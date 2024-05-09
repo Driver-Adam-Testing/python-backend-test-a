@@ -1,5 +1,5 @@
-from typing import Any
 import uuid
+from typing import Any
 
 from fastapi import APIRouter, HTTPException
 from sqlmodel import func, select
@@ -70,7 +70,11 @@ def create_item(
 
 @router.put("/{id}", response_model=ItemOut)
 def update_item(
-    *, session: SessionDep, current_user: CurrentUser, id: uuid.UUID, item_in: ItemUpdate
+    *,
+    session: SessionDep,
+    current_user: CurrentUser,
+    id: uuid.UUID,
+    item_in: ItemUpdate,
 ) -> Any:
     """
     Update an item.
@@ -89,7 +93,9 @@ def update_item(
 
 
 @router.delete("/{id}")
-def delete_item(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Message:
+def delete_item(
+    session: SessionDep, current_user: CurrentUser, id: uuid.UUID
+) -> Message:
     """
     Delete an item.
     """

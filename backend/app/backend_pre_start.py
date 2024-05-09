@@ -32,11 +32,10 @@ def init(db_engine: Engine) -> None:
 def config_extensions(db_engine: Engine) -> None:
     try:
         with db_engine.connect() as connection:
-            connection.execute(text("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";"))
+            connection.execute(text('CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'))
     except Exception as e:
         logger.exception(e)
         raise e
-
 
 
 def main() -> None:

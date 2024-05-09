@@ -2,11 +2,11 @@ import uuid
 
 from fastapi.testclient import TestClient
 from pytest_mock import MockerFixture
-from sqlmodel import Session, select
+from sqlmodel import Session
 
 from app import crud
 from app.core.config import settings
-from app.models import UserCreate, User
+from app.models import UserCreate
 from app.tests.utils.utils import random_email, random_lower_string
 
 

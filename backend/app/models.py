@@ -1,20 +1,16 @@
+from datetime import datetime
 from uuid import UUID
 
-from sqlmodel import Field, Relationship, SQLModel
-from datetime import datetime
-from typing import Optional
-
-from sqlalchemy import Column, func
-from sqlalchemy import text
-from sqlalchemy.dialects.postgresql import UUID as SaUuid
+from sqlalchemy import Column, func, text
 from sqlalchemy import DateTime as SaDateTime
-from sqlmodel import Field, SQLModel
-
+from sqlalchemy.dialects.postgresql import UUID as SaUuid
+from sqlmodel import Field, Relationship, SQLModel
 
 # Shared properties
 
 # NOTE: SQLModel does not support inheriting table models, just data models. So, we have to repeat the
 # created_at and updated_at fields in all models that need them. This is a limitation of SQLModel right now.
+
 
 # TODO replace email str with EmailStr when sqlmodel supports it
 class UserBase(SQLModel):
@@ -56,22 +52,24 @@ class UpdatePassword(SQLModel):
 
 # Database model, database table inferred from class name
 class User(UserBase, table=True):
-    id: UUID | None = Field(sa_column=Column(
-        SaUuid(as_uuid=True),
-        primary_key=True,
-        server_default=text("uuid_generate_v4()")),
+    id: UUID | None = Field(
+        sa_column=Column(
+            SaUuid(as_uuid=True),
+            primary_key=True,
+            server_default=text("uuid_generate_v4()"),
+        ),
         default=None,
     )
     hashed_password: str
     items: list["Item"] = Relationship(back_populates="owner")
-    created_at: Optional[datetime] = Field(
-        sa_column=Column(SaDateTime(timezone=True), server_default=func.now()), default=None
+    created_at: datetime | None = Field(
+        sa_column=Column(SaDateTime(timezone=True), server_default=func.now()),
+        default=None,
     )
 
-    updated_at: Optional[datetime] = Field(
+    updated_at: datetime | None = Field(
         sa_column=Column(SaDateTime(timezone=True), onupdate=func.now()), default=None
     )
-
 
 
 # Properties to return via API, id is always required
@@ -82,6 +80,7 @@ class UserOut(UserBase):
 class UsersOut(SQLModel):
     data: list[UserOut]
     count: int
+
 
 # Shared properties
 class ItemBase(SQLModel):
@@ -101,19 +100,22 @@ class ItemUpdate(ItemBase):
 
 # Database model, database table inferred from class name
 class Item(ItemBase, table=True):
-    id: UUID | None = Field(sa_column=Column(
-        SaUuid(as_uuid=True),
-        primary_key=True,
-        server_default=text("uuid_generate_v4()")),
+    id: UUID | None = Field(
+        sa_column=Column(
+            SaUuid(as_uuid=True),
+            primary_key=True,
+            server_default=text("uuid_generate_v4()"),
+        ),
         default=None,
     )
     title: str
     owner_id: UUID | None = Field(default=None, foreign_key="user.id", nullable=False)
     owner: User | None = Relationship(back_populates="items")
-    created_at: Optional[datetime] = Field(
-        sa_column=Column(SaDateTime(timezone=True), server_default=func.now()), default=None
+    created_at: datetime | None = Field(
+        sa_column=Column(SaDateTime(timezone=True), server_default=func.now()),
+        default=None,
     )
-    updated_at: Optional[datetime] = Field(
+    updated_at: datetime | None = Field(
         sa_column=Column(SaDateTime(timezone=True), onupdate=func.now()), default=None
     )
 

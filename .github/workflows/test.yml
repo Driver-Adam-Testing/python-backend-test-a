@@ -33,7 +33,7 @@ jobs:
       - name: Store coverage files
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-html
+          name: coverage-html-${{ github.run_id }}
           path: backend/htmlcov
 
   # https://github.com/marketplace/actions/alls-green#why

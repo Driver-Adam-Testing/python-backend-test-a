@@ -4,6 +4,6 @@ set -e
 set -x
 
 mypy app
-mypy driver_db
+(cd app/driver_db && mypy .)
 ruff app
 ruff format app --check

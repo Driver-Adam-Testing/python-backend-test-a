@@ -1,7 +1,7 @@
 from collections.abc import Generator
 
 import pytest
-from database import engine, init_db
+from database.db import engine, init_db
 from database.models import Item, User, UserCreate
 from fastapi.testclient import TestClient
 from sqlmodel import Session, delete

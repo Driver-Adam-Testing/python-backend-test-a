@@ -1,7 +1,7 @@
 from collections.abc import Generator
 from typing import Annotated
 
-from database import engine
+from database.db import engine
 from database.models import TokenPayload, User
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer

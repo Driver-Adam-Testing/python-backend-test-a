@@ -1,6 +1,6 @@
 import logging
 
-from database import engine, init_db
+from database.db import engine, init_db
 from sqlmodel import Session
 
 logging.basicConfig(level=logging.INFO)

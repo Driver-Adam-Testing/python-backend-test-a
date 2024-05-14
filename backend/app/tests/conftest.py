@@ -2,11 +2,10 @@ from collections.abc import Generator
 
 import pytest
 from database.db import engine, init_db
-from database.models import Item, User, UserCreate
+from database.models import Item, User
 from fastapi.testclient import TestClient
 from sqlmodel import Session, delete
 
-from app import crud
 from app.core.config import settings
 from app.main import app
 from app.tests.utils.user import authentication_token_from_email
@@ -17,15 +16,6 @@ from app.tests.utils.utils import get_superuser_token_headers
 def db() -> Generator[Session, None, None]:
     with Session(engine) as session:
         init_db(session)
-
-        # Always have a super user around. Is this the right place?
-        user_in = UserCreate(
-            email=settings.FIRST_SUPERUSER,
-            password=settings.FIRST_SUPERUSER_PASSWORD,
-            is_superuser=True,
-        )
-        _ = crud.create_user(session=session, user_create=user_in)
-
         yield session
         statement = delete(Item)
         session.execute(statement)

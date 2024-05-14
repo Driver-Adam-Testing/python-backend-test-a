@@ -21,7 +21,7 @@ class UserBase(SQLModel):
 
 
 # Properties to receive via API on creation
-class UserCreate(UserBase):
+class UserCreate(UserBase):  # TODO move these back to API
     password: str
 
 
@@ -50,7 +50,7 @@ class UpdatePassword(SQLModel):
     new_password: str
 
 
-# Database model, database table inferred from class name
+# Database model, driver-db table inferred from class name
 class User(UserBase, table=True):
     id: UUID | None = Field(
         sa_column=Column(
@@ -98,7 +98,7 @@ class ItemUpdate(ItemBase):
     title: str | None = None  # type: ignore
 
 
-# Database model, database table inferred from class name
+# Database model, driver-db table inferred from class name
 class Item(ItemBase, table=True):
     id: UUID | None = Field(
         sa_column=Column(

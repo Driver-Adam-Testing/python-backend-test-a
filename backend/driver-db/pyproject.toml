@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "database"
+version = "0.1.0"
+description = ""
+authors = ["Admin <admin@example.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+alembic = "^1.12.1"
+sqlmodel = "^0.0.16"
+pydantic-settings = "^2.2.1"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.3"
+pytest-cov = "^4.1.0"
+mypy = "^1.8.0"
+ruff = "^0.2.2"
+pre-commit = "^3.6.2"
+# TODO make sure dependabot can see this package too
+# TODO make sure ruff and pre-commit hooks are run on this package too
+# TODO make sure mypy is run on this package too
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

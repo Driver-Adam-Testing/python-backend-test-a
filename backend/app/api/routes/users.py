@@ -1,18 +1,7 @@
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import col, delete, func, select
-
-from app import crud
-from app.api.deps import (
-    CurrentUser,
-    SessionDep,
-    get_current_active_superuser,
-)
-from app.core.config import settings
-from app.core.security import get_password_hash, verify_password
-from app.models import (
+from database.models import (
     Item,
     Message,
     UpdatePassword,
@@ -24,6 +13,17 @@ from app.models import (
     UserUpdate,
     UserUpdateMe,
 )
+from fastapi import APIRouter, Depends, HTTPException
+from sqlmodel import col, delete, func, select
+
+from app import crud
+from app.api.deps import (
+    CurrentUser,
+    SessionDep,
+    get_current_active_superuser,
+)
+from app.core.config import settings
+from app.core.security import get_password_hash, verify_password
 from app.utils import generate_new_account_email, send_email
 
 router = APIRouter()
@@ -139,7 +139,7 @@ def create_user_open(session: SessionDep, user_in: UserCreateOpen) -> Any:
             status_code=400,
             detail="The user with this email already exists in the system",
         )
-    user_create = UserCreate.from_orm(user_in)
+    user_create = UserCreate.model_validate(user_in)
     user = crud.create_user(session=session, user_create=user_create)
     return user
 

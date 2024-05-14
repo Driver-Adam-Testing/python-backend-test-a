@@ -466,6 +466,23 @@ docs = ["furo", "jaraco.packaging (>=9.3)", "jaraco.tidelift (>=1.4)", "rst.link
 testing = ["cssselect", "importlib-resources", "jaraco.test (>=5.1)", "lxml", "pytest (>=6)", "pytest-black (>=0.3.7)", "pytest-checkdocs (>=2.4)", "pytest-cov", "pytest-enabler (>=2.2)", "pytest-mypy (>=0.9.1)", "pytest-ruff"]
 
 [[package]]
+name = "database"
+version = "0.1.0"
+description = ""
+optional = false
+python-versions = "^3.10"
+files = []
+develop = true
+
+[package.dependencies]
+alembic = "^1.12.1"
+sqlmodel = "^0.0.16"
+
+[package.source]
+type = "directory"
+url = "driver-db"
+
+[[package]]
 name = "distlib"
 version = "0.3.8"
 description = "Distribution utilities"
@@ -2256,4 +2273,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "d1bf7cce2d9eb6d62051719a80e14eeb127722d116af04938775db6cbafe40cf"
+content-hash = "64e6c70463e899335c4556b4df28e10aefd16392c1db0ff82b18cdec64b5f649"

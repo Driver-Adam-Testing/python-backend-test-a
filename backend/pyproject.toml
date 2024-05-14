@@ -24,7 +24,7 @@ psycopg = {extras = ["binary"], version = "^3.1.13"}
 bcrypt = "4.0.1"
 pydantic-settings = "^2.2.1"
 sentry-sdk = {extras = ["fastapi"], version = "^1.40.6"}
-database = {path = "./driver-db", develop = true}
+database = {path = "./driver_db", develop = true}
 
 
 [tool.poetry.group.dev.dependencies]

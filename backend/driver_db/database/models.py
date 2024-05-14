@@ -50,8 +50,7 @@ class UpdatePassword(SQLModel):
     new_password: str
 
 
-# Database model, driver-db table inferred from class name
-class User(UserBase, table=True):
+class User(UserBase, table=True):  # type: ignore
     id: UUID | None = Field(
         sa_column=Column(
             SaUuid(as_uuid=True),
@@ -98,8 +97,8 @@ class ItemUpdate(ItemBase):
     title: str | None = None  # type: ignore
 
 
-# Database model, driver-db table inferred from class name
-class Item(ItemBase, table=True):
+# Database model, db table inferred from class name
+class Item(ItemBase, table=True):  # type: ignore
     id: UUID | None = Field(
         sa_column=Column(
             SaUuid(as_uuid=True),

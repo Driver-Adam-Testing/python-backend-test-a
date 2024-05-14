@@ -11,7 +11,7 @@ RUN curl -sSL https://install.python-poetry.org | POETRY_HOME=/opt/poetry python
 RUN poetry config virtualenvs.create false
 
 # Copy the driver-db package first
-COPY driver-db /app/driver-db
+COPY driver_db /app/driver_db
 
 # Copy pyproject.toml and poetry.lock first for better caching
 COPY ./pyproject.toml ./poetry.lock /app/

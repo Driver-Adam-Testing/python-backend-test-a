@@ -476,11 +476,12 @@ develop = true
 
 [package.dependencies]
 alembic = "^1.12.1"
+pydantic-settings = "^2.2.1"
 sqlmodel = "^0.0.16"
 
 [package.source]
 type = "directory"
-url = "driver-db"
+url = "driver_db"
 
 [[package]]
 name = "distlib"
@@ -2273,4 +2274,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "64e6c70463e899335c4556b4df28e10aefd16392c1db0ff82b18cdec64b5f649"
+content-hash = "f4eeef31f939845902e793a81fa4cfa99ee30e7d41f00cdb2cf48bcfeabc1c7d"

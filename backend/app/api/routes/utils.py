@@ -5,6 +5,8 @@ from pydantic.networks import EmailStr
 from app.api.deps import get_current_active_superuser
 from app.utils import generate_test_email, send_email
 
+from app.api.auth import auth, Auth0User, Security
+
 router = APIRouter()
 
 
@@ -24,3 +26,16 @@ def test_email(email_to: EmailStr) -> Message:
         html_content=email_data.html_content,
     )
     return Message(message="Test email sent")
+
+
+@router.get(
+    "/test-auth/",
+    dependencies=[Depends(auth.authcode_scheme)],
+    status_code=200
+)
+def test_auth(user: Auth0User = Security(auth.get_user)) -> None:
+    """
+    Test Auth.
+    """
+    print(user)
+    return None

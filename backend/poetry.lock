@@ -600,21 +600,6 @@ typing-extensions = ">=4.8.0"
 all = ["email-validator (>=2.0.0)", "httpx (>=0.23.0)", "itsdangerous (>=1.1.0)", "jinja2 (>=2.11.2)", "orjson (>=3.2.1)", "pydantic-extra-types (>=2.0.0)", "pydantic-settings (>=2.0.0)", "python-multipart (>=0.0.7)", "pyyaml (>=5.3.1)", "ujson (>=4.0.1,!=4.0.2,!=4.1.0,!=4.2.0,!=4.3.0,!=5.0.0,!=5.1.0)", "uvicorn[standard] (>=0.12.0)"]
 
 [[package]]
-name = "fastapi-auth0"
-version = "0.5.0"
-description = "Easy auth0.com integration for FastAPI"
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "fastapi-auth0-0.5.0.tar.gz", hash = "sha256:5513880b59b4aad0e60c159af519f29d49c14993adc84e9193a7bf47dddd5a1d"},
-    {file = "fastapi_auth0-0.5.0-py3-none-any.whl", hash = "sha256:73c6ad0cf1803c8eb7251186030c0948cfd3d5aae87918ae3947e826a04dfd8b"},
-]
-
-[package.dependencies]
-fastapi = ">=0.60.0"
-python-jose = ">=3.2.0"
-
-[[package]]
 name = "filelock"
 version = "3.14.0"
 description = "A platform independent file lock."
@@ -2352,4 +2337,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "39542dac92693f87af18823d940548f4a282c13b47b070a88537950304656aa9"
+content-hash = "f4eeef31f939845902e793a81fa4cfa99ee30e7d41f00cdb2cf48bcfeabc1c7d"

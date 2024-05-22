@@ -1,9 +1,8 @@
 from database.models import Message
-from fastapi import APIRouter, Depends, Security
+from fastapi import APIRouter
 from pydantic.networks import EmailStr
 
-from app.api.auth import Auth0User, auth
-from app.api.deps import get_current_active_superuser
+from app.api.auth import Auth0User, CurrentUser
 from app.utils import generate_test_email, send_email
 
 router = APIRouter()
@@ -11,10 +10,9 @@ router = APIRouter()
 
 @router.post(
     "/test-email/",
-    dependencies=[Depends(get_current_active_superuser)],
     status_code=201,
 )
-def test_email(email_to: EmailStr) -> Message:
+def test_email(current_user: CurrentUser, email_to: EmailStr) -> Message:
     """
     Test emails.
     """
@@ -27,12 +25,9 @@ def test_email(email_to: EmailStr) -> Message:
     return Message(message="Test email sent")
 
 
-@router.get(
-    "/test-auth/", dependencies=[Depends(auth.authcode_scheme)], status_code=200
-)
-def test_auth(user: Auth0User = Security(auth.get_user)) -> None:
+@router.get("/test-auth/", status_code=200)
+def test_auth(current_user: CurrentUser) -> Auth0User:
     """
-    Test Auth.
+    Test Auth
     """
-    print(user)
-    return None
+    return current_user

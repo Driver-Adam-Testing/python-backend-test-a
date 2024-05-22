@@ -1,171 +1,129 @@
 import json
-import logging
-import os
 from typing import Annotated
-from urllib import parse, request
+from urllib.request import urlopen
 
-from fastapi import Depends, HTTPException
-from fastapi.security import (
-    HTTPAuthorizationCredentials,
-    HTTPBearer,
-    OAuth2AuthorizationCodeBearer,
-)
+from fastapi import Depends, HTTPException, Request, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import jwt
-from pydantic import BaseModel, Field, ValidationError
-from typing_extensions import TypedDict
+from jose.exceptions import JWTError
+from pydantic import BaseModel, Field
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import JSONResponse
 
-logger = logging.getLogger("driverai_auth0")
-domain = "driverai.us.auth0.com"
-algorithms = ["RS256"]
-audience = "http://localhost"
-
-
-class Auth0UnauthenticatedException(HTTPException):
-    def __init__(self, detail: str, **kwargs):
-        """Returns HTTP 401"""
-        super().__init__(401, detail, **kwargs)
+AUTH0_DOMAIN = "driverai.us.auth0.com"
+API_IDENTIFIER = "https://driveraiapi.ngrok.io"
+ALGORITHMS = ["RS256"]
 
 
-class Auth0UnauthorizedException(HTTPException):
-    def __init__(self, detail: str, **kwargs):
-        """Returns HTTP 403"""
-        super().__init__(403, detail, **kwargs)
+def get_jwks() -> dict:
+    jwks_url = f"https://{AUTH0_DOMAIN}/.well-known/jwks.json"
+    response = urlopen(jwks_url)
+    return json.loads(response.read())
 
 
-class JwksKeyDict(TypedDict):
-    kid: str
-    kty: str
-    use: str
-    n: str
-    e: str
+def get_rsa_key(jwks: dict, kid: str) -> dict:
+    for key in jwks["keys"]:
+        if key["kid"] == kid:
+            return {
+                "kty": key["kty"],
+                "kid": key["kid"],
+                "use": key["use"],
+                "n": key["n"],
+                "e": key["e"],
+            }
+    return {}
 
 
-class JwksDict(TypedDict):
-    keys: list[JwksKeyDict]
+def verify_token(token: str) -> dict:
+    try:
+        unverified_header = jwt.get_unverified_header(token)
+    except JWTError:
+        raise Exception("Invalid header. Use an RS256 signed JWT Access Token")
 
+    rsa_key = get_rsa_key(get_jwks(), unverified_header["kid"])
+    if not rsa_key:
+        raise Exception("Unable to find appropriate key")
 
-auth0_rule_namespace: str = os.getenv(
-    "AUTH0_RULE_NAMESPACE", "https://api.driverai.com/email"
-)
-authcode_scheme = OAuth2AuthorizationCodeBearer(
-    authorizationUrl=f"https://driverai.us.auth0.com/authorize?audience={audience}",
-    tokenUrl="https://driverai.us.auth0.com/oauth/token",
-    scopes={},
-)
-
-
-class Auth0User(BaseModel):
-    id: str = Field(..., alias="sub")
-    permissions: list[str] | None = None
-    email: str | None = Field(None, alias=f"{auth0_rule_namespace}/email")  # type: ignore [literal-required]
-
-
-class Auth0:
-    def __init__(
-        self,
-        domain: str,
-        api_audience: str,
-        scopes: dict[str, str] | None = None,
-        auth0user_model: type[Auth0User] = Auth0User,
-    ):
-        self.domain = domain
-        self.audience = api_audience
-
-        self.auth0_user_model = auth0user_model
-
-        self.algorithms = ["RS256"]
-        r = request.urlopen(f"https://{domain}/.well-known/jwks.json")
-        self.jwks: JwksDict = json.loads(r.read())
-
-        authorization_url_qs = parse.urlencode({"audience": api_audience})
-        authorization_url = f"https://{domain}/authorize?{authorization_url_qs}"
-        self.authcode_scheme = OAuth2AuthorizationCodeBearer(
-            authorizationUrl=authorization_url,
-            tokenUrl=f"https://{domain}/oauth/token",
-            scopes=scopes or {},
+    try:
+        payload = jwt.decode(
+            token,
+            rsa_key,
+            algorithms=ALGORITHMS,
+            audience=API_IDENTIFIER,
+            issuer=f"https://{AUTH0_DOMAIN}/",
         )
+        return payload
+    except JWTError:
+        raise Exception("Token invalid or expired")
 
-    async def get_user(
-        self,
-        creds: HTTPAuthorizationCredentials | None = Depends(
-            HTTPBearer(auto_error=False)
-        ),
-    ) -> Auth0User | None:
-        """
-        Verify the Authorization: Bearer token and return the user.
-        otherwise return None.
-        """
 
-        if creds is None:
-            raise HTTPException(401, detail="Missing bearer token")
+def get_token_payload(request: Request) -> dict:
+    return request.state.token_payload
 
-        token = creds.credentials
-        payload: dict = {}
+
+GetTokenPayload = Annotated[dict, Depends(get_token_payload)]
+
+
+class AuthMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
         try:
-            unverified_header = jwt.get_unverified_header(token)
-
-            if "kid" not in unverified_header:
-                raise Auth0UnauthenticatedException(detail="Malformed token header")
-
-            rsa_key = {}
-            for key in self.jwks["keys"]:
-                if key["kid"] == unverified_header["kid"]:
-                    rsa_key = {
-                        "kty": key["kty"],
-                        "kid": key["kid"],
-                        "use": key["use"],
-                        "n": key["n"],
-                        "e": key["e"],
-                    }
-                    break
-            if rsa_key:
-                payload = jwt.decode(
-                    token,
-                    rsa_key,
-                    algorithms=self.algorithms,
-                    audience=self.audience,
-                    issuer=f"https://{self.domain}/",
-                )
-            else:
-                msg = "Invalid kid header (wrong tenant or rotated public key)"
-                raise Auth0UnauthenticatedException(detail=msg)
-
-        except jwt.ExpiredSignatureError:
-            msg = "Expired token"
-            raise Auth0UnauthenticatedException(detail=msg)
-
-        except jwt.JWTClaimsError:
-            msg = "Invalid token claims (wrong issuer or audience)"
-            raise Auth0UnauthenticatedException(detail=msg)
-
-        except jwt.JWTError:
-            msg = "Malformed token"
-            raise Auth0UnauthenticatedException(detail=msg)
-
-        except Auth0UnauthenticatedException:
-            raise
-
+            if request.url.path not in (
+                "/login",
+                "/docs",
+                "/api/v1/openapi.json",
+                "/redoc",
+            ):
+                auth_header = request.headers.get("Authorization")
+                if auth_header is None or not auth_header.startswith("Bearer "):
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="Not authenticated",
+                    )
+                else:
+                    token = auth_header[len("Bearer ") :]
+                    try:
+                        payload = verify_token(token)
+                        request.state.token_payload = payload
+                    except Exception as e:
+                        raise HTTPException(
+                            status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e)
+                        )
+            response = await call_next(request)
+        except HTTPException as exc:
+            return JSONResponse(
+                status_code=exc.status_code, content={"detail": exc.detail}
+            )
         except Exception as e:
-            logger.error(f'Handled exception decoding token: "{e}"', exc_info=True)
-            raise Auth0UnauthenticatedException(detail="Error decoding token")
-
-        try:
-            user = Auth0User(**payload)
-
-            return user
-
-        except ValidationError as e:
-            logger.error(f'Handled exception parsing Auth0User: "{e}"', exc_info=True)
-            raise Auth0UnauthorizedException(detail="Error parsing Auth0User")
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content={"detail": str(e)},
+            )
+        return response
 
 
-auth = Auth0(domain="driverai.us.auth0.com", api_audience="http://localhost")
+security = HTTPBearer()
+
+
+class User(BaseModel):
+    organization_id: str = Field(..., alias="orgId")
+    organization_display_name: str = Field(..., alias="org_display_name")
+    user_id: str = Field(..., alias="userId")
+    is_service_account: bool = Field(..., alias="isServiceAccount")
+    issuer: str = Field(..., alias="iss")
+    subject: str = Field(..., alias="sub")
+    audience: list[str] = Field(..., alias="aud")
+    issued_at: int = Field(..., alias="iat")
+    expiration: int = Field(..., alias="exp")
+    scope: str = Field(..., alias="scope")
+    organization_name: str = Field(..., alias="org_name")
+    authorized_party: str = Field(..., alias="azp")
 
 
 def get_current_user(
-    token: str = Depends(authcode_scheme), user: Auth0User = Depends(auth.get_user)
-) -> Auth0User:
-    return user
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    token_payload: dict = Depends(get_token_payload),
+):
+    return User(**token_payload)
 
 
-CurrentUser = Annotated[Auth0User, Depends(get_current_user)]
+CurrentUser = Annotated[User, Depends(get_current_user)]

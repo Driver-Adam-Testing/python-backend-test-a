@@ -1,9 +1,10 @@
 import logging
 
-from database.db import engine
 from sqlalchemy import Engine, text
 from sqlmodel import Session, select
 from tenacity import after_log, before_log, retry, stop_after_attempt, wait_fixed
+
+from driver_db.database.db import engine
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

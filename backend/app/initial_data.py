@@ -1,11 +1,11 @@
 import logging
 
-from database.db import engine, init_db
-from database.models import User, UserCreate
 from sqlmodel import Session, select
 
 from app import crud
 from app.core.config import settings
+from driver_db.database.db import engine, init_db
+from driver_db.database.models import User, UserCreate
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

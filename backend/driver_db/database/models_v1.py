@@ -46,7 +46,7 @@ class ContentMetadata(SQLModel, table=True):
     id: UUID | None = Field(default_factory=uuid.uuid4, primary_key=True)
     workspace_id: UUID = Field(index=True)
     codebase_id: UUID | None = Field(default=None, nullable=True, index=True)
-    content_type: ContentType | Enum = Enum(ContentType)
+    content_type: ContentType = Enum(ContentType)  # type: ignore
     relative_path: str | None = Field(default=None, nullable=True, index=True)
     misc_metadata: dict = Field(default={}, sa_column=Column(JSON, nullable=False))
     chunks: list["Chunk"] = Relationship(back_populates="content_metadata")

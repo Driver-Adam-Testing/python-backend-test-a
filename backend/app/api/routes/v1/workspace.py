@@ -85,14 +85,12 @@ def update_workspace(
     if not existing_workspace:
         raise HTTPException(status_code=404, detail="Workspace not found")
     if existing_workspace.organization_id != current_user.organization_id:
-        raise HTTPException(status_code=404, detail="Workspace not found")
+        raise HTTPException(status_code=403, detail="Not enough permissions")
 
-    for attr, value in workspace.__dict__.items():
-        if value is not None:
-            setattr(existing_workspace, attr, value)
-    session.add(existing_workspace)
+    existing_workspace.display_name = workspace.display_name
+    existing_workspace.description = workspace.description
+    existing_workspace.organization_id = workspace.organization_id
     session.commit()
-
     return existing_workspace
 
 

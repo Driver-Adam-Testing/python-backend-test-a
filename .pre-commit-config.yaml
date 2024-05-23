@@ -18,17 +18,14 @@ repos:
         args:
           - --fix
       - id: ruff-format
-
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.10.0
+  - repo: local
     hooks:
-      - id: mypy
-        name: mypy
-        entry: mypy backend/app backend/driver_db
-        language: python
-        types: [ python ]
-        always_run: true
-        pass_filenames: false
+      - id: mypy-pre-commit
+        name: Run mypy on staged files
+        entry: ./mypy-pre-commit.sh
+        language: script
+        files: '\.py$'
+
 ci:
   autofix_commit_msg: 🎨 [pre-commit.ci] Auto format from pre-commit.com hooks
   autoupdate_commit_msg: ⬆ [pre-commit.ci] pre-commit autoupdate

@@ -15,6 +15,7 @@ API_IDENTIFIER = "https://driveraiapi.ngrok.io"
 ALGORITHMS = ["RS256"]
 
 
+# This is to make mypy run again
 def get_jwks() -> dict:
     jwks_url = f"https://{AUTH0_DOMAIN}/.well-known/jwks.json"
     response = urlopen(jwks_url)

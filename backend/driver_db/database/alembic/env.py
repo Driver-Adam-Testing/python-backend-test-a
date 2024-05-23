@@ -10,7 +10,7 @@ config = context.config
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
-fileConfig(config.config_file_name)
+fileConfig(str(config.config_file_name))
 
 # add your model's MetaData object here
 # for 'autogenerate' support
@@ -18,10 +18,10 @@ fileConfig(config.config_file_name)
 # target_metadata = mymodel.Base.metadata
 # target_metadata = None
 
-from database.models import SQLModel  # noqa
+from driver_db.database.models import SQLModel  # noqa
+from driver_db.database.models_v1 import SQLModel as SQLModelV1  # noqa
 
-target_metadata = SQLModel.metadata
-
+target_metadata = SQLModelV1.metadata
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")

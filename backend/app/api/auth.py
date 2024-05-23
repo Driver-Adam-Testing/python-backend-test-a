@@ -122,7 +122,7 @@ class User(BaseModel):
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     token_payload: dict = Depends(get_token_payload),
-):
+) -> User:
     return User(**token_payload)
 
 

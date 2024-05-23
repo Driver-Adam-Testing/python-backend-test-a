@@ -188,8 +188,6 @@ You can set several variables, like:
 
 * `BACKEND_CORS_ORIGINS`: A list of allowed CORS origins separated by commas.
 * `SECRET_KEY`: The secret key for the FastAPI project, used to sign tokens.
-* `FIRST_SUPERUSER`: The email of the first superuser, this superuser will be the one that can create new users.
-* `FIRST_SUPERUSER_PASSWORD`: The password of the first superuser.
 * `USERS_OPEN_REGISTRATION`: Whether to allow open registration of new users.
 * `SMTP_HOST`: The SMTP server host to send emails, this would come from your email provider (E.g. Mailgun, Sparkpost, Sendgrid, etc).
 * `SMTP_USER`: The SMTP server user to send emails.
@@ -307,8 +305,6 @@ The current Github Actions workflows expect these secrets:
 * `DOMAIN_PRODUCTION`
 * `DOMAIN_STAGING`
 * `EMAILS_FROM_EMAIL`
-* `FIRST_SUPERUSER`
-* `FIRST_SUPERUSER_PASSWORD`
 * `POSTGRES_PASSWORD`
 * `SECRET_KEY`
 

@@ -14,9 +14,6 @@ class Settings(BaseSettings):
     POSTGRES_PASSWORD: str
     POSTGRES_DB: str = ""
 
-    FIRST_SUPERUSER: str
-    FIRST_SUPERUSER_PASSWORD: str
-
     @computed_field  # type: ignore[misc]
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> PostgresDsn:

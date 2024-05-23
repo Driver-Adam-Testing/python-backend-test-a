@@ -66,7 +66,6 @@ You can then update configs in the `.env` files to customize your configurations
 Before deploying it, make sure you change at least the values for:
 
 - `SECRET_KEY`
-- `FIRST_SUPERUSER_PASSWORD`
 - `POSTGRES_PASSWORD`
 
 ### Generate secret keys

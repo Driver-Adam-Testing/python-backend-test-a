@@ -7,3 +7,4 @@
 python-backend.code-workspace
 backend/scripts/tests3.py
 backend/driver_db/database/utils/copy_records.py
+.env

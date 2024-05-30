@@ -5,8 +5,7 @@ from datetime import date, datetime, timezone
 from uuid import UUID
 
 import sqlalchemy.dialects.postgresql
-
-# import strawberry
+import strawberry
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import Column, DateTime, Enum, Integer, func, text
 from sqlalchemy.dialects.postgresql import JSONB
@@ -179,14 +178,14 @@ class RuntimeLogContentRetrieval(SQLModel, table=True):
 #     request: dict = Field(default={}, sa_column=Column(JSON, nullable=True))
 
 
-# @strawberry.enum
+@strawberry.enum
 class Enum_Derived_Content_Status(str, enum.Enum):
     generating = "generating"
     generation_complete = "generation-complete"
     generation_error = "generation-error"
 
 
-# @strawberry.enum
+@strawberry.enum
 class Enum_Codebase_Status(str, enum.Enum):
     processing = "processing"
     processing_complete = "processing-complete"

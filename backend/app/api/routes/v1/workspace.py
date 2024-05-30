@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from sqlmodel import select
 
 from app.api.auth import CurrentUser
-from app.api.deps import SessionDep
+from app.api.session import CurrentSession
 from driver_db.database.models_v1 import Workspace
 
 router = APIRouter()
@@ -27,7 +27,7 @@ class Message(BaseModel):
 
 @router.get("/", response_model=WorkspacesOut)
 def read_workspaces(
-    session: SessionDep, current_user: CurrentUser, skip: int = 0, limit: int = 100
+    session: CurrentSession, current_user: CurrentUser, skip: int = 0, limit: int = 100
 ) -> Any:
     """
     Retrieve workspaces.
@@ -44,7 +44,7 @@ def read_workspaces(
 
 
 @router.get("/{id}", response_model=Workspace)
-def read_workspace(session: SessionDep, current_user: CurrentUser, id: UUID) -> Any:
+def read_workspace(session: CurrentSession, current_user: CurrentUser, id: UUID) -> Any:
     """
     Get workspace by ID.
     """
@@ -58,7 +58,7 @@ def read_workspace(session: SessionDep, current_user: CurrentUser, id: UUID) -> 
 
 @router.post("/", response_model=Workspace)
 def create_workspace(
-    session: SessionDep, current_user: CurrentUser, workspace: Workspace
+    session: CurrentSession, current_user: CurrentUser, workspace: Workspace
 ) -> Any:
     """
     Create a new workspace.
@@ -76,7 +76,7 @@ def create_workspace(
 
 @router.put("/{id}", response_model=Workspace)
 def update_workspace(
-    session: SessionDep, current_user: CurrentUser, id: UUID, workspace: Workspace
+    session: CurrentSession, current_user: CurrentUser, id: UUID, workspace: Workspace
 ) -> Any:
     """
     Update an existing workspace.
@@ -95,7 +95,9 @@ def update_workspace(
 
 
 @router.delete("/{id}", response_model=None)
-def delete_workspace(session: SessionDep, current_user: CurrentUser, id: UUID) -> Any:
+def delete_workspace(
+    session: CurrentSession, current_user: CurrentUser, id: UUID
+) -> Any:
     """
     Delete a workspace.
     """

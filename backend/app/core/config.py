@@ -31,6 +31,17 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
     DOMAIN: str = "localhost"
     ENVIRONMENT: Literal["local", "staging", "production"] = "local"
+    AUTH0_DOMAIN: str | None = None
+    AUTH0_CLIENT_ID: str | None = None
+    AUTH0_AUDIENCE: str | None = None
+
+    AUTH0_MGMT_API_CLIENT_ID: str | None = None
+    AUTH0_MGMT_API_CLIENT_SECRET: str | None = None
+    AUTH0_MGMT_API_AUDIENCE: str | None = None
+
+    AWS_ACCESS_KEY_ID: str | None = None
+    AWS_SECRET_ACCESS_KEY: str | None = None
+    AWS_REGION: str | None = None
 
     @computed_field  # type: ignore[misc]
     @property
@@ -56,6 +67,7 @@ class Settings(BaseSettings):
     # TODO: update type to EmailStr when sqlmodel supports it
     EMAILS_FROM_EMAIL: str | None = None
     EMAILS_FROM_NAME: str | None = None
+    BUCKET_NAME: str | None = None
 
     @model_validator(mode="after")
     def _set_default_emails_from(self) -> Self:

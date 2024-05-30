@@ -1,4 +1,3 @@
-import os
 from logging.config import fileConfig
 
 from alembic import context
@@ -20,6 +19,7 @@ fileConfig(str(config.config_file_name))
 
 from driver_db.database.models import SQLModel  # noqa
 from driver_db.database.models_v1 import SQLModel as SQLModelV1  # noqa
+from driver_db.database.config import settings  # noqa
 
 target_metadata = SQLModelV1.metadata
 # other values from the config, defined by the needs of env.py,
@@ -29,12 +29,7 @@ target_metadata = SQLModelV1.metadata
 
 
 def get_url():
-    user = os.getenv("POSTGRES_USER", "postgres")
-    password = os.getenv("POSTGRES_PASSWORD", "")
-    server = os.getenv("POSTGRES_SERVER", "db")
-    port = os.getenv("POSTGRES_PORT", "5432")
-    db = os.getenv("POSTGRES_DB", "app")
-    return f"postgresql+psycopg://{user}:{password}@{server}:{port}/{db}"
+    return str(settings.SQLALCHEMY_DATABASE_URI)
 
 
 def run_migrations_offline():

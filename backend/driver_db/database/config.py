@@ -1,6 +1,8 @@
 from pydantic import PostgresDsn, computed_field
 from pydantic_core import MultiHostUrl
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from sqlalchemy import text
+from sqlmodel import create_engine
 
 
 class Settings(BaseSettings):
@@ -17,7 +19,7 @@ class Settings(BaseSettings):
     @computed_field  # type: ignore[misc]
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> PostgresDsn:
-        return MultiHostUrl.build(
+        url = MultiHostUrl.build(
             scheme="postgresql+psycopg",
             username=self.POSTGRES_USER,
             password=self.POSTGRES_PASSWORD,
@@ -25,6 +27,26 @@ class Settings(BaseSettings):
             port=self.POSTGRES_PORT,
             path=self.POSTGRES_DB,
         )
+        return url
 
 
 settings = Settings()  # type: ignore
+
+
+def init_engine():
+    # Connect to the default database to check if the target database exists and create it if not
+    default_engine = create_engine(
+        f"postgresql://{settings.POSTGRES_USER}:{settings.POSTGRES_PASSWORD}@{settings.POSTGRES_SERVER}:{settings.POSTGRES_PORT}/postgres"
+    )
+    with default_engine.connect() as connection:
+        connection.execute(text("COMMIT"))
+        result = connection.execute(
+            text("SELECT 1 FROM pg_database WHERE datname = :dbname"),
+            {"dbname": settings.POSTGRES_DB},
+        ).fetchone()
+        if not result:
+            connection.execute(text(f"CREATE DATABASE {settings.POSTGRES_DB}"))
+            print(f"Database {settings.POSTGRES_DB} created.")
+
+
+init_engine()

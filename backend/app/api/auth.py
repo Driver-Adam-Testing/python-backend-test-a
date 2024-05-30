@@ -10,14 +10,13 @@ from pydantic import BaseModel, Field
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
-AUTH0_DOMAIN = "driverai.us.auth0.com"
-API_IDENTIFIER = "https://driveraiapi.ngrok.io"
+from app.core.config import settings
+
 ALGORITHMS = ["RS256"]
 
 
-# This is to make mypy run again
 def get_jwks() -> dict:
-    jwks_url = f"https://{AUTH0_DOMAIN}/.well-known/jwks.json"
+    jwks_url = f"https://{settings.AUTH0_DOMAIN}/.well-known/jwks.json"
     response = urlopen(jwks_url)
     return json.loads(response.read())
 
@@ -36,49 +35,42 @@ def get_rsa_key(jwks: dict, kid: str) -> dict:
 
 
 def verify_token(token: str) -> dict:
-    try:
-        unverified_header = jwt.get_unverified_header(token)
-    except JWTError:
-        raise Exception("Invalid header. Use an RS256 signed JWT Access Token")
-
+    unverified_header = jwt.get_unverified_header(token)
     rsa_key = get_rsa_key(get_jwks(), unverified_header["kid"])
     if not rsa_key:
-        raise Exception("Unable to find appropriate key")
-
-    try:
-        payload = jwt.decode(
-            token,
-            rsa_key,
-            algorithms=ALGORITHMS,
-            audience=API_IDENTIFIER,
-            issuer=f"https://{AUTH0_DOMAIN}/",
-        )
-        return payload
-    except JWTError:
-        raise Exception("Token invalid or expired")
+        raise JWTError("Unable to find appropriate key")
+    payload = jwt.decode(
+        token,
+        rsa_key,
+        algorithms=ALGORITHMS,
+        audience=settings.AUTH0_AUDIENCE,
+        issuer=f"https://{settings.AUTH0_DOMAIN}/",
+    )
+    return payload
 
 
-def get_token_payload(request: Request) -> dict:
-    return request.state.token_payload
-
-
-GetTokenPayload = Annotated[dict, Depends(get_token_payload)]
+UNPROTECTED_PATHS = [
+    "/login",
+    "/docs",
+    "/api/v1/openapi.json",
+    "/redoc",
+    "/api/v1/sandbox/apollo-sandbox/",
+]
 
 
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         try:
-            if request.url.path not in (
-                "/login",
-                "/docs",
-                "/api/v1/openapi.json",
-                "/redoc",
-            ):
+            if request.method == "GET" and request.url.path in UNPROTECTED_PATHS:
+                pass
+            elif request.method == "OPTIONS":
+                pass
+            else:
                 auth_header = request.headers.get("Authorization")
                 if auth_header is None or not auth_header.startswith("Bearer "):
                     raise HTTPException(
                         status_code=status.HTTP_401_UNAUTHORIZED,
-                        detail="Not authenticated",
+                        detail="Malformed or missing Authorization header",
                     )
                 else:
                     token = auth_header[len("Bearer ") :]
@@ -96,7 +88,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
             )
         except Exception as e:
             return JSONResponse(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status_code=status.HTTP_400_BAD_REQUEST,
                 content={"detail": str(e)},
             )
         return response
@@ -118,6 +110,10 @@ class User(BaseModel):
     scope: str = Field(..., alias="scope")
     organization_name: str = Field(..., alias="org_name")
     authorized_party: str = Field(..., alias="azp")
+
+
+def get_token_payload(request: Request) -> dict:
+    return request.state.token_payload
 
 
 def get_current_user(

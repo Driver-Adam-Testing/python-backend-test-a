@@ -12,4 +12,4 @@ def get_db() -> Generator[Session, None, None]:
         yield session
 
 
-SessionDep = Annotated[Session, Depends(get_db)]
+CurrentSession = Annotated[Session, Depends(get_db)]

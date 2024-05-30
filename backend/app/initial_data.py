@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 
 def init(session: Session) -> None:
     init_db(session)
+    pass
 
 
 def main() -> None:

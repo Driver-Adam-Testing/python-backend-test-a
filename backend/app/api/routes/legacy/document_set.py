@@ -36,7 +36,7 @@ class DerivedContentTypes(Enum):
 
 @strawberry.type
 class Document:
-    id: str | UUID = ""
+    id: UUID = UUID(int=0)
     content: str = ""
 
 
@@ -71,13 +71,13 @@ class Code:
 
 @strawberry.type
 class ApplicationNote:
-    id: str | UUID = ""
+    id: str = ""
     status: str = ""
     prompt: str = ""
     name: str = ""
     content: str = ""
     description: str = ""
-    metadata: str | None = None
+    metadata: str = ""
     generation_timestamp: datetime | None = None
 
 
@@ -159,26 +159,30 @@ def get_document_set(
         ):
             document_set.short.single_paragraph = doc.content
             document_set.short.single_paragraph_document = Document(
-                id=doc.id, content=doc.content
+                id=doc.id,
+                content=doc.content,  # type: ignore
             )
         elif (
             derived_content_type == DerivedContentTypes.SHORT_SENTENCE_DESCRIPTION.value
         ):
             document_set.short.single_sentence = doc.content
             document_set.short.single_sentence_document = Document(
-                id=doc.id, content=doc.content
+                id=doc.id,
+                content=doc.content,  # type: ignore
             )
         elif (
             derived_content_type == DerivedContentTypes.TERSE_SENTENCE_DESCRIPTION.value
         ):
             document_set.short.terse_sentence = doc.content
             document_set.short.terse_sentence_document = Document(
-                id=doc.id, content=doc.content
+                id=doc.id,
+                content=doc.content,  # type: ignore
             )
         elif derived_content_type == DerivedContentTypes.ARCHITECTURE_DIAGRAM.value:
             document_set.architecture = doc.content
             document_set.architecture_document = Document(
-                id=doc.id, content=doc.content
+                id=doc.id,
+                content=doc.content,  # type: ignore
             )
         elif derived_content_type == DerivedContentTypes.CHUNK_DESCRIPTIONS.value:
             if document_set.chunk_descriptions is None:
@@ -190,23 +194,25 @@ def get_document_set(
         ):
             document_set.quickstart.getting_started = doc.content
             document_set.quickstart.getting_started_document = Document(
-                id=doc.id, content=doc.content
+                id=doc.id,
+                content=doc.content,  # type: ignore
             )
         elif derived_content_type == DerivedContentTypes.QUICK_START_DEPENDENCIES.value:
             document_set.quickstart.dependencies = doc.content
             document_set.quickstart.dependencies_document = Document(
-                id=doc.id, content=doc.content
+                id=doc.id,
+                content=doc.content,  # type: ignore
             )
         elif derived_content_type == DerivedContentTypes.QUICK_START_ENTRY.value:
             document_set.quickstart.entry = doc.content
             document_set.quickstart.entry_document = Document(
-                id=doc.id,
+                id=doc.id,  # type: ignore
                 content=doc.content,  # type: ignore
             )
         elif derived_content_type == DerivedContentTypes.QUICK_START_USE.value:
             document_set.quickstart.use = doc.content  # type: ignore
             document_set.quickstart.use_document = Document(
-                id=doc.id,
+                id=doc.id,  # type: ignore
                 content=doc.content,  # type: ignore
             )
         elif derived_content_type == DerivedContentTypes.APPLICATION_NOTE.value:

@@ -18,7 +18,7 @@ class FlatNode:
     name: str | None
     path: str | None  # TODO: relative_path is renamed path. There's a lot of transformation.
     kind: str | None
-    children: list[str | None] | None = strawberry.field(default_factory=list)
+    children: list[str] | None = strawberry.field(default_factory=list)
 
 
 def get_codebase_tree(
@@ -40,7 +40,8 @@ def get_codebase_tree(
     files = []
 
     for content, source_content_type in source_contents:
-        name = content.relative_path.split("/")[-1]
+        path_parts = content.relative_path.rstrip("/").split("/")
+        name = path_parts[-1]
         kind = (
             NodeTypeEnum.Directory
             if source_content_type.type_name == "codebase-directory"

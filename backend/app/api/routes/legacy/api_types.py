@@ -216,7 +216,7 @@ class DerivedContentInput:
 
 # type: ignore
 @strawberry.experimental.pydantic.input(SourceContent, all_fields=True)
-class SourceContentInput(SourceContent):
+class SourceContentInput:
     pass
 
 

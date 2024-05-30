@@ -68,6 +68,13 @@ class UpdateApplicationNoteInput:
 
 
 @strawberry.input
+class UpdateDocumentInput:
+    id: ID
+    content: str | None = None
+    name: str | None = None
+
+
+@strawberry.input
 class GenerateApplicationNoteInput:
     codebase_id: ID
     workspace_id: ID
@@ -94,12 +101,12 @@ class DocumentEditInput:
 @strawberry.type
 class Mutation:
     @strawberry.mutation
-    async def create_source_content(self, info: Info, input: SourceContentInput) -> str:
+    async def createSourceContent(self, info: Info, input: SourceContentInput) -> str:
         user = info.context.user
         session = info.context.session
 
         workspace = await session.execute(
-            select(Workspace).filter_by(id=input.workspace_id)
+            select(Workspace).filter_by(id=input.workspace_id)  # type: ignore
         ).scalar_one_or_none()
         if not workspace or workspace.organization_id != user.organization_id:
             raise GraphQLError(
@@ -108,7 +115,7 @@ class Mutation:
 
         # TODO: Get rid of the database hits to get source and derived content types. They don't change often enough and they are limited. It's inefficient that they're defined in the database.
         source_content_type = await session.execute(
-            select(SourceContentType).filter_by(type_name=input.source_content_type)
+            select(SourceContentType).filter_by(type_name=input.source_content_type)  # type: ignore
         ).first()
 
         if not source_content_type:
@@ -117,10 +124,10 @@ class Mutation:
             )
 
         source_content = SourceContent(
-            source_content_type_id=source_content_type.id,
-            workspace_id=input.workspace_id,
-            codebase_id=input.codebase_id,
-            relative_path=input.relative_path,
+            source_content_type_id=source_content_type.id,  # type: ignore
+            workspace_id=input.workspace_id,  # type: ignore
+            codebase_id=input.codebase_id,  # type: ignore
+            relative_path=input.relative_path,  # type: ignore
         )
         session.add(source_content)
         session.commit()
@@ -212,7 +219,11 @@ class Mutation:
         ## NOTE: This is a major change, we skip the comprehneder api entirely.
         app_note_func = Function.lookup("comprehender", "create_app_note")
         call = app_note_func.spawn(
-            input.workspace_id, source_content.id, input.prompt, None, None
+            str(input.workspace_id),
+            str(source_content.id),
+            str(input.prompt) if input.prompt else "",
+            "",
+            {},
         )
         if call is None:
             raise GraphQLError(
@@ -227,7 +238,7 @@ class Mutation:
     ) -> GenerateApplicationNoteEditOutput:
         # NOTE: This is being called regardless of appnote or techdoc situations.
         user = info.context.user
-        session = info.context.db
+        session = info.context.session
 
         note = session.exec(
             select(DerivedContent)
@@ -438,7 +449,7 @@ class Mutation:
         try:
             single_shot_edit = Function.lookup("comprehender", "single_shot_edit")
             call = single_shot_edit.spawn(
-                input.workspace_id, input.codebase_id, None, input.options
+                str(input.workspace_id), str(input.codebase_id), "", input.options
             )
             if call is None:
                 raise GraphQLError(
@@ -453,4 +464,51 @@ class Mutation:
             raise GraphQLError(
                 "Document edit not created",
                 extensions={"code": "BAD_REQUEST", "message": "Document edit failed."},
+            )
+
+    # NOTE: Not dry. same as updateApplicationNote
+
+    @strawberry.mutation
+    def updateDocument(self, info: Info, input: UpdateDocumentInput) -> None:
+        session = info.context.session
+        user = info.context.user
+
+        try:
+            note = (
+                session.query(DerivedContent)
+                .filter(DerivedContent.id == input.id)
+                .join(SourceContent)
+                .join(Codebase)
+                .join(Workspace)
+                .filter(Workspace.organization_id == user.organization_id)
+                .one_or_none()
+            )
+
+            if not note:
+                raise GraphQLError(
+                    "Application note not found", extensions={"code": "BAD_REQUEST"}
+                )
+
+            def escape_html(obj):
+                return (
+                    obj.replace("&", "&amp;")
+                    .replace("<", "&lt;")
+                    .replace(">", "&gt;")
+                    .replace('"', "&quot;")
+                    .replace("'", "&#039;")
+                )
+
+            note.content = input.content
+
+            session.add(note)
+            session.commit()
+
+            return None
+        except Exception as e:
+            session.rollback()
+            logger.error(
+                f"Error updating application note {input.id}: {e}", exc_info=True
+            )
+            raise GraphQLError(
+                "Application note update failed", extensions={"code": "BAD_REQUEST"}
             )

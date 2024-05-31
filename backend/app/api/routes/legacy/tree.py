@@ -1,8 +1,9 @@
+# mypy: disable_error_code="call-arg"
 import strawberry
+from database.models_v1 import SourceContent, SourceContentType, Workspace
 from sqlmodel import Session, select
 
 from app.api.routes.legacy.scalars import ID
-from driver_db.database.models_v1 import SourceContent, SourceContentType, Workspace
 
 
 class NodeTypeEnum:
@@ -47,7 +48,7 @@ def get_codebase_tree(
             if source_content_type.type_name == "codebase-directory"
             else NodeTypeEnum.File
         )
-        node = FlatNode(
+        node = FlatNode(  # type: ignore
             id=ID(content.id),
             name=name,
             path=content.relative_path,

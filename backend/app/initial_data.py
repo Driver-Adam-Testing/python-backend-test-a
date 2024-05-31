@@ -1,8 +1,7 @@
 import logging
 
+from database.db import engine, init_db
 from sqlmodel import Session
-
-from driver_db.database.db import engine, init_db
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

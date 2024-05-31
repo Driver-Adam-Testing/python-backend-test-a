@@ -17,9 +17,9 @@ fileConfig(str(config.config_file_name))
 # target_metadata = mymodel.Base.metadata
 # target_metadata = None
 
-from driver_db.database.models import SQLModel  # noqa
-from driver_db.database.models_v1 import SQLModel as SQLModelV1  # noqa
-from driver_db.database.config import settings  # noqa
+from database.models import SQLModel  # noqa
+from database.models_v1 import SQLModel as SQLModelV1  # noqa
+from database.config import settings  # noqa
 
 target_metadata = SQLModelV1.metadata
 # other values from the config, defined by the needs of env.py,

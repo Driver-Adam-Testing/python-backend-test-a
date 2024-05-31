@@ -2,13 +2,13 @@ from collections.abc import Generator
 from unittest.mock import Mock
 
 import pytest
+from database.db import engine, init_db
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
 from app import initial_data
 from app.api.auth import CurrentUser
 from app.main import app
-from driver_db.database.db import engine, init_db
 
 
 @pytest.fixture(scope="session", autouse=True)

@@ -1,5 +1,6 @@
 from uuid import UUID
 
+from database.models_v1 import Workspace
 from sqlmodel import Session
 
 from app.api.auth import CurrentUser
@@ -12,7 +13,6 @@ from app.api.routes.v1.workspace import (
     update_workspace,
 )
 from app.tests.utils.workspace import random_workspace
-from driver_db.database.models_v1 import Workspace
 
 
 def test_create_workspace(db: Session, current_user_with_org: CurrentUser) -> None:

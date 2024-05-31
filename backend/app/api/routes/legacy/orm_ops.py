@@ -1,18 +1,18 @@
 import os
 
-from sqlmodel import Session, delete, select
-
-from app.api.routes.legacy.api_types import SupplementalContent
-from app.api.routes.legacy.s3 import S3BucketAccess
-from app.api.routes.legacy.scalars import ID
-from app.core.logger import logger
-from driver_db.database.models_v1 import (
+from database.models_v1 import (
     Codebase,
     DerivedContent,
     SourceContent,
     SourceContentType,
     Workspace,
 )
+from sqlmodel import Session, delete, select
+
+from app.api.routes.legacy.api_types import SupplementalContent
+from app.api.routes.legacy.s3 import S3BucketAccess
+from app.api.routes.legacy.scalars import ID
+from app.core.logger import logger
 
 
 def get_workspace_related_entities(session: Session, org_id: str) -> list[Workspace]:

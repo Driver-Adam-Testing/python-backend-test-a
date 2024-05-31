@@ -36,6 +36,16 @@ services:
       - traefik.http.routers.${STACK_NAME?Variable not set}-adminer-https.tls.certresolver=le
       - traefik.http.services.${STACK_NAME?Variable not set}-adminer.loadbalancer.server.port=8080
 
+  webapp:
+    build:
+      context: ../webapp-frontend
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
   backend:
     image: '${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}'
     restart: always
@@ -49,6 +59,7 @@ services:
     environment:
       - DOMAIN=${DOMAIN}
       - ENVIRONMENT=${ENVIRONMENT}
+      - PYTHONPATH=/app
       - BACKEND_CORS_ORIGINS=${BACKEND_CORS_ORIGINS}
       - SECRET_KEY=${SECRET_KEY?Variable not set}
       - USERS_OPEN_REGISTRATION=${USERS_OPEN_REGISTRATION}
@@ -78,7 +89,8 @@ services:
 
 
     build:
-      context: ./backend
+      context: .
+      # dockerfile: ./backend/Dockerfile
       args:
         INSTALL_DEV: ${INSTALL_DEV-false}
     labels:

@@ -2,7 +2,7 @@ import random
 import string
 import uuid
 
-from driver_db.database.models_v1 import Workspace
+from database.models_v1 import Workspace
 
 
 def random_workspace(organization_id: str | None = None):

@@ -1,13 +1,13 @@
 from typing import Any
 from uuid import UUID
 
+from database.models_v1 import Workspace
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from sqlmodel import select
 
 from app.api.auth import CurrentUser
 from app.api.session import CurrentSession
-from driver_db.database.models_v1 import Workspace
 
 router = APIRouter()
 

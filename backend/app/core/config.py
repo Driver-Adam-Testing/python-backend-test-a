@@ -70,7 +70,7 @@ class Settings(BaseSettings):
     BUCKET_NAME: str | None = None
 
     @model_validator(mode="after")
-    def _set_default_emails_from(self) -> Self:
+    def _set_default_emails_from(self) -> Self:  # type: ignore
         if not self.EMAILS_FROM_NAME:
             self.EMAILS_FROM_NAME = self.PROJECT_NAME
         return self

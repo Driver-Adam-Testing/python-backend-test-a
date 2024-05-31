@@ -11,10 +11,10 @@ RUN curl -sSL https://install.python-poetry.org | POETRY_HOME=/opt/poetry python
 RUN poetry config virtualenvs.create false
 
 # Copy the driver-db package first
-COPY driver_db /app/driver_db
+COPY driver_db /driver_db
 
 # Copy pyproject.toml and poetry.lock first for better caching
-COPY ./pyproject.toml ./poetry.lock /app/
+COPY backend/pyproject.toml /app/
 
 # Install dependencies
 ARG INSTALL_DEV=false
@@ -23,7 +23,7 @@ RUN bash -c "if [ $INSTALL_DEV == 'true' ] ; then poetry install --no-root ; els
 ENV PYTHONPATH=/app
 
 # Copy the rest of the application
-COPY ./scripts/ /app/scripts/
-COPY ./prestart.sh /app/
-COPY ./tests-start.sh /app/
-COPY ./app /app/app
+COPY backend/scripts/ /app/scripts/
+COPY backend/prestart.sh /app/
+COPY backend/tests-start.sh /app/
+COPY backend/app /app/app

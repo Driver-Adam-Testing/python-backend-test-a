@@ -3,6 +3,15 @@ import os
 from datetime import datetime
 
 import strawberry
+from database.models_v1 import (
+    Codebase,
+    DerivedContent,
+    DerivedContentType,
+    Llm,
+    SourceContent,
+    SourceContentType,
+    Workspace,
+)
 from graphql import GraphQLError
 from modal import Function
 from sqlalchemy import and_, func
@@ -18,15 +27,6 @@ from app.api.routes.legacy.document_set import DerivedContentTypes
 from app.api.routes.legacy.s3 import S3BucketAccess
 from app.api.routes.legacy.scalars import ID, JSON
 from app.core.logger import logger
-from driver_db.database.models_v1 import (
-    Codebase,
-    DerivedContent,
-    DerivedContentType,
-    Llm,
-    SourceContent,
-    SourceContentType,
-    Workspace,
-)
 
 
 @strawberry.type
@@ -230,7 +230,7 @@ class Mutation:
                 "Failed to spawn app note function call.",
                 extensions={"code": "INTERNAL_SERVER_ERROR"},
             )
-        return GenerateApplicationNoteOutput(id=str(call.object_id))
+        return GenerateApplicationNoteOutput(id=str(call.object_id))  # type: ignore
 
     @strawberry.mutation
     async def generateApplicationNoteEdit(
@@ -264,7 +264,8 @@ class Mutation:
                 extensions={"code": "INTERNAL_SERVER_ERROR"},
             )
         return GenerateApplicationNoteEditOutput(
-            call_id=call.object_id, status=ContentStatus.GENERATING.value
+            call_id=call.object_id,
+            status=ContentStatus.GENERATING.value,  # type: ignore
         )
 
     @strawberry.mutation
@@ -456,7 +457,7 @@ class Mutation:
                     "Failed to initiate document edit process.",
                     extensions={"code": "INTERNAL_SERVER_ERROR"},
                 )
-            return GenerateApplicationNoteEditOutput(
+            return GenerateApplicationNoteEditOutput(  # type: ignore
                 call_id=call.object_id, status=ContentStatus.GENERATING.value
             )
         except Exception as error:

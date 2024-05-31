@@ -1,10 +1,10 @@
 import strawberry
+from database.models_v1 import DerivedContent, DerivedContentType
 from sqlmodel import Session, func, select
 
 from app.api.routes.legacy.api_types import DerivedContentResults
 from app.api.routes.legacy.document_set import DerivedContentTypes
 from app.api.routes.legacy.orm_ops import get_source_content_by_id
-from driver_db.database.models_v1 import DerivedContent, DerivedContentType
 
 
 @strawberry.type
@@ -67,7 +67,7 @@ def symbol_set(
         total_symbols_count_result if total_symbols_count_result else 0
     )
 
-    pageInfo = PageInfo(
+    pageInfo = PageInfo(  # type: ignore
         total=total_symbols_count,
         page=page,
         pageSize=page_size,

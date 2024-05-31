@@ -1,4 +1,6 @@
+# mypy: disable_error_code="call-arg"
 import strawberry
+from database.models_v1 import Workspace
 from sqlmodel import select
 from strawberry.types import Info
 
@@ -22,7 +24,6 @@ from app.api.routes.legacy.orm_ops import (
 from app.api.routes.legacy.scalars import ID, NodeType
 from app.api.routes.legacy.symbol_set import SymbolSetResponse, symbol_set
 from app.api.routes.legacy.tree import FlatNode, get_codebase_tree
-from driver_db.database.models_v1 import Workspace
 
 
 @strawberry.type
@@ -124,4 +125,4 @@ class Query:
     @strawberry.field
     async def me(self, info: Info) -> MeResponse:
         user = info.context.user
-        return MeResponse(id=user.subject)
+        return MeResponse(id=user.subject)  # type: ignore

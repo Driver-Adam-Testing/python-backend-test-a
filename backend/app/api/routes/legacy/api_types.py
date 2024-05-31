@@ -2,9 +2,7 @@ from datetime import date, datetime
 from uuid import UUID
 
 import strawberry
-
-from app.api.routes.legacy.scalars import ID
-from driver_db.database.models_v1 import (
+from database.models_v1 import (
     Codebase,
     DerivedContent,
     DerivedContentType,
@@ -13,6 +11,8 @@ from driver_db.database.models_v1 import (
     SourceContentType,
     Workspace,
 )
+
+from app.api.routes.legacy.scalars import ID
 
 
 @strawberry.input

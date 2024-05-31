@@ -5,6 +5,10 @@ from typing import Any
 from uuid import UUID
 
 import strawberry
+from database.models_v1 import (
+    SourceContent,
+    SourceContentType,
+)
 from fastapi import HTTPException
 from graphql import GraphQLError
 from sqlmodel import Session, select
@@ -13,10 +17,6 @@ from app.api.routes.legacy.s3 import S3BucketAccess
 
 # from app.api.routes.legacy.utils import source_type_id_map, derive_bucket_name, download_source_content
 from app.core.logger import logger
-from driver_db.database.models_v1 import (
-    SourceContent,
-    SourceContentType,
-)
 
 
 class DerivedContentTypes(Enum):
@@ -143,7 +143,7 @@ def get_document_set(
     if content is None:
         raise HTTPException(status_code=400, detail="No content found")
     docs = content.derived_contents
-    document_set = DocumentSet(source_content_id=str(content.id))
+    document_set = DocumentSet(source_content_id=str(content.id))  # type: ignore
     for doc in docs:
         derived_content_type = doc.derived_content_type.type_name
         if doc.id is None:
@@ -152,7 +152,7 @@ def get_document_set(
             doc.content = ""
         if derived_content_type == DerivedContentTypes.LONG_DESCRIPTION.value:
             document_set.long = doc.content
-            document_set.long_document = Document(id=doc.id, content=doc.content)
+            document_set.long_document = Document(id=doc.id, content=doc.content)  # type: ignore
         elif (
             derived_content_type
             == DerivedContentTypes.SHORT_PARAGRAPH_DESCRIPTION.value
@@ -244,7 +244,7 @@ def get_document_set(
             code_content = s3_access.get_file_content(
                 relative_path=content.relative_path
             )
-            document_set.code = Code(
+            document_set.code = Code(  # type: ignore
                 file_name=content.relative_path.split("/")[-1],
                 extension=content.relative_path.split(".")[-1],
                 content=code_content,

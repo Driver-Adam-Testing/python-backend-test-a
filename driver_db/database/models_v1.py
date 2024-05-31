@@ -25,7 +25,7 @@ class ContentType(str, enum.Enum):
 # TODO: index content_type
 
 
-class ContentMetadata(SQLModel, table=True):
+class ContentMetadata(SQLModel, table=True):  # type: ignore
     created_at: datetime = Field(
         default=None,
         sa_column=Column(
@@ -51,7 +51,7 @@ class ContentMetadata(SQLModel, table=True):
     chunks: list["Chunk"] = Relationship(back_populates="content_metadata")
 
 
-class Chunk(SQLModel, table=True):
+class Chunk(SQLModel, table=True):  # type: ignore
     created_at: datetime = Field(
         default=None,
         sa_column=Column(
@@ -80,7 +80,7 @@ class Chunk(SQLModel, table=True):
     line_number: int | None
 
 
-class RuntimeLogAgentInstance(SQLModel, table=True):
+class RuntimeLogAgentInstance(SQLModel, table=True):  # type: ignore
     created_at: datetime = Field(
         default=None,
         sa_column=Column(
@@ -110,7 +110,7 @@ class RuntimeLogAgentInstance(SQLModel, table=True):
     )
 
 
-class RuntimeLogAgentMessage(SQLModel, table=True):
+class RuntimeLogAgentMessage(SQLModel, table=True):  # type: ignore
     created_at: datetime = Field(
         default=None,
         sa_column=Column(
@@ -128,7 +128,7 @@ class RuntimeLogAgentMessage(SQLModel, table=True):
     agent_instance: RuntimeLogAgentInstance = Relationship(back_populates="messages")
 
 
-class RuntimeLogAgentError(SQLModel, table=True):
+class RuntimeLogAgentError(SQLModel, table=True):  # type: ignore
     created_at: datetime = Field(
         default=None,
         sa_column=Column(
@@ -145,7 +145,7 @@ class RuntimeLogAgentError(SQLModel, table=True):
     error: str
 
 
-class RuntimeLogContentRetrieval(SQLModel, table=True):
+class RuntimeLogContentRetrieval(SQLModel, table=True):  # type: ignore
     created_at: datetime = Field(
         default=None,
         sa_column=Column(
@@ -164,7 +164,7 @@ class RuntimeLogContentRetrieval(SQLModel, table=True):
     chunk_id: UUID = Field(foreign_key="chunk.id", nullable=False)
 
 
-# class RuntimeLogOperation(SQLModel, table=True):
+# class RuntimeLogOperation(SQLModel, table=True):  # type: ignore
 #     created_at: datetime = Field(
 #         default=None,
 #         sa_column=Column(
@@ -193,7 +193,7 @@ class Enum_Codebase_Status(str, enum.Enum):
     codebase_rejected = "codebase-rejected"
 
 
-class SetupCompleted(SQLModel, table=True):
+class SetupCompleted(SQLModel, table=True):  # type: ignore
     __tablename__ = "setup_completed"
     id: UUID | None = Field(
         sa_column=Column(
@@ -205,7 +205,7 @@ class SetupCompleted(SQLModel, table=True):
     )
 
 
-class Workspace(SQLModel, table=True):
+class Workspace(SQLModel, table=True):  # type: ignore
     __tablename__ = "workspaces"
     id: UUID | None = Field(
         sa_column=Column(
@@ -233,7 +233,7 @@ class Workspace(SQLModel, table=True):
     source_contents: list["SourceContent"] = Relationship(back_populates="workspace")
 
 
-class Codebase(SQLModel, table=True):
+class Codebase(SQLModel, table=True):  # type: ignore
     __tablename__ = "codebases"
     __table_args__ = (
         sqlalchemy.UniqueConstraint(
@@ -277,7 +277,7 @@ class Codebase(SQLModel, table=True):
     source_contents: list["SourceContent"] = Relationship(back_populates="codebase")
 
 
-class SourceContentType(SQLModel, table=True):
+class SourceContentType(SQLModel, table=True):  # type: ignore
     __tablename__ = "source_content_types"
     id: UUID | None = Field(
         sa_column=Column(
@@ -306,7 +306,7 @@ class SourceContentType(SQLModel, table=True):
     )
 
 
-class SourceContent(SQLModel, table=True):
+class SourceContent(SQLModel, table=True):  # type: ignore
     __tablename__ = "source_contents"
     id: UUID | None = Field(
         sa_column=Column(
@@ -338,7 +338,7 @@ class SourceContent(SQLModel, table=True):
     )
 
 
-class Llm(SQLModel, table=True):
+class Llm(SQLModel, table=True):  # type: ignore
     __tablename__ = "llms"
     id: UUID | None = Field(
         sa_column=Column(
@@ -374,7 +374,7 @@ class Llm(SQLModel, table=True):
     derived_contents: list["DerivedContent"] = Relationship(back_populates="llm")
 
 
-class DerivedContentType(SQLModel, table=True):
+class DerivedContentType(SQLModel, table=True):  # type: ignore
     __tablename__ = "derived_content_types"
     id: UUID | None = Field(
         sa_column=Column(
@@ -403,7 +403,7 @@ class DerivedContentType(SQLModel, table=True):
     )
 
 
-class DerivedContent(SQLModel, table=True):
+class DerivedContent(SQLModel, table=True):  # type: ignore
     __tablename__ = "derived_contents"
     id: UUID | None = Field(
         sa_column=Column(

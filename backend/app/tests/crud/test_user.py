@@ -4,7 +4,7 @@
 # from app import crud
 # from app.core.security import verify_password
 # from app.tests.utils.utils import random_email, random_lower_string
-# from driver_db.database.models import User, UserCreate, UserUpdate
+# from database.models import User, UserCreate, UserUpdate
 
 
 # def test_create_user(db: Session) -> None:

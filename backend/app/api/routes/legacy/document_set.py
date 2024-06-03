@@ -10,7 +10,6 @@ from database.models_v1 import (
     SourceContentType,
 )
 from fastapi import HTTPException
-from graphql import GraphQLError
 from sqlmodel import Session, select
 
 from app.api.routes.legacy.s3 import S3BucketAccess
@@ -103,7 +102,7 @@ def node_kind_map(node_kind: str) -> str:
     elif node_kind == "file":
         return "codebase-file"
     else:
-        raise GraphQLError("Invalid node kind", extensions={"code": "BAD_REQUEST"})
+        raise ValueError(f"Invalid node kind: {node_kind}")
 
 
 def source_content_types_map(db: Session) -> dict[str, str]:

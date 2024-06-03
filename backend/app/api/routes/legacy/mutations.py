@@ -513,3 +513,9 @@ class Mutation:
             raise GraphQLError(
                 "Application note update failed", extensions={"code": "BAD_REQUEST"}
             )
+
+    # TODO: add create embeddings and create_source content
+    # TODO: Change readme to reflect current alembic flow
+    # TODO: Audit all error handling
+    # TODO: Create a db wrapper that controls all org_id forbidden checks.
+    # TODO: Check for eaasier ways to do all the enum fetching

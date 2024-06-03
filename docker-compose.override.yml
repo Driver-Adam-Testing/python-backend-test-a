@@ -68,7 +68,7 @@ services:
       - "3000:3000"
     volumes:
       - ../webapp-frontend/:/app
-      - ../webapp-frontent/.next:/app/.next
+      - ../webapp-frontend/.next:/app/.next
 
   frontend:
     restart: "no"

@@ -82,6 +82,7 @@ services:
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID?Variable not set}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY?Variable not set}
       - AWS_REGION=${AWS_REGION?Variable not set}
+
       - BUCKET_NAME=${BUCKET_NAME?Variable not set}
       - MODAL_TOKEN_ID=${MODAL_TOKEN_ID?Variable not set}
       - MODAL_TOKEN_SECRET=${MODAL_TOKEN_SECRET?Variable not set}
@@ -110,6 +111,19 @@ services:
 
       - traefik.http.routers.${STACK_NAME?Variable not set}-backend-http.middlewares=https-redirect,${STACK_NAME?Variable not set}-www-redirect
       - traefik.http.routers.${STACK_NAME?Variable not set}-backend-https.middlewares=${STACK_NAME?Variable not set}-www-redirect
+  s3:
+    image: localstack/localstack:s3-latest
+    ports:
+      - "127.0.0.1:4566:4566"
+    networks:
+      - traefik-public
+      - default
+    volumes:
+      - "./scripts/init-s3-localstack.py:/etc/localstack/init/ready.d/init-s3.py"
+    env_file:
+      - .env
+    environment:
+      - DEBUG=${DEBUG:-0}
 
   frontend:
     image: '${DOCKER_IMAGE_FRONTEND?Variable not set}:${TAG-latest}'

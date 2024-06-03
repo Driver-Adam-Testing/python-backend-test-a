@@ -62,6 +62,14 @@ services:
     # command: sleep infinity  # Infinite loop to keep container alive doing nothing
     command: /start-reload.sh
 
+  webapp:
+    restart: "no"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../webapp-frontend/:/app
+      - ../webapp-frontent/.next:/app/.next
+
   frontend:
     restart: "no"
     build:

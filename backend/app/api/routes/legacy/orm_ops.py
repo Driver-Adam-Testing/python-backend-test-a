@@ -122,18 +122,18 @@ def supplemental_content_by_codebase_id(
         for source_content in source_contents:
             s3_access = S3BucketAccess(
                 organization_id=source_content.workspace.organization_id,
-                codebase_id=codebase_id,
+                codebase_id=str(codebase_id),
             )
-            content_key = source_content.relative_path
+            s3_access.get_file_path(source_content.relative_path)
             download_url = s3_access.get_signed_upload_url(
-                relative_path=content_key, expiration=3600
-            )  # Assuming the need for a presigned URL for upload purposes. Adjust method as necessary for download purposes.
+                relative_path=source_content.relative_path, expiration=3600
+            )
             supplement_content = SupplementalContent(
                 id=ID(source_content.id),
                 name=os.path.basename(source_content.relative_path),
                 relative_path=source_content.relative_path,
                 download_url=download_url,
-                created_at=source_content.created_at,
+                created_at=source_content.created_at.isoformat(),
             )
             supplement_contents.append(supplement_content)
     else:

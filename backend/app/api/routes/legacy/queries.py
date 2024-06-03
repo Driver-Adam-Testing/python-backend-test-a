@@ -1,6 +1,7 @@
 # mypy: disable_error_code="call-arg"
 import strawberry
 from database.models_v1 import Workspace
+from graphql import GraphQLError
 from sqlmodel import select
 from strawberry.types import Info
 
@@ -52,7 +53,9 @@ class Query:
     async def codebase(self, info: Info, id: ID | None = None) -> CodebaseResults:
         session = info.context.session
         if id is None:
-            raise ValueError("id must not be None")
+            raise GraphQLError(
+                "id must not be None", extensions={"code": "BAD_REQUEST"}
+            )
         id_str = str(id)
         return get_codebase_by_id(session, id_str)  # type: ignore
 
@@ -66,7 +69,10 @@ class Query:
         codebaseId: ID | None = None,
     ) -> DocumentSet:
         if path is None or workspaceId is None or codebaseId is None:
-            raise ValueError("path, workspaceId, and codebaseId must not be None")
+            raise GraphQLError(
+                "path, workspaceId, and codebaseId must not be None",
+                extensions={"code": "BAD_REQUEST"},
+            )
         return get_document_set(
             nodeKind,
             path,
@@ -84,7 +90,9 @@ class Query:
         if id is not None:
             id_str = str(id)
         else:
-            raise ValueError("id must not be None")
+            raise GraphQLError(
+                "id must not be None", extensions={"code": "BAD_REQUEST"}
+            )
         return get_application_note(id_str, session, info.context.user.organization_id)
 
     @strawberry.field

@@ -8,12 +8,6 @@ from app.core.config import settings
 
 class S3BucketAccess:
     def __init__(self, organization_id: str, codebase_id: str):
-        print(
-            settings.AWS_ACCESS_KEY_ID,
-            settings.AWS_SECRET_ACCESS_KEY,
-            settings.AWS_REGION,
-            settings.BUCKET_NAME,
-        )
         self.s3_client = boto3.client(
             "s3",
             aws_access_key_id=settings.AWS_ACCESS_KEY_ID,

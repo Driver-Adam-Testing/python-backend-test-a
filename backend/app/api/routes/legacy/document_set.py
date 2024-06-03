@@ -150,6 +150,8 @@ def get_document_set(
             continue
         if doc.content is None:
             doc.content = ""
+        if derived_content_type == DerivedContentTypes.SYMBOL.value:
+            continue
         if derived_content_type == DerivedContentTypes.LONG_DESCRIPTION.value:
             document_set.long = doc.content
             document_set.long_document = Document(id=doc.id, content=doc.content)  # type: ignore
@@ -235,19 +237,19 @@ def get_document_set(
             except json.JSONDecodeError as e:
                 logger.warning(f"[ParseError]: {doc.id} - {str(e)}")
         else:
-            logger.warning(f"no DerivedContentTypes match for {derived_content_type}")
-        if source_content_type["typeName"] == "codebase-file":
-            s3_access = S3BucketAccess(
-                organization_id=organization_id,
-                codebase_id=codebase_id if codebase_id else str(content.codebase_id),
+            logger.warning(
+                f"no DerivedContentTypes documentSet match for {derived_content_type}"
             )
-            code_content = s3_access.get_file_content(
-                relative_path=content.relative_path
-            )
-            document_set.code = Code(  # type: ignore
-                file_name=content.relative_path.split("/")[-1],
-                extension=content.relative_path.split(".")[-1],
-                content=code_content,
-            )
+    if source_content_type["typeName"] == "codebase-file":
+        s3_access = S3BucketAccess(
+            organization_id=organization_id,
+            codebase_id=codebase_id if codebase_id else str(content.codebase_id),
+        )
+        code_content = s3_access.get_file_content(relative_path=content.relative_path)
+        document_set.code = Code(  # type: ignore
+            file_name=content.relative_path.split("/")[-1],
+            extension=content.relative_path.split(".")[-1],
+            content=code_content,
+        )
 
     return document_set

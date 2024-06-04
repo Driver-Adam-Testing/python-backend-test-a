@@ -42,6 +42,7 @@ class Settings(BaseSettings):
     AWS_ACCESS_KEY_ID: str | None = None
     AWS_SECRET_ACCESS_KEY: str | None = None
     AWS_REGION: str | None = None
+    AWS_S3_ENDPOINT_URL: str | None = None
 
     @computed_field  # type: ignore[misc]
     @property

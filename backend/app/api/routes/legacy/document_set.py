@@ -82,16 +82,16 @@ class ApplicationNote:
 
 @strawberry.type
 class DocumentSet:
-    source_content_id: str = ""
-    architecture: str = ""
-    architecture_document: Document = Document()
-    long: str = ""
-    long_document: Document = Document()
-    short: Short = Short()
-    quickstart: Quickstart = Quickstart()
-    chunk_descriptions: list[str] | None = None
-    code: Code = Code()
-    application_notes: list[ApplicationNote] | None = None
+    source_content_id: str = strawberry.field(default="")
+    architecture: str = strawberry.field(default="")
+    architecture_document: Document = strawberry.field(default_factory=Document)
+    long: str = strawberry.field(default="")
+    long_document: Document = strawberry.field(default_factory=Document)
+    short: Short = strawberry.field(default_factory=Short)
+    quickstart: Quickstart = strawberry.field(default_factory=Quickstart)
+    chunk_descriptions: list[str] | None = strawberry.field(default=None)
+    code: Code = strawberry.field(default_factory=Code)
+    application_notes: list[ApplicationNote] | None = strawberry.field(default=None)
 
 
 def node_kind_map(node_kind: str) -> str:

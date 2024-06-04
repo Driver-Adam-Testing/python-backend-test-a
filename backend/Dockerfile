@@ -1,6 +1,13 @@
-FROM tiangolo/uvicorn-gunicorn-fastapi:python3.10
+FROM python:3.12
 
 WORKDIR /app/
+
+# Install start scripts
+COPY backend/scripts/start-reload.sh /start-reload.sh
+COPY backend/scripts/start.sh /start.sh
+COPY backend/scripts/gunicorn.conf /gunicorn.conf
+RUN chmod +x /start-reload.sh
+RUN chmod +x /start.sh
 
 # Install Poetry
 RUN curl -sSL https://install.python-poetry.org | POETRY_HOME=/opt/poetry python && \
@@ -12,6 +19,7 @@ RUN poetry config virtualenvs.create false
 
 # Copy the driver-db package first
 COPY driver_db /driver_db
+COPY ./backend/app /app
 
 # Copy pyproject.toml and poetry.lock first for better caching
 COPY backend/pyproject.toml /app/
@@ -26,4 +34,5 @@ ENV PYTHONPATH=/app
 COPY backend/scripts/ /app/scripts/
 COPY backend/prestart.sh /app/
 COPY backend/tests-start.sh /app/
+
 COPY backend/app /app/app

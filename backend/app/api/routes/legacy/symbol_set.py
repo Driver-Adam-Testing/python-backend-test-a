@@ -33,9 +33,7 @@ def symbol_set(
     if page_size < 1 or page_size > 500:
         raise ValueError("PageSize must be between 1 and 500.")
 
-    maybe_source_content = get_source_content_by_id(
-        session, source_content_id, user_org_id
-    )
+    maybe_source_content = get_source_content_by_id(session, source_content_id)
 
     if not maybe_source_content:
         raise Exception("Source content not found")

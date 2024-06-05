@@ -14,7 +14,6 @@ from database.models_v1 import (
 )
 from graphql import GraphQLError
 from modal import Function
-from sqlalchemy import and_, func
 from sqlalchemy.future import select
 from sqlmodel import Session
 from strawberry.types import Info
@@ -24,6 +23,11 @@ from app.api.routes.legacy.application_note import (
     ContentStatus,
 )
 from app.api.routes.legacy.document_set import DerivedContentTypes
+from app.api.routes.legacy.orm_ops import (
+    check_access,
+    get_codebase_by_id,
+    get_derived_content_by_id,
+)
 from app.api.routes.legacy.s3 import S3BucketAccess
 from app.api.routes.legacy.scalars import ID, JSON
 from app.core.logger import logger
@@ -104,7 +108,12 @@ class Mutation:
     async def createSourceContent(self, info: Info, input: SourceContentInput) -> str:
         user = info.context.user
         session = info.context.session
-
+        if not check_access(
+            session, user.organization_id, codebase_id=input.codebase_id
+        ):
+            raise GraphQLError(
+                "Access denied to the codebase", extensions={"code": "FORBIDDEN"}
+            )
         workspace = await session.execute(
             select(Workspace).filter_by(id=input.workspace_id)  # type: ignore
         ).scalar_one_or_none()
@@ -139,13 +148,13 @@ class Mutation:
     ) -> GenerateApplicationNoteOutput:
         user = info.context.user
         session: Session = info.context.session
-        codebase = session.exec(
-            select(Codebase)
-            .join(Workspace, Codebase.workspace_id == Workspace.id)  # type: ignore
-            .where(Codebase.id == input.codebase_id)  # type: ignore
-            .where(Codebase.workspace_id == input.workspace_id)  # type: ignore
-            .where(Workspace.organization_id == user.organization_id)  # type: ignore
-        ).first()
+        if not check_access(
+            session, user.organization_id, codebase_id=input.codebase_id
+        ):
+            raise GraphQLError(
+                "Access denied to the codebase", extensions={"code": "FORBIDDEN"}
+            )
+        codebase = get_codebase_by_id(session, input.codebase_id)
         if not codebase:
             raise GraphQLError(
                 "Codebase not found in your organization",
@@ -239,17 +248,12 @@ class Mutation:
         # NOTE: This is being called regardless of appnote or techdoc situations.
         user = info.context.user
         session = info.context.session
-
-        note = session.exec(
-            select(DerivedContent)
-            .join(SourceContent, DerivedContent.source_content)  # type: ignore
-            .join(Codebase, SourceContent.codebase)  # type: ignore
-            .join(Workspace, Codebase.workspace)  # type: ignore
-            .where(
-                DerivedContent.id == input.id,  # type: ignore
-                Workspace.organization_id == user.organization_id,  # type: ignore
+        if not check_access(session, user.organization_id, derived_content_id=input.id):
+            raise GraphQLError(
+                "Access denied to the workspace", extensions={"code": "FORBIDDEN"}
             )
-        ).first()
+
+        note = get_derived_content_by_id(session, input.id)
 
         if not note:
             raise GraphQLError(
@@ -274,18 +278,11 @@ class Mutation:
     ) -> None:
         session = info.context.session
         user = info.context.user
+        if not check_access(session, user.organization_id, derived_content_id=input.id):
+            raise GraphQLError("Access denied", extensions={"code": "FORBIDDEN"})
 
         try:
-            note = (
-                session.query(DerivedContent)
-                .filter(DerivedContent.id == input.id)
-                .join(SourceContent)
-                .join(Codebase)
-                .join(Workspace)
-                .filter(Workspace.organization_id == user.organization_id)
-                .one_or_none()
-            )
-
+            note = get_derived_content_by_id(session, input.id)
             if not note:
                 raise GraphQLError(
                     "Application note not found", extensions={"code": "BAD_REQUEST"}
@@ -326,16 +323,11 @@ class Mutation:
     @strawberry.mutation
     async def deleteApplicationNote(self, info: Info, id: ID | None = None) -> None:
         session = info.context.session
+        user = info.context.user
+        if not check_access(session, user.organization_id, derived_content_id=id):
+            raise GraphQLError("Access denied", extensions={"code": "FORBIDDEN"})
         try:
-            note = session.exec(
-                select(DerivedContent).where(
-                    DerivedContent.id == id,  # type: ignore
-                    DerivedContent.derived_content_type.has(  # type: ignore
-                        type_name=DerivedContentTypes.APPLICATION_NOTE.value
-                    ),
-                )
-            ).scalar_one_or_none()
-
+            note = get_derived_content_by_id(session, id)
             if not note:
                 raise GraphQLError(
                     "Application note not found", extensions={"code": "BAD_REQUEST"}
@@ -372,25 +364,11 @@ class Mutation:
 
         if not codebase_id or not file_path or not workspace_id or not creator_id:
             raise GraphQLError("Invalid Request", extensions={"code": "BAD_REQUEST"})
-
-        # Check if the workspace exists
-        workspace_exists = (
-            session.exec(
-                select(func.count())
-                .select_from(Workspace)
-                .where(
-                    and_(
-                        Workspace.id == workspace_id,  # type: ignore
-                        Workspace.organization_id == org_id,  # type: ignore
-                    )
-                )
-            ).scalar_one()
-            > 0
-        )
-
-        if not workspace_exists:
+        if not check_access(
+            session, org_id, codebase_id=codebase_id, workspace_id=workspace_id
+        ):
             raise GraphQLError(
-                "Workspace not found", extensions={"code": "BAD_REQUEST"}
+                "Access denied to the codebase", extensions={"code": "FORBIDDEN"}
             )
 
         try:
@@ -413,31 +391,18 @@ class Mutation:
     ) -> GenerateApplicationNoteEditOutput:
         user = info.context.user
         session = info.context.session
-
-        if not user or not user.organization_id:
+        if not check_access(
+            session,
+            user.organization_id,
+            codebase_id=input.codebase_id,
+            workspace_id=input.workspace_id,
+        ):
             raise GraphQLError(
-                "Invalid user or organization ID", extensions={"code": "BAD_REQUEST"}
+                "Access denied to the codebase", extensions={"code": "FORBIDDEN"}
             )
-        codebase = session.exec(
-            select(Codebase).where(
-                Codebase.id == input.codebase_id,  # type: ignore
-                Codebase.workspace_id == input.workspace_id,  # type: ignore
-            )
-        ).first()
+        codebase = get_codebase_by_id(session, input.codebase_id)
         if not codebase:
             raise GraphQLError("Codebase not found", extensions={"code": "BAD_REQUEST"})
-
-        workspace = session.exec(
-            select(Workspace).where(
-                Workspace.id == input.workspace_id,  # type: ignore
-                Workspace.organization_id == user.organization_id,  # type: ignore
-            )
-        ).first()
-        if not workspace:
-            raise GraphQLError(
-                "Workspace does not belong to the user's organization.",
-                extensions={"code": "FORBIDDEN"},
-            )
 
         techDoc = session.exec(
             select(DerivedContent).where(DerivedContent.id == input.document_id)  # type: ignore

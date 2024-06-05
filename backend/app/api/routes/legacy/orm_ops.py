@@ -117,39 +117,39 @@ def check_access(
     source_content_id: str | None = None,
     derived_content_id: str | None = None,
 ) -> bool:
+    access_checks = []
+
     if workspace_id:
         workspace = session.exec(
             select(Workspace).where(Workspace.id == workspace_id)
         ).first()
-        if workspace and workspace.organization_id == organization_id:
-            return True
+        access_checks.append(workspace and workspace.organization_id == organization_id)
 
     if codebase_id:
         codebase = session.exec(
             select(Codebase).where(Codebase.id == codebase_id)
         ).first()
-        if codebase and codebase.workspace.organization_id == organization_id:
-            return True
+        access_checks.append(
+            codebase and codebase.workspace.organization_id == organization_id
+        )
 
     if source_content_id:
         source_content = session.exec(
             select(SourceContent).where(SourceContent.id == source_content_id)
         ).first()
-        if (
+        access_checks.append(
             source_content
             and source_content.codebase.workspace.organization_id == organization_id
-        ):
-            return True
+        )
 
     if derived_content_id:
         derived_content = session.exec(
             select(DerivedContent).where(DerivedContent.id == derived_content_id)
         ).first()
-        if (
+        access_checks.append(
             derived_content
             and derived_content.source_content.codebase.workspace.organization_id
             == organization_id
-        ):
-            return True
+        )
 
-    return False
+    return all(access_checks)

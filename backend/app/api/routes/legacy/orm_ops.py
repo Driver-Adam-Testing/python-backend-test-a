@@ -25,45 +25,14 @@ def get_workspace_related_entities(session: Session, org_id: str) -> list[Worksp
     return result  # type: ignore
 
 
-def get_source_content_by_id(
-    session: Session, id: str, org_id: str
-) -> SourceContent | None:
-    statement = (
-        select(SourceContent)
-        .where(SourceContent.id == id)
-        .join(Codebase)
-        .join(Workspace)
-        .where(Workspace.organization_id == org_id)
-    )
+def get_source_content_by_id(session: Session, id: str) -> SourceContent | None:
+    statement = select(SourceContent).where(SourceContent.id == id)
     result = session.exec(statement)
     return result.first()
 
 
-def get_derived_content_by_id(
-    session: Session, id: str, org_id: str
-) -> DerivedContent | None:
-    statement = (
-        select(DerivedContent)
-        .where(DerivedContent.id == id)
-        .join(SourceContent)
-        .join(Codebase)
-        .join(Workspace)
-        .where(Workspace.organization_id == org_id)
-    )
-    result = session.exec(statement)
-    return result.first()
-
-
-def get_derived_content_by_id_no_org_check(
-    session: Session, id: str
-) -> DerivedContent | None:
-    statement = (
-        select(DerivedContent)
-        .where(DerivedContent.id == id)
-        .join(SourceContent)
-        .join(Codebase)
-        .join(Workspace)
-    )
+def get_derived_content_by_id(session: Session, id: str) -> DerivedContent | None:
+    statement = select(DerivedContent).where(DerivedContent.id == id)
     result = session.exec(statement)
     return result.first()
 
@@ -101,7 +70,7 @@ def get_codebase_by_id(session: Session, codebase_id: str) -> Codebase | None:
 
 
 def supplemental_content_by_codebase_id(
-    codebase_id: str, organization_id: str, session: Session
+    session: Session, codebase_id: str
 ) -> list[SupplementalContent]:
     logger.info(f"Fetching supplemental content for codebase {codebase_id}")
     supplement_contents = []
@@ -110,8 +79,6 @@ def supplemental_content_by_codebase_id(
         .where(SourceContent.codebase_id == codebase_id)
         .join(SourceContentType)
         .where(SourceContentType.type_name == "SUPPLEMENTAL_DOCUMENT")
-        .join(Workspace)
-        .where(Workspace.organization_id == organization_id)
     ).all()
 
     if source_contents:
@@ -140,3 +107,49 @@ def supplemental_content_by_codebase_id(
         logger.info(f"No supplemental content found for codebase {codebase_id}")
 
     return supplement_contents
+
+
+def check_access(
+    session: Session,
+    organization_id: str,
+    workspace_id: str | None = None,
+    codebase_id: str | None = None,
+    source_content_id: str | None = None,
+    derived_content_id: str | None = None,
+) -> bool:
+    if workspace_id:
+        workspace = session.exec(
+            select(Workspace).where(Workspace.id == workspace_id)
+        ).first()
+        if workspace and workspace.organization_id == organization_id:
+            return True
+
+    if codebase_id:
+        codebase = session.exec(
+            select(Codebase).where(Codebase.id == codebase_id)
+        ).first()
+        if codebase and codebase.workspace.organization_id == organization_id:
+            return True
+
+    if source_content_id:
+        source_content = session.exec(
+            select(SourceContent).where(SourceContent.id == source_content_id)
+        ).first()
+        if (
+            source_content
+            and source_content.codebase.workspace.organization_id == organization_id
+        ):
+            return True
+
+    if derived_content_id:
+        derived_content = session.exec(
+            select(DerivedContent).where(DerivedContent.id == derived_content_id)
+        ).first()
+        if (
+            derived_content
+            and derived_content.source_content.codebase.workspace.organization_id
+            == organization_id
+        ):
+            return True
+
+    return False

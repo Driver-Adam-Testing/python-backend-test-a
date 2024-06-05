@@ -23,8 +23,8 @@ class ApplicationNoteResponse:
 
 
 def get_application_note(id: str, session: Session, organization_id: str):
-    maybe_doc = get_derived_content_by_id(session, id, organization_id)
-
+    maybe_doc = get_derived_content_by_id(session, id)
+    print(f"not using {organization_id} in input")
     if not maybe_doc:
         logger.error("Document not found")
         return None
@@ -72,10 +72,10 @@ async def application_note_edit(call_id: str) -> ApplicationNoteEditResponse:
     try:
         result = function_call.get(timeout=0)
     except TimeoutError:
-        return ApplicationNoteEditResponse(
+        return ApplicationNoteEditResponse(  # type: ignore
             call_id=call_id, status=ContentStatus.GENERATING.value, content=""
         )
-    return ApplicationNoteEditResponse(
+    return ApplicationNoteEditResponse(  # type: ignore
         call_id=call_id,
         status=ContentStatus.GENERATION_COMPLETE.value,
         content=result["content"],

@@ -17,7 +17,6 @@ fileConfig(str(config.config_file_name))
 # target_metadata = mymodel.Base.metadata
 # target_metadata = None
 
-from database.models import SQLModel  # noqa
 from database.models_v1 import SQLModel as SQLModelV1  # noqa
 from database.config import settings  # noqa
 

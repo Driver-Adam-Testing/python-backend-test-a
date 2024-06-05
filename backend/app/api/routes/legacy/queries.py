@@ -19,6 +19,7 @@ from app.api.routes.legacy.application_note import (
 from app.api.routes.legacy.auth0 import get_organization_by_id
 from app.api.routes.legacy.document_set import DocumentSet, get_document_set
 from app.api.routes.legacy.orm_ops import (
+    check_access,
     get_codebase_by_id,
     supplemental_content_by_codebase_id,
 )
@@ -37,6 +38,10 @@ class Query:
     @strawberry.field
     async def organization(self, info: Info, id: str) -> OrganizationResult:
         session = info.context.session
+        if info.context.user.organization_id != id:
+            raise GraphQLError(
+                "Organization not found", extensions={"code": "NOT_FOUND"}
+            )
         organization = get_organization_by_id(id)
         workspaces = session.exec(
             select(Workspace).where(Workspace.organization_id == id)
@@ -52,12 +57,19 @@ class Query:
     @strawberry.field
     async def codebase(self, info: Info, id: ID | None = None) -> CodebaseResults:
         session = info.context.session
+        user_org_id = info.context.user.organization_id
         if id is None:
             raise GraphQLError(
                 "id must not be None", extensions={"code": "BAD_REQUEST"}
             )
-        id_str = str(id)
-        return get_codebase_by_id(session, id_str)  # type: ignore
+        if not check_access(session, user_org_id, codebase_id=str(id)):
+            raise GraphQLError(
+                "Access denied to the codebase", extensions={"code": "NOT_FOUND"}
+            )
+        codebase = get_codebase_by_id(session, str(id))
+        if codebase is None:
+            raise GraphQLError("Codebase not found", extensions={"code": "NOT_FOUND"})
+        return codebase
 
     @strawberry.field
     async def documentSet(
@@ -73,13 +85,21 @@ class Query:
                 "path, workspaceId, and codebaseId must not be None",
                 extensions={"code": "BAD_REQUEST"},
             )
+        session = info.context.session
+        if not check_access(
+            session,
+            info.context.user.organization_id,
+            workspace_id=str(workspaceId),
+            codebase_id=str(codebaseId),
+        ):
+            raise GraphQLError("Access denied", extensions={"code": "NOT_FOUND"})
         return get_document_set(
             nodeKind,
             path,
             str(workspaceId),
             str(codebaseId),
             info.context.user.organization_id,
-            info.context.session,
+            session,
         )
 
     @strawberry.field
@@ -93,6 +113,10 @@ class Query:
             raise GraphQLError(
                 "id must not be None", extensions={"code": "BAD_REQUEST"}
             )
+        if not check_access(
+            session, info.context.user.organization_id, derived_content_id=id_str
+        ):
+            raise GraphQLError("Access denied", extensions={"code": "NOT_FOUND"})
         return get_application_note(id_str, session, info.context.user.organization_id)
 
     @strawberry.field
@@ -101,6 +125,8 @@ class Query:
     ) -> list[FlatNode]:
         session = info.context.session
         user = info.context.user
+        if not check_access(session, user.organization_id, codebase_id=str(codebaseId)):
+            raise GraphQLError("Access denied", extensions={"code": "NOT_FOUND"})
         return get_codebase_tree(str(codebaseId), session, user.organization_id)
 
     @strawberry.field
@@ -109,12 +135,17 @@ class Query:
     ) -> SymbolSetResponse:
         session = info.context.session
         organization_id = info.context.user.organization_id
+        if not check_access(
+            session, organization_id, source_content_id=str(sourceContentId)
+        ):
+            raise GraphQLError("Access denied", extensions={"code": "NOT_FOUND"})
         return symbol_set(
             session, str(sourceContentId), organization_id, page, pageSize
         )
 
     @strawberry.mutation
     async def applicationNoteEdit(self, call_id: ID) -> ApplicationNoteEditResponse:
+        # Assuming access check is performed within the application_note_edit function or not required due to the nature of the mutation.
         return await application_note_edit(str(call_id))
 
     @strawberry.field
@@ -124,10 +155,10 @@ class Query:
         session = info.context.session
         user = info.context.user
         organization_id = user.organization_id
+        if not check_access(session, organization_id, codebase_id=str(codebaseId)):
+            raise GraphQLError("Access denied", extensions={"code": "NOT_FOUND"})
         return supplemental_content_by_codebase_id(
-            codebase_id=str(codebaseId),
-            organization_id=organization_id,
-            session=session,
+            session=session, codebase_id=str(codebaseId)
         )
 
     @strawberry.field

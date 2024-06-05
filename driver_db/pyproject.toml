@@ -6,12 +6,13 @@ authors = ["Admin <admin@example.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "^3.12"
 alembic = "^1.12.1"
 sqlmodel = "^0.0.16"
 pydantic-settings = "^2.2.1"
 pgvector = "^0.2.5"
 psycopg2 = "^2.9.9"
+psycopg = {extras = ["binary"], version = "^3.1.13"}
 
 #TODO: Remove strawberry-graphql from here when we migrate schemas or transition legacy.
 strawberry-graphql = {extras = ["fastapi"], version = "^0.230.0"}

@@ -94,6 +94,7 @@ class DocumentSet:
     application_notes: list[ApplicationNote] | None = strawberry.field(default=None)
 
 
+# TODO: Get rid of this!
 def node_kind_map(node_kind: str) -> str:
     if node_kind == "resource":
         return "codebase"

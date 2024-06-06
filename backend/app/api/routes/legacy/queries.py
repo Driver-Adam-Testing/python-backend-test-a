@@ -157,8 +157,13 @@ class Query:
         organization_id = user.organization_id
         if not check_access(session, organization_id, codebase_id=str(codebaseId)):
             raise GraphQLError("Access denied", extensions={"code": "NOT_FOUND"})
+        get_metadata = False
+        # Determine if the GraphQL query includes SupplementalContent.file_size_bytes
+        if "file_size_bytes" or "pages" in info.selected_fields:
+            get_metadata = True
+
         return supplemental_content_by_codebase_id(
-            session=session, codebase_id=str(codebaseId)
+            session=session, codebase_id=str(codebaseId), get_metadata=get_metadata
         )
 
     @strawberry.field

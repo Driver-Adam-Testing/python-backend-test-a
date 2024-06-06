@@ -1,5 +1,7 @@
 import os
+from io import BytesIO
 
+import PyPDF2
 from database.models_v1 import (
     Codebase,
     DerivedContent,
@@ -70,7 +72,7 @@ def get_codebase_by_id(session: Session, codebase_id: str) -> Codebase | None:
 
 
 def supplemental_content_by_codebase_id(
-    session: Session, codebase_id: str
+    session: Session, codebase_id: str, get_metadata: bool = False
 ) -> list[SupplementalContent]:
     logger.info(f"Fetching supplemental content for codebase {codebase_id}")
     supplement_contents = []
@@ -78,7 +80,7 @@ def supplemental_content_by_codebase_id(
         select(SourceContent)
         .where(SourceContent.codebase_id == codebase_id)
         .join(SourceContentType)
-        .where(SourceContentType.type_name == "SUPPLEMENTAL_DOCUMENT")
+        .where(SourceContentType.type_name == "supplemental-document")
     ).all()
 
     if source_contents:
@@ -91,22 +93,35 @@ def supplemental_content_by_codebase_id(
                 organization_id=source_content.workspace.organization_id,
                 codebase_id=str(codebase_id),
             )
-            s3_access.get_file_path(source_content.relative_path)
-            download_url = s3_access.get_signed_upload_url(
+            download_url = s3_access.get_signed_download_url(
                 relative_path=source_content.relative_path, expiration=3600
             )
-            supplement_content = SupplementalContent(
+            supplemental_content = SupplementalContent(
                 id=ID(source_content.id),
                 name=os.path.basename(source_content.relative_path),
                 relative_path=source_content.relative_path,
                 download_url=download_url,
-                created_at=source_content.created_at.isoformat(),
+                created_at=source_content.created_at,
             )
-            supplement_contents.append(supplement_content)
+
+            if source_content.relative_path.endswith(".pdf") and get_metadata:
+                file_content = s3_access.get_file_content(
+                    relative_path=source_content.relative_path, prefix=""
+                )
+                supplemental_content.file_size_bytes = len(file_content)
+                supplemental_content.pages = count_pdf_pages(file_content)
+
+            supplement_contents.append(supplemental_content)
     else:
         logger.info(f"No supplemental content found for codebase {codebase_id}")
 
     return supplement_contents
+
+
+def count_pdf_pages(file_content: str) -> int:
+    file_stream = BytesIO(file_content)  # type: ignore
+    pdf = PyPDF2.PdfReader(file_stream)
+    return len(pdf.pages)
 
 
 def check_access(

@@ -241,3 +241,5 @@ class SupplementalContent:
     relative_path: str
     download_url: str
     created_at: datetime | None = None
+    file_size_bytes: int | None = None
+    pages: int | None = None

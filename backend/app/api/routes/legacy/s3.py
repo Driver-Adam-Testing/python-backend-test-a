@@ -1,5 +1,4 @@
 import hashlib
-from urllib.parse import quote_plus
 
 import boto3
 
@@ -48,11 +47,18 @@ class S3BucketAccess:
     def get_signed_upload_url(self, relative_path: str, expiration=3600) -> str:
         """Generate a signed URL for uploading files. Expiration time is in seconds."""
         file_path = self.get_file_path(relative_path)
-        # URL encode the file path to ensure special characters are correctly handled
-        encoded_file_path = quote_plus(file_path)
         return self.s3_client.generate_presigned_url(
             "put_object",
-            Params={"Bucket": self.organization_id_hashed, "Key": encoded_file_path},
+            Params={"Bucket": self.organization_id_hashed, "Key": file_path},
+            ExpiresIn=expiration,
+        )
+
+    def get_signed_download_url(self, relative_path: str, expiration=3600) -> str:
+        """Generate a signed URL for downloading files. Expiration time is in seconds."""
+        file_path = self.get_file_path(relative_path, prefix="")
+        return self.s3_client.generate_presigned_url(
+            "get_object",
+            Params={"Bucket": self.organization_id_hashed, "Key": file_path},
             ExpiresIn=expiration,
         )
 
@@ -63,7 +69,11 @@ class S3BucketAccess:
             obj = self.s3_client.get_object(
                 Bucket=self.organization_id_hashed, Key=file_path
             )
-            return obj["Body"].read().decode("utf-8")
+            file_content = obj["Body"].read()
+            if relative_path.endswith(".pdf"):
+                return file_content
+            else:
+                return file_content.decode("utf-8", errors="replace")
         except self.s3_client.exceptions.NoSuchKey:
             print(
                 f"The file at {file_path} does not exist in the bucket {self.organization_id_hashed}."

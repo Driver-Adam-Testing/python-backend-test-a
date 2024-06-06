@@ -10,3 +10,4 @@ copy_records.py
 .env
 *.pyc
 driver_db/scripts/copy_records_from_dev.sh
+backend/scripts/copy_records_from_dev.sh

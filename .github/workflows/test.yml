@@ -23,7 +23,7 @@ jobs:
           python-version: '3.10'
 
       - name: Load .env.test Environment Variables
-        run: echo "ENV_FILE=python-backend/.env.test" >> $GITHUB_ENV
+        run: echo "ENV_FILE=.env.test" >> $GITHUB_ENV
 
       - run: docker compose --env-file ${{ env.ENV_FILE }} build
       - run: docker compose --env-file ${{ env.ENV_FILE }} down -v --remove-orphans

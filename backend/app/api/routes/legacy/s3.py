@@ -13,32 +13,31 @@ class S3BucketAccess:
             aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
             aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
             region_name=settings.AWS_REGION,
+            endpoint_url=settings.AWS_S3_ENDPOINT_URL
+            if settings.AWS_S3_ENDPOINT_URL
+            else None,
         )
-        self.bucket_name = settings.BUCKET_NAME
         self.organization_id_hashed = self._hash_organization_id(organization_id)
         self.codebase_id = codebase_id
 
     def _hash_organization_id(self, organization_id: str) -> str:
-        return hashlib.sha256(organization_id.encode()).hexdigest()
+        # Hash the organization_id and take the first 63 characters to use as the bucket name
+        return hashlib.sha256(organization_id.encode()).hexdigest()[:63]
 
     def get_file_path(self, relative_path: str, prefix: str = "/source") -> str:
         if prefix:
             relative_path = f"{prefix}/{relative_path.lstrip('/')}"
         # Ensure the leading slash is removed from the final path to avoid incorrect key generation
-        return f"{self.organization_id_hashed}/{self.codebase_id}/{relative_path.lstrip('/')}"
-
-    def download_file(self, relative_path: str, download_path: str) -> None:
-        file_path = self.get_file_path(relative_path)
-        self.s3_client.download_file(self.bucket_name, file_path, download_path)
+        return f"{self.codebase_id}/{relative_path.lstrip('/')}"
 
     def upload_file(self, file_path: str, relative_path: str) -> None:
         s3_path = self.get_file_path(relative_path)
-        self.s3_client.upload_file(file_path, self.bucket_name, s3_path)
+        self.s3_client.upload_file(file_path, self.organization_id_hashed, s3_path)
 
     def list_files(self, prefix: str = "") -> list:
-        full_prefix = f"{self.organization_id_hashed}/{self.codebase_id}/{prefix}"
+        full_prefix = f"{self.codebase_id}/{prefix}"
         response = self.s3_client.list_objects_v2(
-            Bucket=self.bucket_name, Prefix=full_prefix
+            Bucket=self.organization_id_hashed, Prefix=full_prefix
         )
         return [
             obj["Key"]
@@ -53,7 +52,7 @@ class S3BucketAccess:
         encoded_file_path = quote_plus(file_path)
         return self.s3_client.generate_presigned_url(
             "put_object",
-            Params={"Bucket": self.bucket_name, "Key": encoded_file_path},
+            Params={"Bucket": self.organization_id_hashed, "Key": encoded_file_path},
             ExpiresIn=expiration,
         )
 
@@ -61,10 +60,12 @@ class S3BucketAccess:
         """Return the content of a file from S3."""
         file_path = self.get_file_path(relative_path, prefix)
         try:
-            obj = self.s3_client.get_object(Bucket=self.bucket_name, Key=file_path)
+            obj = self.s3_client.get_object(
+                Bucket=self.organization_id_hashed, Key=file_path
+            )
             return obj["Body"].read().decode("utf-8")
         except self.s3_client.exceptions.NoSuchKey:
             print(
-                f"The file at {file_path} does not exist in the bucket {self.bucket_name}."
+                f"The file at {file_path} does not exist in the bucket {self.organization_id_hashed}."
             )
             return ""

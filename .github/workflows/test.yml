@@ -24,10 +24,9 @@ jobs:
 
       - name: Load .env.test Environment Variables
         run: cp .env.test .env
-
-      - run: docker compose build
+      - run: docker compose build backend s3 database
       - run: docker compose down -v --remove-orphans
-      - run: docker compose up -d
+      - run: docker compose up -d backend s3 database
       - name: Lint
         run: docker compose exec -T backend bash /app/scripts/lint.sh
       - name: Run tests

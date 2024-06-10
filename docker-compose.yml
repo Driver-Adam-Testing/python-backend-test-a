@@ -26,13 +26,11 @@ services:
 
   backend:
     image: 'backend:latest'
-    restart: no
     ports:
       - "8888:8888"
     volumes:
       - ./backend/:/app
     build:
-      context: .
       dockerfile: ./Dockerfile
       args:
         INSTALL_DEV: ${INSTALL_DEV-true}

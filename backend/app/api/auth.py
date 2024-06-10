@@ -51,6 +51,7 @@ def verify_token(token: str) -> dict:
 
 UNPROTECTED_PATHS = [
     "/login",
+    "/api/v1/healthcheck/",
     "/docs",
     "/api/v1/openapi.json",
     "/redoc",

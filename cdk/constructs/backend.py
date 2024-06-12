@@ -56,5 +56,5 @@ class Backend(Construct):
         }
         task_options = aws_ecs_patterns.ApplicationLoadBalancedTaskImageOptions(image=aws_ecs.ContainerImage.from_asset("."), secrets=container_secrets, environment=container_environment_vars, container_port=8888)
         health_check = aws_ecs.HealthCheck(command=["CMD-SHELL", "curl -f http://localhost:8888/api/v1/healthcheck || exit 1"])
-        service = aws_ecs_patterns.ApplicationLoadBalancedFargateService(self, "BackendApi", protocol=aws_elasticloadbalancingv2.ApplicationProtocol.HTTPS, redirect_http=True, assign_public_ip=True, desired_count=2, cluster=cluster, domain_zone=hosted_zone, domain_name="api." + hosted_zone.zone_name, task_image_options=task_options, health_check=health_check)
+        service = aws_ecs_patterns.ApplicationLoadBalancedFargateService(self, "BackendApi", protocol=aws_elasticloadbalancingv2.ApplicationProtocol.HTTPS, platform_version=aws_ecs.FargatePlatformVersion.VERSION1_4, runtime_platform=aws_ecs.RuntimePlatform(cpu_architecture=aws_ecs.CpuArchitecture.ARM64), redirect_http=True, assign_public_ip=True, desired_count=2, cluster=cluster, domain_zone=hosted_zone, domain_name="api." + hosted_zone.zone_name, task_image_options=task_options, health_check=health_check)
         postgres_secret.grant_read(service.task_definition.task_role)

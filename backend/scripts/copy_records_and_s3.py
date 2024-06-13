@@ -66,21 +66,20 @@ for model in models:
         except Exception as e:
             print(f"Error during migration of records for {model}: {e}")
 
-
 # Configure source S3 details
 source_s3 = boto3.client(
     "s3",
-    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-    region_name=os.getenv("AWS_REGION"),
+    aws_access_key_id=os.getenv("SRC_AWS_ACCESS_KEY_ID"),
+    aws_secret_access_key=os.getenv("SRC_AWS_SECRET_ACCESS_KEY"),
+    region_name="us-east-1",
 )
 
 # Configure target S3 details for local development
 target_s3 = boto3.client(
     "s3",
-    endpoint_url="http://localhost:4566",  # LocalStack default endpoint
-    aws_access_key_id="test",  # Default LocalStack credentials
-    aws_secret_access_key="test",  # Default LocalStack credentials
+    endpoint_url="http://localhost:9000",  # LocalStack default endpoint
+    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),  # Minio credentials from .env
+    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),  # Minio credentials from .env
     region_name="us-east-1",  # Default region for LocalStack
 )
 try:
@@ -89,6 +88,8 @@ try:
     if "Buckets" in source_buckets:
         for bucket in source_buckets["Buckets"]:
             source_bucket_name = bucket["Name"]
+            if(source_bucket_name.startswith("cdk")):
+                continue # Skip CDK resources at least
             target_bucket_name = (
                 source_bucket_name  # Assuming target bucket name is the same as source
             )

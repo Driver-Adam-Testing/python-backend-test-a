@@ -1,8 +1,10 @@
+import os
 from pydantic import PostgresDsn, computed_field
 from pydantic_core import MultiHostUrl
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy import text
 from sqlmodel import create_engine
+from urllib.parse import quote_plus
 
 
 class Settings(BaseSettings):
@@ -15,6 +17,7 @@ class Settings(BaseSettings):
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
     POSTGRES_DB: str = ""
+    SSL_MODE: str = "" if os.getenv("ENVIRONMENT") == "local" else "sslmode=require"
 
     @computed_field  # type: ignore[misc]
     @property
@@ -22,10 +25,11 @@ class Settings(BaseSettings):
         url = MultiHostUrl.build(
             scheme="postgresql+psycopg",
             username=self.POSTGRES_USER,
-            password=self.POSTGRES_PASSWORD,
+            password=quote_plus(self.POSTGRES_PASSWORD),
             host=self.POSTGRES_SERVER,
             port=self.POSTGRES_PORT,
             path=self.POSTGRES_DB,
+            query=self.SSL_MODE
         )
         return url
 
@@ -34,9 +38,10 @@ settings = Settings()  # type: ignore
 
 
 def init_engine():
+    SSL_MODE: str = "" if os.getenv("ENVIRONMENT") == "local" else "sslmode=require"
     # Connect to the default database to check if the target database exists and create it if not
     default_engine = create_engine(
-        f"postgresql://{settings.POSTGRES_USER}:{settings.POSTGRES_PASSWORD}@{settings.POSTGRES_SERVER}:{settings.POSTGRES_PORT}/postgres"
+        f"postgresql://{settings.POSTGRES_USER}:{quote_plus(settings.POSTGRES_PASSWORD)}@{settings.POSTGRES_SERVER}:{settings.POSTGRES_PORT}/postgres?{SSL_MODE}"
     )
     with default_engine.connect() as connection:
         connection.execute(text("COMMIT"))

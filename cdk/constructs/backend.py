@@ -9,10 +9,12 @@ from aws_cdk import (
 )
 from constructs import Construct
 
-
-
+class BackendParams:
+    cors_origins: str
+    def __init__(self, cors_origins):
+        self.cors_origins = cors_origins
 class Backend(Construct):
-    def __init__(self, scope: Construct, id: str):
+    def __init__(self, scope: Construct, id: str, params: BackendParams):
         super().__init__(scope, id)
 
         vpc_id = aws_ssm.StringParameter.value_from_lookup(scope, parameter_name="/baseline/infra/v2/vpc/id")
@@ -35,8 +37,9 @@ class Backend(Construct):
         auth0_secret = aws_secretsmanager.Secret.from_secret_name_v2(self, "Auth0Secret", secret_name=auth0_secret_name)
 
         container_environment_vars = {
-            "BACKEND_CORS_ORIGINS": "https://labs.dev.driverai.com",
-            "PORT": "8888"
+            "BACKEND_CORS_ORIGINS": params.cors_origins,
+            "PORT": "8888",
+            "PROJECT_NAME": "DriverAI API"
         }
         container_secrets = {
             "POSTGRES_SERVER": aws_ecs.Secret.from_secrets_manager(postgres_secret, "SERVER"), 
@@ -52,9 +55,10 @@ class Backend(Construct):
             "AUTH0_MGMT_API_AUDIENCE": aws_ecs.Secret.from_secrets_manager(auth0_secret, "AUTH0_MGMT_API_AUDIENCE"),
             "MODAL_TOKEN_ID": aws_ecs.Secret.from_secrets_manager(modal_secret, "MODAL_TOKEN_ID"),
             "MODAL_TOKEN_SECRET": aws_ecs.Secret.from_secrets_manager(modal_secret, "MODAL_TOKEN_SECRET"),
-            "MODAL_ENVIRONMENT": aws_ecs.Secret.from_secrets_manager(modal_secret, "MODAL_ENVIRONMENT")
+            "MODAL_ENVIRONMENT": aws_ecs.Secret.from_secrets_manager(modal_secret, "MODAL_ENVIRONMENT"),
         }
-        task_options = aws_ecs_patterns.ApplicationLoadBalancedTaskImageOptions(image=aws_ecs.ContainerImage.from_asset("."), secrets=container_secrets, environment=container_environment_vars, container_port=8888)
-        health_check = aws_ecs.HealthCheck(command=["CMD-SHELL", "curl -f http://localhost:8888/api/v1/healthcheck || exit 1"])
-        service = aws_ecs_patterns.ApplicationLoadBalancedFargateService(self, "BackendApi", protocol=aws_elasticloadbalancingv2.ApplicationProtocol.HTTPS, platform_version=aws_ecs.FargatePlatformVersion.VERSION1_4, runtime_platform=aws_ecs.RuntimePlatform(cpu_architecture=aws_ecs.CpuArchitecture.ARM64), redirect_http=True, assign_public_ip=True, desired_count=2, cluster=cluster, domain_zone=hosted_zone, domain_name="api." + hosted_zone.zone_name, task_image_options=task_options, health_check=health_check)
-        postgres_secret.grant_read(service.task_definition.task_role)
+        
+        task_image = aws_ecs.ContainerImage.from_asset(".", asset_name="python-backend")
+        task_options = aws_ecs_patterns.ApplicationLoadBalancedTaskImageOptions(image=task_image, secrets=container_secrets, environment=container_environment_vars, container_port=8888)
+        service = aws_ecs_patterns.ApplicationLoadBalancedFargateService(self, "BackendApi", protocol=aws_elasticloadbalancingv2.ApplicationProtocol.HTTPS, platform_version=aws_ecs.FargatePlatformVersion.VERSION1_4, runtime_platform=aws_ecs.RuntimePlatform(cpu_architecture=aws_ecs.CpuArchitecture.ARM64), redirect_http=True, assign_public_ip=True, desired_count=2, cluster=cluster, domain_zone=hosted_zone, domain_name="api." + hosted_zone.zone_name, task_image_options=task_options, task_subnets=aws_ec2.SubnetSelection(subnet_type=aws_ec2.SubnetType.PRIVATE_WITH_EGRESS))
+        service.target_group.configure_health_check(path="/api/v1/healthcheck/", port="8888")

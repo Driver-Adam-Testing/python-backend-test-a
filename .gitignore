@@ -14,3 +14,5 @@ backend/scripts/copy_records_from_dev.sh
 
 cdk.context.json
 cdk.out
+
+node_modules

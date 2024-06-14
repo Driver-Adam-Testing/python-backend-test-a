@@ -26,27 +26,30 @@ jobs:
   #       with:
   #         node-version: "20.x"
   #         cache: "npm"
-  #     - run: npm i -g aws-cdk
   #     - name: Configure AWS Credentials
   #       uses: aws-actions/configure-aws-credentials@v4
   #       with:
   #         aws-region: us-east-1
   #         role-to-assume: arn:aws:iam::550082761109:role/V2BaseInfrastructureStack-BaseInfrastructureCICDRol-CObZ1WQz13Sy
-  #     - name: CDK Deploy
-  #       env:
-  #         DEPLOYMENT_ENVIRONMENT: development
-  #       run: ./cdk-deploy.sh 550082761109 us-east-1 "$@" --require-approval never
   ops:
     # needs: unittest
     runs-on: ubuntu-latest
     environment: ops
     steps:
       - uses: actions/checkout@v4
+      - name: Use Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: "npm"
+      - run: npm ci
       - name: Set up Python 3.12
         uses: actions/setup-python@v4
         with:
           python-version: "3.12"
-      - run: npm i -g aws-cdk
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+      - run: poetry install --no-root
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -54,8 +57,8 @@ jobs:
           role-to-assume: arn:aws:iam::058264523856:role/V2BaseInfrastructureStack-BaseInfrastructureCICDRol-iFv3DUSRZEMS
       - name: CDK Synth
         env:
-          DEPLOYMENT_ENVIRONMENT: development
-        run: cdk synth > template.yaml
+          DEPLOYMENT_ENVIRONMENT: ops
+        run: npx cdk synth > template.yaml
       - name: Archive generated CloudFormation template
         uses: actions/upload-artifact@v4
         with:
@@ -64,4 +67,4 @@ jobs:
       - name: CDK Deploy
         env:
           DEPLOYMENT_ENVIRONMENT: ops
-        run: cdk deploy 058264523856 us-east-1 "$@" --require-approval never
+        run: npx cdk deploy --require-approval never

@@ -5,10 +5,13 @@ from aws_cdk import (
     aws_ecs_patterns,
     aws_ec2,
     aws_ssm,
-    aws_route53
+    aws_route53,
+    aws_wafv2,
+    Duration
 )
 from constructs import Construct
 
+# TODO: parameterize task count and container size
 class BackendParams:
     cors_origins: str
     def __init__(self, cors_origins):
@@ -60,5 +63,32 @@ class Backend(Construct):
         
         task_image = aws_ecs.ContainerImage.from_asset(".", asset_name="python-backend")
         task_options = aws_ecs_patterns.ApplicationLoadBalancedTaskImageOptions(image=task_image, secrets=container_secrets, environment=container_environment_vars, container_port=8888)
-        service = aws_ecs_patterns.ApplicationLoadBalancedFargateService(self, "BackendApi", protocol=aws_elasticloadbalancingv2.ApplicationProtocol.HTTPS, platform_version=aws_ecs.FargatePlatformVersion.VERSION1_4, runtime_platform=aws_ecs.RuntimePlatform(cpu_architecture=aws_ecs.CpuArchitecture.ARM64), redirect_http=True, assign_public_ip=True, desired_count=2, cluster=cluster, domain_zone=hosted_zone, domain_name="api." + hosted_zone.zone_name, task_image_options=task_options, task_subnets=aws_ec2.SubnetSelection(subnet_type=aws_ec2.SubnetType.PRIVATE_WITH_EGRESS))
+        service = aws_ecs_patterns.ApplicationLoadBalancedFargateService(self, "BackendApi",\
+            protocol=aws_elasticloadbalancingv2.ApplicationProtocol.HTTPS,\
+            platform_version=aws_ecs.FargatePlatformVersion.LATEST,\
+            runtime_platform=aws_ecs.RuntimePlatform(cpu_architecture=aws_ecs.CpuArchitecture.ARM64),\
+            redirect_http=True,\
+            assign_public_ip=False,\
+            desired_count=2,\
+            cluster=cluster,\
+            domain_zone=hosted_zone,\
+            domain_name="api." + hosted_zone.zone_name,\
+            task_image_options=task_options,\
+            task_subnets=aws_ec2.SubnetSelection(subnet_type=aws_ec2.SubnetType.PRIVATE_WITH_EGRESS),\
+            health_check_grace_period=Duration.minutes(2))
         service.target_group.configure_health_check(path="/api/v1/healthcheck/", port="8888")
+
+        waf_visibility_config = aws_wafv2.CfnWebACL.VisibilityConfigProperty(cloud_watch_metrics_enabled=True, metric_name="MetricForWebACLCDK", sampled_requests_enabled=True)
+        waf_visibility_config_crs = aws_wafv2.CfnWebACL.VisibilityConfigProperty(cloud_watch_metrics_enabled=True, metric_name="MetricForWebACLCDK-CRS", sampled_requests_enabled=True)
+        waf_rule_overrides = [\
+            aws_wafv2.CfnWebACL.RuleActionOverrideProperty(name="SizeRestrictions_BODY", action_to_use=aws_wafv2.CfnWebACL.RuleActionProperty(allow={})),\
+            aws_wafv2.CfnWebACL.RuleActionOverrideProperty(name="SizeRestrictions_URIPATH", action_to_use=aws_wafv2.CfnWebACL.RuleActionProperty(allow={})),\
+            aws_wafv2.CfnWebACL.RuleActionOverrideProperty(name="SizeRestrictions_QUERYSTRING", action_to_use=aws_wafv2.CfnWebACL.RuleActionProperty(allow={})),\
+            aws_wafv2.CfnWebACL.RuleActionOverrideProperty(name="GenericLFI_BODY", action_to_use=aws_wafv2.CfnWebACL.RuleActionProperty(allow={})),\
+            aws_wafv2.CfnWebACL.RuleActionOverrideProperty(name="GenericRFI_BODY", action_to_use=aws_wafv2.CfnWebACL.RuleActionProperty(allow={})),\
+        ]
+        waf_rule_statement = aws_wafv2.CfnWebACL.StatementProperty(managed_rule_group_statement=aws_wafv2.CfnWebACL.ManagedRuleGroupStatementProperty(name="AWSManagedRulesCommonRuleSet", vendor_name="AWS", rule_action_overrides=waf_rule_overrides))
+        waf_rules = [aws_wafv2.CfnWebACL.RuleProperty(name="CRSRule", priority=0, statement=waf_rule_statement, visibility_config=waf_visibility_config_crs, override_action=aws_wafv2.CfnWebACL.OverrideActionProperty(none={}))]
+
+        waf = aws_wafv2.CfnWebACL(self, "PythonBackendWAF", scope='REGIONAL', default_action=aws_wafv2.CfnWebACL.DefaultActionProperty(allow={}), visibility_config=waf_visibility_config, rules=waf_rules)
+        waf_association = aws_wafv2.CfnWebACLAssociation(self, 'WebACLALBAssociation', resource_arn=service.load_balancer.load_balancer_arn, web_acl_arn=waf.attr_arn)

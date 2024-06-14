@@ -39,6 +39,9 @@ class Backend(Construct):
         auth0_secret_name = aws_ssm.StringParameter.value_from_lookup(scope, parameter_name="/baseline/infra/v2/pythonBackend/auth0ConfigurationsName")
         auth0_secret = aws_secretsmanager.Secret.from_secret_name_v2(self, "Auth0Secret", secret_name=auth0_secret_name)
 
+        s3_secret_name = aws_ssm.StringParameter.value_from_lookup(scope, parameter_name="/baseline/infra/v2/pythonBackend/s3ConfigurationsName")
+        s3_secret = aws_secretsmanager.Secret.from_secret_name_v2(self, "S3Secret", secret_name=s3_secret_name)
+
         container_environment_vars = {
             "BACKEND_CORS_ORIGINS": params.cors_origins,
             "PORT": "8888",
@@ -59,6 +62,8 @@ class Backend(Construct):
             "MODAL_TOKEN_ID": aws_ecs.Secret.from_secrets_manager(modal_secret, "MODAL_TOKEN_ID"),
             "MODAL_TOKEN_SECRET": aws_ecs.Secret.from_secrets_manager(modal_secret, "MODAL_TOKEN_SECRET"),
             "MODAL_ENVIRONMENT": aws_ecs.Secret.from_secrets_manager(modal_secret, "MODAL_ENVIRONMENT"),
+            "AWS_ACCESS_KEY_ID": aws_ecs.Secret.from_secrets_manager(s3_secret, "AWS_ACCESS_KEY_ID"),
+            "AWS_SECRET_ACCESS_KEY": aws_ecs.Secret.from_secrets_manager(s3_secret, "AWS_SECRET_ACCESS_KEY"),
         }
         
         task_image = aws_ecs.ContainerImage.from_asset(".", asset_name="python-backend")

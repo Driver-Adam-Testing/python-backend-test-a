@@ -66,7 +66,10 @@ class Backend(Construct):
         service = aws_ecs_patterns.ApplicationLoadBalancedFargateService(self, "BackendApi",\
             protocol=aws_elasticloadbalancingv2.ApplicationProtocol.HTTPS,\
             platform_version=aws_ecs.FargatePlatformVersion.LATEST,\
-            runtime_platform=aws_ecs.RuntimePlatform(cpu_architecture=aws_ecs.CpuArchitecture.ARM64),\
+            # Github Actions runners only provide x86 - we'd have to go to self-hosted to deploy ARM currently
+            # There is a limited beta, so support for ARM is coming
+            # https://github.com/orgs/community/discussions/25319
+            runtime_platform=aws_ecs.RuntimePlatform(cpu_architecture=aws_ecs.CpuArchitecture.X86_64),\
             redirect_http=True,\
             assign_public_ip=False,\
             desired_count=2,\

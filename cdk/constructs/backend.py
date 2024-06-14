@@ -80,7 +80,7 @@ class Backend(Construct):
             task_subnets=aws_ec2.SubnetSelection(subnet_type=aws_ec2.SubnetType.PRIVATE_WITH_EGRESS),\
             health_check_grace_period=Duration.minutes(5),\
             circuit_breaker=aws_ecs.DeploymentCircuitBreaker(enable=True, rollback=True),\
-            cpu=1,\
+            cpu=1024,\
             memory_limit_mib=2048)
         service.target_group.configure_health_check(path="/api/v1/healthcheck/", port="8888")
 

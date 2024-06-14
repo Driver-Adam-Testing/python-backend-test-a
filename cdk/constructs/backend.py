@@ -81,7 +81,7 @@ class Backend(Construct):
             health_check_grace_period=Duration.minutes(5),\
             circuit_breaker=aws_ecs.DeploymentCircuitBreaker(enable=True, rollback=True),\
             cpu=1,\
-            memory_limit_mib=1024)
+            memory_limit_mib=2048)
         service.target_group.configure_health_check(path="/api/v1/healthcheck/", port="8888")
 
         waf_visibility_config = aws_wafv2.CfnWebACL.VisibilityConfigProperty(cloud_watch_metrics_enabled=True, metric_name="MetricForWebACLCDK", sampled_requests_enabled=True)

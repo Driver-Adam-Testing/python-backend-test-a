@@ -39,7 +39,7 @@ class Backend(Construct):
         auth0_secret_name = aws_ssm.StringParameter.value_from_lookup(scope, parameter_name="/baseline/infra/v2/pythonBackend/auth0ConfigurationsName")
         auth0_secret = aws_secretsmanager.Secret.from_secret_name_v2(self, "Auth0Secret", secret_name=auth0_secret_name)
 
-        s3_secret_name = aws_ssm.StringParameter.value_from_lookup(scope, parameter_name="/baseline/infra/v2/pythonBackend/s3ConfigurationsName")
+        s3_secret_name = aws_ssm.StringParameter.value_from_lookup(scope, parameter_name="/baseline/infra/v2/pythonBackend/s3CredentialsName")
         s3_secret = aws_secretsmanager.Secret.from_secret_name_v2(self, "S3Secret", secret_name=s3_secret_name)
 
         container_environment_vars = {

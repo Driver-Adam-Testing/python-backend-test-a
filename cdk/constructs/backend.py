@@ -99,7 +99,6 @@ class Backend(Construct):
 
         waf_visibility_config = aws_wafv2.CfnWebACL.VisibilityConfigProperty(cloud_watch_metrics_enabled=True, metric_name="MetricForWebACLCDK", sampled_requests_enabled=True)
         waf_visibility_config_crs = aws_wafv2.CfnWebACL.VisibilityConfigProperty(cloud_watch_metrics_enabled=True, metric_name="MetricForWebACLCDK-CRS", sampled_requests_enabled=True)
-        waf_rule_statement = aws_wafv2.CfnWebACL.StatementProperty(managed_rule_group_statement=aws_wafv2.CfnWebACL.ManagedRuleGroupStatementProperty(name="AWSManagedRulesCommonRuleSet", vendor_name="AWS", rule_action_overrides=waf_rule_overrides))
         waf_rule_overrides = [\
             aws_wafv2.CfnWebACL.RuleActionOverrideProperty(name="SizeRestrictions_BODY", action_to_use=aws_wafv2.CfnWebACL.RuleActionProperty(allow={})),\
             aws_wafv2.CfnWebACL.RuleActionOverrideProperty(name="SizeRestrictions_URIPATH", action_to_use=aws_wafv2.CfnWebACL.RuleActionProperty(allow={})),\
@@ -107,6 +106,7 @@ class Backend(Construct):
             aws_wafv2.CfnWebACL.RuleActionOverrideProperty(name="GenericLFI_BODY", action_to_use=aws_wafv2.CfnWebACL.RuleActionProperty(allow={})),\
             aws_wafv2.CfnWebACL.RuleActionOverrideProperty(name="GenericRFI_BODY", action_to_use=aws_wafv2.CfnWebACL.RuleActionProperty(allow={})),\
         ]
+        waf_rule_statement = aws_wafv2.CfnWebACL.StatementProperty(managed_rule_group_statement=aws_wafv2.CfnWebACL.ManagedRuleGroupStatementProperty(name="AWSManagedRulesCommonRuleSet", vendor_name="AWS", rule_action_overrides=waf_rule_overrides))
         crs_rule = aws_wafv2.CfnWebACL.RuleProperty(name="CRSRule", priority=1, statement=waf_rule_statement, visibility_config=waf_visibility_config_crs, override_action=aws_wafv2.CfnWebACL.OverrideActionProperty(none={}))
         waf_rules = [ipset_rule, crs_rule]
         waf = aws_wafv2.CfnWebACL(self, "PythonBackendWAF", scope='REGIONAL', default_action=aws_wafv2.CfnWebACL.DefaultActionProperty(allow={}), visibility_config=waf_visibility_config, rules=waf_rules)

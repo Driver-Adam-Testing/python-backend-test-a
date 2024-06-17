@@ -62,7 +62,7 @@ UNPROTECTED_PATHS = [
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         try:
-            print(request.body)
+            print(await request.body())
             if request.method == "GET" and request.url.path in UNPROTECTED_PATHS:
                 pass
             elif request.method == "OPTIONS":

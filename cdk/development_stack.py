@@ -10,4 +10,7 @@ class DevelopmentStack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        backend = Backend(self, "ApiBackend", BackendParams(cors_origins="https://app.dev.driverai.com,https://labs.dev.driverai.com,https://app2.dev.driverai.com"))
+        backend = Backend(self, "ApiBackend", BackendParams(\
+            cors_origins="https://app.dev.driverai.com,https://labs.dev.driverai.com,https://app2.dev.driverai.com"),\
+            allowed_ips=["98.142.217.111"]
+        )

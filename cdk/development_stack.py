@@ -12,5 +12,5 @@ class DevelopmentStack(Stack):
 
         backend = Backend(self, "ApiBackend", BackendParams(\
             cors_origins="https://app.dev.driverai.com,https://labs.dev.driverai.com,https://app2.dev.driverai.com",\
-            allowed_ips=["98.142.217.111"]
+            allowed_ips=["98.142.217.111/32"]
         ))

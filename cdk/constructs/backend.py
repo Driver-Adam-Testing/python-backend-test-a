@@ -16,8 +16,9 @@ from constructs import Construct
 class BackendParams:
     cors_origins: str
     allowed_ips: List[str]
-    def __init__(self, cors_origins):
+    def __init__(self, cors_origins, allowed_ips):
         self.cors_origins = cors_origins
+        self.allowed_ips = allowed_ips
 class Backend(Construct):
     def __init__(self, scope: Construct, id: str, params: BackendParams):
         super().__init__(scope, id)

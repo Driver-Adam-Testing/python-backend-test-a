@@ -1,4 +1,5 @@
 import os
+from typing import Literal
 from pydantic import PostgresDsn, computed_field
 from pydantic_core import MultiHostUrl
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -17,7 +18,8 @@ class Settings(BaseSettings):
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
     POSTGRES_DB: str = ""
-    SSL_MODE: str = "" if os.getenv("ENVIRONMENT") == "local" else "sslmode=require"
+    ENVIRONMENT: Literal["local", "development", "production"] = "local"
+    SSL_MODE: str = "" if ENVIRONMENT == "local" else "sslmode=require"
 
     @computed_field  # type: ignore[misc]
     @property
@@ -38,7 +40,7 @@ settings = Settings()  # type: ignore
 
 
 def init_engine():
-    SSL_MODE: str = "" if os.getenv("ENVIRONMENT") == "local" else "sslmode=require"
+    SSL_MODE: str = settings.SSL_MODE
     # Connect to the default database to check if the target database exists and create it if not
     default_engine = create_engine(
         f"postgresql://{settings.POSTGRES_USER}:{quote_plus(settings.POSTGRES_PASSWORD)}@{settings.POSTGRES_SERVER}:{settings.POSTGRES_PORT}/postgres?{SSL_MODE}"

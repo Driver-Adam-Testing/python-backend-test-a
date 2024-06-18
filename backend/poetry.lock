@@ -892,6 +892,23 @@ typing-extensions = ">=4.8.0"
 all = ["email-validator (>=2.0.0)", "httpx (>=0.23.0)", "itsdangerous (>=1.1.0)", "jinja2 (>=2.11.2)", "orjson (>=3.2.1)", "pydantic-extra-types (>=2.0.0)", "pydantic-settings (>=2.0.0)", "python-multipart (>=0.0.7)", "pyyaml (>=5.3.1)", "ujson (>=4.0.1,!=4.0.2,!=4.1.0,!=4.2.0,!=4.3.0,!=5.0.0,!=5.1.0)", "uvicorn[standard] (>=0.12.0)"]
 
 [[package]]
+name = "fastapi-cli"
+version = "0.0.4"
+description = "Run and manage FastAPI apps from the command line with FastAPI CLI. 🚀"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "fastapi_cli-0.0.4-py3-none-any.whl", hash = "sha256:a2552f3a7ae64058cdbb530be6fa6dbfc975dc165e4fa66d224c3d396e25e809"},
+    {file = "fastapi_cli-0.0.4.tar.gz", hash = "sha256:e2e9ffaffc1f7767f488d6da34b6f5a377751c996f397902eb6abb99a67bde32"},
+]
+
+[package.dependencies]
+typer = ">=0.12.3"
+
+[package.extras]
+standard = ["fastapi", "uvicorn[standard] (>=0.15.0)"]
+
+[[package]]
 name = "filelock"
 version = "3.14.0"
 description = "A platform independent file lock."
@@ -3500,4 +3517,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "e044a3497da20ce255a45eb143c0ef75322766aad321cb006badc78a5751bb76"
+content-hash = "26a284ef6aa91391b1360036817c2543f4ce2e857ba1b0c1bd39f3ac79234c8d"

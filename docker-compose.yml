@@ -12,54 +12,54 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
       - POSTGRES_USER=${POSTGRES_USER?Variable not set}
       - POSTGRES_DB=${POSTGRES_DB?Variable not set}
-  backend:
-    image: 'backend:latest'
-    ports:
-      - "8888:8888"
-    volumes:
-      - ./backend/:/app
-    build:
-      dockerfile: ./Dockerfile
-      args:
-        INSTALL_DEV: ${INSTALL_DEV-true}
-    networks:
-      - default
-    depends_on:
-      - db
-      - s3
-    env_file:
-      - .env
-    environment:
-      - DOMAIN=${DOMAIN}
-      - ENVIRONMENT=${ENVIRONMENT}
-      - PYTHONPATH=/app
-      - BACKEND_CORS_ORIGINS=${BACKEND_CORS_ORIGINS}
-      - SECRET_KEY=${SECRET_KEY?Variable not set}
-      - USERS_OPEN_REGISTRATION=${USERS_OPEN_REGISTRATION}
-      - SMTP_HOST=${SMTP_HOST}
-      - SMTP_USER=${SMTP_USER}
-      - SMTP_PASSWORD=${SMTP_PASSWORD}
-      - EMAILS_FROM_EMAIL=${EMAILS_FROM_EMAIL}
-      - POSTGRES_SERVER=db
-      - POSTGRES_PORT=${POSTGRES_PORT}
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_USER=${POSTGRES_USER?Variable not set}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
-      - AUTH0_DOMAIN=${AUTH0_DOMAIN}
-      - AUTH0_CLIENT_ID=${AUTH0_CLIENT_ID}
-      - AUTH0_AUDIENCE=${AUTH0_AUDIENCE}
-      - AUTH0_MGMT_API_CLIENT_ID=${AUTH0_MGMT_API_CLIENT_ID}
-      - AUTH0_MGMT_API_CLIENT_SECRET=${AUTH0_MGMT_API_CLIENT_SECRET}
-      - AUTH0_MGMT_API_AUDIENCE=${AUTH0_MGMT_API_AUDIENCE}
-      - AWS_REGION=${AWS_REGION?Variable not set}
-      - AWS_BUCKET_NAME=${AWS_BUCKET_NAME?Variable not set}
-      - AWS_S3_ENDPOINT_URL=http://s3:9000
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID?Variable not set}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY?Variable not set}
-      - PORT=8888
-      - MODAL_TOKEN_ID=${MODAL_TOKEN_ID?Variable not set}
-      - MODAL_TOKEN_SECRET=${MODAL_TOKEN_SECRET?Variable not set}
-      - MODAL_ENVIRONMENT=${MODAL_ENVIRONMENT?dev}
+  # backend:
+  #   image: 'backend:latest'
+  #   ports:
+  #     - "8888:8888"
+  #   volumes:
+  #     - ./backend/:/app
+  #   build:
+  #     dockerfile: ./Dockerfile
+  #     args:
+  #       INSTALL_DEV: ${INSTALL_DEV-true}
+  #   networks:
+  #     - default
+  #   depends_on:
+  #     - db
+  #     - s3
+  #   env_file:
+  #     - .env
+  #   environment:
+  #     - DOMAIN=${DOMAIN}
+  #     - ENVIRONMENT=${ENVIRONMENT}
+  #     - PYTHONPATH=/app
+  #     - BACKEND_CORS_ORIGINS=${BACKEND_CORS_ORIGINS}
+  #     - SECRET_KEY=${SECRET_KEY?Variable not set}
+  #     - USERS_OPEN_REGISTRATION=${USERS_OPEN_REGISTRATION}
+  #     - SMTP_HOST=${SMTP_HOST}
+  #     - SMTP_USER=${SMTP_USER}
+  #     - SMTP_PASSWORD=${SMTP_PASSWORD}
+  #     - EMAILS_FROM_EMAIL=${EMAILS_FROM_EMAIL}
+  #     - POSTGRES_SERVER=db
+  #     - POSTGRES_PORT=${POSTGRES_PORT}
+  #     - POSTGRES_DB=${POSTGRES_DB}
+  #     - POSTGRES_USER=${POSTGRES_USER?Variable not set}
+  #     - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
+  #     - AUTH0_DOMAIN=${AUTH0_DOMAIN}
+  #     - AUTH0_CLIENT_ID=${AUTH0_CLIENT_ID}
+  #     - AUTH0_AUDIENCE=${AUTH0_AUDIENCE}
+  #     - AUTH0_MGMT_API_CLIENT_ID=${AUTH0_MGMT_API_CLIENT_ID}
+  #     - AUTH0_MGMT_API_CLIENT_SECRET=${AUTH0_MGMT_API_CLIENT_SECRET}
+  #     - AUTH0_MGMT_API_AUDIENCE=${AUTH0_MGMT_API_AUDIENCE}
+  #     - AWS_REGION=${AWS_REGION?Variable not set}
+  #     - AWS_BUCKET_NAME=${AWS_BUCKET_NAME?Variable not set}
+  #     - AWS_S3_ENDPOINT_URL=http://s3:9000
+  #     - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID?Variable not set}
+  #     - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY?Variable not set}
+  #     - PORT=8888
+  #     - MODAL_TOKEN_ID=${MODAL_TOKEN_ID?Variable not set}
+  #     - MODAL_TOKEN_SECRET=${MODAL_TOKEN_SECRET?Variable not set}
+  #     - MODAL_ENVIRONMENT=${MODAL_ENVIRONMENT?dev}
   s3:
     image: quay.io/minio/minio:latest
     command: server /data --console-address ":9001"

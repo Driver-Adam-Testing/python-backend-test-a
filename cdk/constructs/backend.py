@@ -50,7 +50,7 @@ class Backend(Construct):
 
         container_environment_vars = {
             "BACKEND_CORS_ORIGINS": params.cors_origins,
-            "PORT": "8888",
+            "PORT": "8000",
             "PROJECT_NAME": "DriverAI API"
         }
         container_secrets = {
@@ -93,7 +93,7 @@ class Backend(Construct):
             circuit_breaker=aws_ecs.DeploymentCircuitBreaker(enable=True, rollback=True),\
             cpu=1024,\
             memory_limit_mib=2048)
-        service.target_group.configure_health_check(path="/api/v1/healthcheck/", port="8888")
+        service.target_group.configure_health_check(path="/api/v1/healthcheck/", port="8000")
         service.task_definition.task_role.attach_inline_policy(aws_iam.Policy(self, "CustomerSecretsRW", document=aws_iam.PolicyDocument(statements=[\
             aws_iam.PolicyStatement(\
                 effect=aws_iam.Effect.ALLOW,\

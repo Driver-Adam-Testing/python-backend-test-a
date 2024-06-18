@@ -37,4 +37,4 @@ COPY backend/tests-start.sh /app/
 
 COPY backend/app /app/app
 
-CMD [ "/start-reload.sh" ]
+CMD [ "/bin/sh", "-c", "if [ \"$INSTALL_DEV\" = 'true' ]; then exec /start-reload.sh \"$@\"; else exec /start.sh \"$@\"; fi" ]

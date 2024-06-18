@@ -73,7 +73,7 @@ class Backend(Construct):
         }
         
         task_image = aws_ecs.ContainerImage.from_asset(".", asset_name="python-backend")
-        task_options = aws_ecs_patterns.ApplicationLoadBalancedTaskImageOptions(image=task_image, secrets=container_secrets, environment=container_environment_vars, container_port=8888)
+        task_options = aws_ecs_patterns.ApplicationLoadBalancedTaskImageOptions(image=task_image, secrets=container_secrets, environment=container_environment_vars, container_port=8000)
         service = aws_ecs_patterns.ApplicationLoadBalancedFargateService(self, "BackendApi",\
             protocol=aws_elasticloadbalancingv2.ApplicationProtocol.HTTPS,\
             platform_version=aws_ecs.FargatePlatformVersion.LATEST,\

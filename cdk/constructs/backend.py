@@ -1,10 +1,13 @@
+import os
 from typing import List
 from aws_cdk import (
+    Stack,
     aws_elasticloadbalancingv2,
     aws_secretsmanager,
     aws_ecs,
     aws_ecs_patterns,
     aws_ec2,
+    aws_iam,
     aws_ssm,
     aws_route53,
     aws_wafv2,
@@ -91,7 +94,13 @@ class Backend(Construct):
             cpu=1024,\
             memory_limit_mib=2048)
         service.target_group.configure_health_check(path="/api/v1/healthcheck/", port="8888")
-
+        service.task_definition.task_role.attach_inline_policy(aws_iam.Policy(self, "CustomerSecretsRW", document=aws_iam.PolicyDocument(statements=[\
+            aws_iam.PolicyStatement(\
+                effect=aws_iam.Effect.ALLOW,\
+                actions=["secretsmanager:CreateSecret", "secretsmanager:ListSecrets", "secretsmanager:DescribeSecret"],\
+                resources=[f"arn:aws:secretsmanager:{Stack.of(self).region}:{Stack.of(self).account}:secret:CUSTOMER/*"]\
+            )
+        ])))
         waf_visibility_config_ips = aws_wafv2.CfnWebACL.VisibilityConfigProperty(cloud_watch_metrics_enabled=True, metric_name="MetricForWebACLCDK-IPs", sampled_requests_enabled=True)
         whitelist_ip_set = aws_wafv2.CfnIPSet(self, "WhitelistIPs", ip_address_version="IPV4", scope="REGIONAL", addresses=params.allowed_ips)
         ipset_rule_statement = aws_wafv2.CfnWebACL.StatementProperty(ip_set_reference_statement=aws_wafv2.CfnWebACL.IPSetReferenceStatementProperty(arn=whitelist_ip_set.attr_arn))

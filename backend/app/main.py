@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
 from starlette.middleware.cors import CORSMiddleware
@@ -19,6 +21,7 @@ app = FastAPI(
 
 # Set all CORS enabled origins
 if settings.BACKEND_CORS_ORIGINS:
+    logging.info(f"Setting CORS to {settings.BACKEND_CORS_ORIGINS}")
     app.add_middleware(
         CORSMiddleware,
         allow_origins=[

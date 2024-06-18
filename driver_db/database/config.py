@@ -54,6 +54,3 @@ def init_engine():
         if not result:
             connection.execute(text(f"CREATE DATABASE {settings.POSTGRES_DB}"))
             print(f"Database {settings.POSTGRES_DB} created.")
-
-
-init_engine()

@@ -11,6 +11,6 @@ class DevelopmentStack(Stack):
         super().__init__(scope, construct_id, **kwargs)
 
         backend = Backend(self, "ApiBackend", BackendParams(\
-            cors_origins="https://app.dev.driverai.com,https://labs.dev.driverai.com,https://app2.dev.driverai.com",\
+            cors_origins="https://app.dev.driverai.com,https://labs.dev.driverai.com,https://app2.dev.driverai.com,http://localhost:3000",\
             allowed_ips=["98.142.217.111/32"]
         ))

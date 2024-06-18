@@ -49,7 +49,7 @@ class S3BucketAccess:
         file_path = self.get_file_path(relative_path)
         return self.s3_client.generate_presigned_url(
             "put_object",
-            Params={"Bucket": self.organization_id_hashed, "Key": file_path, "Content-Type": "application/octet-stream"},
+            Params={"Bucket": self.organization_id_hashed, "Key": file_path, "ContentType": "application/octet-stream"},
             ExpiresIn=expiration,
         )
 

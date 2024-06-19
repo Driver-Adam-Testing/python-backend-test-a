@@ -328,6 +328,10 @@ class SourceContent(SQLModel, table=True):  # type: ignore
     updated_at: None | datetime = Field(
         sa_column=Column(DateTime(timezone=False), onupdate=func.now()), default=None
     )
+    analysis_metadata: dict | None = Field(
+        sa_column=Column(JSONB, nullable=True), default=None
+    )  
+
     source_content_type: SourceContentType = Relationship(
         back_populates="source_contents"
     )

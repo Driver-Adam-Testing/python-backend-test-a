@@ -11,11 +11,11 @@ alembic = "^1.12.1"
 sqlmodel = "^0.0.16"
 pydantic-settings = "^2.2.1"
 pgvector = "^0.2.5"
-psycopg2 = "^2.9.9"
-psycopg = {extras = ["binary"], version = "^3.1.13"}
 
 #TODO: Remove strawberry-graphql from here when we migrate schemas or transition legacy.
 strawberry-graphql = {extras = ["fastapi"], version = "^0.230.0"}
+psycopg2-binary = "^2.9.9"
+asyncpg = "^0.29.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.3"

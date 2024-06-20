@@ -8,6 +8,7 @@ from database.models_v1 import SourceContentType
 from sqlmodel import Session, select
 import zipfile
 import chardet
+import requests
 
 from functools import cache
 from uuid import UUID
@@ -58,6 +59,14 @@ def download_file_from_s3(
     except Exception as e:
         raise(e)
 
+def download_file_from_presigned_url(
+    presigned_url: str,
+    download_destination: Path
+):
+    with requests.get(presigned_url) as r:
+        r.raise_for_status()
+        with open(download_destination, 'wb') as w_file:
+            w_file.write(r.content)
 
 def get_root_directories_in_archive(zip_file: zipfile.ZipFile) -> list:
     root_dirs = []

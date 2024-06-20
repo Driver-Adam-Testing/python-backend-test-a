@@ -1,9 +1,7 @@
 import os
 from pathlib import Path
-from dataclasses import dataclass, asdict
-from uuid import UUID, uuid4
 from urllib.parse import urljoin
-
+from uuid import UUID, uuid4
 
 import modal
 
@@ -38,20 +36,33 @@ image = (
     concurrency_limit=5
 )
 def run_codebase_onboarding(
-    bucket_name: str, 
-    archive_name: str, 
-    org_id: str, 
+    presigned_url: str,
+    archive_name: str,
+    org_id: str,
     creator_id: str,
     workspace_id: str
 ) -> None:
-    from sqlmodel import Session
-    from database.models_v1 import Codebase, SourceContent, Workspace, Enum_Codebase_Status
     from database.db import engine
-
-    from utils import create_base_storage_url, create_bucket_if_dne, download_file_from_s3, get_source_content_type_uuid, is_on_blacklist, run_file_stats_and_reencode, unpack_archive, upload_file_to_s3
+    from database.models_v1 import (
+        Codebase,
+        Enum_Codebase_Status,
+        SourceContent,
+    )
+    from sqlmodel import Session
+    from utils import (
+        create_base_storage_url,
+        create_bucket_if_dne,
+        download_file_from_presigned_url,
+        get_source_content_type_uuid,
+        is_on_blacklist,
+        run_file_stats_and_reencode,
+        unpack_archive,
+        upload_file_to_s3,
+    )
 
     download_dest = Path(archive_name)
-    download_file_from_s3(bucket_name, org_id, archive_name, download_dest)
+    download_file_from_presigned_url(presigned_url, download_dest)
+
     print(f'Downloaded {archive_name} from S3')
 
     extracted_path = unpack_archive(download_dest)
@@ -65,13 +76,13 @@ def run_codebase_onboarding(
         create_bucket_if_dne(upload_bucket)
         codebase_id = uuid4()
 
-        for root, dirs, files in os.walk(extracted_path):
+        for root, _, files in os.walk(extracted_path):
             all_directories.append(root)
             for filename in files:
                 local_path = Path(root) / filename
 
                 file_stats = run_file_stats_and_reencode(
-                    local_path, 
+                    local_path,
                 )
                 codebase_stats[local_path] = file_stats
 
@@ -80,6 +91,7 @@ def run_codebase_onboarding(
         for file_path in codebase_stats.keys():
             if not codebase_stats[file_path]['is_blacklisted']:
                 uploaded_dest_path = upload_file_to_s3(upload_bucket, s3_dest_root, file_path)
+                print(f"Uploaded {file_path} to {uploaded_dest_path}")
 
         with Session(engine) as session:
             with session.begin():
@@ -96,7 +108,7 @@ def run_codebase_onboarding(
                     status=Enum_Codebase_Status.processing
                 )
                 session.add(codebase)
-                # Flush here to confirm that Source Contents created after this will know that the 
+                # Flush here to confirm that Source Contents created after this will know that the
                 # codebase exists
                 session.flush()
                 print(f"Created but not commited codebase: {str(extracted_path)}, with ID: {codebase_id}")
@@ -107,7 +119,7 @@ def run_codebase_onboarding(
                     relative_path=str(extracted_path),
                     source_content_type_id=cb_sc_uuid,
                     workspace_id=workspace_id,
-                    analysis_metadata=dict()
+                    analysis_metadata={}
                 )
                 session.add(cb_sc)
 
@@ -115,14 +127,14 @@ def run_codebase_onboarding(
                 dir_sc_uuid = get_source_content_type_uuid("codebase-directory")
                 for directory in all_directories:
                     if not is_on_blacklist(Path(directory)):
-                        # TODO: analysis metadata for directories? 
-                        # TODO: this is fragile - consider using DAG logic here 
+                        # TODO: analysis metadata for directories?
+                        # TODO: this is fragile - consider using DAG logic here
                         dir_sc = SourceContent(
                             codebase_id=codebase_id,
                             relative_path=directory,
                             source_content_type_id=dir_sc_uuid,
                             workspace_id=workspace_id,
-                            analysis_metadata=dict()
+                            analysis_metadata={}
                         )
                         session.add(dir_sc)
                         print(f"Created but not commited source content for: {directory}.")
@@ -164,9 +176,9 @@ def run_codebase_onboarding(
     concurrency_limit=5
 )
 def onboard_and_inspect(dropzone_bucket_name:str, archive_name: str, org_id: str, creator_id: str, workspace_id: UUID):
-    from sqlmodel import Session
-    from database.models_v1 import Codebase, Enum_Codebase_Status
     from database.db import engine
+    from database.models_v1 import Codebase, Enum_Codebase_Status
+    from sqlmodel import Session
     #TODO: send email on failure at any step in this process
     try:
         inspect_db = modal.Function.lookup("inspector-v2", "inspect_db")
@@ -212,7 +224,7 @@ def onboard_and_inspect(dropzone_bucket_name:str, archive_name: str, org_id: str
 )
 def send_exception_email(exception_details):
     import sendgrid
-    from sendgrid.helpers.mail import Mail, Email, To, Content
+    from sendgrid.helpers.mail import Content, Email, Mail, To
 
     env_name = os.environ.get("ENV_NAME")
     sendgrid_api_key = os.environ.get("SENDGRID_API_KEY")
@@ -223,7 +235,7 @@ def send_exception_email(exception_details):
     subject = f"MODAL {env_name}: Exception Occurred"
     content = Content("text/plain", f"An exception occurred: {exception_details}")
     mail = Mail(from_email, to_email, subject, content)
-    
+
     try:
         response = sg.send(mail)
         print(f"Email sent: {response.status_code}")
@@ -233,24 +245,8 @@ def send_exception_email(exception_details):
 
 @app.local_entrypoint()
 def main():
-    # s3_bucket_name = "modal-dev-inspector-1234442"
-    s3_bucket_name = "development-codebase-dropzone"
-    s3_prefix = "codebases"
-    archive_name = "first_nes.zip"
-    # create_bucket_if_dne(s3_bucket_name)
-
-    # # Upload to bucket if doesn't exist
-    # local_path = Path('examples') / archive_name
-    # s3_resource = resource("s3", endpoint_url=os.environ["AWS_S3_ENDPOINT_URL"])
-    
-    # s3_destination_path = Path(s3_prefix) / archive_name 
-    # try:
-    #     s3_resource.Object(s3_bucket_name, str(s3_destination_path)).load()
-    #     print('obj exists')
-    # except:
-    #     s3_bucket = s3_resource.Bucket(s3_bucket_name) 
-    #     s3_bucket.upload_file(local_path, str(s3_destination_path))
-
+    presigned_url = ""
+    archive_name = "infinity-core.zip"
     org_id = '6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641'
     creator_id = 'auth0|6650e02b9812cd674f78cf75'
     workspace_id = UUID('2fb6c92d-68cb-4864-a457-8031589e3210')
@@ -260,4 +256,4 @@ def main():
     #     load_dotenv()
     #     run_codebase_onboarding.local(s3_bucket_name, s3_prefix, archive_name, org_id, creator_id, workspace_id)
     # else:
-    onboard_and_inspect.remote(s3_bucket_name, archive_name, org_id, creator_id, workspace_id)
+    onboard_and_inspect.remote(presigned_url, archive_name, org_id, creator_id, workspace_id)

@@ -31,4 +31,4 @@ else
 fi
 
 # Start Gunicorn
-exec gunicorn -k "$WORKER_CLASS" -c "$GUNICORN_CONF" "$APP_MODULE"
+exec gunicorn -b 0.0.0.0:$PORT -k "$WORKER_CLASS" -c "$GUNICORN_CONF" "$APP_MODULE"

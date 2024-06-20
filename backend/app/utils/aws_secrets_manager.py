@@ -14,7 +14,13 @@ def write_secret(secret_name, secret_value):
     )
 
     try:
-        response = client.create_secret(Name=secret_name, SecretString=secret_value)
+        value = read_secret(secret_name)
+        if value:
+            print(f"Secret {secret_name} already exists. Updating the secret.")
+            response = client.update_secret(SecretId=secret_name, SecretString=secret_value)
+        else:
+            print(f"Secret {secret_name} does not exist. Creating a new secret.")
+            response = client.create_secret(Name=secret_name, SecretString=secret_value)
         return response
     except ClientError as e:
         print(f"An error occurred: {e}")
@@ -44,4 +50,4 @@ def read_secret(secret_name):
 
 def format_secret_key(org_id: str, user_id: str, provider: str):
     user_id = user_id.replace("|", "_")
-    return f"CUSTOMER/{provider}/{org_id}/{user_id}"
+    return f"DRIVER_AI_CUSTOMER/{provider}/{org_id}/{user_id}"

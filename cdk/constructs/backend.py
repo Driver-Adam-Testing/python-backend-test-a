@@ -19,9 +19,11 @@ from constructs import Construct
 class BackendParams:
     cors_origins: str
     allowed_ips: List[str]
-    def __init__(self, cors_origins, allowed_ips):
+    environment: str
+    def __init__(self, cors_origins, allowed_ips, environment):
         self.cors_origins = cors_origins
         self.allowed_ips = allowed_ips
+        self.environment = environment
 class Backend(Construct):
     def __init__(self, scope: Construct, id: str, params: BackendParams):
         super().__init__(scope, id)
@@ -51,7 +53,8 @@ class Backend(Construct):
         container_environment_vars = {
             "BACKEND_CORS_ORIGINS": params.cors_origins,
             "PORT": "8000",
-            "PROJECT_NAME": "DriverAI API"
+            "PROJECT_NAME": "DriverAI API",
+            "ENVIRONMENT": params.environment
         }
         container_secrets = {
             "POSTGRES_SERVER": aws_ecs.Secret.from_secrets_manager(postgres_secret, "SERVER"), 

@@ -25,3 +25,19 @@ async def exchange_code_for_token(code: str) -> Any:
             raise Exception('GitHub access token not found.')
 
         return token_data
+
+
+# fetch user orgs
+
+
+async def fetch_repos(token: str) -> list[dict[str, Any]]:
+    url = 'https://api.github.com/user/repos'
+    headers = {
+        'Authorization': f'token {token}'
+    }
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url, headers=headers)
+        response.raise_for_status()  # Raises an exception for 4XX/5XX responses
+
+        return response.json()

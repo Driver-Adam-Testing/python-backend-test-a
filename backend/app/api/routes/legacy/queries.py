@@ -1,5 +1,12 @@
 # mypy: disable_error_code="call-arg"
+import json
+from datetime import datetime
+
 import strawberry
+
+from app.utils.aws_secrets_manager import format_secret_key, read_secret
+
+from app.utils.gh_ops import fetch_repos
 from database.models_v1 import Workspace
 from graphql import GraphQLError
 from sqlmodel import select
@@ -10,6 +17,7 @@ from app.api.routes.legacy.api_types import (
     OrganizationResult,  # type: ignore
     SupplementalContent,  # type: ignore
     GitProvider,
+    GitRepository
 )
 from app.api.routes.legacy.application_note import (
     ApplicationNoteEditResponse,
@@ -74,12 +82,12 @@ class Query:
 
     @strawberry.field
     async def documentSet(
-        self,
-        info: Info,
-        nodeKind: NodeType,
-        path: str | None = None,
-        workspaceId: ID | None = None,
-        codebaseId: ID | None = None,
+            self,
+            info: Info,
+            nodeKind: NodeType,
+            path: str | None = None,
+            workspaceId: ID | None = None,
+            codebaseId: ID | None = None,
     ) -> DocumentSet:
         if path is None or workspaceId is None or codebaseId is None:
             raise GraphQLError(
@@ -88,10 +96,10 @@ class Query:
             )
         session = info.context.session
         if not check_access(
-            session,
-            info.context.user.organization_id,
-            workspace_id=str(workspaceId),
-            codebase_id=str(codebaseId),
+                session,
+                info.context.user.organization_id,
+                workspace_id=str(workspaceId),
+                codebase_id=str(codebaseId),
         ):
             raise GraphQLError("Access denied", extensions={"code": "NOT_FOUND"})
         return get_document_set(
@@ -105,7 +113,7 @@ class Query:
 
     @strawberry.field
     async def applicationNote(
-        self, info: Info, id: ID | None = None
+            self, info: Info, id: ID | None = None
     ) -> ApplicationNoteResponse:
         session = info.context.session
         if id is not None:
@@ -115,14 +123,14 @@ class Query:
                 "id must not be None", extensions={"code": "BAD_REQUEST"}
             )
         if not check_access(
-            session, info.context.user.organization_id, derived_content_id=id_str
+                session, info.context.user.organization_id, derived_content_id=id_str
         ):
             raise GraphQLError("Access denied", extensions={"code": "NOT_FOUND"})
         return get_application_note(id_str, session, info.context.user.organization_id)
 
     @strawberry.field
     async def tree(
-        self, info: Info, codebaseId: ID, workspaceId: ID | None = None
+            self, info: Info, codebaseId: ID, workspaceId: ID | None = None
     ) -> list[FlatNode]:
         session = info.context.session
         user = info.context.user
@@ -132,12 +140,12 @@ class Query:
 
     @strawberry.field
     async def symbolSet(
-        self, info: Info, sourceContentId: ID, page: int = 1, pageSize: int = 10
+            self, info: Info, sourceContentId: ID, page: int = 1, pageSize: int = 10
     ) -> SymbolSetResponse:
         session = info.context.session
         organization_id = info.context.user.organization_id
         if not check_access(
-            session, organization_id, source_content_id=str(sourceContentId)
+                session, organization_id, source_content_id=str(sourceContentId)
         ):
             raise GraphQLError("Access denied", extensions={"code": "NOT_FOUND"})
         return symbol_set(
@@ -151,7 +159,7 @@ class Query:
 
     @strawberry.field
     async def supplementalContent(
-        self, info: Info, codebaseId: ID
+            self, info: Info, codebaseId: ID
     ) -> list[SupplementalContent]:
         session = info.context.session
         user = info.context.user
@@ -173,11 +181,48 @@ class Query:
         return MeResponse(id=user.subject)  # type: ignore
 
     @strawberry.field
-    async def connectedGitProviders(self) -> list[GitProvider]:
-        return [
-            GitProvider(
-                display_name="GitHub",
-                name="github",
-                logo_url="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
+    async def connectedGitProviders(self, info: Info) -> list[GitProvider]:
+        providers = []
+        user = info.context.user
+        for provider in ["github"]:
+            secret_key = format_secret_key(
+                user_id=user.user_id, org_id=user.organization_id, provider=provider
             )
-        ]
+            value = read_secret(secret_key)
+            if value is not None:
+                providers.append(
+                    GitProvider(
+                        display_name="GitHub",
+                        name="github",
+                        logo_url="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
+                    )
+                )
+        return providers
+
+    @strawberry.field
+    async def reposByGitProvider(self, info: Info, provider: str) -> list[GitRepository]:
+        repos = []
+        user = info.context.user
+
+        secret_key = format_secret_key(
+            user_id=user.user_id, org_id=user.organization_id, provider=provider
+        )
+        value = read_secret(secret_key)
+        if value is not None:
+            # Assuming the value is stored as a dictionary
+            s = value['SecretString']
+            secret_sauce = json.loads(s)
+            token = secret_sauce['access_token']
+            # Fetch repos using the token
+            git_repos = await fetch_repos(token)
+            print(git_repos)
+            repos = [GitRepository(
+                provider_name=provider,
+                repo_name=repo['full_name'],
+                org=repo['owner']['login'],
+                last_updated=datetime.fromisoformat(repo['updated_at']),
+                metadata=repo
+            ) for repo in git_repos]
+            # Assuming the response from fetch_repos is a list of dictionaries
+
+        return repos

@@ -50,15 +50,18 @@ async def git_provider_callback(provider: str, code: str, state: str, request: R
 
         org_id, user_id = state_dict["org_id"], state_dict["user_id"]
         secret_key = format_secret_key(org_id, user_id, provider)
-        print(secret_key)
         token_data = await exchange_code_for_token(code)
         # store access token in aws secret manager
-        print(token_data)
         secret_value = json.dumps(token_data)
         write_secret(secret_key, secret_value)
         value = read_secret(secret_key)
-        print(value)
-        return OkResponse(status="OK")
+        if value is not None:
+            print('Secret stored successfully')
+            return OkResponse(status="OK")
+        else:
+            print('Failed to store secret')
+            raise HTTPException(status_code=500, detail="Internal Server Error")
+
     except Exception as error:
         print(error)
         raise HTTPException(status_code=500, detail="Internal Server Error")

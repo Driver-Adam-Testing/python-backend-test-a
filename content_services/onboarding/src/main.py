@@ -175,7 +175,7 @@ def run_codebase_onboarding(
     region='us-east',
     concurrency_limit=5
 )
-def onboard_and_inspect(dropzone_bucket_name:str, archive_name: str, org_id: str, creator_id: str, workspace_id: UUID):
+def onboard_and_inspect(presigned_url:str, archive_name: str, org_id: str, creator_id: str, workspace_id: UUID):
     from database.db import engine
     from database.models_v1 import Codebase, Enum_Codebase_Status
     from sqlmodel import Session
@@ -184,7 +184,7 @@ def onboard_and_inspect(dropzone_bucket_name:str, archive_name: str, org_id: str
         inspect_db = modal.Function.lookup("inspector-v2", "inspect_db")
         create_embeddings = modal.Function.lookup("comprehender", "create_embeddings")
 
-        codebase_id = run_codebase_onboarding.remote(dropzone_bucket_name, archive_name, org_id, creator_id, workspace_id)
+        codebase_id = run_codebase_onboarding.remote(presigned_url, archive_name, org_id, creator_id, workspace_id)
         print("onboarding complete for codebase: ", codebase_id)
         print("Inspecting...")
 

@@ -17,7 +17,7 @@ import modal
 from database.models_v1 import Codebase, SourceContent, SourceContentType, Workspace, Enum_Codebase_Status
 from database.db import engine
 
-app = modal.App("codebase-analysis-onboarding")
+app = modal.App("codebase-onboarding")
 
 # TODO: configuration
 # TODO: parallelize
@@ -105,11 +105,11 @@ def create_source_content(sc_input: SourceContentInput) -> None:
 
 def download_file_from_s3(
     bucket_name: str, 
-    s3_file_prefix: str, 
     org_id: str,
     file_name: str, 
     download_destination: Path
 ) -> None:
+    s3_file_prefix = "codebases"
     s3_resource = resource("s3", endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL"))
     #TODO: if S3 is reorged, bucket is consistent?
     s3_bucket = s3_resource.Bucket(bucket_name)
@@ -138,7 +138,7 @@ def unpack_archive(archive_path: Path) -> Path:
     extracted_path = None
     if len(root_dirs) != 1:
         # Handles both multiple and no roots, extract to an appended root
-        extracted_path = Path(archive_path.stem)
+        extracted_path = Path(archive_path.stem) # TODO: this is sensitive if we modify archive name at all
         extracted_path.mkdir(exist_ok=False) # don't unpack into an existing dir
     local_archive.extractall(path=extracted_path)
 
@@ -275,7 +275,7 @@ def evaluate_file_hex(filepath: Path) -> bool:
                 is_hex = True
     return is_hex
 
-def evaluate_file_on_blacklist(filepath: Path) -> bool:
+def is_on_blacklist(filepath: Path) -> bool:
     blacklist_dirs = ['.git']
     blacklist_file_exts = []
     is_blacklisted = False
@@ -283,7 +283,7 @@ def evaluate_file_on_blacklist(filepath: Path) -> bool:
     if any(dir in filepath.parts for dir in blacklist_dirs):
         is_blacklisted = True
     
-    if filepath.suffix in blacklist_file_exts:
+    if filepath.is_file() and filepath.suffix in blacklist_file_exts:
         is_blacklisted = True
     
     return is_blacklisted
@@ -349,7 +349,7 @@ def run_file_onboarding(
     # due to file encoding nastiness w/ binary files
     file_size_processable = evaluate_file_size_processable(local_path)
     is_binary = evaluate_file_binary(local_path)
-    is_blacklisted = evaluate_file_on_blacklist(local_path)
+    is_blacklisted = is_on_blacklist(local_path)
 
     file_stats = {}
 
@@ -366,19 +366,20 @@ def run_file_onboarding(
         file_stats['is_analyzable'] = False
     file_stats['is_blacklisted'] = is_blacklisted
 
-    uploaded_dest_path = upload_file_to_s3(bucket_name, dest_root, local_path)
+    if not is_blacklisted:
+        uploaded_dest_path = upload_file_to_s3(bucket_name, dest_root, local_path)
 
-    file_sc_type = get_source_content_type_uuid("codebase-file")
-    file_sc_input = SourceContentInput(
-        codebase_id=codebase_id,
-        relative_path=str(local_path),
-        source_content_type_id=file_sc_type,
-        workspace_id=workspace_id,
-        analysis_metadata=file_stats
-    )
-    create_source_content(file_sc_input)
+        file_sc_type = get_source_content_type_uuid("codebase-file")
+        file_sc_input = SourceContentInput(
+            codebase_id=codebase_id,
+            relative_path=str(local_path),
+            source_content_type_id=file_sc_type,
+            workspace_id=workspace_id,
+            analysis_metadata=file_stats
+        )
+        create_source_content(file_sc_input)
 
-    print(f"Onboarded File: {local_path} to {uploaded_dest_path} on S3. Processable: {file_stats['is_analyzable']}. Stats: {file_stats}")
+        print(f"Onboarded File: {local_path} to {uploaded_dest_path} on S3. Processable: {file_stats['is_analyzable']}. Stats: {file_stats}")
     return file_stats
 
 @app.function(
@@ -399,7 +400,6 @@ def run_file_onboarding(
 )
 def run_codebase_onboarding(
     bucket_name: str, 
-    s3_prefix: str, 
     archive_name: str, 
     org_id: str, 
     creator_id: str,
@@ -409,7 +409,7 @@ def run_codebase_onboarding(
     # TODO: Validate org exists
 
     download_dest = Path(archive_name)
-    download_file_from_s3(bucket_name, s3_prefix, org_id, archive_name, download_dest)
+    download_file_from_s3(bucket_name, org_id, archive_name, download_dest)
     print(f'Downloaded {archive_name} from S3')
 
     extracted_path = unpack_archive(download_dest)
@@ -470,17 +470,33 @@ def run_codebase_onboarding(
         print("couldn't find source content type named codebase-directory")
 
     for directory in all_directories:
-        # TODO: analysis metadata for directories? 
-        dir_sc_input = SourceContentInput(
-            codebase_id=codebase_id,
-            relative_path=directory,
-            source_content_type_id=dir_sc_uuid,
-            workspace_id=workspace_id,
-            analysis_metadata=dict()
-        )
-        create_source_content(dir_sc_input)
+        if not is_on_blacklist(Path(directory)):
+            # TODO: analysis metadata for directories? 
+            # TODO: this is fragile - consider using DAG logic here 
+            dir_sc_input = SourceContentInput(
+                codebase_id=codebase_id,
+                relative_path=directory,
+                source_content_type_id=dir_sc_uuid,
+                workspace_id=workspace_id,
+                analysis_metadata=dict()
+            )
+            create_source_content(dir_sc_input)
 
     return codebase_id
+
+@app.function(
+    image=modal.Image.debian_slim(python_version="3.12"),
+    timeout=24*60*60
+)
+def onboard_and_inspect(dropzone_bucket_name:str, archive_name: str, org_id: str, creator_id: str, workspace_id: UUID):
+    inspect_db = modal.Function.lookup("inspector-v2", "inspect_db")
+
+    codebase_id = run_codebase_onboarding.remote(dropzone_bucket_name, archive_name, org_id, creator_id, workspace_id)
+    print("onboarding complete for codebase: ", codebase_id)
+
+    run_id = uuid4()
+    inspect_db.remote(codebase_id, run_id)
+
 
 @app.local_entrypoint()
 def main():
@@ -511,9 +527,4 @@ def main():
     #     load_dotenv()
     #     run_codebase_onboarding.local(s3_bucket_name, s3_prefix, archive_name, org_id, creator_id, workspace_id)
     # else:
-    codebase_id = run_codebase_onboarding.remote(s3_bucket_name, s3_prefix, archive_name, org_id, creator_id, workspace_id)
-
-    inspect_db = modal.Function.lookup("inspector-v2", "inspect_db")
-
-    run_id = uuid4()
-    inspect_db.remote(codebase_id, run_id)
+    onboard_and_inspect.remote(s3_bucket_name, archive_name, org_id, creator_id, workspace_id)

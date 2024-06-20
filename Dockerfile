@@ -30,10 +30,10 @@ COPY backend/scripts/gunicorn_conf.py /gunicorn_conf.py
 RUN chmod +x /start-reload.sh
 RUN chmod +x /start.sh
 
-
 # Copy the rest of the application
 COPY backend/scripts/ /app/scripts/
 COPY backend/prestart.sh /app/
 COPY backend/tests-start.sh /app/
+COPY backend/app /app/app
 
 CMD [ "/bin/sh", "-c", "if [ \"$INSTALL_DEV\" = 'true' ]; then exec /start-reload.sh \"$@\"; else exec /start.sh \"$@\"; fi" ]

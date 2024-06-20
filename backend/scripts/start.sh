@@ -17,6 +17,7 @@ elif [ -f /app/app/gunicorn_conf.py ]; then
 else
     DEFAULT_GUNICORN_CONF=/gunicorn_conf.py
 fi
+
 export GUNICORN_CONF=${GUNICORN_CONF:-$DEFAULT_GUNICORN_CONF}
 export WORKER_CLASS=${WORKER_CLASS:-"uvicorn.workers.UvicornWorker"}
 
@@ -31,4 +32,4 @@ else
 fi
 
 # Start Gunicorn
-exec gunicorn -b 0.0.0.0:$PORT -k "$WORKER_CLASS" -c "$GUNICORN_CONF" "$APP_MODULE"
+exec gunicorn -k "$WORKER_CLASS" -c "$GUNICORN_CONF" "$APP_MODULE"

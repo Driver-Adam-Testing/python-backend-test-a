@@ -5,7 +5,7 @@ WORKDIR /app/
 # Install start scripts
 COPY backend/scripts/start-reload.sh /start-reload.sh
 COPY backend/scripts/start.sh /start.sh
-COPY backend/scripts/gunicorn.conf /gunicorn.conf
+COPY backend/scripts/gunicorn_conf.py /gunicorn_conf.py
 RUN chmod +x /start-reload.sh
 RUN chmod +x /start.sh
 
@@ -37,5 +37,6 @@ COPY backend/tests-start.sh /app/
 
 COPY backend/app /app/app
 
-# CMD [ "/start-reload.sh" ]
-CMD [ "/bin/sh", "-c", "if [ \"$INSTALL_DEV\" = 'true' ]; then exec /start-reload.sh \"$@\"; else exec /start.sh \"$@\"; fi" ]
+# CMD [ "/start-reload.sh"]
+CMD [ "/start.sh" ]
+# CMD [ "/bin/sh", "-c", "if [ \"$INSTALL_DEV\" = 'true' ]; then exec /start-reload.sh \"$@\"; else exec /start.sh \"$@\"; fi" ]

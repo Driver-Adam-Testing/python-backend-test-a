@@ -19,9 +19,11 @@ from constructs import Construct
 class BackendParams:
     cors_origins: str
     allowed_ips: List[str]
-    def __init__(self, cors_origins, allowed_ips):
+    environment: str
+    def __init__(self, cors_origins, allowed_ips, environment):
         self.cors_origins = cors_origins
         self.allowed_ips = allowed_ips
+        self.environment = environment
 class Backend(Construct):
     def __init__(self, scope: Construct, id: str, params: BackendParams):
         super().__init__(scope, id)
@@ -51,7 +53,8 @@ class Backend(Construct):
         container_environment_vars = {
             "BACKEND_CORS_ORIGINS": params.cors_origins,
             "PORT": "8000",
-            "PROJECT_NAME": "DriverAI API"
+            "PROJECT_NAME": "DriverAI API",
+            "ENVIRONMENT": params.environment
         }
         container_secrets = {
             "POSTGRES_SERVER": aws_ecs.Secret.from_secrets_manager(postgres_secret, "SERVER"), 
@@ -106,7 +109,8 @@ class Backend(Construct):
         waf_visibility_config_ips = aws_wafv2.CfnWebACL.VisibilityConfigProperty(cloud_watch_metrics_enabled=True, metric_name="MetricForWebACLCDK-IPs", sampled_requests_enabled=True)
         whitelist_ip_set = aws_wafv2.CfnIPSet(self, "WhitelistIPs", ip_address_version="IPV4", scope="REGIONAL", addresses=params.allowed_ips)
         ipset_rule_statement = aws_wafv2.CfnWebACL.StatementProperty(ip_set_reference_statement=aws_wafv2.CfnWebACL.IPSetReferenceStatementProperty(arn=whitelist_ip_set.attr_arn))
-        ipset_rule = aws_wafv2.CfnWebACL.RuleProperty(name="AllowedIPs", priority=0, statement=ipset_rule_statement, visibility_config=waf_visibility_config_ips, action=aws_wafv2.CfnWebACL.RuleActionProperty(allow={}))
+        n = aws_wafv2.CfnWebACL.NotStatementProperty(statement=ipset_rule_statement)
+        ipset_rule = aws_wafv2.CfnWebACL.RuleProperty(name="AllowedIPs", priority=0, statement=aws_wafv2.CfnWebACL.StatementProperty(not_statement=n), visibility_config=waf_visibility_config_ips, action=aws_wafv2.CfnWebACL.RuleActionProperty(block={}))
 
         waf_visibility_config = aws_wafv2.CfnWebACL.VisibilityConfigProperty(cloud_watch_metrics_enabled=True, metric_name="MetricForWebACLCDK", sampled_requests_enabled=True)
         waf_visibility_config_crs = aws_wafv2.CfnWebACL.VisibilityConfigProperty(cloud_watch_metrics_enabled=True, metric_name="MetricForWebACLCDK-CRS", sampled_requests_enabled=True)

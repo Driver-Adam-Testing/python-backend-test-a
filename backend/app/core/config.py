@@ -41,6 +41,12 @@ class Settings(BaseSettings):
     AWS_SECRET_ACCESS_KEY: str | None = None
     AWS_REGION: str | None = None
     AWS_S3_ENDPOINT_URL: str | None = None
+    PORT: int | None = None
+    HOST: str | None = None
+
+    GH_CLIENT_ID: str | None = None
+    GH_CLIENT_SECRET: str | None = None
+    GH_REDIRECT_URI: str | None = None
 
     @computed_field  # type: ignore[misc]
     @property

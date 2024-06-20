@@ -1,5 +1,4 @@
 import json
-import boto3
 import httpx
 from config import settings
 
@@ -27,7 +26,6 @@ async def lambda_handler(event, context):
 
 async def exec_onboarding_service(event):
     # Placeholder for the API call logic
-    url = settings.API_URL
     payload = {**event}
     headers = {
         'Accept': 'application/json',

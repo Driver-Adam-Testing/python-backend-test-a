@@ -6,7 +6,6 @@ import httpx
 import unittest
 from httpx import Response
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
 from src.main import lambda_handler
 from src.config import settings
 

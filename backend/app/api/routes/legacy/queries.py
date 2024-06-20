@@ -9,6 +9,7 @@ from app.api.routes.legacy.api_types import (
     CodebaseResults,  # type: ignore
     OrganizationResult,  # type: ignore
     SupplementalContent,  # type: ignore
+    GitProvider,
 )
 from app.api.routes.legacy.application_note import (
     ApplicationNoteEditResponse,
@@ -170,3 +171,13 @@ class Query:
     async def me(self, info: Info) -> MeResponse:
         user = info.context.user
         return MeResponse(id=user.subject)  # type: ignore
+
+    @strawberry.field
+    async def connectedGitProviders(self) -> list[GitProvider]:
+        return [
+            GitProvider(
+                display_name="GitHub",
+                name="github",
+                logo_url="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
+            )
+        ]

@@ -243,3 +243,11 @@ class SupplementalContent:
     created_at: datetime | None = None
     file_size_bytes: int | None = None
     pages: int | None = None
+
+
+@strawberry.type
+class GitProvider:
+    display_name: str
+    name: str
+    logo_url: str
+

@@ -1,10 +1,7 @@
-import sys
-import os
 import json
 import pytest
 import httpx
 import unittest
-from httpx import Response
 
 from src.main import lambda_handler
 from src.config import settings

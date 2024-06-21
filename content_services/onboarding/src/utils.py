@@ -1,17 +1,17 @@
 import os
 import re
+import zipfile
+from functools import cache
 from pathlib import Path
+from uuid import UUID
+
+import chardet
+import requests
 from boto3 import resource
 from botocore.client import ClientError
 from database.db import engine
 from database.models_v1 import SourceContentType
 from sqlmodel import Session, select
-import zipfile
-import chardet
-import requests
-
-from functools import cache
-from uuid import UUID
 
 
 @cache
@@ -31,7 +31,7 @@ def create_base_storage_url(org_id: str):
 
 def create_bucket_if_dne(bucket_name: str) -> None:
     try:
-        # TODO: handle this cleanly? AWS_S3_ENDPOINT_URL returns None if DNE, which reverts to 
+        # TODO: handle this cleanly? AWS_S3_ENDPOINT_URL returns None if DNE, which reverts to
         # default boto3 behavior
         s3_resource = resource("s3", endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL"))
         s3_resource.meta.client.head_bucket(Bucket=bucket_name)
@@ -63,10 +63,11 @@ def download_file_from_presigned_url(
     presigned_url: str,
     download_destination: Path
 ):
-    with requests.get(presigned_url) as r:
+    with requests.get(presigned_url, stream=True) as r:
         r.raise_for_status()
         with open(download_destination, 'wb') as w_file:
-            w_file.write(r.content)
+            for chunk in r.iter_content(chunk_size=8192):
+                w_file.write(chunk)
 
 def get_root_directories_in_archive(zip_file: zipfile.ZipFile) -> list:
     root_dirs = []
@@ -202,7 +203,7 @@ def evaluate_file_hex(filepath: Path) -> bool:
     hex_perc_threshold = 0.99
     regex_test_str = r'[a-fA-F0-9\n ]'
     is_hex = False
-    with open(filepath, 'r') as r_file:
+    with open(filepath) as r_file:
         file_str = r_file.read()
 
         if len(file_str) > 0:
@@ -248,7 +249,7 @@ def reencode_file(filepath: Path) -> None:
                 except UnicodeDecodeError as e:
                     print(f"Error: {e} decoding {filepath} \
                           with predicted encoding: {pred_enc['encoding']}")
-                    # TODO: force UTF-8 encoding with ignored characters? 
+                    # TODO: force UTF-8 encoding with ignored characters?
             else:
                 print(f"Chardet returned None for {filepath}")
 
@@ -282,7 +283,7 @@ def analyze_binary_file(filepath: Path) -> dict:
 def run_file_stats_and_reencode(
     local_path: Path,
 ) -> dict:
-    # Evaluate file-processability before reencoding 
+    # Evaluate file-processability before reencoding
     # due to file encoding nastiness w/ binary files
     file_size_processable = evaluate_file_size_processable(local_path)
     is_binary = evaluate_file_binary(local_path)

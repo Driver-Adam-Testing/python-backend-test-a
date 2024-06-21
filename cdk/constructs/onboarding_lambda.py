@@ -37,8 +37,6 @@ class OnboardingLambda(Construct):
                 "CLIENT_SECRET_SECRET": client_secret_secret.secret_name,
                 "API_URL": params.api_url,
                 "AUTH0_URL": params.auth0_url,
-                "AWS_ACCESS_KEY_ID": "",
-                "AWS_SECRET_ACCESS_KEY": ""
             },
             bundling=aws_lambda_python_alpha.BundlingOptions(asset_excludes=['.venv', '.env', 'tests/', '.pytest*'])
         )

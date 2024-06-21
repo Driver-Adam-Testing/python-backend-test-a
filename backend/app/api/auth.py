@@ -58,6 +58,7 @@ UNPROTECTED_PATHS = [
     "/api/v1/sandbox/apollo-sandbox/",
     "/api/v1/git-provider/github/auth",
     "/api/v1/git-provider/github/install",
+    "/api/v1/git-provider/github/webhook",
     "/api/v1/git-provider/github/callback",
 ]
 
@@ -65,7 +66,7 @@ UNPROTECTED_PATHS = [
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         try:
-            if request.method == "GET" and request.url.path in UNPROTECTED_PATHS:
+            if request.method in ["GET", "POST"] and request.url.path in UNPROTECTED_PATHS:
                 pass
             elif request.method == "OPTIONS":
                 pass

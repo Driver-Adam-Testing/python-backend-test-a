@@ -1,12 +1,10 @@
 # mypy: disable_error_code="call-arg"
 import json
 from datetime import datetime
-
 import strawberry
+from app.utils.aws_secrets_manager import format_secret_key, read_secret, write_secret
 
-from app.utils.aws_secrets_manager import format_secret_key, read_secret
-
-from app.utils.gh_ops import fetch_repos
+from app.utils.gh_ops import fetch_repos, is_token_valid, refresh_access_token
 from database.models_v1 import Workspace
 from graphql import GraphQLError
 from sqlmodel import select
@@ -213,6 +211,19 @@ class Query:
             s = value['SecretString']
             secret_sauce = json.loads(s)
             token = secret_sauce['access_token']
+            refresh_token = secret_sauce['refresh_token']
+
+            # Check if the token is valid (pseudo-code, replace with actual validation)
+            if not await is_token_valid(token):
+                # Refresh the token using the refresh token
+                #TODO: Handle the case where the refresh token is expired
+                new_tokens = await refresh_access_token(refresh_token)
+                print(new_tokens)
+                token = new_tokens['access_token']
+                # Update the stored secret with new tokens
+                secret_value = json.dumps(new_tokens)
+                write_secret(secret_key, secret_value)
+
             # Fetch repos using the token
             git_repos = await fetch_repos(token)
             print(git_repos)

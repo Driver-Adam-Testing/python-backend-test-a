@@ -28,20 +28,43 @@ async def exchange_code_for_token(code: str) -> Any:
         return token_data
 
 
+async def is_token_valid(token):
+    url = "https://api.github.com/user"
+    headers = {"Authorization": f"Bearer {token}"}
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url, headers=headers)
+        return response.status_code == 200
+
+
+async def refresh_access_token(refresh_token):
+    url = "https://github.com/login/oauth/access_token"
+    data = {
+        "grant_type": "refresh_token",
+        "refresh_token": refresh_token,
+        'client_id': settings.GH_CLIENT_ID,
+        'client_secret': settings.GH_CLIENT_SECRET,
+    }
+    headers = {"Accept": "application/json"}
+    async with httpx.AsyncClient() as client:
+        response = await client.post(url, data=data, headers=headers)
+        return response.json()  # This should contain the new 'access_token' and optionally a new 'refresh_token'
+
+
 # fetch user orgs
-
-
 async def fetch_repos(token: str) -> list[dict[str, Any]]:
     url = 'https://api.github.com/user/repos'
     headers = {
         'Authorization': f'token {token}'
     }
 
-    async with httpx.AsyncClient() as client:
-        response = await client.get(url, headers=headers)
-        response.raise_for_status()  # Raises an exception for 4XX/5XX responses
-
-        return response.json()
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, headers=headers)
+            response.raise_for_status()  # Raises an exception for 4XX/5XX responses
+            return response.json()
+    except Exception as e:
+        print(f"Failed to fetch repositories: {e}")
+        raise e
 
 
 async def download_and_upload_repo(org_name: str, owner: str, org_id: str, workspace_id: str, repo: str, file_path: str,
@@ -80,4 +103,3 @@ async def download_and_upload_repo(org_name: str, owner: str, org_id: str, works
         print(f"Failed to download repository: {e}")
     except Exception as e:
         print(f"Failed to upload repository: {e}")
-

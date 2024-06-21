@@ -102,7 +102,7 @@ class Backend(Construct):
             aws_iam.PolicyStatement(
                 effect=aws_iam.Effect.ALLOW,
                 actions=["secretsmanager:CreateSecret", "secretsmanager:ListSecrets", "secretsmanager:DescribeSecret"],
-                resources=[f"arn:aws:secretsmanager:{Stack.of(self).region}:{Stack.of(self).account}:secret:CUSTOMER/*"]
+                resources=[f"arn:aws:secretsmanager:{Stack.of(self).region}:{Stack.of(self).account}:secret:DRIVER_AI_CUSTOMER/*"]
             )
         ])))
         waf_visibility_config_ips = aws_wafv2.CfnWebACL.VisibilityConfigProperty(cloud_watch_metrics_enabled=True, metric_name="MetricForWebACLCDK-IPs", sampled_requests_enabled=True)
@@ -122,6 +122,7 @@ class Backend(Construct):
         ]
         waf_rule_statement = aws_wafv2.CfnWebACL.StatementProperty(managed_rule_group_statement=aws_wafv2.CfnWebACL.ManagedRuleGroupStatementProperty(name="AWSManagedRulesCommonRuleSet", vendor_name="AWS", rule_action_overrides=waf_rule_overrides))
         crs_rule = aws_wafv2.CfnWebACL.RuleProperty(name="CRSRule", priority=1, statement=waf_rule_statement, visibility_config=waf_visibility_config_crs, override_action=aws_wafv2.CfnWebACL.OverrideActionProperty(none={}))
-        waf_rules = [ipset_rule, crs_rule]
+        # waf_rules = [ipset_rule, crs_rule]
+        waf_rules = [crs_rule]
         waf = aws_wafv2.CfnWebACL(self, "PythonBackendWAF", scope='REGIONAL', default_action=aws_wafv2.CfnWebACL.DefaultActionProperty(allow={}), visibility_config=waf_visibility_config, rules=waf_rules)
         waf_association = aws_wafv2.CfnWebACLAssociation(self, 'WebACLALBAssociation', resource_arn=service.load_balancer.load_balancer_arn, web_acl_arn=waf.attr_arn)

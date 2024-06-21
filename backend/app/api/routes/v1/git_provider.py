@@ -64,11 +64,6 @@ async def git_provider_callback(provider: str, code: str, state: str, request: R
     value = read_secret(secret_key)
     if value is not None:
         print('Secret stored successfully')
-    # redirect = 'http://localhost:3000/driver-ai/ws/7fe232eb-37ae-4820-8439-0a10dabde8b2/upload/cb'
-    # response.status_code = HTTP_302_FOUND
-    # response.headers["Location"] = redirect
-    # return response
-    # Return HTML with JavaScript to close the window
     content = "<html><body><script>window.close();</script></body></html>"
     return Response(content=content, media_type="text/html")
 

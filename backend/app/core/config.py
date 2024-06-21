@@ -41,6 +41,8 @@ class Settings(BaseSettings):
     AWS_SECRET_ACCESS_KEY: str | None = None
     AWS_REGION: str | None = None
     AWS_S3_ENDPOINT_URL: str | None = None
+    AWS_S3_CODE_BUCKET_SUFFIX: str | None = None
+
     PORT: int | None = None
     HOST: str | None = None
 

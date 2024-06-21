@@ -56,7 +56,8 @@ class Backend(Construct):
             "BACKEND_CORS_ORIGINS": params.cors_origins,
             "PORT": "8000",
             "PROJECT_NAME": "DriverAI API",
-            "ENVIRONMENT": params.environment
+            "ENVIRONMENT": params.environment,
+            "AWS_S3_CODE_BUCKET_SUFFIX": "codebase-dropzone"
         }
         container_secrets = {
             "POSTGRES_SERVER": aws_ecs.Secret.from_secrets_manager(postgres_secret, "SERVER"), 

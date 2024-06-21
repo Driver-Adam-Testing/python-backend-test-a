@@ -16,4 +16,4 @@ class DevelopmentStack(Stack):
             cors_origins="https://app.dev.driverai.com,https://labs.dev.driverai.com,https://app2.dev.driverai.com,http://localhost:3000",
             allowed_ips=["98.142.217.111/32"]
         ))
-        onboarding_lambda = OnboardingLambda(self, "OnboardingLambda", OnboardingLambdaParams(environment="development", api_url="https://api.ops.driverai.com/api/v1", auth0_url="https://driverai-dev.us.auth0.com"))
+        onboarding_lambda = OnboardingLambda(self, "OnboardingLambda", OnboardingLambdaParams(environment="development", api_url="https://api.ops.driverai.com/api/v1", auth0_url="https://auth.dev.driverai.com"))

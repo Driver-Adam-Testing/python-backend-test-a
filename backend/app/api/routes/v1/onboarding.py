@@ -34,5 +34,5 @@ def trigger_onboarding(session: CurrentSession, trigger_body: OnboardingRequestB
     # codebases/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/first_nes.zip
     archive_name = Path(trigger_body.object_key).name
     onboard_and_inspect = modal.Function.lookup("codebase-onboarding", "onboard_and_inspect")
-    onboard_and_inspect.remote(trigger_body.download_url, archive_name, trigger_body.org_id, trigger_body.creator_id, trigger_body.workspace_id)
+    call = onboard_and_inspect.spawn(trigger_body.download_url, archive_name, trigger_body.org_id, trigger_body.creator_id, trigger_body.workspace_id)
     return Onboarding(status="OK")

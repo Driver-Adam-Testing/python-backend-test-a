@@ -75,10 +75,10 @@ class Backend(Construct):
             "MODAL_ENVIRONMENT": aws_ecs.Secret.from_secrets_manager(modal_secret, "MODAL_ENVIRONMENT"),
             "AWS_ACCESS_KEY_ID": aws_ecs.Secret.from_secrets_manager(s3_secret, "AWS_ACCESS_KEY_ID"),
             "AWS_SECRET_ACCESS_KEY": aws_ecs.Secret.from_secrets_manager(s3_secret, "AWS_SECRET_ACCESS_KEY"),
-            "GH_CLIENT_ID": aws_ecs.Secret.from_secrets_manager(s3_secret, "GH_CLIENT_ID"),
-            "GH_CLIENT_SECRET": aws_ecs.Secret.from_secrets_manager(s3_secret, "GH_CLIENT_SECRET"),
-            "GH_REDIRECT_URI": aws_ecs.Secret.from_secrets_manager(s3_secret, "GH_REDIRECT_URI"),
-            "GH_WEBHOOK_SECRET": aws_ecs.Secret.from_secrets_manager(s3_secret, "GH_WEBHOOK_SECRET"),
+            "GH_CLIENT_ID": aws_ecs.Secret.from_secrets_manager(github_secret, "GH_CLIENT_ID"),
+            "GH_CLIENT_SECRET": aws_ecs.Secret.from_secrets_manager(github_secret, "GH_CLIENT_SECRET"),
+            "GH_REDIRECT_URI": aws_ecs.Secret.from_secrets_manager(github_secret, "GH_REDIRECT_URI"),
+            "GH_WEBHOOK_SECRET": aws_ecs.Secret.from_secrets_manager(github_secret, "GH_WEBHOOK_SECRET"),
         }
         
         task_image = aws_ecs.ContainerImage.from_asset(".", asset_name="python-backend")

@@ -47,7 +47,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: CloudFormation Template
-          path: template.yaml
+          path: dev-template.yaml
       - name: CDK Deploy
         env:
           DEPLOYMENT_ENVIRONMENT: development
@@ -84,7 +84,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: CloudFormation Template
-          path: template.yaml
+          path: ops-template.yaml
       - name: CDK Deploy
         env:
           DEPLOYMENT_ENVIRONMENT: ops

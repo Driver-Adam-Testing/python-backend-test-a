@@ -1,4 +1,3 @@
-import os
 from typing import List
 from aws_cdk import (
     Stack,

@@ -87,7 +87,7 @@ async def download_and_upload_repo(org_name: str, owner: str, org_id: str, works
     try:
         s3_url = generate_presigned_url(upload_key, codebase_metadata)
         print(s3_url)
-        async with httpx.AsyncClient(follow_redirects=False) as client:
+        async with httpx.AsyncClient(follow_redirects=True) as client:
             # Download repository ZIP from GitHub
             response = await client.get(github_url, headers={'Authorization': f'token {access_token}'}, timeout=None)
             response.raise_for_status()

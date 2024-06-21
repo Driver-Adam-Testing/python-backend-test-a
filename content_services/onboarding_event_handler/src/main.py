@@ -21,8 +21,8 @@ async def handler(event, context):
         cache_config = SecretCacheConfig()
         cache = SecretCache(config = cache_config, client = sm_client)
 
-        access_key_id = cache.get_secret_string(settings.AWS_ACCESS_KEY_ID) if settings.ENVIRONMENT != "local" else settings.AWS_ACCESS_KEY_ID
-        access_key_secret = cache.get_secret_string(settings.AWS_ACCESS_KEY_SECRET) if settings.ENVIRONMENT != "local" else settings.AWS_ACCESS_KEY_SECRET
+        access_key_id = cache.get_secret_string(settings.L_AWS_ACCESS_KEY_ID) if settings.ENVIRONMENT != "local" else settings.L_AWS_ACCESS_KEY_ID
+        access_key_secret = cache.get_secret_string(settings.L_AWS_ACCESS_KEY_SECRET) if settings.ENVIRONMENT != "local" else settings.L_AWS_ACCESS_KEY_ID
         s3_client = botocore.session.get_session().create_client(
             "s3",
             aws_access_key_id=access_key_id,

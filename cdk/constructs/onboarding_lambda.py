@@ -35,6 +35,8 @@ class OnboardingLambda(Construct):
                 "ENVIRONMENT": params.environment, 
                 "CLIENT_ID_SECRET": client_id_secret.secret_name, 
                 "CLIENT_SECRET_SECRET": client_secret_secret.secret_name,
+                "L_AWS_ACCESS_KEY_ID": s3_secret_name,
+                "L_AWS_SECRET_ACCESS_KEY": s3_secret_name,
                 "API_URL": params.api_url,
                 "AUTH0_URL": params.auth0_url,
             },

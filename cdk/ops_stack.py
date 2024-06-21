@@ -6,7 +6,7 @@ from cdk.constructs.backend import Backend, BackendParams
 from cdk.constructs.onboarding_lambda import OnboardingLambda, OnboardingLambdaParams
 from constructs import Construct
 
-class DevelopmentStack(Stack):
+class OpsStack(Stack):
 
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)

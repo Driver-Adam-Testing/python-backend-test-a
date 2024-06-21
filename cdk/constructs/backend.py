@@ -49,6 +49,9 @@ class Backend(Construct):
         s3_secret_name = aws_ssm.StringParameter.value_from_lookup(scope, parameter_name="/baseline/infra/v2/pythonBackend/s3CredentialsName")
         s3_secret = aws_secretsmanager.Secret.from_secret_name_v2(self, "S3Secret", secret_name=s3_secret_name)
 
+        github_secret_name = aws_ssm.StringParameter.value_from_lookup(scope, parameter_name="/baseline/infra/v2/pythonBackend/githubConfigurationsName")
+        github_secret = aws_secretsmanager.Secret.from_secret_name_v2(self, "GitHubCredentials", secret_name=github_secret_name)
+
         container_environment_vars = {
             "BACKEND_CORS_ORIGINS": params.cors_origins,
             "PORT": "8000",
@@ -72,6 +75,10 @@ class Backend(Construct):
             "MODAL_ENVIRONMENT": aws_ecs.Secret.from_secrets_manager(modal_secret, "MODAL_ENVIRONMENT"),
             "AWS_ACCESS_KEY_ID": aws_ecs.Secret.from_secrets_manager(s3_secret, "AWS_ACCESS_KEY_ID"),
             "AWS_SECRET_ACCESS_KEY": aws_ecs.Secret.from_secrets_manager(s3_secret, "AWS_SECRET_ACCESS_KEY"),
+            "GH_CLIENT_ID": aws_ecs.Secret.from_secrets_manager(s3_secret, "GH_CLIENT_ID"),
+            "GH_CLIENT_SECRET": aws_ecs.Secret.from_secrets_manager(s3_secret, "GH_CLIENT_SECRET"),
+            "GH_REDIRECT_URI": aws_ecs.Secret.from_secrets_manager(s3_secret, "GH_REDIRECT_URI"),
+            "GH_WEBHOOK_SECRET": aws_ecs.Secret.from_secrets_manager(s3_secret, "GH_WEBHOOK_SECRET"),
         }
         
         task_image = aws_ecs.ContainerImage.from_asset(".", asset_name="python-backend")

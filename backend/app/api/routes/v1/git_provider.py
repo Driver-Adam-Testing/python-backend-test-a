@@ -83,26 +83,29 @@ class GitRepository(BaseModel):
 
 
 # endpoint to clone repo and pipe to s3
-@router.post("/{provider}/clone-repo", response_model=OkResponse)
+@router.post("/{provider}/clone-repo")
 async def clone_repo(session: CurrentSession, current_user: CurrentUser, provider: str, repo: GitRepository):
     secret_key = format_secret_key(current_user.organization_id, current_user.user_id, provider)
     value = read_secret(secret_key)
     token = None
+    upload_complete = False
     if value is not None:
         s = value['SecretString']
         secret_sauce = json.loads(s)
         token = secret_sauce['access_token']
-    await download_and_upload_repo(
-        repo.org,
-        current_user.user_id,
-        current_user.organization_id,
-        repo.workspace_id,
-        repo.repo_name,
-        repo.metadata['clone_url'],
-        token
-    )
+        upload_complete = await download_and_upload_repo(
+            repo.org,
+            current_user.user_id,
+            current_user.organization_id,
+            repo.workspace_id,
+            repo.repo_name,
+            repo.metadata['clone_url'],
+            token)
 
-    return OkResponse(status="OK")
+    if upload_complete is True:
+        return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content={"message": "Upload complete"})
+    else:
+        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content={"message": "Upload failed"})
 
 
 def verify_signature(payload_body, secret_token, signature_header):
@@ -121,6 +124,8 @@ def verify_signature(payload_body, secret_token, signature_header):
     expected_signature = "sha256=" + hash_object.hexdigest()
     if not hmac.compare_digest(expected_signature, signature_header):
         raise HTTPException(status_code=403, detail="Request signatures didn't match!")
+
+
 @router.post("/{provider}/webhook")
 async def webhook(provider: str, request: Request):
     # Parse the JSON body and headers from the request
@@ -142,4 +147,3 @@ async def webhook(provider: str, request: Request):
         print(f"Unhandled event: {github_event}")
     # return OkResponse(status="OK")
     return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content={"message": "Accepted"})
-

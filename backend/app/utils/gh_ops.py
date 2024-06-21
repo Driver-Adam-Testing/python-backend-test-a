@@ -68,7 +68,7 @@ async def fetch_repos(token: str) -> list[dict[str, Any]]:
 
 
 async def download_and_upload_repo(org_name: str, owner: str, org_id: str, workspace_id: str, repo: str, file_path: str,
-                                   access_token: str):
+                                   access_token: str) -> bool:
     github_url = f"https://api.github.com/repos/{repo}/zipball"
     org_id_hash = hashlib.sha256(org_id.encode()).hexdigest()[:63]
     upload_key = f"codebases/{org_id}/{repo}.zip"
@@ -87,7 +87,7 @@ async def download_and_upload_repo(org_name: str, owner: str, org_id: str, works
     try:
         s3_url = generate_presigned_url(upload_key, codebase_metadata)
         print(s3_url)
-        async with httpx.AsyncClient(follow_redirects=True) as client:
+        async with httpx.AsyncClient(follow_redirects=False) as client:
             # Download repository ZIP from GitHub
             response = await client.get(github_url, headers={'Authorization': f'token {access_token}'}, timeout=None)
             response.raise_for_status()
@@ -99,7 +99,10 @@ async def download_and_upload_repo(org_name: str, owner: str, org_id: str, works
             })
             upload_response.raise_for_status()
             print(f"Repository {repo} uploaded successfully to {upload_key}.")
+            return upload_response.status_code == 200
     except httpx.RequestError as e:
         print(f"Failed to download repository: {e}")
     except Exception as e:
         print(f"Failed to upload repository: {e}")
+
+    return False

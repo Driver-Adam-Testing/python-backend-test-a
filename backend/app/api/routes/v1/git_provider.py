@@ -44,7 +44,8 @@ def install_url(org_id: str, user_id: str):
 
 
 @router.get("/{provider}/callback", response_model=OkResponse)
-async def git_provider_callback(provider: str, code: str, state: str, request: Request, response: Response):
+async def git_provider_callback(provider: str, code: str, state: str, installation_id: str, request: Request,
+                                response: Response):
     if provider != "github":
         raise HTTPException(status_code=400, detail="Bad request")
 
@@ -59,7 +60,9 @@ async def git_provider_callback(provider: str, code: str, state: str, request: R
     secret_key = format_secret_key(org_id, user_id, provider)
     token_data = await exchange_code_for_token(code)
     # store access token in aws secret manager
+    # token_data['installation_id'] = installation_id
     secret_value = json.dumps(token_data)
+    # secret_value = json.dumps({'token_data': token_data, 'installation_id': installation_id})
     write_secret(secret_key, secret_value)
     value = read_secret(secret_key)
     if value is not None:
@@ -123,9 +126,22 @@ def verify_signature(payload_body, secret_token, signature_header):
 
 @router.post("/{provider}/webhook")
 async def webhook(provider: str, request: Request):
-    # Parse the JSON body and headers from the request
-    body = await request.json()
+    # Ensure the request body is read as bytes for signature verification
+    body_bytes = await request.body()  # Get the raw request body as bytes
+    body = await request.json()  # Parse the JSON body for further processing
     github_event = request.headers.get('x-github-event', '')
+    signature_header = request.headers.get('x-hub-signature-256', '')
+
+    # Verify the GitHub signature
+    secret_token = settings.GH_WEBHOOK_SECRET  # Ensure you have this configured in your settings or environment
+    try:
+        verify_signature(body_bytes, secret_token, signature_header)
+    except HTTPException as e:
+        return JSONResponse(status_code=e.status_code, content={"detail": e.detail})
+
+    # TODO handle install event
+    # TODO handle uninstall event
+    # TODO handle revoke event
 
     # Respond to indicate that the delivery was successfully received
     if github_event == 'issues':
@@ -140,5 +156,4 @@ async def webhook(provider: str, request: Request):
         print('GitHub sent the ping event')
     else:
         print(f"Unhandled event: {github_event}")
-    # return OkResponse(status="OK")
     return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content={"message": "Accepted"})

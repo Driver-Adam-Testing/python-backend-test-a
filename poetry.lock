@@ -79,6 +79,24 @@ publication = ">=0.0.3"
 typeguard = ">=2.13.3,<2.14.0"
 
 [[package]]
+name = "aws-cdk-aws-lambda-python-alpha"
+version = "2.146.0a0"
+description = "The CDK Construct Library for AWS Lambda in Python"
+optional = false
+python-versions = "~=3.8"
+files = [
+    {file = "aws-cdk.aws-lambda-python-alpha-2.146.0a0.tar.gz", hash = "sha256:a96c6fe50e6f29083952b061baa8bc42b3e3eda0457bcbd83f4c30105fc14894"},
+    {file = "aws_cdk.aws_lambda_python_alpha-2.146.0a0-py3-none-any.whl", hash = "sha256:867318cbd698e3113a88420ceccae047249effac983ef2dfd249faba7d9a67af"},
+]
+
+[package.dependencies]
+aws-cdk-lib = ">=2.146.0,<3.0.0"
+constructs = ">=10.0.0,<11.0.0"
+jsii = ">=1.99.0,<2.0.0"
+publication = ">=0.0.3"
+typeguard = ">=2.13.3,<2.14.0"
+
+[[package]]
 name = "aws-cdk-aws-redshift-alpha"
 version = "2.146.0a0"
 description = "The CDK Construct Library for AWS::Redshift"
@@ -865,4 +883,4 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "c233f558c42d3e9b888c40362416fcc9203787dad11446eccfa4fbd4ab782f0e"
+content-hash = "bd71796c0729150d87d34c2e203b3dc8cb450f19ac00d6289628e05124a836c8"

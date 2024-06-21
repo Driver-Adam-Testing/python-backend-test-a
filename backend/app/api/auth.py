@@ -115,6 +115,14 @@ class User(BaseModel):
     organization_name: str = Field(..., alias="org_name")
     authorized_party: str = Field(..., alias="azp")
 
+class M2M(BaseModel):
+    issuer: str = Field(..., alias="iss")
+    subject: str = Field(..., alias="sub")
+    audience: list[str] = Field(..., alias="aud")
+    issued_at: int = Field(..., alias="iat")
+    expiration: int = Field(..., alias="exp")
+    authorized_party: str = Field(..., alias="azp")
+
 
 def get_token_payload(request: Request) -> dict:
     return request.state.token_payload

@@ -2,7 +2,7 @@ from fastapi import APIRouter
 
 from app.core.config import settings
 from app.api.routes.legacy.schema import graphql_router, sandbox_router
-from app.api.routes.v1 import workspace, healthcheck, git_provider
+from app.api.routes.v1 import workspace, healthcheck, git_provider, onboarding
 
 api_router = APIRouter()
 
@@ -10,5 +10,6 @@ api_router.include_router(graphql_router, prefix="/graphql", tags=["legacy-graph
 api_router.include_router(workspace.router, prefix="/workspace", tags=["workspace"])
 api_router.include_router(healthcheck.router, prefix="/healthcheck", tags=["healthcheck"])
 api_router.include_router(git_provider.router, prefix="/git-provider", tags=["git-provider"])
+api_router.include_router(onboarding.router, prefix="/onboarding", tags=["onboarding"])
 if(settings.ENVIRONMENT != "production"):
     api_router.include_router(sandbox_router, prefix="/sandbox", tags=["legacy-sandbox"])

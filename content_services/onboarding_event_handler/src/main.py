@@ -46,6 +46,8 @@ async def handler(event, context):
                 print(s3_record)
                 bucket_name = s3_record['s3']['bucket']['name']
                 object_key = s3_record['s3']['object']['key']
+                metadata = s3_client.head_object(Bucket=bucket_name, Key=object_key)
+                print(metadata)
                 
                 presigned_url = s3_client.generate_presigned_url(
                     "get_object",
@@ -53,23 +55,26 @@ async def handler(event, context):
                     ExpiresIn=3600,
                 )
 
-                # Execute API call to run the onboarding service
-                # PresignedURL to download archive
-                # Name of archive
-                # OrgId
-                # Creator ID
-                # Workspace
-                return await exec_onboarding_service({ "download_url": presigned_url, "object_key": object_key, "org_id": "TODO", "creator_id": "TODO", "workspace_id": "TODO", "s3_record": s3_record }, token_json['access_token'])
+                return await exec_onboarding_service({ 
+                    "download_url": presigned_url, 
+                    "object_key": object_key, 
+                    "org_id": metadata['Metadata']['x-amz-meta-organization_id'], 
+                    "creator_id": metadata['Metadata']['x-amz-meta-creator_id'], 
+                    "workspace_id": metadata['Metadata']['x-amz-meta-workspace_id'],
+                    "filepath": metadata['Metadata']['x-amz-meta-file_path'],
+                    "codebase_name": metadata['Metadata']['x-amz-meta-codebase_name']
+                }, token_json['access_token'])
 
 
 async def exec_onboarding_service(event, token):
-    async with httpx.AsyncClient(base_url=settings.API_URL) as driverClient:
+    async with httpx.AsyncClient(base_url=settings.API_URL, follow_redirects=True) as driverClient:
         payload = {**event}
         headers = {
             'Accept': 'application/json',
             'Authorization': f'Bearer {token}'
         }
-        response = await driverClient.post("/onboarding", headers=headers, data=json.dumps(payload))
+        print(json.dumps(payload))
+        response = await driverClient.post("/onboarding/", headers=headers, data=json.dumps(payload))
 
         response.raise_for_status()  # Raises an exception for 4XX/5XX responses
         event_response = response.json()

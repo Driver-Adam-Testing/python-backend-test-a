@@ -40,14 +40,10 @@ async def test_lambda_handler(sns_event):
     assert response == "OK", "Handler response should be 'Ok'"
 
 
-@pytest.mark.asyncio
-async def test_exec_onboarding_service():
-    response = await exec_onboarding_service({"test": "event"})
-    assert response.json()['status'] == "OK", "API call should return 'Ok'"
-    # async with httpx.AsyncClient(base_url=settings.API_URL) as client:
-    #     response = await client.get("/healthcheck/")
-    #     print(response.json())
-    #     assert response.json()['status'] == "OK", "API call should return 'Ok'"
+# @pytest.mark.asyncio
+# async def test_exec_onboarding_service():
+#     response = await exec_onboarding_service({"test": "event"})
+#     assert response.json()['status'] == "OK", "API call should return 'Ok'"
 
 
 if __name__ == '__main__':

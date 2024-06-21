@@ -59,7 +59,7 @@ async def handler(event, context):
                 # OrgId
                 # Creator ID
                 # Workspace
-                return await exec_onboarding_service({ "download_url": presigned_url, "object_key": object_key, "org_id": "TODO", "creator_id": "TODO", "workspace_id": "TODO", s3_record: s3_record }, token_json['access_token'])
+                return await exec_onboarding_service({ "download_url": presigned_url, "object_key": object_key, "org_id": "TODO", "creator_id": "TODO", "workspace_id": "TODO", "s3_record": s3_record }, token_json['access_token'])
 
 
 async def exec_onboarding_service(event, token):
@@ -71,9 +71,6 @@ async def exec_onboarding_service(event, token):
         }
         response = await driverClient.post("/onboarding", headers=headers, data=json.dumps(payload))
 
-        # For Endpoint
-        # onboard_and_inspect = modal.Function.lookup("codebase-onboarding", "onboard_and_inspect")
-        # onboard_and_inspect.remote(dropzone_bucket_name, archive_name, org_id, creator_id, workspace_id)
         response.raise_for_status()  # Raises an exception for 4XX/5XX responses
         event_response = response.json()
         print(event_response)

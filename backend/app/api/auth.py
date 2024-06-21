@@ -134,5 +134,12 @@ def get_current_user(
 ) -> User:
     return User(**token_payload)
 
+def get_current_m2m(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    token_payload: dict = Depends(get_token_payload),
+) -> M2M:
+    return M2M(**token_payload)
+
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
+CurrentToken = Annotated[M2M, Depends(get_current_m2m)]

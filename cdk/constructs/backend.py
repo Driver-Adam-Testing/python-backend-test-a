@@ -77,33 +77,33 @@ class Backend(Construct):
         
         task_image = aws_ecs.ContainerImage.from_asset(".", asset_name="python-backend")
         task_options = aws_ecs_patterns.ApplicationLoadBalancedTaskImageOptions(image=task_image, secrets=container_secrets, environment=container_environment_vars, container_port=8000)
-        service = aws_ecs_patterns.ApplicationLoadBalancedFargateService(self, "BackendApi",\
-            protocol=aws_elasticloadbalancingv2.ApplicationProtocol.HTTPS,\
-            platform_version=aws_ecs.FargatePlatformVersion.LATEST,\
+        service = aws_ecs_patterns.ApplicationLoadBalancedFargateService(self, "BackendApi",
+            protocol=aws_elasticloadbalancingv2.ApplicationProtocol.HTTPS,
+            platform_version=aws_ecs.FargatePlatformVersion.LATEST,
             # Github Actions runners only provide x86 - we'd have to go to self-hosted to deploy ARM currently
             # There is a limited beta, so support for ARM is coming
             # https://github.com/orgs/community/discussions/25319
-            runtime_platform=aws_ecs.RuntimePlatform(cpu_architecture=aws_ecs.CpuArchitecture.X86_64),\
-            redirect_http=True,\
-            assign_public_ip=False,\
-            desired_count=2,\
-            cluster=cluster,\
-            domain_zone=hosted_zone,\
-            domain_name="api." + hosted_zone.zone_name,\
-            task_image_options=task_options,\
-            task_subnets=aws_ec2.SubnetSelection(subnet_type=aws_ec2.SubnetType.PRIVATE_WITH_EGRESS),\
-            health_check_grace_period=Duration.minutes(5),\
-            circuit_breaker=aws_ecs.DeploymentCircuitBreaker(enable=True, rollback=True),\
-            min_healthy_percent=100,\
-            max_healthy_percent=250,\
-            cpu=512,\
+            runtime_platform=aws_ecs.RuntimePlatform(cpu_architecture=aws_ecs.CpuArchitecture.X86_64),
+            redirect_http=True,
+            assign_public_ip=False,
+            desired_count=2,
+            cluster=cluster,
+            domain_zone=hosted_zone,
+            domain_name="api." + hosted_zone.zone_name,
+            task_image_options=task_options,
+            task_subnets=aws_ec2.SubnetSelection(subnet_type=aws_ec2.SubnetType.PRIVATE_WITH_EGRESS),
+            health_check_grace_period=Duration.minutes(5),
+            circuit_breaker=aws_ecs.DeploymentCircuitBreaker(enable=True, rollback=True),
+            min_healthy_percent=100,
+            max_healthy_percent=250,
+            cpu=512,
             memory_limit_mib=1024)
         service.target_group.configure_health_check(path="/api/v1/healthcheck/", port="8000")
-        service.task_definition.task_role.attach_inline_policy(aws_iam.Policy(self, "CustomerSecretsRW", document=aws_iam.PolicyDocument(statements=[\
-            aws_iam.PolicyStatement(\
-                effect=aws_iam.Effect.ALLOW,\
-                actions=["secretsmanager:CreateSecret", "secretsmanager:ListSecrets", "secretsmanager:DescribeSecret"],\
-                resources=[f"arn:aws:secretsmanager:{Stack.of(self).region}:{Stack.of(self).account}:secret:CUSTOMER/*"]\
+        service.task_definition.task_role.attach_inline_policy(aws_iam.Policy(self, "CustomerSecretsRW", document=aws_iam.PolicyDocument(statements=[
+            aws_iam.PolicyStatement(
+                effect=aws_iam.Effect.ALLOW,
+                actions=["secretsmanager:CreateSecret", "secretsmanager:ListSecrets", "secretsmanager:DescribeSecret"],
+                resources=[f"arn:aws:secretsmanager:{Stack.of(self).region}:{Stack.of(self).account}:secret:CUSTOMER/*"]
             )
         ])))
         waf_visibility_config_ips = aws_wafv2.CfnWebACL.VisibilityConfigProperty(cloud_watch_metrics_enabled=True, metric_name="MetricForWebACLCDK-IPs", sampled_requests_enabled=True)
@@ -114,12 +114,12 @@ class Backend(Construct):
 
         waf_visibility_config = aws_wafv2.CfnWebACL.VisibilityConfigProperty(cloud_watch_metrics_enabled=True, metric_name="MetricForWebACLCDK", sampled_requests_enabled=True)
         waf_visibility_config_crs = aws_wafv2.CfnWebACL.VisibilityConfigProperty(cloud_watch_metrics_enabled=True, metric_name="MetricForWebACLCDK-CRS", sampled_requests_enabled=True)
-        waf_rule_overrides = [\
-            aws_wafv2.CfnWebACL.RuleActionOverrideProperty(name="SizeRestrictions_BODY", action_to_use=aws_wafv2.CfnWebACL.RuleActionProperty(allow={})),\
-            aws_wafv2.CfnWebACL.RuleActionOverrideProperty(name="SizeRestrictions_URIPATH", action_to_use=aws_wafv2.CfnWebACL.RuleActionProperty(allow={})),\
-            aws_wafv2.CfnWebACL.RuleActionOverrideProperty(name="SizeRestrictions_QUERYSTRING", action_to_use=aws_wafv2.CfnWebACL.RuleActionProperty(allow={})),\
-            aws_wafv2.CfnWebACL.RuleActionOverrideProperty(name="GenericLFI_BODY", action_to_use=aws_wafv2.CfnWebACL.RuleActionProperty(allow={})),\
-            aws_wafv2.CfnWebACL.RuleActionOverrideProperty(name="GenericRFI_BODY", action_to_use=aws_wafv2.CfnWebACL.RuleActionProperty(allow={})),\
+        waf_rule_overrides = [
+            aws_wafv2.CfnWebACL.RuleActionOverrideProperty(name="SizeRestrictions_BODY", action_to_use=aws_wafv2.CfnWebACL.RuleActionProperty(allow={})),
+            aws_wafv2.CfnWebACL.RuleActionOverrideProperty(name="SizeRestrictions_URIPATH", action_to_use=aws_wafv2.CfnWebACL.RuleActionProperty(allow={})),
+            aws_wafv2.CfnWebACL.RuleActionOverrideProperty(name="SizeRestrictions_QUERYSTRING", action_to_use=aws_wafv2.CfnWebACL.RuleActionProperty(allow={})),
+            aws_wafv2.CfnWebACL.RuleActionOverrideProperty(name="GenericLFI_BODY", action_to_use=aws_wafv2.CfnWebACL.RuleActionProperty(allow={})),
+            aws_wafv2.CfnWebACL.RuleActionOverrideProperty(name="GenericRFI_BODY", action_to_use=aws_wafv2.CfnWebACL.RuleActionProperty(allow={})),
         ]
         waf_rule_statement = aws_wafv2.CfnWebACL.StatementProperty(managed_rule_group_statement=aws_wafv2.CfnWebACL.ManagedRuleGroupStatementProperty(name="AWSManagedRulesCommonRuleSet", vendor_name="AWS", rule_action_overrides=waf_rule_overrides))
         crs_rule = aws_wafv2.CfnWebACL.RuleProperty(name="CRSRule", priority=1, statement=waf_rule_statement, visibility_config=waf_visibility_config_crs, override_action=aws_wafv2.CfnWebACL.OverrideActionProperty(none={}))

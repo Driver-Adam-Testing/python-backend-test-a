@@ -43,11 +43,6 @@ jobs:
         env:
           DEPLOYMENT_ENVIRONMENT: development
         run: npx cdk synth > dev-template.yaml
-      - name: Archive generated CloudFormation template
-        uses: actions/upload-artifact@v4
-        with:
-          name: CloudFormation Template
-          path: dev-template.yaml
       - name: CDK Deploy
         env:
           DEPLOYMENT_ENVIRONMENT: development
@@ -80,11 +75,6 @@ jobs:
         env:
           DEPLOYMENT_ENVIRONMENT: ops
         run: npx cdk synth > ops-template.yaml
-      - name: Archive generated CloudFormation template
-        uses: actions/upload-artifact@v4
-        with:
-          name: CloudFormation Template
-          path: ops-template.yaml
       - name: CDK Deploy
         env:
           DEPLOYMENT_ENVIRONMENT: ops

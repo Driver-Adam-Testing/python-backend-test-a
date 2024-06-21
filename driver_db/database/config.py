@@ -44,20 +44,3 @@ class Settings(BaseSettings):
             return url
 
 settings = Settings()  # type: ignore
-
-
-def init_engine():
-    SSL_MODE: str = settings.SSL_MODE
-    # Connect to the default database to check if the target database exists and create it if not
-    default_engine = create_engine(
-        f"postgresql://{settings.POSTGRES_USER}:{quote_plus(settings.POSTGRES_PASSWORD)}@{settings.POSTGRES_SERVER}:{settings.POSTGRES_PORT}/postgres?{SSL_MODE}"
-    )
-    with default_engine.connect() as connection:
-        connection.execute(text("COMMIT"))
-        result = connection.execute(
-            text("SELECT 1 FROM pg_database WHERE datname = :dbname"),
-            {"dbname": settings.POSTGRES_DB},
-        ).fetchone()
-        if not result:
-            connection.execute(text(f"CREATE DATABASE {settings.POSTGRES_DB}"))
-            print(f"Database {settings.POSTGRES_DB} created.")

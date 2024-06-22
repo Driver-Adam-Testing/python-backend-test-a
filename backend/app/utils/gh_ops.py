@@ -71,7 +71,7 @@ async def download_and_upload_repo(org_name: str, owner: str, org_id: str, works
                                    access_token: str) -> bool:
     github_url = f"https://api.github.com/repos/{repo}/zipball"
     org_id_hash = hashlib.sha256(org_id.encode()).hexdigest()[:63]
-    upload_key = f"codebases/{org_id}/{repo}.zip"
+    upload_key = f"codebases/{org_id_hash}/{repo}.zip"
 
     codebase_metadata = {
         'organization_id': org_id,
@@ -79,7 +79,8 @@ async def download_and_upload_repo(org_name: str, owner: str, org_id: str, works
         'org_name': org_name,
         'workspace_id': workspace_id,
         'creator_id': owner,
-        'file_path': file_path,
+        # 'file_path': file_path,
+        'file_path': upload_key,
         'codebase_name': repo,
         'content_type': 'codebase'
     }

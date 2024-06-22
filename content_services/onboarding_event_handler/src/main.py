@@ -23,9 +23,6 @@ def handler(event, context):
             aws_access_key_id=access_key_id,
             aws_secret_access_key=access_key_secret,
             region_name=settings.AWS_REGION,
-            endpoint_url=settings.AWS_S3_ENDPOINT_URL
-            if settings.AWS_S3_ENDPOINT_URL
-            else None,
         )
 
         client_id = cache.get_secret_string(settings.CLIENT_ID_SECRET) if settings.ENVIRONMENT != "local" else settings.CLIENT_ID_SECRET

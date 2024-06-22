@@ -75,7 +75,7 @@ def exec_onboarding_service(event, token):
             'Authorization': f'Bearer {token}'
         }
         print(json.dumps(payload))
-        response = driverClient.post("/onboarding/", headers=headers, data=json.dumps(payload))
+        response = driverClient.post("/onboarding/", headers=headers, json=payload)
 
         response.raise_for_status()  # Raises an exception for 4XX/5XX responses
         event_response = response.json()

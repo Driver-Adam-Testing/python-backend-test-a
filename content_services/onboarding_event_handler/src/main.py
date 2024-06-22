@@ -30,6 +30,7 @@ def handler(event, context):
         payload = json.dumps({"client_id":client_id,"client_secret":client_secret,"audience":settings.API_URL,"grant_type":"client_credentials"})
         
         with httpx.Client(base_url=settings.AUTH0_URL) as auth0Client:
+            logging.info(f"Fetching M2M token from Auth0...")
             # Fetch one M2M token per invocation of the lambda. This could be cached but would require additional impl similar to SecretCache above
             token_response = auth0Client.post("/oauth/token", headers={ 'content-type': "application/json" }, data=payload)
             token_response.raise_for_status() # Raises an exception for 4XX/5XX responses
@@ -39,17 +40,14 @@ def handler(event, context):
             for s3_record in sns_message['Records']:
                 bucket_name = s3_record['s3']['bucket']['name']
                 object_key = s3_record['s3']['object']['key']
-                print("Bucket = " + bucket_name)
-                print("Object Key = " + object_key)
                 metadata = s3_client.head_object(Bucket=bucket_name, Key=object_key)
-                print(metadata)
-                
                 presigned_url = s3_client.generate_presigned_url(
                     "get_object",
                     Params={"Bucket": bucket_name, "Key": object_key},
                     ExpiresIn=3600,
                 )
 
+                logging.info(f"Triggering codebase onboarding for bucket = {bucket_name}, key = {object_key}")
                 return exec_onboarding_service({ 
                     "download_url": presigned_url, 
                     "object_key": object_key, 
@@ -69,8 +67,6 @@ def exec_onboarding_service(event, token):
             'Content-Type': 'application/json',
             'Authorization': f'Bearer {token}'
         }
-        print("PAYLOAD")
-        print(json.dumps(payload))
         response = driverClient.post("/onboarding/", headers=headers, json=payload)
 
         response.raise_for_status()  # Raises an exception for 4XX/5XX responses

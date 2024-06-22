@@ -23,6 +23,9 @@ def handler(event, context):
             aws_access_key_id=access_key_id,
             aws_secret_access_key=access_key_secret,
             region_name=settings.AWS_REGION,
+            endpoint_url=settings.AWS_S3_ENDPOINT_URL
+            if settings.AWS_S3_ENDPOINT_URL
+            else None,
         )
 
         client_id = cache.get_secret_string(settings.CLIENT_ID_SECRET) if settings.ENVIRONMENT != "local" else settings.CLIENT_ID_SECRET
@@ -42,8 +45,8 @@ def handler(event, context):
                 object_key = s3_record['s3']['object']['key']
                 print("Bucket = " + bucket_name)
                 print("Object Key = " + object_key)
-                metadata = s3_client.head_object(Bucket=bucket_name, Key=object_key)
-                print(metadata)
+                # metadata = s3_client.head_object(Bucket=bucket_name, Key=object_key)
+                # print(metadata)
                 
                 presigned_url = s3_client.generate_presigned_url(
                     "get_object",
@@ -54,11 +57,11 @@ def handler(event, context):
                 return exec_onboarding_service({ 
                     "download_url": presigned_url, 
                     "object_key": object_key, 
-                    "org_id": metadata['Metadata']['x-amz-meta-organization_id'], 
-                    "creator_id": metadata['Metadata']['x-amz-meta-creator_id'], 
-                    "workspace_id": metadata['Metadata']['x-amz-meta-workspace_id'],
-                    "filepath": metadata['Metadata']['x-amz-meta-file_path'],
-                    "codebase_name": metadata['Metadata']['x-amz-meta-codebase_name']
+                    # "org_id": metadata['Metadata']['x-amz-meta-organization_id'], 
+                    # "creator_id": metadata['Metadata']['x-amz-meta-creator_id'], 
+                    # "workspace_id": metadata['Metadata']['x-amz-meta-workspace_id'],
+                    # "filepath": metadata['Metadata']['x-amz-meta-file_path'],
+                    # "codebase_name": metadata['Metadata']['x-amz-meta-codebase_name']
                 }, token_json['access_token'])
 
 

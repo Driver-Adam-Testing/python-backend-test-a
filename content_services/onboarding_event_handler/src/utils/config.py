@@ -13,9 +13,6 @@ class Settings(BaseSettings):
     CLIENT_ID_SECRET: str
     CLIENT_SECRET_SECRET: str
     ENVIRONMENT: Literal["local", "ops", "development", "production"]
-    L_AWS_ACCESS_KEY_ID: str
-    L_AWS_SECRET_ACCESS_KEY: str
-    AWS_REGION: str
     AWS_S3_ENDPOINT_URL: str | None = None
 
 settings = Settings()  # type: ignore

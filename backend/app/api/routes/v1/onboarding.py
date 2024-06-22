@@ -2,6 +2,7 @@ from typing import Any
 from fastapi import APIRouter
 from pydantic import BaseModel
 from pathlib import Path
+import logging
 import modal
 from app.api.session import CurrentSession
 
@@ -12,9 +13,9 @@ class Onboarding(BaseModel):
     status: str = "OK"
 
 class OnboardingRequestBody(BaseModel):
-    creator_id: str
-    org_id: str
-    workspace_id: str
+    creator_id: str | None = None
+    org_id: str | None = None
+    workspace_id: str | None = None
     download_url: str
     object_key: str
 
@@ -29,9 +30,8 @@ def trigger_onboarding(session: CurrentSession, trigger_body: OnboardingRequestB
     Returns:
         Onboarding: Returns a JSON response with the health status
     """
-
-    # For Endpoint
-    # codebases/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/first_nes.zip
+    
+    logging.info("Triggering codebase onboarding...")
     archive_name = Path(trigger_body.object_key).name
     onboard_and_inspect = modal.Function.lookup("codebase-onboarding", "onboard_and_inspect")
     call = onboard_and_inspect.spawn(trigger_body.download_url, archive_name, trigger_body.org_id, trigger_body.creator_id, trigger_body.workspace_id)

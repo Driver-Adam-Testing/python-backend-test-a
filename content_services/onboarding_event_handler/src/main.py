@@ -9,7 +9,7 @@ from src.utils.config import settings
 # Python lambdas have to be synchronous ¯\_(ツ)_/¯ 
 # https://stackoverflow.com/questions/60455830/can-you-have-an-async-handler-in-lambda-python-3-6
 def handler(event, context):
-    botocore.session.get_session().set_stream_logger('', logging.DEBUG)
+    # botocore.session.get_session().set_stream_logger('', logging.DEBUG)
     # Parse the SNS message
     for record in event['Records']:
         sns_message = json.loads(record['Sns']['Message'])
@@ -18,13 +18,8 @@ def handler(event, context):
         cache_config = SecretCacheConfig()
         cache = SecretCache(config = cache_config, client = sm_client)
 
-        access_key_id = cache.get_secret_string(settings.L_AWS_ACCESS_KEY_ID) if settings.ENVIRONMENT != "local" else settings.L_AWS_ACCESS_KEY_ID
-        access_key_secret = cache.get_secret_string(settings.L_AWS_SECRET_ACCESS_KEY) if settings.ENVIRONMENT != "local" else settings.L_AWS_SECRET_ACCESS_KEY
         s3_client = botocore.session.get_session().create_client(
             "s3",
-            # aws_access_key_id=access_key_id,
-            # aws_secret_access_key=access_key_secret,
-            # region_name=settings.AWS_REGION,
             endpoint_url=settings.AWS_S3_ENDPOINT_URL
             if settings.AWS_S3_ENDPOINT_URL
             else None,
@@ -74,6 +69,7 @@ def exec_onboarding_service(event, token):
             'Content-Type': 'application/json',
             'Authorization': f'Bearer {token}'
         }
+        print("PAYLOAD")
         print(json.dumps(payload))
         response = driverClient.post("/onboarding/", headers=headers, json=payload)
 

@@ -3,7 +3,7 @@ import httpx
 import botocore 
 import botocore.session 
 from aws_secretsmanager_caching import SecretCache, SecretCacheConfig 
-from utils.config import settings
+from src.utils.config import settings
 
 # Ensure you have the necessary permissions in your Lambda's execution role to read from S3 and SNS
 # TODO: this service receives events from s3 when objects are uploaded

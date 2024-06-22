@@ -39,10 +39,6 @@ jobs:
         with:
           aws-region: us-east-1
           role-to-assume: ${{ vars.AWS_CICD_ROLE }}
-      - name: CDK Synth
-        env:
-          DEPLOYMENT_ENVIRONMENT: development
-        run: npx cdk synth > dev-template.yaml
       - name: CDK Deploy
         env:
           DEPLOYMENT_ENVIRONMENT: development
@@ -71,10 +67,6 @@ jobs:
         with:
           aws-region: us-east-1
           role-to-assume: ${{ vars.AWS_CICD_ROLE }}
-      - name: CDK Synth
-        env:
-          DEPLOYMENT_ENVIRONMENT: ops
-        run: npx cdk synth > ops-template.yaml
       - name: CDK Deploy
         env:
           DEPLOYMENT_ENVIRONMENT: ops

@@ -71,6 +71,7 @@ def exec_onboarding_service(event, token):
         payload = {**event}
         headers = {
             'Accept': 'application/json',
+            'Content-Type': 'application/json',
             'Authorization': f'Bearer {token}'
         }
         print(json.dumps(payload))

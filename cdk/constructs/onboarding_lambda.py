@@ -6,7 +6,8 @@ from aws_cdk import (
     aws_lambda_python_alpha,
     aws_s3,
     aws_sns,
-    aws_ssm
+    aws_ssm,
+    Duration
 )
 from constructs import Construct
 
@@ -43,7 +44,8 @@ class OnboardingLambda(Construct):
                 "API_URL": params.api_url,
                 "AUTH0_URL": params.auth0_url,
             },
-            bundling=aws_lambda_python_alpha.BundlingOptions(asset_excludes=['.venv', '.env', 'tests/', '.pytest*'])
+            bundling=aws_lambda_python_alpha.BundlingOptions(asset_excludes=['.venv', '.env', 'tests/', '.pytest*']),
+            timeout=Duration.seconds(15)
         )
         client_id_secret.grant_read(lambda_function)
         client_secret_secret.grant_read(lambda_function)

@@ -12,7 +12,7 @@ from src.utils.config import settings
 # 3. It should be able to extract the object key
 # 4. It should be able to execute an api call to run the onboarding service
 
-async def handler(event, context):
+def handler(event, context):
     # Parse the SNS message
     for record in event['Records']:
         sns_message = json.loads(record['Sns']['Message'])
@@ -37,9 +37,9 @@ async def handler(event, context):
         client_secret = cache.get_secret_string(settings.CLIENT_SECRET_SECRET) if settings.ENVIRONMENT != "local" else settings.CLIENT_SECRET_SECRET
         payload = json.dumps({"client_id":client_id,"client_secret":client_secret,"audience":settings.API_URL,"grant_type":"client_credentials"})
         
-        async with httpx.AsyncClient(base_url=settings.AUTH0_URL) as auth0Client:
+        with httpx.Client(base_url=settings.AUTH0_URL) as auth0Client:
             # Fetch one M2M token per invocation of the lambda. This could be cached but would require additional impl similar to SecretCache above
-            token_response = await auth0Client.post("/oauth/token", headers={ 'content-type': "application/json" }, data=payload)
+            token_response = auth0Client.post("/oauth/token", headers={ 'content-type': "application/json" }, data=payload)
             token_response.raise_for_status() # Raises an exception for 4XX/5XX responses
             token_json = token_response.json()
 
@@ -57,7 +57,7 @@ async def handler(event, context):
                     ExpiresIn=3600,
                 )
 
-                return await exec_onboarding_service({ 
+                return exec_onboarding_service({ 
                     "download_url": presigned_url, 
                     "object_key": object_key, 
                     "org_id": metadata['Metadata']['x-amz-meta-organization_id'], 
@@ -68,15 +68,15 @@ async def handler(event, context):
                 }, token_json['access_token'])
 
 
-async def exec_onboarding_service(event, token):
-    async with httpx.AsyncClient(base_url=settings.API_URL, follow_redirects=True) as driverClient:
+def exec_onboarding_service(event, token):
+    with httpx.Client(base_url=settings.API_URL, follow_redirects=True) as driverClient:
         payload = {**event}
         headers = {
             'Accept': 'application/json',
             'Authorization': f'Bearer {token}'
         }
         print(json.dumps(payload))
-        response = await driverClient.post("/onboarding/", headers=headers, data=json.dumps(payload))
+        response = driverClient.post("/onboarding/", headers=headers, data=json.dumps(payload))
 
         response.raise_for_status()  # Raises an exception for 4XX/5XX responses
         event_response = response.json()

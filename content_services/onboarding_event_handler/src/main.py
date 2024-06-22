@@ -3,11 +3,13 @@ import httpx
 import botocore 
 import botocore.session 
 from aws_secretsmanager_caching import SecretCache, SecretCacheConfig 
+import logging
 from src.utils.config import settings
 
 # Python lambdas have to be synchronous ¯\_(ツ)_/¯ 
 # https://stackoverflow.com/questions/60455830/can-you-have-an-async-handler-in-lambda-python-3-6
 def handler(event, context):
+    botocore.session.get_session().set_stream_logger('', logging.DEBUG)
     # Parse the SNS message
     for record in event['Records']:
         sns_message = json.loads(record['Sns']['Message'])

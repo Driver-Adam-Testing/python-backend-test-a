@@ -5,13 +5,8 @@ import botocore.session
 from aws_secretsmanager_caching import SecretCache, SecretCacheConfig 
 from src.utils.config import settings
 
-# Ensure you have the necessary permissions in your Lambda's execution role to read from S3 and SNS
-# TODO: this service receives events from s3 when objects are uploaded
-# 1. It should be able to handle the event
-# 2. It should be able to parse the event
-# 3. It should be able to extract the object key
-# 4. It should be able to execute an api call to run the onboarding service
-
+# Python lambdas have to be synchronous ¯\_(ツ)_/¯ 
+# https://stackoverflow.com/questions/60455830/can-you-have-an-async-handler-in-lambda-python-3-6
 def handler(event, context):
     # Parse the SNS message
     for record in event['Records']:
@@ -22,7 +17,7 @@ def handler(event, context):
         cache = SecretCache(config = cache_config, client = sm_client)
 
         access_key_id = cache.get_secret_string(settings.L_AWS_ACCESS_KEY_ID) if settings.ENVIRONMENT != "local" else settings.L_AWS_ACCESS_KEY_ID
-        access_key_secret = cache.get_secret_string(settings.L_AWS_ACCESS_KEY_SECRET) if settings.ENVIRONMENT != "local" else settings.L_AWS_ACCESS_KEY_ID
+        access_key_secret = cache.get_secret_string(settings.L_AWS_SECRET_ACCESS_KEY) if settings.ENVIRONMENT != "local" else settings.L_AWS_SECRET_ACCESS_KEY
         s3_client = botocore.session.get_session().create_client(
             "s3",
             aws_access_key_id=access_key_id,

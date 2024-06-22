@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     AUTH0_URL: str
     CLIENT_ID_SECRET: str
     CLIENT_SECRET_SECRET: str
-    ENVIRONMENT: Literal["local"]
+    ENVIRONMENT: Literal["local", "ops", "development", "production"]
     L_AWS_ACCESS_KEY_ID: str
     L_AWS_SECRET_ACCESS_KEY: str
     AWS_REGION: str

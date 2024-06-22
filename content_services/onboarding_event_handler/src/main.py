@@ -43,6 +43,8 @@ def handler(event, context):
                 print(s3_record)
                 bucket_name = s3_record['s3']['bucket']['name']
                 object_key = s3_record['s3']['object']['key']
+                print("Bucket = " + bucket_name)
+                print("Object Key = " + object_key)
                 metadata = s3_client.head_object(Bucket=bucket_name, Key=object_key)
                 print(metadata)
                 

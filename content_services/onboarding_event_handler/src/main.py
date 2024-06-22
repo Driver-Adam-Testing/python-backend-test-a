@@ -29,6 +29,7 @@ def handler(event, context):
         )
 
         client_id = cache.get_secret_string(settings.CLIENT_ID_SECRET) if settings.ENVIRONMENT != "local" else settings.CLIENT_ID_SECRET
+        print(client_id)
         client_secret = cache.get_secret_string(settings.CLIENT_SECRET_SECRET) if settings.ENVIRONMENT != "local" else settings.CLIENT_SECRET_SECRET
         payload = json.dumps({"client_id":client_id,"client_secret":client_secret,"audience":settings.API_URL,"grant_type":"client_credentials"})
         

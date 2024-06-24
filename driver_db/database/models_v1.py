@@ -45,9 +45,9 @@ class ContentMetadata(SQLModel, table=True):  # type: ignore
     id: UUID | None = Field(default_factory=uuid.uuid4, primary_key=True)
     workspace_id: UUID = Field(index=True)
     codebase_id: UUID | None = Field(default=None, nullable=True, index=True)
-    content_type: ContentType = Enum(ContentType)  # type: ignore
+    content_type: ContentType = Enum(ContentType)
     relative_path: str | None = Field(default=None, nullable=True, index=True)
-    misc_metadata: dict = Field(default={}, sa_column=Column(JSON, nullable=False))
+    misc_metadata: dict = Field(default={}, sa_column=Column(JSON, nullable=False))  # type: ignore
     chunks: list["Chunk"] = Relationship(back_populates="content_metadata")
 
 
@@ -120,7 +120,7 @@ class RuntimeLogAgentMessage(SQLModel, table=True):  # type: ignore
         ),
     )
     id: UUID | None = Field(default_factory=uuid.uuid4, primary_key=True)
-    message: dict = Field(default={}, sa_column=Column(JSON, nullable=False))
+    message: dict = Field(default={}, sa_column=Column(JSON, nullable=False))  # type: ignore
     order: int = Field(default=None, sa_column=Column(Integer, autoincrement=True))
     agent_instance_id: UUID = Field(
         foreign_key="runtimelogagentinstance.id", nullable=False
@@ -249,7 +249,7 @@ class Codebase(SQLModel, table=True):  # type: ignore
         ),
         default=None,
     )
-    workspace_id: UUID = Field(foreign_key="workspaces.id")
+    workspace_id: UUID = Field(foreign_key="workspaces.id", index=True)
     codebase_name: str = Field(
         max_length=255,
         sa_column=sqlalchemy.Column(sqlalchemy.String(255), nullable=False),
@@ -316,9 +316,13 @@ class SourceContent(SQLModel, table=True):  # type: ignore
         ),
         default=None,
     )
-    source_content_type_id: UUID = Field(foreign_key="source_content_types.id")
-    workspace_id: UUID = Field(foreign_key="workspaces.id")
-    codebase_id: None | UUID = Field(default=None, foreign_key="codebases.id")
+    source_content_type_id: UUID = Field(
+        foreign_key="source_content_types.id", index=True
+    )
+    workspace_id: UUID = Field(foreign_key="workspaces.id", index=True)
+    codebase_id: None | UUID = Field(
+        default=None, foreign_key="codebases.id", index=True
+    )
     relative_path: str = Field(sa_column=Column(sqlalchemy.Text, nullable=False))
     created_at: None | datetime = Field(
         sa_column=Column(DateTime(timezone=False), server_default=func.now()),
@@ -328,9 +332,9 @@ class SourceContent(SQLModel, table=True):  # type: ignore
     updated_at: None | datetime = Field(
         sa_column=Column(DateTime(timezone=False), onupdate=func.now()), default=None
     )
-    analysis_metadata: dict | None = Field(
+    analysis_metadata: dict | None = Field(  # type: ignore
         sa_column=Column(JSONB, nullable=True), default=None
-    )  
+    )
 
     source_content_type: SourceContentType = Relationship(
         back_populates="source_contents"
@@ -418,9 +422,9 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
         default=None,
     )
     derived_content_type_id: UUID = Field(foreign_key="derived_content_types.id")
-    source_content_id: UUID = Field(foreign_key="source_contents.id")
+    source_content_id: UUID = Field(foreign_key="source_contents.id", index=True)
     content: None | str = Field(sa_column=Column(sqlalchemy.Text, nullable=True))
-    dc_metadata: dict | None = Field(
+    dc_metadata: dict | None = Field(  # type: ignore
         sa_column=Column("metadata", JSONB, nullable=True), default=None
     )  # Rename of attr required since metadata is a reserved keyword
     llm_id: None | UUID = Field(default=None, foreign_key="llms.id")

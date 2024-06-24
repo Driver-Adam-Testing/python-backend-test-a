@@ -105,6 +105,12 @@ class DocumentEditInput:
     options: JSON  # type: ignore
 
 
+@strawberry.input
+class UploadCodebaseInput:
+    workspace_id: str
+    file_path: str
+
+
 @strawberry.type
 class Mutation:
     @strawberry.mutation
@@ -482,15 +488,6 @@ class Mutation:
                 "Application note update failed", extensions={"code": "BAD_REQUEST"}
             )
 
-
-@strawberry.input
-class UploadCodebaseInput:
-    workspace_id: str
-    file_path: str
-
-
-@strawberry.type
-class Mutation:
     @strawberry.mutation
     async def uploadCodebase(self, info: Info, input: UploadCodebaseInput) -> str:
         user = info.context.user
@@ -506,7 +503,6 @@ class Mutation:
 
         if not codebase_name or not file_path or not org_id or not workspace_id or not creator_id:
             raise GraphQLError("Invalid Request", extensions={"code": "BAD_REQUEST"})
-
 
         # TODO: Complete validations
         # # Check if the workspace exists

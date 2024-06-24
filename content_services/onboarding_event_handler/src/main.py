@@ -68,6 +68,7 @@ def handler(event, context):
 def exec_onboarding_service(event, token):
     with httpx.Client(base_url=settings.API_URL, follow_redirects=True) as driverClient:
         payload = {**event}
+        print(payload)
         headers = {
             'Accept': 'application/json',
             'Content-Type': 'application/json',

@@ -57,11 +57,11 @@ def handler(event, context):
                 return exec_onboarding_service({
                     "download_url": presigned_url,
                     "object_key": object_key,
-                    "org_id": metadata['Metadata'].get('x-amz-meta-organization_id'),
-                    "creator_id": metadata['Metadata'].get('x-amz-meta-creator_id'),
-                    "workspace_id": metadata['Metadata'].get('x-amz-meta-workspace_id'),
-                    "filepath": metadata['Metadata'].get('x-amz-meta-file_path'),
-                    "codebase_name": metadata['Metadata'].get('x-amz-meta-codebase_name')
+                    "org_id": metadata['Metadata']['organization_id'],
+                    "creator_id": metadata['Metadata']['creator_id'],
+                    "workspace_id": metadata['Metadata']['workspace_id'],
+                    "filepath": metadata['Metadata']['file_path'],
+                    "codebase_name": metadata['Metadata']['codebase_name']
                 }, token_json['access_token'])
 
 

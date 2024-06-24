@@ -91,7 +91,7 @@ class DocumentSet:
     quickstart: Quickstart = strawberry.field(default_factory=Quickstart)
     chunk_descriptions: list[str] | None = strawberry.field(default=None)
     code: Code = strawberry.field(default_factory=Code)
-    application_notes: list[ApplicationNote] | None = strawberry.field(default=None)
+    application_notes: list[ApplicationNote] | None = strawberry.field(default_factory=lambda: [])
 
 
 # TODO: Get rid of this!

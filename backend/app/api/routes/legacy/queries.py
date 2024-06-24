@@ -229,7 +229,7 @@ class Query:
             print(git_repos)
             repos = [GitRepository(
                 provider_name=provider,
-                repo_name=repo['full_name'],
+                repo_name=repo['name'],
                 org=repo['owner']['login'],
                 last_updated=datetime.fromisoformat(repo['updated_at']),
                 metadata=repo

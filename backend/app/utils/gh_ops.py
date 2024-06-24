@@ -69,7 +69,8 @@ async def fetch_repos(token: str) -> list[dict[str, Any]]:
 
 async def download_and_upload_repo(org_name: str, owner: str, org_id: str, workspace_id: str, repo: str, file_path: str,
                                    access_token: str) -> bool:
-    github_url = f"https://api.github.com/repos/{repo}/zipball"
+    # TODO: fix this org_name
+    github_url = f"https://api.github.com/repos/{org_name}/{repo}/zipball"
     org_id_hash = hashlib.sha256(org_id.encode()).hexdigest()[:63]
     upload_key = f"codebases/{org_id_hash}/{repo}.zip"
 

@@ -180,6 +180,7 @@ def onboard_and_inspect(presigned_url:str, archive_name: str, org_id: str, creat
     from database.models_v1 import Codebase, Enum_Codebase_Status
     from sqlmodel import Session
     #TODO: send email on failure at any step in this process
+    print(f"Onboarding for: {archive_name} with org_id: {org_id}, creator_id: {creator_id}, workspace_id: {workspace_id} with presigned_url: {presigned_url}")
     try:
         inspect_db = modal.Function.lookup("inspector-v2", "inspect_db")
         create_embeddings = modal.Function.lookup("comprehender", "create_embeddings")
@@ -194,6 +195,7 @@ def onboard_and_inspect(presigned_url:str, archive_name: str, org_id: str, creat
         print("Creating embeddings...")
 
         create_embeddings.remote(str(workspace_id), str(codebase_id))
+        print("Embeddings created")
 
         #Update codebase status to processing-complete
         with Session(engine) as session:

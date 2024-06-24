@@ -5,12 +5,15 @@ from pathlib import Path
 import logging
 import modal
 from app.api.session import CurrentSession
+from uuid import UUID
 
 router = APIRouter()
+
 
 class Onboarding(BaseModel):
     """Response model to validate and return when performing a health check."""
     status: str = "OK"
+
 
 class OnboardingRequestBody(BaseModel):
     creator_id: str | None = None
@@ -18,6 +21,7 @@ class OnboardingRequestBody(BaseModel):
     workspace_id: str | None = None
     download_url: str
     object_key: str
+
 
 @router.post(
     "/",
@@ -30,9 +34,14 @@ def trigger_onboarding(session: CurrentSession, trigger_body: OnboardingRequestB
     Returns:
         Onboarding: Returns a JSON response with the health status
     """
-    
+
     logging.info("Triggering codebase onboarding...")
     archive_name = Path(trigger_body.object_key).name
     onboard_and_inspect = modal.Function.lookup("codebase-onboarding", "onboard_and_inspect")
-    call = onboard_and_inspect.spawn(trigger_body.download_url, archive_name, trigger_body.org_id, trigger_body.creator_id, trigger_body.workspace_id)
+    call = onboard_and_inspect.spawn(
+        trigger_body.download_url,
+        archive_name,
+        trigger_body.org_id,
+        trigger_body.creator_id,
+        UUID(trigger_body.workspace_id))
     return Onboarding(status="OK")

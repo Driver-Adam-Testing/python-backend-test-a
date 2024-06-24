@@ -34,7 +34,7 @@ def handler(event, context):
                               "grant_type": "client_credentials"})
 
         with httpx.Client(base_url=settings.AUTH0_URL) as auth0Client:
-            logging.info(f"Fetching M2M token from Auth0...")
+            print(f"Fetching M2M token from Auth0...")
             # Fetch one M2M token per invocation of the lambda. This could be cached but would require additional impl similar to SecretCache above
             token_response = auth0Client.post("/oauth/token", headers={'content-type': "application/json"},
                                               data=payload)
@@ -52,8 +52,8 @@ def handler(event, context):
                     ExpiresIn=3600,
                 )
 
-                logging.info(f"Triggering codebase onboarding for bucket = {bucket_name}, key = {object_key}")
-                logging.info(f"{metadata}")
+                print(f"Triggering codebase onboarding for bucket = {bucket_name}, key = {object_key}")
+                print(f"{metadata}")
                 return exec_onboarding_service({
                     "download_url": presigned_url,
                     "object_key": object_key,
@@ -68,6 +68,7 @@ def handler(event, context):
 def exec_onboarding_service(event, token):
     with httpx.Client(base_url=settings.API_URL, follow_redirects=True) as driverClient:
         payload = {**event}
+        print(payload)
         headers = {
             'Accept': 'application/json',
             'Content-Type': 'application/json',

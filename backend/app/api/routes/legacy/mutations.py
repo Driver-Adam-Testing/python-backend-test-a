@@ -1,8 +1,11 @@
+import hashlib
 import json
 import os
 from datetime import datetime
 
 import strawberry
+
+from app.utils.aws_s3 import generate_presigned_url
 from database.models_v1 import (
     Codebase,
     DerivedContent,
@@ -109,7 +112,7 @@ class Mutation:
         user = info.context.user
         session = info.context.session
         if not check_access(
-            session, user.organization_id, codebase_id=input.codebase_id
+                session, user.organization_id, codebase_id=input.codebase_id
         ):
             raise GraphQLError(
                 "Access denied to the codebase", extensions={"code": "FORBIDDEN"}
@@ -144,12 +147,12 @@ class Mutation:
 
     @strawberry.mutation
     async def generateApplicationNote(
-        self, info: Info, input: GenerateApplicationNoteInput
+            self, info: Info, input: GenerateApplicationNoteInput
     ) -> GenerateApplicationNoteOutput:
         user = info.context.user
         session: Session = info.context.session
         if not check_access(
-            session, user.organization_id, codebase_id=input.codebase_id
+                session, user.organization_id, codebase_id=input.codebase_id
         ):
             raise GraphQLError(
                 "Access denied to the codebase", extensions={"code": "FORBIDDEN"}
@@ -243,7 +246,7 @@ class Mutation:
 
     @strawberry.mutation
     async def generateApplicationNoteEdit(
-        self, info: Info, input: ApplicationNoteEditInput
+            self, info: Info, input: ApplicationNoteEditInput
     ) -> GenerateApplicationNoteEditOutput:
         # NOTE: This is being called regardless of appnote or techdoc situations.
         user = info.context.user
@@ -274,7 +277,7 @@ class Mutation:
 
     @strawberry.mutation
     def updateApplicationNote(
-        self, info: Info, input: UpdateApplicationNoteInput
+            self, info: Info, input: UpdateApplicationNoteInput
     ) -> None:
         session = info.context.session
         user = info.context.user
@@ -365,7 +368,7 @@ class Mutation:
         if not codebase_id or not file_path or not workspace_id or not creator_id:
             raise GraphQLError("Invalid Request", extensions={"code": "BAD_REQUEST"})
         if not check_access(
-            session, org_id, codebase_id=codebase_id, workspace_id=workspace_id
+                session, org_id, codebase_id=codebase_id, workspace_id=workspace_id
         ):
             raise GraphQLError(
                 "Access denied to the codebase", extensions={"code": "FORBIDDEN"}
@@ -387,15 +390,15 @@ class Mutation:
 
     @strawberry.mutation
     async def generateDocumentEdit(
-        self, info: Info, input: DocumentEditInput
+            self, info: Info, input: DocumentEditInput
     ) -> GenerateApplicationNoteEditOutput:
         user = info.context.user
         session = info.context.session
         if not check_access(
-            session,
-            user.organization_id,
-            codebase_id=input.codebase_id,
-            workspace_id=input.workspace_id,
+                session,
+                user.organization_id,
+                codebase_id=input.codebase_id,
+                workspace_id=input.workspace_id,
         ):
             raise GraphQLError(
                 "Access denied to the codebase", extensions={"code": "FORBIDDEN"}
@@ -478,6 +481,73 @@ class Mutation:
             raise GraphQLError(
                 "Application note update failed", extensions={"code": "BAD_REQUEST"}
             )
+
+
+@strawberry.input
+class UploadCodebaseInput:
+    workspace_id: str
+    file_path: str
+
+
+@strawberry.type
+class Mutation:
+    @strawberry.mutation
+    async def uploadCodebase(self, info: Info, input: UploadCodebaseInput) -> str:
+        user = info.context.user
+        workspace_id = input.workspace_id
+        file_path = input.file_path
+        creator_id = user.user_id
+        org_id = user.organization_id
+        codebase_name = os.path.splitext(os.path.basename(file_path))[0]
+
+        logger.info(
+            f"Uploading codebase for orgId: {org_id}, workspaceId: {workspace_id}, ownerId: {creator_id}"
+        )
+
+        if not codebase_name or not file_path or not org_id or not workspace_id or not creator_id:
+            raise GraphQLError("Invalid Request", extensions={"code": "BAD_REQUEST"})
+
+
+        # TODO: Complete validations
+        # # Check if the workspace exists
+        # workspace_exists = db_session.query(Workspace).filter(and_(
+        #     Workspace.id == workspace_id,
+        #     Workspace.organization_id == org_id
+        # )).count() > 0
+
+        # if not workspace_exists:
+        #     raise GraphQLError("Workspace not found", extensions={"code": "BAD_REQUEST"})
+
+        # # Validate that the name is unique within the org
+        # is_name_unique = db_session.query(Codebase).filter(and_(
+        #     Codebase.workspace_id == workspace_id,
+        #     Codebase.codebase_name == codebase_name
+        # )).count() == 0
+
+        # if not is_name_unique:
+        #     raise GraphQLError("Resource name already exists.", extensions={"code": "BAD_REQUEST"})
+
+        try:
+
+            org_id_hash = hashlib.sha256(org_id.encode()).hexdigest()[:63]
+            upload_key = f"codebases/{org_id_hash}/{os.path.basename(file_path)}"
+            logger.info(f"Upload URL generated for {upload_key}")
+            codebase_metadata = {
+                'organization_id': org_id_hash,
+                'org_bucket': org_id_hash,
+                'org_name': user.organization_name,
+                'workspace_id': workspace_id,
+                'creator_id': creator_id,
+                'file_path': file_path,
+                'codebase_name': codebase_name,
+                'content_type': 'codebase'
+            }
+
+            upload_url = generate_presigned_url(upload_key, codebase_metadata)
+            return upload_url
+        except Exception as e:
+            logger.error(f"Error generating upload URL for {upload_key}: {e}")
+            raise GraphQLError("Upload URL not created.", extensions={"code": "BAD_REQUEST"})
 
     # TODO: add create embeddings and create_source content
     # TODO: Change readme to reflect current alembic flow

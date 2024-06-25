@@ -97,7 +97,6 @@ async def clone_repo(session: CurrentSession, current_user: CurrentUser, provide
             current_user.organization_id,
             repo.workspace_id,
             repo.repo_name,
-            repo.metadata['clone_url'],
             token)
 
     if upload_complete is True:

@@ -67,20 +67,18 @@ async def fetch_repos(token: str) -> list[dict[str, Any]]:
         raise e
 
 
-async def download_and_upload_repo(org_name: str, owner: str, org_id: str, workspace_id: str, repo: str, file_path: str,
+async def download_and_upload_repo(org_name: str, owner: str, org_id: str, workspace_id: str, repo: str,
                                    access_token: str) -> bool:
-    # TODO: fix this org_name
     github_url = f"https://api.github.com/repos/{org_name}/{repo}/zipball"
     org_id_hash = hashlib.sha256(org_id.encode()).hexdigest()[:63]
     upload_key = f"codebases/{org_id_hash}/{repo}.zip"
 
     codebase_metadata = {
-        'organization_id': org_id,
+        'organization_id': org_id_hash,
         'org_bucket': org_id_hash,
         'org_name': org_name,
         'workspace_id': workspace_id,
         'creator_id': owner,
-        # 'file_path': file_path,
         'file_path': upload_key,
         'codebase_name': repo,
         'content_type': 'codebase'
@@ -89,11 +87,11 @@ async def download_and_upload_repo(org_name: str, owner: str, org_id: str, works
     try:
         s3_url = generate_put_presigned_url(upload_key, codebase_metadata)
         print(s3_url)
-        async with httpx.AsyncClient(follow_redirects=True) as client:
+        async with httpx.AsyncClient(follow_redirects=True, timeout=None) as client:
             # Download repository ZIP from GitHub
             response = await client.get(github_url, headers={'Authorization': f'token {access_token}'}, timeout=None)
             response.raise_for_status()
-
+            # print(str(len(response.content)))
             # Upload the ZIP to S3 using the pre-signed URL
             upload_response = await client.put(s3_url, content=response.content, headers={
                 'Content-Type': 'application/zip',
@@ -103,8 +101,10 @@ async def download_and_upload_repo(org_name: str, owner: str, org_id: str, works
             print(f"Repository {repo} uploaded successfully to {upload_key}.")
             return upload_response.status_code == 200
     except httpx.RequestError as e:
+        print(e)
         print(f"Failed to download repository: {e}")
     except Exception as e:
+        print(e)
         print(f"Failed to upload repository: {e}")
 
     return False

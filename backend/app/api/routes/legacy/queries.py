@@ -218,7 +218,6 @@ class Query:
                 # Refresh the token using the refresh token
                 #TODO: Handle the case where the refresh token is expired
                 new_tokens = await refresh_access_token(refresh_token)
-                print(new_tokens)
                 token = new_tokens['access_token']
                 # Update the stored secret with new tokens
                 secret_value = json.dumps(new_tokens)
@@ -226,7 +225,6 @@ class Query:
 
             # Fetch repos using the token
             git_repos = await fetch_repos(token)
-            print(git_repos)
             repos = [GitRepository(
                 provider_name=provider,
                 repo_name=repo['name'],

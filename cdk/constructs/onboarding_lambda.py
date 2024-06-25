@@ -38,6 +38,7 @@ class OnboardingLambda(Construct):
                 "CLIENT_SECRET_SECRET": client_secret_secret.secret_name,
                 "API_URL": params.api_url,
                 "AUTH0_URL": params.auth0_url,
+                "AWS_S3_CODE_BUCKET_SUFFIX": "codebase-onboarding"
             },
             bundling=aws_lambda_python_alpha.BundlingOptions(asset_excludes=['.venv', '.env', 'tests/', '.pytest*']),
             timeout=Duration.seconds(15)

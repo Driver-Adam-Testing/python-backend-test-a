@@ -2,6 +2,7 @@ import logging
 from pathlib import Path
 from typing import Any
 
+import openai
 from utils.dag import LiteNode
 from utils.io import (
     get_prompt_template,
@@ -9,7 +10,6 @@ from utils.io import (
 from utils.llm import (
     chunk_str,
 )
-
 from utils.models import ChatOpenAI
 
 PARENT_PATH = Path(__file__).parent
@@ -261,21 +261,30 @@ def comprehend_file_top_down(
         chunk_detailed_descriptions = []
         num_chunks = len(chunks)
         for idx, c in enumerate(chunks):
-            chunk_detailed_descriptions.append(
-                file_chunk_description(
-                    llm=llm,
-                    file_name=node.root_rel_path.name,
-                    codebase_name=codebase_name,
-                    path=node.root_rel_path,
-                    code_chunk=c,
+            try:
+                chunk_detailed_descriptions.append(
+                    file_chunk_description(
+                        llm=llm,
+                        file_name=node.root_rel_path.name,
+                        codebase_name=codebase_name,
+                        path=node.root_rel_path,
+                        code_chunk=c,
+                    )
                 )
-            )
-            logging.info(
-                f"Source code chunk {idx + 1}/{num_chunks} processed for file `{node.root_rel_path}`"
-            )
-            print(
-                f"Source code chunk {idx + 1}/{num_chunks} processed for file `{node.root_rel_path}`"
-            )
+                logging.info(
+                    f"Source code chunk {idx + 1}/{num_chunks} processed for file `{node.root_rel_path}`"
+                )
+                print(
+                    f"Source code chunk {idx + 1}/{num_chunks} processed for file `{node.root_rel_path}`"
+                )
+            except openai.BadRequestError:
+                description = "Could not process file"
+                success = False
+                results = _return_with_simple_message(
+                    message=description,
+                )
+                return success, results
+
         # Compression steps, if needed.
         aggregated_descriptions = ""
         for idx, c in enumerate(chunk_detailed_descriptions, start=1):
@@ -353,28 +362,38 @@ def comprehend_file_top_down(
         )
     # TODO: Vulnerable to edge case with code map + source code is over the context window length.
     else:
-        file_description_long = file_long_from_code(
-            llm=llm,
-            file_name=node.root_rel_path.name,
-            codebase_name=codebase_name,
-            path=node.root_rel_path,
-            code=source_code,
-        )
-        chunk_detailed_descriptions = [file_description_long]
-        file_description_single_sentence = file_single_sentence_from_code(
-            llm=llm,
-            file_name=node.root_rel_path.name,
-            codebase_name=codebase_name,
-            path=node.root_rel_path,
-            code=source_code,
-        )
-        file_description_single_paragraph = file_single_paragraph_from_code(
-            llm=llm,
-            file_name=node.root_rel_path.name,
-            codebase_name=codebase_name,
-            path=node.root_rel_path,
-            code=source_code,
-        )
+        try:
+            file_description_long = file_long_from_code(
+                llm=llm,
+                file_name=node.root_rel_path.name,
+                codebase_name=codebase_name,
+                path=node.root_rel_path,
+                code=source_code,
+            )
+            chunk_detailed_descriptions = [file_description_long]
+            file_description_single_sentence = file_single_sentence_from_code(
+                llm=llm,
+                file_name=node.root_rel_path.name,
+                codebase_name=codebase_name,
+                path=node.root_rel_path,
+                code=source_code,
+            )
+            file_description_single_paragraph = file_single_paragraph_from_code(
+                llm=llm,
+                file_name=node.root_rel_path.name,
+                codebase_name=codebase_name,
+                path=node.root_rel_path,
+                code=source_code,
+            )
+        except openai.BadRequestError:
+            # TODO: this is a hack. Should rethink the tokenizing
+            description = "Could not process file"
+            success = False
+            results = _return_with_simple_message(
+                message=description,
+            )
+            return success, results
+
     short_descriptions = {
         "single_sentence": file_description_single_sentence,
         "single_paragraph": file_description_single_paragraph,

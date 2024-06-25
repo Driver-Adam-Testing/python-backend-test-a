@@ -18,6 +18,7 @@ function_cfg = dict(secrets=[modal.Secret.from_name("open-ai")], image=image)
 
 @app.function(
     concurrency_limit=8,
+    timeout=15*60,
     **function_cfg,
 )
 def make_tech_doc(
@@ -45,7 +46,7 @@ def make_tech_doc(
     return file_docs_successful, file_doc, node
 
 
-@app.function(concurrency_limit=3, **function_cfg)
+@app.function(concurrency_limit=3,timeout=60*60, **function_cfg)
 def make_symbol_docs(
     node: LiteNode,
     source_code: str,
@@ -65,7 +66,7 @@ def make_symbol_docs(
     return symbols
 
 
-@app.function(concurrency_limit=3, **function_cfg)
+@app.function(concurrency_limit=3, timeout=15*60, **function_cfg)
 def make_folder_tech_doc(
     codebase_name: str, node: LiteNode, child_nodes_to_docs: dict[LiteNode, dict]
 ) -> dict[str, any]:
@@ -89,7 +90,7 @@ def make_folder_tech_doc(
     return folder_docs
 
 
-@app.function(concurrency_limit=3, **function_cfg)
+@app.function(concurrency_limit=3, timeout=60*60, **function_cfg)
 def make_toplevel_tech_docs(
     codebase_name: str, nodes_to_docs: dict[LiteNode, dict]
 ) -> dict[str, any]:

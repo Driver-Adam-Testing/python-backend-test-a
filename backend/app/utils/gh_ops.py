@@ -2,7 +2,7 @@ import hashlib
 from typing import Any
 import httpx
 from app.core.config import settings
-from app.utils.aws_s3 import generate_presigned_url
+from app.utils.aws_s3 import generate_put_presigned_url
 
 
 async def exchange_code_for_token(code: str) -> Any:
@@ -87,7 +87,7 @@ async def download_and_upload_repo(org_name: str, owner: str, org_id: str, works
     }
     print(codebase_metadata)
     try:
-        s3_url = generate_presigned_url(upload_key, codebase_metadata)
+        s3_url = generate_put_presigned_url(upload_key, codebase_metadata)
         print(s3_url)
         async with httpx.AsyncClient(follow_redirects=True) as client:
             # Download repository ZIP from GitHub

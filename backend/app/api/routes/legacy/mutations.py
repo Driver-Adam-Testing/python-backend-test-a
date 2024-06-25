@@ -5,7 +5,7 @@ from datetime import datetime
 
 import strawberry
 
-from app.utils.aws_s3 import generate_presigned_url
+from app.utils.aws_s3 import generate_put_presigned_url
 from database.models_v1 import (
     Codebase,
     DerivedContent,
@@ -381,9 +381,10 @@ class Mutation:
             )
 
         try:
-            s3_access = S3BucketAccess(organization_id=org_id, codebase_id=codebase_id)
             relative_path = os.path.basename(file_path)
-            upload_url = s3_access.get_signed_upload_url(relative_path=relative_path)
+            org_id_hash = hashlib.sha256(org_id.encode()).hexdigest()[:63]
+            upload_key = f"documents/{org_id_hash}/{os.path.basename(file_path)}"
+            upload_url = generate_put_presigned_url(key=upload_key, content_type="application/pdf")
             logger.info(f"Upload URL generated for {relative_path}")
             return upload_url
         except Exception as e:
@@ -539,7 +540,7 @@ class Mutation:
                 'content_type': 'codebase'
             }
 
-            upload_url = generate_presigned_url(upload_key, codebase_metadata)
+            upload_url = generate_put_presigned_url(key=upload_key, content_type="application/zip", metadata=codebase_metadata)
             return upload_url
         except Exception as e:
             logger.error(f"Error generating upload URL for {upload_key}: {e}")

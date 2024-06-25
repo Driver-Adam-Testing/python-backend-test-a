@@ -79,6 +79,7 @@ services:
       /bin/sh -c '
       /usr/bin/mc alias set s3 http://s3:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}";
       /usr/bin/mc mb s3/"$${AWS_BUCKET_NAME}";
+      /usr/bin/mc mb s3/local-codebase-dropzone;
       /usr/bin/mc admin user add s3 "$${AWS_ACCESS_KEY_ID}" "$${AWS_SECRET_ACCESS_KEY}";
       /usr/bin/mc admin policy attach s3 readwrite --user "$${AWS_ACCESS_KEY_ID}";
       exit 0;

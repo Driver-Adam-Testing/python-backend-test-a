@@ -45,7 +45,7 @@ def make_tech_doc(
     return file_docs_successful, file_doc, node
 
 
-@app.function(concurrency_limit=3, **function_cfg)
+@app.function(concurrency_limit=3,timeout=60*60, **function_cfg)
 def make_symbol_docs(
     node: LiteNode,
     source_code: str,

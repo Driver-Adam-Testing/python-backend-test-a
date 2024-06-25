@@ -89,7 +89,7 @@ def make_folder_tech_doc(
     return folder_docs
 
 
-@app.function(concurrency_limit=3, **function_cfg)
+@app.function(concurrency_limit=3, timeout=60*60, **function_cfg)
 def make_toplevel_tech_docs(
     codebase_name: str, nodes_to_docs: dict[LiteNode, dict]
 ) -> dict[str, any]:

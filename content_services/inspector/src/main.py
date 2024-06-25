@@ -22,12 +22,6 @@ from common import app
 # TODO add tasks for embedding, db persistence, etc. We want to be optionally coupled to a db
 # so we can run without the full application context, potentially
 
-
-# TODO don't hard code like this!
-LOCAL_CODEBASE_ROOT = Path("/Users/andrewmark/projects/content-database")
-REMOTE_CODEBASE_ROOT = Path("/data/content-database")
-
-
 # Unified structure for file paths and source content IDs
 @dataclass
 class FileInfo:
@@ -69,6 +63,8 @@ class FileInfo:
     proxy=modal.Proxy.from_name("pg-proxy"),
     memory="2048",
     timeout=3600 * 5,
+    region="us-east",
+    concurrency_limit=5
 )
 async def inspect_db(codebase_id: uuid.UUID, run_id: str, resume: bool = False):
     from utils.db import (

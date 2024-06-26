@@ -85,7 +85,7 @@ async def download_and_upload_repo(org_name: str, owner: str, org_id: str, works
     }
     print(codebase_metadata)
     try:
-        s3_url = generate_put_presigned_url(upload_key, codebase_metadata)
+        s3_url = generate_put_presigned_url(key=upload_key, content_type="application/zip", metadata=codebase_metadata)
         print(s3_url)
         async with httpx.AsyncClient(follow_redirects=True, timeout=None) as client:
             # Download repository ZIP from GitHub

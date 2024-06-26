@@ -7,7 +7,7 @@ from uuid import UUID
 import strawberry
 from database.models_v1 import (
     SourceContent,
-    SourceContentType,
+    SourceContentType, DerivedContentType, DerivedContent,
 )
 from fastapi import HTTPException
 from sqlmodel import Session, select
@@ -118,12 +118,12 @@ def source_type_id_map(kind: str, db: Session) -> dict[str, Any]:
 
 
 def get_document_set(
-    node_kind: str,
-    path: str,
-    workspace_id: str,
-    codebase_id: str,
-    organization_id: str,
-    session: Session,
+        node_kind: str,
+        path: str,
+        workspace_id: str,
+        codebase_id: str,
+        organization_id: str,
+        session: Session,
 ) -> DocumentSet:
     relative_path = path
     source_content_type = source_type_id_map(node_kind, session)
@@ -131,18 +131,40 @@ def get_document_set(
     if source_content_type["typeName"] == "codebase":
         relative_path = path.replace("/", "")
 
+    query = (
+        select(SourceContent)
+        .join(SourceContent.derived_contents)
+        .join(DerivedContentType, DerivedContent.derived_content_type_id == DerivedContentType.id)
+        .where(
+            SourceContent.relative_path == relative_path,
+            SourceContent.source_content_type_id == source_content_type["id"],
+            DerivedContentType.type_name != DerivedContentTypes.SYMBOL.value,
+        )
+    )
     query = select(SourceContent).where(
         SourceContent.relative_path == relative_path,
         SourceContent.source_content_type_id == source_content_type["id"],
     )
+
     if workspace_id:
         query = query.where(SourceContent.workspace_id == workspace_id)
     if codebase_id:
         query = query.where(SourceContent.codebase_id == codebase_id)
     content = session.exec(query).first()
+
     if content is None:
         raise HTTPException(status_code=400, detail="No content found")
-    docs = content.derived_contents
+
+    dc_query = (
+        select(DerivedContent)
+        .join(DerivedContentType, DerivedContent.derived_content_type_id == DerivedContentType.id)
+        .where(
+            DerivedContent.source_content_id == content.id,
+            DerivedContentType.type_name != DerivedContentTypes.SYMBOL.value,  # Updated line
+        ))
+    docs = session.exec(dc_query).all()
+    # docs = content.derived_contents
+    print(len(docs))
     document_set = DocumentSet(source_content_id=str(content.id))  # type: ignore
     for doc in docs:
         derived_content_type = doc.derived_content_type.type_name
@@ -156,8 +178,8 @@ def get_document_set(
             document_set.long = doc.content
             document_set.long_document = Document(id=doc.id, content=doc.content)  # type: ignore
         elif (
-            derived_content_type
-            == DerivedContentTypes.SHORT_PARAGRAPH_DESCRIPTION.value
+                derived_content_type
+                == DerivedContentTypes.SHORT_PARAGRAPH_DESCRIPTION.value
         ):
             document_set.short.single_paragraph = doc.content
             document_set.short.single_paragraph_document = Document(
@@ -165,7 +187,7 @@ def get_document_set(
                 content=doc.content,  # type: ignore
             )
         elif (
-            derived_content_type == DerivedContentTypes.SHORT_SENTENCE_DESCRIPTION.value
+                derived_content_type == DerivedContentTypes.SHORT_SENTENCE_DESCRIPTION.value
         ):
             document_set.short.single_sentence = doc.content
             document_set.short.single_sentence_document = Document(
@@ -173,7 +195,7 @@ def get_document_set(
                 content=doc.content,  # type: ignore
             )
         elif (
-            derived_content_type == DerivedContentTypes.TERSE_SENTENCE_DESCRIPTION.value
+                derived_content_type == DerivedContentTypes.TERSE_SENTENCE_DESCRIPTION.value
         ):
             document_set.short.terse_sentence = doc.content
             document_set.short.terse_sentence_document = Document(
@@ -191,8 +213,8 @@ def get_document_set(
                 document_set.chunk_descriptions = []
             document_set.chunk_descriptions.extend(doc.content.split("\n\n\n"))
         elif (
-            derived_content_type
-            == DerivedContentTypes.QUICK_START_GETTING_STARTED.value
+                derived_content_type
+                == DerivedContentTypes.QUICK_START_GETTING_STARTED.value
         ):
             document_set.quickstart.getting_started = doc.content
             document_set.quickstart.getting_started_document = Document(

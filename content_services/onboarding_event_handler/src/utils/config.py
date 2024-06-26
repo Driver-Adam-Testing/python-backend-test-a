@@ -14,6 +14,6 @@ class Settings(BaseSettings):
     CLIENT_SECRET_SECRET: str
     ENVIRONMENT: Literal["local", "ops", "development", "production"]
     AWS_S3_ENDPOINT_URL: str | None = None
-    AWS_S3_CODE_BUCKET_SUFFIX: str = "codebase-onboarding"
+    AWS_S3_CODE_BUCKET_SUFFIX: str = "codebase-dropzone"
 
 settings = Settings()  # type: ignore

@@ -4,8 +4,6 @@ import os
 from datetime import datetime
 
 import strawberry
-
-from app.utils.aws_s3 import generate_put_presigned_url
 from database.models_v1 import (
     Codebase,
     DerivedContent,
@@ -31,9 +29,9 @@ from app.api.routes.legacy.orm_ops import (
     get_codebase_by_id,
     get_derived_content_by_id,
 )
-from app.api.routes.legacy.s3 import S3BucketAccess
 from app.api.routes.legacy.scalars import ID, JSON
 from app.core.logger import logger
+from app.utils.aws_s3 import generate_put_presigned_url
 
 
 @strawberry.type
@@ -111,6 +109,16 @@ class UploadCodebaseInput:
     file_path: str
 
 
+@strawberry.input
+class WebhookInput:
+    content: str | None = None
+    document_id: ID
+    errors: list[str | None] | None = None
+    extra_context: JSON | None = None  # type: ignore
+    name: str | None = None
+    prompt: str
+
+
 @strawberry.type
 class Mutation:
     @strawberry.mutation
@@ -118,7 +126,7 @@ class Mutation:
         user = info.context.user
         session = info.context.session
         if not check_access(
-                session, user.organization_id, codebase_id=input.codebase_id
+            session, user.organization_id, codebase_id=input.codebase_id
         ):
             raise GraphQLError(
                 "Access denied to the codebase", extensions={"code": "FORBIDDEN"}
@@ -153,12 +161,12 @@ class Mutation:
 
     @strawberry.mutation
     async def generateApplicationNote(
-            self, info: Info, input: GenerateApplicationNoteInput
+        self, info: Info, input: GenerateApplicationNoteInput
     ) -> GenerateApplicationNoteOutput:
         user = info.context.user
         session: Session = info.context.session
         if not check_access(
-                session, user.organization_id, codebase_id=input.codebase_id
+            session, user.organization_id, codebase_id=input.codebase_id
         ):
             raise GraphQLError(
                 "Access denied to the codebase", extensions={"code": "FORBIDDEN"}
@@ -238,9 +246,9 @@ class Mutation:
         app_note_func = Function.lookup("comprehender", "create_app_note")
         call = app_note_func.spawn(
             str(input.workspace_id),
-            str(source_content.id),
+            str(input.codebase_id),
             str(input.prompt) if input.prompt else "",
-            "",
+            {"document_id": str(app_note.id)},
             {},
         )
         if call is None:
@@ -252,7 +260,7 @@ class Mutation:
 
     @strawberry.mutation
     async def generateApplicationNoteEdit(
-            self, info: Info, input: ApplicationNoteEditInput
+        self, info: Info, input: ApplicationNoteEditInput
     ) -> GenerateApplicationNoteEditOutput:
         # NOTE: This is being called regardless of appnote or techdoc situations.
         user = info.context.user
@@ -283,7 +291,7 @@ class Mutation:
 
     @strawberry.mutation
     def updateApplicationNote(
-            self, info: Info, input: UpdateApplicationNoteInput
+        self, info: Info, input: UpdateApplicationNoteInput
     ) -> None:
         session = info.context.session
         user = info.context.user
@@ -374,7 +382,7 @@ class Mutation:
         if not codebase_id or not file_path or not workspace_id or not creator_id:
             raise GraphQLError("Invalid Request", extensions={"code": "BAD_REQUEST"})
         if not check_access(
-                session, org_id, codebase_id=codebase_id, workspace_id=workspace_id
+            session, org_id, codebase_id=codebase_id, workspace_id=workspace_id
         ):
             raise GraphQLError(
                 "Access denied to the codebase", extensions={"code": "FORBIDDEN"}
@@ -385,15 +393,19 @@ class Mutation:
             org_id_hash = hashlib.sha256(org_id.encode()).hexdigest()[:63]
             upload_key = f"documents/{org_id_hash}/{os.path.basename(file_path)}"
             codebase_metadata = {
-                'organization_id': org_id_hash,
-                'org_bucket': org_id_hash,
-                'org_name': user.organization_name,
-                'workspace_id': workspace_id,
-                'creator_id': creator_id,
-                'file_path': file_path,
-                'content_type': 'supplemental-document'
+                "organization_id": org_id_hash,
+                "org_bucket": org_id_hash,
+                "org_name": user.organization_name,
+                "workspace_id": workspace_id,
+                "creator_id": creator_id,
+                "file_path": file_path,
+                "content_type": "supplemental-document",
             }
-            upload_url = generate_put_presigned_url(key=upload_key, content_type="application/pdf", metadata=codebase_metadata)
+            upload_url = generate_put_presigned_url(
+                key=upload_key,
+                content_type="application/pdf",
+                metadata=codebase_metadata,
+            )
             logger.info(f"Upload URL generated for {relative_path}")
             return upload_url
         except Exception as e:
@@ -406,15 +418,15 @@ class Mutation:
 
     @strawberry.mutation
     async def generateDocumentEdit(
-            self, info: Info, input: DocumentEditInput
+        self, info: Info, input: DocumentEditInput
     ) -> GenerateApplicationNoteEditOutput:
         user = info.context.user
         session = info.context.session
         if not check_access(
-                session,
-                user.organization_id,
-                codebase_id=input.codebase_id,
-                workspace_id=input.workspace_id,
+            session,
+            user.organization_id,
+            codebase_id=input.codebase_id,
+            workspace_id=input.workspace_id,
         ):
             raise GraphQLError(
                 "Access denied to the codebase", extensions={"code": "FORBIDDEN"}
@@ -511,7 +523,13 @@ class Mutation:
             f"Uploading codebase for orgId: {org_id}, workspaceId: {workspace_id}, ownerId: {creator_id}"
         )
 
-        if not codebase_name or not file_path or not org_id or not workspace_id or not creator_id:
+        if (
+            not codebase_name
+            or not file_path
+            or not org_id
+            or not workspace_id
+            or not creator_id
+        ):
             raise GraphQLError("Invalid Request", extensions={"code": "BAD_REQUEST"})
 
         # TODO: Complete validations
@@ -534,26 +552,108 @@ class Mutation:
         #     raise GraphQLError("Resource name already exists.", extensions={"code": "BAD_REQUEST"})
 
         try:
-
             org_id_hash = hashlib.sha256(org_id.encode()).hexdigest()[:63]
             upload_key = f"codebases/{org_id_hash}/{os.path.basename(file_path)}"
             logger.info(f"Upload URL generated for {upload_key}")
             codebase_metadata = {
-                'organization_id': org_id_hash,
-                'org_bucket': org_id_hash,
-                'org_name': user.organization_name,
-                'workspace_id': workspace_id,
-                'creator_id': creator_id,
-                'file_path': file_path,
-                'codebase_name': codebase_name,
-                'content_type': 'codebase'
+                "organization_id": org_id_hash,
+                "org_bucket": org_id_hash,
+                "org_name": user.organization_name,
+                "workspace_id": workspace_id,
+                "creator_id": creator_id,
+                "file_path": file_path,
+                "codebase_name": codebase_name,
+                "content_type": "codebase",
             }
 
-            upload_url = generate_put_presigned_url(key=upload_key, content_type="application/zip", metadata=codebase_metadata)
+            upload_url = generate_put_presigned_url(
+                key=upload_key,
+                content_type="application/zip",
+                metadata=codebase_metadata,
+            )
             return upload_url
         except Exception as e:
             logger.error(f"Error generating upload URL for {upload_key}: {e}")
-            raise GraphQLError("Upload URL not created.", extensions={"code": "BAD_REQUEST"})
+            raise GraphQLError(
+                "Upload URL not created.", extensions={"code": "BAD_REQUEST"}
+            )
+
+    @strawberry.mutation
+    async def webhook(self, info: Info, input: WebhookInput) -> str:
+        session: Session = info.context.session
+        logger.info(f"Webhook called with {json.dumps(input, indent=2)}")
+        has_errors = bool(input.errors)
+
+        try:
+            doc = get_derived_content_by_id(session, input.document_id)
+            if not doc:
+                raise GraphQLError(
+                    "Derived Content not found", extensions={"code": "BAD_REQUEST"}
+                )
+
+            if (
+                doc.derived_content_type.type_name
+                == DerivedContentTypes.APPLICATION_NOTE.value
+            ):
+                if doc.status != ContentStatus.GENERATING.value:
+                    raise GraphQLError(
+                        "Application note not in generating state",
+                        extensions={"code": "BAD_REQUEST"},
+                    )
+
+                metadata = doc.metadata
+                if not has_errors:
+                    content = json.loads(doc.content)
+                    metadata["modal_context"]["callback"] = input.extra_context
+                    content["name"] = input.name or content["name"]
+                    content["content"] = input.content or content["content"]
+                    doc.status = ContentStatus.GENERATION_COMPLETE.value
+                    doc.content = json.dumps(content)
+                else:
+                    metadata["history"].append(
+                        {
+                            "action": ContentStatus.GENERATION_ERROR.value,
+                            "data": "\n".join(
+                                [
+                                    error
+                                    for error in input.errors
+                                    if isinstance(error, str)
+                                ]
+                            ),
+                            "timestamp": str(datetime.now()),
+                        }
+                    )
+                    doc.status = ContentStatus.GENERATION_ERROR.value
+
+                doc.metadata = metadata
+            else:
+                content = input.content or doc.content
+                metadata = {
+                    **input,
+                    "generation_timestamp": str(datetime.now()),
+                    "history": [
+                        {
+                            "action": ContentStatus.GENERATION_COMPLETE.value,
+                            "data": content,
+                            "timestamp": str(datetime.now()),
+                        }
+                    ],
+                    "errors": [],
+                }
+                doc.status = ContentStatus.GENERATION_COMPLETE.value
+                doc.content = content
+                doc.metadata = metadata
+
+            session.add(doc)
+            session.commit()
+            return str(doc.id)
+        except Exception as error:
+            session.rollback()
+            logger.error(f"[Webhook]: {error}")
+            raise GraphQLError(
+                "Webhook processing failed",
+                extensions={"code": "BAD_REQUEST", "message": str(error)},
+            )
 
     # TODO: add create embeddings and create_source content
     # TODO: Change readme to reflect current alembic flow

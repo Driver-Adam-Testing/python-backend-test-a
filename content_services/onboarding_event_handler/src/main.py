@@ -4,6 +4,8 @@ import botocore
 import botocore.session
 from aws_secretsmanager_caching import SecretCache, SecretCacheConfig
 import logging
+from urllib.parse import unquote_plus
+from src.utils.aws_s3 import generate_get_presigned_url, head_object
 from src.utils.config import settings
 
 
@@ -18,13 +20,6 @@ def handler(event, context):
         sm_client = botocore.session.get_session().create_client('secretsmanager')
         cache_config = SecretCacheConfig()
         cache = SecretCache(config=cache_config, client=sm_client)
-
-        s3_client = botocore.session.get_session().create_client(
-            "s3",
-            endpoint_url=settings.AWS_S3_ENDPOINT_URL
-            if settings.AWS_S3_ENDPOINT_URL
-            else None,
-        )
 
         client_id = cache.get_secret_string(
             settings.CLIENT_ID_SECRET) if settings.ENVIRONMENT != "local" else settings.CLIENT_ID_SECRET
@@ -45,15 +40,11 @@ def handler(event, context):
             for s3_record in sns_message['Records']:
                 bucket_name = s3_record['s3']['bucket']['name']
                 object_key = s3_record['s3']['object']['key']
-                metadata = s3_client.head_object(Bucket=bucket_name, Key=object_key)
-                presigned_url = s3_client.generate_presigned_url(
-                    "get_object",
-                    Params={"Bucket": bucket_name, "Key": object_key},
-                    ExpiresIn=3600,
-                )
-
+                real_object_key = unquote_plus(object_key)
+                print(real_object_key)
+                metadata = head_object(bucket=bucket_name, key=real_object_key)
+                presigned_url = generate_get_presigned_url(key=real_object_key)
                 print(f"Triggering codebase onboarding for bucket = {bucket_name}, key = {object_key}")
-                print(f"{metadata}")
                 return exec_onboarding_service({
                     "download_url": presigned_url,
                     "object_key": object_key,
@@ -75,7 +66,6 @@ def exec_onboarding_service(event, token):
             'Authorization': f'Bearer {token}'
         }
         response = driverClient.post("/onboarding/", headers=headers, json=payload)
-
         response.raise_for_status()  # Raises an exception for 4XX/5XX responses
         event_response = response.json()
         print(event_response)

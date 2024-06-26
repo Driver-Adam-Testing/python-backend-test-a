@@ -131,7 +131,7 @@ class Mutation:
             raise GraphQLError(
                 "Access denied to the codebase", extensions={"code": "FORBIDDEN"}
             )
-        workspace = await session.execute(
+        workspace = session.execute(
             select(Workspace).filter_by(id=input.workspace_id)  # type: ignore
         ).scalar_one_or_none()
         if not workspace or workspace.organization_id != user.organization_id:
@@ -140,9 +140,9 @@ class Mutation:
             )
 
         # TODO: Get rid of the database hits to get source and derived content types. They don't change often enough and they are limited. It's inefficient that they're defined in the database.
-        source_content_type = await session.execute(
+        source_content_type = session.execute(
             select(SourceContentType).filter_by(type_name=input.source_content_type)  # type: ignore
-        ).first()
+        ).scalar_one_or_none()
 
         if not source_content_type:
             raise GraphQLError(
@@ -397,6 +397,7 @@ class Mutation:
                 "org_bucket": org_id_hash,
                 "org_name": user.organization_name,
                 "workspace_id": workspace_id,
+                "codebase_id": codebase_id,
                 "creator_id": creator_id,
                 "file_path": file_path,
                 "content_type": "supplemental-document",

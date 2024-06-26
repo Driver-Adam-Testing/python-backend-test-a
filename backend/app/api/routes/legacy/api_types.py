@@ -215,9 +215,12 @@ class DerivedContentInput:
 
 
 # type: ignore
-@strawberry.experimental.pydantic.input(SourceContent, all_fields=True)
+@strawberry.input
 class SourceContentInput:
-    pass
+    workspace_id: UUID | None = None
+    codebase_id: UUID | None = None
+    relative_path: str | None = None
+    source_content_type: str | None = None
 
 
 # type: ignore

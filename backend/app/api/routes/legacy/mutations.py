@@ -384,7 +384,18 @@ class Mutation:
             relative_path = os.path.basename(file_path)
             org_id_hash = hashlib.sha256(org_id.encode()).hexdigest()[:63]
             upload_key = f"documents/{org_id_hash}/{os.path.basename(file_path)}"
-            upload_url = generate_put_presigned_url(key=upload_key, content_type="application/pdf", metadata={"content_type": "supplemental-document"})
+            codebase_name = os.path.splitext(os.path.basename(file_path))[0]
+            codebase_metadata = {
+                'organization_id': org_id_hash,
+                'org_bucket': org_id_hash,
+                'org_name': user.organization_name,
+                'workspace_id': workspace_id,
+                'creator_id': creator_id,
+                'file_path': file_path,
+                'codebase_name': codebase_name,
+                'content_type': 'supplemental-document'
+            }
+            upload_url = generate_put_presigned_url(key=upload_key, content_type="application/pdf", metadata=codebase_metadata)
             logger.info(f"Upload URL generated for {relative_path}")
             return upload_url
         except Exception as e:

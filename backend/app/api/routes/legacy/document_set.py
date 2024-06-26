@@ -153,8 +153,7 @@ def get_document_set(
             DerivedContentType.type_name != DerivedContentTypes.SYMBOL.value,  # Updated line
         ))
     docs = session.exec(dc_query).all()
-    # docs = content.derived_contents
-    print(len(docs))
+
     document_set = DocumentSet(source_content_id=str(content.id))  # type: ignore
     for doc in docs:
         derived_content_type = doc.derived_content_type.type_name

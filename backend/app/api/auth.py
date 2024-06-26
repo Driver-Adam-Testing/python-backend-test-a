@@ -92,7 +92,6 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 status_code=exc.status_code, content={"detail": exc.detail}
             )
         except Exception as e:
-            print(e)
             return JSONResponse(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 content={"detail": str(e)},

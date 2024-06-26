@@ -131,16 +131,6 @@ def get_document_set(
     if source_content_type["typeName"] == "codebase":
         relative_path = path.replace("/", "")
 
-    query = (
-        select(SourceContent)
-        .join(SourceContent.derived_contents)
-        .join(DerivedContentType, DerivedContent.derived_content_type_id == DerivedContentType.id)
-        .where(
-            SourceContent.relative_path == relative_path,
-            SourceContent.source_content_type_id == source_content_type["id"],
-            DerivedContentType.type_name != DerivedContentTypes.SYMBOL.value,
-        )
-    )
     query = select(SourceContent).where(
         SourceContent.relative_path == relative_path,
         SourceContent.source_content_type_id == source_content_type["id"],

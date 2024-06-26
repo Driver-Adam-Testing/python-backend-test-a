@@ -389,6 +389,7 @@ class Mutation:
                 'org_bucket': org_id_hash,
                 'org_name': user.organization_name,
                 'workspace_id': workspace_id,
+                'codebase_id': codebase_id,
                 'creator_id': creator_id,
                 'file_path': file_path,
                 'content_type': 'supplemental-document'

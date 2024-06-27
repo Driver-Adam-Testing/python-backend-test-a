@@ -7,7 +7,7 @@ import ssl
 
 from database.config import settings
 
-engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI))
+engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI), pool_size=5)
 
 if settings.ASYNC_DATABASE_URL:
     def parse_db_url(url: str) -> tuple[str, dict[str, str]]:
@@ -60,8 +60,8 @@ if settings.ASYNC_DATABASE_URL:
         },  # Disable prepared statements for PgBouncer compatibility,
         # Verify these below are good values
         future=True,
-        pool_size=20,
-        max_overflow=20,
+        pool_size=10,
+        max_overflow=10,
         pool_recycle=3600,
     )
 

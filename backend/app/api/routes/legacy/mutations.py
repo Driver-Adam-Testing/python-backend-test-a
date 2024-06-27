@@ -124,20 +124,26 @@ class Mutation:
     @strawberry.mutation
     async def createSourceContent(self, info: Info, input: SourceContentInput) -> str:
         user = info.context.user
+        m2m = info.context.m2m
         session = info.context.session
-        if not check_access(
-            session, user.organization_id, codebase_id=input.codebase_id
-        ):
-            raise GraphQLError(
-                "Access denied to the codebase", extensions={"code": "FORBIDDEN"}
-            )
-        workspace = session.execute(
-            select(Workspace).filter_by(id=input.workspace_id)  # type: ignore
-        ).scalar_one_or_none()
-        if not workspace or workspace.organization_id != user.organization_id:
-            raise GraphQLError(
-                "Workspace not found or access denied", extensions={"code": "FORBIDDEN"}
-            )
+        
+        # This endpoint is called by the onboarding lambda, which is not a user and does not have a user token
+        if(user != None):
+            if not check_access(
+                    session, user.organization_id, codebase_id=input.codebase_id
+            ):
+                raise GraphQLError(
+                    "Access denied to the codebase", extensions={"code": "FORBIDDEN"}
+                )
+            workspace = session.execute(
+                select(Workspace).filter_by(id=input.workspace_id)  # type: ignore
+            ).scalar_one_or_none()
+            if not workspace or workspace.organization_id != user.organization_id:
+                raise GraphQLError(
+                    "Workspace not found or access denied", extensions={"code": "FORBIDDEN"}
+                )
+        elif m2m == None:
+            raise "No User or M2M token found"
 
         # TODO: Get rid of the database hits to get source and derived content types. They don't change often enough and they are limited. It's inefficient that they're defined in the database.
         source_content_type = session.execute(

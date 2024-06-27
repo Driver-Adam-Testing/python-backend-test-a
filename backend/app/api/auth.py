@@ -109,7 +109,7 @@ class User(BaseModel):
     is_service_account: bool = Field(..., alias="isServiceAccount")
     issuer: str = Field(..., alias="iss")
     subject: str = Field(..., alias="sub")
-    audience: list[str] = Field(..., alias="aud")
+    audience: list[str] | str = Field(..., alias="aud")
     issued_at: int = Field(..., alias="iat")
     expiration: int = Field(..., alias="exp")
     scope: str = Field(..., alias="scope")
@@ -119,7 +119,7 @@ class User(BaseModel):
 class M2M(BaseModel):
     issuer: str = Field(..., alias="iss")
     subject: str = Field(..., alias="sub")
-    audience: list[str] = Field(..., alias="aud")
+    audience: list[str] | str = Field(..., alias="aud")
     issued_at: int = Field(..., alias="iat")
     expiration: int = Field(..., alias="exp")
     authorized_party: str = Field(..., alias="azp")
@@ -133,13 +133,17 @@ def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     token_payload: dict = Depends(get_token_payload),
 ) -> User:
-    return User(**token_payload)
+    # Making this optional since some endpoints are called w/ M2M tokens
+    if(token_payload.get("userId") != None):
+        return User(**token_payload)
 
 def get_current_m2m(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     token_payload: dict = Depends(get_token_payload),
 ) -> M2M:
-    return M2M(**token_payload)
+    # Making this optional since most endpoints are called w/ User tokens
+    if(token_payload.get("userId") == None):
+        return M2M(**token_payload)
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]

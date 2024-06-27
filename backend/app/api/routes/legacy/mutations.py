@@ -109,24 +109,44 @@ class UploadCodebaseInput:
     file_path: str
 
 
+@strawberry.input
+class WebhookInput:
+    content: str | None = None
+    document_id: ID
+    errors: list[str | None] | None = None
+    extra_context: JSON | None = None  # type: ignore
+    name: str | None = None
+    prompt: str
+
+
 @strawberry.type
 class Mutation:
     @strawberry.mutation
     def createSourceContent(self, info: Info, input: SourceContentInput) -> str:
         user = info.context.user
+        m2m = info.context.m2m
         session = info.context.session
-        if not check_access(
-            session, user.organization_id, codebase_id=input.codebase_id
-        ):
+
+        # This endpoint is called by the onboarding lambda, which is not a user and does not have a user token
+        if user is not None:
+            if not check_access(
+                session, user.organization_id, codebase_id=input.codebase_id
+            ):
+                raise GraphQLError(
+                    "Access denied to the codebase", extensions={"code": "FORBIDDEN"}
+                )
+            workspace = session.execute(
+                select(Workspace).filter_by(id=input.workspace_id)  # type: ignore
+            ).scalar_one_or_none()
+            if not workspace or workspace.organization_id != user.organization_id:
+                raise GraphQLError(
+                    "Workspace not found or access denied",
+                    extensions={"code": "FORBIDDEN"},
+                )
+        elif m2m is None:
             raise GraphQLError(
-                "Access denied to the codebase", extensions={"code": "FORBIDDEN"}
-            )
-        workspace = session.execute(
-            select(Workspace).filter_by(id=input.workspace_id)  # type: ignore
-        ).scalar_one_or_none()
-        if not workspace or workspace.organization_id != user.organization_id:
-            raise GraphQLError(
-                "Workspace not found or access denied", extensions={"code": "FORBIDDEN"}
+                "No user or m2m token found",
+                extensions={"code": "FORBIDDEN"},
             )
 
         # TODO: Get rid of the database hits to get source and derived content types. They don't change often enough and they are limited. It's inefficient that they're defined in the database.
@@ -236,9 +256,9 @@ class Mutation:
         app_note_func = Function.lookup("comprehender", "create_app_note")
         call = app_note_func.spawn(
             str(input.workspace_id),
-            str(source_content.id),
+            str(input.codebase_id),
             str(input.prompt) if input.prompt else "",
-            "",
+            {"document_id": str(app_note.id)},
             {},
         )
         if call is None:
@@ -557,6 +577,11 @@ class Mutation:
                 "content_type": "codebase",
             }
 
+            upload_url = generate_put_presigned_url(
+                key=upload_key,
+                content_type="application/zip",
+                metadata=codebase_metadata,
+            )
             upload_url = generate_put_presigned_url(
                 key=upload_key,
                 content_type="application/zip",

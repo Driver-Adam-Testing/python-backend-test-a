@@ -99,12 +99,12 @@ class Backend(Construct):
             domain_name="api." + hosted_zone.zone_name,
             task_image_options=task_options,
             task_subnets=aws_ec2.SubnetSelection(subnet_type=aws_ec2.SubnetType.PRIVATE_WITH_EGRESS),
-            health_check_grace_period=Duration.minutes(5),
+            health_check_grace_period=Duration.minutes(6),
             circuit_breaker=aws_ecs.DeploymentCircuitBreaker(enable=True, rollback=True),
             min_healthy_percent=100,
             max_healthy_percent=250,
-            cpu=512,
-            memory_limit_mib=1024)
+            cpu=1024,
+            memory_limit_mib=2048)
         service.target_group.configure_health_check(path="/api/v1/healthcheck/", port="8000")
         service.task_definition.task_role.attach_inline_policy(aws_iam.Policy(self, "CustomerSecretsRW", document=aws_iam.PolicyDocument(statements=[
             aws_iam.PolicyStatement(

@@ -122,15 +122,15 @@ class WebhookInput:
 @strawberry.type
 class Mutation:
     @strawberry.mutation
-    async def createSourceContent(self, info: Info, input: SourceContentInput) -> str:
+    def createSourceContent(self, info: Info, input: SourceContentInput) -> str:
         user = info.context.user
         m2m = info.context.m2m
         session = info.context.session
-        
+
         # This endpoint is called by the onboarding lambda, which is not a user and does not have a user token
-        if(user != None):
+        if user is not None:
             if not check_access(
-                    session, user.organization_id, codebase_id=input.codebase_id
+                session, user.organization_id, codebase_id=input.codebase_id
             ):
                 raise GraphQLError(
                     "Access denied to the codebase", extensions={"code": "FORBIDDEN"}
@@ -140,10 +140,14 @@ class Mutation:
             ).scalar_one_or_none()
             if not workspace or workspace.organization_id != user.organization_id:
                 raise GraphQLError(
-                    "Workspace not found or access denied", extensions={"code": "FORBIDDEN"}
+                    "Workspace not found or access denied",
+                    extensions={"code": "FORBIDDEN"},
                 )
-        elif m2m == None:
-            raise "No User or M2M token found"
+        elif m2m is None:
+            raise GraphQLError(
+                "No user or m2m token found",
+                extensions={"code": "FORBIDDEN"},
+            )
 
         # TODO: Get rid of the database hits to get source and derived content types. They don't change often enough and they are limited. It's inefficient that they're defined in the database.
         source_content_type = session.execute(
@@ -166,7 +170,7 @@ class Mutation:
         return str(source_content.id)
 
     @strawberry.mutation
-    async def generateApplicationNote(
+    def generateApplicationNote(
         self, info: Info, input: GenerateApplicationNoteInput
     ) -> GenerateApplicationNoteOutput:
         user = info.context.user
@@ -265,7 +269,7 @@ class Mutation:
         return GenerateApplicationNoteOutput(id=str(call.object_id))  # type: ignore
 
     @strawberry.mutation
-    async def generateApplicationNoteEdit(
+    def generateApplicationNoteEdit(
         self, info: Info, input: ApplicationNoteEditInput
     ) -> GenerateApplicationNoteEditOutput:
         # NOTE: This is being called regardless of appnote or techdoc situations.
@@ -344,7 +348,7 @@ class Mutation:
             )
 
     @strawberry.mutation
-    async def deleteApplicationNote(self, info: Info, id: ID | None = None) -> None:
+    def deleteApplicationNote(self, info: Info, id: ID | None = None) -> None:
         session = info.context.session
         user = info.context.user
         if not check_access(session, user.organization_id, derived_content_id=id):
@@ -424,7 +428,7 @@ class Mutation:
             )
 
     @strawberry.mutation
-    async def generateDocumentEdit(
+    def generateDocumentEdit(
         self, info: Info, input: DocumentEditInput
     ) -> GenerateApplicationNoteEditOutput:
         user = info.context.user
@@ -518,7 +522,7 @@ class Mutation:
             )
 
     @strawberry.mutation
-    async def uploadCodebase(self, info: Info, input: UploadCodebaseInput) -> str:
+    def uploadCodebase(self, info: Info, input: UploadCodebaseInput) -> str:
         user = info.context.user
         workspace_id = input.workspace_id
         file_path = input.file_path
@@ -578,88 +582,16 @@ class Mutation:
                 content_type="application/zip",
                 metadata=codebase_metadata,
             )
+            upload_url = generate_put_presigned_url(
+                key=upload_key,
+                content_type="application/zip",
+                metadata=codebase_metadata,
+            )
             return upload_url
         except Exception as e:
             logger.error(f"Error generating upload URL for {upload_key}: {e}")
             raise GraphQLError(
                 "Upload URL not created.", extensions={"code": "BAD_REQUEST"}
-            )
-
-    @strawberry.mutation
-    async def webhook(self, info: Info, input: WebhookInput) -> str:
-        session: Session = info.context.session
-        logger.info(f"Webhook called with {json.dumps(input, indent=2)}")
-        has_errors = bool(input.errors)
-
-        try:
-            doc = get_derived_content_by_id(session, input.document_id)
-            if not doc:
-                raise GraphQLError(
-                    "Derived Content not found", extensions={"code": "BAD_REQUEST"}
-                )
-
-            if (
-                doc.derived_content_type.type_name
-                == DerivedContentTypes.APPLICATION_NOTE.value
-            ):
-                if doc.status != ContentStatus.GENERATING.value:
-                    raise GraphQLError(
-                        "Application note not in generating state",
-                        extensions={"code": "BAD_REQUEST"},
-                    )
-
-                metadata = doc.metadata
-                if not has_errors:
-                    content = json.loads(doc.content)
-                    metadata["modal_context"]["callback"] = input.extra_context
-                    content["name"] = input.name or content["name"]
-                    content["content"] = input.content or content["content"]
-                    doc.status = ContentStatus.GENERATION_COMPLETE.value
-                    doc.content = json.dumps(content)
-                else:
-                    metadata["history"].append(
-                        {
-                            "action": ContentStatus.GENERATION_ERROR.value,
-                            "data": "\n".join(
-                                [
-                                    error
-                                    for error in input.errors
-                                    if isinstance(error, str)
-                                ]
-                            ),
-                            "timestamp": str(datetime.now()),
-                        }
-                    )
-                    doc.status = ContentStatus.GENERATION_ERROR.value
-
-                doc.metadata = metadata
-            else:
-                content = input.content or doc.content
-                metadata = {
-                    **input,
-                    "generation_timestamp": str(datetime.now()),
-                    "history": [
-                        {
-                            "action": ContentStatus.GENERATION_COMPLETE.value,
-                            "data": content,
-                            "timestamp": str(datetime.now()),
-                        }
-                    ],
-                    "errors": [],
-                }
-                doc.status = ContentStatus.GENERATION_COMPLETE.value
-                doc.content = content
-                doc.metadata = metadata
-
-            session.add(doc)
-            session.commit()
-            return str(doc.id)
-        except Exception as error:
-            session.rollback()
-            logger.error(f"[Webhook]: {error}")
-            raise GraphQLError(
-                "Webhook processing failed",
-                extensions={"code": "BAD_REQUEST", "message": str(error)},
             )
 
     # TODO: add create embeddings and create_source content

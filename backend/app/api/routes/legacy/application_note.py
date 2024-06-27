@@ -67,7 +67,7 @@ class ContentStatus(Enum):
     GENERATION_ERROR = "generation-error"
 
 
-async def application_note_edit(call_id: str) -> ApplicationNoteEditResponse:
+def application_note_edit(call_id: str) -> ApplicationNoteEditResponse:
     function_call = FunctionCall.from_id(call_id)
     try:
         result = function_call.get(timeout=0)

@@ -1,6 +1,11 @@
-FROM --platform=linux/amd64 python:3.12
+FROM --platform=linux/amd64 python:3.12-slim
 
 WORKDIR /app/
+
+RUN apt-get update && apt-get install -y \
+    curl \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install Poetry
 RUN curl -sSL https://install.python-poetry.org | POETRY_HOME=/opt/poetry python && \
@@ -35,5 +40,9 @@ COPY backend/scripts/ /app/scripts/
 COPY backend/prestart.sh /app/
 COPY backend/tests-start.sh /app/
 COPY backend/app /app/app
+
+RUN apt-get purge -y --auto-remove build-essential \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 CMD [ "/bin/sh", "-c", "if [ \"$INSTALL_DEV\" = 'true' ]; then exec /start-reload.sh \"$@\"; else exec /start.sh \"$@\"; fi" ]

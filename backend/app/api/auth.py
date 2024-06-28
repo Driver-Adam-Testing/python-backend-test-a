@@ -56,8 +56,6 @@ UNPROTECTED_PATHS = [
     "/api/v1/openapi.json",
     "/redoc",
     "/api/v1/sandbox/apollo-sandbox/",
-    "/api/v1/git-provider/github/auth",
-    "/api/v1/git-provider/github/install",
     "/api/v1/git-provider/github/webhook",
     "/api/v1/git-provider/github/callback",
 ]

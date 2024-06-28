@@ -575,6 +575,7 @@ class Mutation:
                 "file_path": file_path,
                 "codebase_name": codebase_name,
                 "content_type": "codebase",
+                "provider": "manual",
             }
 
             upload_url = generate_put_presigned_url(

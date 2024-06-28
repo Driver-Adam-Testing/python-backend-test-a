@@ -1,17 +1,19 @@
-from typing import Any
+import logging
+from pathlib import Path
+from uuid import UUID
+
+import modal
 from fastapi import APIRouter
 from pydantic import BaseModel
-from pathlib import Path
-import logging
-import modal
+
 from app.api.session import CurrentSession
-from uuid import UUID
 
 router = APIRouter()
 
 
 class Onboarding(BaseModel):
     """Response model to validate and return when performing a health check."""
+
     status: str = "OK"
 
 
@@ -21,6 +23,7 @@ class OnboardingRequestBody(BaseModel):
     workspace_id: str | None = None
     download_url: str
     object_key: str
+    provider: str | None = None
 
 
 @router.post(
@@ -28,7 +31,9 @@ class OnboardingRequestBody(BaseModel):
     summary="Trigger Codebase Onboarding",
     response_description="Return HTTP Status Code 200 (OK)",
 )
-def trigger_onboarding(session: CurrentSession, trigger_body: OnboardingRequestBody) -> Onboarding:
+def trigger_onboarding(
+    session: CurrentSession, trigger_body: OnboardingRequestBody
+) -> Onboarding:
     """
     ## Trigger codebase onboarding
     Returns:
@@ -37,11 +42,15 @@ def trigger_onboarding(session: CurrentSession, trigger_body: OnboardingRequestB
 
     logging.info("Triggering codebase onboarding...")
     archive_name = Path(trigger_body.object_key).name
-    onboard_and_inspect = modal.Function.lookup("codebase-onboarding", "onboard_and_inspect")
-    call = onboard_and_inspect.spawn(
+    onboard_and_inspect = modal.Function.lookup(
+        "codebase-onboarding", "onboard_and_inspect"
+    )
+    onboard_and_inspect.spawn(
         trigger_body.download_url,
         archive_name,
         trigger_body.org_id,
         trigger_body.creator_id,
-        UUID(trigger_body.workspace_id))
+        UUID(trigger_body.workspace_id),
+        trigger_body.provider,
+    )
     return Onboarding(status="OK")

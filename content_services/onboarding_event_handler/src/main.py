@@ -52,7 +52,8 @@ def handler(event, context):
                     "creator_id": metadata['Metadata']['creator_id'],
                     "workspace_id": metadata['Metadata']['workspace_id'],
                     "filepath": metadata['Metadata']['file_path'],
-                    "codebase_name": metadata['Metadata']['codebase_name']
+                    "codebase_name": metadata['Metadata']['codebase_name'],
+                    "provider": metadata['Metadata']['provider']
                 }, token_json['access_token'])
 
 

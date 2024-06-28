@@ -78,7 +78,8 @@ async def clone_repo(session: CurrentSession, current_user: CurrentUser, provide
             current_user.organization_id,
             repo.workspace_id,
             repo.repo_name,
-            token)
+            token,
+            provider)
 
     if upload_complete is True:
         return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content={"message": "Upload complete"})

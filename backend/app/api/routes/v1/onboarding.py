@@ -21,6 +21,7 @@ class OnboardingRequestBody(BaseModel):
     workspace_id: str | None = None
     download_url: str
     object_key: str
+    provider: str | None = None
 
 
 @router.post(
@@ -43,5 +44,6 @@ def trigger_onboarding(session: CurrentSession, trigger_body: OnboardingRequestB
         archive_name,
         trigger_body.org_id,
         trigger_body.creator_id,
-        UUID(trigger_body.workspace_id))
+        UUID(trigger_body.workspace_id),
+        trigger_body.provider)
     return Onboarding(status="OK")

@@ -6,8 +6,10 @@ from uuid import UUID
 
 import strawberry
 from database.models_v1 import (
+    DerivedContent,
+    DerivedContentType,
     SourceContent,
-    SourceContentType, DerivedContentType, DerivedContent,
+    SourceContentType,
 )
 from fastapi import HTTPException
 from sqlmodel import Session, select
@@ -62,10 +64,22 @@ class Quickstart:
 
 
 @strawberry.type
+class CodeMetadata:
+    size: int | None
+    sloc: int | None
+    extension: str | None
+    is_binary: bool | None
+    is_hex: bool | None
+    is_analyzable: bool
+    is_blacklisted: bool
+
+
+@strawberry.type
 class Code:
     file_name: str = ""
     extension: str = ""
     content: str = ""
+    metadata: CodeMetadata | None = None
 
 
 @strawberry.type
@@ -91,7 +105,9 @@ class DocumentSet:
     quickstart: Quickstart = strawberry.field(default_factory=Quickstart)
     chunk_descriptions: list[str] | None = strawberry.field(default=None)
     code: Code = strawberry.field(default_factory=Code)
-    application_notes: list[ApplicationNote] | None = strawberry.field(default_factory=lambda: [])
+    application_notes: list[ApplicationNote] | None = strawberry.field(
+        default_factory=lambda: []
+    )
 
 
 # TODO: Get rid of this!
@@ -118,12 +134,12 @@ def source_type_id_map(kind: str, db: Session) -> dict[str, Any]:
 
 
 def get_document_set(
-        node_kind: str,
-        path: str,
-        workspace_id: str,
-        codebase_id: str,
-        organization_id: str,
-        session: Session,
+    node_kind: str,
+    path: str,
+    workspace_id: str,
+    codebase_id: str,
+    organization_id: str,
+    session: Session,
 ) -> DocumentSet:
     relative_path = path
     source_content_type = source_type_id_map(node_kind, session)
@@ -147,11 +163,16 @@ def get_document_set(
 
     dc_query = (
         select(DerivedContent)
-        .join(DerivedContentType, DerivedContent.derived_content_type_id == DerivedContentType.id)
+        .join(
+            DerivedContentType,
+            DerivedContent.derived_content_type_id == DerivedContentType.id,
+        )
         .where(
             DerivedContent.source_content_id == content.id,
-            DerivedContentType.type_name != DerivedContentTypes.SYMBOL.value,  # Updated line
-        ))
+            DerivedContentType.type_name
+            != DerivedContentTypes.SYMBOL.value,  # Updated line
+        )
+    )
     docs = session.exec(dc_query).all()
 
     document_set = DocumentSet(source_content_id=str(content.id))  # type: ignore
@@ -167,8 +188,8 @@ def get_document_set(
             document_set.long = doc.content
             document_set.long_document = Document(id=doc.id, content=doc.content)  # type: ignore
         elif (
-                derived_content_type
-                == DerivedContentTypes.SHORT_PARAGRAPH_DESCRIPTION.value
+            derived_content_type
+            == DerivedContentTypes.SHORT_PARAGRAPH_DESCRIPTION.value
         ):
             document_set.short.single_paragraph = doc.content
             document_set.short.single_paragraph_document = Document(
@@ -176,7 +197,7 @@ def get_document_set(
                 content=doc.content,  # type: ignore
             )
         elif (
-                derived_content_type == DerivedContentTypes.SHORT_SENTENCE_DESCRIPTION.value
+            derived_content_type == DerivedContentTypes.SHORT_SENTENCE_DESCRIPTION.value
         ):
             document_set.short.single_sentence = doc.content
             document_set.short.single_sentence_document = Document(
@@ -184,7 +205,7 @@ def get_document_set(
                 content=doc.content,  # type: ignore
             )
         elif (
-                derived_content_type == DerivedContentTypes.TERSE_SENTENCE_DESCRIPTION.value
+            derived_content_type == DerivedContentTypes.TERSE_SENTENCE_DESCRIPTION.value
         ):
             document_set.short.terse_sentence = doc.content
             document_set.short.terse_sentence_document = Document(
@@ -202,8 +223,8 @@ def get_document_set(
                 document_set.chunk_descriptions = []
             document_set.chunk_descriptions.extend(doc.content.split("\n\n\n"))
         elif (
-                derived_content_type
-                == DerivedContentTypes.QUICK_START_GETTING_STARTED.value
+            derived_content_type
+            == DerivedContentTypes.QUICK_START_GETTING_STARTED.value
         ):
             document_set.quickstart.getting_started = doc.content
             document_set.quickstart.getting_started_document = Document(
@@ -261,6 +282,17 @@ def get_document_set(
             file_name=content.relative_path.split("/")[-1],
             extension=content.relative_path.split(".")[-1],
             content=code_content,
+            metadata=CodeMetadata(
+                size=content.metadata.get("size"),
+                sloc=content.metadata.get("sloc"),
+                extension=content.metadata.get("extension"),
+                is_binary=content.metadata.get("is_binary"),
+                is_hex=content.metadata.get("is_hex"),
+                is_analyzable=content.metadata["is_analyzable"],
+                is_blacklisted=content.metadata["is_blacklisted"],
+            )
+            if content.metadata
+            else None,
         )
 
     return document_set

@@ -130,7 +130,7 @@ class Mutation:
         # This endpoint is called by the onboarding lambda, which is not a user and does not have a user token
         if user is not None:
             if not check_access(
-                    session, user.organization_id, codebase_id=input.codebase_id
+                session, user.organization_id, codebase_id=input.codebase_id
             ):
                 raise GraphQLError(
                     "Access denied to the codebase", extensions={"code": "FORBIDDEN"}
@@ -171,12 +171,12 @@ class Mutation:
 
     @strawberry.mutation
     def generateApplicationNote(
-            self, info: Info, input: GenerateApplicationNoteInput
+        self, info: Info, input: GenerateApplicationNoteInput
     ) -> GenerateApplicationNoteOutput:
         user = info.context.user
         session: Session = info.context.session
         if not check_access(
-                session, user.organization_id, codebase_id=input.codebase_id
+            session, user.organization_id, codebase_id=input.codebase_id
         ):
             raise GraphQLError(
                 "Access denied to the codebase", extensions={"code": "FORBIDDEN"}
@@ -270,7 +270,7 @@ class Mutation:
 
     @strawberry.mutation
     def generateApplicationNoteEdit(
-            self, info: Info, input: ApplicationNoteEditInput
+        self, info: Info, input: ApplicationNoteEditInput
     ) -> GenerateApplicationNoteEditOutput:
         # NOTE: This is being called regardless of appnote or techdoc situations.
         user = info.context.user
@@ -301,7 +301,7 @@ class Mutation:
 
     @strawberry.mutation
     def updateApplicationNote(
-            self, info: Info, input: UpdateApplicationNoteInput
+        self, info: Info, input: UpdateApplicationNoteInput
     ) -> None:
         session = info.context.session
         user = info.context.user
@@ -392,7 +392,7 @@ class Mutation:
         if not codebase_id or not file_path or not workspace_id or not creator_id:
             raise GraphQLError("Invalid Request", extensions={"code": "BAD_REQUEST"})
         if not check_access(
-                session, org_id, codebase_id=codebase_id, workspace_id=workspace_id
+            session, org_id, codebase_id=codebase_id, workspace_id=workspace_id
         ):
             raise GraphQLError(
                 "Access denied to the codebase", extensions={"code": "FORBIDDEN"}
@@ -429,15 +429,15 @@ class Mutation:
 
     @strawberry.mutation
     def generateDocumentEdit(
-            self, info: Info, input: DocumentEditInput
+        self, info: Info, input: DocumentEditInput
     ) -> GenerateApplicationNoteEditOutput:
         user = info.context.user
         session = info.context.session
         if not check_access(
-                session,
-                user.organization_id,
-                codebase_id=input.codebase_id,
-                workspace_id=input.workspace_id,
+            session,
+            user.organization_id,
+            codebase_id=input.codebase_id,
+            workspace_id=input.workspace_id,
         ):
             raise GraphQLError(
                 "Access denied to the codebase", extensions={"code": "FORBIDDEN"}
@@ -535,11 +535,11 @@ class Mutation:
         )
 
         if (
-                not codebase_name
-                or not file_path
-                or not org_id
-                or not workspace_id
-                or not creator_id
+            not codebase_name
+            or not file_path
+            or not org_id
+            or not workspace_id
+            or not creator_id
         ):
             raise GraphQLError("Invalid Request", extensions={"code": "BAD_REQUEST"})
 
@@ -575,7 +575,7 @@ class Mutation:
                 "file_path": file_path,
                 "codebase_name": codebase_name,
                 "content_type": "codebase",
-                "provider": "manual"
+                "provider": "manual",
             }
 
             upload_url = generate_put_presigned_url(

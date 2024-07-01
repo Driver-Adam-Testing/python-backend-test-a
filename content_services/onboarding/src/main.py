@@ -66,11 +66,13 @@ def run_codebase_onboarding(
 
     print(f'Downloaded {archive_name} from S3')
 
-    extracted_path = unpack_archive(download_dest)
-    codebase_name = str(extracted_path)
+    codebase_name = None
     if provider == 'github':
-        codebase_name = codebase_name.rsplit('.', 1)[0]
+        codebase_name = archive_name.rsplit('.', 1)[0]
 
+    extracted_path = unpack_archive(download_dest, override_codebase_name=codebase_name)
+    codebase_name = str(extracted_path)
+    print("Codebase name : ", codebase_name)
     print("Unpacked archive to: ", extracted_path)
 
     all_directories = []
@@ -112,6 +114,7 @@ def run_codebase_onboarding(
                     workspace_id=workspace_id,
                     status=Enum_Codebase_Status.processing
                 )
+                print(codebase)
                 session.add(codebase)
                 # Flush here to confirm that Source Contents created after this will know that the
                 # codebase exists

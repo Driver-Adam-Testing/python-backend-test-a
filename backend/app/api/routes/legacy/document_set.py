@@ -283,13 +283,13 @@ def get_document_set(
             extension=content.relative_path.split(".")[-1],
             content=code_content,
             metadata=CodeMetadata(
-                size=content.metadata.get("size"),
-                sloc=content.metadata.get("sloc"),
-                extension=content.metadata.get("extension"),
-                is_binary=content.metadata.get("is_binary"),
-                is_hex=content.metadata.get("is_hex"),
-                is_analyzable=content.metadata["is_analyzable"],
-                is_blacklisted=content.metadata["is_blacklisted"],
+                size=content.analysis_metadata.get("size"),
+                sloc=content.analysis_metadata.get("sloc"),
+                extension=content.analysis_metadata.get("extension"),
+                is_binary=content.analysis_metadata.get("is_binary"),
+                is_hex=content.analysis_metadata.get("is_hex"),
+                is_analyzable=content.analysis_metadata["is_analyzable"],
+                is_blacklisted=content.analysis_metadata["is_blacklisted"],
             )
             if content.metadata
             else None,

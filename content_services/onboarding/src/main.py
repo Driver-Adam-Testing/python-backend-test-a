@@ -40,7 +40,8 @@ def run_codebase_onboarding(
     archive_name: str,
     org_id: str,
     creator_id: str,
-    workspace_id: str
+    workspace_id: str,
+    provider: str
 ) -> None:
     from database.db import engine
     from database.models_v1 import (
@@ -66,6 +67,10 @@ def run_codebase_onboarding(
     print(f'Downloaded {archive_name} from S3')
 
     extracted_path = unpack_archive(download_dest)
+    codebase_name = str(extracted_path)
+    if provider == 'github':
+        codebase_name = codebase_name.rsplit('.', 1)[0]
+
     print("Unpacked archive to: ", extracted_path)
 
     all_directories = []
@@ -99,7 +104,7 @@ def run_codebase_onboarding(
                 final_storage_url = urljoin(base_url, str(codebase_id))
                 codebase = Codebase(
                     id=codebase_id,
-                    codebase_name=str(extracted_path),
+                    codebase_name=codebase_name,
                     creator_id=creator_id,
                     description='',
                     resource_root=f"{str(extracted_path)}/",
@@ -175,17 +180,17 @@ def run_codebase_onboarding(
     region='us-east',
     concurrency_limit=5
 )
-def onboard_and_inspect(presigned_url:str, archive_name: str, org_id: str, creator_id: str, workspace_id: UUID):
+def onboard_and_inspect(presigned_url:str, archive_name: str, org_id: str, creator_id: str, workspace_id: UUID, provider: str = 'manual'):
     from database.db import engine
     from database.models_v1 import Codebase, Enum_Codebase_Status
     from sqlmodel import Session
     #TODO: send email on failure at any step in this process
-    print(f"Onboarding for: {archive_name} with org_id: {org_id}, creator_id: {creator_id}, workspace_id: {workspace_id} with presigned_url: {presigned_url}")
+    print(f"Onboarding for: {archive_name} from {provider} with org_id: {org_id}, creator_id: {creator_id}, workspace_id: {workspace_id} with presigned_url: {presigned_url}")
     try:
         inspect_db = modal.Function.lookup("inspector-v2", "inspect_db")
         create_embeddings = modal.Function.lookup("comprehender", "create_embeddings")
 
-        codebase_id = run_codebase_onboarding.remote(presigned_url, archive_name, org_id, creator_id, workspace_id)
+        codebase_id = run_codebase_onboarding.remote(presigned_url, archive_name, org_id, creator_id, workspace_id, provider)
         print("onboarding complete for codebase: ", codebase_id)
         print("Inspecting...")
 

@@ -77,7 +77,7 @@ def get_root_directories_in_archive(zip_file: zipfile.ZipFile) -> list:
     return root_dirs
 
 
-def unpack_archive(archive_path: Path) -> Path:
+def unpack_archive(archive_path: Path, override_codebase_name: str | None = None) -> Path:
     # Creating zipfile instance does NOT unpack right away.
     # We can check root dir cases and modify from there BEFORE unpacking
     local_archive = zipfile.ZipFile(archive_path, "r")
@@ -94,7 +94,10 @@ def unpack_archive(archive_path: Path) -> Path:
     if extracted_path is None:
         extracted_path = Path(root_dirs[0])
 
-    stripped_extracted_path = Path(re.sub(r"/\.[^/.]+$/", "", str(extracted_path)))
+    stripped_extracted_path = Path(re.sub(r'/\.[^/.]+$/', "", str(extracted_path)))
+    if override_codebase_name:
+        stripped_extracted_path = Path(override_codebase_name)
+
     os.rename(extracted_path, stripped_extracted_path)
 
     return stripped_extracted_path

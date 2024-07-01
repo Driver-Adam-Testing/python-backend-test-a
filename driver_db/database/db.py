@@ -1,15 +1,15 @@
-import uuid
-
-from sqlmodel import Session, create_engine
-from urllib.parse import parse_qs, urlparse
-from sqlalchemy.ext.asyncio import create_async_engine
 import ssl
+import uuid
+from urllib.parse import parse_qs, urlparse
 
 from database.config import settings
+from sqlalchemy.ext.asyncio import create_async_engine
+from sqlmodel import Session, create_engine
 
-engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI), pool_size=5)
+engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI), pool_size=10)
 
 if settings.ASYNC_DATABASE_URL:
+
     def parse_db_url(url: str) -> tuple[str, dict[str, str]]:
         """
         Parses a database URL and extracts the connection string without query parameters
@@ -33,7 +33,6 @@ if settings.ASYNC_DATABASE_URL:
         )
         return base_connection_string, connect_args
 
-
     # Asyncpg doesn't seem to support the url ssl query params as it says it does
     # So we need to manually add them back in with this hacking
     # See
@@ -45,9 +44,7 @@ if settings.ASYNC_DATABASE_URL:
         ssl_ctx = ssl.create_default_context(
             ssl.Purpose.SERVER_AUTH, cafile=connect_args["sslrootcert"]
         )
-        ssl_ctx.check_hostname = (
-            False  # If True, equivalent to sslmode=verify-full, if False sslmode=verify-ca.
-        )
+        ssl_ctx.check_hostname = False  # If True, equivalent to sslmode=verify-full, if False sslmode=verify-ca.
 
     async_engine = create_async_engine(
         base_async_url,

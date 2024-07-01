@@ -278,21 +278,20 @@ def get_document_set(
             codebase_id=codebase_id if codebase_id else str(content.codebase_id),
         )
         code_content = s3_access.get_file_content(relative_path=content.relative_path)
-        analysis_metadata = getattr(content, "analysis_metadata", {})
         document_set.code = Code(  # type: ignore
             file_name=content.relative_path.split("/")[-1],
             extension=content.relative_path.split(".")[-1],
             content=code_content,
             metadata=CodeMetadata(
-                size=analysis_metadata.get("size"),
-                sloc=analysis_metadata.get("sloc"),
-                extension=analysis_metadata.get("extension"),
-                is_binary=analysis_metadata.get("is_binary"),
-                is_hex=analysis_metadata.get("is_hex"),
-                is_analyzable=analysis_metadata.get("is_analyzable"),
-                is_blacklisted=analysis_metadata.get("is_blacklisted"),
+                size=content.analysis_metadata.get("size"),
+                sloc=content.analysis_metadata.get("sloc"),
+                extension=content.analysis_metadata.get("extension"),
+                is_binary=content.analysis_metadata.get("is_binary"),
+                is_hex=content.analysis_metadata.get("is_hex"),
+                is_analyzable=content.analysis_metadata["is_analyzable"],
+                is_blacklisted=content.analysis_metadata["is_blacklisted"],
             )
-            if content.metadata
+            if content.analysis_metadata
             else None,
         )
 

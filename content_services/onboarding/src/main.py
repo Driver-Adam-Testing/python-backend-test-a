@@ -195,9 +195,10 @@ def onboard_and_inspect(presigned_url:str, archive_name: str, org_id: str, creat
 
         codebase_id = run_codebase_onboarding.remote(presigned_url, archive_name, org_id, creator_id, workspace_id, provider)
         print("onboarding complete for codebase: ", codebase_id)
-        print("Inspecting...")
 
         run_id = uuid4()
+        print("Inspecting...")
+        print("Inspection ID: ", run_id)
         inspect_db.remote(codebase_id, run_id)
         print("Inspection complete")
         print("Creating embeddings...")

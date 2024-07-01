@@ -20,9 +20,9 @@ from utils.task import Task, TaskResult, TaskResultKind
 
 TechDocsTask = Union["FileTechDocTask", "FolderTechDocTask", "TopLevelDocsTask"]
 
-symbols_sem = asyncio.Semaphore(200)
-tech_docs_sem = asyncio.Semaphore(200)
-folder_tech_docs_sem = asyncio.Semaphore(100)
+symbols_sem = asyncio.Semaphore(20)
+tech_docs_sem = asyncio.Semaphore(20)
+folder_tech_docs_sem = asyncio.Semaphore(20)
 database_sem = asyncio.Semaphore(5)
 
 

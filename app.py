@@ -18,11 +18,11 @@ elif deployment_environment == "development":
     DevelopmentStack(app, "DriverApiStack",
         env=cdk.Environment(account="550082761109", region="us-east-1"),
     )
-elif os.getenv('DEPLOYMENT_ENVIRONMENT') == "ops":
+elif deployment_environment == "ops":
     OpsStack(app, "DriverApiStack",
         env=cdk.Environment(account="058264523856", region="us-east-1"),
     )
-elif os.getenv('DEPLOYMENT_ENVIRONMENT') == "production":
+elif deployment_environment == "production":
     ProductionStack(app, "DriverApiStack",
         env=cdk.Environment(account="896724907114", region="us-east-1"),
     )

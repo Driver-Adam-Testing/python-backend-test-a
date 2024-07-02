@@ -1,0 +1,22 @@
+#!/bin/bash
+set -e
+
+# Check if an environment argument is provided
+if [ -z "$1" ]; then
+    echo "Please provide an environment argument."
+    exit 1
+fi
+
+# Get the environment argument from the command line
+environment=$1
+
+# Navigate to the inspector directory
+cd inspector
+# Perform modal deploy on src/main.py with the environment argument
+modal deploy --env=$environment src/main.py
+# Navigate back to the original directory
+cd .. 
+# Navigate to the onboarding directory
+cd onboarding
+# Perform modal deploy on src/main.py with the environment argument
+modal deploy --env=$environment src/main.py

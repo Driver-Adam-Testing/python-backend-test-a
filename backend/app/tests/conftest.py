@@ -1,37 +1,22 @@
 from collections.abc import Generator
+from unittest.mock import Mock
 
 import pytest
-from database import engine, init_db
-from database.models import Item, User, UserCreate
+from database.db import engine, init_db
 from fastapi.testclient import TestClient
-from sqlmodel import Session, delete
+from sqlmodel import Session
 
-from app import crud
-from app.core.config import settings
+from app import initial_data
+from app.api.auth import CurrentUser
 from app.main import app
-from app.tests.utils.user import authentication_token_from_email
-from app.tests.utils.utils import get_superuser_token_headers
 
 
 @pytest.fixture(scope="session", autouse=True)
 def db() -> Generator[Session, None, None]:
     with Session(engine) as session:
         init_db(session)
-
-        # Always have a super user around. Is this the right place?
-        user_in = UserCreate(
-            email=settings.FIRST_SUPERUSER,
-            password=settings.FIRST_SUPERUSER_PASSWORD,
-            is_superuser=True,
-        )
-        _ = crud.create_user(session=session, user_create=user_in)
-
+        initial_data.init(session)
         yield session
-        statement = delete(Item)
-        session.execute(statement)
-        statement = delete(User)
-        session.execute(statement)
-        session.commit()
 
 
 @pytest.fixture(scope="module")
@@ -41,12 +26,27 @@ def client() -> Generator[TestClient, None, None]:
 
 
 @pytest.fixture(scope="module")
-def superuser_token_headers(client: TestClient) -> dict[str, str]:
-    return get_superuser_token_headers(client)
+def current_user_with_org() -> CurrentUser:
+    current_user = Mock(spec=CurrentUser)
+    current_user.user_id = "testuserid"
+    current_user.organization_id = "testorgid"
+    current_user.is_service_account = False
+    return current_user
 
 
 @pytest.fixture(scope="module")
-def normal_user_token_headers(client: TestClient, db: Session) -> dict[str, str]:
-    return authentication_token_from_email(
-        client=client, email=settings.EMAIL_TEST_USER, db=db
-    )
+def current_user_without_org() -> CurrentUser:
+    current_user = Mock(spec=CurrentUser)
+    current_user.user_id = "testuserid"
+    current_user.organization_id = None
+    current_user.is_service_account = False
+    return current_user
+
+
+@pytest.fixture(scope="module")
+def current_user_without_id() -> CurrentUser:
+    current_user = Mock(spec=CurrentUser)
+    current_user.user_id = None
+    current_user.organization_id = "testorgid"
+    current_user.is_service_account = False
+    return current_user

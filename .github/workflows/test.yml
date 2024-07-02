@@ -4,10 +4,10 @@ on:
   push:
     branches:
       - master
-  pull_request:
-    types:
-      - opened
-      - synchronize
+  # pull_request:
+  #   types:
+  #     - opened
+  #     - synchronize
 
 jobs:
 
@@ -20,11 +20,13 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.12'
 
-      - run: docker compose build
+      - name: Load .env.test Environment Variables
+        run: cp .env.test .env
+      - run: docker compose build backend s3 db
       - run: docker compose down -v --remove-orphans
-      - run: docker compose up -d
+      - run: docker compose up -d backend s3 db
       - name: Lint
         run: docker compose exec -T backend bash /app/scripts/lint.sh
       - name: Run tests

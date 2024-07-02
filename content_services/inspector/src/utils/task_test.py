@@ -1,0 +1,261 @@
+import asyncio
+import time
+
+import pytest
+from pathlib import Path
+from tempfile import TemporaryDirectory
+import json
+import boto3
+from moto import mock_aws
+
+from utils.task import (
+    LocalDiskTaskResultPersistence,
+    S3TaskResultPersistence,
+    Task,
+    TaskResult,
+    TaskManager,
+)
+
+
+class MockTaskResult:
+    def __init__(self, data: dict):
+        self.data = data
+
+    def to_json(self) -> str:
+        return json.dumps(self.data)
+
+    @staticmethod
+    def from_json(json_str: str) -> "MockTaskResult":
+        data = json.loads(json_str)
+        return MockTaskResult(data)
+
+
+class TestLocalDiskTaskResultPersistence:
+    @pytest.fixture
+    def temp_dir(self):
+        with TemporaryDirectory() as tmpdirname:
+            yield Path(tmpdirname)
+
+    @pytest.fixture
+    def mock_task_result(self, monkeypatch):
+        monkeypatch.setattr("utils.task.TaskResult", MockTaskResult)
+
+    def test_save_and_load_task_result(self, temp_dir, mock_task_result):
+        persistence = LocalDiskTaskResultPersistence(base_dir=temp_dir)
+        run_id = "test_run"
+        task_id = "test_task"
+        result = MockTaskResult(data={"key": "value"})
+
+        persistence.save_task_result(run_id, task_id, result)
+        loaded_result = persistence.load_task_result(run_id, task_id)
+
+        assert loaded_result is not None
+        assert loaded_result.data == result.data
+
+    def test_load_nonexistent_task_result(self, temp_dir, mock_task_result):
+        persistence = LocalDiskTaskResultPersistence(base_dir=temp_dir)
+        run_id = "test_run"
+        task_id = "nonexistent_task"
+
+        result = persistence.load_task_result(run_id, task_id)
+
+        assert result is None
+
+    def test_load_all_results(self, temp_dir, mock_task_result):
+        persistence = LocalDiskTaskResultPersistence(base_dir=temp_dir)
+        run_id = "test_run"
+        results = {
+            "task_1": MockTaskResult(data={"key1": "value1"}),
+            "task_2": MockTaskResult(data={"key2": "value2"}),
+        }
+
+        for task_id, result in results.items():
+            persistence.save_task_result(run_id, task_id, result)
+
+        loaded_results = persistence.load_all_results(run_id)
+
+        assert len(loaded_results) == len(results)
+        for task_id, result in results.items():
+            assert task_id in loaded_results
+            assert loaded_results[task_id].data == result.data
+
+    def test_clear_all_results(self, temp_dir, mock_task_result):
+        persistence = LocalDiskTaskResultPersistence(base_dir=temp_dir)
+        run_id = "test_run"
+        results = {
+            "task_1": MockTaskResult(data={"key1": "value1"}),
+            "task_2": MockTaskResult(data={"key2": "value2"}),
+        }
+
+        for task_id, result in results.items():
+            persistence.save_task_result(run_id, task_id, result)
+
+        persistence.clear_all_results(run_id)
+        loaded_results = persistence.load_all_results(run_id)
+
+        assert len(loaded_results) == 0
+        run_dir = persistence._get_run_dir(run_id)
+        assert not run_dir.exists()
+
+
+class TestS3TaskResultPersistence:
+    @pytest.fixture
+    def s3_bucket(self):
+        with mock_aws():
+            s3_client = boto3.client("s3")
+            bucket_name = "test-bucket"
+            s3_client.create_bucket(Bucket=bucket_name)
+            yield bucket_name
+
+    @pytest.fixture
+    def mock_task_result(self, monkeypatch):
+        monkeypatch.setattr("utils.task.TaskResult", MockTaskResult)
+
+    def test_save_and_load_task_result(self, s3_bucket, mock_task_result):
+        persistence = S3TaskResultPersistence(bucket_name=s3_bucket)
+        run_id = "test_run"
+        task_id = "test_task"
+        result = MockTaskResult(data={"key": "value"})
+
+        persistence.save_task_result(run_id, task_id, result)
+        loaded_result = persistence.load_task_result(run_id, task_id)
+
+        assert loaded_result is not None
+        assert loaded_result.data == result.data
+
+    def test_load_nonexistent_task_result(self, s3_bucket, mock_task_result):
+        persistence = S3TaskResultPersistence(bucket_name=s3_bucket)
+        run_id = "test_run"
+        task_id = "nonexistent_task"
+
+        result = persistence.load_task_result(run_id, task_id)
+
+        assert result is None
+
+    def test_load_all_results(self, s3_bucket, mock_task_result):
+        persistence = S3TaskResultPersistence(bucket_name=s3_bucket)
+        run_id = "test_run"
+        results = {
+            "task_1": MockTaskResult(data={"key1": "value1"}),
+            "task_2": MockTaskResult(data={"key2": "value2"}),
+        }
+
+        for task_id, result in results.items():
+            persistence.save_task_result(run_id, task_id, result)
+
+        loaded_results = persistence.load_all_results(run_id)
+
+        assert len(loaded_results) == len(results)
+        for task_id, result in results.items():
+            assert task_id in loaded_results
+            assert loaded_results[task_id].data == result.data
+
+    def test_clear_all_results(self, s3_bucket, mock_task_result):
+        persistence = S3TaskResultPersistence(bucket_name=s3_bucket)
+        run_id = "test_run"
+        results = {
+            "task_1": MockTaskResult(data={"key1": "value1"}),
+            "task_2": MockTaskResult(data={"key2": "value2"}),
+        }
+
+        for task_id, result in results.items():
+            persistence.save_task_result(run_id, task_id, result)
+
+        persistence.clear_all_results(run_id)
+        loaded_results = persistence.load_all_results(run_id)
+
+        assert len(loaded_results) == 0
+
+
+class SleepTask(Task):
+    def __init__(self, task_name: str, sleep_time: float, dependencies: tuple[Task] | None = None):
+        dependencies = dependencies or tuple()
+
+        super().__init__(task_name=task_name, dependencies=dependencies)
+        self.sleep_time = sleep_time
+
+    async def run_implementation(self, dependent_results: dict["Task", TaskResult]) -> dict[str, any]:
+        start_time = time.time()
+        await asyncio.sleep(self.sleep_time)
+        end_time = time.time()
+        return {"start_time": start_time, "completed_at": end_time}
+
+    def recoverable_errors(self) -> set[type[Exception]]:
+        return set()
+
+    def hashable_attrs(self) -> tuple:
+        return (self.task_name, self.sleep_time)
+
+
+class TestTaskManager:
+    @pytest.fixture
+    def setup_tasks(self):
+        task1 = SleepTask(task_name="task1", sleep_time=1)
+        task2 = SleepTask(task_name="task2", sleep_time=1.5, dependencies=(task1,))
+        task3 = SleepTask(task_name="task3", sleep_time=1, dependencies=(task1,))
+
+        tasks = [task1, task2, task3]
+
+        task_manager = TaskManager(tasks=tasks, serial_exe=False, persistence=None)
+        return task_manager, task1, task2, task3
+
+    @pytest.mark.asyncio
+    async def test_task_dependency_basic(self, setup_tasks):
+        task_manager, task1, task2, task3 = setup_tasks
+
+        global_start_time = time.time()
+        await task_manager.run_tasks(run_id="test_run")
+
+        task1_result = task_manager.task_results[task1].result
+        task2_result = task_manager.task_results[task2].result
+        task3_result = task_manager.task_results[task3].result
+
+        task1_start_time = task1_result["start_time"]
+        task1_completion_time = task1_result["completed_at"]
+        task2_start_time = task2_result["start_time"]
+        task2_completion_time = task2_result["completed_at"]
+        task3_start_time = task3_result["start_time"]
+        task3_completion_time = task3_result["completed_at"]
+
+        assert task1_start_time >= global_start_time
+        assert task1_completion_time >= task1_start_time + 1
+        assert task2_start_time >= task1_completion_time
+        assert task2_completion_time >= task2_start_time + 1.5
+        assert task3_start_time >= task1_completion_time
+        assert task3_completion_time >= task3_start_time + 1
+
+        # Ensure task3 runs concurrently with task2
+        assert abs(task3_start_time - task2_start_time) < 0.1
+
+        print(f"Task 1 started at: {task1_start_time}")
+        print(f"Task 1 completed at: {task1_completion_time}")
+        print(f"Task 2 started at: {task2_start_time}")
+        print(f"Task 2 completed at: {task2_completion_time}")
+        print(f"Task 3 started at: {task3_start_time}")
+        print(f"Task 3 completed at: {task3_completion_time}")
+
+        assert task2_completion_time >= global_start_time + 2
+        assert task3_completion_time >= global_start_time + 2
+
+
+    # Test rerunning will rerun tasks that ended in recoverable error but not the others!
+
+    # class TestErrorPropagation:
+    #     class ErrorTask(Task):
+    #         def __init__(self, task_name: str, error: Exception):
+    #             super().__init__(task_name=task_name)
+    #             self.error = error
+    #
+    #         async def run_implementation(self, dependent_results: dict["Task", TaskResult]) -> dict[str, any]:
+    #             raise self.error
+    #
+    #         def recoverable_errors(self) -> set[type[Exception]]:
+    #             return {type(self.error)}
+    #
+    #         def hashable_attrs(self) -> tuple:
+    #             return (self.task_name, self.error)
+    #
+    #     @pytest.mark.asyncio
+    #     async def test_error_propagation(self):
+    #         error_task = self.ErrorTask(task_name="error_task", error=RuntimeError("Error message"))
+    #         task_manager = TaskManager(tasks=[error_task], serial_exe=False, persistence=None)

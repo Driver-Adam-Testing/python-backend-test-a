@@ -26,7 +26,7 @@ def test_init_successful_connection(mocker: MockerFixture) -> None:
 
     assert (
         connection_successful
-    ), "The driver-db connection should be successful and not raise an exception."
+    ), "The db connection should be successful and not raise an exception."
 
     assert session_mock.exec.called_once_with(
         select(1)

@@ -15,7 +15,7 @@ class ProductionStack(Stack):
         backend = Backend(self, "ApiBackend", BackendParams(
             environment="production",
             cors_origins="https://app.driverai.com",
-            allowed_ips=[] # Currently disabled
+            allowed_ips=[] # All IPs currently allowed
         ))
         onboarding_lambda = OnboardingLambda(self, "OnboardingLambda", OnboardingLambdaParams(environment="production", api_url="https://api.us1.driverai.com/api/v1", auth0_url="https://auth.driverai.com"))
 

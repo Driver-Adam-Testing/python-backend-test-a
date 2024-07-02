@@ -1,14 +1,13 @@
 import abc
 import asyncio
 import hashlib
+import json
 import pickle
-from pathlib import Path
 from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
-
 from dataclasses import dataclass, field
-import json
 from enum import Enum
+from pathlib import Path
 
 import boto3
 import modal.exception
@@ -217,7 +216,9 @@ class Task(abc.ABC):
         raise NotImplementedError
 
     def _is_recoverable_error(self, error: Exception) -> bool:
-        for recoverable_error in self._base_recoverable_errors | self.recoverable_errors():
+        for recoverable_error in (
+            self._base_recoverable_errors | self.recoverable_errors()
+        ):
             if isinstance(error, recoverable_error):
                 return True
         return False
@@ -254,6 +255,10 @@ class TaskManager:
     write_executor: ThreadPoolExecutor = field(
         default_factory=lambda: ThreadPoolExecutor(max_workers=5)
     )
+
+    @classmethod
+    def with_s3_persistence(cls, bucket_name: str, *args, **kwargs):
+        return cls(*args, persistence=S3TaskResultPersistence(bucket_name), **kwargs)
 
     async def run_tasks(self, run_id: str, resume: bool = False):
         if resume and self.persistence:

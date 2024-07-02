@@ -126,7 +126,7 @@ class Backend(Construct):
         waf_rule_statement = aws_wafv2.CfnWebACL.StatementProperty(managed_rule_group_statement=aws_wafv2.CfnWebACL.ManagedRuleGroupStatementProperty(name="AWSManagedRulesCommonRuleSet", vendor_name="AWS", rule_action_overrides=waf_rule_overrides))
         crs_rule = aws_wafv2.CfnWebACL.RuleProperty(name="CRSRule", priority=1, statement=waf_rule_statement, visibility_config=waf_visibility_config_crs, override_action=aws_wafv2.CfnWebACL.OverrideActionProperty(none={}))
         waf_rules = [crs_rule]
-        if(params.allowed_ips.count() > 0):
+        if len(params.allowed_ips) > 0:
             whitelist_ip_set = aws_wafv2.CfnIPSet(self, "WhitelistIPs", ip_address_version="IPV4", scope="REGIONAL", addresses=params.allowed_ips)
             ipset_rule_statement = aws_wafv2.CfnWebACL.StatementProperty(ip_set_reference_statement=aws_wafv2.CfnWebACL.IPSetReferenceStatementProperty(arn=whitelist_ip_set.attr_arn))
             n = aws_wafv2.CfnWebACL.NotStatementProperty(statement=ipset_rule_statement)

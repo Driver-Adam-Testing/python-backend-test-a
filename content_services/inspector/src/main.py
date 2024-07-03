@@ -1,26 +1,21 @@
+import os
+import pprint
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
-import pprint
-import asyncio
-import os
 
 import modal
-from tasks import FolderTechDocTask, FileTechDocTask, SymbolsTask, TopLevelDocsTask
-
-
-from inspection.extensions import CODE_EXT, META_EXT
-from utils.task import TaskManager, flatten_tasks
-from utils.dag import FileTreeDag, NodeKind, Node
-
-
 from common import app
+from tasks import FileTechDocTask, FolderTechDocTask, SymbolsTask, TopLevelDocsTask
+from utils.dag import FileTreeDag, Node, NodeKind
+from utils.task import TaskManager, flatten_tasks
 
 # TODO considering using concurrent inputs when we're just calling open AI. This should
 # save some cost (though costs are negligible today)
 
 # TODO add tasks for embedding, db persistence, etc. We want to be optionally coupled to a db
 # so we can run without the full application context, potentially
+
 
 # Unified structure for file paths and source content IDs
 @dataclass
@@ -64,26 +59,33 @@ class FileInfo:
     memory="2048",
     timeout=3600 * 5,
     region="us-east",
-    concurrency_limit=5
+    concurrency_limit=5,
 )
 async def inspect_db(codebase_id: uuid.UUID, run_id: str, resume: bool = False):
+    import tempfile
+
+    import boto3
     from utils.db import (
+        SourceContentTypeMap,
+        download_source_content_file,
         get_codebase_by_id,
         get_source_contents_by_codebase_id,
-        download_source_content_file,
-        SourceContentTypeMap
     )
-    import tempfile
-    import boto3
 
     codebase = await get_codebase_by_id(codebase_id)
-    source_contents_files = await get_source_contents_by_codebase_id(codebase_id, {SourceContentTypeMap.FILE})
-    source_contents_all = await get_source_contents_by_codebase_id(codebase_id, {SourceContentTypeMap.FILE, SourceContentTypeMap.DIRECTORY})
-    source_content_codebase = await get_source_contents_by_codebase_id(codebase_id, {SourceContentTypeMap.CODEBASE_ROOT})
+    source_contents_files = await get_source_contents_by_codebase_id(
+        codebase_id, {SourceContentTypeMap.FILE}
+    )
+    source_contents_all = await get_source_contents_by_codebase_id(
+        codebase_id, {SourceContentTypeMap.FILE, SourceContentTypeMap.DIRECTORY}
+    )
+    source_content_codebase = await get_source_contents_by_codebase_id(
+        codebase_id, {SourceContentTypeMap.CODEBASE_ROOT}
+    )
     assert len(source_content_codebase) == 1
     source_content_codebase_id = source_content_codebase[0].id
 
-    #TODO handle the S3_ENDPOINT_URL gracefully
+    # TODO handle the S3_ENDPOINT_URL gracefully
     s3_client = boto3.client("s3", endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL"))
     with tempfile.TemporaryDirectory() as download_dir:
         download_root = Path(download_dir)
@@ -94,22 +96,30 @@ async def inspect_db(codebase_id: uuid.UUID, run_id: str, resume: bool = False):
                 codebase_storage_url=codebase.storage_url,
                 codebase_root=codebase.resource_root,
                 source_content_rel_path=sc.relative_path,
-                download_root=download_root
+                download_root=download_root,
             )
             file_paths.append(download_abs_path)
             # file_paths.append(
             #     FileInfo(path=download_abs_path, source_content_id=sc.id)
             # )
-        codebase_dag: FileTreeDag = build_dag(root_path=download_root, file_paths=file_paths)
+        codebase_dag: FileTreeDag = build_dag(
+            root_path=download_root, file_paths=file_paths
+        )
         sorted_nodes = codebase_dag.topological_sort()
-        path_to_source_content_id = {Path(sc.relative_path): sc.id for sc in source_contents_all}
+        path_to_source_content_id = {
+            Path(sc.relative_path): sc.id for sc in source_contents_all
+        }
 
         for k in path_to_source_content_id.keys():
             print(k)
         print("=======")
         for node in sorted_nodes:
             print(node.root_rel_path)
-        nodes_with_id: list[tuple[Node, uuid.UUID | None]] = [(node, path_to_source_content_id[node.root_rel_path]) for node in sorted_nodes if node.root_rel_path != Path(".")]
+        nodes_with_id: list[tuple[Node, uuid.UUID | None]] = [
+            (node, path_to_source_content_id[node.root_rel_path])
+            for node in sorted_nodes
+            if node.root_rel_path != Path(".")
+        ]
 
         await inspect_files(
             sc_codebase_id=source_content_codebase_id,
@@ -117,7 +127,7 @@ async def inspect_db(codebase_id: uuid.UUID, run_id: str, resume: bool = False):
             nodes_with_id=nodes_with_id,
             codebase_name=codebase.codebase_name,
             run_id=run_id,
-            resume=resume
+            resume=resume,
         )
 
 
@@ -125,24 +135,25 @@ def build_dag(root_path: Path, file_paths: list[Path]) -> FileTreeDag:
     print("Building DAG...")
     dag = FileTreeDag(root_abs_path=root_path)
     for p in file_paths:
-        if (
-            p.is_file()
-        ):
+        if p.is_file():
             dag.add_file(p, change_status=False)
     return dag
 
 
 async def inspect_files(
-    sc_codebase_id: uuid.UUID, codebase_root: Path, nodes_with_id: list[tuple[Node, uuid.UUID | None]], codebase_name: str, run_id: str, resume: bool
+    sc_codebase_id: uuid.UUID,
+    codebase_root: Path,
+    nodes_with_id: list[tuple[Node, uuid.UUID | None]],
+    codebase_name: str,
+    run_id: str,
+    resume: bool,
 ):
-
-
     print("---------- All nodes ----------")
-    for (node, _) in nodes_with_id:
+    for node, _ in nodes_with_id:
         print(node)
 
     tasks = []
-    for (node, sc_id) in nodes_with_id:
+    for node, sc_id in nodes_with_id:
         lite_node = node.into_lite_node()
 
         if node.kind in {NodeKind.SUB_FOLDER, NodeKind.ROOT_FOLDER}:
@@ -168,7 +179,7 @@ async def inspect_files(
         else:  # File
             source_code = get_file_content(codebase_root / lite_node.root_rel_path)
             tech_docs_task = FileTechDocTask(
-                codebase_name=codebase_name, # TODO make sure codebase name is handled correctly.
+                codebase_name=codebase_name,  # TODO make sure codebase name is handled correctly.
                 source_code=source_code,
                 node=lite_node,
                 task_name=f"TechDoc {node.root_rel_path}",
@@ -201,7 +212,9 @@ async def inspect_files(
         print("=> ", t)
 
     print("\n---------- Running tasks ----------")
-    task_manager = TaskManager(tasks, serial_exe=False)
+    task_manager = TaskManager.with_s3_persistence(
+        bucket_name=os.environ["BUCKET_NAME"], tasks=tasks, serial_exe=False
+    )
 
     task_results = await task_manager.run_tasks(run_id, resume=resume)
 
@@ -226,7 +239,6 @@ async def inspect_files(
 
 def get_file_content(path: Path) -> str:
     return Path(path).read_text()
-
 
 
 #
@@ -349,8 +361,8 @@ def get_file_content(path: Path) -> str:
 )
 async def db_test():
     from database.db import async_engine
-    from sqlmodel import select
     from database.models_v1 import Codebase
+    from sqlmodel import select
     from sqlmodel.ext.asyncio.session import AsyncSession
 
     async with AsyncSession(async_engine) as session:
@@ -371,7 +383,9 @@ def main(resume_from_id: str | None = None):
         run_id = uuid.uuid4()  # When rerunning we would supply this. This is used to identify the run in the db
     try:
         # inspect_local.remote(REMOTE_CODEBASE_ROOT, str(run_id), resume=resume)
-        inspect_db.remote(uuid.UUID("7f65267b-af3f-43b9-bf9b-bca33b4b07bd"), run_id, resume=resume)
+        inspect_db.remote(
+            uuid.UUID("7f65267b-af3f-43b9-bf9b-bca33b4b07bd"), run_id, resume=resume
+        )
         # asyncio.run(inspect_db.local(uuid.UUID("8dc2ecd9-1289-4359-90a3-dacdd42405a7"), run_id, resume=resume))
     finally:
         print("Run id: ", run_id)

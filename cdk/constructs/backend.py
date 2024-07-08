@@ -7,6 +7,7 @@ from aws_cdk import (
     aws_ecs_patterns,
     aws_ec2,
     aws_iam,
+    aws_logs,
     aws_ssm,
     aws_route53,
     aws_wafv2,
@@ -83,7 +84,13 @@ class Backend(Construct):
         }
         
         task_image = aws_ecs.ContainerImage.from_asset(".", asset_name="python-backend")
-        task_options = aws_ecs_patterns.ApplicationLoadBalancedTaskImageOptions(image=task_image, secrets=container_secrets, environment=container_environment_vars, container_port=8000)
+        task_options = aws_ecs_patterns.ApplicationLoadBalancedTaskImageOptions(
+            image=task_image, 
+            secrets=container_secrets, 
+            environment=container_environment_vars, 
+            container_port=8000,
+            log_driver=aws_ecs.LogDrivers.aws_logs(stream_prefix="python-backend", log_retention=aws_logs.RetentionDays.ONE_YEAR)
+        )
         service = aws_ecs_patterns.ApplicationLoadBalancedFargateService(self, "BackendApi",
             protocol=aws_elasticloadbalancingv2.ApplicationProtocol.HTTPS,
             platform_version=aws_ecs.FargatePlatformVersion.LATEST,

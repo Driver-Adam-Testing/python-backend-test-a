@@ -6,6 +6,8 @@ from openai import OpenAI
 from pydantic import BaseModel
 from config import settings
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import argparse
+from urllib.parse import urlparse
 
 client = OpenAI(
     # This is the default and can be omitted
@@ -43,8 +45,6 @@ def summarize_text_with_openai(text):
         messages=[
             {"role": "system", "content": "You are a helpful assistant."},
             MESSAGE,
-            # ASSISTANT_MESSAGE,
-            # {"role": "user", "content": f"Summarize the following text:\n\n{text}"}
         ],
         model="gpt-4o",
     )
@@ -110,26 +110,25 @@ def embed_metadata(content_metadata):
 
 class PdfInput(BaseModel):
     presigned_url: str
-    pdf_name: str
+    pdf_name: str | None = None
 
 
 def preprocess(input: PdfInput):
-    # data = request.json
     presigned_url = input.presigned_url
-    pdf_name = input.pdf_name
+    pdf_name = input.pdf_name or os.path.basename(urlparse(presigned_url).path)
     download_path = f'./pdfs/{pdf_name}'
 
     # Download the PDF
-    # pdf_path = download_pdf(presigned_url, download_path)
-    # pdf_path = '/Users/ghostmac/Downloads/EVAL-CN0565-ARDZUserGuideAnalogDevicesWiki.pdf'
-    pdf_path = '/Users/ghostmac/Downloads/AD7173-8.pdf'
-    # # Split PDF into pages
+    pdf_path = download_pdf(presigned_url, download_path)
+    # pdf_path = '/Users/ghostmac/Downloads/AD7173-8.pdf'
+    
+    # Split PDF into pages
     pages = split_pdf_into_pages(pdf_path)
 
-    # # Summarize the PDF and its pages
+    # Summarize the PDF and its pages
     pdf_summary, page_summaries = summarize_pdf_content(pages)
 
-    # # Create content metadata
+    # Create content metadata
     content_metadata = create_content_metadata(pdf_summary, page_summaries)
 
     # Save and embed metadata
@@ -141,5 +140,10 @@ def preprocess(input: PdfInput):
 
 
 if __name__ == '__main__':
-    output = preprocess(PdfInput(presigned_url="https://arxiv.org/pdf/2404.16130", pdf_name="example.pdf"))
+    parser = argparse.ArgumentParser(description='Process a PDF file.')
+    parser.add_argument('presigned_url', type=str, help='The presigned URL of the PDF file.')
+
+    args = parser.parse_args()
+
+    output = preprocess(PdfInput(presigned_url=args.presigned_url, pdf_name=None))
     print(output)

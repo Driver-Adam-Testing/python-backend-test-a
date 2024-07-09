@@ -1,0 +1,119 @@
+import json
+import os
+import fitz
+import requests
+from openai import OpenAI
+from pydantic import BaseModel
+from config import settings
+
+
+def download_pdf(presigned_url, download_path):
+    response = requests.get(presigned_url)
+    with open(download_path, 'wb') as file:
+        file.write(response.content)
+    return download_path
+
+
+def split_pdf_into_pages(pdf_path):
+    doc = fitz.open(pdf_path)
+    pages = []
+    for page_num in range(len(doc)):
+        page = doc.load_page(page_num)
+        text = page.get_text()
+        images = page.get_images(full=True)
+        pages.append({
+            'page_num': page_num + 1,
+            'text': text,
+            'images': images
+        })
+    return pages
+
+
+def summarize_text_with_openai(text):
+    client = OpenAI(
+        # This is the default and can be omitted
+        api_key=settings.OPENAI_API_KEY,
+    )
+
+    PROMPT = f"I am a seasoned software engineer, I seek in-depth technical summarization of text:\n\n{text}"
+    MESSAGE = {"role": "user", "content": PROMPT}
+    chat_completion = client.chat.completions.create(
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            MESSAGE,
+            # ASSISTANT_MESSAGE,
+            # {"role": "user", "content": f"Summarize the following text:\n\n{text}"}
+        ],
+        model="gpt-3.5-turbo",
+    )
+    return chat_completion.choices[0].message.content
+
+
+def summarize_pdf_content(pages):
+    entire_text = "\n\n".join([page['text'] for page in pages])
+    pdf_summary = summarize_text_with_openai(entire_text)
+
+    page_summaries = []
+    for page in pages:
+        summary = summarize_text_with_openai(page['text'])
+        print(f"Page {page['page_num']} Summary: {summary}")
+        page_summaries.append({
+            'page_num': page['page_num'],
+            'summary': summary
+        })
+
+    return pdf_summary, page_summaries
+
+
+def create_content_metadata(pdf_summary, page_summaries):
+    content_metadata = {
+        'pdf_summary': pdf_summary,
+        'page_summaries': page_summaries
+    }
+    return content_metadata
+
+
+def save_metadata(content_metadata):
+    # Placeholder for saving metadata to the database
+    print(content_metadata)
+    return content_metadata
+
+
+def embed_metadata(content_metadata):
+    # Placeholder for embedding metadata
+    return content_metadata
+
+
+class PdfInput(BaseModel):
+    presigned_url: str
+    pdf_name: str
+
+
+def preprocess(input: PdfInput):
+    # data = request.json
+    presigned_url = input.presigned_url
+    pdf_name = input.pdf_name
+    download_path = f'./pdfs/{pdf_name}'
+
+    # Download the PDF
+    pdf_path = download_pdf(presigned_url, download_path)
+
+    # # Split PDF into pages
+    pages = split_pdf_into_pages(pdf_path)
+
+    # # Summarize the PDF and its pages
+    pdf_summary, page_summaries = summarize_pdf_content(pages)
+
+    # # Create content metadata
+    content_metadata = create_content_metadata(pdf_summary, page_summaries)
+
+    # Save and embed metadata
+    save_metadata(content_metadata)
+    content_metadata = embed_metadata(content_metadata)
+
+    return content_metadata
+
+
+if __name__ == '__main__':
+    output = preprocess(PdfInput(presigned_url="https://arxiv.org/pdf/2404.16130", pdf_name="example.pdf"))
+    print(output)

@@ -5,6 +5,12 @@ import requests
 from openai import OpenAI
 from pydantic import BaseModel
 from config import settings
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+client = OpenAI(
+    # This is the default and can be omitted
+    api_key=settings.OPENAI_API_KEY,
+)
 
 
 def download_pdf(presigned_url, download_path):
@@ -30,10 +36,6 @@ def split_pdf_into_pages(pdf_path):
 
 
 def summarize_text_with_openai(text):
-    client = OpenAI(
-        # This is the default and can be omitted
-        api_key=settings.OPENAI_API_KEY,
-    )
 
     PROMPT = f"I am a seasoned software engineer, I seek in-depth technical summarization of text:\n\n{text}"
     MESSAGE = {"role": "user", "content": PROMPT}
@@ -44,7 +46,7 @@ def summarize_text_with_openai(text):
             # ASSISTANT_MESSAGE,
             # {"role": "user", "content": f"Summarize the following text:\n\n{text}"}
         ],
-        model="gpt-3.5-turbo",
+        model="gpt-4o",
     )
     return chat_completion.choices[0].message.content
 
@@ -54,14 +56,36 @@ def summarize_pdf_content(pages):
     pdf_summary = summarize_text_with_openai(entire_text)
 
     page_summaries = []
-    for page in pages:
-        summary = summarize_text_with_openai(page['text'])
-        print(f"Page {page['page_num']} Summary: {summary}")
-        page_summaries.append({
-            'page_num': page['page_num'],
-            'summary': summary
-        })
+    with ThreadPoolExecutor() as executor:
+        future_to_page = {executor.submit(summarize_text_with_openai, page['text']): page for page in pages}
+        for future in as_completed(future_to_page):
+            page = future_to_page[future]
+            try:
+                summary = future.result()
+                print(f"Page {page['page_num']} Summary: {summary}")
+                page_summaries.append({
+                    'page_num': page['page_num'],
+                    'summary': summary
+                })
+            except Exception as exc:
+                print(f"Page {page['page_num']} generated an exception: {exc}")
+                page_summaries.append({
+                    'page_num': page['page_num'],
+                    'summary': "Error: Could not generate summary."
+                })
 
+    # Ensure all pages are summarized
+    summarized_pages = {summary['page_num'] for summary in page_summaries}
+    for page in pages:
+        if page['page_num'] not in summarized_pages:
+            page_summaries.append({
+                'page_num': page['page_num'],
+                'summary': "Error: Summary missing."
+            })
+
+    # Sort page summaries by page number
+    page_summaries.sort(key=lambda x: x['page_num'])
+    
     return pdf_summary, page_summaries
 
 
@@ -96,8 +120,9 @@ def preprocess(input: PdfInput):
     download_path = f'./pdfs/{pdf_name}'
 
     # Download the PDF
-    pdf_path = download_pdf(presigned_url, download_path)
-
+    # pdf_path = download_pdf(presigned_url, download_path)
+    # pdf_path = '/Users/ghostmac/Downloads/EVAL-CN0565-ARDZUserGuideAnalogDevicesWiki.pdf'
+    pdf_path = '/Users/ghostmac/Downloads/AD7173-8.pdf'
     # # Split PDF into pages
     pages = split_pdf_into_pages(pdf_path)
 
@@ -110,7 +135,8 @@ def preprocess(input: PdfInput):
     # Save and embed metadata
     save_metadata(content_metadata)
     content_metadata = embed_metadata(content_metadata)
-
+    with open(f'./metadata/{pdf_name}_metadata.json', 'w') as json_file:
+        json.dump(content_metadata, json_file, indent=4)
     return content_metadata
 
 

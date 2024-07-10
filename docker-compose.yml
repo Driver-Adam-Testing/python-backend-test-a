@@ -60,6 +60,7 @@ services:
       - MODAL_TOKEN_ID=${MODAL_TOKEN_ID?Variable not set}
       - MODAL_TOKEN_SECRET=${MODAL_TOKEN_SECRET?Variable not set}
       - MODAL_ENVIRONMENT=${MODAL_ENVIRONMENT?dev}
+      - INSTALL_DEV=true
   s3:
     image: quay.io/minio/minio:latest
     command: server /data --console-address ":9001"

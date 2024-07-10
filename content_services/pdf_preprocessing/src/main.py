@@ -251,12 +251,10 @@ async def preprocess(input: PdfInput):
     source_content_id = input.source_content_id
     pdf_name = input.pdf_name or os.path.basename(urlparse(presigned_url).path)
     download_path = f'./pdfs/{pdf_name}'
-
     # Download the PDF
     pdf_path = download_pdf(presigned_url, download_path)
     # Split PDF into pages
     pages = split_pdf_into_pages(pdf_path)
-
     # Summarize the PDF and its pages
     pdf_summary, page_summaries = summarize_pdf_content(pages)
 
@@ -265,7 +263,7 @@ async def preprocess(input: PdfInput):
     async with AsyncSession(async_engine) as session:
         async with session.begin():
             # Get source content
-            source_content = await get_source_content(source_content_id, session)
+            source_content = await get_source_content(UUID(source_content_id), session)
             # Create derived content
             derived_content_records = await create_derived_content(source_content, pdf_summary, page_summaries, session)
             session.add_all(derived_content_records)

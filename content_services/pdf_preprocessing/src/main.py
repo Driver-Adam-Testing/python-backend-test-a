@@ -21,6 +21,8 @@ from database.models_v1 import (
 )
 from sqlmodel import select
 
+from src.embed_helpers import generate_embeddings_for_string
+
 LLM_MODEL = "gpt-4o"
 
 client = OpenAI(
@@ -102,12 +104,12 @@ def summarize_pdf_content(pages):
     return pdf_summary, page_summaries
 
 
-
 # get source content by source_content_id
 async def get_source_content(source_content_id: UUID, session) -> SourceContent:
     from sqlmodel import select
     sc = await session.exec(select(SourceContent).where(SourceContent.id == source_content_id))
     return sc.first()
+
 
 async def get_derived_content_type_uuid(content_type: str, session) -> UUID:
     from sqlmodel import select
@@ -121,35 +123,36 @@ async def get_derived_content_type_uuid(content_type: str, session) -> UUID:
         dct_uuid = res_dct.id
     return dct_uuid
 
-async def get_llm_uuid(content_type: str, session) -> UUID:
+
+async def get_llm_uuid(llmModel: str, session) -> UUID:
     from sqlmodel import select
 
     llm_uuid = None
     sel_statement = select(Llm).where(
-        Llm.model == LLM_MODEL
+        Llm.model == llmModel
     )
     llm_dct = (await session.exec(sel_statement)).first()
     if llm_dct:
         llm_uuid = llm_dct.id
     return llm_uuid
 
-async def create_derived_content(source_content, pdf_summary, session) -> [DerivedContent]:
+
+async def create_derived_content(source_content, pdf_summary, page_summaries, session) -> [DerivedContent]:
     from sqlmodel import insert
     derived_contents = []
     # Placeholder for creating derived content
     derived_content_type_id = await get_derived_content_type_uuid('pdf_summary', session)
     llm_uuid = await get_llm_uuid(LLM_MODEL, session)
-    pdf_summary_dc = DerivedContent(
+
+    derived_contents.append(DerivedContent(
         source_content_id=source_content.id,
         derived_content_type_id=derived_content_type_id,
-        content=pdf_summary['pdf_summary'],
+        content=pdf_summary,
         llm_id=llm_uuid,
         order=0
-    )
+    ))
 
-    derived_contents.append(pdf_summary_dc)
-
-    for page_summary in pdf_summary.page_summaries:
+    for page_summary in page_summaries:
         page_summary_dc = DerivedContent(
             source_content_id=source_content.id,
             derived_content_type_id=derived_content_type_id,
@@ -173,15 +176,68 @@ def create_content_metadata(pdf_summary, page_summaries):
     return content_metadata
 
 
-def save_metadata(content_metadata):
-    # Placeholder for saving metadata to the database
-    print(content_metadata)
-    return content_metadata
+async def persist_embeddings(
+        session,
+        split_documents: list,
+        embeds: list,
+        content_type: str | ContentType,
+        codebase_id: str,
+        workspace_id: str,
+        relative_path: str,
+        metadata: dict = {},
+) -> bool:
+    from sqlmodel import delete, select
 
+    if len(split_documents) > 0:
+        try:
+            cm_res = await session.exec(
+                select(ContentMetadata)
+                .where(ContentMetadata.codebase_id == codebase_id)
+                .where(ContentMetadata.relative_path == relative_path)
+                .where(ContentMetadata.content_type == content_type)
+                .where(ContentMetadata.workspace_id == workspace_id)
+            )
+            cm = cm_res.first()
+            if cm is not None:
+                # Delete existing chunks associated with cm
+                print("existing metadata: ", cm.relative_path, cm.content_type)
+                await session.exec(
+                    delete(Chunk).where(Chunk.content_metadata_id == cm.id)
+                )
+                cm.misc_metadata = metadata
+            else:
+                cm = ContentMetadata(
+                    workspace_id=workspace_id,
+                    misc_metadata=metadata,
+                    content_type=content_type,
+                    relative_path=relative_path,
+                    codebase_id=codebase_id,
+                )
+                print("creating: ", relative_path, content_type)
 
-def embed_metadata(content_metadata):
-    # Placeholder for embedding metadata
-    return content_metadata
+            session.add(cm)
+            line_number = 0
+            # if content_type == ContentType.CODE_SYMBOL and "line" in metadata:
+            #     line_number = metadata["line"]
+            [
+                session.add(
+                    Chunk(
+                        text_embedding_3_small=e,
+                        text=d.text,
+                        content_metadata_id=cm.id,
+                        chunk_number=i,
+                        token_count=len(d.tokens),
+                        line_number=line_number if line_number != 0 else d.start_line,
+                    )
+                )
+                for i, (d, e) in enumerate(zip(split_documents, embeds))
+            ]
+            return True
+        except Exception as e:
+            print(f"Error embedding {relative_path}: {e}")
+            return False
+    else:
+        return True
 
 
 class PdfInput(BaseModel):
@@ -198,8 +254,6 @@ async def preprocess(input: PdfInput):
 
     # Download the PDF
     pdf_path = download_pdf(presigned_url, download_path)
-    # pdf_path = '/Users/ghostmac/Downloads/AD7173-8.pdf'
-
     # Split PDF into pages
     pages = split_pdf_into_pages(pdf_path)
 
@@ -213,16 +267,26 @@ async def preprocess(input: PdfInput):
             # Get source content
             source_content = await get_source_content(source_content_id, session)
             # Create derived content
-            derived_content_records = create_derived_content(source_content, pdf_summary, page_summaries)
+            derived_content_records = await create_derived_content(source_content, pdf_summary, page_summaries, session)
             session.add_all(derived_content_records)
+
+            for derived_content in derived_content_records:
+                # Generate embeddings   
+                split_documents, embeds = await generate_embeddings_for_string(derived_content.content)
+                # TODO replace with content type
+                await persist_embeddings(session,
+                                         split_documents,
+                                         embeds,
+                                         "pdf_summary",
+                                         str(source_content.codebase_id),
+                                         str(source_content.workspace_id),
+                                         derived_content.id)
+
             # Create content metadata
             content_metadata = create_content_metadata(pdf_summary, page_summaries)
 
-            # Save and embed metadata
-            save_metadata(content_metadata)
-            content_metadata = embed_metadata(content_metadata)
-            
-            session.commit()
+            await session.commit()
+
     with open(f'./metadata/{pdf_name}_metadata.json', 'w') as json_file:
         json.dump(content_metadata, json_file, indent=4)
     return content_metadata

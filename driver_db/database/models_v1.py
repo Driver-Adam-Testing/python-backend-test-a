@@ -19,6 +19,7 @@ class ContentType(str, enum.Enum):
     FILE_SUMMARY = "FILE_SUMMARY"
     FOLDER_SUMMARY = "FOLDER_SUMMARY"
     CODE_SYMBOL = "CODE_SYMBOL"
+    PDF_SUMMARY = "PDF_SUMMARY"
     UNKNOWN = "UNKNOWN"
 
 

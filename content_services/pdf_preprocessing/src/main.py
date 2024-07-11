@@ -1,11 +1,12 @@
 import json
 import os
+from datetime import datetime
 from uuid import UUID
-
 import fitz
 import requests
 from openai import OpenAI
 from pydantic import BaseModel
+from sqlalchemy import JSON, String
 from config import settings
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import argparse
@@ -21,7 +22,7 @@ from database.models_v1 import (
 )
 from sqlmodel import select
 
-from src.embed_helpers import generate_embeddings_for_string
+from embed_helpers import generate_embeddings_for_string
 
 LLM_MODEL = "gpt-4o"
 
@@ -137,6 +138,18 @@ async def get_llm_uuid(llmModel: str, session) -> UUID:
     return llm_uuid
 
 
+async def create_source_content(workspace_id, codebase_id, source_content_type_id, session) -> SourceContent:
+    from sqlmodel import insert
+    source_content = SourceContent(
+        workspace_id=workspace_id,
+        codebase_id=codebase_id,
+        source_content_type_id=source_content_type_id
+    )
+    session.add(source_content)
+    await session.commit()
+    return source_content
+
+
 async def create_derived_content(source_content, pdf_summary, page_summaries, session) -> [DerivedContent]:
     from sqlmodel import insert
     derived_contents = []
@@ -148,6 +161,7 @@ async def create_derived_content(source_content, pdf_summary, page_summaries, se
         source_content_id=source_content.id,
         derived_content_type_id=derived_content_type_id,
         content=pdf_summary,
+        status="generation-complete",
         llm_id=llm_uuid,
         order=0
     ))
@@ -157,6 +171,7 @@ async def create_derived_content(source_content, pdf_summary, page_summaries, se
             source_content_id=source_content.id,
             derived_content_type_id=derived_content_type_id,
             content=page_summary['summary'],
+            status="generation-complete",
             llm_id=llm_uuid,
             metadata={
                 'page_num': page_summary['page_num']
@@ -180,7 +195,7 @@ async def persist_embeddings(
         session,
         split_documents: list,
         embeds: list,
-        content_type: str | ContentType,
+        content_type: ContentType,
         codebase_id: str,
         workspace_id: str,
         relative_path: str,
@@ -190,13 +205,26 @@ async def persist_embeddings(
 
     if len(split_documents) > 0:
         try:
-            cm_res = await session.exec(
+            query = (
                 select(ContentMetadata)
                 .where(ContentMetadata.codebase_id == codebase_id)
                 .where(ContentMetadata.relative_path == relative_path)
                 .where(ContentMetadata.content_type == content_type)
                 .where(ContentMetadata.workspace_id == workspace_id)
             )
+
+            if 'document-type' in metadata:
+                query = query.where(
+                    ContentMetadata.misc_metadata["document-type"].as_string() == content_type
+                )
+
+            if 'page_num' in metadata:
+                page_num = str(metadata['page_num'])
+                query = query.where(
+                    ContentMetadata.misc_metadata["page_num"].as_string() == page_num
+                )
+
+            cm_res = await session.exec(query)
             cm = cm_res.first()
             if cm is not None:
                 # Delete existing chunks associated with cm
@@ -212,6 +240,8 @@ async def persist_embeddings(
                     content_type=content_type,
                     relative_path=relative_path,
                     codebase_id=codebase_id,
+                    created_at=datetime.now(),
+                    updated_at=datetime.now()
                 )
                 print("creating: ", relative_path, content_type)
 
@@ -257,7 +287,9 @@ async def preprocess(input: PdfInput):
     pages = split_pdf_into_pages(pdf_path)
     # Summarize the PDF and its pages
     pdf_summary, page_summaries = summarize_pdf_content(pages)
-
+    # pdf_summary = "some pdf summary"
+    # page_summaries = [{'page_num': 1,
+    #                    'summary': 'This configuration pertains to an HTTPS load balancer setup with distinct rules and target groups. Here’s a detailed technical summary:\n\n### Listeners\n1. **Protocol and Port**: Listens on HTTPS (secured HTTP) on port 443.\n\n### Rules\n1. **Rule 1**: \n   - **Priority**: 100\n   - **Action**: Forward traffic to a specified target group.\n   - **Conditions**: Applies if the URL path pattern matches `/*` (all requests).\n\n2. **Rule 2** (Default rule):\n   - **Action**: Return a fixed response if no other rule matches.\n   - **Condition**: Applies when no other rule is satisfied.\n\n### Target Group (DLMApiTargetGroup)\n- The target group contains two targets with specific IP addresses and health statuses.\n- **Algorithm**: Likely round-robin or similar distribution mechanism (implied but not specified).\n\n### Targets\n1. **Target 1**:\n   - **Port**: 4000\n   - **IP Address**: 172.10.144.25\n   - **Status**: Healthy\n\n2. **Target 2**:\n   - **Port**: 4000\n   - **IP Address**: 172.10.209.196\n   - **Status**: Healthy\n\n### Summary\n- **HTTPS Listener** on port 443 with a forwarding rule having the highest priority (100) to a target group if the path pattern matches `/*`.\n- **Default rule** to handle all unmatched requests with a fixed response.\n- **Target Group "DLMApiTargetGroup"**: Contains 2 healthy targets listening on port 4000, addressed at 172.10.144.25 and 172.10.209.196 respectively.\n\nThis setup ensures that all incoming HTTPS traffic is routed primarily to the healthy backend targets provided, with a catch-all rule to handle any unmatched requests.'}]
     from database.db import async_engine
     from sqlmodel.ext.asyncio.session import AsyncSession
     async with AsyncSession(async_engine) as session:
@@ -267,6 +299,7 @@ async def preprocess(input: PdfInput):
             # Create derived content
             derived_content_records = await create_derived_content(source_content, pdf_summary, page_summaries, session)
             session.add_all(derived_content_records)
+            # await session.commit()
 
             for derived_content in derived_content_records:
                 # Generate embeddings   
@@ -275,12 +308,14 @@ async def preprocess(input: PdfInput):
                 await persist_embeddings(session,
                                          split_documents,
                                          embeds,
-                                         "pdf_summary",
+                                         ContentType.PDF_SUMMARY,
                                          str(source_content.codebase_id),
                                          str(source_content.workspace_id),
-                                         derived_content.id)
+                                         source_content.relative_path,
+                                         {'document-type': ContentType.PDF_SUMMARY,
+                                          'page_num': derived_content.order})
 
-            # Create content metadata
+                # Create content metadata
             content_metadata = create_content_metadata(pdf_summary, page_summaries)
 
             await session.commit()
@@ -288,13 +323,3 @@ async def preprocess(input: PdfInput):
     with open(f'./metadata/{pdf_name}_metadata.json', 'w') as json_file:
         json.dump(content_metadata, json_file, indent=4)
     return content_metadata
-
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Process a PDF file.')
-    parser.add_argument('presigned_url', type=str, help='The presigned URL of the PDF file.')
-
-    args = parser.parse_args()
-
-    output = preprocess(PdfInput(presigned_url=args.presigned_url, pdf_name=None))
-    print(output)

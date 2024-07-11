@@ -5,7 +5,7 @@ from openai import OpenAI
 
 TEXT_EMBEDDING_MODEL = os.getenv("TEXT_EMBEDDING_MODEL", "text-embedding-3-small")
 SUPPORTED_OPENAI_MODELS = ["text-embedding-3-small"]
-from .text_splitter import TextChunk
+from text_splitter import TextChunk
 
 
 class TextEmbedder:

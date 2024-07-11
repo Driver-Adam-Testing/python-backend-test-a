@@ -16,12 +16,11 @@ async def main():
     object_key = f"{codebase_id}/{relative_path}"
     presigned_url = generate_get_presigned_url(key=object_key, bucket=org_id_hash)
     print(presigned_url)
-    output = await preprocess(PdfInput(
+    await preprocess(PdfInput(
         presigned_url=presigned_url,
         pdf_name=None,
         source_content_id='4f6e2a72-3f69-47ff-b967-b43733cb158e'
     ))
-    print(output)
 
 
 if __name__ == "__main__":

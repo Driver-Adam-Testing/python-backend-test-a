@@ -275,8 +275,9 @@ class PdfInput(BaseModel):
     pdf_name: str | None = None
     source_content_id: str | None = None
 
-#TODO: we dont need the presigned url, we can just pass the pdf path
-#TODO: consolidate all embeddings into one place / service
+
+# TODO: we dont need the presigned url, we can just pass the pdf path
+# TODO: consolidate all embeddings into one place / service
 
 async def preprocess(input: PdfInput):
     presigned_url = input.presigned_url
@@ -299,26 +300,25 @@ async def preprocess(input: PdfInput):
             derived_content_records = await create_derived_content(source_content, pdf_summary, page_summaries, session)
             session.add_all(derived_content_records)
             # await session.commit()
-
+            embedding_dict = {}
             for derived_content in derived_content_records:
                 # Generate embeddings   
                 split_documents, embeds = await generate_embeddings_for_string(derived_content.content)
-                # TODO replace with content type
-                await persist_embeddings(session,
-                                         split_documents,
-                                         embeds,
-                                         ContentType.PDF_SUMMARY,
-                                         str(source_content.codebase_id),
-                                         str(source_content.workspace_id),
-                                         source_content.relative_path,
-                                         {'document-type': ContentType.PDF_SUMMARY,
-                                          'page_num': derived_content.order})
 
-                # Create content metadata
-            content_metadata = create_content_metadata(pdf_summary, page_summaries)
+                content_embedded = await persist_embeddings(session,
+                                                            split_documents,
+                                                            embeds,
+                                                            ContentType.PDF_SUMMARY,
+                                                            str(source_content.codebase_id),
+                                                            str(source_content.workspace_id),
+                                                            source_content.relative_path,
+                                                            {
+                                                                'document-type': ContentType.PDF_SUMMARY,
+                                                                'page_num': derived_content.order})
+                embedding_dict[derived_content.id] = content_embedded
 
             await session.commit()
 
-    with open(f'./metadata/{pdf_name}_metadata.json', 'w') as json_file:
-        json.dump(content_metadata, json_file, indent=4)
-    return content_metadata
+            for key, value in embedding_dict.items():
+                print(f"Embedding for {key} persisted: {value}")
+    return

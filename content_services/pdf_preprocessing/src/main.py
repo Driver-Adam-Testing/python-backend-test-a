@@ -275,6 +275,8 @@ class PdfInput(BaseModel):
     pdf_name: str | None = None
     source_content_id: str | None = None
 
+#TODO: we dont need the presigned url, we can just pass the pdf path
+#TODO: consolidate all embeddings into one place / service
 
 async def preprocess(input: PdfInput):
     presigned_url = input.presigned_url
@@ -287,9 +289,6 @@ async def preprocess(input: PdfInput):
     pages = split_pdf_into_pages(pdf_path)
     # Summarize the PDF and its pages
     pdf_summary, page_summaries = summarize_pdf_content(pages)
-    # pdf_summary = "some pdf summary"
-    # page_summaries = [{'page_num': 1,
-    #                    'summary': 'This configuration pertains to an HTTPS load balancer setup with distinct rules and target groups. Here’s a detailed technical summary:\n\n### Listeners\n1. **Protocol and Port**: Listens on HTTPS (secured HTTP) on port 443.\n\n### Rules\n1. **Rule 1**: \n   - **Priority**: 100\n   - **Action**: Forward traffic to a specified target group.\n   - **Conditions**: Applies if the URL path pattern matches `/*` (all requests).\n\n2. **Rule 2** (Default rule):\n   - **Action**: Return a fixed response if no other rule matches.\n   - **Condition**: Applies when no other rule is satisfied.\n\n### Target Group (DLMApiTargetGroup)\n- The target group contains two targets with specific IP addresses and health statuses.\n- **Algorithm**: Likely round-robin or similar distribution mechanism (implied but not specified).\n\n### Targets\n1. **Target 1**:\n   - **Port**: 4000\n   - **IP Address**: 172.10.144.25\n   - **Status**: Healthy\n\n2. **Target 2**:\n   - **Port**: 4000\n   - **IP Address**: 172.10.209.196\n   - **Status**: Healthy\n\n### Summary\n- **HTTPS Listener** on port 443 with a forwarding rule having the highest priority (100) to a target group if the path pattern matches `/*`.\n- **Default rule** to handle all unmatched requests with a fixed response.\n- **Target Group "DLMApiTargetGroup"**: Contains 2 healthy targets listening on port 4000, addressed at 172.10.144.25 and 172.10.209.196 respectively.\n\nThis setup ensures that all incoming HTTPS traffic is routed primarily to the healthy backend targets provided, with a catch-all rule to handle any unmatched requests.'}]
     from database.db import async_engine
     from sqlmodel.ext.asyncio.session import AsyncSession
     async with AsyncSession(async_engine) as session:

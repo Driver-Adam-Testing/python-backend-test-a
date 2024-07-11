@@ -1,4 +1,4 @@
-from database.models_v1 import Chunk, ContentMetadata
+from database.models_v1 import Chunk, ContentMetadata, Workspace
 from pydantic import BaseModel
 from sqlmodel import Session, asc, or_, select
 
@@ -31,11 +31,17 @@ class SearchResults(BaseModel):
 def search_content_metadata(session: Session, organization_id: str, input: SearchInput):
     embedded_query = TextEmbedder().batch_embed_text([input.query])[0]
 
-    statement = select(
-        Chunk,
-        ContentMetadata,
-        Chunk.text_embedding_3_small.l2_distance(embedded_query).label("score"),
-    ).where(ContentMetadata.id == Chunk.content_metadata_id)
+    statement = (
+        select(
+            Chunk,
+            ContentMetadata,
+            Chunk.text_embedding_3_small.l2_distance(embedded_query).label("score"),
+            Workspace,
+        )
+        .where(ContentMetadata.id == Chunk.content_metadata_id)
+        .where(Workspace.organization_id == organization_id)
+        .where(ContentMetadata.workspace_id == Workspace.id)
+    )
 
     if input.workspace_id:
         statement = statement.where(ContentMetadata.workspace_id == input.workspace_id)
@@ -72,7 +78,7 @@ def search_content_metadata(session: Session, organization_id: str, input: Searc
     search_results = []
 
     accumulated_tokens = 0
-    for c, cm, score in results:
+    for c, cm, score, _ in results:
         c: Chunk = c
         cm: ContentMetadata = cm
         if input.token_limit is not None:

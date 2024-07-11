@@ -15,6 +15,10 @@ router = APIRouter()
 def search(
     session: CurrentSession, user: CurrentUser, input: SearchInput
 ) -> SearchResults:
+    try:
+        organization_id = user.organization_id
+    except Exception:
+        organization_id = None
     return search_content_metadata(
-        session=session, organization_id=user.organization_id, input=input
+        session=session, organization_id=organization_id, input=input
     )

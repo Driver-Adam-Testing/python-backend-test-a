@@ -28,7 +28,9 @@ class SearchResults(BaseModel):
     results: list[SearchResult]
 
 
-def search_content_metadata(session: Session, organization_id: str, input: SearchInput):
+def search_content_metadata(
+    session: Session, organization_id: str | None, input: SearchInput
+):
     embedded_query = TextEmbedder().batch_embed_text([input.query])[0]
 
     statement = (
@@ -39,9 +41,11 @@ def search_content_metadata(session: Session, organization_id: str, input: Searc
             Workspace,
         )
         .where(ContentMetadata.id == Chunk.content_metadata_id)
-        .where(Workspace.organization_id == organization_id)
         .where(ContentMetadata.workspace_id == Workspace.id)
     )
+
+    if organization_id:
+        statement = statement.where(Workspace.organization_id == organization_id)
 
     if input.workspace_id:
         statement = statement.where(ContentMetadata.workspace_id == input.workspace_id)

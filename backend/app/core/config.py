@@ -51,6 +51,8 @@ class Settings(BaseSettings):
     GH_REDIRECT_URI: str | None = None
     GH_WEBHOOK_SECRET: str | None = None
 
+    OPENAI_API_KEY: str | None = None
+
     @computed_field  # type: ignore[misc]
     @property
     def server_host(self) -> str:

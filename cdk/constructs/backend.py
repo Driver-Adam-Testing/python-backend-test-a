@@ -53,6 +53,9 @@ class Backend(Construct):
         github_secret_name = aws_ssm.StringParameter.value_from_lookup(scope, parameter_name="/baseline/infra/v2/pythonBackend/githubConfigurationsName")
         github_secret = aws_secretsmanager.Secret.from_secret_name_v2(self, "GitHubCredentials", secret_name=github_secret_name)
 
+        openai_secret_name = aws_ssm.StringParameter.value_from_lookup(scope, parameter_name="/baseline/infra/v2/pythonBackend/openAIApiKeyName")
+        openai_secret = aws_secretsmanager.Secret.from_secret_name_v2(self, "OpenAIApiKeyCredentials", secret_name=openai_secret_name)
+        
         container_environment_vars = {
             "BACKEND_CORS_ORIGINS": params.cors_origins,
             "PORT": "8000",
@@ -81,6 +84,7 @@ class Backend(Construct):
             "GH_CLIENT_SECRET": aws_ecs.Secret.from_secrets_manager(github_secret, "GH_CLIENT_SECRET"),
             "GH_REDIRECT_URI": aws_ecs.Secret.from_secrets_manager(github_secret, "GH_REDIRECT_URI"),
             "GH_WEBHOOK_SECRET": aws_ecs.Secret.from_secrets_manager(github_secret, "GH_WEBHOOK_SECRET"),
+            "OPENAI_API_KEY": aws_ecs.Secret.from_secrets_manager(openai_secret)
         }
         
         task_image = aws_ecs.ContainerImage.from_asset(".", asset_name="python-backend")

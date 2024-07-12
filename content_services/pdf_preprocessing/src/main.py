@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 from datetime import datetime
@@ -23,6 +24,7 @@ from database.models_v1 import (
 from sqlmodel import select
 
 from embed_helpers import generate_embeddings_for_string
+from utils.aws_s3 import generate_get_presigned_url
 
 LLM_MODEL = "gpt-4o"
 
@@ -108,8 +110,17 @@ def summarize_pdf_content(pages):
 # get source content by source_content_id
 async def get_source_content(source_content_id: UUID, session) -> SourceContent:
     from sqlmodel import select
-    sc = await session.exec(select(SourceContent).where(SourceContent.id == source_content_id))
-    return sc.first()
+    from database.models_v1 import Workspace  # Import Workspace model
+
+    query = (
+        select(SourceContent, Workspace)
+        .join(Workspace, SourceContent.workspace_id == Workspace.id)
+        .where(SourceContent.id == source_content_id)
+    )
+    result = await session.exec(query)
+    source_content, workspace = result.first()
+    source_content.workspace = workspace  # Attach workspace to source_content
+    return source_content
 
 
 async def get_derived_content_type_uuid(content_type: str, session) -> UUID:
@@ -276,26 +287,32 @@ class PdfInput(BaseModel):
     source_content_id: str | None = None
 
 
-# TODO: we dont need the presigned url, we can just pass the pdf path
 # TODO: consolidate all embeddings into one place / service
 
-async def preprocess(input: PdfInput):
-    presigned_url = input.presigned_url
-    source_content_id = input.source_content_id
-    pdf_name = input.pdf_name or os.path.basename(urlparse(presigned_url).path)
-    download_path = f'./pdfs/{pdf_name}'
-    # Download the PDF
-    pdf_path = download_pdf(presigned_url, download_path)
-    # Split PDF into pages
-    pages = split_pdf_into_pages(pdf_path)
-    # Summarize the PDF and its pages
-    pdf_summary, page_summaries = summarize_pdf_content(pages)
+# async def preprocess(input: PdfInput):
+async def preprocess(source_content_id: str):
     from database.db import async_engine
     from sqlmodel.ext.asyncio.session import AsyncSession
+
     async with AsyncSession(async_engine) as session:
         async with session.begin():
             # Get source content
             source_content = await get_source_content(UUID(source_content_id), session)
+            # await source_content.workspace
+            org_id = source_content.workspace.organization_id
+            org_id_hash = hashlib.sha256(org_id.encode()).hexdigest()[:63]
+
+            object_key = f"{source_content.codebase_id}/{source_content.relative_path}"
+            presigned_url = generate_get_presigned_url(key=object_key, bucket=org_id_hash)
+
+            pdf_name = os.path.basename(urlparse(source_content.relative_path).path)
+            download_path = f'./pdfs/{pdf_name}'
+            # Download the PDF
+            pdf_path = download_pdf(presigned_url, download_path)
+            # Split PDF into pages
+            pages = split_pdf_into_pages(pdf_path)
+            # Summarize the PDF and its pages
+            pdf_summary, page_summaries = summarize_pdf_content(pages)
             # Create derived content
             derived_content_records = await create_derived_content(source_content, pdf_summary, page_summaries, session)
             session.add_all(derived_content_records)

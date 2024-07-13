@@ -7,6 +7,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 
 from app.api.session import CurrentSession
+from app.core.config import settings
 
 router = APIRouter()
 
@@ -53,4 +54,26 @@ def trigger_onboarding(
         UUID(trigger_body.workspace_id),
         trigger_body.provider,
     )
+    return Onboarding(status="OK")
+
+
+class PdfOnboardingRequestBody(BaseModel):
+    source_content_id: str | None = None
+
+
+@router.post(
+    "/generate-pdf-summaries",
+    summary="Trigger PDF Summarization and Embedding",
+    response_description="Return HTTP Status Code 200 (OK)",
+)
+def trigger_pdf_summary_processing(session: CurrentSession, body: PdfOnboardingRequestBody) -> Onboarding:
+    logging.info("Triggering pdf summary creation...")
+    # archive_name = Path(trigger_body.object_key).name
+    create_and_embed_pdf_summaries = modal.Function.lookup(
+        app_name="pdf-summary-embedding",
+        environment_name=settings.MODAL_ENVIRONMENT,
+        tag="create_and_embed_pdf_summaries"
+    )
+    create_and_embed_pdf_summaries.spawn(body.source_content_id)
+
     return Onboarding(status="OK")

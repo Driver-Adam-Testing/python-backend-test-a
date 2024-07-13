@@ -125,6 +125,7 @@ class M2M(BaseModel):
     issued_at: int = Field(..., alias="iat")
     expiration: int = Field(..., alias="exp")
     authorized_party: str = Field(..., alias="azp")
+    organization_id: str
 
 
 def get_token_payload(request: Request) -> dict:

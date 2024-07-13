@@ -1,6 +1,5 @@
 from typing import List
 
-import tiktoken
 
 TOKEN = "token"
 
@@ -61,6 +60,8 @@ class TextSplitter:
         """
         chunks = []
         if self.split_on == TOKEN:
+            import tiktoken
+
             encoder = tiktoken.encoding_for_model(self.model)
             tokens = list(encoder.encode(text))
             line_number = 0

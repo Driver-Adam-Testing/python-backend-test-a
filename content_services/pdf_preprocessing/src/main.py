@@ -1,36 +1,34 @@
 import hashlib
-import json
 import os
 from datetime import datetime
+from pathlib import Path
 from uuid import UUID
-import fitz
 import requests
-from openai import OpenAI
-from pydantic import BaseModel
-from sqlalchemy import JSON, String
 from config import settings
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import argparse
+
 from urllib.parse import urlparse
 from database.models_v1 import (
     Chunk,
-    Codebase,
     ContentMetadata,
     ContentType,
     Llm,
     DerivedContent,
     SourceContent, DerivedContentType,
 )
-from sqlmodel import select
+import modal
 
 from embed_helpers import generate_embeddings_for_string
 from utils.aws_s3 import generate_get_presigned_url
 
 LLM_MODEL = "gpt-4o"
 
-client = OpenAI(
-    # This is the default and can be omitted
-    api_key=settings.OPENAI_API_KEY,
+app = modal.App("pdf-summary-embedding")
+
+image = (
+    modal.Image.debian_slim(python_version="3.12")
+    .copy_local_dir('../../driver_db/', remote_path='/driver_db')
+    .poetry_install_from_file("pyproject.toml")
 )
 
 
@@ -42,6 +40,8 @@ def download_pdf(presigned_url, download_path):
 
 
 def split_pdf_into_pages(pdf_path):
+    import pymupdf as fitz
+
     doc = fitz.open(pdf_path)
     pages = []
     for page_num in range(len(doc)):
@@ -57,6 +57,12 @@ def split_pdf_into_pages(pdf_path):
 
 
 def summarize_text_with_openai(text):
+    from openai import OpenAI
+
+    client = OpenAI(
+        # This is the default and can be omitted
+        api_key=settings.OPENAI_API_KEY,
+    )
     PROMPT = f"I am a seasoned software engineer, I seek in-depth technical summarization of text:\n\n{text}"
     MESSAGE = {"role": "user", "content": PROMPT}
     chat_completion = client.chat.completions.create(
@@ -281,12 +287,6 @@ async def persist_embeddings(
         return True
 
 
-class PdfInput(BaseModel):
-    presigned_url: str
-    pdf_name: str | None = None
-    source_content_id: str | None = None
-
-
 # TODO: consolidate all embeddings into one place / service
 
 # async def preprocess(input: PdfInput):
@@ -306,7 +306,7 @@ async def preprocess(source_content_id: str):
             presigned_url = generate_get_presigned_url(key=object_key, bucket=org_id_hash)
 
             pdf_name = os.path.basename(urlparse(source_content.relative_path).path)
-            download_path = f'./pdfs/{pdf_name}'
+            download_path = Path(pdf_name)
             # Download the PDF
             pdf_path = download_pdf(presigned_url, download_path)
             # Split PDF into pages
@@ -339,3 +339,60 @@ async def preprocess(source_content_id: str):
             for key, value in embedding_dict.items():
                 print(f"Embedding for {key} persisted: {value}")
     return
+
+
+@app.function(
+    image=image,
+    mounts=[
+        modal.Mount.from_local_python_packages("database"),
+        modal.Mount.from_local_dir(
+            local_path="../../driver_db/certs/",
+            remote_path="/root/data/",
+        )
+    ],
+    secrets=[
+        modal.Secret.from_name("env-name"),
+        modal.Secret.from_name("aws-inspector-s3"),
+        modal.Secret.from_name("db"),
+        modal.Secret.from_name("open-ai")
+    ],
+    proxy=modal.Proxy.from_name("pg-proxy"),
+    timeout=24 * 60 * 60,
+    region='us-east',
+    concurrency_limit=5
+)
+async def create_and_embed_pdf_summaries(source_content_id: str) -> None:
+    # add some logging
+    print(f"Starting PDF preprocessing...")
+    print(f"Creating summaries for source_content: {source_content_id}")
+    if not source_content_id:
+        raise ValueError("source_content_id is required")
+
+    await preprocess(source_content_id)
+
+
+async def run_tasks():
+    import asyncio
+    source_content_ids = [
+        "106856ea-3f7c-476a-ac4f-35d77358e8c1",
+        "37741946-00d8-4be0-bd89-9515e17da734",
+        "c7a53985-2c10-4211-b738-15e1a9b4bb70",
+        "80e0d455-5c62-467b-9b7e-db78ddf5e160",
+        "7271b7c7-733a-4f8f-b65c-e281485fe2b8",
+        "e50abaca-14f8-4af8-b6ef-933cd0c599f6",
+        "e5d4e2c8-9a44-43f4-a355-b300d539889b",
+        "c25452a8-e8b5-42df-89d5-d024557588d4",
+        "e5266a3a-1232-4665-a871-7f1bb2b356d7",
+        "a6dd3cab-adc6-46fc-8f5e-e9b01b8f3eef",
+        "fa904fac-74be-4143-836c-59dcf293cb7c",
+        "e81caf63-95bd-4f34-b84f-0f750df1da40"
+    ]
+    tasks = [create_and_embed_pdf_summaries.remote(source_content_id) for source_content_id in source_content_ids]
+    await asyncio.gather(*tasks)
+
+
+@app.local_entrypoint()
+def main():
+    import asyncio
+    asyncio.run(run_tasks())
+

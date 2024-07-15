@@ -134,11 +134,11 @@ def get_token_payload(request: Request) -> dict:
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     token_payload: dict = Depends(get_token_payload),
-) -> User | M2M:
+) -> User:
     # Making this optional since some endpoints are called w/ M2M tokens
     if token_payload.get("userId") is not None:
         return User(**token_payload)
-    return M2M(**token_payload)
+    return None
 
 
 def get_current_m2m(

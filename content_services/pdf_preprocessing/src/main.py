@@ -288,6 +288,7 @@ async def persist_embeddings(
 
 
 # TODO: consolidate all embeddings into one place / service
+# TODO: Replace pre-signed url with boto3 impl.
 
 # async def preprocess(input: PdfInput):
 async def preprocess(source_content_id: str):

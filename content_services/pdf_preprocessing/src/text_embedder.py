@@ -1,7 +1,6 @@
 import os
 from typing import List, Union
 
-from openai import OpenAI
 
 TEXT_EMBEDDING_MODEL = os.getenv("TEXT_EMBEDDING_MODEL", "text-embedding-3-small")
 SUPPORTED_OPENAI_MODELS = ["text-embedding-3-small"]
@@ -54,6 +53,8 @@ class TextEmbedder:
             If the specified model is not supported.
         """
         if self.model in SUPPORTED_OPENAI_MODELS:
+            from openai import OpenAI
+
             openai_client = OpenAI()
             if all(isinstance(chunk, TextChunk) for chunk in text_chunks):
                 text_chunks = [chunk.text for chunk in text_chunks]

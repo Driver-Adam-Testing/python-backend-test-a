@@ -71,6 +71,7 @@ def trigger_pdf_summary_processing(session: CurrentSession, body: PdfOnboardingR
     # archive_name = Path(trigger_body.object_key).name
     create_and_embed_pdf_summaries = modal.Function.lookup(
         app_name="pdf-summary-embedding",
+        # TODO: this line is not need once we deploy to production.
         environment_name=settings.MODAL_ENVIRONMENT,
         tag="create_and_embed_pdf_summaries"
     )

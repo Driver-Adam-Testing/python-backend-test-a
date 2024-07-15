@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.auth import CurrentUser
+from app.api.auth import CurrentToken
 from app.api.session import CurrentSession
 from app.utils.search import SearchInput, SearchResults, search_content_metadata
 
@@ -13,12 +13,6 @@ router = APIRouter()
     response_description="Return HTTP Status Code 200 (OK)",
 )
 def search(
-    session: CurrentSession, user: CurrentUser, input: SearchInput
+    session: CurrentSession, m2m: CurrentToken, input: SearchInput
 ) -> SearchResults:
-    try:
-        organization_id = user.organization_id
-    except Exception:
-        organization_id = None
-    return search_content_metadata(
-        session=session, organization_id=organization_id, input=input
-    )
+    return search_content_metadata(session=session, organization_id=None, input=input)

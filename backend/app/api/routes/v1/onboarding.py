@@ -76,7 +76,7 @@ class PdfOnboardingRequestBody(BaseModel):
     response_description="Return HTTP Status Code 200 (OK)",
 )
 def trigger_pdf_summary_processing(
-    session: CurrentSession, body: PdfOnboardingRequestBody
+    current_token: CurrentToken, session: CurrentSession, body: PdfOnboardingRequestBody
 ) -> Onboarding:
     logging.info("Triggering pdf summary creation...")
     # archive_name = Path(trigger_body.object_key).name

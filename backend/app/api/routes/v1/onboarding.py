@@ -6,6 +6,7 @@ import modal
 from fastapi import APIRouter
 from pydantic import BaseModel
 
+from app.api.auth import CurrentToken
 from app.api.session import CurrentSession
 from app.core.config import settings
 
@@ -13,9 +14,11 @@ router = APIRouter()
 
 
 class Onboarding(BaseModel):
+    # TODO: What does this note mean? are we hitting this with a health check?
     """Response model to validate and return when performing a health check."""
 
     status: str = "OK"
+    call_id: str | None = None
 
 
 class OnboardingRequestBody(BaseModel):
@@ -33,7 +36,9 @@ class OnboardingRequestBody(BaseModel):
     response_description="Return HTTP Status Code 200 (OK)",
 )
 def trigger_onboarding(
-    session: CurrentSession, trigger_body: OnboardingRequestBody
+    current_token: CurrentToken,
+    session: CurrentSession,
+    trigger_body: OnboardingRequestBody,
 ) -> Onboarding:
     """
     ## Trigger codebase onboarding
@@ -46,7 +51,7 @@ def trigger_onboarding(
     onboard_and_inspect = modal.Function.lookup(
         "codebase-onboarding", "onboard_and_inspect"
     )
-    onboard_and_inspect.spawn(
+    call = onboard_and_inspect.spawn(
         trigger_body.download_url,
         archive_name,
         trigger_body.org_id,
@@ -54,7 +59,11 @@ def trigger_onboarding(
         UUID(trigger_body.workspace_id),
         trigger_body.provider,
     )
-    return Onboarding(status="OK")
+    if call is None:
+        # TODO: don't raise this as a status exception, actuall raise an appropriate httpexception
+        return Onboarding(status="400")
+
+    return Onboarding(status="OK", call_id=call.object_id)
 
 
 class PdfOnboardingRequestBody(BaseModel):
@@ -66,15 +75,20 @@ class PdfOnboardingRequestBody(BaseModel):
     summary="Trigger PDF Summarization and Embedding",
     response_description="Return HTTP Status Code 200 (OK)",
 )
-def trigger_pdf_summary_processing(session: CurrentSession, body: PdfOnboardingRequestBody) -> Onboarding:
+def trigger_pdf_summary_processing(
+    session: CurrentSession, body: PdfOnboardingRequestBody
+) -> Onboarding:
     logging.info("Triggering pdf summary creation...")
     # archive_name = Path(trigger_body.object_key).name
     create_and_embed_pdf_summaries = modal.Function.lookup(
         app_name="pdf-summary-embedding",
         # TODO: this line is not need once we deploy to production.
         environment_name=settings.MODAL_ENVIRONMENT,
-        tag="create_and_embed_pdf_summaries"
+        tag="create_and_embed_pdf_summaries",
     )
-    create_and_embed_pdf_summaries.spawn(body.source_content_id)
+    call = create_and_embed_pdf_summaries.spawn(body.source_content_id)
+    if call is None:
+        # TODO: don't raise this as a status exception, actuall raise an appropriate httpexception
+        return Onboarding(status="400")
 
-    return Onboarding(status="OK")
+    return Onboarding(status="OK", call_id=call.object_id)

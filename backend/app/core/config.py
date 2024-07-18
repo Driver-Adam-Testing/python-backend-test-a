@@ -53,6 +53,8 @@ class Settings(BaseSettings):
 
     OPENAI_API_KEY: str | None = None
 
+    MODAL_ENVIRONMENT: str | None = None
+
     @computed_field  # type: ignore[misc]
     @property
     def server_host(self) -> str:

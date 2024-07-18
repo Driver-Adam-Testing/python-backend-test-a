@@ -14,9 +14,6 @@ router = APIRouter()
 
 
 class Onboarding(BaseModel):
-    # TODO: What does this note mean? are we hitting this with a health check?
-    """Response model to validate and return when performing a health check."""
-
     status: str = "OK"
     call_id: str | None = None
 
@@ -59,9 +56,6 @@ def trigger_onboarding(
         UUID(trigger_body.workspace_id),
         trigger_body.provider,
     )
-    if call is None:
-        # TODO: don't raise this as a status exception, actuall raise an appropriate httpexception
-        return Onboarding(status="400")
 
     return Onboarding(status="OK", call_id=call.object_id)
 
@@ -87,8 +81,5 @@ def trigger_pdf_summary_processing(
         tag="create_and_embed_pdf_summaries",
     )
     call = create_and_embed_pdf_summaries.spawn(body.source_content_id)
-    if call is None:
-        # TODO: don't raise this as a status exception, actuall raise an appropriate httpexception
-        return Onboarding(status="400")
 
     return Onboarding(status="OK", call_id=call.object_id)

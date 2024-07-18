@@ -14,6 +14,7 @@ router = APIRouter()
 
 
 class Onboarding(BaseModel):
+    # TODO: Is the status being consumed somewhere? Otherwise this isn't appropriate.
     status: str = "OK"
     call_id: str | None = None
 

@@ -64,7 +64,10 @@ UNPROTECTED_PATHS = [
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         try:
-            if request.method in ["GET", "POST"] and request.url.path in UNPROTECTED_PATHS:
+            if (
+                request.method in ["GET", "POST"]
+                and request.url.path in UNPROTECTED_PATHS
+            ):
                 pass
             elif request.method == "OPTIONS":
                 pass
@@ -114,6 +117,7 @@ class User(BaseModel):
     organization_name: str = Field(..., alias="org_name")
     authorized_party: str = Field(..., alias="azp")
 
+
 class M2M(BaseModel):
     issuer: str = Field(..., alias="iss")
     subject: str = Field(..., alias="sub")
@@ -132,17 +136,19 @@ def get_current_user(
     token_payload: dict = Depends(get_token_payload),
 ) -> User:
     # Making this optional since some endpoints are called w/ M2M tokens
-    if(token_payload.get("userId") != None):
+    if token_payload.get("userId") is not None:
         return User(**token_payload)
+    return None
+
 
 def get_current_m2m(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     token_payload: dict = Depends(get_token_payload),
 ) -> M2M:
     # Making this optional since most endpoints are called w/ User tokens
-    if(token_payload.get("userId") == None):
+    if token_payload.get("userId") is None:
         return M2M(**token_payload)
 
 
-CurrentUser = Annotated[User, Depends(get_current_user)]
+CurrentUser = Annotated[User | M2M, Depends(get_current_user)]
 CurrentToken = Annotated[M2M, Depends(get_current_m2m)]

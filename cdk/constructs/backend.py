@@ -7,6 +7,7 @@ from aws_cdk import (
     aws_ecs_patterns,
     aws_ec2,
     aws_iam,
+    aws_logs,
     aws_ssm,
     aws_route53,
     aws_wafv2,
@@ -32,7 +33,7 @@ class Backend(Construct):
 
         cluster_name = aws_ssm.StringParameter.value_from_lookup(scope, parameter_name="/baseline/infra/v2/ecs/cluster/name")
         cluster = aws_ecs.Cluster.from_cluster_attributes(self, id="BaselineCluster", cluster_name=cluster_name, vpc=vpc)
- 
+
         hosted_zone_id = aws_ssm.StringParameter.value_from_lookup(scope, parameter_name="/baseline/infra/v2/route53/hostedZoneId")
         hosted_zone_name = aws_ssm.StringParameter.value_from_lookup(scope, parameter_name="/baseline/infra/v2/route53/hostedZoneName")
         hosted_zone = aws_route53.HostedZone.from_hosted_zone_attributes(self, id="BaselineHostedZone", zone_name=hosted_zone_name, hosted_zone_id=hosted_zone_id)
@@ -52,6 +53,9 @@ class Backend(Construct):
         github_secret_name = aws_ssm.StringParameter.value_from_lookup(scope, parameter_name="/baseline/infra/v2/pythonBackend/githubConfigurationsName")
         github_secret = aws_secretsmanager.Secret.from_secret_name_v2(self, "GitHubCredentials", secret_name=github_secret_name)
 
+        openai_secret_name = aws_ssm.StringParameter.value_from_lookup(scope, parameter_name="/baseline/infra/v2/pythonBackend/openAIApiKeyName")
+        openai_secret = aws_secretsmanager.Secret.from_secret_name_v2(self, "OpenAIApiKeyCredentials", secret_name=openai_secret_name)
+
         container_environment_vars = {
             "BACKEND_CORS_ORIGINS": params.cors_origins,
             "PORT": "8000",
@@ -60,7 +64,7 @@ class Backend(Construct):
             "AWS_S3_CODE_BUCKET_SUFFIX": "codebase-dropzone"
         }
         container_secrets = {
-            "POSTGRES_SERVER": aws_ecs.Secret.from_secrets_manager(postgres_secret, "SERVER"), 
+            "POSTGRES_SERVER": aws_ecs.Secret.from_secrets_manager(postgres_secret, "SERVER"),
             "POSTGRES_PORT": aws_ecs.Secret.from_secrets_manager(postgres_secret, "PORT"),
             "POSTGRES_DB": aws_ecs.Secret.from_secrets_manager(postgres_secret, "DB"),
             "POSTGRES_USER": aws_ecs.Secret.from_secrets_manager(postgres_secret, "USER"),
@@ -80,10 +84,17 @@ class Backend(Construct):
             "GH_CLIENT_SECRET": aws_ecs.Secret.from_secrets_manager(github_secret, "GH_CLIENT_SECRET"),
             "GH_REDIRECT_URI": aws_ecs.Secret.from_secrets_manager(github_secret, "GH_REDIRECT_URI"),
             "GH_WEBHOOK_SECRET": aws_ecs.Secret.from_secrets_manager(github_secret, "GH_WEBHOOK_SECRET"),
+            "OPENAI_API_KEY": aws_ecs.Secret.from_secrets_manager(openai_secret, "OPENAI_API_KEY")
         }
-        
+
         task_image = aws_ecs.ContainerImage.from_asset(".", asset_name="python-backend")
-        task_options = aws_ecs_patterns.ApplicationLoadBalancedTaskImageOptions(image=task_image, secrets=container_secrets, environment=container_environment_vars, container_port=8000)
+        task_options = aws_ecs_patterns.ApplicationLoadBalancedTaskImageOptions(
+            image=task_image,
+            secrets=container_secrets,
+            environment=container_environment_vars,
+            container_port=8000,
+            log_driver=aws_ecs.LogDrivers.aws_logs(stream_prefix="python-backend", log_retention=aws_logs.RetentionDays.ONE_YEAR)
+        )
         service = aws_ecs_patterns.ApplicationLoadBalancedFargateService(self, "BackendApi",
             protocol=aws_elasticloadbalancingv2.ApplicationProtocol.HTTPS,
             platform_version=aws_ecs.FargatePlatformVersion.LATEST,

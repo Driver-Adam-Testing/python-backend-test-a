@@ -20,9 +20,9 @@ jinja2 = "^3.1.2"
 python-jose = {extras = ["cryptography"], version = "^3.3.0"}
 httpx = "^0.25.1"
 
-# TODO: This should be in database instead of both? 
+# TODO: This should be in database instead of both?
 # Taking this out broke the deployment. Because the scripts.
-# File "/app/app/backend_pre_start.py", line 3, in <module> 
+# File "/app/app/backend_pre_start.py", line 3, in <module>
 # ModuleNotFoundError: No module named 'psycopg'
 # Signed, Jesse.
 psycopg = {extras = ["binary"], version = "^3.1.13"}
@@ -40,6 +40,8 @@ moto = "^5.0.9"
 pypdf2 = "^3.0.1"
 aws-cdk-lib = "^2.144.0"
 constructs = "^10.3.0"
+openai = "^1.35.12"
+tiktoken = "^0.7.0"
 
 
 [tool.poetry.group.dev.dependencies]

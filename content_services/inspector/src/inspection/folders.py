@@ -16,6 +16,18 @@ class ContentDocs:
     docs: dict[str, any]
 
 
+def folder_item_priority_ordering(
+    llm: ChatOpenAI,
+    raw_list_str: str,
+) -> str:
+    system_prompt = get_prompt_template(
+        PARENT_PATH
+        / "prompt_templates/folders/item_priority_ordering.txt"
+    )
+    human_prompt = raw_list_str
+    return llm.generate_response(system_prompt, human_prompt)
+
+
 def folder_chunk_description(
     llm: ChatOpenAI,
     folder_name: str,
@@ -420,6 +432,31 @@ def comprehend_folder_top_down(
         aggregation_state = "no_chunks"
         data = child_content
 
+    # TODO: Clean up and remove redundant and unused IRs below.
+    child_single_sentence_descriptions = {k: v["short"]["single_sentence"] for k, v in child_nodes_to_docs.items()}
+    child_folder_list = ""
+    child_file_list = ""
+    for k, v in child_single_sentence_descriptions.items():
+        if k.kind == NodeKind.FILE:
+            child_file_list += f"- **{k.root_rel_path.name}**: {v}\n"
+        # TODO: Careful in assuming non-files are folders.
+        else:
+            child_folder_list += f"- **{k.root_rel_path.name}**: {v}\n"
+
+    if child_folder_list:
+        folder_prefix = "## Folders\n"
+        child_folder_list_ordered = folder_item_priority_ordering(llm=llm, raw_list_str=f"{folder_prefix}{child_folder_list}")
+    else:
+        child_folder_list_ordered = ""
+
+    if child_file_list:
+        file_prefix = "## Files\n"
+        child_file_list_ordered = folder_item_priority_ordering(llm=llm, raw_list_str=f"{file_prefix}{child_file_list}")
+    else:
+        child_file_list_ordered = ""
+
+    child_list = f"{child_folder_list_ordered}\n{child_file_list_ordered}"
+
     print(f"Generating final folder content for `{folder_name}` ...")
     if use_async:
         with FastShutdownThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -528,6 +565,8 @@ def comprehend_folder_top_down(
     #         folder_content_long=long_description,
     #     )
 
+    # TODO: Replace this hacked overwrite of `long_description`.
+    long_description = child_list
     return {
         "short": short_descriptions,
         "long": long_description,

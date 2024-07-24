@@ -231,7 +231,7 @@ class Workspace(SQLModel, table=True):  # type: ignore
         sa_column=Column(DateTime(timezone=False), onupdate=func.now()), default=None
     )
     codebases: list["Codebase"] = Relationship(back_populates="workspace")
-    source_contents: list["SourceContent"] = Relationship(back_populates="workspace")
+    # source_contents: list["SourceContent"] = Relationship(back_populates="workspace")
 
 
 class Codebase(SQLModel, table=True):  # type: ignore
@@ -302,9 +302,9 @@ class SourceContentType(SQLModel, table=True):  # type: ignore
     updated_at: None | datetime = Field(
         sa_column=Column(DateTime(timezone=False), onupdate=func.now()), default=None
     )
-    source_contents: list["SourceContent"] = Relationship(
-        back_populates="source_content_type"
-    )
+    # source_contents: list["SourceContent"] = Relationship(
+    #     back_populates="source_content_type"
+    # )
 
 
 class DerivedContentType(SQLModel, table=True):  # type: ignore
@@ -363,14 +363,14 @@ class SourceContent(SQLModel, table=True):  # type: ignore
     misc_metadata: dict | None = Field(  # type: ignore
         sa_column=Column("metadata", JSONB, nullable=True), default=None
     )
-    source_content_type: SourceContentType = Relationship(
-        back_populates="source_contents"
-    )
+    # source_content_type: SourceContentType = Relationship(
+    #     back_populates="source_contents"
+    # )
     workspace: Workspace = Relationship(back_populates="source_contents")
     codebase: None | Codebase = Relationship(back_populates="source_contents")
-    derived_contents: list["DerivedContent"] = Relationship(
-        back_populates="source_content"
-    )
+    # derived_contents: list["DerivedContent"] = Relationship(
+    #     back_populates="source_content"
+    # )
     order: int | None = Field(
         sa_column=Column(Integer, nullable=True, server_default=text("0"))
     )
@@ -402,6 +402,7 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
         foreign_key="source_contents.id", index=True, nullable=True, default=None
     )
     codebase_id: None | UUID = Field(default=None, foreign_key="codebases.id")
+    relative_path: str = Field(sa_column=Column(sqlalchemy.Text, nullable=False))
     content: None | str = Field(sa_column=Column(sqlalchemy.Text, nullable=True))
     misc_metadata: dict | None = Field(  # type: ignore
         sa_column=Column("metadata", JSONB, nullable=True), default=None
@@ -412,7 +413,7 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
                 Enum_Derived_Content_Status,
                 values_callable=lambda x: [e.value for e in x],
             ),
-            nullable=False,
+            nullable=True,
         )
     )
     created_at: None | datetime = Field(
@@ -426,8 +427,7 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
     # derived_content_type: DerivedContentType = Relationship(
     #     back_populates="derived_contents"
     # )
-    source_content: SourceContent = Relationship(back_populates="derived_contents")
+    # source_content: SourceContent = Relationship(back_populates="derived_contents")
     order: int | None = Field(
         sa_column=Column(Integer, nullable=True, server_default=text("0"))
     )
-    relative_path: str = Field(sa_column=Column(sqlalchemy.Text, nullable=False))

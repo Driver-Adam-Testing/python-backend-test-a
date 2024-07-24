@@ -1,8 +1,7 @@
-from database.models_v1 import Chunk, ContentMetadata, Workspace
+from database.models_v1 import Chunk, ContentMetadata
 from pydantic import BaseModel
 from sqlmodel import Session, asc, or_, select
 
-from app.utils.content_scope import build_content_scope
 from app.utils.text_embedder import TextEmbedder
 
 
@@ -12,7 +11,7 @@ class SearchInput(BaseModel):
     result_limit: int | None = 20
     algorithm: str = "semantic"
     content_type: str | list[str] | None = None
-    workspace_id: str | None = None
+    workspace_id: str | None = None  # TODO: lock this down in auth
     codebase_id: str | None = None
     relative_path: str | None = None
 
@@ -20,7 +19,6 @@ class SearchInput(BaseModel):
 class SearchResult(BaseModel):
     content: str
     score: float
-    experimental_content_scope: str  # Format: organization_id:workspace_id:codebase_id:relative_path
     metadata: dict
 
 
@@ -33,19 +31,11 @@ def search_content_metadata(
 ):
     embedded_query = TextEmbedder().batch_embed_text([input.query])[0]
 
-    statement = (
-        select(
-            Chunk,
-            ContentMetadata,
-            Chunk.text_embedding_3_small.l2_distance(embedded_query).label("score"),
-            Workspace,
-        )
-        .where(ContentMetadata.id == Chunk.content_metadata_id)
-        .where(ContentMetadata.workspace_id == Workspace.id)
-    )
-
-    if organization_id:
-        statement = statement.where(Workspace.organization_id == organization_id)
+    statement = select(
+        Chunk,
+        ContentMetadata,
+        Chunk.text_embedding_3_small.l2_distance(embedded_query).label("score"),
+    ).where(ContentMetadata.id == Chunk.content_metadata_id)
 
     if input.workspace_id:
         statement = statement.where(ContentMetadata.workspace_id == input.workspace_id)
@@ -82,7 +72,7 @@ def search_content_metadata(
     search_results = []
 
     accumulated_tokens = 0
-    for c, cm, score, _ in results:
+    for c, cm, score in results:
         c: Chunk = c
         cm: ContentMetadata = cm
         if input.token_limit is not None:
@@ -98,12 +88,6 @@ def search_content_metadata(
             SearchResult(
                 content=c.text,
                 score=score,
-                experimental_content_scope=build_content_scope(
-                    organization_id=organization_id,
-                    workspace_id=cm.workspace_id,
-                    codebase_id=cm.codebase_id,
-                    relative_path=cm.relative_path,
-                ),
                 metadata={
                     "content_type": cm.content_type,
                     "relative_path": cm.relative_path,

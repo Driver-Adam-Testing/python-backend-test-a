@@ -160,7 +160,7 @@ class Mutation:
             )
 
         source_content = SourceContent(
-            source_content_type_id=source_content_type.id,  # type: ignore
+            content_type_id=source_content_type.id,  # type: ignore
             workspace_id=input.workspace_id,  # type: ignore
             codebase_id=input.codebase_id,  # type: ignore
             relative_path=input.relative_path,  # type: ignore
@@ -223,14 +223,14 @@ class Mutation:
             select(SourceContent.id)  # type: ignore
             .join(
                 SourceContentType,
-                SourceContent.source_content_type_id == SourceContentType.id,
+                SourceContent.content_type_id == SourceContentType.id,
             )
             .where(
                 SourceContent.codebase_id == input.codebase_id,
                 SourceContentType.type_name == "codebase",
             )
         ).first()
-        derived_content_type_id = (
+        content_type_id = (
             session.exec(
                 select(DerivedContentType.id).where(  # type: ignore
                     DerivedContentType.type_name
@@ -242,10 +242,9 @@ class Mutation:
         )
         app_note = DerivedContent(
             source_content_id=source_content.id,
-            derived_content_type_id=derived_content_type_id,
+            content_type_id=content_type_id,
             content=json.dumps(note_content),
             status=ContentStatus.GENERATING.value,
-            llm_id=None,
             metadata=metadata,
         )
 

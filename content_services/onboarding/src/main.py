@@ -12,9 +12,10 @@ app = modal.App("codebase-onboarding")
 
 image = (
     modal.Image.debian_slim(python_version="3.12")
-    .copy_local_dir('../../driver_db/', remote_path='/driver_db')
+    .copy_local_dir("../../driver_db/", remote_path="/driver_db")
     .poetry_install_from_file("pyproject.toml")
 )
+
 
 @app.function(
     image=image,
@@ -24,16 +25,13 @@ image = (
         modal.Mount.from_local_dir(
             local_path="../../driver_db/certs/",
             remote_path="/root/data/",
-        )
+        ),
     ],
-    secrets=[
-        modal.Secret.from_name("aws-inspector-s3"),
-        modal.Secret.from_name("db")
-    ],
+    secrets=[modal.Secret.from_name("aws-inspector-s3"), modal.Secret.from_name("db")],
     proxy=modal.Proxy.from_name("pg-proxy"),
-    timeout=60*60,
-    region='us-east',
-    concurrency_limit=5
+    timeout=60 * 60,
+    region="us-east",
+    concurrency_limit=5,
 )
 def run_codebase_onboarding(
     presigned_url: str,
@@ -41,7 +39,7 @@ def run_codebase_onboarding(
     org_id: str,
     creator_id: str,
     workspace_id: str,
-    provider: str
+    provider: str,
 ) -> None:
     from database.db import engine
     from database.models_v1 import (
@@ -64,11 +62,11 @@ def run_codebase_onboarding(
     download_dest = Path(archive_name)
     download_file_from_presigned_url(presigned_url, download_dest)
 
-    print(f'Downloaded {archive_name} from S3')
+    print(f"Downloaded {archive_name} from S3")
 
     codebase_name = None
-    if provider == 'github':
-        codebase_name = archive_name.rsplit('.', 1)[0]
+    if provider == "github":
+        codebase_name = archive_name.rsplit(".", 1)[0]
 
     extracted_path = unpack_archive(download_dest, override_codebase_name=codebase_name)
     codebase_name = str(extracted_path)
@@ -96,8 +94,10 @@ def run_codebase_onboarding(
         s3_dest_root = Path(str(codebase_id)) / "source"
         # TODO: put this in a threadpoolexecutor
         for file_path in codebase_stats.keys():
-            if not codebase_stats[file_path]['is_blacklisted']:
-                uploaded_dest_path = upload_file_to_s3(upload_bucket, s3_dest_root, file_path)
+            if not codebase_stats[file_path]["is_blacklisted"]:
+                uploaded_dest_path = upload_file_to_s3(
+                    upload_bucket, s3_dest_root, file_path
+                )
                 print(f"Uploaded {file_path} to {uploaded_dest_path}")
 
         with Session(engine) as session:
@@ -108,26 +108,28 @@ def run_codebase_onboarding(
                     id=codebase_id,
                     codebase_name=codebase_name,
                     creator_id=creator_id,
-                    description='',
+                    description="",
                     resource_root=f"{str(extracted_path)}/",
                     storage_url=final_storage_url,
                     workspace_id=workspace_id,
-                    status=Enum_Codebase_Status.processing
+                    status=Enum_Codebase_Status.processing,
                 )
                 print(codebase)
                 session.add(codebase)
                 # Flush here to confirm that Source Contents created after this will know that the
                 # codebase exists
                 session.flush()
-                print(f"Created but not commited codebase: {str(extracted_path)}, with ID: {codebase_id}")
+                print(
+                    f"Created but not commited codebase: {str(extracted_path)}, with ID: {codebase_id}"
+                )
 
                 cb_sc_uuid = get_source_content_type_uuid("codebase")
                 cb_sc = SourceContent(
                     codebase_id=codebase_id,
                     relative_path=str(extracted_path),
-                    source_content_type_id=cb_sc_uuid,
+                    content_type_id=cb_sc_uuid,
                     workspace_id=workspace_id,
-                    analysis_metadata={}
+                    misc_metadata={},
                 )
                 session.add(cb_sc)
 
@@ -140,30 +142,35 @@ def run_codebase_onboarding(
                         dir_sc = SourceContent(
                             codebase_id=codebase_id,
                             relative_path=directory,
-                            source_content_type_id=dir_sc_uuid,
+                            content_type_id=dir_sc_uuid,
                             workspace_id=workspace_id,
-                            analysis_metadata={}
+                            misc_metadata={},
                         )
                         session.add(dir_sc)
-                        print(f"Created but not commited source content for: {directory}.")
+                        print(
+                            f"Created but not commited source content for: {directory}."
+                        )
 
                 # Add file source contents
                 for file_path in codebase_stats.keys():
-                    if not codebase_stats[file_path]['is_blacklisted']:
+                    if not codebase_stats[file_path]["is_blacklisted"]:
                         file_sc_type = get_source_content_type_uuid("codebase-file")
                         file_sc = SourceContent(
                             codebase_id=codebase_id,
                             relative_path=str(file_path),
-                            source_content_type_id=file_sc_type,
+                            content_type_id=file_sc_type,
                             workspace_id=workspace_id,
-                            analysis_metadata=codebase_stats[file_path]
+                            misc_metadata=codebase_stats[file_path],
                         )
                         session.add(file_sc)
 
-                        print(f"Created but not commited source content for: {file_path}. Processable: {codebase_stats[file_path]['is_analyzable']}. Stats: {codebase_stats[file_path]}")
+                        print(
+                            f"Created but not commited source content for: {file_path}. Processable: {codebase_stats[file_path]['is_analyzable']}. Stats: {codebase_stats[file_path]}"
+                        )
 
     print("Codebase onboarding complete for codebase id: ", codebase_id)
     return codebase_id
+
 
 @app.function(
     image=image,
@@ -172,28 +179,37 @@ def run_codebase_onboarding(
         modal.Mount.from_local_dir(
             local_path="../../driver_db/certs/",
             remote_path="/root/data/",
-        )
+        ),
     ],
-    secrets=[
-        modal.Secret.from_name("aws-inspector-s3"),
-        modal.Secret.from_name("db")
-    ],
+    secrets=[modal.Secret.from_name("aws-inspector-s3"), modal.Secret.from_name("db")],
     proxy=modal.Proxy.from_name("pg-proxy"),
-    timeout=24*60*60,
-    region='us-east',
-    concurrency_limit=5
+    timeout=24 * 60 * 60,
+    region="us-east",
+    concurrency_limit=5,
 )
-def onboard_and_inspect(presigned_url:str, archive_name: str, org_id: str, creator_id: str, workspace_id: UUID, provider: str = 'manual'):
+def onboard_and_inspect(
+    presigned_url: str,
+    archive_name: str,
+    org_id: str,
+    creator_id: str,
+    workspace_id: UUID,
+    provider: str = "manual",
+):
     from database.db import engine
     from database.models_v1 import Codebase, Enum_Codebase_Status
     from sqlmodel import Session
-    #TODO: send email on failure at any step in this process
-    print(f"Onboarding for: {archive_name} from {provider} with org_id: {org_id}, creator_id: {creator_id}, workspace_id: {workspace_id} with presigned_url: {presigned_url}")
+
+    # TODO: send email on failure at any step in this process
+    print(
+        f"Onboarding for: {archive_name} from {provider} with org_id: {org_id}, creator_id: {creator_id}, workspace_id: {workspace_id} with presigned_url: {presigned_url}"
+    )
     try:
         inspect_db = modal.Function.lookup("inspector-v2", "inspect_db")
         create_embeddings = modal.Function.lookup("comprehender", "create_embeddings")
 
-        codebase_id = run_codebase_onboarding.remote(presigned_url, archive_name, org_id, creator_id, workspace_id, provider)
+        codebase_id = run_codebase_onboarding.remote(
+            presigned_url, archive_name, org_id, creator_id, workspace_id, provider
+        )
         print("onboarding complete for codebase: ", codebase_id)
 
         run_id = uuid4()
@@ -206,7 +222,7 @@ def onboard_and_inspect(presigned_url:str, archive_name: str, org_id: str, creat
         create_embeddings.remote(str(workspace_id), str(codebase_id))
         print("Embeddings created")
 
-        #Update codebase status to processing-complete
+        # Update codebase status to processing-complete
         with Session(engine) as session:
             with session.begin():
                 codebase = session.get(Codebase, codebase_id)
@@ -220,18 +236,16 @@ def onboard_and_inspect(presigned_url:str, archive_name: str, org_id: str, creat
         exc_tb = e.__traceback__
         filename = exc_tb.tb_frame.f_code.co_filename
         line_number = exc_tb.tb_lineno
-        exception_details = f"Exception type: {exception_type}\nFile: {filename}\nLine: {line_number}"
+        exception_details = (
+            f"Exception type: {exception_type}\nFile: {filename}\nLine: {line_number}"
+        )
         send_exception_email.remote(exception_details)
         raise e
 
 
 @app.function(
-    image=modal.Image.debian_slim(python_version="3.12")
-    .pip_install("sendgrid"),
-    secrets=[
-        modal.Secret.from_name("sendgrid"),
-        modal.Secret.from_name("env-name")
-    ]
+    image=modal.Image.debian_slim(python_version="3.12").pip_install("sendgrid"),
+    secrets=[modal.Secret.from_name("sendgrid"), modal.Secret.from_name("env-name")],
 )
 def send_exception_email(exception_details):
     import sendgrid
@@ -258,13 +272,15 @@ def send_exception_email(exception_details):
 def main():
     presigned_url = ""
     archive_name = "infinity-core.zip"
-    org_id = '6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641'
-    creator_id = 'auth0|6650e02b9812cd674f78cf75'
-    workspace_id = UUID('2fb6c92d-68cb-4864-a457-8031589e3210')
+    org_id = "6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641"
+    creator_id = "auth0|6650e02b9812cd674f78cf75"
+    workspace_id = UUID("2fb6c92d-68cb-4864-a457-8031589e3210")
 
     # if modal.is_local():
     #     from dotenv import load_dotenv
     #     load_dotenv()
     #     run_codebase_onboarding.local(s3_bucket_name, s3_prefix, archive_name, org_id, creator_id, workspace_id)
     # else:
-    onboard_and_inspect.remote(presigned_url, archive_name, org_id, creator_id, workspace_id)
+    onboard_and_inspect.remote(
+        presigned_url, archive_name, org_id, creator_id, workspace_id
+    )

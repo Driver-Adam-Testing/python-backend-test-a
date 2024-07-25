@@ -429,7 +429,6 @@ def comprehend_folder_top_down(
         aggregation_state = "no_chunks"
         data = child_content
 
-    # TODO: Clean up and remove redundant and unused IRs below.
     child_single_sentence_descriptions = {
         k: v["short"]["single_sentence"] for k, v in child_nodes_to_docs.items()
     }
@@ -438,8 +437,7 @@ def comprehend_folder_top_down(
     for k, v in child_single_sentence_descriptions.items():
         if k.kind == NodeKind.FILE:
             child_file_list += f"- **{k.root_rel_path.name}**: {v}\n"
-        # TODO: Careful in assuming non-files are folders.
-        else:
+        else:  # subfolder or root folder
             child_folder_list += f"- **{k.root_rel_path.name}**: {v}\n"
 
     if child_folder_list:
@@ -458,19 +456,12 @@ def comprehend_folder_top_down(
     else:
         child_file_list_ordered = ""
 
-    child_list = f"{child_folder_list_ordered}\n{child_file_list_ordered}"
+    long_description = f"{child_folder_list_ordered}\n{child_file_list_ordered}"
 
     print(f"Generating final folder content for `{folder_name}` ...")
     if use_async:
         with FastShutdownThreadPoolExecutor(max_workers=max_workers) as executor:
             if aggregation_state == "chunks":
-                long_future = executor.submit(
-                    folder_long_from_chunk_descriptions,
-                    llm,
-                    folder_name,
-                    codebase_name,
-                    data,
-                )
                 single_sentence_future = executor.submit(
                     folder_single_sentence_from_chunk_descriptions,
                     llm,
@@ -486,13 +477,6 @@ def comprehend_folder_top_down(
                     data,
                 )
             else:
-                long_future = executor.submit(
-                    folder_long_from_long_descriptions,
-                    llm,
-                    folder_name,
-                    codebase_name,
-                    data,
-                )
                 single_sentence_future = executor.submit(
                     folder_single_sentence_from_long_descriptions,
                     llm,
@@ -507,19 +491,12 @@ def comprehend_folder_top_down(
                     codebase_name,
                     data,
                 )
-            long_description = long_future.result()
             short_descriptions = {
                 "single_sentence": single_sentence_future.result(),
                 "single_paragraph": single_paragraph_future.result(),
             }
     else:
         if aggregation_state == "chunks":
-            long = folder_long_from_chunk_descriptions(
-                llm=llm,
-                folder_name=folder_name,
-                codebase_name=codebase_name,
-                data=data,
-            )
             single_sentence = folder_single_sentence_from_chunk_descriptions(
                 llm=llm,
                 folder_name=folder_name,
@@ -533,12 +510,6 @@ def comprehend_folder_top_down(
                 data=data,
             )
         else:
-            long = folder_long_from_long_descriptions(
-                llm=llm,
-                folder_name=folder_name,
-                codebase_name=codebase_name,
-                child_content=data,
-            )
             single_sentence = folder_single_sentence_from_long_descriptions(
                 llm=llm,
                 folder_name=folder_name,
@@ -551,7 +522,6 @@ def comprehend_folder_top_down(
                 codebase_name=codebase_name,
                 child_content=data,
             )
-        long_description = long
         short_descriptions = {
             "single_sentence": single_sentence,
             "single_paragraph": single_paragraph,
@@ -568,8 +538,6 @@ def comprehend_folder_top_down(
     #         folder_content_long=long_description,
     #     )
 
-    # TODO: Replace this hacked overwrite of `long_description`.
-    long_description = child_list
     return {
         "short": short_descriptions,
         "long": long_description,

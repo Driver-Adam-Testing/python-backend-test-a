@@ -1,7 +1,14 @@
 from fastapi import APIRouter
 
 from app.api.routes.legacy.schema import graphql_router, sandbox_router
-from app.api.routes.v1 import git_provider, healthcheck, onboarding, search, workspace
+from app.api.routes.v1 import (
+    content,
+    git_provider,
+    healthcheck,
+    onboarding,
+    search,
+    workspace,
+)
 from app.core.config import settings
 
 api_router = APIRouter()
@@ -16,6 +23,8 @@ api_router.include_router(
 )
 api_router.include_router(onboarding.router, prefix="/onboarding", tags=["onboarding"])
 api_router.include_router(search.router, prefix="/search", tags=["search"])
+api_router.include_router(content.router, prefix="/content", tags=["content"])
+
 if settings.ENVIRONMENT != "production":
     api_router.include_router(
         sandbox_router, prefix="/sandbox", tags=["legacy-sandbox"]

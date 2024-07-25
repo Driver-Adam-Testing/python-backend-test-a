@@ -1,8 +1,8 @@
 from fastapi import APIRouter
+from shared.pipelines.search import SearchInput, SearchResults, search_content_metadata
 
 from app.api.auth import CurrentToken
 from app.api.session import CurrentSession
-from app.utils.search import SearchInput, SearchResults, search_content_metadata
 
 router = APIRouter()
 

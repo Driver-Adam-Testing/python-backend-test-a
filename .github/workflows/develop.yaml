@@ -60,6 +60,14 @@ jobs:
           MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
           MODAL_ENV: ${{ vars.MODAL_ENV }}
         run: poetry install --no-root && poetry run modal deploy --env=$MODAL_ENV --tag=${{ github.ref_name }}.${GITHUB_SHA::8} src/main.py
+      - name: Deploy PDF Preprocessing
+        working-directory: content_services/pdf_preprocessing
+        env:
+          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+          MODAL_ENV: ${{ vars.MODAL_ENV }}
+        run: poetry install --no-root && poetry run modal deploy --env=$MODAL_ENV --tag=${{ github.ref_name }}.${GITHUB_SHA::8} src/main.py
+
   ops:
     # needs: unittest
     runs-on: ubuntu-latest

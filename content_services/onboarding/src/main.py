@@ -5,6 +5,8 @@ from uuid import UUID, uuid4
 
 import modal
 
+from database.models_v1 import DerivedContent
+
 app = modal.App("codebase-onboarding")
 
 # TODO: configuration
@@ -45,7 +47,6 @@ def run_codebase_onboarding(
     from database.models_v1 import (
         Codebase,
         Enum_Codebase_Status,
-        SourceContent,
     )
     from sqlmodel import Session
     from utils import (
@@ -124,7 +125,7 @@ def run_codebase_onboarding(
                 )
 
                 cb_sc_uuid = get_source_content_type_uuid("codebase")
-                cb_sc = SourceContent(
+                cb_sc = DerivedContent(
                     codebase_id=codebase_id,
                     relative_path=str(extracted_path),
                     content_type_id=cb_sc_uuid,
@@ -139,7 +140,7 @@ def run_codebase_onboarding(
                     if not is_on_blacklist(Path(directory)):
                         # TODO: analysis metadata for directories?
                         # TODO: this is fragile - consider using DAG logic here
-                        dir_sc = SourceContent(
+                        dir_sc = DerivedContent(
                             codebase_id=codebase_id,
                             relative_path=directory,
                             content_type_id=dir_sc_uuid,
@@ -155,7 +156,7 @@ def run_codebase_onboarding(
                 for file_path in codebase_stats.keys():
                     if not codebase_stats[file_path]["is_blacklisted"]:
                         file_sc_type = get_source_content_type_uuid("codebase-file")
-                        file_sc = SourceContent(
+                        file_sc = DerivedContent(
                             codebase_id=codebase_id,
                             relative_path=str(file_path),
                             content_type_id=file_sc_type,

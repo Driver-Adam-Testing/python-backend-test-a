@@ -1,6 +1,6 @@
 # mypy: disable_error_code="call-arg"
 import strawberry
-from database.models_v1 import SourceContent, SourceContentType, Workspace
+from database.models_v1 import DerivedContent, DerivedContentType, Workspace
 from sqlmodel import Session, select
 
 from app.api.routes.legacy.scalars import ID
@@ -26,13 +26,15 @@ def get_codebase_tree(
     codebase_id: str, session: Session, organization_id: str
 ) -> list[FlatNode]:
     statement = (
-        select(SourceContent, SourceContentType)
+        select(DerivedContent, DerivedContentType)
         .join(Workspace)
-        .where(SourceContent.codebase_id == codebase_id)
-        .where(Workspace.id == SourceContent.workspace_id)
+        .where(DerivedContent.codebase_id == codebase_id)
+        .where(Workspace.id == DerivedContent.workspace_id)
         .where(Workspace.organization_id == organization_id)
-        .where(SourceContentType.type_name.in_(["codebase-directory", "codebase-file"]))  # type: ignore
-        .where(SourceContentType.id == SourceContent.content_type_id)
+        .where(
+            DerivedContentType.type_name.in_(["codebase-directory", "codebase-file"])
+        )  # type: ignore
+        .where(DerivedContentType.id == DerivedContent.content_type_id)
     )
 
     source_contents = session.exec(statement).all()

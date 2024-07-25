@@ -4,7 +4,6 @@ from sqlmodel import Session, func, select
 
 from app.api.routes.legacy.api_types import DerivedContentResults
 from app.api.routes.legacy.document_set import DerivedContentTypes
-from app.api.routes.legacy.orm_ops import get_source_content_by_id
 
 
 @strawberry.type
@@ -32,11 +31,6 @@ def symbol_set(
         raise ValueError("Page must be at least 1.")
     if page_size < 1 or page_size > 500:
         raise ValueError("PageSize must be between 1 and 500.")
-
-    maybe_source_content = get_source_content_by_id(session, source_content_id)
-
-    if not maybe_source_content:
-        raise Exception("Source content not found")
 
     offset = (page - 1) * page_size
     symbols_statement = (

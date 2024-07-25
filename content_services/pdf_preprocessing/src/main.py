@@ -12,9 +12,7 @@ from database.models_v1 import (
     Chunk,
     ContentMetadata,
     ContentType,
-    Llm,
     DerivedContent,
-    SourceContent,
     DerivedContentType,
 )
 import modal
@@ -113,15 +111,16 @@ def summarize_pdf_content(pages):
     return pdf_summary, page_summaries
 
 
+# TODO dedup
 # get source content by source_content_id
-async def get_source_content(source_content_id: UUID, session) -> SourceContent:
+async def get_source_content(source_content_id: UUID, session) -> DerivedContent:
     from sqlmodel import select
     from database.models_v1 import Workspace  # Import Workspace model
 
     query = (
-        select(SourceContent, Workspace)
-        .join(Workspace, SourceContent.workspace_id == Workspace.id)
-        .where(SourceContent.id == source_content_id)
+        select(DerivedContent, Workspace)
+        .join(Workspace, DerivedContent.workspace_id == Workspace.id)
+        .where(DerivedContent.id == source_content_id)
     )
     result = await session.exec(query)
     source_content, workspace = result.first()
@@ -142,21 +141,10 @@ async def get_derived_content_type_uuid(content_type: str, session) -> UUID:
     return dct_uuid
 
 
-async def get_llm_uuid(llmModel: str, session) -> UUID:
-    from sqlmodel import select
-
-    llm_uuid = None
-    sel_statement = select(Llm).where(Llm.model == llmModel)
-    llm_dct = (await session.exec(sel_statement)).first()
-    if llm_dct:
-        llm_uuid = llm_dct.id
-    return llm_uuid
-
-
 async def create_source_content(
     workspace_id, codebase_id, content_type_id, session
-) -> SourceContent:
-    source_content = SourceContent(
+) -> DerivedContent:
+    source_content = DerivedContent(
         workspace_id=workspace_id,
         codebase_id=codebase_id,
         content_type_id=content_type_id,
@@ -172,7 +160,6 @@ async def create_derived_content(
     derived_contents = []
     # Placeholder for creating derived content
     content_type_id = await get_derived_content_type_uuid("pdf_summary", session)
-    # llm_uuid = await get_llm_uuid(LLM_MODEL, session)
 
     derived_contents.append(
         DerivedContent(
@@ -211,9 +198,11 @@ async def persist_embeddings(
     codebase_id: str,
     workspace_id: str,
     relative_path: str,
-    metadata: dict = {},
+    metadata: dict | None = None,
 ) -> bool:
     from sqlmodel import delete, select
+
+    metadata = metadata or {}
 
     if len(split_documents) > 0:
         try:

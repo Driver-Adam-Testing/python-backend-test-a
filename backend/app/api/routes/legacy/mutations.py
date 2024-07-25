@@ -15,7 +15,7 @@ from sqlalchemy.future import select
 from sqlmodel import Session
 from strawberry.types import Info
 
-from app.api.routes.legacy.api_types import DerivedContentInput
+from app.api.routes.legacy.api_types import SourceContentInput
 from app.api.routes.legacy.application_note import (
     ContentStatus,
 )
@@ -118,7 +118,7 @@ class WebhookInput:
 @strawberry.type
 class Mutation:
     @strawberry.mutation
-    def createSourceContent(self, info: Info, input: DerivedContentInput) -> str:
+    def createSourceContent(self, info: Info, input: SourceContentInput) -> str:
         user = info.context.user
         m2m = info.context.m2m
         session = info.context.session
@@ -231,6 +231,7 @@ class Mutation:
         )
         app_note = DerivedContent(
             source_content_id=content.id,
+            relative_path=content.relative_path,
             content_type_id=content_type_id,
             content=json.dumps(note_content),
             status=ContentStatus.GENERATING.value,

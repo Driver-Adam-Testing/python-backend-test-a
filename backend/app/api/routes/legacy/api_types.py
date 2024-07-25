@@ -151,7 +151,7 @@ class WorkspaceInput:
 
 # type: ignore
 @strawberry.input
-class DerivedContentInput:
+class SourceContentInput:
     workspace_id: UUID | None = None
     codebase_id: UUID | None = None
     relative_path: str | None = None

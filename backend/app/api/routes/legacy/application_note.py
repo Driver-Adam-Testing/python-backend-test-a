@@ -45,7 +45,7 @@ def get_application_note(id: str, session: Session, organization_id: str):
             name=parsed_content.get("name", ""),
             content=parsed_content.get("content", ""),
             description=parsed_content.get("description", ""),
-            metadata=doc.dc_metadata,  # type: ignore
+            metadata=doc.misc_metadata,  # type: ignore
             generation_timestamp=doc.created_at.isoformat() if doc.created_at else None,
         )
         return note

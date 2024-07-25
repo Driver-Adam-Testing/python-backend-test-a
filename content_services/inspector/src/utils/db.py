@@ -2,11 +2,13 @@ import enum
 
 from sqlmodel.ext.asyncio.session import AsyncSession
 import uuid
-from database.models_v1 import Codebase, SourceContent, SourceContentType, DerivedContentType
+from database.models_v1 import (
+    Codebase,
+    DerivedContentType,
+    DerivedContent,
+)
 from pathlib import Path
-from functools import cache
 from uuid import UUID
-from sqlmodel import Boolean
 
 
 async def get_codebase_by_id(codebase_id: uuid.UUID) -> Codebase:
@@ -18,13 +20,13 @@ async def get_codebase_by_id(codebase_id: uuid.UUID) -> Codebase:
         return (await session.exec(statement)).one()
 
 
-
 class SourceContentTypeMap(enum.Enum):
     # This is because these are in a separate table and arent already defined in the db package
     # Hacky... would be better to have concrete enum in db package
     FILE = "codebase-file"
     DIRECTORY = "codebase-directory"
     CODEBASE_ROOT = "codebase"
+
 
 class DerivedContentTypeMap(enum.Enum):
     # This is because these are in a separate table and arent already defined in the db package
@@ -42,17 +44,21 @@ class DerivedContentTypeMap(enum.Enum):
     APPLICATION_NOTE = "application_note"
     SHORT_SENTENCE_DESCRIPTION = "short_sentence_description"
 
+
 async def get_derived_content_type_uuid(content_type: DerivedContentTypeMap) -> UUID:
     from database.db import async_engine
     from sqlmodel import select
 
     dct_uuid = None
     async with AsyncSession(async_engine) as session:
-        sel_statement = select(DerivedContentType).where(DerivedContentType.type_name == content_type.value)
+        sel_statement = select(DerivedContentType).where(
+            DerivedContentType.type_name == content_type.value
+        )
         res_dct = (await session.exec(sel_statement)).first()
         if res_dct:
             dct_uuid = res_dct.id
     return dct_uuid
+
 
 async def get_source_content_type_uuid(content_type: SourceContentTypeMap) -> UUID:
     from database.db import async_engine
@@ -60,15 +66,19 @@ async def get_source_content_type_uuid(content_type: SourceContentTypeMap) -> UU
 
     sct_uuid = None
     async with AsyncSession(async_engine) as session:
-        sel_statement = select(SourceContentType).where(SourceContentType.type_name == content_type.value)
+        sel_statement = select(DerivedContentType).where(
+            DerivedContentType.type_name == content_type.value
+        )
         res_sct = (await session.exec(sel_statement)).first()
         if res_sct:
             sct_uuid = res_sct.id
     return sct_uuid
 
+
+# TODO this actually would get source and derived content if the incoming types weren't correct
 async def get_source_contents_by_codebase_id(
     codebase_id: uuid.UUID, content_types: set[SourceContentTypeMap]
-) -> list[SourceContent]:
+) -> list[DerivedContent]:
     from database.db import async_engine
     from sqlmodel import select
 
@@ -76,28 +86,31 @@ async def get_source_contents_by_codebase_id(
     # down to what has been configured.
     async with AsyncSession(async_engine) as session:
         statement = (
-            select(SourceContent)
+            select(DerivedContent)
             .join(
-                SourceContentType,
-                SourceContent.source_content_type_id == SourceContentType.id,
+                DerivedContentType,
+                DerivedContent.content_type_id == DerivedContentType.id,
             )
             .where(
-                SourceContentType.type_name.in_([ct.value for ct in content_types]),
-                SourceContent.codebase_id == codebase_id
-                # SourceContent.analysis_metadata.op("->>")("is_analyzable") == 'true'
+                DerivedContentType.type_name.in_([ct.value for ct in content_types]),
+                DerivedContent.codebase_id == codebase_id,
+                # SourceContent.misc_metadata.op("->>")("is_analyzable") == 'true'
             )
         )
         results = await session.exec(statement)
-    
-    file_source_content_type_id = await get_source_content_type_uuid(SourceContentTypeMap.FILE)
+
+    file_content_type_id = await get_source_content_type_uuid(SourceContentTypeMap.FILE)
 
     res_list = []
     for res in results.all():
-        if res.source_content_type_id == file_source_content_type_id and res.analysis_metadata["is_analyzable"] == True:
+        if (
+            res.content_type_id == file_content_type_id
+            and res.misc_metadata["is_analyzable"] is True
+        ):
             res_list.append(res)
-        elif res.source_content_type_id != file_source_content_type_id:
+        elif res.content_type_id != file_content_type_id:
             res_list.append(res)
-    
+
     return res_list
 
 

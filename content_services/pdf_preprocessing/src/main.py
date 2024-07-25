@@ -12,9 +12,8 @@ from database.models_v1 import (
     Chunk,
     ContentMetadata,
     ContentType,
-    Llm,
     DerivedContent,
-    SourceContent, DerivedContentType,
+    DerivedContentType,
 )
 import modal
 
@@ -27,14 +26,14 @@ app = modal.App("pdf-summary-embedding")
 
 image = (
     modal.Image.debian_slim(python_version="3.12")
-    .copy_local_dir('../../driver_db/', remote_path='/driver_db')
+    .copy_local_dir("../../driver_db/", remote_path="/driver_db")
     .poetry_install_from_file("pyproject.toml")
 )
 
 
 def download_pdf(presigned_url, download_path):
     response = requests.get(presigned_url)
-    with open(download_path, 'wb') as file:
+    with open(download_path, "wb") as file:
         file.write(response.content)
     return download_path
 
@@ -48,11 +47,7 @@ def split_pdf_into_pages(pdf_path):
         page = doc.load_page(page_num)
         text = page.get_text()
         images = page.get_images(full=True)
-        pages.append({
-            'page_num': page_num + 1,
-            'text': text,
-            'images': images
-        })
+        pages.append({"page_num": page_num + 1, "text": text, "images": images})
     return pages
 
 
@@ -76,52 +71,56 @@ def summarize_text_with_openai(text):
 
 
 def summarize_pdf_content(pages):
-    entire_text = "\n\n".join([page['text'] for page in pages])
+    entire_text = "\n\n".join([page["text"] for page in pages])
     pdf_summary = summarize_text_with_openai(entire_text)
 
     page_summaries = []
     with ThreadPoolExecutor() as executor:
-        future_to_page = {executor.submit(summarize_text_with_openai, page['text']): page for page in pages}
+        future_to_page = {
+            executor.submit(summarize_text_with_openai, page["text"]): page
+            for page in pages
+        }
         for future in as_completed(future_to_page):
             page = future_to_page[future]
             try:
                 summary = future.result()
                 print(f"Page {page['page_num']} Summary: {summary}")
-                page_summaries.append({
-                    'page_num': page['page_num'],
-                    'summary': summary
-                })
+                page_summaries.append(
+                    {"page_num": page["page_num"], "summary": summary}
+                )
             except Exception as exc:
                 print(f"Page {page['page_num']} generated an exception: {exc}")
-                page_summaries.append({
-                    'page_num': page['page_num'],
-                    'summary': "Error: Could not generate summary."
-                })
+                page_summaries.append(
+                    {
+                        "page_num": page["page_num"],
+                        "summary": "Error: Could not generate summary.",
+                    }
+                )
 
     # Ensure all pages are summarized
-    summarized_pages = {summary['page_num'] for summary in page_summaries}
+    summarized_pages = {summary["page_num"] for summary in page_summaries}
     for page in pages:
-        if page['page_num'] not in summarized_pages:
-            page_summaries.append({
-                'page_num': page['page_num'],
-                'summary': "Error: Summary missing."
-            })
+        if page["page_num"] not in summarized_pages:
+            page_summaries.append(
+                {"page_num": page["page_num"], "summary": "Error: Summary missing."}
+            )
 
     # Sort page summaries by page number
-    page_summaries.sort(key=lambda x: x['page_num'])
+    page_summaries.sort(key=lambda x: x["page_num"])
 
     return pdf_summary, page_summaries
 
 
+# TODO dedup
 # get source content by source_content_id
-async def get_source_content(source_content_id: UUID, session) -> SourceContent:
+async def get_source_content(source_content_id: UUID, session) -> DerivedContent:
     from sqlmodel import select
     from database.models_v1 import Workspace  # Import Workspace model
 
     query = (
-        select(SourceContent, Workspace)
-        .join(Workspace, SourceContent.workspace_id == Workspace.id)
-        .where(SourceContent.id == source_content_id)
+        select(DerivedContent, Workspace)
+        .join(Workspace, DerivedContent.workspace_id == Workspace.id)
+        .where(DerivedContent.id == source_content_id)
     )
     result = await session.exec(query)
     source_content, workspace = result.first()
@@ -142,58 +141,44 @@ async def get_derived_content_type_uuid(content_type: str, session) -> UUID:
     return dct_uuid
 
 
-async def get_llm_uuid(llmModel: str, session) -> UUID:
-    from sqlmodel import select
-
-    llm_uuid = None
-    sel_statement = select(Llm).where(
-        Llm.model == llmModel
-    )
-    llm_dct = (await session.exec(sel_statement)).first()
-    if llm_dct:
-        llm_uuid = llm_dct.id
-    return llm_uuid
-
-
-async def create_source_content(workspace_id, codebase_id, source_content_type_id, session) -> SourceContent:
-    from sqlmodel import insert
-    source_content = SourceContent(
+async def create_source_content(
+    workspace_id, codebase_id, content_type_id, session
+) -> DerivedContent:
+    source_content = DerivedContent(
         workspace_id=workspace_id,
         codebase_id=codebase_id,
-        source_content_type_id=source_content_type_id
+        content_type_id=content_type_id,
     )
     session.add(source_content)
     await session.commit()
     return source_content
 
 
-async def create_derived_content(source_content, pdf_summary, page_summaries, session) -> [DerivedContent]:
-    from sqlmodel import insert
+async def create_derived_content(
+    source_content, pdf_summary, page_summaries, session
+) -> [DerivedContent]:
     derived_contents = []
     # Placeholder for creating derived content
-    derived_content_type_id = await get_derived_content_type_uuid('pdf_summary', session)
-    llm_uuid = await get_llm_uuid(LLM_MODEL, session)
+    content_type_id = await get_derived_content_type_uuid("pdf_summary", session)
 
-    derived_contents.append(DerivedContent(
-        source_content_id=source_content.id,
-        derived_content_type_id=derived_content_type_id,
-        content=pdf_summary,
-        status="generation-complete",
-        llm_id=llm_uuid,
-        order=0
-    ))
+    derived_contents.append(
+        DerivedContent(
+            source_content_id=source_content.id,
+            content_type_id=content_type_id,
+            content=pdf_summary,
+            status="generation-complete",
+            order=0,
+        )
+    )
 
     for page_summary in page_summaries:
         page_summary_dc = DerivedContent(
             source_content_id=source_content.id,
-            derived_content_type_id=derived_content_type_id,
-            content=page_summary['summary'],
+            content_type_id=content_type_id,
+            content=page_summary["summary"],
             status="generation-complete",
-            llm_id=llm_uuid,
-            metadata={
-                'page_num': page_summary['page_num']
-            },
-            order=page_summary['page_num']
+            metadata={"page_num": page_summary["page_num"]},
+            order=page_summary["page_num"],
         )
         derived_contents.append(page_summary_dc)
 
@@ -201,24 +186,23 @@ async def create_derived_content(source_content, pdf_summary, page_summaries, se
 
 
 def create_content_metadata(pdf_summary, page_summaries):
-    content_metadata = {
-        'pdf_summary': pdf_summary,
-        'page_summaries': page_summaries
-    }
+    content_metadata = {"pdf_summary": pdf_summary, "page_summaries": page_summaries}
     return content_metadata
 
 
 async def persist_embeddings(
-        session,
-        split_documents: list,
-        embeds: list,
-        content_type: ContentType,
-        codebase_id: str,
-        workspace_id: str,
-        relative_path: str,
-        metadata: dict = {},
+    session,
+    split_documents: list,
+    embeds: list,
+    content_type: ContentType,
+    codebase_id: str,
+    workspace_id: str,
+    relative_path: str,
+    metadata: dict | None = None,
 ) -> bool:
     from sqlmodel import delete, select
+
+    metadata = metadata or {}
 
     if len(split_documents) > 0:
         try:
@@ -230,13 +214,14 @@ async def persist_embeddings(
                 .where(ContentMetadata.workspace_id == workspace_id)
             )
 
-            if 'document-type' in metadata:
+            if "document-type" in metadata:
                 query = query.where(
-                    ContentMetadata.misc_metadata["document-type"].as_string() == content_type
+                    ContentMetadata.misc_metadata["document-type"].as_string()
+                    == content_type
                 )
 
-            if 'page_num' in metadata:
-                page_num = str(metadata['page_num'])
+            if "page_num" in metadata:
+                page_num = str(metadata["page_num"])
                 query = query.where(
                     ContentMetadata.misc_metadata["page_num"].as_string() == page_num
                 )
@@ -258,7 +243,7 @@ async def persist_embeddings(
                     relative_path=relative_path,
                     codebase_id=codebase_id,
                     created_at=datetime.now(),
-                    updated_at=datetime.now()
+                    updated_at=datetime.now(),
                 )
                 print("creating: ", relative_path, content_type)
 
@@ -290,6 +275,7 @@ async def persist_embeddings(
 # TODO: consolidate all embeddings into one place / service
 # TODO: Replace pre-signed url with boto3 impl.
 
+
 # async def preprocess(input: PdfInput):
 async def preprocess(source_content_id: str):
     from database.db import async_engine
@@ -304,7 +290,9 @@ async def preprocess(source_content_id: str):
             org_id_hash = hashlib.sha256(org_id.encode()).hexdigest()[:63]
 
             object_key = f"{source_content.codebase_id}/{source_content.relative_path}"
-            presigned_url = generate_get_presigned_url(key=object_key, bucket=org_id_hash)
+            presigned_url = generate_get_presigned_url(
+                key=object_key, bucket=org_id_hash
+            )
 
             pdf_name = os.path.basename(urlparse(source_content.relative_path).path)
             download_path = Path(pdf_name)
@@ -315,24 +303,31 @@ async def preprocess(source_content_id: str):
             # Summarize the PDF and its pages
             pdf_summary, page_summaries = summarize_pdf_content(pages)
             # Create derived content
-            derived_content_records = await create_derived_content(source_content, pdf_summary, page_summaries, session)
+            derived_content_records = await create_derived_content(
+                source_content, pdf_summary, page_summaries, session
+            )
             session.add_all(derived_content_records)
             # await session.commit()
             embedding_dict = {}
             for derived_content in derived_content_records:
-                # Generate embeddings   
-                split_documents, embeds = await generate_embeddings_for_string(derived_content.content)
+                # Generate embeddings
+                split_documents, embeds = await generate_embeddings_for_string(
+                    derived_content.content
+                )
 
-                content_embedded = await persist_embeddings(session,
-                                                            split_documents,
-                                                            embeds,
-                                                            ContentType.PDF_SUMMARY,
-                                                            str(source_content.codebase_id),
-                                                            str(source_content.workspace_id),
-                                                            source_content.relative_path,
-                                                            {
-                                                                'document-type': ContentType.PDF_SUMMARY,
-                                                                'page_num': derived_content.order})
+                content_embedded = await persist_embeddings(
+                    session,
+                    split_documents,
+                    embeds,
+                    ContentType.PDF_SUMMARY,
+                    str(source_content.codebase_id),
+                    str(source_content.workspace_id),
+                    source_content.relative_path,
+                    {
+                        "document-type": ContentType.PDF_SUMMARY,
+                        "page_num": derived_content.order,
+                    },
+                )
                 embedding_dict[derived_content.id] = content_embedded
 
             await session.commit()
@@ -349,22 +344,22 @@ async def preprocess(source_content_id: str):
         modal.Mount.from_local_dir(
             local_path="../../driver_db/certs/",
             remote_path="/root/data/",
-        )
+        ),
     ],
     secrets=[
         modal.Secret.from_name("env-name"),
         modal.Secret.from_name("aws-inspector-s3"),
         modal.Secret.from_name("db"),
-        modal.Secret.from_name("open-ai")
+        modal.Secret.from_name("open-ai"),
     ],
     proxy=modal.Proxy.from_name("pg-proxy"),
     timeout=24 * 60 * 60,
-    region='us-east',
-    concurrency_limit=5
+    region="us-east",
+    concurrency_limit=5,
 )
 async def create_and_embed_pdf_summaries(source_content_id: str) -> None:
     # add some logging
-    print(f"Starting PDF preprocessing...")
+    print("Starting PDF preprocessing...")
     print(f"Creating summaries for source_content: {source_content_id}")
     if not source_content_id:
         raise ValueError("source_content_id is required")
@@ -374,6 +369,7 @@ async def create_and_embed_pdf_summaries(source_content_id: str) -> None:
 
 async def run_tasks():
     import asyncio
+
     source_content_ids = [
         "106856ea-3f7c-476a-ac4f-35d77358e8c1",
         "37741946-00d8-4be0-bd89-9515e17da734",
@@ -386,14 +382,17 @@ async def run_tasks():
         "e5266a3a-1232-4665-a871-7f1bb2b356d7",
         "a6dd3cab-adc6-46fc-8f5e-e9b01b8f3eef",
         "fa904fac-74be-4143-836c-59dcf293cb7c",
-        "e81caf63-95bd-4f34-b84f-0f750df1da40"
+        "e81caf63-95bd-4f34-b84f-0f750df1da40",
     ]
-    tasks = [create_and_embed_pdf_summaries.remote(source_content_id) for source_content_id in source_content_ids]
+    tasks = [
+        create_and_embed_pdf_summaries.remote(source_content_id)
+        for source_content_id in source_content_ids
+    ]
     await asyncio.gather(*tasks)
 
 
 @app.local_entrypoint()
 def main():
     import asyncio
-    asyncio.run(run_tasks())
 
+    asyncio.run(run_tasks())

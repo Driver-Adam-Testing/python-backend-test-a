@@ -20,3 +20,9 @@ cd ..
 cd onboarding
 # Perform modal deploy on src/main.py with the environment argument
 modal deploy --env=$environment src/main.py
+# Navigate back to the original directory
+cd .. 
+# Navigate to the pdf_preprocessing directory
+cd pdf_preprocessing
+# Perform modal deploy on src/main.py with the environment argument
+modal deploy --env=$environment src/main.py

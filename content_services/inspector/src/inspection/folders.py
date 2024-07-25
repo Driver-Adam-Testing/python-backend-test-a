@@ -21,8 +21,7 @@ def folder_item_priority_ordering(
     raw_list_str: str,
 ) -> str:
     system_prompt = get_prompt_template(
-        PARENT_PATH
-        / "prompt_templates/folders/item_priority_ordering.txt"
+        PARENT_PATH / "prompt_templates/folders/item_priority_ordering.txt"
     )
     human_prompt = raw_list_str
     return llm.generate_response(system_prompt, human_prompt)
@@ -35,8 +34,7 @@ def folder_chunk_description(
     description_chunk: str,
 ) -> str:
     system_prompt = get_prompt_template(
-        PARENT_PATH
-        / "prompt_templates/folders/chunk_description.txt"
+        PARENT_PATH / "prompt_templates/folders/chunk_description.txt"
     )
     human_prompt = (
         f"Chunk of child descriptions for folder `{folder_name}` in codebase `{codebase_name}`:"
@@ -52,8 +50,7 @@ def folder_compress_chunks(
     description_chunk: str,
 ) -> str:
     system_prompt = get_prompt_template(
-        PARENT_PATH
-        / "prompt_templates/folders/compress_chunks.txt"
+        PARENT_PATH / "prompt_templates/folders/compress_chunks.txt"
     )
     human_prompt = (
         f"Chunk of child subset descriptions for folder `{folder_name}` in codebase `{codebase_name}`:"
@@ -69,8 +66,7 @@ def folder_long_from_chunk_descriptions(
     data: str,
 ) -> str:
     system_prompt = get_prompt_template(
-        PARENT_PATH
-        / "prompt_templates/folders/long_from_chunk_descriptions.txt"
+        PARENT_PATH / "prompt_templates/folders/long_from_chunk_descriptions.txt"
     )
     human_prompt = data
     return llm.generate_response(system_prompt, human_prompt)
@@ -111,8 +107,7 @@ def folder_long_from_long_descriptions(
     child_content: str,
 ) -> str:
     system_prompt = get_prompt_template(
-        PARENT_PATH
-        / "prompt_templates/folders/long_from_long_descriptions.txt"
+        PARENT_PATH / "prompt_templates/folders/long_from_long_descriptions.txt"
     )
     human_prompt = ""
     human_prompt += f"Folder `{folder_name}` in codebase `{codebase_name}` content:\n\n{child_content}\n\n"
@@ -329,8 +324,10 @@ def comprehend_folder_top_down(
                     ]
                 aggregated_descriptions = ""
                 for idx, c_str in enumerate(chunk_detailed_descriptions, start=1):
-                    aggregated_descriptions += (f"Folder content subset {idx} description for folder {folder_name}:"
-                                                f"\n\n{c_str}\n\n")
+                    aggregated_descriptions += (
+                        f"Folder content subset {idx} description for folder {folder_name}:"
+                        f"\n\n{c_str}\n\n"
+                    )
                 compression_idx += 1
                 if compression_idx >= compression_loop_max_itr:
                     if raise_hard_errors:
@@ -433,7 +430,9 @@ def comprehend_folder_top_down(
         data = child_content
 
     # TODO: Clean up and remove redundant and unused IRs below.
-    child_single_sentence_descriptions = {k: v["short"]["single_sentence"] for k, v in child_nodes_to_docs.items()}
+    child_single_sentence_descriptions = {
+        k: v["short"]["single_sentence"] for k, v in child_nodes_to_docs.items()
+    }
     child_folder_list = ""
     child_file_list = ""
     for k, v in child_single_sentence_descriptions.items():
@@ -445,13 +444,17 @@ def comprehend_folder_top_down(
 
     if child_folder_list:
         folder_prefix = "## Folders\n"
-        child_folder_list_ordered = folder_item_priority_ordering(llm=llm, raw_list_str=f"{folder_prefix}{child_folder_list}")
+        child_folder_list_ordered = folder_item_priority_ordering(
+            llm=llm, raw_list_str=f"{folder_prefix}{child_folder_list}"
+        )
     else:
         child_folder_list_ordered = ""
 
     if child_file_list:
         file_prefix = "## Files\n"
-        child_file_list_ordered = folder_item_priority_ordering(llm=llm, raw_list_str=f"{file_prefix}{child_file_list}")
+        child_file_list_ordered = folder_item_priority_ordering(
+            llm=llm, raw_list_str=f"{file_prefix}{child_file_list}"
+        )
     else:
         child_file_list_ordered = ""
 

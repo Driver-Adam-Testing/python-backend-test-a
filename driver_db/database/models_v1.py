@@ -345,13 +345,19 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
         ),
         default=None,
     )
-    content_type_id: UUID = Field(foreign_key="derived_content_types.id")
+    content_type_id: UUID = Field(
+        foreign_key="derived_content_types.id", nullable=False
+    )
     content_type: DerivedContentType = Relationship(back_populates="contents")
+    # All content must be in a workspace
     workspace_id: UUID = Field(foreign_key="workspaces.id", nullable=False)
     source_content_id: UUID | None = Field(
         foreign_key="derived_contents.id", index=True, nullable=True, default=None
     )
-    codebase_id: None | UUID = Field(default=None, foreign_key="codebases.id")
+    # Content doesn't need to be associated with a codebase in our flat asset design
+    codebase_id: None | UUID = Field(
+        default=None, foreign_key="codebases.id", nullable=True
+    )
     codebase: None | Codebase = Relationship(back_populates="source_contents")
     relative_path: str = Field(sa_column=Column(sqlalchemy.Text, nullable=False))
     content: None | str = Field(
@@ -385,7 +391,6 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
     derived_contents: list["DerivedContent"] = Relationship(
         back_populates="source_content"
     )
-
     order: int | None = Field(
         sa_column=Column(Integer, nullable=True, server_default=text("0"))
     )

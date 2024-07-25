@@ -155,7 +155,7 @@ class SourceContentInput:
     workspace_id: UUID | None = None
     codebase_id: UUID | None = None
     relative_path: str | None = None
-    derived_content_type: str | None = None
+    source_content_type: str | None = None
 
 
 # type: ignore

@@ -147,7 +147,7 @@ class Mutation:
 
         # TODO: Get rid of the database hits to get source and derived content types. They don't change often enough and they are limited. It's inefficient that they're defined in the database.
         content_type = session.execute(
-            select(DerivedContentType).filter_by(type_name=input.derived_content_type)  # type: ignore
+            select(DerivedContentType).filter_by(type_name=input.source_content_type)  # type: ignore
         ).scalar_one_or_none()
 
         if not content_type:

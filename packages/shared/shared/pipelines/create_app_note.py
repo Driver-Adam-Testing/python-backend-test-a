@@ -1,16 +1,16 @@
 from urllib.parse import unquote, urlparse
 
-from comprehender import prompts
-from comprehender.agent import Agent
-from comprehender.agent.agent_tools import (
+from pydantic import UUID4, BaseModel
+from shared import prompts
+from shared.agent import Agent
+from shared.agent.agent_tools import (
     deep_rag_tool,
     list_files_tool,
     query_uploaded_pdf_files,
     search_pdf_summaries_tool,
     search_source_code_tool,
 )
-from comprehender.agent.tool import Tool
-from pydantic import UUID4, BaseModel
+from shared.agent.tool import Tool
 
 
 class CreateAppNoteRequest(BaseModel):

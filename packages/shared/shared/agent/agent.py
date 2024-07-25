@@ -5,11 +5,12 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import anthropic
 import requests
-from comprehender.rag.vector_db import VectorDb
-from comprehender.utils import claude_tool_formatter
-from comprehender.utils.bcolors import bcolors
 from openai import OpenAI
 from openai.types.chat.chat_completion_message import ChatCompletionMessage
+
+from shared.agent.models.claude import claude_tool_formatter
+from shared.agent.vector_db import VectorDb
+from shared.utils.bcolors import bcolors
 
 SUPPORTED_MODELS = [
     {"model": "gpt-4-turbo-preview", "provider": "openai"},
@@ -49,6 +50,7 @@ class AgentBase:
     @property
     def backend_token(self):
         if self._backend_token is None:
+            # TODO: get this from settings
             auth0_domain = os.getenv("AUTH0_DOMAIN")
             client_id = os.getenv("AUTH0_CLIENT_ID")
             client_secret = os.getenv("AUTH0_CLIENT_SECRET")

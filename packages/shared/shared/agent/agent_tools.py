@@ -2,6 +2,7 @@ import os
 import re
 
 import requests
+from openai import OpenAI
 
 from .tool import Tool
 
@@ -96,8 +97,6 @@ think_tool = Tool(
 def query_uploaded_pdf_files(
     agent_context, file_ids: list[str], query: str, rationale: str = None
 ) -> str:
-    from openai import OpenAI
-
     client = OpenAI()
     # TODO: make typehints consistent with openai
     if isinstance(file_ids, str):

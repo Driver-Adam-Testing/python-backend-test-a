@@ -4,9 +4,8 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 import uuid
 from database.models_v1 import (
     Codebase,
-    SourceContent,
-    SourceContentType,
     DerivedContentType,
+    DerivedContent,
 )
 from pathlib import Path
 from uuid import UUID
@@ -67,8 +66,8 @@ async def get_source_content_type_uuid(content_type: SourceContentTypeMap) -> UU
 
     sct_uuid = None
     async with AsyncSession(async_engine) as session:
-        sel_statement = select(SourceContentType).where(
-            SourceContentType.type_name == content_type.value
+        sel_statement = select(DerivedContentType).where(
+            DerivedContentType.type_name == content_type.value
         )
         res_sct = (await session.exec(sel_statement)).first()
         if res_sct:
@@ -76,9 +75,10 @@ async def get_source_content_type_uuid(content_type: SourceContentTypeMap) -> UU
     return sct_uuid
 
 
+# TODO this actually would get source and derived content if the incoming types weren't correct
 async def get_source_contents_by_codebase_id(
     codebase_id: uuid.UUID, content_types: set[SourceContentTypeMap]
-) -> list[SourceContent]:
+) -> list[DerivedContent]:
     from database.db import async_engine
     from sqlmodel import select
 
@@ -86,14 +86,14 @@ async def get_source_contents_by_codebase_id(
     # down to what has been configured.
     async with AsyncSession(async_engine) as session:
         statement = (
-            select(SourceContent)
+            select(DerivedContent)
             .join(
-                SourceContentType,
-                SourceContent.content_type_id == SourceContentType.id,
+                DerivedContentType,
+                DerivedContent.content_type_id == DerivedContentType.id,
             )
             .where(
-                SourceContentType.type_name.in_([ct.value for ct in content_types]),
-                SourceContent.codebase_id == codebase_id,
+                DerivedContentType.type_name.in_([ct.value for ct in content_types]),
+                DerivedContent.codebase_id == codebase_id,
                 # SourceContent.misc_metadata.op("->>")("is_analyzable") == 'true'
             )
         )

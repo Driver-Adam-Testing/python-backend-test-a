@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "comprehender"
+version = "0.1.0"
+description = ""
+authors = ["Neil Zumwalde <neilzumwalde@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+database = {path = "../../driver_db", develop = true}
+shared = {path = "../../packages/shared", develop = true}
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

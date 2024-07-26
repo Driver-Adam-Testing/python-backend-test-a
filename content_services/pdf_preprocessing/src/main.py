@@ -145,11 +145,13 @@ async def create_derived_content_without_inserting(
     derived_contents.append(
         DerivedContent(
             workspace_id=source_content.workspace_id,
+            codebase_id=source_content.codebase_id,
             relative_path=source_content.relative_path,
             source_content_id=source_content.id,
             content_type_id=content_type_id,
             content=pdf_summary,
             status="generation-complete",
+            misc_metadata=None,
             order=0,
         )
     )
@@ -157,12 +159,13 @@ async def create_derived_content_without_inserting(
     for page_summary in page_summaries:
         page_summary_dc = DerivedContent(
             workspace_id=source_content.workspace_id,
+            codebase_id=source_content.codebase_id,
             relative_path=source_content.relative_path,
             source_content_id=source_content.id,
             content_type_id=content_type_id,
             content=page_summary["summary"],
             status="generation-complete",
-            metadata={"page_num": page_summary["page_num"]},
+            misc_metadata={"page_num": page_summary["page_num"]},
             order=page_summary["page_num"],
         )
         derived_contents.append(page_summary_dc)

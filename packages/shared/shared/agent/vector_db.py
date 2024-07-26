@@ -1,11 +1,7 @@
 # flake8: noqa: E203
 
-
-from dotenv import load_dotenv
-from sqlmodel import Session, select
-
-from driver_db.database.db import engine
-from driver_db.database.models_v1 import (
+from database.db import engine
+from database.models_v1 import (
     Chunk,
     ContentMetadata,
     ContentType,
@@ -13,8 +9,7 @@ from driver_db.database.models_v1 import (
     RuntimeLogAgentInstance,
     RuntimeLogAgentMessage,
 )
-
-load_dotenv()
+from sqlmodel import Session, select
 
 
 class VectorDb:

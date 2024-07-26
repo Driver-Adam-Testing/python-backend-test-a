@@ -10,7 +10,6 @@ from database.models_v1 import (
     ContentMetadata,
     ContentType,
     DerivedContent,
-    SourceContent,
 )
 from shared.embedding.embedding_helpers import (
     download_source_content_file,
@@ -192,7 +191,9 @@ async def embed_content_for_codebase(codebase_id: str, workspace_id: str) -> Non
     async with AsyncSession(async_engine) as session:
         async with session.begin():
             sc_res = await session.exec(
-                select(SourceContent.id).where(SourceContent.codebase_id == codebase_id)
+                select(DerivedContent.id)
+                .where(DerivedContent.codebase_id == codebase_id)
+                .where(DerivedContent.source_content_id is None)
             )
             source_content_ids = sc_res.all()
 
@@ -235,8 +236,8 @@ async def embed_content_for_source_content(
                     codebase = cb_res.first()
                     sc = (
                         await session.exec(
-                            select(SourceContent).where(
-                                SourceContent.id == source_content_id
+                            select(DerivedContent).where(
+                                DerivedContent.id == source_content_id
                             )
                         )
                     ).first()

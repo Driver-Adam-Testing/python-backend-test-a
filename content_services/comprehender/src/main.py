@@ -9,9 +9,6 @@ from datetime import datetime
 import modal
 from sqlmodel import Session, select
 
-from driver_db.database.db import engine
-from driver_db.database.models_v1 import DerivedContent
-
 app = modal.App("comprehender")
 
 
@@ -19,28 +16,16 @@ app = modal.App("comprehender")
 # package, which is a *local* package in pyproject.toml of comprehender.
 image = (
     modal.Image.debian_slim(python_version="3.12")
-    .copy_mount(
-        mount=modal.Mount.from_local_dir(
-            local_path="../comprehender-database", remote_path="/"
-        ),
-        remote_path="/tmp/comprehender-database",
-    )
-    .copy_mount(
-        mount=modal.Mount.from_local_dir(
-            local_path="../../python-backend/driver_db", remote_path="/"
-        ),
-        remote_path="/python-backend/driver_db",
-    )
+    .copy_local_dir("../../driver_db/", remote_path="/driver_db")
+    .copy_local_dir(local_path="../../packages/shared", remote_path="/packages/shared")
     .poetry_install_from_file("pyproject.toml")
 )
 
 comprehender_modal_config = {
     "image": image,
     "mounts": [
-        # This is required so modal uploads the comprehender python package files.
-        modal.Mount.from_local_python_packages("comprehender"),
         modal.Mount.from_local_dir(
-            local_path="../data/",
+            local_path="../../driver_db/certs",
             remote_path="/root/data/",
         ),
     ],
@@ -50,7 +35,8 @@ comprehender_modal_config = {
         modal.Secret.from_name("db"),
     ],
     "proxy": modal.Proxy.from_name("pg-proxy"),
-    "concurrency_limit": 8,
+    "concurrency_limit": 5,
+    "region": "us-east",
 }
 
 
@@ -143,27 +129,6 @@ def create_embeddings(workspace_id: str, codebase_id: str):
     embed_content_for_codebase.remote(codebase_id, workspace_id)
 
 
-@app.function(
-    image=image,
-    mounts=[
-        # This is required so modal uploads the comprehender python package files.
-        modal.Mount.from_local_python_packages("comprehender"),
-        modal.Mount.from_local_dir(
-            local_path="../data/",
-            remote_path="/root/data/",
-        ),
-    ],
-    secrets=[
-        modal.Secret.from_name("db"),
-    ],
-    proxy=modal.Proxy.from_name("pg-proxy"),
-)
-def migrate_db():
-    from comprehender_database import db
-
-    db.main()
-
-
 ### TODO: This is the wrong place in general for db operations.
 ### When we migrate comprehender, look into changing this.
 class ContentStatus:
@@ -179,6 +144,9 @@ def save_app_note_results(
     errors: list | None = None,
     echoed_context: dict | None = None,
 ):
+    from database.db import engine
+    from database.models_v1 import DerivedContent
+
     with Session(engine) as session:
         derived_content = session.exec(
             select(DerivedContent).where(DerivedContent.id == derived_content_id)

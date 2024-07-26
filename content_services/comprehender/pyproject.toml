@@ -7,7 +7,6 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.12"
-database = {path = "../../driver_db", develop = true}
 shared = {path = "../../packages/shared", develop = true}
 
 

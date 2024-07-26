@@ -1,18 +1,16 @@
 import re
 from urllib.parse import unquote, urlparse
 
-from comprehender import prompts
-from comprehender.agent import Agent
-from comprehender.agent.agent_tools import execute_backend_search
-from comprehender.rag.vector_db import ContentType
-from pydantic import UUID4
-
-from .dtos.operation_request import OperationRequest
+from database.models_v1 import ContentType
+from pydantic import UUID4, BaseModel
+from shared import prompts
+from shared.agent import Agent
+from shared.agent.agent_tools import execute_backend_search
 
 # TODO: something is wrong with options defaulting to {}
 
 
-class RunAgentRequest(OperationRequest):
+class RunAgentRequest(BaseModel):
     workspace_id: UUID4
     codebase_id: UUID4 = None
     prompt: str | None

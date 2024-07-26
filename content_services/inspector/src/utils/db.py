@@ -61,16 +61,16 @@ async def get_derived_content_type_uuid(content_type: DerivedContentTypeMap) -> 
 
 
 # TODO remove the need for this...
-async def get_rel_path_workspace_id_from_source_content_id(
+async def get_rel_path_workspace_id_codebase_id_from_source_content_id(
     source_content_id: UUID,
-) -> tuple[str, str]:
+) -> tuple[str, str, str]:
     from database.db import async_engine
     from sqlmodel import select
 
     async with AsyncSession(async_engine) as session:
         statement = select(DerivedContent).where(DerivedContent.id == source_content_id)
         res = (await session.exec(statement)).first()
-        return (res.relative_path, res.workspace_id)
+        return (res.relative_path, res.workspace_id, res.codebase_id)
 
 
 async def get_source_content_type_uuid(content_type: SourceContentTypeMap) -> UUID:

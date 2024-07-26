@@ -208,7 +208,7 @@ class Mutation:
             "errors": [],
         }
 
-        content: DerivedContent = session.exec(
+        content = session.exec(
             select(DerivedContent)  # type: ignore
             .join(
                 DerivedContentType,
@@ -218,7 +218,7 @@ class Mutation:
                 DerivedContent.codebase_id == input.codebase_id,
                 DerivedContentType.type_name == "codebase",
             )
-        ).first()
+        ).first()[0]
         content_type_id = (
             session.exec(
                 select(DerivedContentType.id).where(  # type: ignore

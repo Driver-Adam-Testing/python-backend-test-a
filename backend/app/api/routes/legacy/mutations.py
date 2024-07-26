@@ -230,6 +230,7 @@ class Mutation:
             .id
         )
         app_note = DerivedContent(
+            workspace_id=content.workspace_id,
             source_content_id=content.id,
             relative_path=content.relative_path,
             content_type_id=content_type_id,

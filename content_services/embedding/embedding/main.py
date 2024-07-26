@@ -11,26 +11,17 @@ from database.models_v1 import (
     ContentType,
     DerivedContent,
 )
-from shared.embedding.embedding_helpers import (
-    download_source_content_file,
-    generate_embeddings_for_string,
-    get_derived_content_type_uuid,
-    get_source_content_type_uuid,
-)
 from sqlmodel import select
 
 db_sem = asyncio.Semaphore(5)
 modal_sem = asyncio.Semaphore(200)
 
 app = modal.App("embedding")
+
 image = (
     modal.Image.debian_slim(python_version="3.12")
-    .copy_local_dir(
-        "../../python-backend/driver_db/", remote_path="/python-backend/driver_db/"
-    )
-    .copy_local_dir(
-        "../comprehender-database/", remote_path="/tmp/comprehender-database/"
-    )
+    .copy_local_dir("../../driver_db/", remote_path="/driver_db")
+    .copy_local_dir(local_path="../../packages/shared", remote_path="/packages/shared")
     .poetry_install_from_file("pyproject.toml")
 )
 
@@ -38,15 +29,22 @@ image = (
 @app.function(
     image=image,
     mounts=[
-        modal.Mount.from_local_python_packages("comprehender"),
+        modal.Mount.from_local_dir(
+            local_path="../../driver_db/certs",
+            remote_path="/root/data/",
+        )
     ],
     secrets=[modal.Secret.from_name("open-ai")],
     timeout=60 * 60,
-    concurrency_limit=10,
+    concurrency_limit=5,
 )
 async def generate_embeddings_for_source_contents(
     file_content: str, long_description: str, symbols_dcs: list, relative_path: str
 ) -> dict:
+    from shared.embedding.embedding_helpers import (
+        generate_embeddings_for_string,
+    )
+
     ret_dict = {}
     if file_content is not None:
         try:
@@ -173,9 +171,10 @@ async def persist_embeddings(
 @app.function(
     image=image,
     mounts=[
-        modal.Mount.from_local_python_packages("database"),
-        modal.Mount.from_local_python_packages("comprehender"),
-        modal.Mount.from_local_dir(local_path="../data/", remote_path="/root/data/"),
+        modal.Mount.from_local_dir(
+            local_path="../../driver_db/certs",
+            remote_path="/root/data/",
+        ),
     ],
     secrets=[modal.Secret.from_name("aws-inspector-s3"), modal.Secret.from_name("db")],
     proxy=modal.Proxy.from_name("pg-proxy"),
@@ -218,6 +217,11 @@ async def embed_content_for_source_content(
     source_content_id: str, codebase_id: str, workspace_id: str
 ) -> dict:
     from database.db import async_engine
+    from shared.embedding.embedding_helpers import (
+        download_source_content_file,
+        get_derived_content_type_uuid,
+        get_source_content_type_uuid,
+    )
     from sqlmodel.ext.asyncio.session import AsyncSession
 
     is_analyzable = False

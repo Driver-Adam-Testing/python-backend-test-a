@@ -11,6 +11,7 @@ openai = "^1.37.0"
 markdown = "^3.6"
 database = {path = "../../driver_db", develop = true}
 tiktoken = "^0.7.0"
+anthropic = "^0.31.2"
 
 [build-system]
 requires = ["poetry-core"]

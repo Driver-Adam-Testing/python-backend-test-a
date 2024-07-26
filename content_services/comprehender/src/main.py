@@ -153,23 +153,23 @@ def save_app_note_results(
         ).first()
         if not derived_content:
             raise Exception(f"No Derived content {derived_content_id}")
-        if not derived_content.dc_metadata:
-            derived_content.dc_metadata = {}
+        if not derived_content.misc_metadata:
+            derived_content.misc_metadata = {}
 
         ## TODO: LOTS OF REDUNDANT DATA HERE... I DON'T KNOW WHAT'S ACTUALLY USED, so I'm keeping everything
         ## TODO: Ensure dc_metadata is created here without assigning a whole object.
-        derived_content.dc_metadata["generation_timestamp"] = str(datetime.now())
-        derived_content.dc_metadata["document_id"] = derived_content_id
-        derived_content.dc_metadata["content"] = results.get("content", "")
-        derived_content.dc_metadata["errors"] = errors
-        derived_content.dc_metadata["prompt"] = prompt
-        derived_content.dc_metadata["name"] = results.get("name", "")
-        derived_content.dc_metadata["extra_context"] = echoed_context
-        if not derived_content.dc_metadata.get("history", None):
-            derived_content.dc_metadata["history"] = []
-        if not derived_content.dc_metadata.get("modal_context", None):
-            derived_content.dc_metadata["modal_context"] = {}
-        derived_content.dc_metadata["modal_context"]["callback"] = echoed_context
+        derived_content.misc_metadata["generation_timestamp"] = str(datetime.now())
+        derived_content.misc_metadata["document_id"] = derived_content_id
+        derived_content.misc_metadata["content"] = results.get("content", "")
+        derived_content.misc_metadata["errors"] = errors
+        derived_content.misc_metadata["prompt"] = prompt
+        derived_content.misc_metadata["name"] = results.get("name", "")
+        derived_content.misc_metadata["extra_context"] = echoed_context
+        if not derived_content.misc_metadata.get("history", None):
+            derived_content.misc_metadata["history"] = []
+        if not derived_content.misc_metadata.get("modal_context", None):
+            derived_content.misc_metadata["modal_context"] = {}
+        derived_content.misc_metadata["modal_context"]["callback"] = echoed_context
 
         action = (
             ContentStatus.GENERATION_ERROR
@@ -183,7 +183,7 @@ def save_app_note_results(
             else results.get("content", None)
         )
 
-        derived_content.dc_metadata["history"].append(
+        derived_content.misc_metadata["history"].append(
             {
                 "action": action,
                 "data": data,

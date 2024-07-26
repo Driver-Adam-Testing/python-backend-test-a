@@ -209,7 +209,7 @@ class Mutation:
         }
 
         content: DerivedContent = session.exec(
-            select(DerivedContent.id)  # type: ignore
+            select(DerivedContent)  # type: ignore
             .join(
                 DerivedContentType,
                 DerivedContent.content_type_id == DerivedContentType.id,
@@ -235,6 +235,7 @@ class Mutation:
             content_type_id=content_type_id,
             content=json.dumps(note_content),
             status=ContentStatus.GENERATING.value,
+            workspace_id=content.workspace_id,
             metadata=metadata,
         )
 

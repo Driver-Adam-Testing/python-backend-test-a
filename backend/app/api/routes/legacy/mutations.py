@@ -15,7 +15,7 @@ from sqlalchemy.future import select
 from sqlmodel import Session
 from strawberry.types import Info
 
-from app.api.routes.legacy.api_types import DerivedContentInput
+from app.api.routes.legacy.api_types import SourceContentInput
 from app.api.routes.legacy.application_note import (
     ContentStatus,
 )
@@ -118,7 +118,7 @@ class WebhookInput:
 @strawberry.type
 class Mutation:
     @strawberry.mutation
-    def createSourceContent(self, info: Info, input: DerivedContentInput) -> str:
+    def createSourceContent(self, info: Info, input: SourceContentInput) -> str:
         user = info.context.user
         m2m = info.context.m2m
         session = info.context.session
@@ -147,7 +147,7 @@ class Mutation:
 
         # TODO: Get rid of the database hits to get source and derived content types. They don't change often enough and they are limited. It's inefficient that they're defined in the database.
         content_type = session.execute(
-            select(DerivedContentType).filter_by(type_name=input.derived_content_type)  # type: ignore
+            select(DerivedContentType).filter_by(type_name=input.source_content_type)  # type: ignore
         ).scalar_one_or_none()
 
         if not content_type:
@@ -209,7 +209,7 @@ class Mutation:
         }
 
         content: DerivedContent = session.exec(
-            select(DerivedContent.id)  # type: ignore
+            select(DerivedContent)  # type: ignore
             .join(
                 DerivedContentType,
                 DerivedContent.content_type_id == DerivedContentType.id,
@@ -231,9 +231,11 @@ class Mutation:
         )
         app_note = DerivedContent(
             source_content_id=content.id,
+            relative_path=content.relative_path,
             content_type_id=content_type_id,
             content=json.dumps(note_content),
             status=ContentStatus.GENERATING.value,
+            workspace_id=content.workspace_id,
             metadata=metadata,
         )
 

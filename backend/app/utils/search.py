@@ -1,6 +1,4 @@
-import uuid
-
-from database.models_v1 import Chunk, ContentMetadata, ContentType
+from database.models_v1 import Chunk, ContentMetadata
 from pydantic import BaseModel
 from sqlmodel import Session, asc, or_, select
 
@@ -12,12 +10,10 @@ class SearchInput(BaseModel):
     token_limit: int | None = None
     result_limit: int | None = 20
     algorithm: str = "semantic"
-    content_type: set[ContentType] | None = None
-    workspace_id: str
-    # codebase_id: str | None = None
-    source_content_ids: list[uuid.UUID] | None
-    derived_content_ids: list[uuid.UUID] | None
-    # TODO handle nuance of, given a PDF source content ID, need to be smart to get the right content types and derived contents
+    content_type: str | list[str] | None = None
+    workspace_id: str | None = None  # TODO: lock this down in auth
+    codebase_id: str | None = None
+    relative_path: str | None = None
 
 
 class SearchResult(BaseModel):

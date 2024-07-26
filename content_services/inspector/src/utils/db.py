@@ -1,14 +1,14 @@
 import enum
-
-from sqlmodel.ext.asyncio.session import AsyncSession
 import uuid
-from database.models_v1 import (
-    Codebase,
-    DerivedContentType,
-    DerivedContent,
-)
 from pathlib import Path
 from uuid import UUID
+
+from database.models_v1 import (
+    Codebase,
+    DerivedContent,
+    DerivedContentType,
+)
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 
 async def get_codebase_by_id(codebase_id: uuid.UUID) -> Codebase:
@@ -58,6 +58,19 @@ async def get_derived_content_type_uuid(content_type: DerivedContentTypeMap) -> 
         if res_dct:
             dct_uuid = res_dct.id
     return dct_uuid
+
+
+# TODO remove the need for this...
+async def get_rel_path_workspace_id_from_source_content_id(
+    source_content_id: UUID,
+) -> tuple[str, str]:
+    from database.db import async_engine
+    from sqlmodel import select
+
+    async with AsyncSession(async_engine) as session:
+        statement = select(DerivedContent).where(DerivedContent.id == source_content_id)
+        res = (await session.exec(statement)).first()
+        return (res.relative_path, res.workspace_id)
 
 
 async def get_source_content_type_uuid(content_type: SourceContentTypeMap) -> UUID:

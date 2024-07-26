@@ -149,7 +149,7 @@ def get_document_set(
 
     query = select(SourceContent).where(
         SourceContent.relative_path == relative_path,
-        SourceContent.source_content_type_id == source_content_type["id"],
+        SourceContent.content_type_id == source_content_type["id"],
     )
 
     if workspace_id:
@@ -165,7 +165,7 @@ def get_document_set(
         select(DerivedContent)
         .join(
             DerivedContentType,
-            DerivedContent.derived_content_type_id == DerivedContentType.id,
+            DerivedContent.content_type_id == DerivedContentType.id,
         )
         .where(
             DerivedContent.source_content_id == content.id,
@@ -283,15 +283,15 @@ def get_document_set(
             extension=content.relative_path.split(".")[-1],
             content=code_content,
             metadata=CodeMetadata(
-                size=content.analysis_metadata.get("size"),
-                sloc=content.analysis_metadata.get("sloc"),
-                extension=content.analysis_metadata.get("extension"),
-                is_binary=content.analysis_metadata.get("is_binary"),
-                is_hex=content.analysis_metadata.get("is_hex"),
-                is_analyzable=content.analysis_metadata["is_analyzable"],
-                is_blacklisted=content.analysis_metadata["is_blacklisted"],
+                size=content.misc_metadata.get("size"),
+                sloc=content.misc_metadata.get("sloc"),
+                extension=content.misc_metadata.get("extension"),
+                is_binary=content.misc_metadata.get("is_binary"),
+                is_hex=content.misc_metadata.get("is_hex"),
+                is_analyzable=content.misc_metadata["is_analyzable"],
+                is_blacklisted=content.misc_metadata["is_blacklisted"],
             )
-            if content.analysis_metadata
+            if content.misc_metadata
             else None,
         )
 

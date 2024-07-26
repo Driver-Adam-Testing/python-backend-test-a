@@ -32,7 +32,7 @@ def get_codebase_tree(
         .where(Workspace.id == SourceContent.workspace_id)
         .where(Workspace.organization_id == organization_id)
         .where(SourceContentType.type_name.in_(["codebase-directory", "codebase-file"]))  # type: ignore
-        .where(SourceContentType.id == SourceContent.source_content_type_id)
+        .where(SourceContentType.id == SourceContent.content_type_id)
     )
 
     source_contents = session.exec(statement).all()

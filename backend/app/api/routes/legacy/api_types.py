@@ -129,7 +129,7 @@ class DerivedContentQuery:
     __model__ = DerivedContent
     id: UUID | None = None
     content: str | None = None
-    dc_metadata: dict | None = None
+    misc_metadata: dict | None = None
     status: str | None = None
     order: int | None = None
     llm: LlmQuery | None = None
@@ -163,7 +163,7 @@ class DerivedContentTypeResults:
 class DerivedContentResults:
     @strawberry.field(description="Metadata of the derived content")
     def metadata(self) -> dict | None:
-        return self.dc_metadata  # type: ignore
+        return self.misc_metadata  # type: ignore
 
     derived_content_type: DerivedContentTypeResults
 
@@ -262,4 +262,3 @@ class GitRepository:
     org: str
     last_updated: datetime
     metadata: dict
-

@@ -1,7 +1,7 @@
 import enum
 import functools
 import uuid
-from datetime import date, datetime, timezone
+from datetime import datetime, timezone
 from uuid import UUID
 
 import sqlalchemy.dialects.postgresql
@@ -307,82 +307,6 @@ class SourceContentType(SQLModel, table=True):  # type: ignore
     )
 
 
-class SourceContent(SQLModel, table=True):  # type: ignore
-    __tablename__ = "source_contents"
-    id: UUID | None = Field(
-        sa_column=Column(
-            SaUuid(as_uuid=True),
-            primary_key=True,
-            server_default=text("uuid_generate_v4()"),
-        ),
-        default=None,
-    )
-    source_content_type_id: UUID = Field(
-        foreign_key="source_content_types.id", index=True
-    )
-    workspace_id: UUID = Field(foreign_key="workspaces.id", index=True)
-    codebase_id: None | UUID = Field(
-        default=None, foreign_key="codebases.id", index=True
-    )
-    relative_path: str = Field(sa_column=Column(sqlalchemy.Text, nullable=False))
-    created_at: None | datetime = Field(
-        sa_column=Column(DateTime(timezone=False), server_default=func.now()),
-        default=None,
-    )
-
-    updated_at: None | datetime = Field(
-        sa_column=Column(DateTime(timezone=False), onupdate=func.now()), default=None
-    )
-    analysis_metadata: dict | None = Field(  # type: ignore
-        sa_column=Column(JSONB, nullable=True), default=None
-    )
-
-    source_content_type: SourceContentType = Relationship(
-        back_populates="source_contents"
-    )
-    workspace: Workspace = Relationship(back_populates="source_contents")
-    codebase: None | Codebase = Relationship(back_populates="source_contents")
-    derived_contents: list["DerivedContent"] = Relationship(
-        back_populates="source_content"
-    )
-
-
-class Llm(SQLModel, table=True):  # type: ignore
-    __tablename__ = "llms"
-    id: UUID | None = Field(
-        sa_column=Column(
-            SaUuid(as_uuid=True),
-            primary_key=True,
-            server_default=text("uuid_generate_v4()"),
-        ),
-        default=None,
-    )
-    name: str = Field(
-        max_length=255,
-        sa_column=sqlalchemy.Column(sqlalchemy.String(255), nullable=False),
-    )
-    model: str = Field(
-        max_length=255,
-        sa_column=sqlalchemy.Column(sqlalchemy.String(255), nullable=False),
-    )
-    training_date: date
-    owned_by: str = Field(
-        max_length=255,
-        sa_column=sqlalchemy.Column(
-            "model_owned_by", sqlalchemy.String(255), nullable=False
-        ),
-    )
-    created_at: None | datetime = Field(
-        sa_column=Column(DateTime(timezone=False), server_default=func.now()),
-        default=None,
-    )
-
-    updated_at: None | datetime = Field(
-        sa_column=Column(DateTime(timezone=False), onupdate=func.now()), default=None
-    )
-    derived_contents: list["DerivedContent"] = Relationship(back_populates="llm")
-
-
 class DerivedContentType(SQLModel, table=True):  # type: ignore
     __tablename__ = "derived_content_types"
     id: UUID | None = Field(
@@ -412,6 +336,56 @@ class DerivedContentType(SQLModel, table=True):  # type: ignore
     )
 
 
+class SourceContent(SQLModel, table=True):  # type: ignore
+    __tablename__ = "source_contents"
+    id: UUID | None = Field(
+        sa_column=Column(
+            SaUuid(as_uuid=True),
+            primary_key=True,
+            server_default=text("uuid_generate_v4()"),
+        ),
+        default=None,
+    )
+    content_type_id: UUID  # FK dropped in prep for copy from SC -> DC
+    workspace_id: UUID = Field(foreign_key="workspaces.id", index=True)
+    codebase_id: None | UUID = Field(
+        default=None, foreign_key="codebases.id", index=True
+    )
+    relative_path: str = Field(sa_column=Column(sqlalchemy.Text, nullable=False))
+    created_at: None | datetime = Field(
+        sa_column=Column(DateTime(timezone=False), server_default=func.now()),
+        default=None,
+    )
+
+    updated_at: None | datetime = Field(
+        sa_column=Column(DateTime(timezone=False), onupdate=func.now()), default=None
+    )
+    misc_metadata: dict | None = Field(  # type: ignore
+        sa_column=Column("metadata", JSONB, nullable=True), default=None
+    )
+    source_content_type: SourceContentType = Relationship(
+        back_populates="source_contents"
+    )
+    workspace: Workspace = Relationship(back_populates="source_contents")
+    codebase: None | Codebase = Relationship(back_populates="source_contents")
+    derived_contents: list["DerivedContent"] = Relationship(
+        back_populates="source_content"
+    )
+    order: int | None = Field(
+        sa_column=Column(Integer, nullable=True, server_default=text("0"))
+    )
+    content: None | str = Field(sa_column=Column(sqlalchemy.Text, nullable=True))
+    status: Enum_Derived_Content_Status = Field(
+        sa_column=sqlalchemy.Column(
+            Enum(
+                Enum_Derived_Content_Status,
+                values_callable=lambda x: [e.value for e in x],
+            ),
+            nullable=True,
+        )
+    )
+
+
 class DerivedContent(SQLModel, table=True):  # type: ignore
     __tablename__ = "derived_contents"
     id: UUID | None = Field(
@@ -422,14 +396,16 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
         ),
         default=None,
     )
-    derived_content_type_id: UUID = Field(foreign_key="derived_content_types.id")
-    source_content_id: UUID = Field(foreign_key="source_contents.id", index=True)
+    content_type_id: UUID = Field(foreign_key="derived_content_types.id")
+    workspace_id: UUID = Field(foreign_key="workspaces.id", nullable=False)
+    source_content_id: UUID | None = Field(
+        foreign_key="source_contents.id", index=True, nullable=True, default=None
+    )
+    codebase_id: None | UUID = Field(default=None, foreign_key="codebases.id")
     content: None | str = Field(sa_column=Column(sqlalchemy.Text, nullable=True))
-    dc_metadata: dict | None = Field(  # type: ignore
+    misc_metadata: dict | None = Field(  # type: ignore
         sa_column=Column("metadata", JSONB, nullable=True), default=None
     )  # Rename of attr required since metadata is a reserved keyword
-    llm_id: None | UUID = Field(default=None, foreign_key="llms.id")
-    llm: None | Llm = Relationship(back_populates="derived_contents")
     status: Enum_Derived_Content_Status = Field(
         sa_column=sqlalchemy.Column(
             Enum(
@@ -447,10 +423,11 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
     updated_at: None | datetime = Field(
         sa_column=Column(DateTime(timezone=False), onupdate=func.now()), default=None
     )
-    derived_content_type: DerivedContentType = Relationship(
-        back_populates="derived_contents"
-    )
+    # derived_content_type: DerivedContentType = Relationship(
+    #     back_populates="derived_contents"
+    # )
     source_content: SourceContent = Relationship(back_populates="derived_contents")
     order: int | None = Field(
         sa_column=Column(Integer, nullable=True, server_default=text("0"))
     )
+    relative_path: str = Field(sa_column=Column(sqlalchemy.Text, nullable=False))

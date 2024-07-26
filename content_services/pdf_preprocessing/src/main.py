@@ -1,13 +1,14 @@
 import hashlib
 import os
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
+from urllib.parse import urlparse
 from uuid import UUID
+
+import modal
 import requests
 from config import settings
-from concurrent.futures import ThreadPoolExecutor, as_completed
-
-from urllib.parse import urlparse
 from database.models_v1 import (
     Chunk,
     ContentMetadata,
@@ -15,8 +16,6 @@ from database.models_v1 import (
     DerivedContent,
     DerivedContentType,
 )
-import modal
-
 from embed_helpers import generate_embeddings_for_string
 from utils.aws_s3 import generate_get_presigned_url
 
@@ -112,10 +111,9 @@ def summarize_pdf_content(pages):
 
 
 # TODO dedup
-# get source content by source_content_id
 async def get_source_content(source_content_id: UUID, session) -> DerivedContent:
-    from sqlmodel import select
     from database.models_v1 import Workspace  # Import Workspace model
+    from sqlmodel import select
 
     query = (
         select(DerivedContent, Workspace)
@@ -141,20 +139,7 @@ async def get_derived_content_type_uuid(content_type: str, session) -> UUID:
     return dct_uuid
 
 
-async def create_source_content(
-    workspace_id, codebase_id, content_type_id, session
-) -> DerivedContent:
-    source_content = DerivedContent(
-        workspace_id=workspace_id,
-        codebase_id=codebase_id,
-        content_type_id=content_type_id,
-    )
-    session.add(source_content)
-    await session.commit()
-    return source_content
-
-
-async def create_derived_content(
+async def create_derived_content_without_inserting(
     source_content, pdf_summary, page_summaries, session
 ) -> [DerivedContent]:
     derived_contents = []
@@ -163,6 +148,7 @@ async def create_derived_content(
 
     derived_contents.append(
         DerivedContent(
+            relative_path=source_content.relative_path,
             source_content_id=source_content.id,
             content_type_id=content_type_id,
             content=pdf_summary,
@@ -173,6 +159,7 @@ async def create_derived_content(
 
     for page_summary in page_summaries:
         page_summary_dc = DerivedContent(
+            relative_path=source_content.relative_path,
             source_content_id=source_content.id,
             content_type_id=content_type_id,
             content=page_summary["summary"],
@@ -262,7 +249,7 @@ async def persist_embeddings(
                         line_number=line_number if line_number != 0 else d.start_line,
                     )
                 )
-                for i, (d, e) in enumerate(zip(split_documents, embeds))
+                for i, (d, e) in enumerate(zip(split_documents, embeds, strict=False))
             ]
             return True
         except Exception as e:
@@ -283,9 +270,7 @@ async def preprocess(source_content_id: str):
 
     async with AsyncSession(async_engine) as session:
         async with session.begin():
-            # Get source content
             source_content = await get_source_content(UUID(source_content_id), session)
-            # await source_content.workspace
             org_id = source_content.workspace.organization_id
             org_id_hash = hashlib.sha256(org_id.encode()).hexdigest()[:63]
 
@@ -296,18 +281,14 @@ async def preprocess(source_content_id: str):
 
             pdf_name = os.path.basename(urlparse(source_content.relative_path).path)
             download_path = Path(pdf_name)
-            # Download the PDF
+
             pdf_path = download_pdf(presigned_url, download_path)
-            # Split PDF into pages
             pages = split_pdf_into_pages(pdf_path)
-            # Summarize the PDF and its pages
             pdf_summary, page_summaries = summarize_pdf_content(pages)
-            # Create derived content
-            derived_content_records = await create_derived_content(
+            derived_content_records = await create_derived_content_without_inserting(
                 source_content, pdf_summary, page_summaries, session
             )
             session.add_all(derived_content_records)
-            # await session.commit()
             embedding_dict = {}
             for derived_content in derived_content_records:
                 # Generate embeddings

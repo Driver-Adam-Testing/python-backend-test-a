@@ -41,7 +41,7 @@ image = (
 async def generate_embeddings_for_source_contents(
     file_content: str, long_description: str, symbols_dcs: list, relative_path: str
 ) -> dict:
-    from shared.embedding.embedding_helpers import (
+    from shared.embedding.embed_helpers import (
         generate_embeddings_for_string,
     )
 
@@ -192,7 +192,7 @@ async def embed_content_for_codebase(codebase_id: str, workspace_id: str) -> Non
             sc_res = await session.exec(
                 select(DerivedContent.id)
                 .where(DerivedContent.codebase_id == codebase_id)
-                .where(DerivedContent.source_content_id is None)
+                .where(DerivedContent.source_content_id == None)  # noqa
             )
             source_content_ids = sc_res.all()
 
@@ -217,7 +217,7 @@ async def embed_content_for_source_content(
     source_content_id: str, codebase_id: str, workspace_id: str
 ) -> dict:
     from database.db import async_engine
-    from shared.embedding.embedding_helpers import (
+    from shared.embedding.embed_helpers import (
         download_source_content_file,
         get_derived_content_type_uuid,
         get_source_content_type_uuid,

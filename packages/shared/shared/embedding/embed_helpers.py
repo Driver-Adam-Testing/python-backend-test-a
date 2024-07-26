@@ -2,7 +2,7 @@ import time
 from pathlib import Path
 from uuid import UUID
 
-from database.models_v1 import DerivedContentType, SourceContentType
+from database.models_v1 import DerivedContentType
 from shared.chunking.text_splitter import TextSplitter
 from shared.embedding.text_embedder import TextEmbedder
 
@@ -11,8 +11,8 @@ async def get_source_content_type_uuid(content_type: str, session) -> UUID:
     from sqlmodel import select
 
     sct_uuid = None
-    sel_statement = select(SourceContentType).where(
-        SourceContentType.type_name == content_type
+    sel_statement = select(DerivedContentType).where(
+        DerivedContentType.type_name == content_type
     )
     res_sct = (await session.exec(sel_statement)).first()
     if res_sct:

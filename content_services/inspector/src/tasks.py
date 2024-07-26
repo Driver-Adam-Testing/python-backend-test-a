@@ -1,20 +1,23 @@
+import asyncio
+import uuid
 from pathlib import Path
 from typing import Union
-import uuid
+
 from database.models_v1 import DerivedContent, Enum_Derived_Content_Status
-from utils.db import DerivedContentTypeMap, get_derived_content_type_uuid
-from sqlalchemy import delete
-import asyncio
-
-from openai import OpenAIError
-
 from modal_funcs import (
     make_folder_tech_doc,
-    make_tech_doc,
     make_symbol_docs,
+    make_tech_doc,
     make_toplevel_tech_docs,
 )
+from openai import OpenAIError
+from sqlalchemy import delete
 from utils.dag import LiteNode
+from utils.db import (
+    DerivedContentTypeMap,
+    get_derived_content_type_uuid,
+    get_rel_path_workspace_id_from_source_content_id,
+)
 from utils.task import Task, TaskResult, TaskResultKind
 
 TechDocsTask = Union["FileTechDocTask", "FolderTechDocTask", "TopLevelDocsTask"]
@@ -57,8 +60,8 @@ class FolderTechDocTask(Task):
                 child_nodes_to_docs=child_nodes_to_docs,
             )
 
-        from sqlmodel.ext.asyncio.session import AsyncSession
         from database.db import async_engine
+        from sqlmodel.ext.asyncio.session import AsyncSession
 
         async with database_sem:
             short_single_sentence_dc_id = await get_derived_content_type_uuid(
@@ -70,11 +73,16 @@ class FolderTechDocTask(Task):
             long_descrip_dc_id = await get_derived_content_type_uuid(
                 DerivedContentTypeMap.LONG_DESCRIPTION
             )
+            _, workspace_id = await get_rel_path_workspace_id_from_source_content_id(
+                self.source_content_id
+            )
 
             # Short Single Sentence
             short_sent_dc = DerivedContent(
                 content_type_id=short_single_sentence_dc_id,
                 source_content_id=self.source_content_id,
+                workspace_id=workspace_id,
+                relative_path=str(self.node.root_rel_path),
                 content=docs["short"]["single_sentence"],
                 misc_metadata=None,
                 status=Enum_Derived_Content_Status.generation_complete,
@@ -84,6 +92,8 @@ class FolderTechDocTask(Task):
             short_para_dc = DerivedContent(
                 content_type_id=short_single_paragraph_dc_id,
                 source_content_id=self.source_content_id,
+                workspace_id=workspace_id,
+                relative_path=str(self.node.root_rel_path),
                 content=docs["short"]["single_paragraph"],
                 misc_metadata=None,
                 status=Enum_Derived_Content_Status.generation_complete,
@@ -93,6 +103,8 @@ class FolderTechDocTask(Task):
             long_desc_dc = DerivedContent(
                 content_type_id=long_descrip_dc_id,
                 source_content_id=self.source_content_id,
+                workspace_id=workspace_id,
+                relative_path=str(self.node.root_rel_path),
                 content=docs["long"],
                 misc_metadata=None,
                 status=Enum_Derived_Content_Status.generation_complete,
@@ -154,8 +166,8 @@ class FileTechDocTask(Task):
                 codebase_name=self.codebase_name,
             )
 
-        from sqlmodel.ext.asyncio.session import AsyncSession
         from database.db import async_engine
+        from sqlmodel.ext.asyncio.session import AsyncSession
 
         async with database_sem:
             short_single_sentence_dc_id = await get_derived_content_type_uuid(
@@ -171,10 +183,16 @@ class FileTechDocTask(Task):
                 DerivedContentTypeMap.CHUNK_DESCRIPTIONS
             )
 
+            _, workspace_id = await get_rel_path_workspace_id_from_source_content_id(
+                self.source_content_id
+            )
+
             # Short Single Sentence
             short_sent_dc = DerivedContent(
                 content_type_id=short_single_sentence_dc_id,
                 source_content_id=self.source_content_id,
+                workspace_id=workspace_id,
+                relative_path=str(node.root_rel_path),
                 content=docs["short"]["single_sentence"],
                 misc_metadata=None,
                 status=Enum_Derived_Content_Status.generation_complete,
@@ -184,6 +202,8 @@ class FileTechDocTask(Task):
             short_para_dc = DerivedContent(
                 content_type_id=short_single_paragraph_dc_id,
                 source_content_id=self.source_content_id,
+                workspace_id=workspace_id,
+                relative_path=str(node.root_rel_path),
                 content=docs["short"]["single_paragraph"],
                 misc_metadata=None,
                 status=Enum_Derived_Content_Status.generation_complete,
@@ -193,6 +213,8 @@ class FileTechDocTask(Task):
             long_desc_dc = DerivedContent(
                 content_type_id=long_descrip_dc_id,
                 source_content_id=self.source_content_id,
+                workspace_id=workspace_id,
+                relative_path=str(node.root_rel_path),
                 content=docs["long"],
                 misc_metadata=None,
                 status=Enum_Derived_Content_Status.generation_complete,
@@ -205,6 +227,8 @@ class FileTechDocTask(Task):
                     chunk_dc = DerivedContent(
                         content_type_id=chunk_dc_id,
                         source_content_id=self.source_content_id,
+                        workspace_id=workspace_id,
+                        relative_path=str(node.root_rel_path),
                         content=chunk,
                         misc_metadata=None,
                         status=Enum_Derived_Content_Status.generation_complete,
@@ -280,18 +304,25 @@ class SymbolsTask(Task):
                     symbol_count_limit=symbol_count_limit,
                 )
 
-        from sqlmodel.ext.asyncio.session import AsyncSession
         from database.db import async_engine
+        from sqlmodel.ext.asyncio.session import AsyncSession
 
         async with database_sem:
             symbol_derived_content_id = await get_derived_content_type_uuid(
                 DerivedContentTypeMap.SYMBOL
             )
+
+            _, workspace_id = await get_rel_path_workspace_id_from_source_content_id(
+                self.source_content_id
+            )
+
             symbol_dcs = []
             for idx, symbol in enumerate(symbols):
                 symbol_dc = DerivedContent(
                     content_type_id=symbol_derived_content_id,
                     source_content_id=self.source_content_id,
+                    workspace_id=workspace_id,
+                    relative_path=str(self.node.root_rel_path),
                     content=None,
                     misc_metadata=symbol,
                     status=Enum_Derived_Content_Status.generation_complete,
@@ -394,11 +425,20 @@ class TopLevelDocsTask(Task):
                 (quickstart_get_started_dc_id, docs["quickstart"]["getting_started"]),
             ]
 
+            (
+                relative_path,
+                workspace_id,
+            ) = await get_rel_path_workspace_id_from_source_content_id(
+                self.source_content_id
+            )
+
             dc_contents = []
             for dc_type_id, dc_docs in top_level_tups:
                 dc = DerivedContent(
                     content_type_id=dc_type_id,
                     source_content_id=self.source_content_id,
+                    workspace_id=workspace_id,
+                    relative_path=relative_path,
                     content=dc_docs,
                     misc_metadata=None,
                     status=Enum_Derived_Content_Status.generation_complete,
@@ -406,8 +446,8 @@ class TopLevelDocsTask(Task):
                 )
                 dc_contents.append(dc)
 
-            from sqlmodel.ext.asyncio.session import AsyncSession
             from database.db import async_engine
+            from sqlmodel.ext.asyncio.session import AsyncSession
 
             async with AsyncSession(async_engine) as session:
                 # TODO: we aren't deleting here. When we create embeddings, we'll want to cascade

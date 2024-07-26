@@ -83,20 +83,20 @@ async def generate_embeddings_for_source_contents(
     ret_dict["symbols"] = {}
     if symbols_dcs is not None:
         for sym in symbols_dcs:
-            if sym.dc_metadata.get("description") is not None:
+            if sym.misc_metadata.get("description") is not None:
                 try:
                     s_splits, s_embeds = await generate_embeddings_for_string(
-                        sym.dc_metadata["description"]
+                        sym.misc_metadata["description"]
                     )
                     ret_dict["symbols"][
-                        sym.dc_metadata["name"] + ":" + str(sym.dc_metadata["line"])
+                        sym.misc_metadata["name"] + ":" + str(sym.misc_metadata["line"])
                     ] = {"success": True, "splits": s_splits, "embeds": s_embeds}
                 except Exception as e:
                     print(
-                        f"Error embedding symbol {sym.dc_metadata['name']} on {relative_path}: {e}"
+                        f"Error embedding symbol {sym.misc_metadata['name']} on {relative_path}: {e}"
                     )
                     ret_dict["symbols"][
-                        sym.dc_metadata["name"] + str(sym.dc_metadata["line"])
+                        sym.misc_metadata["name"] + str(sym.misc_metadata["line"])
                     ] = {"success": False, "splits": [], "embeds": []}
 
     return ret_dict
@@ -247,8 +247,8 @@ async def embed_content_for_source_content(
                     ).first()
 
                     # TODO: what about older versions of the content without analysis_metadata?
-                    if sc.analysis_metadata is not None:
-                        is_analyzable = sc.analysis_metadata.get("is_analyzable")
+                    if sc.misc_metadata is not None:
+                        is_analyzable = sc.misc_metadata.get("is_analyzable")
                     else:
                         is_analyzable = False
 
@@ -261,7 +261,7 @@ async def embed_content_for_source_content(
                     cb_sc_type_id = await get_source_content_type_uuid(
                         "codebase", session
                     )
-                    sc_type_id = sc.source_content_type_id
+                    sc_type_id = sc.content_type_id
 
                     if is_analyzable or sc_type_id in [dir_sc_type_id, cb_sc_type_id]:
                         ld_dc_type_id = await get_derived_content_type_uuid(
@@ -274,10 +274,7 @@ async def embed_content_for_source_content(
                                     DerivedContent.source_content_id
                                     == source_content_id
                                 )
-                                .where(
-                                    DerivedContent.derived_content_type_id
-                                    == ld_dc_type_id
-                                )
+                                .where(DerivedContent.content_type_id == ld_dc_type_id)
                             )
                         ).first()
 
@@ -297,8 +294,7 @@ async def embed_content_for_source_content(
                                         == source_content_id
                                     )
                                     .where(
-                                        DerivedContent.derived_content_type_id
-                                        == cd_dc_type_id
+                                        DerivedContent.content_type_id == cd_dc_type_id
                                     )
                                 )
                             ).all()
@@ -323,7 +319,7 @@ async def embed_content_for_source_content(
                                             == source_content_id
                                         )
                                         .where(
-                                            DerivedContent.derived_content_type_id
+                                            DerivedContent.content_type_id
                                             == symbols_dc_type_id
                                         )
                                     )
@@ -382,19 +378,19 @@ async def embed_content_for_source_content(
                         )
                     if symbols_dcs is not None:
                         for sym in symbols_dcs:
-                            if sym.dc_metadata.get("description") is not None:
+                            if sym.misc_metadata.get("description") is not None:
                                 symbol_embed_dict = embed_dict["symbols"][
-                                    sym.dc_metadata["name"]
+                                    sym.misc_metadata["name"]
                                     + ":"
-                                    + str(sym.dc_metadata["line"])
+                                    + str(sym.misc_metadata["line"])
                                 ]
                                 if symbol_embed_dict["success"]:
                                     sym_rel_path = (
                                         sc.relative_path
                                         + ":"
-                                        + sym.dc_metadata["name"]
+                                        + sym.misc_metadata["name"]
                                         + ":"
-                                        + str(sym.dc_metadata["line"])
+                                        + str(sym.misc_metadata["line"])
                                     )
                                     await persist_embeddings(
                                         session=session,
@@ -404,7 +400,7 @@ async def embed_content_for_source_content(
                                         codebase_id=codebase_id,
                                         workspace_id=workspace_id,
                                         relative_path=sym_rel_path,
-                                        metadata=sym.dc_metadata,
+                                        metadata=sym.misc_metadata,
                                     )
         return {"source_content_id": source_content_id, "success": True}
     except Exception as e:

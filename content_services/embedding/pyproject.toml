@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "shared"
+name = "embedding"
 version = "0.1.0"
 description = ""
 authors = ["Neil Zumwalde <neilzumwalde@gmail.com>"]
@@ -7,10 +7,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.12"
-openai = "^1.37.0"
-markdown = "^3.6"
-database = {path = "../../driver_db", develop = true}
-tiktoken = "^0.7.0"
+shared = {path = "../../packages/shared", develop = true}
 
 [build-system]
 requires = ["poetry-core"]

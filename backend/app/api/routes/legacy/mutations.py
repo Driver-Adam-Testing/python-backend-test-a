@@ -209,7 +209,7 @@ class Mutation:
         }
 
         content: DerivedContent = session.exec(
-            select(DerivedContent.id)  # type: ignore
+            select(DerivedContent)  # type: ignore
             .join(
                 DerivedContentType,
                 DerivedContent.content_type_id == DerivedContentType.id,

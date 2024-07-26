@@ -335,6 +335,7 @@ class DerivedContentType(SQLModel, table=True):  # type: ignore
     contents: list["DerivedContent"] = Relationship(back_populates="content_type")
 
 
+# TODO add indexes back
 class DerivedContent(SQLModel, table=True):  # type: ignore
     __tablename__ = "derived_contents"
     id: UUID | None = Field(
@@ -350,7 +351,7 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
     )
     content_type: DerivedContentType = Relationship(back_populates="contents")
     # All content must be in a workspace
-    workspace_id: UUID = Field(foreign_key="workspaces.id", nullable=False)
+    workspace_id: UUID = Field(foreign_key="workspaces.id", nullable=False, index=True)
     source_content_id: UUID | None = Field(
         foreign_key="derived_contents.id", index=True, nullable=True, default=None
     )
@@ -358,7 +359,7 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
     # all source contents and derived contents for a codebase associated with the codebase. PDFs and other docs,
     # however, won't have a codebase ID -- just a workspace ID, since we are keeping workspaces for now.
     codebase_id: None | UUID = Field(
-        default=None, foreign_key="codebases.id", nullable=True
+        default=None, foreign_key="codebases.id", nullable=True, index=True
     )
     codebase: None | Codebase = Relationship(back_populates="source_contents")
     relative_path: str = Field(sa_column=Column(sqlalchemy.Text, nullable=False))

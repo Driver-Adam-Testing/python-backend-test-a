@@ -8,7 +8,6 @@ from uuid import UUID
 
 import modal
 import requests
-from config import settings
 from database.models_v1 import (
     Chunk,
     ContentMetadata,
@@ -53,10 +52,7 @@ def split_pdf_into_pages(pdf_path):
 def summarize_text_with_openai(text):
     from openai import OpenAI
 
-    client = OpenAI(
-        # This is the default and can be omitted
-        api_key=settings.OPENAI_API_KEY,
-    )
+    client = OpenAI()
     PROMPT = f"I am a seasoned software engineer, I seek in-depth technical summarization of text:\n\n{text}"
     MESSAGE = {"role": "user", "content": PROMPT}
     chat_completion = client.chat.completions.create(

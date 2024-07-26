@@ -354,7 +354,9 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
     source_content_id: UUID | None = Field(
         foreign_key="derived_contents.id", index=True, nullable=True, default=None
     )
-    # Content doesn't need to be associated with a codebase in our flat asset design
+    # Content doesn't need to be associated with a codebase in our flat asset design. But for now, we keep
+    # all source contents and derived contents for a codebase associated with the codebase. PDFs and other docs,
+    # however, won't have a codebase ID -- just a workspace ID, since we are keeping workspaces for now.
     codebase_id: None | UUID = Field(
         default=None, foreign_key="codebases.id", nullable=True
     )
@@ -365,7 +367,7 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
     )
     misc_metadata: dict | None = Field(  # type: ignore
         sa_column=Column("metadata", JSONB, nullable=True), default=None
-    )  # Rename of attr required since metadata is a reserved keyword
+    )
     status: Enum_Derived_Content_Status | None = Field(
         sa_column=sqlalchemy.Column(
             Enum(

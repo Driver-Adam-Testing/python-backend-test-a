@@ -19,9 +19,9 @@ class ContentDocs:
 
 
 class AggregationState(Enum):
-    ChildList = auto()
-    SingleChunk = auto()
-    ManyChunks = auto()
+    CHILD_LIST = auto()
+    SINGLE_CHUNK = auto()
+    MANY_CHUNKS = auto()
 
 
 def folder_item_priority_ordering(
@@ -276,7 +276,7 @@ def comprehend_folder_top_down(
         # TODO: Consider parity with file content generation where there is a
         # TODO: check against a max number of chunks.
         if num_chunks > 1:
-            aggregation_state = AggregationState.ManyChunks
+            aggregation_state = AggregationState.MANY_CHUNKS
             print(f"Number of initial chunks for folder `{folder_name}`: {num_chunks}")
             print(f"Processing {len(chunks)} chunks for folder `{folder_name}` ...")
             if use_async:
@@ -446,23 +446,23 @@ def comprehend_folder_top_down(
                 print(f"`chunk_detailed_descriptions`: {chunk_detailed_descriptions}")
                 data = aggregated_descriptions
         else:  # just a single aggregated chunk
-            aggregation_state = AggregationState.SingleChunk
+            aggregation_state = AggregationState.SINGLE_CHUNK
             data = child_content
     else:  # child list is small enough
-        aggregation_state = AggregationState.ChildList
+        aggregation_state = AggregationState.CHILD_LIST
         data = completed_child_lists
 
     # Dispatch to the correct single sentence/paragraph generation function depending on the
     # compression/aggregation strategy that was used.
     print(f"Generating final folder content for `{folder_name}` ...")
     match aggregation_state:
-        case AggregationState.ManyChunks:
+        case AggregationState.MANY_CHUNKS:
             single_sentence_fn = folder_single_sentence_from_chunk_descriptions
             single_paragraph_fn = folder_single_paragraph_from_chunk_descriptions
-        case AggregationState.SingleChunk:
+        case AggregationState.SINGLE_CHUNK:
             single_sentence_fn = folder_single_sentence_from_long_descriptions
             single_paragraph_fn = folder_single_paragraph_from_long_descriptions
-        case AggregationState.ChildList:
+        case AggregationState.CHILD_LIST:
             single_sentence_fn = folder_single_sentence_from_child_list
             single_paragraph_fn = folder_single_paragraph_from_child_list
         case _:

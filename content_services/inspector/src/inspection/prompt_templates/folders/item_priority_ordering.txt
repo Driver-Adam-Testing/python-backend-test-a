@@ -4,9 +4,9 @@ You will be given a list of files or folders, along with a single sentence descr
 
 Your job is to reorder the list items to put the most important or relevant items first and the least relevant items last.
 
-**You only re-order the list of items but do not edit, add, or delete content.**
+**You only reorder the list of items but do not edit, add, or delete content.**
 
-Beginning of instructive examples:
+Below, are some instructive examples of how to reorder a list of files or folders, including reasoning for the reordering to demonstrate how to reorder content. In your output, you will not provide any reasoning. Your output will just contain the list content given to you but reordered (no edits, additions, deletions, or reasoning for the reordering).
 
 A list of files may be given to you like this:
 

@@ -178,65 +178,6 @@ def folder_single_paragraph_from_long_descriptions(
     return llm.generate_response(system_prompt, human_prompt)
 
 
-# def _write_folder_content_to_disk(
-#     dir: str,
-#     file_node: Node,
-#     folder_content_short: dict[str, str],
-#     folder_content_long: str,
-# ) -> None:
-#     if file_node.kind is not NodeKind.ROOT_FOLDER:
-#         write_to_disk(
-#             data=folder_content_short["single_sentence"],
-#             file=f"{dir}/short_descriptions/{file_node.path_rel_root}_single_sentence.txt",
-#         )
-#         write_to_disk(
-#             data=folder_content_short["single_paragraph"],
-#             file=f"{dir}/short_descriptions/{file_node.path_rel_root}_single_paragraph.txt",
-#         )
-#         write_to_disk(
-#             data=folder_content_long,
-#             file=f"{dir}/long_descriptions/{file_node.path_rel_root}.txt",
-#         )
-#     else:
-#         write_to_disk(
-#             data=folder_content_short["single_sentence"],
-#             file=f"{dir}/short_descriptions/{file_folder_name}_single_sentence.txt",
-#         )
-#         write_to_disk(
-#             data=folder_content_short["single_paragraph"],
-#             file=f"{dir}/short_descriptions/{file_folder_name}_single_paragraph.txt",
-#         )
-#         write_to_disk(
-#             data=folder_content_long,
-#             file=f"{dir}/long_descriptions/{file_folder_name}.txt",
-#         )
-
-
-# def _return_with_simple_message(
-#     message: str, file_node: Node, file_content: str, to_disk_dir: Optional[str]
-# ) -> dict[str, any]:
-#     if to_disk_dir is not None:
-#         _write_file_content_to_disk(
-#             dir=to_disk_dir,
-#             file_node=file_node,
-#             chunk_descr=[message],
-#             file_content_short={
-#                 "single_sentence": message,
-#                 "single_paragraph": message,
-#             },
-#             file_content_long=message,
-#             file_content_sys="",
-#             file_content_code=file_content,
-#         )
-#     return {
-#         "chunk_descriptions": message,
-#         "short": {
-#             "single_sentence": message,
-#             "single_paragraph": message,
-#         },
-#         "long": message,
-#         "architecture": "",
-#     }
 def _return_with_simple_message(message: str, folder_node: LiteNode) -> dict[str, any]:
     long_description = message
     short_descriptions = {
@@ -563,13 +504,6 @@ def comprehend_folder_top_down(
     print(
         f"Short description for `{folder_name}` at `{node.root_rel_path}`:\n{short_descriptions['single_paragraph']}"
     )
-    # if to_disk_dir is not None:
-    #     _write_folder_content_to_disk(
-    #         dir=to_disk_dir,
-    #         file_node=node,
-    #         folder_content_short=short_descriptions,
-    #         folder_content_long=long_description,
-    #     )
 
     return {
         "short": short_descriptions,

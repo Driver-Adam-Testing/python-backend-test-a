@@ -67,19 +67,6 @@ def folder_compress_chunks(
     return llm.generate_response(system_prompt, human_prompt)
 
 
-def folder_long_from_chunk_descriptions(
-    llm: ChatOpenAI,
-    folder_name: str,
-    codebase_name: str,
-    data: str,
-) -> str:
-    system_prompt = get_prompt_template(
-        PARENT_PATH / "prompt_templates/folders/long_from_chunk_descriptions.txt"
-    )
-    human_prompt = data
-    return llm.generate_response(system_prompt, human_prompt)
-
-
 def folder_single_sentence_from_child_list(
     llm: ChatOpenAI,
     folder_name: str,
@@ -89,7 +76,8 @@ def folder_single_sentence_from_child_list(
     system_prompt = get_prompt_template(
         PARENT_PATH / "prompt_templates/folders/single_sentence_from_child_list.txt"
     )
-    human_prompt = data
+    human_prompt = ""
+    human_prompt += f"Folder `{folder_name}` in codebase `{codebase_name}` child content:\n\n{data}\n\n"
     return llm.generate_response(system_prompt, human_prompt)
 
 
@@ -101,6 +89,20 @@ def folder_single_paragraph_from_child_list(
 ) -> str:
     system_prompt = get_prompt_template(
         PARENT_PATH / "prompt_templates/folders/single_paragraph_from_child_list.txt"
+    )
+    human_prompt = ""
+    human_prompt += f"Folder `{folder_name}` in codebase `{codebase_name}` child content:\n\n{data}\n\n"
+    return llm.generate_response(system_prompt, human_prompt)
+
+
+def folder_long_from_chunk_descriptions(
+    llm: ChatOpenAI,
+    folder_name: str,
+    codebase_name: str,
+    data: str,
+) -> str:
+    system_prompt = get_prompt_template(
+        PARENT_PATH / "prompt_templates/folders/long_from_chunk_descriptions.txt"
     )
     human_prompt = data
     return llm.generate_response(system_prompt, human_prompt)
@@ -138,13 +140,15 @@ def folder_long_from_long_descriptions(
     llm: ChatOpenAI,
     folder_name: str,
     codebase_name: str,
-    child_content: str,
+    data: str,
 ) -> str:
     system_prompt = get_prompt_template(
         PARENT_PATH / "prompt_templates/folders/long_from_long_descriptions.txt"
     )
     human_prompt = ""
-    human_prompt += f"Folder `{folder_name}` in codebase `{codebase_name}` content:\n\n{child_content}\n\n"
+    human_prompt += (
+        f"Folder `{folder_name}` in codebase `{codebase_name}` content:\n\n{data}\n\n"
+    )
     return llm.generate_response(system_prompt, human_prompt)
 
 
@@ -152,14 +156,16 @@ def folder_single_sentence_from_long_descriptions(
     llm: ChatOpenAI,
     folder_name: str,
     codebase_name: str,
-    child_content: str,
+    data: str,
 ) -> str:
     system_prompt = get_prompt_template(
         PARENT_PATH
         / "prompt_templates/folders/single_sentence_from_long_descriptions.txt"
     )
     human_prompt = ""
-    human_prompt += f"Folder `{folder_name}` in codebase `{codebase_name}` content:\n\n{child_content}\n\n"
+    human_prompt += (
+        f"Folder `{folder_name}` in codebase `{codebase_name}` content:\n\n{data}\n\n"
+    )
     return llm.generate_response(system_prompt, human_prompt)
 
 
@@ -167,14 +173,16 @@ def folder_single_paragraph_from_long_descriptions(
     llm: ChatOpenAI,
     folder_name: str,
     codebase_name: str,
-    child_content: str,
+    data: str,
 ) -> str:
     system_prompt = get_prompt_template(
         PARENT_PATH
         / "prompt_templates/folders/single_paragraph_from_long_descriptions.txt"
     )
     human_prompt = ""
-    human_prompt += f"Folder `{folder_name}` in codebase `{codebase_name}` content:\n\n{child_content}\n\n"
+    human_prompt += (
+        f"Folder `{folder_name}` in codebase `{codebase_name}` content:\n\n{data}\n\n"
+    )
     return llm.generate_response(system_prompt, human_prompt)
 
 
@@ -435,13 +443,12 @@ def comprehend_folder_top_down(
                                 message=description,
                                 folder_node=node,
                             )
-
-            print(f"`chunk_detailed_descriptions`: {chunk_detailed_descriptions}")
-            data = aggregated_descriptions
-        else:
+                print(f"`chunk_detailed_descriptions`: {chunk_detailed_descriptions}")
+                data = aggregated_descriptions
+        else:  # just a single aggregated chunk
             aggregation_state = AggregationState.SingleChunk
             data = child_content
-    else:
+    else:  # child list is small enough
         aggregation_state = AggregationState.ChildList
         data = completed_child_lists
 

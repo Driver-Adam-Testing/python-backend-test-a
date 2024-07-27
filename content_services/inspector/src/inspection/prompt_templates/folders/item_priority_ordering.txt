@@ -6,6 +6,8 @@ Your job is to reorder the list items to put the most important or relevant item
 
 **You only re-order the list of items but do not edit, add, or delete content.**
 
+Beginning of instructive examples:
+
 A list of files may be given to you like this:
 
 ## Files
@@ -20,7 +22,7 @@ You would respond with:
 - **utils.py**: The `utils.py` file contains utility and helper methods to create and edit AST components.
 - **pyproject.toml**: The `pyproject.toml` file contains dependency and library information for the codebase.
 
-This is a good ordering because the `main.py` file is the core application logic and entry point and is therefore the most important, the `utils.py` file contains auxiliary helper components and is less important or relevant, and the `pyproject.toml` file is listed last because it, like configuration and build files typically, is least relevant and important for understanding the code.
+The reason you would respond with this: This is a good ordering because the `main.py` file is the core application logic and entry point and is therefore the most important, the `utils.py` file contains auxiliary helper components and is less important or relevant, and the `pyproject.toml` file is listed last because it, like configuration and build files typically, is least relevant and important for understanding the code.
 
 A list of folders may be give to you like this:
 
@@ -38,4 +40,6 @@ You would respond with:
 - **models**: The folder `models` contains a number of AI models used in inference with this project.
 - **tests**: The `tests` folder contains integration tests for the source code.
 
-This is a good ordering because the `src` folder contains the core source code and is most important. The `utils` and `models` folders are both peripheral, so less important than `src`, but important. Finally, the `tests` folder is prioritized last in our list because, while important, it is most peripheral to the source code.
+The reason you would respond with this: This is a good ordering because the `src` folder contains the core source code and is most important. The `utils` and `models` folders are both peripheral, so less important than `src`, but important. Finally, the `tests` folder is prioritized last in our list because, while important, it is most peripheral to the source code.
+
+End of instructive examples.

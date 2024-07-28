@@ -1,9 +1,10 @@
 import logging
+from enum import IntEnum
 from pathlib import Path
-from typing import Any
+from typing import Any, Self
 
 import openai
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 from utils.dag import LiteNode
 from utils.io import (
     get_prompt_template,
@@ -13,71 +14,46 @@ from utils.llm import (
 )
 from utils.models import ChatOpenAI
 
+from inspection.prompt_templates.files.templates.metadata_default import (
+    METADATA_SYSTEM_PROMPT,
+    METADATA_TEMPLATE,
+)
+from inspection.prompt_templates.files.templates.source_code_large import (
+    SOURCE_CODE_LARGE_SYSTEM_PROMPT,
+    SOURCE_CODE_LARGE_TEMPLATE,
+)
+from inspection.prompt_templates.files.templates.source_code_small import (
+    SOURCE_CODE_SMALL_SYSTEM_PROMPT,
+    SOURCE_CODE_SMALL_TEMPLATE,
+)
+
 PARENT_PATH = Path(__file__).parent
 
 
-SIMPLE_START_SYSTEM_PROMPT = """
-You are a software engineering documentation expert. You write detailed documentation to explain software.
+class FileEnum(IntEnum):
+    SOURCE_CODE_LARGE = 0
+    SOURCE_CODE_SMALL = 1
+    METADATA = 2
 
-You are skilled at explaining technical details as well as recognize and articulate the key conceptual components and purpose of software.
-"""
 
-PURPOSE_PROMPT = """
-In a single paragraph of 3 to 5 sentences, explain the purpose of the code provided below. Answer questions such as:
+class FileKind(BaseModel):
+    kind: FileEnum
 
-- Does this code provide a narrow and specific functionality? If so, what is that?
-- Is this code a collection of many different components? If so, what is the common them or purpose?
-- Is this code clearly an executable script, a library intended to be imported elsewhere, or does it define public APIs?
-"""
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, file_name: str, code: str) -> Self:
+        system_prompt = get_prompt_template(
+            PARENT_PATH / "prompt_templates/files/determine_file_kind.txt"
+        )
+        human_prompt = ""
+        human_prompt += f"File name: {file_name}\n\nFile contents:\n\n{code}"
+        file_kind_raw = llm.generate_response(system_prompt, human_prompt)
+        try:
+            file_kind = cls(kind=int(file_kind_raw))
+        except ValidationError as e:
+            logging.warn(f"Failed to parse LLM file kind for file {file_name}: {e}")
+            file_kind = cls(kind=FileEnum.SOURCE_CODE_LARGE)
 
-TECHNICAL_SUMMARY_PROMPT = """
-In one or more paragraphs, summarize the technical details of the code provided below. Choose a summary length appropriate for the length and complexity of code. Longer and more complex code should have more summary content.
-
-In writing your technical summary, consider the following:
-- What are the most important technical details that a developer working with this could should know.
-"""
-
-IMPORTS_PROMPT = """
-Summarize the dependencies or imports used in the code provided below.
-
-- If there are none, just say so.
-- Do not speculate on the nature of the imports or dependencies if it is not clear what they are for. If it is not clear, just identify the name. If it is clear what an import or dependency is, briefly describe it.
-"""
-
-DATA_STRUCTURES_PROMPT = """
-Summarize the data structures in the code provided below.
-
-- If there are none, just say so.
-- If there are relatively few, describe each of them.
-- If there are many, focus on the most important data structures.
-- When describing a data structure, provide detail that matches the complexity of the data structure. Large and complex data structures should get longer explanations, while small ones a single sentence.
-- Provide your output in a list, where each item of the list is a data structure.
-"""
-
-FUNCTIONS_PROMPT = """
-Summarize the functions or methods in the code provided below. For each function or method, describe the inputs, control flow and logic, and output.
-
-- If there are none, just say so.
-- If there are relatively few, describe each of them.
-- If there are many, focus on the most important functions or methods.
-- If you are describing a method rather than a free function, identify the class the method is associated with.
-- When describing a function or method, provide detail that matches the complexity of the function or method body. Large and complex functions or methods should get longer explanations, while small ones much less.
-- Provide your output such that each function or method is described in a 3rd level markdown header where the function or method name is the header title (e.g., ### <function_name>).
-"""
-
-DIAGRAMS_PROMPT = """
-Build an ASCII diagram that represents the logical flow of the code provided below.
-"""
-
-SIMPLE_START_TEMPLATE = [
-    ("# Overview",),
-    ("## Purpose", PURPOSE_PROMPT),
-    ("## Technical Summary", TECHNICAL_SUMMARY_PROMPT),
-    ("## Imports and Dependencies", IMPORTS_PROMPT),
-    ("## Data Structures", DATA_STRUCTURES_PROMPT),
-    ("## Functions", FUNCTIONS_PROMPT),
-    # ("## Diagram", DIAGRAMS_PROMPT),
-]
+        return file_kind
 
 
 class Template(BaseModel):
@@ -453,9 +429,27 @@ def comprehend_file_top_down(
             #     path=node.root_rel_path,
             #     code=source_code,
             # )
-            long_template = Template(
-                system_prompt=SIMPLE_START_SYSTEM_PROMPT, template=SIMPLE_START_TEMPLATE
+            file_kind = FileKind.from_llm(
+                llm=llm, file_name=node.root_rel_path.name, code=source_code
             )
+            match file_kind.kind:
+                case FileEnum.SOURCE_CODE_LARGE:
+                    long_template = Template(
+                        system_prompt=SOURCE_CODE_LARGE_SYSTEM_PROMPT,
+                        template=SOURCE_CODE_LARGE_TEMPLATE,
+                    )
+                case FileEnum.SOURCE_CODE_SMALL:
+                    long_template = Template(
+                        system_prompt=SOURCE_CODE_SMALL_SYSTEM_PROMPT,
+                        template=SOURCE_CODE_SMALL_TEMPLATE,
+                    )
+                case FileEnum.METADATA:
+                    long_template = Template(
+                        system_prompt=METADATA_SYSTEM_PROMPT,
+                        template=METADATA_TEMPLATE,
+                    )
+                case _:
+                    raise ValueError(f"Unknown file kind variant: {file_kind.kind}")
             file_description_long = long_template.run(llm=llm, code=source_code)
             chunk_detailed_descriptions = [file_description_long]
             file_description_single_sentence = file_single_sentence_from_code(

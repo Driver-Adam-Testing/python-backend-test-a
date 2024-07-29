@@ -8,7 +8,7 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.12"
 shared = {path = "../../packages/shared", develop = true}
-
+modal = "^0.64.0"
 
 [build-system]
 requires = ["poetry-core"]

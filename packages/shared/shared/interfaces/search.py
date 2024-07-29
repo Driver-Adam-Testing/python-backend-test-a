@@ -1,4 +1,5 @@
-from shared.interfaces import DriverRequest, DriverResponse
+from shared.interfaces.request import DriverRequest
+from shared.interfaces.response import DriverResponse
 
 
 class SearchInput(DriverRequest):

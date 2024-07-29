@@ -7,6 +7,7 @@ from app.api.routes.v1 import (
     healthcheck,
     onboarding,
     search,
+    tags,
     workspace,
 )
 from app.core.config import settings
@@ -24,6 +25,7 @@ api_router.include_router(
 api_router.include_router(onboarding.router, prefix="/onboarding", tags=["onboarding"])
 api_router.include_router(search.router, prefix="/search", tags=["search"])
 api_router.include_router(content.router, prefix="/content", tags=["content"])
+api_router.include_router(tags.router, prefix="/tags", tags=["tags"])
 
 if settings.ENVIRONMENT != "production":
     api_router.include_router(

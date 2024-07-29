@@ -1,4 +1,13 @@
-from database.models_v1 import DerivedContent, DerivedContentType, Workspace
+from datetime import datetime
+from typing import Optional
+from uuid import UUID
+
+from database.models_v1 import (
+    DerivedContent,
+    DerivedContentType,
+    Enum_Derived_Content_Status,
+    Workspace,
+)
 from pydantic import BaseModel
 from sqlmodel import Session, asc, desc, select
 
@@ -15,32 +24,46 @@ class ListContentInput(BaseModel):
     status: str | None = None
     content_type_id: list[str] | None = None
     tags: list[str] | None = None
-
-
-class ListContentResults(BaseModel):
-    results: list[DerivedContent]
-    offset: int
-    limit: int
+    workspace_id: str | None = None
 
 
 class ListContentTypesResults(BaseModel):
     results: list[DerivedContentType]
 
 
-def list_content(session: Session, user: CurrentUser, input: ListContentInput):
+class ListContentResult(BaseModel):
+    id: UUID
+    content_type_id: UUID
+    content_type: DerivedContentType
+    # All content must be in a workspace
+    workspace_id: UUID
+    workspace_name: str
+    source_content_id: UUID | None
+    # Content doesn't need to be associated with a codebase in our flat asset design
+    codebase_id: None | UUID
+    relative_path: str
+    content: None | str
+    misc_metadata: dict | None
+    status: Enum_Derived_Content_Status | None
+    created_at: None | datetime
+    updated_at: None | datetime
+    source_content: Optional["DerivedContent"]
+    order: int | None
+
+
+class ListContentResults(BaseModel):
+    results: list[ListContentResult]
+    offset: int
+    limit: int
+
+
+def list_content(
+    session: Session, user: CurrentUser, input: ListContentInput
+) -> ListContentResults:
     statement = (
         select(DerivedContent)
         .join(Workspace)
         .where(user.organization_id == Workspace.organization_id)
-        # .join(Codebase)
-        # .filter(
-        #     or_(
-        #         [
-        #             user.organization_id == Codebase.workspace.organization_id,
-        #             user.organization_id == Workspace.organization_id,
-        #         ]
-        #     )
-        # )
         .offset(input.offset)
         .limit(input.limit)
     )
@@ -55,19 +78,45 @@ def list_content(session: Session, user: CurrentUser, input: ListContentInput):
                 "Invalid sort direction provided. Options are ASC or DESC"
             )
 
+    if input.workspace_id:
+        statement = statement.where(DerivedContent.workspace_id == input.workspace_id)
+
     if input.text:
         statement = statement.where(DerivedContent.relative_path.contains(input.text))
 
     if input.status:
         statement = statement.where(DerivedContent.status == input.status)
 
-    if input.content_type_id and len(input.content_type_id) > 0:
+    if input.content_type_id:
         statement = statement.where(
             DerivedContent.content_type_id.in_(input.content_type_id)
         )
 
     results = session.exec(statement).all()
-    return ListContentResults(results=results, offset=input.offset, limit=input.limit)
+    return ListContentResults(
+        results=(
+            ListContentResult(
+                id=result.id,
+                content_type_id=result.content_type_id,
+                content_type=result.content_type,
+                workspace_id=result.workspace_id,
+                workspace_name=result.workspace.display_name,
+                source_content_id=result.source_content_id,
+                codebase_id=result.codebase_id,
+                relative_path=result.relative_path,
+                content=result.content,
+                misc_metadata=result.misc_metadata,
+                status=result.status,
+                created_at=result.created_at,
+                updated_at=result.updated_at,
+                source_content=result.source_content,
+                order=result.order,
+            )
+            for result in results
+        ),
+        offset=input.offset,
+        limit=input.limit,
+    )
 
 
 def list_content_types(session: Session):

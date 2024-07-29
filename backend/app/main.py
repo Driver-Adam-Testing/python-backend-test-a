@@ -1,6 +1,7 @@
 import logging
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
 from starlette.middleware.cors import CORSMiddleware
 
@@ -9,9 +10,9 @@ from app.api.main import api_router
 from app.core.config import settings
 
 
-
 def custom_generate_unique_id(route: APIRoute) -> str:
     return f"{route.tags[0]}-{route.name}"
+
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -36,3 +37,10 @@ if settings.BACKEND_CORS_ORIGINS:
 app.add_middleware(AuthMiddleware)
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logging.error(f"Unhandled exception: {exc}")
+    # Return the JSON response with the appropriate status code
+    return JSONResponse(status_code=500, content="Something went wrong.")

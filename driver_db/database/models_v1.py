@@ -8,7 +8,7 @@ from uuid import UUID
 import sqlalchemy.dialects.postgresql
 import strawberry
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import Column, DateTime, Enum, Integer, func, text
+from sqlalchemy import Column, DateTime, Enum, Integer, UniqueConstraint, func, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as SaUuid
 from sqlmodel import JSON, Field, Relationship, SQLModel
@@ -395,3 +395,61 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
         sa_column=Column(Integer, nullable=True, server_default=text("0"))
     )
     workspace: Workspace = Relationship(back_populates="source_contents")
+
+
+class Tag(SQLModel, table=True):  # type: ignore
+    __tablename__ = "tags"
+    __table_args__ = (
+        UniqueConstraint("name", "organization_id", name="unique_tag_name_per_org_id"),
+    )
+    id: UUID | None = Field(
+        sa_column=Column(
+            SaUuid(as_uuid=True),
+            primary_key=True,
+            server_default=text("uuid_generate_v4()"),
+        ),
+        default=None,
+    )
+    name: str = Field(
+        max_length=255,
+        sa_column=sqlalchemy.Column(sqlalchemy.String(255), nullable=False),
+    )
+    hex_color: str = Field(
+        max_length=7,
+        sa_column=sqlalchemy.Column(sqlalchemy.String(7), nullable=False),
+    )
+    organization_id: str
+    created_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=False), server_default=func.now(), nullable=False
+        ),
+        default=None,
+    )
+    created_by: None | datetime = Field(
+        sa_column=sqlalchemy.Column(sqlalchemy.String(128), nullable=False),
+        default=None,
+    )
+    updated_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=False),
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
+        ),
+    )
+    updated_by: None | datetime = Field(
+        sa_column=sqlalchemy.Column(sqlalchemy.String(128), nullable=False),
+        default=None,
+    )
+
+
+class TagContent(SQLModel, table=True):
+    __tablename__ = "tags_contents"
+    """Link table between Tags and Content models."""
+
+    tag_id: None | uuid.UUID = Field(
+        default=None, foreign_key="tags.id", primary_key=True
+    )
+    content_id: None | uuid.UUID = Field(
+        default=None, foreign_key="derived_contents.id", primary_key=True
+    )

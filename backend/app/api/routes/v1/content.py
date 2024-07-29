@@ -1,5 +1,3 @@
-from typing import Annotated
-
 from fastapi import APIRouter, Query
 
 from app.api.auth import CurrentUser
@@ -23,13 +21,14 @@ def list(
     session: CurrentSession,
     user: CurrentUser,
     limit: int | None = 20,
-    text: str | None = None,
     offset: int | None = 0,
-    content_type_id: Annotated[list[str], Query()] | None = None,
+    content_type_id: list[str] | None = Query(None),
     sort_by: str | None = None,
     sort_direction: str | None = "ASC",
     status: str | None = None,
-    tags: Annotated[list[str], Query()] | None = None,
+    tags: list[str] | None = Query(None),
+    text: str | None = None,
+    workspace_id: str | None = None,
 ) -> ListContentResults:
     return list_content(
         session,
@@ -43,6 +42,7 @@ def list(
             sort_direction=sort_direction,
             status=status,
             tags=tags,
+            workspace_id=workspace_id,
         ),
     )
 

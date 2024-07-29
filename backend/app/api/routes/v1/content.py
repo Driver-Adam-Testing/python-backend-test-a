@@ -5,6 +5,7 @@ from app.api.session import CurrentSession
 from app.utils.content import (
     ListContentInput,
     ListContentResults,
+    ListContentTypesInput,
     ListContentTypesResults,
     list_content,
     list_content_types,
@@ -51,5 +52,17 @@ def list(
     "/types",
     summary="List content types",
 )
-def list_types(session: CurrentSession, user: CurrentUser) -> ListContentTypesResults:
-    return list_content_types(session)
+def list_types(
+    session: CurrentSession,
+    user: CurrentUser,
+    limit: int | None = 20,
+    offset: int | None = 0,
+    sort_by: str | None = None,
+    sort_direction: str | None = "ASC",
+) -> ListContentTypesResults:
+    return list_content_types(
+        session,
+        ListContentTypesInput(
+            limit=limit, offset=offset, sort_by=sort_by, sort_direction=sort_direction
+        ),
+    )

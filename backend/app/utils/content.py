@@ -27,6 +27,13 @@ class ListContentInput(BaseModel):
     workspace_id: str | None = None
 
 
+class ListContentTypesInput(BaseModel):
+    limit: int | None = 20
+    offset: int | None = 0
+    sort_by: str | None = None
+    sort_direction: str | None = "DESC"
+
+
 class ListContentTypesResults(BaseModel):
     results: list[DerivedContentType]
 
@@ -119,6 +126,17 @@ def list_content(
     )
 
 
-def list_content_types(session: Session):
-    results = session.exec(select(DerivedContentType)).all()
+def list_content_types(session: Session, input: ListContentTypesInput):
+    statement = select(DerivedContentType).offset(input.offset).limit(input.limit)
+    if input.sort_by:
+        if input.sort_direction == "ASC":
+            statement = statement.order_by(asc(input.sort_by))
+        elif input.sort_direction == "DESC":
+            statement = statement.order_by(desc(input.sort_by))
+        else:
+            logger.error("Invalid sort direction provided.")
+            raise RuntimeError(
+                "Invalid sort direction provided. Options are ASC or DESC"
+            )
+    results = session.exec(statement).all()
     return ListContentTypesResults(results=results)

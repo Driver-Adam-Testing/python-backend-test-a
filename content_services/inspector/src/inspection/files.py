@@ -13,6 +13,7 @@ from utils.llm import (
     chunk_str,
 )
 from utils.models import ChatOpenAI
+from utils.templates import Template
 
 from inspection.prompt_templates.files.templates.metadata_default import (
     METADATA_SYSTEM_PROMPT,
@@ -67,24 +68,6 @@ class FileKind(BaseModel):
             file_kind = cls(kind=fallback_kind)
 
         return file_kind
-
-
-class Template(BaseModel):
-    system_prompt: str
-    template: list[tuple[str] | tuple[str, str]]
-
-    def run(self, llm: ChatOpenAI, code: str) -> str:
-        output = ""
-        for tup in self.template:
-            if len(tup) == 1:  # Top level header
-                output += f"{tup[0]}\n"
-            else:  # 2nd level, prompt pair
-                section_title, section_prompt = tup
-                human_prompt = f"{section_prompt}\n\nCode:\n\n{code}"
-                content = llm.generate_response(self.system_prompt, human_prompt)
-                output += f"{section_title}\n{content}\n"
-
-        return output
 
 
 def file_long_from_code(
@@ -463,7 +446,9 @@ def comprehend_file_top_down(
                     )
                 case _:
                     raise ValueError(f"Unknown file kind variant: {file_kind.kind}")
-            file_description_long = long_template.run(llm=llm, code=source_code)
+            file_description_long = long_template.run_with_code(
+                llm=llm, code=source_code
+            )
             chunk_detailed_descriptions = [file_description_long]
             file_description_single_sentence = file_single_sentence_from_code(
                 llm=llm,

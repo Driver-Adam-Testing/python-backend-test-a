@@ -44,7 +44,7 @@ def get_execution_result(call_id: str) -> Instruction:
         instruction_result.status = "running"
         instruction_result.response = ""
     except Exception:
-        instruction_result.status = "expired"
+        instruction_result.status = "failed"
         instruction_result.error = "Output expired"
 
     print(instruction_result)

@@ -9,15 +9,13 @@ In a single paragraph of 3 to 5 sentences, explain the purpose of the code provi
 
 - Does this code provide narrow or broad functionality?
 - Is this code a collection of many different components? If so, what is the common theme or purpose?
-- What kind of code is this? For example, is this code clearly an executable script, a header file, a library intended to be imported elsewhere, does it define public APIs, etc.?
+- What kind of code is this? For example, is this code clearly an executable script, a C header file, a library intended to be imported elsewhere, does it define public APIs, etc.?
 """
 
 TECHNICAL_SUMMARY_PROMPT = """
 In one or more paragraphs, summarize the important technical concepts of the code provided below. Choose a summary length appropriate for the length and complexity of code. Longer and more complex code should have more summary content.
 
-In writing your technical summary, consider the following:
-- What are the most important technical concepts and details that a developer working with this could should know?
-- Write more about about the conceptual use cases, applications, and logic of how components of the code are used instead of focusing on particular functions, classes, variables, etc.
+In writing your technical summary, write about about the conceptual use cases, applications, logic, and component interactions in the code instead of focusing on particular functions, classes, variables, etc. A new developer can read your output and conceptually understand the core technical elements of the code before diving into source code.
 """
 
 IMPORTS_PROMPT = """

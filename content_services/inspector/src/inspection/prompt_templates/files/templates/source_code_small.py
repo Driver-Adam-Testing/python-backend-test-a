@@ -10,7 +10,7 @@ PURPOSE_PROMPT = """
 In a single paragraph of 3 to 5 sentences, explain the purpose of the code provided below. Consider questions such as the following when providing your output:
 
 - Does this code provide narrow or broad functionality?
-- What kind of code is this? For example, is this code a short script, a simple header file, a collection of global variables or configuration variables, etc.?
+- What kind of code is this? For example, is this code a short script, a simple C header file, a collection of global variables or configuration variables, etc.?
 """
 
 SOURCE_CODE_SMALL_TEMPLATE = [

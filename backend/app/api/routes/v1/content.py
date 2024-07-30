@@ -7,6 +7,9 @@ from app.utils.content import (
     ListContentResults,
     ListContentTypesInput,
     ListContentTypesResults,
+    TagAssociationResponse,
+    associate_tag,
+    disassociate_tag,
     list_content,
     list_content_types,
 )
@@ -66,3 +69,29 @@ def list_types(
             limit=limit, offset=offset, sort_by=sort_by, sort_direction=sort_direction
         ),
     )
+
+
+@router.post(
+    "/{content_id}/tags/{tag_id}",
+    summary="Associate a tag with this content",
+)
+def associate_tag_with_content(
+    session: CurrentSession,
+    user: CurrentUser,
+    content_id: str,
+    tag_id: str,
+) -> TagAssociationResponse:
+    return associate_tag(session, user, content_id, tag_id)
+
+
+@router.delete(
+    "/{content_id}/tags/{tag_id}",
+    summary="Disassociate a tag with this content",
+)
+def disassociate_tag_with_content(
+    session: CurrentSession,
+    user: CurrentUser,
+    content_id: str,
+    tag_id: str,
+) -> TagAssociationResponse:
+    return disassociate_tag(session, user, content_id, tag_id)

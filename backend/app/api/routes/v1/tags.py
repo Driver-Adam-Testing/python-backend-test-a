@@ -61,9 +61,3 @@ def update_tag(
 
 # Delete a tag
 # @router.delete("/tags/{tag_id}", status_code=204)
-# def delete_tag(tag_id: int):
-#     for i, tag in enumerate(tags_store):
-#         if tag.id == tag_id:
-#             tags_store.pop(i)
-#             return
-#     raise HTTPException(status_code=404, detail="Tag not found")

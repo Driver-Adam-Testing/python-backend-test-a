@@ -6,8 +6,11 @@ from database.models_v1 import (
     DerivedContent,
     DerivedContentType,
     Enum_Derived_Content_Status,
+    Tag,
+    TagContent,
     Workspace,
 )
+from fastapi import HTTPException, status
 from pydantic import BaseModel
 from sqlmodel import Session, asc, desc, select
 
@@ -62,6 +65,12 @@ class ListContentResults(BaseModel):
     results: list[ListContentResult]
     offset: int
     limit: int
+
+
+class TagAssociationResponse(BaseModel):
+    tag_id: str
+    content_id: str
+    message: str
 
 
 def list_content(
@@ -140,3 +149,84 @@ def list_content_types(session: Session, input: ListContentTypesInput):
             )
     results = session.exec(statement).all()
     return ListContentTypesResults(results=results)
+
+
+def associate_tag(
+    session: Session, user: CurrentUser, content_id: str, tag_id: str
+) -> TagAssociationResponse:
+    # Check if content exists
+    content = session.exec(
+        select(DerivedContent)
+        .join(Workspace)
+        .where(user.organization_id == Workspace.organization_id)
+        .where(DerivedContent.id == content_id)
+    ).first()
+    if not content:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
+        )
+
+    # Check if tag exists
+    tag = session.exec(
+        select(Tag)
+        .where(Tag.id == tag_id)
+        .where(user.organization_id == Tag.organization_id)
+    ).first()
+    if not tag:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Tag not found"
+        )
+
+    # Associate tag with content
+    content.tags.append(tag)
+    session.commit()
+    return TagAssociationResponse(
+        tag_id=tag_id, content_id=content_id, message="Tag associated successfully"
+    )
+
+
+def disassociate_tag(
+    session: Session, user: CurrentUser, content_id: str, tag_id: str
+) -> TagAssociationResponse:
+    # Check if content exists
+    content = session.exec(
+        select(DerivedContent)
+        .join(Workspace)
+        .join(DerivedContent.tags)
+        .where(user.organization_id == Workspace.organization_id)
+        .where(DerivedContent.id == content_id)
+    ).first()
+    if not content:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
+        )
+
+    # Check if tag exists
+    tag = session.exec(
+        select(Tag)
+        .where(Tag.id == tag_id)
+        .where(user.organization_id == Tag.organization_id)
+    ).first()
+    if not tag:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Tag not found"
+        )
+
+    # Disassociate tag with content
+    link = session.exec(
+        select(TagContent)
+        .where(TagContent.tag_id == tag_id)
+        .where(TagContent.content_id == content_id)
+    ).first()
+    if link:
+        session.delete(link)
+        session.commit()
+        return TagAssociationResponse(
+            tag_id=tag_id,
+            content_id=content_id,
+            message="Tag disassociated successfully",
+        )
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Tag association not found"
+        )

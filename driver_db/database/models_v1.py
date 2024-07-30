@@ -335,6 +335,20 @@ class DerivedContentType(SQLModel, table=True):  # type: ignore
     contents: list["DerivedContent"] = Relationship(back_populates="content_type")
 
 
+class TagContent(SQLModel, table=True):
+    __tablename__ = "tags_contents"
+    """Link table between Tags and Content models."""
+
+    tag_id: None | uuid.UUID = Field(
+        default=None, foreign_key="tags.id", primary_key=True
+    )
+    content_id: None | uuid.UUID = Field(
+        default=None, foreign_key="derived_contents.id", primary_key=True
+    )
+    # tag: Optional["Tag"] = Relationship(back_populates="derived_contents")
+    # derived_content: Optional["DerivedContent"] = Relationship(back_populates="tags")
+
+
 class DerivedContent(SQLModel, table=True):  # type: ignore
     __tablename__ = "derived_contents"
     id: UUID | None = Field(
@@ -391,10 +405,14 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
     derived_contents: list["DerivedContent"] = Relationship(
         back_populates="source_content"
     )
+
     order: int | None = Field(
         sa_column=Column(Integer, nullable=True, server_default=text("0"))
     )
     workspace: Workspace = Relationship(back_populates="source_contents")
+    tags: list["Tag"] = Relationship(
+        back_populates="derived_contents", link_model=TagContent
+    )
 
 
 class Tag(SQLModel, table=True):  # type: ignore
@@ -441,15 +459,6 @@ class Tag(SQLModel, table=True):  # type: ignore
         sa_column=sqlalchemy.Column(sqlalchemy.String(128), nullable=False),
         default=None,
     )
-
-
-class TagContent(SQLModel, table=True):
-    __tablename__ = "tags_contents"
-    """Link table between Tags and Content models."""
-
-    tag_id: None | uuid.UUID = Field(
-        default=None, foreign_key="tags.id", primary_key=True
-    )
-    content_id: None | uuid.UUID = Field(
-        default=None, foreign_key="derived_contents.id", primary_key=True
+    derived_contents: list["DerivedContent"] = Relationship(
+        back_populates="tags", link_model=TagContent
     )

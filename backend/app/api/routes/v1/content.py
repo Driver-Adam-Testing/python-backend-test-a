@@ -30,7 +30,7 @@ def list(
     sort_by: str | None = None,
     sort_direction: str | None = "ASC",
     status: str | None = None,
-    tags: list[str] | None = Query(None),
+    tag: list[str] | None = Query(None),
     text: str | None = None,
     workspace_id: str | None = None,
 ) -> ListContentResults:
@@ -45,7 +45,7 @@ def list(
             sort_by=sort_by,
             sort_direction=sort_direction,
             status=status,
-            tags=tags,
+            tags=tag,
             workspace_id=workspace_id,
         ),
     )

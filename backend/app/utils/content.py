@@ -12,7 +12,7 @@ from database.models_v1 import (
 )
 from fastapi import HTTPException, status
 from pydantic import BaseModel
-from sqlmodel import Session, asc, desc, select
+from sqlmodel import Session, asc, desc, or_, select
 
 from app.api.auth import CurrentUser
 from app.core.logger import logger
@@ -55,6 +55,7 @@ class ListContentResult(BaseModel):
     content: None | str
     misc_metadata: dict | None
     status: Enum_Derived_Content_Status | None
+    tags: list[Tag]
     created_at: None | datetime
     updated_at: None | datetime
     source_content: Optional["DerivedContent"]
@@ -79,6 +80,8 @@ def list_content(
     statement = (
         select(DerivedContent)
         .join(Workspace)
+        .join(TagContent, isouter=True)
+        .join(Tag, isouter=True)
         .where(user.organization_id == Workspace.organization_id)
         .offset(input.offset)
         .limit(input.limit)
@@ -108,6 +111,12 @@ def list_content(
             DerivedContent.content_type_id.in_(input.content_type_id)
         )
 
+    if input.tags:
+        tag_clauses = []
+        for tag in input.tags:
+            tag_clauses.append(Tag.name.contains(tag))
+        statement = statement.where(or_(*tag_clauses))
+
     results = session.exec(statement).all()
     return ListContentResults(
         results=(
@@ -127,6 +136,7 @@ def list_content(
                 updated_at=result.updated_at,
                 source_content=result.source_content,
                 order=result.order,
+                tags=result.tags,
             )
             for result in results
         ),

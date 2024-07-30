@@ -17,6 +17,7 @@ RUN poetry config virtualenvs.create false
 
 # Copy the driver-db package first
 COPY driver_db /driver_db
+COPY packages /packages
 COPY ./backend/app /app
 
 # Copy pyproject.toml and poetry.lock first for better caching

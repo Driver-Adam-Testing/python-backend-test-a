@@ -76,14 +76,6 @@ def create_app_note(request: CreateAppNoteRequest):
                 "content": "use the uploaded files when the source code and descriptions provide insufficient context. Be clear and specific with the query.",
             }
         )
-    else:
-        agent = Agent(
-            workspace_id=request.workspace_id,
-            codebase_id=request.codebase_id,
-            tools=[deep_rag_tool, search_source_code_tool, list_files_tool],
-            max_iterations=5,
-            model=request.model,
-        )
     agent.add_message(prompts.interface.batch_tools.MESSAGE)
     agent.add_message(prompts.interface.technical_context_interface.MESSAGE)
     agent.add_message(prompts.voice.software_engineer.MESSAGE)

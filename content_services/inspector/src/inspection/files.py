@@ -40,7 +40,13 @@ class FileKind(BaseModel):
     kind: FileEnum
 
     @classmethod
-    def from_llm(cls, llm: ChatOpenAI, file_name: str, code: str) -> Self:
+    def from_llm(
+        cls,
+        llm: ChatOpenAI,
+        file_name: str,
+        code: str,
+        fallback_kind: FileEnum = FileEnum.SOURCE_CODE_LARGE,
+    ) -> Self:
         system_prompt = get_prompt_template(
             PARENT_PATH / "prompt_templates/files/determine_file_kind.txt"
         )
@@ -49,9 +55,16 @@ class FileKind(BaseModel):
         file_kind_raw = llm.generate_response(system_prompt, human_prompt)
         try:
             file_kind = cls(kind=int(file_kind_raw))
+        except ValueError as e:
+            logging.warn(
+                f"Failed to parse integer from LLM response to determine file kind for file {file_name}: {e}"
+            )
+            file_kind = cls(kind=fallback_kind)
         except ValidationError as e:
-            logging.warn(f"Failed to parse LLM file kind for file {file_name}: {e}")
-            file_kind = cls(kind=FileEnum.SOURCE_CODE_LARGE)
+            logging.warn(
+                f"Invalid integer enum variant parsed from LLM to determine file kind for file {file_name}: {e}"
+            )
+            file_kind = cls(kind=fallback_kind)
 
         return file_kind
 

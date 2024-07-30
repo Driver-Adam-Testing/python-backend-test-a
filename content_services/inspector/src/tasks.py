@@ -16,7 +16,7 @@ from utils.dag import LiteNode
 from utils.db import (
     DerivedContentTypeMap,
     get_derived_content_type_uuid,
-    get_rel_path_workspace_id_from_source_content_id,
+    get_rel_path_workspace_id_codebase_id_from_source_content_id,
 )
 from utils.task import Task, TaskResult, TaskResultKind
 
@@ -73,7 +73,11 @@ class FolderTechDocTask(Task):
             long_descrip_dc_id = await get_derived_content_type_uuid(
                 DerivedContentTypeMap.LONG_DESCRIPTION
             )
-            _, workspace_id = await get_rel_path_workspace_id_from_source_content_id(
+            (
+                _,
+                workspace_id,
+                codebase_id,
+            ) = await get_rel_path_workspace_id_codebase_id_from_source_content_id(
                 self.source_content_id
             )
 
@@ -82,6 +86,7 @@ class FolderTechDocTask(Task):
                 content_type_id=short_single_sentence_dc_id,
                 source_content_id=self.source_content_id,
                 workspace_id=workspace_id,
+                codebase_id=codebase_id,
                 relative_path=str(self.node.root_rel_path),
                 content=docs["short"]["single_sentence"],
                 misc_metadata=None,
@@ -93,6 +98,7 @@ class FolderTechDocTask(Task):
                 content_type_id=short_single_paragraph_dc_id,
                 source_content_id=self.source_content_id,
                 workspace_id=workspace_id,
+                codebase_id=codebase_id,
                 relative_path=str(self.node.root_rel_path),
                 content=docs["short"]["single_paragraph"],
                 misc_metadata=None,
@@ -104,6 +110,7 @@ class FolderTechDocTask(Task):
                 content_type_id=long_descrip_dc_id,
                 source_content_id=self.source_content_id,
                 workspace_id=workspace_id,
+                codebase_id=codebase_id,
                 relative_path=str(self.node.root_rel_path),
                 content=docs["long"],
                 misc_metadata=None,
@@ -183,7 +190,11 @@ class FileTechDocTask(Task):
                 DerivedContentTypeMap.CHUNK_DESCRIPTIONS
             )
 
-            _, workspace_id = await get_rel_path_workspace_id_from_source_content_id(
+            (
+                _,
+                workspace_id,
+                codebase_id,
+            ) = await get_rel_path_workspace_id_codebase_id_from_source_content_id(
                 self.source_content_id
             )
 
@@ -192,6 +203,7 @@ class FileTechDocTask(Task):
                 content_type_id=short_single_sentence_dc_id,
                 source_content_id=self.source_content_id,
                 workspace_id=workspace_id,
+                codebase_id=codebase_id,
                 relative_path=str(node.root_rel_path),
                 content=docs["short"]["single_sentence"],
                 misc_metadata=None,
@@ -203,6 +215,7 @@ class FileTechDocTask(Task):
                 content_type_id=short_single_paragraph_dc_id,
                 source_content_id=self.source_content_id,
                 workspace_id=workspace_id,
+                codebase_id=codebase_id,
                 relative_path=str(node.root_rel_path),
                 content=docs["short"]["single_paragraph"],
                 misc_metadata=None,
@@ -214,6 +227,7 @@ class FileTechDocTask(Task):
                 content_type_id=long_descrip_dc_id,
                 source_content_id=self.source_content_id,
                 workspace_id=workspace_id,
+                codebase_id=codebase_id,
                 relative_path=str(node.root_rel_path),
                 content=docs["long"],
                 misc_metadata=None,
@@ -228,6 +242,7 @@ class FileTechDocTask(Task):
                         content_type_id=chunk_dc_id,
                         source_content_id=self.source_content_id,
                         workspace_id=workspace_id,
+                        codebase_id=codebase_id,
                         relative_path=str(node.root_rel_path),
                         content=chunk,
                         misc_metadata=None,
@@ -312,7 +327,11 @@ class SymbolsTask(Task):
                 DerivedContentTypeMap.SYMBOL
             )
 
-            _, workspace_id = await get_rel_path_workspace_id_from_source_content_id(
+            (
+                _,
+                workspace_id,
+                codebase_id,
+            ) = await get_rel_path_workspace_id_codebase_id_from_source_content_id(
                 self.source_content_id
             )
 
@@ -322,6 +341,7 @@ class SymbolsTask(Task):
                     content_type_id=symbol_derived_content_id,
                     source_content_id=self.source_content_id,
                     workspace_id=workspace_id,
+                    codebase_id=codebase_id,
                     relative_path=str(self.node.root_rel_path),
                     content=None,
                     misc_metadata=symbol,
@@ -428,7 +448,8 @@ class TopLevelDocsTask(Task):
             (
                 relative_path,
                 workspace_id,
-            ) = await get_rel_path_workspace_id_from_source_content_id(
+                codebase_id,
+            ) = await get_rel_path_workspace_id_codebase_id_from_source_content_id(
                 self.source_content_id
             )
 
@@ -438,6 +459,7 @@ class TopLevelDocsTask(Task):
                     content_type_id=dc_type_id,
                     source_content_id=self.source_content_id,
                     workspace_id=workspace_id,
+                    codebase_id=codebase_id,
                     relative_path=relative_path,
                     content=dc_docs,
                     misc_metadata=None,

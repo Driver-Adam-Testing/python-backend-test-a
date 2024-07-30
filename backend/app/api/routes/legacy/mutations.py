@@ -208,7 +208,7 @@ class Mutation:
             "errors": [],
         }
 
-        content: DerivedContent = session.exec(
+        content = session.exec(
             select(DerivedContent)  # type: ignore
             .join(
                 DerivedContentType,
@@ -218,7 +218,7 @@ class Mutation:
                 DerivedContent.codebase_id == input.codebase_id,
                 DerivedContentType.type_name == "codebase",
             )
-        ).first()
+        ).first()[0]
         content_type_id = (
             session.exec(
                 select(DerivedContentType.id).where(  # type: ignore
@@ -230,12 +230,12 @@ class Mutation:
             .id
         )
         app_note = DerivedContent(
+            workspace_id=content.workspace_id,
             source_content_id=content.id,
             relative_path=content.relative_path,
             content_type_id=content_type_id,
             content=json.dumps(note_content),
             status=ContentStatus.GENERATING.value,
-            workspace_id=content.workspace_id,
             metadata=metadata,
         )
 

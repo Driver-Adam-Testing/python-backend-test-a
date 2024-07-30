@@ -8,14 +8,12 @@ from app.api.routes.v1 import (
     onboarding,
     search,
     tags,
-    workspace,
 )
 from app.core.config import settings
 
 api_router = APIRouter()
 
 api_router.include_router(graphql_router, prefix="/graphql", tags=["legacy-graphql"])
-api_router.include_router(workspace.router, prefix="/workspace", tags=["workspace"])
 api_router.include_router(
     healthcheck.router, prefix="/healthcheck", tags=["healthcheck"]
 )

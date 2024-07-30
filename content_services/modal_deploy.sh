@@ -15,14 +15,24 @@ cd inspector
 # Perform modal deploy on src/main.py with the environment argument
 modal deploy --env=$environment src/main.py
 # Navigate back to the original directory
-cd .. 
+cd ..
 # Navigate to the onboarding directory
 cd onboarding
 # Perform modal deploy on src/main.py with the environment argument
 modal deploy --env=$environment src/main.py
 # Navigate back to the original directory
-cd .. 
+cd ..
 # Navigate to the pdf_preprocessing directory
 cd pdf_preprocessing
+# Perform modal deploy on src/main.py with the environment argument
+modal deploy --env=$environment src/main.py
+cd ..
+# Navigate to the pdf_preprocessing directory
+cd comprehender
+# Perform modal deploy on src/main.py with the environment argument
+modal deploy --env=$environment src/main.py
+cd ..
+# Navigate to the pdf_preprocessing directory
+cd embedding
 # Perform modal deploy on src/main.py with the environment argument
 modal deploy --env=$environment src/main.py

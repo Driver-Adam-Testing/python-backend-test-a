@@ -5,18 +5,18 @@ You are skilled at explaining technical details as well as recognize and articul
 """
 
 PURPOSE_PROMPT = """
-In a single paragraph of 3 to 5 sentences, explain the purpose of the code provided below. Answer questions such as:
+In a single paragraph of 3 to 5 sentences, explain the purpose of the code provided below. Consider questions such as the following when providing your output:
 
-- Does this code provide a narrow and specific functionality, or does it contain broad functionality?
-- Is this code a collection of many different components? If so, what is the common them or purpose?
-- What kind of code is this? For example, is this code clearly an executable script, a library intended to be imported elsewhere, does it define public APIs, etc.?
+- Does this code provide narrow or broad functionality?
+- Is this code a collection of many different components? If so, what is the common theme or purpose?
+- What kind of code is this? For example, is this code clearly an executable script, a header file, a library intended to be imported elsewhere, does it define public APIs, etc.?
 """
 
 TECHNICAL_SUMMARY_PROMPT = """
 In one or more paragraphs, summarize the important technical concepts of the code provided below. Choose a summary length appropriate for the length and complexity of code. Longer and more complex code should have more summary content.
 
 In writing your technical summary, consider the following:
-- What are the most important technical concepts and details that a developer working with this could should know.
+- What are the most important technical concepts and details that a developer working with this could should know?
 - Write more about about the conceptual use cases, applications, and logic of how components of the code are used instead of focusing on particular functions, classes, variables, etc.
 """
 

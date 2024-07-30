@@ -9,10 +9,10 @@ In particular, you are skilled at describing configuration and metadata files su
 PURPOSE_PROMPT = """
 You will be given contents from a metadata or configuration file that is not code, but is from a software codebase.
 
-In a single paragraph of 3 to 5 sentences, explain the purpose of the file contents. Answer questions such as:
+In a single paragraph of 3 to 5 sentences, explain the purpose of the file contents. Consider questions such as the following when providing your output:
 
 - What kind of file is this? Does it configure other software, hardware, cloud components, contain data used by the application, etc.?
-- Does this file provide narrow functionality or does it have broad functionality? If it is narrow, what is that?
+- Does this file provide narrow or broad functionality? If it is narrow, what is that?
 - Are there many conceptual categories or components to this file's contents? If so, what is the common theme or purpose?
 - What is the relevance of this file's content to a codebase?
 """
@@ -23,7 +23,7 @@ You will be given contents from a metadata or configuration file that is not cod
 In one or more paragraphs, summarize the functional details of the file's contents that are provided below. Choose a summary length appropriate for the length and complexity of the content. Longer and more complex content should have more summary content.
 
 In writing your content summary, consider the following:
-- What are the most important technical details that a developer working with this file should know.
+- What are the most important technical details that a developer working with this file should know?
 """
 
 METADATA_TEMPLATE = [

@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query
 
 from app.api.auth import CurrentUser
 from app.api.session import CurrentSession
+from app.core.logger import logging
 from app.utils.content import (
     ListContentInput,
     ListContentResults,
@@ -81,7 +82,14 @@ def associate_tag_with_content(
     content_id: str,
     tag_id: str,
 ) -> TagAssociationResponse:
-    return associate_tag(session, user, content_id, tag_id)
+    try:
+        return associate_tag(session, user, content_id, tag_id)
+    except Exception as ex:
+        logging.exception("Unable to find tag or content.", exc_info=ex)
+        raise HTTPException(
+            status_code=404,
+            detail="Unable to find tag or content, please check your parameters.",
+        )
 
 
 @router.delete(
@@ -94,4 +102,8 @@ def disassociate_tag_with_content(
     content_id: str,
     tag_id: str,
 ) -> TagAssociationResponse:
-    return disassociate_tag(session, user, content_id, tag_id)
+    try:
+        return disassociate_tag(session, user, content_id, tag_id)
+    except Exception as ex:
+        logging.exception("Association not found", exc_info=ex)
+        raise HTTPException(status_code=404, detail="Association not found")

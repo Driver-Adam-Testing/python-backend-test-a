@@ -41,6 +41,9 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    logging.error(f"Unhandled exception: {exc}")
+    logging.error("Unhandled exception", exc_info=exc)
     # Return the JSON response with the appropriate status code
-    return JSONResponse(status_code=500, content="Something went wrong.")
+    return JSONResponse(
+        status_code=500,
+        content="Something went wrong. This error has been logged and the team will be investigating.",
+    )

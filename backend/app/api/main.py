@@ -5,6 +5,7 @@ from app.api.routes.v1 import (
     content,
     git_provider,
     healthcheck,
+    instructions,
     onboarding,
     search,
     tags,
@@ -24,6 +25,7 @@ api_router.include_router(onboarding.router, prefix="/onboarding", tags=["onboar
 api_router.include_router(search.router, prefix="/search", tags=["search"])
 api_router.include_router(content.router, prefix="/content", tags=["content"])
 api_router.include_router(tags.router, prefix="/tags", tags=["tags"])
+api_router.include_router(instructions.router, prefix="/instructions", tags=["instructions"])
 
 if settings.ENVIRONMENT != "production":
     api_router.include_router(

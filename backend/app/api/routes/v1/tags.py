@@ -32,10 +32,10 @@ logger = logging.getLogger(__name__)
 
 # Create a new tag
 @router.post("/", status_code=201)
-def new_tag(session: CurrentSession, user: CurrentUser, newTag: NewTagInput) -> Tag:
+def new_tag(session: CurrentSession, user: CurrentUser, new_tag: NewTagInput) -> Tag:
     logging.info("Creating new tag")
     try:
-        return create_tag(session=session, user=user, input=newTag)
+        return create_tag(session=session, user=user, input=new_tag)
     except IntegrityError:
         logging.error("Tag name already exists")
         raise HTTPException(status_code=400, detail="Tag name already exists.")

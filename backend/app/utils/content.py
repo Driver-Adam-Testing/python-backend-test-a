@@ -31,7 +31,6 @@ class ListContentInput(BaseModel):
     content_type_id: list[str] | None = None
     tags: list[str] | None = None
     tag_ids: list[str] | None = None
-    workspace_id: str | None = None
 
 
 class ListContentTypesInput(BaseModel):
@@ -108,12 +107,6 @@ def list_content(
                 status_code=400,
                 detail="Invalid sort direction provided. Options are ASC or DESC",
             )
-
-    if input.workspace_id:
-        statement = statement.where(DerivedContent.workspace_id == input.workspace_id)
-        count_statement = count_statement.where(
-            DerivedContent.workspace_id == input.workspace_id
-        )
 
     if input.text:
         statement = statement.where(DerivedContent.relative_path.contains(input.text))

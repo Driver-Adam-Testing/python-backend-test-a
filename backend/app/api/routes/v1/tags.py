@@ -30,7 +30,6 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-# Create a new tag
 @router.post("/", status_code=201)
 def new_tag(session: CurrentSession, user: CurrentUser, new_tag: NewTagInput) -> Tag:
     logging.info("Creating new tag")
@@ -41,7 +40,6 @@ def new_tag(session: CurrentSession, user: CurrentUser, new_tag: NewTagInput) ->
         raise HTTPException(status_code=400, detail="Tag name already exists.")
 
 
-# Read all tags
 @router.get("/")
 def read_tags(
     session: CurrentSession,

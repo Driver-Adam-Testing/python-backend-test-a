@@ -39,7 +39,6 @@ def list(
     status: str | None = None,
     tag: Annotated[list[str] | None, Query()] = None,
     text: str | None = None,
-    workspace_id: str | None = None,
 ) -> ListContentResults:
     return list_content(
         session,
@@ -53,7 +52,6 @@ def list(
             sort_direction=sort_direction,
             status=status,
             tags=tag,
-            workspace_id=workspace_id,
         ),
     )
 

@@ -7,7 +7,7 @@ from sqlalchemy import func
 from sqlmodel import Session, select
 
 from app.api.auth import CurrentUser
-from app.utils.content import ListContentInput, list_content
+from app.api.content.content import ListContentInput, list_content
 
 logger = logging.getLogger(__name__)
 

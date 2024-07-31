@@ -4,8 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, Query
 
 from app.api.auth import CurrentUser
-from app.api.session import CurrentSession
-from app.utils.content import (
+from app.api.content.content import (
     ListContentInput,
     ListContentResults,
     ListContentTypesInput,
@@ -16,6 +15,7 @@ from app.utils.content import (
     list_content,
     list_content_types,
 )
+from app.api.session import CurrentSession
 
 logger = logging.getLogger(__name__)
 

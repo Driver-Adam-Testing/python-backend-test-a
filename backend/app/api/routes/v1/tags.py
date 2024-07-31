@@ -6,14 +6,14 @@ from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy.exc import IntegrityError
 
 from app.api.auth import CurrentUser
-from app.api.session import CurrentSession
-from app.utils.content import (
+from app.api.content.content import (
     ListContentInput,
     TagAssociationResponse,
     associate_tag,
     disassociate_tag,
 )
-from app.utils.tags import (
+from app.api.session import CurrentSession
+from app.api.tags.tags import (
     ListTagContentsResults,
     ListTagsInput,
     ListTagsResults,

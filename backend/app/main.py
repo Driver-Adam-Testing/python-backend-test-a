@@ -1,5 +1,4 @@
 import logging
-import os
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -17,7 +16,7 @@ def custom_generate_unique_id(route: APIRoute) -> str:
 
 
 def configure_logging():
-    log_level = os.getenv("LOG_LEVEL") or logging.INFO
+    log_level = settings.LOG_LEVEL.upper()
     logging.basicConfig(
         level=log_level,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",

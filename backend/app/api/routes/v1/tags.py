@@ -1,10 +1,11 @@
+import logging
+
 from database.models_v1 import Tag
 from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy.exc import IntegrityError
 
 from app.api.auth import CurrentUser
 from app.api.session import CurrentSession
-from app.core.logger import logging
 from app.utils.content import (
     ListContentInput,
     TagAssociationResponse,
@@ -23,6 +24,9 @@ from app.utils.tags import (
 )
 
 router = APIRouter()
+
+
+logger = logging.getLogger(__name__)
 
 
 # Create a new tag

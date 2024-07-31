@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from typing import Optional
 from uuid import UUID
@@ -16,7 +17,8 @@ from sqlalchemy import func
 from sqlmodel import Session, asc, desc, or_, select
 
 from app.api.auth import CurrentUser
-from app.core.logger import logger
+
+logger = logging.getLogger(__name__)
 
 
 class ListContentInput(BaseModel):
@@ -102,8 +104,9 @@ def list_content(
             statement = statement.order_by(desc(input.sort_by))
         else:
             logger.error("Invalid sort direction provided.")
-            raise RuntimeError(
-                "Invalid sort direction provided. Options are ASC or DESC"
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid sort direction provided. Options are ASC or DESC",
             )
 
     if input.workspace_id:

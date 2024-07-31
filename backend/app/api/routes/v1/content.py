@@ -1,9 +1,10 @@
+import logging
+
 from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy.exc import IntegrityError
 
 from app.api.auth import CurrentUser
 from app.api.session import CurrentSession
-from app.core.logger import logging
 from app.utils.content import (
     ListContentInput,
     ListContentResults,
@@ -15,6 +16,9 @@ from app.utils.content import (
     list_content,
     list_content_types,
 )
+
+logger = logging.getLogger(__name__)
+
 
 router = APIRouter()
 

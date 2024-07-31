@@ -1,3 +1,5 @@
+import logging
+
 from database.models_v1 import DerivedContent, Tag
 from pydantic import BaseModel
 from sqlalchemy import func
@@ -5,6 +7,8 @@ from sqlmodel import Session, select
 
 from app.api.auth import CurrentUser
 from app.utils.content import ListContentInput, list_content
+
+logger = logging.getLogger(__name__)
 
 
 class ListTagsInput(BaseModel):
@@ -83,6 +87,7 @@ def edit_tag(
         session.commit()
         session.refresh(tag)
         return tag
+    logger.error("Tag not found")
     raise Exception("Tag not found")
 
 
@@ -117,4 +122,5 @@ def list_tag_contents(
             limit=input.limit,
             count=content.count,
         )
+    logger.error("Tag not found")
     raise Exception("Tag not found")

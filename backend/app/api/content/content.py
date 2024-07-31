@@ -86,6 +86,11 @@ def list_content(
         .join(Workspace)
         .join(TagContent, isouter=True)
         .join(Tag, isouter=True)
+        # TODO: Current plan is for workspaces to be removed from the application.
+        # In this intermediate state, we are maintaining the existing workspace
+        # table and joining them all together to obtain all content that is currently
+        # housed under the given organization. This will need updated if/when the
+        # workspace data is being migrated.
         .where(user.organization_id == Workspace.organization_id)
     )
     count_statement = (
@@ -102,7 +107,6 @@ def list_content(
         elif input.sort_direction == "DESC":
             statement = statement.order_by(desc(input.sort_by))
         else:
-            logger.error("Invalid sort direction provided.")
             raise HTTPException(
                 status_code=400,
                 detail="Invalid sort direction provided. Options are ASC or DESC",
@@ -179,9 +183,7 @@ def list_content_types(session: Session, input: ListContentTypesInput):
             statement = statement.order_by(desc(input.sort_by))
         else:
             logger.error("Invalid sort direction provided.")
-            raise RuntimeError(
-                "Invalid sort direction provided. Options are ASC or DESC"
-            )
+            raise ValueError("Invalid sort direction provided. Options are ASC or DESC")
     results = session.exec(statement).all()
     return ListContentTypesResults(results=results)
 

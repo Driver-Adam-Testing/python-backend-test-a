@@ -55,11 +55,11 @@ def read_tags(
     )
 
 
-# Update a tag - all users in an organization can edit all tags in the organization
 @router.put("/{tag_id}")
 def update_tag(
     session: CurrentSession, user: CurrentUser, tag_id: str, updatedTag: NewTagInput
 ) -> Tag:
+    """Update a tag. All users in an organization can edit all tags in the organization currently."""
     return edit_tag(session=session, user=user, tag_id=tag_id, input=updatedTag)
 
 

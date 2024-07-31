@@ -1,14 +1,14 @@
-from database.models_v1 import DerivedContent, Tag, TagContent
+from database.models_v1 import DerivedContent, Tag
 from pydantic import BaseModel
-from sqlalchemy import and_
+from sqlalchemy import func
 from sqlmodel import Session, select
 
 from app.api.auth import CurrentUser
+from app.utils.content import ListContentInput, list_content
 
 
 class ListTagsInput(BaseModel):
     name: str | None
-    user_id: str | None
     limit: int
     offset: int
 
@@ -22,31 +22,36 @@ class ListTagsResults(BaseModel):
     results: list[Tag]
     offset: int
     limit: int
+    count: int
 
 
 class ListTagContentsResults(BaseModel):
     tag: Tag
-    content_type_ids: list[str]
     results: list[DerivedContent]
     offset: int
     limit: int
+    count: int
 
 
 def list_tags(
     session: Session, user: CurrentUser, input: ListTagsInput
 ) -> ListTagsResults:
-    statement = (
-        select(Tag)
+    statement = select(Tag).where(user.organization_id == Tag.organization_id)
+    count_statement = (
+        select(func.count())
+        .select_from(Tag)
         .where(user.organization_id == Tag.organization_id)
-        .offset(input.offset)
-        .limit(input.limit)
     )
 
     if input.name:
         statement = statement.where(Tag.name.contains(input.name))
+        count_statement = count_statement.where(Tag.name.contains(input.name))
 
-    results = session.exec(statement).all()
-    return ListTagsResults(results=results, offset=input.offset, limit=input.limit)
+    total_count = session.exec(count_statement).one()
+    results = session.exec(statement.offset(input.offset).limit(input.limit)).all()
+    return ListTagsResults(
+        results=results, offset=input.offset, limit=input.limit, count=total_count
+    )
 
 
 def create_tag(session: Session, user: CurrentUser, input: NewTagInput) -> Tag:
@@ -82,42 +87,34 @@ def edit_tag(
 
 
 def list_tag_contents(
-    session: Session,
-    user: CurrentUser,
-    tag_id: str,
-    limit: int,
-    offset: int,
-    content_type_ids: list[str],
+    session: Session, user: CurrentUser, tag_id: str, input: ListContentInput
 ) -> ListTagContentsResults:
     tag = session.exec(
-        select(Tag)
-        .join(TagContent, isouter=True)
-        .join(
-            DerivedContent,
-            isouter=True,
-            onclause=(
-                and_(
-                    TagContent.content_id == DerivedContent.id,
-                    DerivedContent.content_type_id.in_(content_type_ids),
-                )
+        select(Tag).where(
+            Tag.id == tag_id and Tag.organization_id == user.organization_id
+        )
+    ).first()
+    if tag:
+        content = list_content(
+            session,
+            user,
+            input=ListContentInput(
+                limit=input.limit,
+                offset=input.offset,
+                text=input.text,
+                content_type_id=input.content_type_id,
+                sort_by=input.sort_by,
+                sort_direction=input.sort_direction,
+                status=input.status,
+                workspace_id=input.workspace_id,
+                tag_ids=[tag_id],
             ),
         )
-        .where(Tag.id == tag_id and Tag.organization_id == user.organization_id)
-        .offset(offset)
-        .limit(limit)
-    ).first()
-
-    if not tag:
-        raise Exception("Not found")
-
-    return ListTagContentsResults(
-        tag=tag,
-        content_type_ids=content_type_ids,
-        results=[
-            tag
-            for tag in tag.derived_contents
-            if tag.content_type_id in content_type_ids
-        ],
-        offset=offset,
-        limit=limit,
-    )
+        return ListTagContentsResults(
+            tag=tag,
+            results=content.results,
+            offset=input.offset,
+            limit=input.limit,
+            count=content.count,
+        )
+    raise Exception("Tag not found")

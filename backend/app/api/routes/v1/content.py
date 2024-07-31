@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Query
+from sqlalchemy.exc import IntegrityError
 
 from app.api.auth import CurrentUser
 from app.api.session import CurrentSession
@@ -84,6 +85,12 @@ def associate_tag_with_content(
 ) -> TagAssociationResponse:
     try:
         return associate_tag(session, user, content_id, tag_id)
+    except IntegrityError:
+        logging.error("Association already exists.")
+        raise HTTPException(
+            status_code=400,
+            detail="Association already exists, please check your parameters.",
+        )
     except Exception as ex:
         logging.exception("Unable to find tag or content.", exc_info=ex)
         raise HTTPException(

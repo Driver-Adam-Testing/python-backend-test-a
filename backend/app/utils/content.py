@@ -12,6 +12,7 @@ from database.models_v1 import (
 )
 from fastapi import HTTPException, status
 from pydantic import BaseModel
+from sqlalchemy import func
 from sqlmodel import Session, asc, desc, or_, select
 
 from app.api.auth import CurrentUser
@@ -19,7 +20,7 @@ from app.core.logger import logger
 
 
 class ListContentInput(BaseModel):
-    text: str | None
+    text: str | None = None
     limit: int | None = 20
     offset: int | None = 0
     sort_by: str | None = None
@@ -27,6 +28,7 @@ class ListContentInput(BaseModel):
     status: str | None = None
     content_type_id: list[str] | None = None
     tags: list[str] | None = None
+    tag_ids: list[str] | None = None
     workspace_id: str | None = None
 
 
@@ -66,6 +68,7 @@ class ListContentResults(BaseModel):
     results: list[ListContentResult]
     offset: int
     limit: int
+    count: int
 
 
 class TagAssociationResponse(BaseModel):
@@ -83,8 +86,14 @@ def list_content(
         .join(TagContent, isouter=True)
         .join(Tag, isouter=True)
         .where(user.organization_id == Workspace.organization_id)
-        .offset(input.offset)
-        .limit(input.limit)
+    )
+    count_statement = (
+        select(func.count())
+        .select_from(DerivedContent)
+        .join(Workspace)
+        .join(TagContent, isouter=True)
+        .join(Tag, isouter=True)
+        .where(user.organization_id == Workspace.organization_id)
     )
     if input.sort_by:
         if input.sort_direction == "ASC":
@@ -99,15 +108,25 @@ def list_content(
 
     if input.workspace_id:
         statement = statement.where(DerivedContent.workspace_id == input.workspace_id)
+        count_statement = count_statement.where(
+            DerivedContent.workspace_id == input.workspace_id
+        )
 
     if input.text:
         statement = statement.where(DerivedContent.relative_path.contains(input.text))
+        count_statement = count_statement.where(
+            DerivedContent.relative_path.contains(input.text)
+        )
 
     if input.status:
         statement = statement.where(DerivedContent.status == input.status)
+        count_statement = count_statement.where(DerivedContent.status == input.status)
 
     if input.content_type_id:
         statement = statement.where(
+            DerivedContent.content_type_id.in_(input.content_type_id)
+        )
+        count_statement = count_statement.where(
             DerivedContent.content_type_id.in_(input.content_type_id)
         )
 
@@ -116,8 +135,17 @@ def list_content(
         for tag in input.tags:
             tag_clauses.append(Tag.name.contains(tag))
         statement = statement.where(or_(*tag_clauses))
+        count_statement = count_statement.where(or_(*tag_clauses))
 
-    results = session.exec(statement).all()
+    if input.tag_ids:
+        tag_id_clauses = []
+        for tag_id in input.tag_ids:
+            tag_id_clauses.append(Tag.id == tag_id)
+        statement = statement.where(or_(*tag_id_clauses))
+        count_statement = count_statement.where(or_(*tag_id_clauses))
+
+    total_count = session.exec(count_statement).one()
+    results = session.exec(statement.offset(input.offset).limit(input.limit)).all()
     return ListContentResults(
         results=(
             ListContentResult(
@@ -142,6 +170,7 @@ def list_content(
         ),
         offset=input.offset,
         limit=input.limit,
+        count=total_count,
     )
 
 

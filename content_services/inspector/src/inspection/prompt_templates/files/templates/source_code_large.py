@@ -21,14 +21,15 @@ In writing your technical summary, write about about the conceptual use cases, a
 IMPORTS_PROMPT = """
 Summarize the dependencies or imports used in the code provided below.
 
-- If there are none, just say so.
+- If there are no dependencies or imports, just say so and do not write anything else.
 - Do not speculate on the nature of the imports or dependencies if it is not clear what they are for. If it is not clear, just identify the name. If it is clear what an import or dependency is, briefly describe it.
 """
 
 DATA_STRUCTURES_PROMPT = """
-Summarize the data structures in the code provided below.
+Summarize the important data structures in the code provided below.
 
-- If there are none, just say so.
+- Only discuss custom, complex, or compound data structures. Do not talk about the most primitive data structures inherent to the programming language, such as integers, floating point values, or strings.
+- If there are no suitable data structures, just say so and do not write anything else.
 - If there are relatively few, describe each of them.
 - If there are many, focus on the most important data structures.
 - When describing a data structure, provide detail that matches the complexity of the data structure. Large and complex data structures should get longer explanations, while small ones a single sentence.
@@ -38,7 +39,7 @@ Summarize the data structures in the code provided below.
 FUNCTIONS_PROMPT = """
 Summarize the functions or methods in the code provided below. For each function or method, describe the inputs, control flow and logic, and output.
 
-- If there are none, just say so.
+- If there are no functions in the code, just say so and do not write anything else.
 - If there are relatively few, describe each of them.
 - If there are many, focus on the most important functions or methods.
 - If you are describing a method of a class rather than a free function, identify the class the method is associated with when you describe it.

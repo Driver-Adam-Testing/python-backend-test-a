@@ -62,7 +62,6 @@ def list(
 )
 def list_types(
     session: CurrentSession,
-    user: CurrentUser,
     limit: int | None = 20,
     offset: int | None = 0,
     sort_by: str | None = None,
@@ -94,12 +93,6 @@ def associate_tag_with_content(
             status_code=400,
             detail="Association already exists, please check your parameters.",
         )
-    except Exception as ex:
-        logging.exception("Unable to find tag or content.", exc_info=ex)
-        raise HTTPException(
-            status_code=404,
-            detail="Unable to find tag or content, please check your parameters.",
-        )
 
 
 @router.delete(
@@ -112,8 +105,4 @@ def disassociate_tag_with_content(
     content_id: str,
     tag_id: str,
 ) -> TagAssociationResponse:
-    try:
-        return disassociate_tag(session, user, content_id, tag_id)
-    except Exception as ex:
-        logging.exception("Association not found", exc_info=ex)
-        raise HTTPException(status_code=404, detail="Association not found")
+    return disassociate_tag(session, user, content_id, tag_id)

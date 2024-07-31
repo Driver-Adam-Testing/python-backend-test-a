@@ -60,11 +60,7 @@ def read_tags(
 def update_tag(
     session: CurrentSession, user: CurrentUser, tag_id: str, updatedTag: NewTagInput
 ) -> Tag:
-    try:
-        return edit_tag(session=session, user=user, tag_id=tag_id, input=updatedTag)
-    except Exception as ex:
-        logging.error("Tag not found for update", exc_info=ex)
-        raise HTTPException(status_code=404, detail="Tag not found")
+    return edit_tag(session=session, user=user, tag_id=tag_id, input=updatedTag)
 
 
 @router.get("/{tag_id}/content")
@@ -77,29 +73,23 @@ def read_tag_contents(
     sort_direction: str | None = "ASC",
     status: str | None = None,
     text: str | None = None,
-    workspace_id: str | None = None,
     limit: int | None = 20,
     offset: int | None = 0,
 ) -> ListTagContentsResults:
-    try:
-        return list_tag_contents(
-            session=session,
-            user=user,
-            tag_id=tag_id,
-            input=ListContentInput(
-                limit=limit,
-                offset=offset,
-                text=text,
-                content_type_id=content_type_id,
-                sort_by=sort_by,
-                sort_direction=sort_direction,
-                status=status,
-                workspace_id=workspace_id,
-            ),
-        )
-    except Exception as ex:
-        logging.exception("Tag content not found", exc_info=ex)
-        raise HTTPException(status_code=404, detail="Tag content not found")
+    return list_tag_contents(
+        session=session,
+        user=user,
+        tag_id=tag_id,
+        input=ListContentInput(
+            limit=limit,
+            offset=offset,
+            text=text,
+            content_type_id=content_type_id,
+            sort_by=sort_by,
+            sort_direction=sort_direction,
+            status=status,
+        ),
+    )
 
 
 @router.post(
@@ -120,12 +110,6 @@ def associate_tag_with_content(
             status_code=400,
             detail="Association already exists, please check your parameters.",
         )
-    except Exception as ex:
-        logging.exception("Unable to find tag or content.", exc_info=ex)
-        raise HTTPException(
-            status_code=404,
-            detail="Unable to find tag or content, please check your parameters.",
-        )
 
 
 @router.delete(
@@ -138,8 +122,4 @@ def disassociate_tag_with_content(
     content_id: str,
     tag_id: str,
 ) -> TagAssociationResponse:
-    try:
-        return disassociate_tag(session, user, content_id, tag_id)
-    except Exception as ex:
-        logging.exception("Association not found", exc_info=ex)
-        raise HTTPException(status_code=404, detail="Association not found")
+    return disassociate_tag(session, user, content_id, tag_id)

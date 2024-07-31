@@ -1,6 +1,7 @@
 import logging
 
 from database.models_v1 import DerivedContent, Tag
+from fastapi import HTTPException
 from pydantic import BaseModel
 from sqlalchemy import func
 from sqlmodel import Session, select
@@ -87,8 +88,8 @@ def edit_tag(
         session.commit()
         session.refresh(tag)
         return tag
-    logger.error("Tag not found")
-    raise Exception("Tag not found")
+    logger.error("Tag not found to edit")
+    raise HTTPException(status_code=404, detail="Tag not found")
 
 
 def list_tag_contents(
@@ -122,5 +123,5 @@ def list_tag_contents(
             limit=input.limit,
             count=content.count,
         )
-    logger.error("Tag not found")
-    raise Exception("Tag not found")
+    logger.error("Tag not found.")
+    raise HTTPException(status_code=404, detail="Tag not found")

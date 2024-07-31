@@ -17,11 +17,13 @@ def custom_generate_unique_id(route: APIRoute) -> str:
 
 
 def configure_logging():
+    log_level = os.getenv("LOG_LEVEL") or logging.INFO
     logging.basicConfig(
-        level=os.getenv("LOG_LEVEL") or logging.INFO,
+        level=log_level,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
+    logging.info(f"Log Level set to {log_level}")
 
 
 configure_logging()

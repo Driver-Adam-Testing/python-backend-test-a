@@ -2,13 +2,13 @@ import json
 from typing import Annotated
 from urllib.request import urlopen
 
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import Depends, Request
+from fastapi.responses import JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import jwt
 from jose.exceptions import JWTError
 from pydantic import BaseModel, Field
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.responses import JSONResponse
 
 from app.core.config import settings
 
@@ -63,40 +63,25 @@ UNPROTECTED_PATHS = [
 
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
-        try:
-            if (
-                request.method in ["GET", "POST"]
-                and request.url.path in UNPROTECTED_PATHS
-            ):
-                pass
-            elif request.method == "OPTIONS":
-                pass
+        if request.method in ["GET", "POST"] and request.url.path in UNPROTECTED_PATHS:
+            pass
+        elif request.method == "OPTIONS":
+            pass
+        else:
+            auth_header = request.headers.get("Authorization")
+            if auth_header is None or not auth_header.startswith("Bearer "):
+                return JSONResponse(
+                    status_code=401, content="Missing or malformed Authorization header"
+                )
             else:
-                auth_header = request.headers.get("Authorization")
-                if auth_header is None or not auth_header.startswith("Bearer "):
-                    raise HTTPException(
-                        status_code=status.HTTP_401_UNAUTHORIZED,
-                        detail="Malformed or missing Authorization header",
-                    )
-                else:
-                    token = auth_header[len("Bearer ") :]
-                    try:
-                        payload = verify_token(token)
-                        request.state.token_payload = payload
-                    except Exception as e:
-                        raise HTTPException(
-                            status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e)
-                        )
-            response = await call_next(request)
-        except HTTPException as exc:
-            return JSONResponse(
-                status_code=exc.status_code, content={"detail": exc.detail}
-            )
-        except Exception as e:
-            return JSONResponse(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                content={"detail": str(e)},
-            )
+                token = auth_header[len("Bearer ") :]
+                try:
+                    payload = verify_token(token)
+                    request.state.token_payload = payload
+                except Exception:
+                    return JSONResponse(status_code=401, content="Unauthorized")
+
+        response = await call_next(request)
         return response
 
 

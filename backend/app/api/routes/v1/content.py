@@ -1,8 +1,7 @@
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Query
-from sqlalchemy.exc import IntegrityError
+from fastapi import APIRouter, Query
 
 from app.api.auth import CurrentUser
 from app.api.session import CurrentSession
@@ -85,14 +84,7 @@ def associate_tag_with_content(
     content_id: str,
     tag_id: str,
 ) -> TagAssociationResponse:
-    try:
-        return associate_tag(session, user, content_id, tag_id)
-    except IntegrityError:
-        logging.error("Association already exists.")
-        raise HTTPException(
-            status_code=400,
-            detail="Association already exists, please check your parameters.",
-        )
+    return associate_tag(session, user, content_id, tag_id)
 
 
 @router.delete(

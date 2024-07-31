@@ -1,4 +1,5 @@
 import logging
+from typing import Annotated
 
 from database.models_v1 import Tag
 from fastapi import APIRouter, HTTPException, Query
@@ -73,7 +74,7 @@ def read_tag_contents(
     session: CurrentSession,
     user: CurrentUser,
     tag_id: str,
-    content_type_id: list[str] | None = Query(None),
+    content_type_id: Annotated[list[str] | None, Query()] = None,
     sort_by: str | None = None,
     sort_direction: str | None = "ASC",
     status: str | None = None,

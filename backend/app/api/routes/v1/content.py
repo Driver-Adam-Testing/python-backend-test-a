@@ -1,4 +1,5 @@
 import logging
+from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy.exc import IntegrityError
@@ -32,11 +33,11 @@ def list(
     user: CurrentUser,
     limit: int | None = 20,
     offset: int | None = 0,
-    content_type_id: list[str] | None = Query(None),
+    content_type_id: Annotated[list[str] | None, Query()] = None,
     sort_by: str | None = None,
     sort_direction: str | None = "ASC",
     status: str | None = None,
-    tag: list[str] | None = Query(None),
+    tag: Annotated[list[str] | None, Query()] = None,
     text: str | None = None,
     workspace_id: str | None = None,
 ) -> ListContentResults:

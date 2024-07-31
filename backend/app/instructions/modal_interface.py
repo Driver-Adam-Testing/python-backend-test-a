@@ -6,13 +6,7 @@ from app.instructions.types import Instruction
 
 
 def execute_instruction(workspace_id: str, codebase_id: str, prompt: str) -> str:
-    if prompt is None:
-        raise Exception("Prompt is required")
 
-    if workspace_id is None:
-        raise Exception("Workspace ID is required")
-
-    # prompt = body.prompt
     single_shot_edit = Function.lookup(
         "comprehender",
         "single_shot_edit",

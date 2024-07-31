@@ -442,7 +442,7 @@ class Tag(SQLModel, table=True):  # type: ignore
     organization_id: str
     created_at: None | datetime = Field(
         sa_column=Column(
-            DateTime(timezone=False), server_default=func.now(), nullable=False
+            DateTime(timezone=True), server_default=func.now(), nullable=False
         ),
         default=None,
     )
@@ -452,7 +452,7 @@ class Tag(SQLModel, table=True):  # type: ignore
     )
     updated_at: None | datetime = Field(
         sa_column=Column(
-            DateTime(timezone=False),
+            DateTime(timezone=True),
             server_default=func.now(),
             onupdate=func.now(),
             nullable=False,

@@ -37,6 +37,7 @@ def list(
     sort_direction: str | None = "ASC",
     status: str | None = None,
     tag: Annotated[list[str] | None, Query()] = None,
+    tag_id: Annotated[list[str] | None, Query()] = None,
     text: str | None = None,
 ) -> ListContentResults:
     return list_content(
@@ -51,6 +52,7 @@ def list(
             sort_direction=sort_direction,
             status=status,
             tags=tag,
+            tag_ids=tag_id,
         ),
     )
 

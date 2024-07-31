@@ -112,7 +112,6 @@ def list_tag_contents(
                 sort_by=input.sort_by,
                 sort_direction=input.sort_direction,
                 status=input.status,
-                workspace_id=input.workspace_id,
                 tag_ids=[tag_id],
             ),
         )

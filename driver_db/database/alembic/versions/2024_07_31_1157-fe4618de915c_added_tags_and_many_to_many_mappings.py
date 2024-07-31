@@ -64,18 +64,6 @@ def upgrade():
         ),
         sa.PrimaryKeyConstraint("tag_id", "content_id"),
     )
-    op.create_index(
-        op.f("ix_derived_contents_codebase_id"),
-        "derived_contents",
-        ["codebase_id"],
-        unique=False,
-    )
-    op.create_index(
-        op.f("ix_derived_contents_workspace_id"),
-        "derived_contents",
-        ["workspace_id"],
-        unique=False,
-    )
     # ### end Alembic commands ###
 
 

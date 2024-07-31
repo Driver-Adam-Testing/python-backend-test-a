@@ -1,13 +1,13 @@
 from pydantic import BaseModel
-from typing import List
+from typing import Literal
 
 
 class Instruction(BaseModel):
-    call_id: str = None
-    status: str = None
-    response: str = None
-    error: str = None
-    references: List[str] = None
+    call_id: str
+    status: str = list(Literal["running", "completed", "expired", "failed"])
+    response: None | str
+    error: str
+    references: list[str]
 
 
 class ExecuteInstructionRequest(BaseModel):
@@ -17,16 +17,16 @@ class ExecuteInstructionRequest(BaseModel):
 
 
 class ExecuteInstructionResponse(BaseModel):
-    call_id: str = None
+    call_id: str
 
 
 class InstructionResultRequest(BaseModel):
-    call_id: str = None
+    call_id: str
 
 
 class BatchInstructionResultsRequest(BaseModel):
-    call_ids: List[str]
+    call_ids: list[str]
 
 
 class InstructionResultsResponse(BaseModel):
-    data: List[Instruction]
+    data: list[Instruction]

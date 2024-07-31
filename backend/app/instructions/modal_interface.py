@@ -22,45 +22,34 @@ def execute_instruction(workspace_id: str, codebase_id: str, prompt: str) -> str
         str(workspace_id), str(codebase_id), prompt, None
     )
 
-    if call_response is None:
-        raise Exception("Failed to spawn function call")
-
-    print(call_response)
     return str(call_response.object_id)
 
 
 def get_execution_result(call_id: str) -> Instruction:
-    if call_id is None:
-        raise Exception("Call ID is required")
-
-    instruction_result = Instruction(call_id=call_id)
-
+    response = None
+    error = ""
     function_call = FunctionCall.from_id(call_id)
     try:
         result = function_call.get(timeout=0)
-        instruction_result.status = "completed"
-        instruction_result.response = result.get("content")
+        status = "completed"
+        response = result["content"]
     except TimeoutError:
-        instruction_result.status = "running"
-        instruction_result.response = ""
-    except Exception:
-        instruction_result.status = "expired"
-        instruction_result.error = "Output expired"
+        status = "running"
+    except Exception as e:
+        # TODO: Log the exception
+        # logger.warning(e)
+        # This is swallowing all errors because the way modal responds to errors is not consistent
+        status = "expired"
+        error = "Output expired"
 
-    print(instruction_result)
-
-    return instruction_result
+    return Instruction(
+        call_id=call_id,
+        status=status,
+        response=response,
+        error=error,
+        references=[]
+    )
 
 
 def get_batch_execution_results(call_ids: list[str]) -> list[Instruction]:
-    if call_ids is None:
-        raise Exception("Call IDs are required")
-
-    results: list[Instruction] = []
-
-    for call_id in call_ids:
-        instruction_result = get_execution_result(call_id)
-
-        results.append(instruction_result)
-
-    return results
+    return [get_execution_result(call_id) for call_id in call_ids]

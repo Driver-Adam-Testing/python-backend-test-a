@@ -1,7 +1,7 @@
 from logging.config import fileConfig
 
-from alembic import context, command
-from sqlalchemy import engine_from_config, pool, text
+from alembic import context
+from sqlalchemy import engine_from_config, pool
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -76,9 +76,15 @@ def run_migrations_online():
             # Since we are using Postgres, we can handle DB migration concurrency with LOCK TABLE
             # https://github.com/sqlalchemy/alembic/issues/633
             # command.ensure_version(config=context.config)
-            connection.execute(
-                statement=text("LOCK TABLE alembic_version IN ACCESS EXCLUSIVE MODE")
-            )
+            # try:
+            #     connection.execute(
+            #         statement=text("LOCK TABLE alembic_version IN ACCESS EXCLUSIVE MODE")
+            #     )
+            # except Exception as e:
+            #     if "relation \"alembic_version\" does not exist" in str(e):
+            #         print("Warning: alembic_version table does not exist.")
+            #     else:
+            #         raise RuntimeError(f"Failed to lock table alembic_version: {e}")
             context.run_migrations()
             # lock is released when transaction ends
 

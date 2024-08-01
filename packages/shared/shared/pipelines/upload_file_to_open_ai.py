@@ -1,25 +1,18 @@
-import io
 import os
 
 import requests
 from database.models_v1 import ContentMetadata, ContentType
-from openai import OpenAI
 from sqlmodel import Session, create_engine
+
+from packages.shared.shared.utils.openai_file import (
+    upload_file_to_open_ai as upload_file,
+)
 
 
 def upload_file_to_open_ai(
     workspace: str, file_content: bytes, codebase_id: str = None, url: str = None
 ) -> str:
-    client = OpenAI()
-    file_io = io.BytesIO(file_content)
-
-    # TODO: move away from this functionality.
-
-    file_io.name = "auxiliary_document.pdf"
-    uploaded_file = client.files.create(
-        file=file_io,
-        purpose="assistants",
-    )
+    file_id = upload_file(file_content=file_content)
 
     engine = create_engine(os.environ["DATABASE_URL"], pool_size=1, max_overflow=10)
 
@@ -29,12 +22,12 @@ def upload_file_to_open_ai(
                 workspace_id=workspace,
                 codebase_id=codebase_id,
                 content_type=ContentType.AUXILIARY_DOCUMENTATION,
-                misc_metadata={"file_id": uploaded_file.id, "url": url},
+                misc_metadata={"file_id": file_id, "url": url},
             )
         )
         session.commit()
 
-    return uploaded_file.id
+    return file_id
 
 
 def upload_file_from_url_to_open_ai(

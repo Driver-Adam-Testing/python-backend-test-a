@@ -1,13 +1,13 @@
 import logging
 
-from database.models_v1 import DerivedContent, Tag
+from database.models_v1 import Tag
 from fastapi import HTTPException
 from pydantic import BaseModel
 from sqlalchemy import func
 from sqlmodel import Session, select
 
 from app.api.auth import CurrentUser
-from app.api.content.content import ListContentInput, list_content
+from app.api.content.content import ListContentInput, ListContentResult, list_content
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ class ListTagsResults(BaseModel):
 
 class ListTagContentsResults(BaseModel):
     tag: Tag
-    results: list[DerivedContent]
+    results: list[ListContentResult]
     offset: int
     limit: int
     count: int
@@ -109,6 +109,7 @@ def list_tag_contents(
                 offset=input.offset,
                 text=input.text,
                 content_type_id=input.content_type_id,
+                content_type_name=input.content_type_name,
                 sort_by=input.sort_by,
                 sort_direction=input.sort_direction,
                 status=input.status,

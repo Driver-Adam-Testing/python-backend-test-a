@@ -29,6 +29,7 @@ class ListContentInput(BaseModel):
     sort_direction: str | None = "DESC"
     status: str | None = None
     content_type_id: list[str] | None = None
+    content_type_name: list[str] | None = None
     tags: list[str] | None = None
     tag_ids: list[str] | None = None
 
@@ -46,9 +47,10 @@ class ListContentTypesResults(BaseModel):
 
 class ListContentResult(BaseModel):
     id: UUID
+    organization_id: str
     content_type_id: UUID
-    content_type: DerivedContentType
-    # All content must be in a workspace
+    content_type_name: str
+    # All content must be in a workspace currently
     workspace_id: UUID
     workspace_name: str
     source_content_id: UUID | None
@@ -83,6 +85,7 @@ def list_content(
 ) -> ListContentResults:
     statement = (
         select(DerivedContent)
+        .join(DerivedContentType)
         .join(Workspace)
         .join(TagContent, isouter=True)
         .join(Tag, isouter=True)
@@ -96,6 +99,7 @@ def list_content(
     count_statement = (
         select(func.count())
         .select_from(DerivedContent)
+        .join(DerivedContentType)
         .join(Workspace)
         .join(TagContent, isouter=True)
         .join(Tag, isouter=True)
@@ -130,6 +134,14 @@ def list_content(
             DerivedContent.content_type_id.in_(input.content_type_id)
         )
 
+    if input.content_type_name:
+        statement = statement.where(
+            DerivedContentType.type_name.in_(input.content_type_name)
+        )
+        count_statement = count_statement.where(
+            DerivedContentType.type_name.in_(input.content_type_name)
+        )
+
     if input.tags:
         tag_clauses = []
         for tag in input.tags:
@@ -150,8 +162,9 @@ def list_content(
         results=(
             ListContentResult(
                 id=result.id,
+                organization_id=result.workspace.organization_id,
                 content_type_id=result.content_type_id,
-                content_type=result.content_type,
+                content_type_name=result.content_type.type_name,
                 workspace_id=result.workspace_id,
                 workspace_name=result.workspace.display_name,
                 source_content_id=result.source_content_id,

@@ -1,4 +1,8 @@
+import json
 import logging
+import logging.handlers
+from datetime import datetime
+from logging import Formatter
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -11,17 +15,30 @@ from app.api.main import api_router
 from app.core.config import settings
 
 
+class JsonFormatter(Formatter):
+    def __init__(self):
+        super().__init__()
+
+    def format(self, record):
+        json_record = {}
+        json_record["level"] = record.levelname
+        json_record["timestamp"] = datetime.fromtimestamp(record.created).strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
+        json_record["name"] = record.name
+        json_record["message"] = record.getMessage()
+        return json.dumps(json_record)
+
+
 def custom_generate_unique_id(route: APIRoute) -> str:
     return f"{route.tags[0]}-{route.name}"
 
 
 def configure_logging():
     log_level = settings.LOG_LEVEL.upper()
-    logging.basicConfig(
-        level=log_level,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
+    handler = logging.StreamHandler()
+    handler.setFormatter(JsonFormatter())
+    logging.basicConfig(level=log_level, handlers=[handler])
     logging.info(f"Log Level set to {log_level}")
 
 

@@ -16,6 +16,6 @@ class LoggingMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
         response_time = datetime.now() - now
         logger.info(
-            f"Request ID {request_id} from {request.client.host} : Status {response.status_code} : {int(response_time.total_seconds() * 1000)} ms"
+            f"{request_id} {request.headers["X-Fowarded-For"] if "X-Fowarded-For" in request.headers.keys() else request.client.host} Status={response.status_code} ResponseTime={int(response_time.total_seconds() * 1000)}ms"
         )
         return response

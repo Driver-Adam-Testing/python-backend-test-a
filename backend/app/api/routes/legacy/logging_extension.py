@@ -8,7 +8,5 @@ logger = logging.getLogger(__name__)
 
 class LoggingExtension(SchemaExtension):
     def on_execute(self) -> Iterator[None]:
-        logger.info(
-            f"GraphQL : {self.execution_context.operation_type} {self.execution_context.operation_name}"
-        )
+        logger.info(f"GraphQL : {self.execution_context.query[:128].replace("\n", "")}")
         yield

@@ -1,23 +1,34 @@
 import io
 import os
 
-import fitz  # PyMuPDF
+import fitz
 from openai import OpenAI
 
+from shared.interfaces.file_content.pdf_file_content import (
+    ProcessedPdfFileContent,
+    ProcessedPdfFileContentType,
+)
 
-# TODO: this is presuming that I have a file. perhaps it's better to operate on a byte array only? Not use disk?
-def run_process_pdf(file_content: io.BytesIO, file_name: str):
+
+def run_process_pdf(
+    file_content: io.BytesIO, file_name: str
+) -> list[ProcessedPdfFileContent]:
+    processed_contents = []
     file_id = upload_file_to_open_ai(
         file_content, file_name=os.path.basename(file_name)
     )
-    print(f"Uploaded file ID: {file_id}")
-
     whole_file_summary = summarize_file(file_id=file_id)
-    print(whole_file_summary)
+    processed_contents.append(
+        ProcessedPdfFileContent(
+            content=whole_file_summary,
+            content_type=ProcessedPdfFileContentType.VISUAL_SUMMARY,
+            page=None,
+        )
+    )
 
     pages = split_pdf_into_individual_pages(file_name)
 
-    for page in pages:
+    for index, page in enumerate(pages):
         with open(page, "rb") as f:
             page_content = f.read()
 
@@ -27,17 +38,31 @@ def run_process_pdf(file_content: io.BytesIO, file_name: str):
         # print(f"Uploaded page ID: {page_file_id}")
 
         # Summarize each page
-        page_summary = summarize_file(file_id=page_file_id, context=whole_file_summary)
-        print(page_summary)
-
-        page_text = extract_text_from_pdf(page)
-        print(page_text)
-
-        page_tables = extract_tables_from_pdf(page)
-        print(page_tables)
-
-        page_images = extract_images_from_pdf(page)
-        for image in page_images:
+        processed_contents.append(
+            ProcessedPdfFileContent(
+                content=summarize_file(
+                    file_id=page_file_id, context=whole_file_summary
+                ),
+                page=index + 1,
+                content_type=ProcessedPdfFileContentType.VISUAL_SUMMARY,
+            )
+        )
+        processed_contents.append(
+            ProcessedPdfFileContent(
+                content=extract_text_from_pdf(page),
+                page=index + 1,
+                content_type=ProcessedPdfFileContentType.EXTRACTED_TEXT,
+            )
+        )
+        for table in extract_tables_from_pdf(page):
+            processed_contents.append(
+                ProcessedPdfFileContent(
+                    content=table,
+                    page=index + 1,
+                    content_type=ProcessedPdfFileContentType.EXTRACTED_TEXT,
+                )
+            )
+        for image in extract_images_from_pdf(page):
             with open(image, "rb") as img_file:
                 image_content = img_file.read()
 
@@ -48,7 +73,14 @@ def run_process_pdf(file_content: io.BytesIO, file_name: str):
             print(f"Uploaded image ID: {image_file_id}")
 
             image_summary = summarize_file(file_id=image_file_id)
-            print(image_summary)
+            processed_contents.append(
+                ProcessedPdfFileContent(
+                    content=image_summary,
+                    page=index + 1,
+                    content_type=ProcessedPdfFileContentType.EXTRACTED_IMAGE_SUMMARY,
+                )
+            )
+    return processed_contents
 
 
 def split_pdf_into_individual_pages(file_name):
@@ -125,12 +157,11 @@ def extract_images_from_pdf(file_name):
         return None
 
 
-def upload_file_to_open_ai(file_content, file_name):
+def upload_file_to_open_ai(file_content: io.BytesIO, file_name):
     client = OpenAI()
     try:
-        file = io.BytesIO(file_content)
-        file.name = file_name
-        message_file = client.files.create(file=file, purpose="assistants")
+        file_content.name = file_name
+        message_file = client.files.create(file=file_content, purpose="assistants")
         return message_file.id
     except Exception as e:
         print(f"Error uploading PDF to vector store: {e}")
@@ -138,6 +169,7 @@ def upload_file_to_open_ai(file_content, file_name):
 
 
 def summarize_file(file_id, context=None):
+    # TODO: how do we handle prompts not in the code?
     query = "Summarize the uploaded file. Be verbose and descriptive. Describe diagrams, schematics, images, text, and tables in detail."
     if context:
         query += f" <context>This file is part of a larger context, described here: {context} </context> {query}"

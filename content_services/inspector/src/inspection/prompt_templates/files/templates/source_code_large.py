@@ -25,16 +25,31 @@ Summarize the dependencies or imports used in the code provided below.
 - Do not speculate on the nature of the imports or dependencies if it is not clear what they are for. If it is not clear, just identify the name. If it is clear what an import or dependency is, briefly describe it.
 """
 
-DATA_STRUCTURES_PROMPT = """
+DATA_STRUCTURES_CHECKER = """
+Your job is to determine if there are any important data structures defined in the code provided below.
+
+- A data structure is custom or compound type in a given programming language, such as structs, classes, or enums. Functions, methods, and variables are not data structures.
+- An important data structure is a custom, complex, or compound data structure in the language of the provided code but does not include primitive types inherent to the programming language such as integers, floating point values, or strings.
+- You are only looking for important data structures that are fully defined in the code given to you. For example, a struct or class that is defined in the code. If a data structure is imported or used without being defined in the code, it is not to be considered.
+
+**You only respond with the text 'true' or 'false'.**
+- If there is one or more data structure, as described above, respond with 'true'.
+- Otherwise, respond with 'false'.
+"""
+
+DATA_STRUCTURES_FOUND_PROMPT = """
 Summarize the important data structures in the code provided below.
 
-- Only discuss custom, complex, or compound data structures. Do not talk about the most primitive data structures inherent to the programming language, such as integers, floating point values, or strings.
-- If there are no suitable data structures, just say so and do not write anything else.
-- If there are relatively few, describe each of them.
-- If there are many, focus on the most important data structures.
-- When describing a data structure, provide detail that matches the complexity of the data structure. Large and complex data structures should get longer explanations, while small ones a single sentence.
+- A data structure is custom or compound type in a given programming language, such as structs, classes, or enums. Functions, methods, and variables are not data structures.
+- Only discuss custom, complex, or compound data structures defined in the code below. Do not talk about the most primitive types inherent to the programming language, such as integers, floating point values, or strings.
+- Only discuss important data structures that are fully defined in the code given to you, not just imported or used.
+- If there are relatively few important data structures, describe each of them.
+- If there are many important data structures, focus on the most important data structures.
+- When describing an important data structure, provide detail that matches the complexity of the data structure. Large and complex data structures should get longer explanations, while small ones a single sentence.
 - Provide your output in a list, where each item of the list is a data structure.
 """
+
+DATA_STRUCTURES_NONE_CONTENT = "No custom data structures."
 
 FUNCTIONS_PROMPT = """
 Summarize the functions or methods in the code provided below. For each function or method, describe the inputs, control flow and logic, and output.
@@ -56,7 +71,7 @@ SOURCE_CODE_LARGE_TEMPLATE = [
     ("## Purpose", PURPOSE_PROMPT),
     ("## Technical Summary", TECHNICAL_SUMMARY_PROMPT),
     ("## Imports and Dependencies", IMPORTS_PROMPT),
-    ("## Data Structures", DATA_STRUCTURES_PROMPT),
+    ("## Data Structures", DATA_STRUCTURES_CHECKER, DATA_STRUCTURES_FOUND_PROMPT, lambda: DATA_STRUCTURES_NONE_CONTENT),
     ("## Functions", FUNCTIONS_PROMPT),
     # ("## Diagram", DIAGRAMS_PROMPT),
 ]

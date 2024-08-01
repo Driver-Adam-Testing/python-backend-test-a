@@ -2,7 +2,7 @@ import io
 import os
 
 import click
-from shared.pipelines.process_file.file_type_pdf import run_process_pdf
+from shared.pipelines.process_file.process_file_pdf import run_process_pdf
 
 
 @click.group()

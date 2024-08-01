@@ -4,25 +4,32 @@ import os
 import fitz
 from openai import OpenAI
 
+from shared.agent.models.openai.file_search import query_file
 from shared.interfaces.file_content.pdf_file_content import (
     ProcessedPdfFileContent,
     ProcessedPdfFileContentType,
 )
+from shared.utils.openai_file import upload_file_to_open_ai
 
 client = OpenAI()
 
 assistant = client.beta.assistants.create(
     name="PDF Summarizer",
-    instructions="You are a microprocessors and hardware expert engineer, as well as a technical writer.",
+    instructions="You are an expert microprocessors and hardware engineer, as well as a technical writer.",
     model="gpt-4o",
     tools=[{"type": "file_search"}],
 )
 
 
 def run_process_pdf(file_content: io.BytesIO) -> list[ProcessedPdfFileContent]:
+    summarization_query = "Summarize the uploaded file. Be verbose and descriptive. If the pdf has diagrams, schematics, images, text, or tables, describe them in great detail."
     processed_contents = []
     file_id = upload_file_to_open_ai(file_content)
-    whole_file_summary = summarize_file(file_id=file_id)
+    whole_file_summary = query_file(
+        query=summarization_query, file_id=file_id, assistant_id=assistant.id
+    )
+
+    summarization_query += f" <context>This file is part of a larger context, described here: {whole_file_summary} </context>  If there is an electrical schematic, describe all connections and features of the diagram.  If there is a chart, describe the type of chart and the values it depicts."
     processed_contents.append(
         ProcessedPdfFileContent(
             content=whole_file_summary,
@@ -31,7 +38,7 @@ def run_process_pdf(file_content: io.BytesIO) -> list[ProcessedPdfFileContent]:
         )
     )
 
-    pages = split_pdf_into_individual_pages(file_content=file_content)
+    pages = split_pdf_into_pages(file_content=file_content)
 
     for index, page_content in enumerate(pages):
         print(f"Processing page {index + 1}")
@@ -39,8 +46,10 @@ def run_process_pdf(file_content: io.BytesIO) -> list[ProcessedPdfFileContent]:
 
         processed_contents.append(
             ProcessedPdfFileContent(
-                content=summarize_file(
-                    file_id=page_file_id, context=whole_file_summary
+                content=query_file(
+                    file_id=page_file_id,
+                    query=summarization_query,
+                    assistant_id=assistant.id,
                 ),
                 page=index + 1,
                 content_type=ProcessedPdfFileContentType.VISUAL_SUMMARY,
@@ -64,15 +73,14 @@ def run_process_pdf(file_content: io.BytesIO) -> list[ProcessedPdfFileContent]:
                 )
             )
         for image in extract_images_from_pdf(page_content):
-            image_content = image[1]
-            image_file_bytes_io = io.BytesIO(image_content)
-            image_file_bytes_io.name = image[0]
-            image_file_id = upload_file_to_open_ai(image_file_bytes_io)
-
-            image_summary = summarize_file(file_id=image_file_id)
+            image_file_id = upload_file_to_open_ai(image)
             processed_contents.append(
                 ProcessedPdfFileContent(
-                    content=image_summary,
+                    content=query_file(
+                        file_id=image_file_id,
+                        query=summarization_query,
+                        assistant_id=assistant.id,
+                    ),
                     page=index + 1,
                     content_type=ProcessedPdfFileContentType.EXTRACTED_IMAGE_SUMMARY,
                     open_ai_file_id=image_file_id,
@@ -81,7 +89,7 @@ def run_process_pdf(file_content: io.BytesIO) -> list[ProcessedPdfFileContent]:
     return processed_contents
 
 
-def split_pdf_into_individual_pages(file_content: io.BytesIO):
+def split_pdf_into_pages(file_content: io.BytesIO):
     pdf_document = fitz.open(stream=file_content, filetype="pdf")
 
     created_pages = []
@@ -122,43 +130,11 @@ def extract_images_from_pdf(file_content: io.BytesIO):
             image_bytes = base_image["image"]
             image_ext = base_image["ext"]
             image_filename = f"{os.path.splitext(file_content.name)[0]}_img_{img_index + 1}.{image_ext}"
-            images.append((image_filename, image_bytes))
+            image_bytes_io = io.BytesIO(image_bytes)
+            image_bytes_io.name = image_filename
+            images.append(image_bytes_io)
 
     return images
-
-
-def upload_file_to_open_ai(file_content: io.BytesIO):
-    message_file = client.files.create(file=file_content, purpose="assistants")
-    return message_file.id
-
-
-def summarize_file(file_id, context=None):
-    query = "Summarize the uploaded file. Be verbose and descriptive. If the pdf has diagrams, schematics, images, text, or tables, describe them in great detail."
-    if context:
-        query += f" <context>This file is part of a larger context, described here: {context} </context>  If there is an electrical schematic, describe all connections and features of the diagram.  If there is a chart, describe the type of chart and the values it depicts."
-
-    thread = client.beta.threads.create(
-        messages=[
-            {
-                "role": "user",
-                "content": query,
-                "attachments": [
-                    {"file_id": file_id, "tools": [{"type": "file_search"}]}
-                ],
-            }
-        ]
-    )
-
-    run = client.beta.threads.runs.create_and_poll(
-        thread_id=thread.id,
-        instructions="You're an expert technical writer and engineer who can understand technical documents.",
-        assistant_id=assistant.id,
-    )
-
-    if run.status == "completed":
-        messages = client.beta.threads.messages.list(thread_id=thread.id)
-        summary = messages.data[0].content[0].text.value
-        return summary
 
 
 def extract_tables_from_pdf(file_content: io.BytesIO):

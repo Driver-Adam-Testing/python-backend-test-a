@@ -1,3 +1,4 @@
+import io
 from enum import Enum
 
 from shared.interfaces.file_content.file_content import ProcessedFileContent
@@ -10,8 +11,7 @@ class Parser(Enum):
 
 
 class ProcessFileRequest(DriverRequest):
-    content: str
-    file_name: str
+    file_path: str
     parser: Parser | None = None
 
 
@@ -21,8 +21,12 @@ class ProcessFileResponse(DriverResponse):
 
 def process_file(request: ProcessFileRequest) -> ProcessFileResponse:
     if request.parser == Parser.PDF:
-        from shared.pipelines.process_file.file_type_pdf import run_process_pdf
-
-        return ProcessFileResponse(
-            contents=run_process_pdf(request.content, request.file_name)
+        from packages.shared.shared.pipelines.process_file.process_file_pdf import (
+            run_process_pdf,
         )
+
+        with open(request.file_path, "rb") as file:
+            file_content = io.BytesIO(file.read())
+            file_content.name = request.file_path
+
+        return ProcessFileResponse(contents=run_process_pdf(file_content))

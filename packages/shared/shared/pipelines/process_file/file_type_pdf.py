@@ -5,17 +5,17 @@ import fitz  # PyMuPDF
 from openai import OpenAI
 
 
-def run_process_pdf(file):
-    with open(file, "rb") as f:
-        file_content = f.read()
-
-    file_id = upload_file_to_open_ai(file_content, file_name=os.path.basename(file))
+# TODO: this is presuming that I have a file. perhaps it's better to operate on a byte array only? Not use disk?
+def run_process_pdf(file_content: io.BytesIO, file_name: str):
+    file_id = upload_file_to_open_ai(
+        file_content, file_name=os.path.basename(file_name)
+    )
     print(f"Uploaded file ID: {file_id}")
 
     whole_file_summary = summarize_file(file_id=file_id)
     print(whole_file_summary)
 
-    pages = split_pdf_into_individual_pages(file)
+    pages = split_pdf_into_individual_pages(file_name)
 
     for page in pages:
         with open(page, "rb") as f:

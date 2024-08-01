@@ -1,6 +1,6 @@
 import enum
 
-from file_content import ProcessedFileContent
+from shared.interfaces.file_content.file_content import ProcessedFileContent
 
 
 class ProcessedPdfFileContentType(enum.Enum):
@@ -12,5 +12,6 @@ class ProcessedPdfFileContentType(enum.Enum):
 
 
 class ProcessedPdfFileContent(ProcessedFileContent):
+    open_ai_file_id: str | None = None
     page: int | None = None
     content_type: ProcessedPdfFileContentType

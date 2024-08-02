@@ -210,9 +210,6 @@ def save_app_note_results(
         session.commit()
 
 
-# TODO: interfaces are difficult here... IDK how best to solve this without being redundant.
-
-
 @app.function(timeout=3600, **comprehender_modal_config, keep_warm=3)
 def search(input):
     from database.db import engine

@@ -1,3 +1,6 @@
+from utils.templates import S
+
+
 METADATA_SYSTEM_PROMPT = """
 You are a software engineering documentation expert. You write detailed documentation to explain software.
 
@@ -27,7 +30,7 @@ In writing your content summary, consider the following:
 """
 
 METADATA_TEMPLATE = [
-    ("# Overview",),
-    ("## Purpose", PURPOSE_PROMPT),
-    ("## Content Summary", CONTENT_SUMMARY_PROMPT),
+    (S.RAW, "# Overview"),
+    (S.SINGLE_PROMPT, "## Purpose", PURPOSE_PROMPT),
+    (S.SINGLE_PROMPT, "## Content Summary", CONTENT_SUMMARY_PROMPT),
 ]

@@ -1,3 +1,6 @@
+from utils.templates import S
+
+
 PURPOSE_PROMPT = """
 In a single paragraph of 3 to 5 sentences, provide a clear, concise statement of the codebase's purpose.
 """
@@ -50,23 +53,23 @@ Provide an outline for continuing to learn about this codebase.
 
 
 GETTING_STARTED_GUIDE_TEMPLATE = [
-    ("# Codebase Introduction",),
-    ("## Purpose", PURPOSE_PROMPT),
-    ("## Problem Statement", PROBLEM_STATEMENT_PROMPT),
-    ("## Functionality Overview", FUNCTIONALITY_OVERVIEW_PROMPT),
-    ("# User Information",),
-    ("## Target User Archetype(s)", TARGET_USER_ARCHETYPES_PROMPT),
-    ("## Use Cases and User Interactions", USE_CASES_AND_USER_INTERACTIONS_PROMPT),
-    ("## User Journeys", USER_JOURNEYS_PROMPT),
-    ("## Interaction Methods", USER_INTERACTION_METHODS_PROMPT),
-    ("# Technical Overview",),
-    ("## Codebase Organization and Structure", CODEBASE_ORGANIZATION_AND_STRUCTURE_PROMPT),
-    # ("## Unique Aspects or Design Patterns", "Highlight any unique aspects or design patterns used in this codebase. Infer an answer to this by evaluating what you know about this codebase."),
-    # ("## Codebase Type", "Specify the type of codebase, e.g., executable, library, SDK, API, frontend apps, backend service, data pipeline. Infer an answer to this by evaluating what you know about this codebase."),
-    ("## Major Modules/Services", MAJOR_MODULES_PROMPT),
-    ("## Component Interactions", COMPONENT_INTERACTIONS_PROMPT),
-    ("# Getting Started",),
-    ("## Setup and Installation", SETUP_AND_INSTALLATION_PROMPT),
-    # ("## Basic Usage Examples", "Offer simple examples demonstrating basic usage of the codebase"),
-    ("## Continued Exploration", CONTINUED_EXPLORATION_PROMPT),
+    (S.RAW,           "# Codebase Introduction",),
+    (S.SINGLE_PROMPT, "## Purpose", PURPOSE_PROMPT),
+    (S.SINGLE_PROMPT, "## Problem Statement", PROBLEM_STATEMENT_PROMPT),
+    (S.SINGLE_PROMPT, "## Functionality Overview", FUNCTIONALITY_OVERVIEW_PROMPT),
+    (S.RAW,           "# User Information",),
+    (S.SINGLE_PROMPT, "## Target User Archetype(s)", TARGET_USER_ARCHETYPES_PROMPT),
+    (S.SINGLE_PROMPT, "## Use Cases and User Interactions", USE_CASES_AND_USER_INTERACTIONS_PROMPT),
+    (S.SINGLE_PROMPT, "## User Journeys", USER_JOURNEYS_PROMPT),
+    (S.SINGLE_PROMPT, "## Interaction Methods", USER_INTERACTION_METHODS_PROMPT),
+    (S.RAW,           "# Technical Overview",),
+    (S.SINGLE_PROMPT, "## Codebase Organization and Structure", CODEBASE_ORGANIZATION_AND_STRUCTURE_PROMPT),
+    # (S.SINGLE_PROMPT, "## Unique Aspects or Design Patterns", "Highlight any unique aspects or design patterns used in this codebase. Infer an answer to this by evaluating what you know about this codebase."),
+    # (S.SINGLE_PROMPT, "## Codebase Type", "Specify the type of codebase, e.g., executable, library, SDK, API, frontend apps, backend service, data pipeline. Infer an answer to this by evaluating what you know about this codebase."),
+    (S.SINGLE_PROMPT, "## Major Modules/Services", MAJOR_MODULES_PROMPT),
+    (S.SINGLE_PROMPT, "## Component Interactions", COMPONENT_INTERACTIONS_PROMPT),
+    (S.RAW,           "# Getting Started",),
+    (S.SINGLE_PROMPT, "## Setup and Installation", SETUP_AND_INSTALLATION_PROMPT),
+    # (S.SINGLE_PROMPT, "## Basic Usage Examples", "Offer simple examples demonstrating basic usage of the codebase"),
+    (S.SINGLE_PROMPT, "## Continued Exploration", CONTINUED_EXPLORATION_PROMPT),
 ]

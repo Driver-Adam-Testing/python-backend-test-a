@@ -1,4 +1,7 @@
-SOURCE_CODE_SMALL_SYSTEM_PROMPT = """
+from utils.templates import S
+
+
+SOURCE_CODE_SMALL_SYSTEM_PROMPT_DEFAULT = """
 You are a software engineering documentation expert. You write detailed documentation to explain software.
 
 You are skilled at explaining technical details as well as recognize and articulate the key conceptual components and purpose of software.
@@ -10,10 +13,10 @@ PURPOSE_PROMPT = """
 In a single paragraph of 3 to 5 sentences, explain the purpose of the code provided below. Consider questions such as the following when providing your output:
 
 - Does this code provide narrow or broad functionality?
-- What kind of code is this? For example, is this code a short script, a simple C header file, a collection of global variables or configuration variables, etc.?
+- What kind of code is this? For example, is this code a short script, a collection of global variables or configuration variables, etc.?
 """
 
-SOURCE_CODE_SMALL_TEMPLATE = [
-    ("# Overview",),
-    ("## Purpose", PURPOSE_PROMPT),
+SOURCE_CODE_SMALL_TEMPLATE_DEFAULT = [
+    (S.RAW, "# Overview"),
+    (S.SINGLE_PROMPT, "## Purpose", PURPOSE_PROMPT),
 ]

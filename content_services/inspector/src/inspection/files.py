@@ -19,13 +19,21 @@ from inspection.prompt_templates.files.templates.metadata_default import (
     METADATA_SYSTEM_PROMPT,
     METADATA_TEMPLATE,
 )
-from inspection.prompt_templates.files.templates.source_code_large import (
-    SOURCE_CODE_LARGE_SYSTEM_PROMPT,
-    SOURCE_CODE_LARGE_TEMPLATE,
+from inspection.prompt_templates.files.templates.source_code_large_c import (
+    SOURCE_CODE_LARGE_SYSTEM_PROMPT_C,
+    SOURCE_CODE_LARGE_TEMPLATE_C,
 )
-from inspection.prompt_templates.files.templates.source_code_small import (
-    SOURCE_CODE_SMALL_SYSTEM_PROMPT,
-    SOURCE_CODE_SMALL_TEMPLATE,
+from inspection.prompt_templates.files.templates.source_code_large_default import (
+    SOURCE_CODE_LARGE_SYSTEM_PROMPT_DEFAULT,
+    SOURCE_CODE_LARGE_TEMPLATE_DEFAULT,
+)
+from inspection.prompt_templates.files.templates.source_code_small_c import (
+    SOURCE_CODE_SMALL_SYSTEM_PROMPT_C,
+    SOURCE_CODE_SMALL_TEMPLATE_C,
+)
+from inspection.prompt_templates.files.templates.source_code_small_default import (
+    SOURCE_CODE_SMALL_SYSTEM_PROMPT_DEFAULT,
+    SOURCE_CODE_SMALL_TEMPLATE_DEFAULT,
 )
 
 PARENT_PATH = Path(__file__).parent
@@ -428,26 +436,40 @@ def comprehend_file_top_down(
             file_kind = FileKind.from_llm(
                 llm=llm, file_name=node.root_rel_path.name, code=source_code
             )
-            match file_kind.kind:
-                case FileEnum.SOURCE_CODE_LARGE:
+            ext = node.root_rel_path.suffix
+            is_c_file = True if ext == ".c" or ext == ".h" else False
+            match (file_kind.kind, is_c_file):
+                case (FileEnum.SOURCE_CODE_LARGE, True):
                     long_template = Template(
-                        system_prompt=SOURCE_CODE_LARGE_SYSTEM_PROMPT,
-                        template=SOURCE_CODE_LARGE_TEMPLATE,
+                        system_prompt=SOURCE_CODE_LARGE_SYSTEM_PROMPT_C,
+                        template=SOURCE_CODE_LARGE_TEMPLATE_C,
                     )
-                case FileEnum.SOURCE_CODE_SMALL:
+                case (FileEnum.SOURCE_CODE_LARGE, False):
                     long_template = Template(
-                        system_prompt=SOURCE_CODE_SMALL_SYSTEM_PROMPT,
-                        template=SOURCE_CODE_SMALL_TEMPLATE,
+                        system_prompt=SOURCE_CODE_LARGE_SYSTEM_PROMPT_DEFAULT,
+                        template=SOURCE_CODE_LARGE_TEMPLATE_DEFAULT,
                     )
-                case FileEnum.METADATA:
+                case (FileEnum.SOURCE_CODE_SMALL, True):
+                    long_template = Template(
+                        system_prompt=SOURCE_CODE_SMALL_SYSTEM_PROMPT_C,
+                        template=SOURCE_CODE_SMALL_TEMPLATE_C,
+                    )
+                case (FileEnum.SOURCE_CODE_SMALL, False):
+                    long_template = Template(
+                        system_prompt=SOURCE_CODE_SMALL_SYSTEM_PROMPT_DEFAULT,
+                        template=SOURCE_CODE_SMALL_TEMPLATE_DEFAULT,
+                    )
+                case (FileEnum.METADATA, _):
                     long_template = Template(
                         system_prompt=METADATA_SYSTEM_PROMPT,
                         template=METADATA_TEMPLATE,
                     )
-                case _:
-                    raise ValueError(f"Unknown file kind variant: {file_kind.kind}")
+                case (_, _):
+                    raise ValueError(
+                        f"Unknown file kind variant, C language detection pair: {file_kind.kind} - {is_c_file}"
+                    )
             file_description_long = long_template.run_with_code(
-                llm=llm, code=source_code
+                llm=llm, root_rel_path=node.root_rel_path, code=source_code
             )
             chunk_detailed_descriptions = [file_description_long]
             file_description_single_sentence = file_single_sentence_from_code(

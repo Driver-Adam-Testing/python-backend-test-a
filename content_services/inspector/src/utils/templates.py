@@ -1,11 +1,24 @@
 import logging
 from collections.abc import Callable
-from typing import Self
+from enum import IntEnum
+from pathlib import Path
+from typing import Any, Self
 
 from modal import Function
 from pydantic import UUID4, BaseModel, ValidationError
 
 from utils.models import ChatOpenAI
+
+
+class S(IntEnum):
+    RAW = 0
+    SINGLE_PROMPT = 1
+    LLM_COND = 2
+    FN_COND = 3
+
+
+class SectionKind(BaseModel):
+    kind: S
 
 
 def _template_section_with_sse(
@@ -44,26 +57,24 @@ class Boolean(BaseModel):
 
 class Template(BaseModel):
     system_prompt: str
-    template: list[
-        tuple[str]
-        | tuple[str, str]
-        | tuple[str, str, str | Callable[[], str], str | Callable[[], str]]
-    ]
+    template: list[Any]
 
-    def run_with_code(self, llm: ChatOpenAI, code: str) -> str:
+    def run_with_code(self, llm: ChatOpenAI, root_rel_path: Path, code: str) -> str:
         output = ""
         for tup in self.template:
-            arity = len(tup)
-            match arity:
-                case 1:  # Top level header
-                    output += f"{tup[0]}\n"
-                case 2:  # Simple section header, prompt pair
-                    section_title, section_prompt = tup
+            tag = SectionKind(kind=tup[0])
+            args = tup[1:]
+            match tag.kind:
+                case S.RAW:
+                    (raw_content,) = args
+                    output += f"{raw_content}\n"
+                case S.SINGLE_PROMPT:  # Simple section header, prompt pair
+                    section_title, section_prompt = args
                     human_prompt = f"{section_prompt}\n\nCode:\n\n{code}"
                     content = llm.generate_response(self.system_prompt, human_prompt)
                     output += f"{section_title}\n{content}\n"
-                case 4:  # Conditional construct
-                    section_title, conditional_prompt, true_action, false_action = tup
+                case S.LLM_COND:  # Conditional construct using an LLM
+                    section_title, conditional_prompt, true_action, false_action = args
                     conditional_human_prompt = (
                         f"{conditional_prompt}\n\nCode:\n\n{code}"
                     )
@@ -82,9 +93,31 @@ class Template(BaseModel):
                             self.system_prompt, action_human_prompt
                         )
                     output += f"{section_title}\n{content}\n"
+                case S.FN_COND:  # Conditional construct using a function
+                    section_title, conditional_fn, true_action, false_action = args
+                    fn_output: str | None = conditional_fn(code, root_rel_path)
+                    action = false_action if fn_output is None else true_action
+                    if (
+                        action is None
+                    ):  # Indication to just bail without adding any content.
+                        pass
+                    else:
+                        if isinstance(action, Callable):
+                            content = action()
+                        else:
+                            context_from_fn = (
+                                "" if fn_output is None else f"{fn_output}\n\n"
+                            )
+                            action_human_prompt = (
+                                f"{context_from_fn}{action}\n\nCode:\n\n{code}"
+                            )
+                            content = llm.generate_response(
+                                self.system_prompt, action_human_prompt
+                            )
+                        output += f"{section_title}\n{content}\n"
                 case _:
                     raise ValueError(
-                        f"Unsupported template section arity {arity} for direct llm execution"
+                        f"Unsupported template section kind {tag.kind} for direct llm execution"
                     )
 
         return output
@@ -94,12 +127,14 @@ class Template(BaseModel):
     ) -> str:
         output = ""
         for tup in self.template:
-            arity = len(tup)
-            match arity:
-                case 1:  # Top level header
-                    output += f"{tup[0]}\n"
-                case 2:  # Simple section header, prompt pair
-                    section_title, section_prompt = tup
+            tag = SectionKind(kind=tup[0])
+            args = tup[1:]
+            match tag.kind:
+                case S.RAW:
+                    (raw_content,) = args
+                    output += f"{raw_content}\n"
+                case S.SINGLE_PROMPT:  # Simple section header, prompt pair
+                    section_title, section_prompt = args
                     content = _template_section_with_sse(
                         section_prompt=section_prompt,
                         workspace_id=workspace_id,
@@ -108,7 +143,7 @@ class Template(BaseModel):
                     output += f"{section_title}\n{content}\n"
                 case _:
                     raise ValueError(
-                        f"Unsupported template section arity {arity} for single shot edit agent execution"
+                        f"Unsupported template section kind {tag.kind} for single shot edit agent execution"
                     )
 
         return output

@@ -208,3 +208,20 @@ def save_app_note_results(
         derived_content.content = json.dumps(content)
         session.add(derived_content)
         session.commit()
+
+
+# TODO: interfaces are difficult here... IDK how best to solve this without being redundant.
+
+
+@app.function(timeout=3600, **comprehender_modal_config, keep_warm=3)
+def search(input):
+    from database.db import engine
+    from shared.pipelines.search import (
+        SearchInput,
+        search_content_metadata,
+    )
+
+    input = SearchInput(**input)
+    print(input.model_dump())
+    with Session(engine) as session:
+        return search_content_metadata(session, organization_id=None, input=input)

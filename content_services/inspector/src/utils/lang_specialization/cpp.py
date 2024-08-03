@@ -2,17 +2,17 @@ from pathlib import Path
 
 from utils.codemap_ctags import extract_symbols_w_ctags
 
-C_DATA_STRUCTURES = {"enum", "union", "struct", "class", "typedef"}
-C_FUNCTIONS = {"function", "prototype"}
-C_MACROS = {"macro"}
-C_VARIABLES = {"variable", "externvar"}
+CPP_DATA_STRUCTURES = {"enum", "union", "struct", "class", "typedef"}
+CPP_FUNCTIONS = {"function", "prototype"}
+CPP_MACROS = {"macro"}
+CPP_VARIABLES = {"variable", "externvar"}
 
 
 def cpp_data_structure_checker(code: str, root_rel_path: Path) -> str | None:
     symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
     ds_list = []
     for s in symbols:
-        if s["kind"] in C_DATA_STRUCTURES and not s["name"].startswith("__anon"):
+        if s["kind"] in CPP_DATA_STRUCTURES and not s["name"].startswith("__anon"):
             ds_list.append(s["name"])
     if len(ds_list) > 0:
         output = "\nData Structures to document in the code:\n\n"
@@ -25,7 +25,7 @@ def cpp_data_structure_checker(code: str, root_rel_path: Path) -> str | None:
 
 def cpp_function_checker(code: str, root_rel_path: Path) -> str | None:
     symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-    fn_list = [s["name"] for s in symbols if s["kind"] in C_FUNCTIONS]
+    fn_list = [s["name"] for s in symbols if s["kind"] in CPP_FUNCTIONS]
     if len(fn_list) > 0:
         output = "\nFunctions to document in the code:\n\n"
         for fn in fn_list:
@@ -37,7 +37,7 @@ def cpp_function_checker(code: str, root_rel_path: Path) -> str | None:
 
 def cpp_macro_checker(code: str, root_rel_path: Path) -> str | None:
     symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-    m_list = [s["name"] for s in symbols if s["kind"] in C_MACROS]
+    m_list = [s["name"] for s in symbols if s["kind"] in CPP_MACROS]
     if len(m_list) > 0:
         output = "\nMacros to document in the code:\n\n"
         for m in m_list:
@@ -49,7 +49,7 @@ def cpp_macro_checker(code: str, root_rel_path: Path) -> str | None:
 
 def cpp_variables_checker(code: str, root_rel_path: Path) -> str | None:
     symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-    v_list = [s["name"] for s in symbols if s["kind"] in C_VARIABLES]
+    v_list = [s["name"] for s in symbols if s["kind"] in CPP_VARIABLES]
     if len(v_list) > 0:
         output = "\nVariables to document in the code:\n\n"
         for v in v_list:

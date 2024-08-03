@@ -9,6 +9,7 @@ from utils.dag import LiteNode
 from utils.io import (
     get_prompt_template,
 )
+from utils.lang_specialization.common import Lang
 from utils.llm import (
     chunk_str,
 )
@@ -23,6 +24,10 @@ from inspection.prompt_templates.files.templates.source_code_large_c import (
     SOURCE_CODE_LARGE_SYSTEM_PROMPT_C,
     SOURCE_CODE_LARGE_TEMPLATE_C,
 )
+from inspection.prompt_templates.files.templates.source_code_large_cpp import (
+    SOURCE_CODE_LARGE_SYSTEM_PROMPT_CPP,
+    SOURCE_CODE_LARGE_TEMPLATE_CPP,
+)
 from inspection.prompt_templates.files.templates.source_code_large_default import (
     SOURCE_CODE_LARGE_SYSTEM_PROMPT_DEFAULT,
     SOURCE_CODE_LARGE_TEMPLATE_DEFAULT,
@@ -30,6 +35,10 @@ from inspection.prompt_templates.files.templates.source_code_large_default impor
 from inspection.prompt_templates.files.templates.source_code_small_c import (
     SOURCE_CODE_SMALL_SYSTEM_PROMPT_C,
     SOURCE_CODE_SMALL_TEMPLATE_C,
+)
+from inspection.prompt_templates.files.templates.source_code_small_cpp import (
+    SOURCE_CODE_SMALL_SYSTEM_PROMPT_CPP,
+    SOURCE_CODE_SMALL_TEMPLATE_CPP,
 )
 from inspection.prompt_templates.files.templates.source_code_small_default import (
     SOURCE_CODE_SMALL_SYSTEM_PROMPT_DEFAULT,
@@ -76,6 +85,34 @@ class FileKind(BaseModel):
             file_kind = cls(kind=fallback_kind)
 
         return file_kind
+
+
+SOURCE_CODE_LARGE_BY_LANG = {
+    Lang.DEFAULT: (
+        SOURCE_CODE_LARGE_SYSTEM_PROMPT_DEFAULT,
+        SOURCE_CODE_LARGE_TEMPLATE_DEFAULT,
+    ),
+    Lang.C: (SOURCE_CODE_LARGE_SYSTEM_PROMPT_C, SOURCE_CODE_LARGE_TEMPLATE_C),
+    Lang.CPP: (SOURCE_CODE_LARGE_SYSTEM_PROMPT_CPP, SOURCE_CODE_LARGE_TEMPLATE_CPP),
+}
+SOURCE_CODE_SMALL_BY_LANG = {
+    Lang.DEFAULT: (
+        SOURCE_CODE_SMALL_SYSTEM_PROMPT_DEFAULT,
+        SOURCE_CODE_SMALL_TEMPLATE_DEFAULT,
+    ),
+    Lang.C: (SOURCE_CODE_SMALL_SYSTEM_PROMPT_C, SOURCE_CODE_SMALL_TEMPLATE_C),
+    Lang.CPP: (SOURCE_CODE_SMALL_SYSTEM_PROMPT_CPP, SOURCE_CODE_SMALL_TEMPLATE_CPP),
+}
+METADATA_BY_LANG = {
+    Lang.DEFAULT: (METADATA_SYSTEM_PROMPT, METADATA_TEMPLATE),
+    Lang.C: (METADATA_SYSTEM_PROMPT, METADATA_TEMPLATE),
+    Lang.CPP: (METADATA_SYSTEM_PROMPT, METADATA_TEMPLATE),
+}
+TEMPLATE_DATA = {
+    FileEnum.SOURCE_CODE_LARGE: SOURCE_CODE_LARGE_BY_LANG,
+    FileEnum.SOURCE_CODE_SMALL: SOURCE_CODE_SMALL_BY_LANG,
+    FileEnum.METADATA: METADATA_BY_LANG,
+}
 
 
 def file_long_from_code(
@@ -436,38 +473,9 @@ def comprehend_file_top_down(
             file_kind = FileKind.from_llm(
                 llm=llm, file_name=node.root_rel_path.name, code=source_code
             )
-            ext = node.root_rel_path.suffix
-            is_c_file = True if ext == ".c" or ext == ".h" else False
-            match (file_kind.kind, is_c_file):
-                case (FileEnum.SOURCE_CODE_LARGE, True):
-                    long_template = Template(
-                        system_prompt=SOURCE_CODE_LARGE_SYSTEM_PROMPT_C,
-                        template=SOURCE_CODE_LARGE_TEMPLATE_C,
-                    )
-                case (FileEnum.SOURCE_CODE_LARGE, False):
-                    long_template = Template(
-                        system_prompt=SOURCE_CODE_LARGE_SYSTEM_PROMPT_DEFAULT,
-                        template=SOURCE_CODE_LARGE_TEMPLATE_DEFAULT,
-                    )
-                case (FileEnum.SOURCE_CODE_SMALL, True):
-                    long_template = Template(
-                        system_prompt=SOURCE_CODE_SMALL_SYSTEM_PROMPT_C,
-                        template=SOURCE_CODE_SMALL_TEMPLATE_C,
-                    )
-                case (FileEnum.SOURCE_CODE_SMALL, False):
-                    long_template = Template(
-                        system_prompt=SOURCE_CODE_SMALL_SYSTEM_PROMPT_DEFAULT,
-                        template=SOURCE_CODE_SMALL_TEMPLATE_DEFAULT,
-                    )
-                case (FileEnum.METADATA, _):
-                    long_template = Template(
-                        system_prompt=METADATA_SYSTEM_PROMPT,
-                        template=METADATA_TEMPLATE,
-                    )
-                case (_, _):
-                    raise ValueError(
-                        f"Unknown file kind variant, C language detection pair: {file_kind.kind} - {is_c_file}"
-                    )
+            language = Lang.from_ext(ext=node.root_rel_path.suffix)
+            system_prompt, template = TEMPLATE_DATA[file_kind.kind][language]
+            long_template = Template(system_prompt=system_prompt, template=template)
             file_description_long = long_template.run_with_code(
                 llm=llm, root_rel_path=node.root_rel_path, code=source_code
             )

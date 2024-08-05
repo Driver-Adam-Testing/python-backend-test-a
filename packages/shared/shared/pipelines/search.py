@@ -1,8 +1,7 @@
 from database.models_v1 import Chunk, ContentMetadata
+from shared.embedding.text_embedder import TextEmbedder
 from shared.interfaces.search import SearchInput, SearchResult, SearchResults
 from sqlmodel import Session, asc, or_, select
-
-from app.utils.text_embedder import TextEmbedder
 
 
 def search_content_metadata(

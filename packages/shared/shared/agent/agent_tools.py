@@ -1,7 +1,6 @@
-import os
 import re
 
-import requests
+import modal
 from openai import OpenAI
 
 from .tool import Tool
@@ -35,14 +34,9 @@ def execute_backend_search(
     relative_path: str | None = None,
     result_limit: int = 7,
 ):
-    backend_host = os.getenv("DRIVER_API_URL")
-    if not backend_host:
-        raise OSError("DRIVER_API_URL environment variable is not set.")
-
-    headers = {
-        "Authorization": f"Bearer {agent_context.backend_token}",
-        "Content-Type": "application/json",
-    }
+    # backend_host = os.getenv("DRIVER_API_URL")
+    # if not backend_host:
+    #     raise OSError("DRIVER_API_URL environment variable is not set.")
     payload = {
         "query": search_text,
         "result_limit": result_limit,
@@ -51,10 +45,9 @@ def execute_backend_search(
         "codebase_id": str(agent_context.codebase_id),
         "relative_path": relative_path,
     }
-    response = requests.post(f"{backend_host}/search/", json=payload, headers=headers)
-    if response.status_code != 200:
-        raise Exception(f"Search request failed: {response.text}")
-    return format_search_results(response.json())
+    search_function = modal.Function.lookup("comprehender", "search")
+    response = search_function.remote(payload)
+    return format_search_results(response.dict())
 
 
 def search_tech_docs(agent_context, search_text: str, rationale: str) -> str:

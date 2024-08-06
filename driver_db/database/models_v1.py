@@ -47,7 +47,7 @@ class ContentMetadata(SQLModel, table=True):  # type: ignore
     id: UUID | None = Field(default_factory=uuid.uuid4, primary_key=True)
     workspace_id: UUID = Field(index=True)
     codebase_id: UUID | None = Field(default=None, nullable=True, index=True)
-    content_type: ContentType = Enum(ContentType)
+    content_type: ContentType = Field(Enum(ContentType), index=True)
     relative_path: str | None = Field(default=None, nullable=True, index=True)
     misc_metadata: dict = Field(default={}, sa_column=Column(JSON, nullable=False))  # type: ignore
     chunks: list["Chunk"] = Relationship(back_populates="content_metadata")
@@ -71,7 +71,9 @@ class Chunk(SQLModel, table=True):  # type: ignore
         ),
     )
     id: UUID | None = Field(default_factory=uuid.uuid4, primary_key=True)
-    content_metadata_id: UUID = Field(foreign_key="contentmetadata.id", nullable=False)
+    content_metadata_id: UUID = Field(
+        foreign_key="contentmetadata.id", nullable=False, index=True
+    )
     content_metadata: ContentMetadata = Relationship(back_populates="chunks")
     text: str
     text_embedding_3_small: list[float] = Field(

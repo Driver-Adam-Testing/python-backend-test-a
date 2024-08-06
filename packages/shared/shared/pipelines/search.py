@@ -45,8 +45,15 @@ def search_content_metadata(
 
     if input.result_limit:
         statement = statement.limit(input.result_limit)
+    print(statement)
+    import time
 
+    start_time = time.time()
     results = session.exec(statement).all()
+    end_time = time.time()
+
+    elapsed_time_ms = (end_time - start_time) * 1000
+    print(f"Query execution time: {elapsed_time_ms:.2f} ms")
     search_results = []
 
     accumulated_tokens = 0

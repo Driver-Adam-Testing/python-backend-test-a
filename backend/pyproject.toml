@@ -20,13 +20,6 @@ jinja2 = "^3.1.2"
 python-jose = {extras = ["cryptography"], version = "^3.3.0"}
 httpx = "^0.25.1"
 
-# TODO: This should be in database instead of both?
-# Taking this out broke the deployment. Because the scripts.
-# File "/app/app/backend_pre_start.py", line 3, in <module>
-# ModuleNotFoundError: No module named 'psycopg'
-# Signed, Jesse.
-psycopg = {extras = ["binary"], version = "^3.1.13"}
-
 # Pin bcrypt until passlib supports the latest
 bcrypt = "4.0.1"
 pydantic-settings = "^2.2.1"

@@ -1,7 +1,7 @@
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 
 from app.api.auth import CurrentUser
 from app.api.content.content import (
@@ -16,12 +16,14 @@ from app.api.content.content import (
     disassociate_tag,
     list_content,
     list_content_types,
-    create_empty_document
 )
 from app.api.session import CurrentSession
+from app.schemas.content_schema import (
+    CreateTemplateRequest,
+)
+from app.services.content_service import ContentService, get_content_service
 
 logger = logging.getLogger(__name__)
-
 
 router = APIRouter()
 
@@ -112,8 +114,38 @@ def disassociate_tag_with_content(
     summary="Create a document",
 )
 def create_document(
-        session: CurrentSession,
-        user: CurrentUser,
-        request: CreateContentRequest,
+    user: CurrentUser,
+    request: CreateContentRequest,
+    content_service: ContentService = Depends(get_content_service),
 ) -> CreateContentResponse:
-    return create_empty_document(session, user, request.workspace_id, request.codebase_id)
+    return content_service.create_blank_document(
+        user.organization_id, request.workspace_id, request.codebase_id
+    )
+
+
+@router.post(
+    "/create/from-template",
+    summary="Create a content record from a template content record",
+)
+def create_from_template(
+    session: CurrentSession,
+    user: CurrentUser,
+    request: CreateTemplateRequest,
+    content_service: ContentService = Depends(get_content_service),
+) -> CreateContentResponse:
+    return content_service.create_content_from_template(
+        session, user, request.content_id
+    )
+
+
+@router.post(
+    "/create/template",
+    summary="Create a template content record",
+)
+def create_template_content_record(
+    session: CurrentSession,
+    user: CurrentUser,
+    request: CreateTemplateRequest,
+    content_service: ContentService = Depends(get_content_service),
+) -> CreateContentResponse:
+    return content_service.create_template(session, user, request.content_id)

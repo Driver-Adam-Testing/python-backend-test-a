@@ -53,6 +53,7 @@ class ListContentResult(BaseModel):
     # All content must be in a workspace currently
     workspace_id: UUID
     workspace_name: str
+    content_name: str
     source_content_id: UUID | None
     # Content doesn't need to be associated with a codebase in our flat asset design
     codebase_id: None | UUID
@@ -165,6 +166,19 @@ def list_content(
                 organization_id=result.workspace.organization_id,
                 content_type_id=result.content_type_id,
                 content_type_name=result.content_type.type_name,
+                content_name=(
+                    result.misc_metadata.get("name")
+                    if result.content_type.type_name == "application_note"
+                    and result.misc_metadata
+                    and "name" in result.misc_metadata.keys()
+                    else "Generating content..."
+                    if result.content_type.type_name == "application_note"
+                    and result.misc_metadata
+                    and "name" not in result.misc_metadata.keys()
+                    else result.relative_path.removeprefix("documents/")
+                    if result.content_type.type_name == "pdf_summary"
+                    else result.relative_path
+                ),
                 workspace_id=result.workspace_id,
                 workspace_name=result.workspace.display_name,
                 source_content_id=result.source_content_id,

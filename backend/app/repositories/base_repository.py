@@ -11,8 +11,8 @@ class BaseRepository(Generic[T]):
         self.session = session
         self.model = model
 
-    def get(self, id: UUID) -> Optional[T]:
-        return self.session.get(self.model, id)
+    def get(self, pk_id: UUID) -> Optional[T]:
+        return self.session.get(self.model, pk_id)
 
     def get_all(
             self,
@@ -52,8 +52,8 @@ class BaseRepository(Generic[T]):
         self.session.refresh(obj)
         return obj
 
-    def delete(self, id: UUID) -> Optional[T]:
-        obj = self.get(id)
+    def delete(self, pk_id: UUID) -> Optional[T]:
+        obj = self.get(pk_id)
         if obj:
             self.session.delete(obj)
             self.session.commit()

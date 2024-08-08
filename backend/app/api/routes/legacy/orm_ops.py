@@ -5,8 +5,7 @@ import PyPDF2
 from database.models_v1 import (
     Codebase,
     DerivedContent,
-    SourceContent,
-    SourceContentType,
+    DerivedContentType,
     Workspace,
 )
 from sqlmodel import Session, delete, select
@@ -27,8 +26,9 @@ def get_workspace_related_entities(session: Session, org_id: str) -> list[Worksp
     return result  # type: ignore
 
 
-def get_source_content_by_id(session: Session, id: str) -> SourceContent | None:
-    statement = select(SourceContent).where(SourceContent.id == id)
+# TODO remove me
+def get_source_content_by_id(session: Session, id: str) -> DerivedContent | None:
+    statement = select(DerivedContent).where(DerivedContent.id == id)
     result = session.exec(statement)
     return result.first()
 
@@ -40,26 +40,12 @@ def get_derived_content_by_id(session: Session, id: str) -> DerivedContent | Non
 
 
 def delete_codebase_by_id(session: Session, codebase_id: str) -> bool:
+    # TODO cascade delete from codebase to content
     with session.begin():
-        # Fetch the IDs of SourceContent related to the codebase
-        source_content_ids = session.exec(
-            select(SourceContent.id).where(SourceContent.codebase_id == codebase_id)
-        )
-        source_content_ids = source_content_ids.scalars().all()  # type: ignore
-
-        # Delete DerivedContent associated with the fetched SourceContent IDs
-        if source_content_ids:
-            session.exec(
-                delete(DerivedContent).where(
-                    DerivedContent.source_content_id.in_(source_content_ids)  # type: ignore
-                )
-            )
-
         # Delete all associated SourceContent
         session.exec(
-            delete(SourceContent).where(SourceContent.codebase_id == codebase_id)  # type: ignore
+            delete(DerivedContent).where(DerivedContent.codebase_id == codebase_id)  # type: ignore
         )
-
         # Finally, delete the codebase itself
         count = session.exec(delete(Codebase).where(Codebase.id == codebase_id))  # type: ignore
         return count > 0
@@ -77,10 +63,10 @@ def supplemental_content_by_codebase_id(
     logger.info(f"Fetching supplemental content for codebase {codebase_id}")
     supplement_contents = []
     source_contents = session.exec(
-        select(SourceContent)
-        .where(SourceContent.codebase_id == codebase_id)
-        .join(SourceContentType)
-        .where(SourceContentType.type_name == "supplemental-document")
+        select(DerivedContent)
+        .where(DerivedContent.codebase_id == codebase_id)
+        .join(DerivedContentType)
+        .where(DerivedContentType.type_name == "supplemental-document")
     ).all()
 
     if source_contents:
@@ -149,12 +135,11 @@ def check_access(
         )
 
     if source_content_id:
-        source_content = session.exec(
-            select(SourceContent).where(SourceContent.id == source_content_id)
+        content = session.exec(
+            select(DerivedContent).where(DerivedContent.id == source_content_id)
         ).first()
         access_checks.append(
-            source_content
-            and source_content.codebase.workspace.organization_id == organization_id
+            content and content.codebase.workspace.organization_id == organization_id
         )
 
     if derived_content_id:

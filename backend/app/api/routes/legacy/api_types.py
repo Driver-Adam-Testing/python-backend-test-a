@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import datetime
 from uuid import UUID
 
 import strawberry
@@ -6,9 +6,6 @@ from database.models_v1 import (
     Codebase,
     DerivedContent,
     DerivedContentType,
-    Llm,
-    SourceContent,
-    SourceContentType,
     Workspace,
 )
 
@@ -92,32 +89,6 @@ class CodebaseQuery:
 
 
 @strawberry.input
-class SourceContentTypeQuery:
-    __model__ = SourceContentType
-    id: UUID | None = None
-    type_name: str | None = None
-
-
-@strawberry.input
-class SourceContentQuery:
-    __model__ = SourceContent
-    id: UUID | None = None
-    workspace: WorkspaceQuery | None = None
-    codebase: CodebaseQuery | None = None
-    source_content_type: SourceContentTypeQuery | None = None
-
-
-@strawberry.input
-class LlmQuery:
-    __model__ = Llm
-    id: UUID | None = None
-    name: str | None = None
-    model: str | None = None
-    training_date: date | None = None
-    owned_by: str | None = None
-
-
-@strawberry.input
 class DerivedContentTypeQuery:
     __model__ = DerivedContentType
     id: UUID | None = None
@@ -129,11 +100,9 @@ class DerivedContentQuery:
     __model__ = DerivedContent
     id: UUID | None = None
     content: str | None = None
-    dc_metadata: dict | None = None
+    misc_metadata: dict | None = None
     status: str | None = None
     order: int | None = None
-    llm: LlmQuery | None = None
-    source_content: SourceContentQuery | None = None
     derived_content_type: DerivedContentTypeQuery | None = None
 
 
@@ -147,9 +116,6 @@ class WorkspaceResults:
 
 
 # type: ignore
-@strawberry.experimental.pydantic.type(Llm, all_fields=True)
-class LlmResults:
-    pass
 
 
 # type: ignore
@@ -163,37 +129,12 @@ class DerivedContentTypeResults:
 class DerivedContentResults:
     @strawberry.field(description="Metadata of the derived content")
     def metadata(self) -> dict | None:
-        return self.dc_metadata  # type: ignore
+        return self.misc_metadata  # type: ignore
 
     derived_content_type: DerivedContentTypeResults
 
-    @strawberry.experimental.pydantic.type(SourceContent, all_fields=True)
-    class DerivedContentSourceContentResults:
-        pass
-
-    source_content: DerivedContentSourceContentResults
-
-    llm: LlmResults | None
-
 
 # type: ignore
-@strawberry.experimental.pydantic.type(SourceContentType, all_fields=True)
-class SourceContentTypeResults:
-    pass
-
-
-# type: ignore
-@strawberry.experimental.pydantic.type(SourceContent, all_fields=True)
-class SourceContentResults:
-    source_content_type: SourceContentTypeResults
-    workspace: WorkspaceResults
-
-    @strawberry.experimental.pydantic.type(Codebase, all_fields=True)
-    class SourceContentCodebaseResults:
-        pass
-
-    codebase: SourceContentCodebaseResults | None
-    derived_contents: list[DerivedContentResults]
 
 
 # type: ignore
@@ -205,12 +146,6 @@ class CodebaseResults:
 # type: ignore
 @strawberry.experimental.pydantic.input(Workspace, all_fields=True)
 class WorkspaceInput:
-    pass
-
-
-# type: ignore
-@strawberry.experimental.pydantic.input(DerivedContent, all_fields=True)
-class DerivedContentInput:
     pass
 
 
@@ -262,4 +197,3 @@ class GitRepository:
     org: str
     last_updated: datetime
     metadata: dict
-

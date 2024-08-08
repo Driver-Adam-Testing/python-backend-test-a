@@ -1,11 +1,9 @@
-import os
 from typing import Literal
+from urllib.parse import quote_plus
+
 from pydantic import PostgresDsn, computed_field
 from pydantic_core import MultiHostUrl
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from sqlalchemy import text
-from sqlmodel import create_engine
-from urllib.parse import quote_plus
 
 
 class Settings(BaseSettings):
@@ -20,7 +18,7 @@ class Settings(BaseSettings):
     POSTGRES_DB: str = ""
     ENVIRONMENT: Literal["local", "development", "production"] = "local"
     SSL_MODE: str = "" if ENVIRONMENT == "local" else "sslmode=require"
-    
+
     # NOTE: if DATABASE_URL is set, it overrides the other postgres params
     DATABASE_URL: str | None = None
 
@@ -33,14 +31,15 @@ class Settings(BaseSettings):
             return self.DATABASE_URL
         else:
             url = MultiHostUrl.build(
-                scheme="postgresql+psycopg",
+                scheme="postgresql+psycopg2",
                 username=self.POSTGRES_USER,
                 password=quote_plus(self.POSTGRES_PASSWORD),
                 host=self.POSTGRES_SERVER,
                 port=self.POSTGRES_PORT,
                 path=self.POSTGRES_DB,
-                query=self.SSL_MODE
+                query=self.SSL_MODE,
             )
             return url
+
 
 settings = Settings()  # type: ignore

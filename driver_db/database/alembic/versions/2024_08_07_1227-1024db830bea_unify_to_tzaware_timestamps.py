@@ -67,7 +67,7 @@ def upgrade():
     conn = op.get_bind()
 
     tables_with_updated_at = [
-        ("chunk", "created_at", "updated_at"),
+        # ("chunk", "created_at", "updated_at"),
         ("codebases", "created_at", "updated_at"),
         ("contentmetadata", "created_at", "updated_at"),
         ("derived_content_types", "created_at", "updated_at"),
@@ -88,21 +88,6 @@ def upgrade():
         update_created_at_only(table, created_at_col, now, conn)
 
     op.alter_column(
-        "chunk",
-        "created_at",
-        existing_type=postgresql.TIMESTAMP(timezone=True),
-        nullable=False,
-        server_default=sa.text("now()"),
-    )
-    op.alter_column(
-        "chunk",
-        "updated_at",
-        existing_type=postgresql.TIMESTAMP(timezone=True),
-        nullable=False,
-        server_default=sa.text("now()"),
-    )
-
-    op.alter_column(
         "codebases",
         "created_at",
         existing_type=postgresql.TIMESTAMP(),
@@ -167,6 +152,14 @@ def upgrade():
         "updated_at",
         existing_type=postgresql.TIMESTAMP(),
         type_=sa.DateTime(timezone=True),
+        nullable=False,
+        server_default=sa.text("now()"),
+    )
+
+    op.alter_column(
+        "runtimelogcontentretrieval",
+        "created_at",
+        existing_type=postgresql.TIMESTAMP(timezone=True),
         nullable=False,
         server_default=sa.text("now()"),
     )

@@ -19,21 +19,6 @@ depends_on = None
 
 def upgrade():
     op.alter_column(
-        "chunk",
-        "created_at",
-        existing_type=postgresql.TIMESTAMP(timezone=True),
-        nullable=False,
-        server_default=sa.text("now()"),
-    )
-    op.alter_column(
-        "chunk",
-        "updated_at",
-        existing_type=postgresql.TIMESTAMP(timezone=True),
-        nullable=False,
-        server_default=sa.text("now()"),
-    )
-
-    op.alter_column(
         "codebases",
         "created_at",
         existing_type=postgresql.TIMESTAMP(),

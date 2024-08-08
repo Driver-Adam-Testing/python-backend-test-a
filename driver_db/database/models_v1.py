@@ -49,18 +49,22 @@ class ContentMetadata(SQLModel, table=True):  # type: ignore
 
 
 class Chunk(SQLModel, table=True):  # type: ignore
-    created_at: None | datetime = Field(
-        sa_column=Column(
-            DateTime(timezone=True), server_default=func.now(), nullable=False
-        ),
+    # TODO Note: these timestamps weren't updated to match the others because this
+    # table is deprecated soon and there were tons of rows to populate.
+    created_at: datetime = Field(
         default=None,
-    )
-    updated_at: None | datetime = Field(
         sa_column=Column(
             DateTime(timezone=True),
-            server_default=func.now(),
-            onupdate=func.now(),
-            nullable=False,
+            default=functools.partial(datetime.now, tz=timezone.utc),
+            nullable=True,
+        ),
+    )
+    updated_at: datetime = Field(
+        default=None,
+        sa_column=Column(
+            DateTime(timezone=True),
+            onupdate=functools.partial(datetime.now, tz=timezone.utc),
+            nullable=True,
         ),
     )
     id: UUID | None = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -137,13 +141,11 @@ class RuntimeLogAgentError(SQLModel, table=True):  # type: ignore
 
 
 class RuntimeLogContentRetrieval(SQLModel, table=True):  # type: ignore
-    created_at: datetime = Field(
-        default=None,
+    created_at: None | datetime = Field(
         sa_column=Column(
-            DateTime(timezone=True),
-            default=functools.partial(datetime.now, tz=timezone.utc),
-            nullable=True,
+            DateTime(timezone=True), server_default=func.now(), nullable=False
         ),
+        default=None,
     )
     id: UUID | None = Field(default_factory=uuid.uuid4, primary_key=True)
     agent_instance_id: UUID = Field(
@@ -156,6 +158,7 @@ class RuntimeLogContentRetrieval(SQLModel, table=True):  # type: ignore
 
 
 # class RuntimeLogOperation(SQLModel, table=True):  # type: ignore
+# TODO this need to match the other created_at columns!
 #     created_at: datetime = Field(
 #         default=None,
 #         sa_column=Column(

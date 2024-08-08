@@ -1,7 +1,7 @@
 """Unify to tzaware timestamps
 
 Revision ID: 1024db830bea
-Revises: ba2204f9ebda
+Revises: 748f419d2d25
 Create Date: 2024-08-07 12:27:56.209289
 
 """
@@ -14,7 +14,9 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "1024db830bea"
-down_revision = "ba2204f9ebda"
+down_revision = (
+    "748f419d2d25"  # Note due to merge conflict, had to sandwich this migration
+)
 branch_labels = None
 depends_on = None
 

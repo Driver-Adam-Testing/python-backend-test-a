@@ -1,7 +1,8 @@
 from dataclasses import dataclass, field
-from openai import OpenAI
 
 import openai
+from openai import OpenAI
+
 from .decorators import retry_with_exponential_backoff
 
 
@@ -25,10 +26,14 @@ class ChatOpenAI:
             openai.APIConnectionError,
         ),
     )
-    def generate_response(self, system_prompt: str, user_prompt: str):
+    def generate_response(
+        self, system_prompt: str, user_prompt: str, use_json_mode: bool = False
+    ):
+        format = "json_object" if use_json_mode else "text"
         response = self.client.chat.completions.create(
             model=self.model,
             temperature=self.temperature,
+            response_format={"type": format},
             messages=[
                 {
                     "role": "system",
@@ -41,3 +46,24 @@ class ChatOpenAI:
             ],
         )
         return response.choices[0].message.content
+
+    # def generate_response(
+    #     self, system_prompt: str, user_prompt: str, response_format: Type[BaseModel] | None = None
+    # ):
+    #     format = {"type": "text"} if response_format is None else response_format
+    #     response = self.client.chat.completions.create(
+    #         model=self.model,
+    #         temperature=self.temperature,
+    #         response_format=format,
+    #         messages=[
+    #             {
+    #                 "role": "system",
+    #                 "content": system_prompt,
+    #             },
+    #             {
+    #                 "role": "user",
+    #                 "content": user_prompt,
+    #             },
+    #         ],
+    #     )
+    #     return response.choices[0].message.content

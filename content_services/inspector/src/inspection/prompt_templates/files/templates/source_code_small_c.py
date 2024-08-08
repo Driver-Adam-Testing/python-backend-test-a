@@ -1,75 +1,80 @@
-from pathlib import Path
-from typing import Optional
-from utils.codemap_ctags import extract_symbols_w_ctags
+from utils.lang_specialization.c import (
+    DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
+    DATA_STRUCTURES_FOUND_USER_PROMPT,
+    DATA_STRUCTURES_NONE_CONTENT,
+    FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
+    FUNCTIONS_FOUND_USER_PROMPT,
+    FUNCTIONS_NONE_CONTENT,
+    SOURCE_CODE_SMALL_PURPOSE_USER_PROMPT,
+    SOURCE_CODE_SMALL_SYSTEM_PROMPT_GENERAL_C,
+    VARIABLES_FOUND_SYSTEM_PROMPT_JSON,
+    VARIABLES_FOUND_USER_PROMPT,
+    c_data_structure_checker,
+    c_function_checker,
+    c_variables_checker,
+)
+from utils.lang_specialization.common import (
+    DataStructureData,
+    DataStructureDict,
+    FnData,
+    FnDict,
+    VariableData,
+    VariableDict,
+)
+from utils.models import ChatOpenAI
 from utils.templates import S
-import logging
-from utils.lang_specialization.c import c_data_structure_checker, c_function_checker, c_macro_checker, c_variables_checker
 
 
-SOURCE_CODE_SMALL_SYSTEM_PROMPT_C = """
-You are an expert C programmer and a software engineering documentation expert. You write detailed documentation to explain code written in C.
-
-You are skilled at explaining technical details as well as recognize and articulate the key conceptual components and purpose of software.
-
-You specialize in effectively describing small and short source code files. Your goal is to be terse and clear, since the source code you are describing is small and simple.
-"""
-
-PURPOSE_PROMPT = """
-In a single paragraph of 3 to 5 sentences, explain the purpose of the code provided below. Consider questions such as the following when providing your output:
-
-- Does this code provide narrow or broad functionality?
-- What kind of code is this? For example, is this code a short script, a simple C header file, a collection of global variables or configuration variables, etc.?
-"""
-
-DATA_STRUCTURES_FOUND_PROMPT = """
-Summarize the important data structures in the code provided below.
-
-- A data structure is custom or compound type in a given programming language, such as structs, classes, or enums. Functions, methods, and variables are not data structures.
-- Only discuss custom, complex, or compound data structures defined in the code below. Do not talk about the most primitive types inherent to C, such as integers, floating point values, or strings.
-- Only describe important data structures **fully defined** in the code given to you. That is, the implementation of the data structure is in the source code given to you. If a data structure is imported or used without being defined in the code, do not describe it.
-- If there are relatively few important data structures, describe each of them.
-- If there are many important data structures, focus on the most important data structures.
-- When describing an important data structure, provide detail that matches the complexity of the data structure. Large and complex data structures should get longer explanations, while small ones a single sentence.
-- Provide your output in a list, where each item of the list is a data structure.
-"""
-
-FUNCTIONS_FOUND_PROMPT = """
-Summarize the functions or methods in the code provided below. For each function or method, describe the inputs, control flow and logic, and output.
-
-- If there are no functions in the code, just say so and do not write anything else.
-- If there are relatively few, describe each of them.
-- If there are many, focus on the most important functions or methods.
-- When describing a function, provide detail that matches the complexity of the function body. Large and complex functions should get longer explanations, while small ones much less.
-- Provide your output such that each function is described in a 3rd level markdown header where the function name is the header title (e.g., ### <function_name>).
-"""
-
-MACROS_FOUND_PROMPT = """
-Summarize the macros or methods in the code provided below.
-
-- If there are relatively few macros, describe each of them.
-- If there are many macros, focus on the most important ones.
-- If you are describing a method of a class rather than a free function, identify the class the method is associated with when you describe it.
-- When describing a macro, provide detail that matches the complexity of the macro body. Large and complex macros should get longer explanations, while small ones much less.
-- Provide your output in a list, where each item of the list is a macro.
-"""
+def variables_dict_from_llm(
+    llm: ChatOpenAI, vars_list: list[str], code: str
+) -> VariableDict:
+    vars_dict = {
+        v: VariableData.from_llm(
+            llm=llm,
+            system_prompt=VARIABLES_FOUND_SYSTEM_PROMPT_JSON,
+            user_prompt=VARIABLES_FOUND_USER_PROMPT,
+            var_name=v,
+            code=code,
+        )
+        for v in vars_list
+    }
+    return VariableDict(data=vars_dict)
 
 
-VARIABLES_FOUND_PROMPT = """
-Summarize the global variables in the code provided below.
+def data_structure_dict_from_llm(
+    llm: ChatOpenAI, ds_list: list[str], code: str
+) -> DataStructureDict:
+    ds_dict = {
+        ds: DataStructureData.from_llm(
+            llm=llm,
+            system_prompt=DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
+            user_prompt=DATA_STRUCTURES_FOUND_USER_PROMPT,
+            ds_name=ds,
+            code=code,
+        )
+        for ds in ds_list
+    }
+    return DataStructureDict(data=ds_dict)
 
-- A global variable is declared at the top level scope. Local variables declared and used inside of functions are not global variables.
-- Only describe global variables.
-- If there are many global variables, focus on the most important ones.
-- When describing a global variable, provide detail that matches the complexity of the variable. Large and complex global variables (e.g., containing large struct instances) should get longer explanations, while small ones (e.g., one line definitions) much less.
-- Provide your output in a list, where each item of the list is a global variable.
-"""
+
+def fn_dict_from_llm(llm: ChatOpenAI, fn_list: list[str], code: str) -> FnDict:
+    fn_dict = {
+        fn: FnData.from_llm(
+            llm=llm,
+            system_prompt=FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
+            user_prompt=FUNCTIONS_FOUND_USER_PROMPT,
+            fn_name=fn,
+            code=code,
+        )
+        for fn in fn_list
+    }
+    return FnDict(data=fn_dict)
 
 
 SOURCE_CODE_SMALL_TEMPLATE_C = [
-    (S.RAW, "# Overview",),
-    (S.SINGLE_PROMPT, "## Purpose", PURPOSE_PROMPT),
-    # (S.FN_COND,       "## Macros", c_macro_checker, MACROS_FOUND_PROMPT, None),
-    (S.FN_COND,       "## Global Variables", c_variables_checker, VARIABLES_FOUND_PROMPT, None),
-    (S.FN_COND,       "## Data Structures", c_data_structure_checker, DATA_STRUCTURES_FOUND_PROMPT, None),
-    (S.FN_COND,       "## Functions", c_function_checker, FUNCTIONS_FOUND_PROMPT, None),
+    (S.RAW,                 "# Overview"),
+    (S.SINGLE_PROMPT_TEXT, "## Purpose", SOURCE_CODE_SMALL_SYSTEM_PROMPT_GENERAL_C, SOURCE_CODE_SMALL_PURPOSE_USER_PROMPT,),
+    (S.FN_COND_JSON,       "## Global Variables", c_variables_checker, variables_dict_from_llm, None),
+    (S.FN_COND_JSON,       "## Data Structures", c_data_structure_checker, data_structure_dict_from_llm, None,),
+    (S.FN_COND_JSON,       "## Functions", c_function_checker, fn_dict_from_llm, None,),
 ]

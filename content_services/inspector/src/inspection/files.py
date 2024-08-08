@@ -17,31 +17,24 @@ from utils.models import ChatOpenAI
 from utils.templates import Template
 
 from inspection.prompt_templates.files.templates.metadata_default import (
-    METADATA_SYSTEM_PROMPT,
     METADATA_TEMPLATE,
 )
 from inspection.prompt_templates.files.templates.source_code_large_c import (
-    SOURCE_CODE_LARGE_SYSTEM_PROMPT_C,
     SOURCE_CODE_LARGE_TEMPLATE_C,
 )
 from inspection.prompt_templates.files.templates.source_code_large_cpp import (
-    SOURCE_CODE_LARGE_SYSTEM_PROMPT_CPP,
     SOURCE_CODE_LARGE_TEMPLATE_CPP,
 )
 from inspection.prompt_templates.files.templates.source_code_large_default import (
-    SOURCE_CODE_LARGE_SYSTEM_PROMPT_DEFAULT,
     SOURCE_CODE_LARGE_TEMPLATE_DEFAULT,
 )
 from inspection.prompt_templates.files.templates.source_code_small_c import (
-    SOURCE_CODE_SMALL_SYSTEM_PROMPT_C,
     SOURCE_CODE_SMALL_TEMPLATE_C,
 )
 from inspection.prompt_templates.files.templates.source_code_small_cpp import (
-    SOURCE_CODE_SMALL_SYSTEM_PROMPT_CPP,
     SOURCE_CODE_SMALL_TEMPLATE_CPP,
 )
 from inspection.prompt_templates.files.templates.source_code_small_default import (
-    SOURCE_CODE_SMALL_SYSTEM_PROMPT_DEFAULT,
     SOURCE_CODE_SMALL_TEMPLATE_DEFAULT,
 )
 
@@ -88,25 +81,19 @@ class FileKind(BaseModel):
 
 
 SOURCE_CODE_LARGE_BY_LANG = {
-    Lang.DEFAULT: (
-        SOURCE_CODE_LARGE_SYSTEM_PROMPT_DEFAULT,
-        SOURCE_CODE_LARGE_TEMPLATE_DEFAULT,
-    ),
-    Lang.C: (SOURCE_CODE_LARGE_SYSTEM_PROMPT_C, SOURCE_CODE_LARGE_TEMPLATE_C),
-    Lang.CPP: (SOURCE_CODE_LARGE_SYSTEM_PROMPT_CPP, SOURCE_CODE_LARGE_TEMPLATE_CPP),
+    Lang.DEFAULT: SOURCE_CODE_LARGE_TEMPLATE_DEFAULT,
+    Lang.C: SOURCE_CODE_LARGE_TEMPLATE_C,
+    Lang.CPP: SOURCE_CODE_LARGE_TEMPLATE_CPP,
 }
 SOURCE_CODE_SMALL_BY_LANG = {
-    Lang.DEFAULT: (
-        SOURCE_CODE_SMALL_SYSTEM_PROMPT_DEFAULT,
-        SOURCE_CODE_SMALL_TEMPLATE_DEFAULT,
-    ),
-    Lang.C: (SOURCE_CODE_SMALL_SYSTEM_PROMPT_C, SOURCE_CODE_SMALL_TEMPLATE_C),
-    Lang.CPP: (SOURCE_CODE_SMALL_SYSTEM_PROMPT_CPP, SOURCE_CODE_SMALL_TEMPLATE_CPP),
+    Lang.DEFAULT: SOURCE_CODE_SMALL_TEMPLATE_DEFAULT,
+    Lang.C: SOURCE_CODE_SMALL_TEMPLATE_C,
+    Lang.CPP: SOURCE_CODE_SMALL_TEMPLATE_CPP,
 }
 METADATA_BY_LANG = {
-    Lang.DEFAULT: (METADATA_SYSTEM_PROMPT, METADATA_TEMPLATE),
-    Lang.C: (METADATA_SYSTEM_PROMPT, METADATA_TEMPLATE),
-    Lang.CPP: (METADATA_SYSTEM_PROMPT, METADATA_TEMPLATE),
+    Lang.DEFAULT: METADATA_TEMPLATE,
+    Lang.C: METADATA_TEMPLATE,
+    Lang.CPP: METADATA_TEMPLATE,
 }
 TEMPLATE_DATA = {
     FileEnum.SOURCE_CODE_LARGE: SOURCE_CODE_LARGE_BY_LANG,
@@ -474,8 +461,8 @@ def comprehend_file_top_down(
                 llm=llm, file_name=node.root_rel_path.name, code=source_code
             )
             language = Lang.from_ext(ext=node.root_rel_path.suffix)
-            system_prompt, template = TEMPLATE_DATA[file_kind.kind][language]
-            long_template = Template(system_prompt=system_prompt, template=template)
+            template = TEMPLATE_DATA[file_kind.kind][language]
+            long_template = Template(template=template)
             file_description_long = long_template.run_with_code(
                 llm=llm, root_rel_path=node.root_rel_path, code=source_code
             )

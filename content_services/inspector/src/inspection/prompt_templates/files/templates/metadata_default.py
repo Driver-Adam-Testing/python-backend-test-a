@@ -30,7 +30,7 @@ In writing your content summary, consider the following:
 """
 
 METADATA_TEMPLATE = [
-    (S.RAW, "# Overview"),
-    (S.SINGLE_PROMPT, "## Purpose", PURPOSE_PROMPT),
-    (S.SINGLE_PROMPT, "## Content Summary", CONTENT_SUMMARY_PROMPT),
+    (S.RAW,                 "# Overview"),
+    (S.SINGLE_PROMPT_TEXT, "## Purpose", METADATA_SYSTEM_PROMPT, PURPOSE_PROMPT,),
+    (S.SINGLE_PROMPT_TEXT, "## Content Summary", METADATA_SYSTEM_PROMPT, CONTENT_SUMMARY_PROMPT,),
 ]

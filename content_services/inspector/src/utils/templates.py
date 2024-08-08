@@ -1,6 +1,7 @@
 import logging
 from collections.abc import Callable
 from enum import IntEnum
+from inspect import signature
 from pathlib import Path
 from typing import Any, Self
 
@@ -10,11 +11,22 @@ from pydantic import UUID4, BaseModel, ValidationError
 from utils.models import ChatOpenAI
 
 
+def _arity(fn: Callable) -> int:
+    return len(signature(fn).parameters)
+
+
 class S(IntEnum):
     RAW = 0
-    SINGLE_PROMPT = 1
-    LLM_COND = 2
-    FN_COND = 3
+    SINGLE_PROMPT_TEXT = 1
+    SINGLE_PROMPT_JSON = 2
+    LLM_COND_TEXT = 3
+    LLM_COND_JSON = 4
+    FN_COND_TEXT = 5
+    FN_COND_JSON = 6
+
+
+class TemplateError(Exception):
+    pass
 
 
 class SectionKind(BaseModel):
@@ -56,7 +68,6 @@ class Boolean(BaseModel):
 
 
 class Template(BaseModel):
-    system_prompt: str
     template: list[Any]
 
     def run_with_code(self, llm: ChatOpenAI, root_rel_path: Path, code: str) -> str:
@@ -68,34 +79,55 @@ class Template(BaseModel):
                 case S.RAW:
                     (raw_content,) = args
                     output += f"{raw_content}\n"
-                case S.SINGLE_PROMPT:  # Simple section header, prompt pair
-                    section_title, section_prompt = args
-                    human_prompt = f"{section_prompt}\n\nCode:\n\n{code}"
-                    content = llm.generate_response(self.system_prompt, human_prompt)
+                case (
+                    S.SINGLE_PROMPT_TEXT
+                    | S.SINGLE_PROMPT_JSON
+                ):  # Simple section header, prompt pair
+                    use_json_mode = True if tag.kind == S.SINGLE_PROMPT_JSON else False
+                    section_title, system_prompt, section_prompt = args
+                    user_prompt = f"{section_prompt}\n\nCode:\n\n{code}"
+                    content = llm.generate_response(
+                        system_prompt=system_prompt,
+                        user_prompt=user_prompt,
+                        use_json_mode=use_json_mode,
+                    )
+                    # TODO: actually handle rendering JSON output.
                     output += f"{section_title}\n{content}\n"
-                case S.LLM_COND:  # Conditional construct using an LLM
-                    section_title, conditional_prompt, true_action, false_action = args
-                    conditional_human_prompt = (
-                        f"{conditional_prompt}\n\nCode:\n\n{code}"
-                    )
-                    conditional = Boolean.from_llm(
-                        llm=llm,
-                        code=code,
-                        system_prompt=self.system_prompt,
-                        human_prompt=conditional_human_prompt,
-                    )
-                    action = true_action if conditional else false_action
-                    if isinstance(action, Callable):
-                        content = action()
+                case (
+                    S.LLM_COND_TEXT
+                    | S.LLM_COND_JSON
+                ):  # Conditional construct using an LLM
+                    use_json_mode = True if tag.kind == S.LLM_COND_JSON else False
+                    section_title, conditional_llm_fn, true_action, false_action = args
+                    llm_fn_output: list[str] | None = conditional_llm_fn(llm, code)
+                    action = false_action if llm_fn_output is None else true_action
+                    if action is None:
+                        pass
                     else:
-                        action_human_prompt = f"{action}\n\nCode:\n\n{code}"
-                        content = llm.generate_response(
-                            self.system_prompt, action_human_prompt
-                        )
-                    output += f"{section_title}\n{content}\n"
-                case S.FN_COND:  # Conditional construct using a function
+                        if isinstance(action, Callable):
+                            match _arity(action):
+                                case 0:
+                                    content = action()
+                                case 3:
+                                    content = action(llm, llm_fn_output, code)
+                                case _:
+                                    raise
+                        elif isinstance(action, str):
+                            content = action
+                        else:
+                            raise TemplateError(
+                                "`LLM_COND` expects branch string or callable with arity 0 or 3"
+                            )
+                        output += f"{section_title}\n{str(content)}\n"  # Call `str` to render data structure
+                case (
+                    S.FN_COND_TEXT
+                    | S.FN_COND_JSON
+                ):  # Conditional construct using a function
+                    use_json_mode = True if tag.kind == S.FN_COND_JSON else False
                     section_title, conditional_fn, true_action, false_action = args
-                    fn_output: str | None = conditional_fn(code, root_rel_path)
+                    fn_output: list[str] | str | None = conditional_fn(
+                        code, root_rel_path, use_json_mode
+                    )
                     action = false_action if fn_output is None else true_action
                     if (
                         action is None
@@ -103,20 +135,22 @@ class Template(BaseModel):
                         pass
                     else:
                         if isinstance(action, Callable):
-                            content = action()
+                            match _arity(action):
+                                case 0:
+                                    content = action()
+                                case 3:
+                                    content = action(llm, fn_output, code)
+                                case _:
+                                    raise
+                        elif isinstance(action, str):
+                            content = action
                         else:
-                            context_from_fn = (
-                                "" if fn_output is None else f"{fn_output}\n\n"
+                            raise TemplateError(
+                                "`FN_COND` expects branch string or callable with arity 0 or 3"
                             )
-                            action_human_prompt = (
-                                f"{context_from_fn}{action}\n\nCode:\n\n{code}"
-                            )
-                            content = llm.generate_response(
-                                self.system_prompt, action_human_prompt
-                            )
-                        output += f"{section_title}\n{content}\n"
+                        output += f"{section_title}\n{str(content)}\n"  # Call `str` to render data structure
                 case _:
-                    raise ValueError(
+                    raise TemplateError(
                         f"Unsupported template section kind {tag.kind} for direct llm execution"
                     )
 
@@ -133,7 +167,7 @@ class Template(BaseModel):
                 case S.RAW:
                     (raw_content,) = args
                     output += f"{raw_content}\n"
-                case S.SINGLE_PROMPT:  # Simple section header, prompt pair
+                case S.SINGLE_PROMPT_TEXT:  # Simple section header, prompt pair
                     section_title, section_prompt = args
                     content = _template_section_with_sse(
                         section_prompt=section_prompt,

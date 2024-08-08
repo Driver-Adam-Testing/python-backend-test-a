@@ -1,0 +1,2 @@
+PROMPT = """execute several tools at once in each iteration, and use a diverse set of them. Search descriptions at least once. Call tools in several iterations, and don't respond until you have the full context from the codebase the question is about. **You should NEVER invent or use functions NOT defined. NEVER invoke the multi_tool_use.parallel function. **."""
+MESSAGE = {"role": "system", "content": PROMPT}

@@ -8,8 +8,6 @@ import strawberry
 from database.models_v1 import (
     DerivedContent,
     DerivedContentType,
-    SourceContent,
-    SourceContentType,
 )
 from fastapi import HTTPException
 from sqlmodel import Session, select
@@ -20,6 +18,8 @@ from app.api.routes.legacy.s3 import S3BucketAccess
 from app.core.logger import logger
 
 
+# TODO turn model into enum and use directly, or use column to determine source/derived
+# this is unsustainable
 class DerivedContentTypes(Enum):
     SYMBOL = "symbol"
     SHORT_PARAGRAPH_DESCRIPTION = "short_paragraph_description"
@@ -122,15 +122,15 @@ def node_kind_map(node_kind: str) -> str:
         raise ValueError(f"Invalid node kind: {node_kind}")
 
 
-def source_content_types_map(db: Session) -> dict[str, str]:
-    types = db.exec(select(SourceContentType)).all()
+def content_types_map(db: Session) -> dict[str, str]:
+    types = db.exec(select(DerivedContentType)).all()
     return {type.type_name: str(type.id) for type in types}
 
 
-def source_type_id_map(kind: str, db: Session) -> dict[str, Any]:
-    derive_types = source_content_types_map(db)
+def content_type_id_map(kind: str, db: Session) -> dict[str, Any]:
+    content_types = content_types_map(db)
     kind_translation = node_kind_map(kind)
-    return {"typeName": kind_translation, "id": derive_types[kind_translation]}
+    return {"typeName": kind_translation, "id": content_types[kind_translation]}
 
 
 def get_document_set(
@@ -142,20 +142,20 @@ def get_document_set(
     session: Session,
 ) -> DocumentSet:
     relative_path = path
-    source_content_type = source_type_id_map(node_kind, session)
+    content_type = content_type_id_map(node_kind, session)
 
-    if source_content_type["typeName"] == "codebase":
+    if content_type["typeName"] == "codebase":
         relative_path = path.replace("/", "")
 
-    query = select(SourceContent).where(
-        SourceContent.relative_path == relative_path,
-        SourceContent.source_content_type_id == source_content_type["id"],
-    )
-
+    query = select(DerivedContent).where(
+        DerivedContent.relative_path == relative_path,
+        DerivedContent.content_type_id == content_type["id"],
+        DerivedContent.source_content_id == None,  # noqa: E711
+    )  # Note, we imply source content if there's not parent source content id!
     if workspace_id:
-        query = query.where(SourceContent.workspace_id == workspace_id)
+        query = query.where(DerivedContent.workspace_id == workspace_id)  # noqa: E711
     if codebase_id:
-        query = query.where(SourceContent.codebase_id == codebase_id)
+        query = query.where(DerivedContent.codebase_id == codebase_id)  # noqa: E711
     content = session.exec(query).first()
 
     if content is None:
@@ -165,7 +165,7 @@ def get_document_set(
         select(DerivedContent)
         .join(
             DerivedContentType,
-            DerivedContent.derived_content_type_id == DerivedContentType.id,
+            DerivedContent.content_type_id == DerivedContentType.id,
         )
         .where(
             DerivedContent.source_content_id == content.id,
@@ -177,7 +177,7 @@ def get_document_set(
 
     document_set = DocumentSet(source_content_id=str(content.id))  # type: ignore
     for doc in docs:
-        derived_content_type = doc.derived_content_type.type_name
+        derived_content_type = doc.content_type.type_name
         if doc.id is None:
             continue
         if doc.content is None:
@@ -272,7 +272,7 @@ def get_document_set(
             logger.warning(
                 f"no DerivedContentTypes documentSet match for {derived_content_type}"
             )
-    if source_content_type["typeName"] == "codebase-file":
+    if content_type["typeName"] == "codebase-file":
         s3_access = S3BucketAccess(
             organization_id=organization_id,
             codebase_id=codebase_id if codebase_id else str(content.codebase_id),
@@ -283,15 +283,15 @@ def get_document_set(
             extension=content.relative_path.split(".")[-1],
             content=code_content,
             metadata=CodeMetadata(
-                size=content.analysis_metadata.get("size"),
-                sloc=content.analysis_metadata.get("sloc"),
-                extension=content.analysis_metadata.get("extension"),
-                is_binary=content.analysis_metadata.get("is_binary"),
-                is_hex=content.analysis_metadata.get("is_hex"),
-                is_analyzable=content.analysis_metadata["is_analyzable"],
-                is_blacklisted=content.analysis_metadata["is_blacklisted"],
+                size=content.misc_metadata.get("size"),
+                sloc=content.misc_metadata.get("sloc"),
+                extension=content.misc_metadata.get("extension"),
+                is_binary=content.misc_metadata.get("is_binary"),
+                is_hex=content.misc_metadata.get("is_hex"),
+                is_analyzable=content.misc_metadata["is_analyzable"],
+                is_blacklisted=content.misc_metadata["is_blacklisted"],
             )
-            if content.analysis_metadata
+            if content.misc_metadata
             else None,
         )
 

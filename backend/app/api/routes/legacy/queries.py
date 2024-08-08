@@ -58,7 +58,9 @@ class Query:
             id=organization["id"],
             name=organization["name"],
             display_name=organization["display_name"],
-            workspaces=workspaces,
+            # Hide Default workspace from listing in UI
+            # When the workspace table is removed, this filter will go away
+            workspaces=[ws for ws in workspaces if ws.display_name != "Default"],
         )
 
     @strawberry.field

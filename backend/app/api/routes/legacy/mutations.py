@@ -5,12 +5,8 @@ from datetime import datetime
 
 import strawberry
 from database.models_v1 import (
-    Codebase,
     DerivedContent,
     DerivedContentType,
-    Llm,
-    SourceContent,
-    SourceContentType,
     Workspace,
 )
 from graphql import GraphQLError
@@ -19,7 +15,7 @@ from sqlalchemy.future import select
 from sqlmodel import Session
 from strawberry.types import Info
 
-from app.api.routes.legacy.api_types import SourceContentInput  # type: ignore
+from app.api.routes.legacy.api_types import SourceContentInput
 from app.api.routes.legacy.application_note import (
     ContentStatus,
 )
@@ -150,17 +146,18 @@ class Mutation:
             )
 
         # TODO: Get rid of the database hits to get source and derived content types. They don't change often enough and they are limited. It's inefficient that they're defined in the database.
-        source_content_type = session.execute(
-            select(SourceContentType).filter_by(type_name=input.source_content_type)  # type: ignore
+        content_type = session.execute(
+            select(DerivedContentType).filter_by(type_name=input.source_content_type)  # type: ignore
         ).scalar_one_or_none()
 
-        if not source_content_type:
+        if not content_type:
             raise GraphQLError(
                 "SourceContentType not found", extensions={"code": "BAD_REQUEST"}
             )
 
-        source_content = SourceContent(
-            source_content_type_id=source_content_type.id,  # type: ignore
+        source_content = DerivedContent(
+            source_content_id=None,  # No parent for source content rows!
+            content_type_id=content_type.id,  # type: ignore
             workspace_id=input.workspace_id,  # type: ignore
             codebase_id=input.codebase_id,  # type: ignore
             relative_path=input.relative_path,  # type: ignore
@@ -187,14 +184,6 @@ class Mutation:
                 "Codebase not found in your organization",
                 extensions={"code": "FORBIDDEN"},
             )
-
-        llm = session.exec(select(Llm).where(Llm.model == "gpt-4-1106-preview")).first()  # type: ignore
-
-        if not llm:
-            raise GraphQLError(
-                "LLM Model not found", extensions={"code": "BAD_REQUEST"}
-            )
-
         note_content = {
             "name": "Generating Application Note...",
             "description": input.prompt,
@@ -219,18 +208,18 @@ class Mutation:
             "errors": [],
         }
 
-        source_content: SourceContent = session.exec(
-            select(SourceContent.id)  # type: ignore
+        content = session.exec(
+            select(DerivedContent)  # type: ignore
             .join(
-                SourceContentType,
-                SourceContent.source_content_type_id == SourceContentType.id,
+                DerivedContentType,
+                DerivedContent.content_type_id == DerivedContentType.id,
             )
             .where(
-                SourceContent.codebase_id == input.codebase_id,
-                SourceContentType.type_name == "codebase",
+                DerivedContent.codebase_id == input.codebase_id,
+                DerivedContentType.type_name == "codebase",
             )
-        ).first()
-        derived_content_type_id = (
+        ).first()[0]
+        content_type_id = (
             session.exec(
                 select(DerivedContentType.id).where(  # type: ignore
                     DerivedContentType.type_name
@@ -241,11 +230,12 @@ class Mutation:
             .id
         )
         app_note = DerivedContent(
-            source_content_id=source_content.id,
-            derived_content_type_id=derived_content_type_id,
+            workspace_id=content.workspace_id,
+            source_content_id=content.id,
+            relative_path=content.relative_path,
+            content_type_id=content_type_id,
             content=json.dumps(note_content),
             status=ContentStatus.GENERATING.value,
-            llm_id=None,
             metadata=metadata,
         )
 
@@ -485,8 +475,6 @@ class Mutation:
             note = (
                 session.query(DerivedContent)
                 .filter(DerivedContent.id == input.id)
-                .join(SourceContent)
-                .join(Codebase)
                 .join(Workspace)
                 .filter(Workspace.organization_id == user.organization_id)
                 .one_or_none()

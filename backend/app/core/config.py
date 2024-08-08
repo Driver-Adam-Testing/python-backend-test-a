@@ -55,6 +55,8 @@ class Settings(BaseSettings):
 
     MODAL_ENVIRONMENT: str | None = None
 
+    LOG_LEVEL: str = "INFO"
+
     @computed_field  # type: ignore[misc]
     @property
     def server_host(self) -> str:

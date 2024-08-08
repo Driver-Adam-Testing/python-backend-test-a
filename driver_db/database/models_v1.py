@@ -73,6 +73,7 @@ class Chunk(SQLModel, table=True):  # type: ignore
     )
     content_metadata: ContentMetadata = Relationship(back_populates="chunks")
     text: str
+    # Text Embeddings are actually indexed but it's not reflected in the model.py because it's using ivfflat
     text_embedding_3_small: list[float] = Field(
         sa_column=Column(Vector(1536), nullable=True)
     )

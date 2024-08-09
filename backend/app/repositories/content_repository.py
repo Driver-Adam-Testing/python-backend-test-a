@@ -51,7 +51,7 @@ class ContentRepository(BaseRepository[DerivedContent]):
             organization_id: str,
             workspace_id: str,
             codebase_id: str,
-            document_name: str = None) -> DerivedContent:
+            document_name: str | None = None) -> DerivedContent:
         workspace_exists = self.workspace_repository.exists(workspace_id, organization_id)
 
         if not workspace_exists:

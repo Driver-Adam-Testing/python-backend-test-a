@@ -1,3 +1,4 @@
+import json
 import logging
 from datetime import datetime
 from typing import Optional
@@ -78,6 +79,15 @@ class TagAssociationResponse(BaseModel):
     tag_id: str
     content_id: str
     message: str
+
+
+class CreateContentRequest(BaseModel):
+    workspace_id: str
+    codebase_id: str
+
+
+class CreateContentResponse(BaseModel):
+    content_id: str
 
 
 def list_content(
@@ -280,3 +290,61 @@ def disassociate_tag(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Tag association not found"
         )
+
+
+def create_empty_document(session: Session, user: CurrentUser, workspace_id: str, codebase_id: str) -> CreateContentResponse:
+    # Check if workspace exists and belongs to the user's organization
+    workspace = session.exec(
+        select(Workspace)
+        .where(Workspace.id == workspace_id)
+        .where(Workspace.organization_id == user.organization_id)
+    ).first()
+    if not workspace:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Workspace not found"
+        )
+
+    # get application note derived content type
+    application_note_content_type = session.exec(
+        select(DerivedContentType)
+        .where(DerivedContentType.type_name == "application_note")
+    ).first()
+    # get codebase derived content type
+    codebase_content_type = session.exec(
+        select(DerivedContentType)
+        .where(DerivedContentType.type_name == "codebase")
+    ).first()
+
+    # find the derived content type with content type codebase and workspace id and codebase id
+    parent_content = session.exec(
+        select(DerivedContent)
+        .where(DerivedContent.content_type_id == codebase_content_type.id)
+        .where(DerivedContent.workspace_id == workspace_id)
+        .where(DerivedContent.codebase_id == codebase_id)
+    ).first()
+
+    blank_content_template = {
+        "name": "Blank Document",
+        "content": " ",
+        "description": ""
+    }
+
+    new_content = DerivedContent(
+        content_type_id=application_note_content_type.id,
+        workspace_id=workspace_id,
+        source_content_id=parent_content.id,
+        codebase_id=codebase_id,
+        relative_path=parent_content.relative_path,
+        content=json.dumps(blank_content_template),
+        misc_metadata={},
+        status=Enum_Derived_Content_Status.generation_complete,
+        created_at=datetime.now(),
+        updated_at=datetime.now(),
+    )
+
+    # Add the new content to the session and commit
+    session.add(new_content)
+    session.commit()
+    session.refresh(new_content)
+
+    return CreateContentResponse(content_id=str(new_content.id))

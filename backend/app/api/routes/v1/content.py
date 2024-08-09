@@ -5,6 +5,8 @@ from fastapi import APIRouter, Query
 
 from app.api.auth import CurrentUser
 from app.api.content.content import (
+    CreateContentRequest,
+    CreateContentResponse,
     ListContentInput,
     ListContentResults,
     ListContentTypesInput,
@@ -14,6 +16,7 @@ from app.api.content.content import (
     disassociate_tag,
     list_content,
     list_content_types,
+    create_empty_document
 )
 from app.api.session import CurrentSession
 
@@ -102,3 +105,15 @@ def disassociate_tag_with_content(
     tag_id: str,
 ) -> TagAssociationResponse:
     return disassociate_tag(session, user, content_id, tag_id)
+
+
+@router.post(
+    "/create/document",
+    summary="Create a document",
+)
+def create_document(
+        session: CurrentSession,
+        user: CurrentUser,
+        request: CreateContentRequest,
+) -> CreateContentResponse:
+    return create_empty_document(session, user, request.workspace_id, request.codebase_id)

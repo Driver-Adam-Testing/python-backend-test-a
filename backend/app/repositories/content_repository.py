@@ -19,8 +19,7 @@ from database.models_v1 import (
 
 class WorkspaceRepository(BaseRepository[Workspace]):
     def __init__(self, session: Session):
-        self.session = session
-        self.model = Workspace
+        super().__init__(session, Workspace)
 
     def exists(self, id: str, organization_id: str) -> bool:
         workspace = self.get(id)
@@ -31,8 +30,7 @@ class WorkspaceRepository(BaseRepository[Workspace]):
 
 class DerivedContentTypeRepository(BaseRepository[DerivedContentType]):
     def __init__(self, session: Session):
-        self.session = session
-        self.model = DerivedContentType
+        super().__init__(session, DerivedContentType)
 
     def get_by_type_name(self, type_name: str) -> DerivedContentType:
         return self.session.exec(
@@ -43,11 +41,17 @@ class DerivedContentTypeRepository(BaseRepository[DerivedContentType]):
 
 class ContentRepository(BaseRepository[DerivedContent]):
     def __init__(self, session: Session):
-        self.session = session
+        super().__init__(session, DerivedContent)
+        # self.session = session
         self.derived_content_type_repository = DerivedContentTypeRepository(session)
         self.workspace_repository = WorkspaceRepository(session)
 
-    def create_blank_document(self, organization_id: str, workspace_id: str, codebase_id: str) -> DerivedContent:
+    def create_blank_document(
+            self,
+            organization_id: str,
+            workspace_id: str,
+            codebase_id: str,
+            document_name: str = None) -> DerivedContent:
         workspace_exists = self.workspace_repository.exists(workspace_id, organization_id)
 
         if not workspace_exists:
@@ -68,7 +72,7 @@ class ContentRepository(BaseRepository[DerivedContent]):
         ).first()
 
         blank_content_template = {
-            "name": "Blank Document",
+            "name": "Blank Document" if document_name is None else document_name,
             "content": " ",
             "description": ""
         }

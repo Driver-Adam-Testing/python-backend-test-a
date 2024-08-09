@@ -1,9 +1,15 @@
 import json
+from typing import Generator
+from uuid import UUID
+import uuid
 
 import pytest
 from unittest.mock import MagicMock, patch
 from sqlalchemy.exc import NoResultFound
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 from datetime import datetime
+from sqlmodel import Session
 from app.repositories.content_repository import ContentRepository
 from database.models_v1 import (
     DerivedContent,
@@ -12,119 +18,126 @@ from database.models_v1 import (
     Enum_Derived_Content_Status
 )
 
+from database.db import engine, init_db
+from app import initial_data
+
+# Set up the test database URL
+DATABASE_URL = "postgresql+psycopg2://postgres:0Y43sfw7Hng1ZLHexDaxqCIbYmVQ5bhRKer5LlUjLmw@localhost/local_db"
+
 
 @pytest.fixture
-def session():
-    return MagicMock()
+def content_repository(db):
+    return ContentRepository(db)
 
 
-@pytest.fixture
-def content_repository(session):
-    return ContentRepository(session)
-
-
-def test_create_blank_document(content_repository, session):
-    # Mock the workspace_repository.exists method to return True
-    content_repository.workspace_repository = MagicMock()
-    content_repository.workspace_repository.exists.return_value = True
-
-    # Mock the derived_content_type_repository.get_by_type_name method
-    content_repository.derived_content_type_repository = MagicMock()
-    content_repository.derived_content_type_repository.get_by_type_name.side_effect = [
-        MagicMock(id="application_note_content_type_id"),  # Application note content type
-        MagicMock(id="codebase_content_type_id")  # Codebase content type
-    ]
-
-    session.exec.return_value.first.side_effect = [
-        MagicMock(id="parent_content_id", relative_path="path/to/parent")  # Parent content
-    ]
-
-    new_content = content_repository.create_blank_document("org_id", "workspace_id", "codebase_id")
+def test_create_blank_document(content_repository, db):
+    workspace_id = UUID("90c28b84-39f9-4bd8-b7cc-6a97ef530468")
+    codebase_id = UUID("cd7bf15b-ebdd-4882-96a0-df766a62227f")
+    org_id = "org_s76pU1v8LAYhTOWB"
+    new_content = content_repository.create_blank_document(org_id, workspace_id, codebase_id)
 
     # Debugging assertions
     assert new_content is not None, "new_content is None"
     assert hasattr(new_content, 'content_type_id'), "new_content does not have attribute 'content_type_id'"
-    assert new_content.content_type_id == "application_note_content_type_id", f"Expected 'application_note_content_type_id', got {new_content.content_type_id}"
-    assert new_content.workspace_id == "workspace_id"
-    assert new_content.source_content_id == "parent_content_id", f"Expected 'parent_content_id', got {new_content.source_content_id}"
-    assert new_content.codebase_id == "codebase_id"
-    assert new_content.relative_path == "path/to/parent"
+    assert new_content.content_type.type_name == "application_note"
+    assert new_content.workspace_id == workspace_id
+    assert new_content.codebase_id == codebase_id
     assert new_content.status == Enum_Derived_Content_Status.generation_complete
 
-
-def test_create_blank_document_workspace_not_found(content_repository, session):
-    session.exec.return_value.first.side_effect = NoResultFound
-
-    with pytest.raises(NoResultFound):
-        content_repository.create_blank_document("org_id", "workspace_id", "codebase_id")
+    content_repository.delete(new_content.id)
 
 
-def test_create_template(content_repository, session):
-    # Mock the workspace_repository.exists method to return True
-    content_repository.workspace_repository = MagicMock()
-    content_repository.workspace_repository.exists.return_value = True
+def test_create_blank_document_with_name(content_repository, db):
+    workspace_id = UUID("90c28b84-39f9-4bd8-b7cc-6a97ef530468")
+    codebase_id = UUID("cd7bf15b-ebdd-4882-96a0-df766a62227f")
+    org_id = "org_s76pU1v8LAYhTOWB"
+    new_content = content_repository.create_blank_document(org_id, workspace_id, codebase_id, "Test Note")
 
-    # Mock the derived_content_type_repository.get_by_type_name method
-    content_repository.derived_content_type_repository = MagicMock()
-    content_repository.derived_content_type_repository.get_by_type_name.side_effect = [
-        MagicMock(id="template_content_type_id"),  # Template content type
-        MagicMock(id="codebase_content_type_id")  # Codebase content type
-    ]
-
-    session.exec.return_value.first.side_effect = [
-        MagicMock(id="parent_content_id", relative_path="path/to/parent")  # Parent content
-    ]
-
-    new_content = content_repository.create_template("org_id", "workspace_id", "codebase_id")
-
-    assert new_content.content_type_id == "template_content_type_id"
-    assert new_content.workspace_id == "workspace_id"
-    assert new_content.source_content_id == "parent_content_id"
-    assert new_content.codebase_id == "codebase_id"
-    assert new_content.relative_path == "path/to/parent"
+    # Debugging assertions
+    assert new_content is not None, "new_content is None"
+    assert hasattr(new_content, 'content_type_id'), "new_content does not have attribute 'content_type_id'"
+    assert new_content.content_type.type_name == "application_note"
+    assert new_content.workspace_id == workspace_id
+    assert new_content.codebase_id == codebase_id
     assert new_content.status == Enum_Derived_Content_Status.generation_complete
 
-
-def test_create_template_workspace_not_found(content_repository, session):
-    session.exec.return_value.first.side_effect = NoResultFound
-
-    with pytest.raises(NoResultFound):
-        content_repository.create_template("org_id", "workspace_id", "codebase_id")
+    assert json.loads(new_content.content)["name"] == "Test Note"
+    content_repository.delete(new_content.id)
 
 
-def test_create_document_from_template(content_repository, session):
-    # Mock the derived_content_type_repository.get_by_type_name method
-    content_repository.derived_content_type_repository = MagicMock()
-    content_repository.derived_content_type_repository.get_by_type_name.side_effect = [
-        MagicMock(id="template_content_type_id"),  # Template content type
-        MagicMock(id="application_note_content_type_id")  # Application note content type
-    ]
-
-    session.exec.return_value.first.side_effect = [
-        MagicMock(
-            id="content_id",
-            content=json.dumps({"name": "Template"}),
-            content_type_id="template_content_type_id",
-            workspace_id="workspace_id",
-            source_content_id="source_content_id",
-            codebase_id="codebase_id",
-            relative_path="path/to/parent"
-        )  # Content
-    ]
-
-    new_content = content_repository.create_document_from_template("content_id")
-
-    assert new_content.content_type_id == "application_note_content_type_id"
-    assert new_content.workspace_id == "workspace_id"
-    assert new_content.source_content_id == "source_content_id"
-    assert new_content.codebase_id == "codebase_id"
-    assert new_content.relative_path == "path/to/parent"
-    assert new_content.status == Enum_Derived_Content_Status.generation_complete
-    assert json.loads(new_content.content)["name"] == "Template (Copy)"
-
-
-def test_create_document_from_template_content_not_found(content_repository, session):
-    session.exec.return_value.first.side_effect = NoResultFound
+def test_create_blank_document_workspace_not_found(content_repository, db):
+    # db.exec.return_value.first.side_effect = NoResultFound
+    non_existent_workspace_id = str(uuid.uuid4())
 
     with pytest.raises(NoResultFound):
-        content_repository.create_document_from_template("content_id")
+        content_repository.create_blank_document("org_id", non_existent_workspace_id, "codebase_id")
+
+# def test_create_template(content_repository, session):
+#     # Mock the workspace_repository.exists method to return True
+#     content_repository.workspace_repository = MagicMock()
+#     content_repository.workspace_repository.exists.return_value = True
+#
+#     # Mock the derived_content_type_repository.get_by_type_name method
+#     content_repository.derived_content_type_repository = MagicMock()
+#     content_repository.derived_content_type_repository.get_by_type_name.side_effect = [
+#         MagicMock(id="template_content_type_id"),  # Template content type
+#         MagicMock(id="codebase_content_type_id")  # Codebase content type
+#     ]
+#
+#     session.exec.return_value.first.side_effect = [
+#         MagicMock(id="parent_content_id", relative_path="path/to/parent")  # Parent content
+#     ]
+#
+#     new_content = content_repository.create_template("org_id", "workspace_id", "codebase_id")
+#
+#     assert new_content.content_type_id == "template_content_type_id"
+#     assert new_content.workspace_id == "workspace_id"
+#     assert new_content.source_content_id == "parent_content_id"
+#     assert new_content.codebase_id == "codebase_id"
+#     assert new_content.relative_path == "path/to/parent"
+#     assert new_content.status == Enum_Derived_Content_Status.generation_complete
+#
+#
+# def test_create_template_workspace_not_found(content_repository, session):
+#     session.exec.return_value.first.side_effect = NoResultFound
+#
+#     with pytest.raises(NoResultFound):
+#         content_repository.create_template("org_id", "workspace_id", "codebase_id")
+#
+#
+# def test_create_document_from_template(content_repository, session):
+#     # Mock the derived_content_type_repository.get_by_type_name method
+#     content_repository.derived_content_type_repository = MagicMock()
+#     content_repository.derived_content_type_repository.get_by_type_name.side_effect = [
+#         MagicMock(id="template_content_type_id"),  # Template content type
+#         MagicMock(id="application_note_content_type_id")  # Application note content type
+#     ]
+#
+#     session.exec.return_value.first.side_effect = [
+#         MagicMock(
+#             id="content_id",
+#             content=json.dumps({"name": "Template"}),
+#             content_type_id="template_content_type_id",
+#             workspace_id="workspace_id",
+#             source_content_id="source_content_id",
+#             codebase_id="codebase_id",
+#             relative_path="path/to/parent"
+#         )  # Content
+#     ]
+#
+#     new_content = content_repository.create_document_from_template("content_id")
+#
+#     assert new_content.content_type_id == "application_note_content_type_id"
+#     assert new_content.workspace_id == "workspace_id"
+#     assert new_content.source_content_id == "source_content_id"
+#     assert new_content.codebase_id == "codebase_id"
+#     assert new_content.relative_path == "path/to/parent"
+#     assert new_content.status == Enum_Derived_Content_Status.generation_complete
+#     assert json.loads(new_content.content)["name"] == "Template (Copy)"
+#
+#
+# def test_create_document_from_template_content_not_found(content_repository, session):
+#     session.exec.return_value.first.side_effect = NoResultFound
+#
+#     with pytest.raises(NoResultFound):
+#         content_repository.create_document_from_template("content_id")

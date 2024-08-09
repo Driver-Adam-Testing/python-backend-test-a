@@ -1,16 +1,3 @@
-from utils.lang_specialization.cpp import (
-    DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
-    DATA_STRUCTURES_FOUND_USER_PROMPT,
-    FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
-    FUNCTIONS_FOUND_USER_PROMPT,
-    SOURCE_CODE_SMALL_PURPOSE_USER_PROMPT,
-    SOURCE_CODE_SMALL_SYSTEM_PROMPT_GENERAL_CPP,
-    VARIABLES_FOUND_SYSTEM_PROMPT_JSON,
-    VARIABLES_FOUND_USER_PROMPT,
-    cpp_data_structure_checker,
-    cpp_function_checker,
-    cpp_variables_checker,
-)
 from utils.lang_specialization.common import (
     DataStructureData,
     DataStructureDict,
@@ -18,6 +5,18 @@ from utils.lang_specialization.common import (
     FnDict,
     VariableData,
     VariableDict,
+)
+from utils.lang_specialization.cpp import (
+    DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
+    DATA_STRUCTURES_FOUND_USER_PROMPT,
+    FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
+    FUNCTIONS_FOUND_USER_PROMPT,
+    SOURCE_CODE_SMALL_PURPOSE_USER_PROMPT,
+    VARIABLES_FOUND_SYSTEM_PROMPT_JSON,
+    VARIABLES_FOUND_USER_PROMPT,
+    cpp_data_structure_checker,
+    cpp_function_checker,
+    cpp_variables_checker,
 )
 from utils.models import ChatOpenAI
 from utils.templates import S
@@ -70,7 +69,6 @@ def fn_dict_from_llm(llm: ChatOpenAI, fn_list: list[str], code: str) -> FnDict:
 
 
 SOURCE_CODE_SMALL_TEMPLATE_CPP = [
-    (S.RAW,                 "# Overview",),
     (S.SINGLE_PROMPT_TEXT, "## Purpose", SOURCE_CODE_SMALL_PURPOSE_USER_PROMPT),
     (S.FN_COND_JSON,       "## Global Variables", cpp_variables_checker, variables_dict_from_llm, None),
     (S.FN_COND_JSON,       "## Data Structures", cpp_data_structure_checker, data_structure_dict_from_llm, None,),

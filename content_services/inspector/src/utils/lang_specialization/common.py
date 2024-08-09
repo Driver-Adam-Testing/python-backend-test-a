@@ -56,7 +56,7 @@ class VariableData(BaseModel):
 class VariableDict(BaseModel):
     data: dict[str, VariableData]
 
-    def __str__(self) -> str:
+    def render_markdown(self) -> str:
         output = ""
         for k, v in self.data.items():
             output += f"### {k}\n"
@@ -65,9 +65,13 @@ class VariableDict(BaseModel):
             output += f"- **Use**: {v.use}\n\n"
         return output
 
+    def __str__(self) -> str:
+        return self.render_markdown()
+
 
 class DataStructureData(BaseModel):
     type: str
+    members: dict[str, str]
     description: str
 
     @classmethod
@@ -88,20 +92,33 @@ class DataStructureData(BaseModel):
             use_json_mode=True,
         )
         content_json = json.loads(content_raw)
-        return cls(type=content_json["type"], description=content_json["description"])
+        return cls(
+            type=content_json["type"],
+            members=content_json["members"],
+            description=content_json["description"],
+        )
         # return cls.model_validate_json(content)
 
 
 class DataStructureDict(BaseModel):
     data: dict[str, DataStructureData]
 
-    def __str__(self) -> str:
+    def render_markdown(self) -> str:
         output = ""
         for k, v in self.data.items():
             output += f"### {k}\n"
             output += f"- **Type**: `{v.type}`\n"
-            output += f"- **Description**: {v.description}\n\n"
+            output += "\n- **Members**:\n"
+            if len(v.members) > 0:
+                for kk, vv in v.members.items():
+                    output += f"    - `{kk}`: {vv}\n"
+            else:
+                output += "    - None\n"
+            output += f"\n- **Description**: {v.description}\n\n"
         return output
+
+    def __str__(self) -> str:
+        return self.render_markdown()
 
 
 class FnData(BaseModel):
@@ -140,21 +157,24 @@ class FnData(BaseModel):
 class FnDict(BaseModel):
     data: dict[str, FnData]
 
-    def __str__(self) -> str:
+    def render_markdown(self) -> str:
         output = ""
         for k, v in self.data.items():
             output += f"### {k}\n"
             output += f"{v.single_sentence}\n"
-            output += "**Inputs**:\n"
+            output += "\n- **Inputs**:\n"
             if len(v.inputs) > 0:
                 for kk, vv in v.inputs.items():
-                    output += f"- `{kk}`: {vv}\n"
+                    output += f"    - `{kk}`: {vv}\n"
             else:
-                output += "- None\n"
-            output += "\n**Output**:\n"
-            output += f"- {v.output}\n"
-            output += "\n**Control Flow**:\n"
+                output += "    - None\n"
+            output += "\n- **Output**:\n"
+            output += f"    - {v.output}\n"
+            output += "\n- **Logic and Control Flow**:\n"
             for item in v.control_flow:
-                output += f"- {item}\n"
+                output += f"    - {item}\n"
             output += "\n"
         return output
+
+    def __str__(self) -> str:
+        return self.render_markdown()

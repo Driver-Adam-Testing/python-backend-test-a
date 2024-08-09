@@ -38,11 +38,17 @@ In a single paragraph of 3 to 5 sentences, explain the purpose of the code provi
 - What kind of code is this? For example, is this code clearly an executable (e.g., main.cpp), a C++ header file, a C++ file or library intended to be imported elsewhere?
 """
 
-TECHNICAL_SUMMARY_USER_PROMPT = """
-In one or more paragraphs, describe the important technical concepts of the code provided below. Choose a content length appropriate for the length and complexity of code. Longer and more complex code should have more summary content.
+TECHNICAL_CONCEPTS = """
+In a single paragraph of 3 to 5 sentences, describe the important technical features and their interactions in the code provided below.
 
-In writing your description, write about about the conceptual use cases, applications, logic, and component interactions in the code instead of focusing on particular functions, variables, etc. A new developer can read your output and conceptually understand the core technical elements of the code before diving into source code.
+In writing your description, write about about the conceptual use cases, applications, logic, and component interactions instead of focusing on particular functions, variables, etc.
 """
+
+# TECHNICAL_SUMMARY_USER_PROMPT = """
+# In one or more paragraphs, describe the important technical concepts of the code provided below. Choose a content length appropriate for the length and complexity of code. Longer and more complex code should have more summary content.
+
+# In writing your description, write about about the conceptual use cases, applications, logic, and component interactions in the code instead of focusing on particular functions, variables, etc. A new developer can read your output and conceptually understand the core technical elements of the code before diving into source code.
+# """
 
 IMPORTS_USER_PROMPT = """
 Summarize the header files and imports used in the code provided below.
@@ -58,10 +64,15 @@ You focus on writing technical documentation for data structures such as structs
 
 You will be given the name of a data structure to document and the source code where the data structure is defined.
 
-Your job is to describe the data structure. Always respond using the following JSON schema:
+Your job is to describe the data structure. **Always respond using exactly the following JSON schema**:
 {
-    "type": <type of the data structure>
-    "description": <one paragraph description of the data structure>
+    "type": <type of the data structure>,
+    "members": {
+        <member_name1>: <Terse 1 sentence description of the first member or field>,
+        <member_name2>: <Terse 1 sentence description of the second member or field>,
+        ...
+    },
+    "description": <one paragraph description of the data structure>,
 }
 
 Return JSON according to the schema above. Do not use the format ```json ... ```, just return the JSON data.
@@ -84,7 +95,7 @@ You focus on writing technical documentation for functions and class methods. Yo
 
 You will be given the name of a function to document and the source code where the function is defined.
 
-Your job is to describe the function. Always respond using the following JSON schema:
+Your job is to describe the function. **Always respond using exactly the following JSON schema**:
 {
     "single_sentence": <terse single sentence description of the function>,
     "inputs": {
@@ -118,11 +129,11 @@ You focus on writing technical documentation for variables. You are skilled at e
 
 You will be given the name of a variable to document and the source code where the data structure is defined.
 
-Your job is to describe the data structure. Always respond using the following JSON schema:
+Your job is to describe the data structure. **Always respond using exactly the following JSON schema**:
 {
-    "type": <type of the variable>
-    "description": <1 to 3 sentence description of the variable>
-    "use": <1 to 3 sentence description of how this variable is used>
+    "type": <type of the variable>,
+    "description": <1 to 3 sentence description of the variable>,
+    "use": <Terse 1 sentence description of how this variable is used>,
 }
 
 Return JSON according to the schema above. Do not use the format ```json ... ```, just return the JSON data.

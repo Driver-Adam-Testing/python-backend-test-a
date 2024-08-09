@@ -1,3 +1,11 @@
+from utils.lang_specialization.common import (
+    DataStructureData,
+    DataStructureDict,
+    FnData,
+    FnDict,
+    VariableData,
+    VariableDict,
+)
 from utils.lang_specialization.cpp import (
     DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
     DATA_STRUCTURES_FOUND_USER_PROMPT,
@@ -8,21 +16,13 @@ from utils.lang_specialization.cpp import (
     IMPORTS_USER_PROMPT,
     SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT,
     SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_CPP,
-    TECHNICAL_SUMMARY_USER_PROMPT,
+    TECHNICAL_CONCEPTS,
     VARIABLES_FOUND_SYSTEM_PROMPT_JSON,
     VARIABLES_FOUND_USER_PROMPT,
     VARIABLES_NONE_CONTENT,
     cpp_data_structure_checker,
     cpp_function_checker,
     cpp_variables_checker,
-)
-from utils.lang_specialization.common import (
-    DataStructureData,
-    DataStructureDict,
-    FnData,
-    FnDict,
-    VariableData,
-    VariableDict,
 )
 from utils.models import ChatOpenAI
 from utils.templates import S
@@ -77,7 +77,8 @@ def fn_dict_from_llm(llm: ChatOpenAI, fn_list: list[str], code: str) -> FnDict:
 SOURCE_CODE_LARGE_TEMPLATE_CPP = [
     (S.RAW,                 "# Overview"),
     (S.SINGLE_PROMPT_TEXT, "## Purpose", SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_CPP, SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT,),
-    (S.SINGLE_PROMPT_TEXT, "## Technical Summary", SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_CPP, TECHNICAL_SUMMARY_USER_PROMPT,),
+    (S.SINGLE_PROMPT_TEXT, "## Technical Summary", SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_CPP, TECHNICAL_CONCEPTS,),
+    (S.RAW,                 "# Symbol Documentation"),
     (S.SINGLE_PROMPT_TEXT, "## Imports and Dependencies", SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_CPP, IMPORTS_USER_PROMPT,),
     (S.FN_COND_JSON,       "## Global Variables", cpp_variables_checker, variables_dict_from_llm, VARIABLES_NONE_CONTENT),
     (S.FN_COND_JSON,       "## Data Structures", cpp_data_structure_checker, data_structure_dict_from_llm, DATA_STRUCTURES_NONE_CONTENT,),

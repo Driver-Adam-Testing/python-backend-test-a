@@ -9,23 +9,19 @@ from utils.lang_specialization.common import (
 from utils.lang_specialization.default import (
     DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
     DATA_STRUCTURES_FOUND_USER_PROMPT,
-    DATA_STRUCTURES_NONE_CONTENT,
     FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
     FUNCTIONS_FOUND_USER_PROMPT,
-    FUNCTIONS_NONE_CONTENT,
-    IMPORTS_USER_PROMPT,
     SOURCE_CODE_SMALL_PURPOSE_USER_PROMPT,
     SOURCE_CODE_SYSTEM_PROMPT_GENERAL_DEFAULT,
-    TECHNICAL_SUMMARY_USER_PROMPT,
     VARIABLES_FOUND_SYSTEM_PROMPT_JSON,
     VARIABLES_FOUND_USER_PROMPT,
-    VARIABLES_NONE_CONTENT,
     default_data_structure_checker,
     default_function_checker,
     default_variable_checker,
 )
 from utils.models import ChatOpenAI
 from utils.templates import S
+
 
 def variables_dict_from_llm(
     llm: ChatOpenAI, vars_list: list[str], code: str
@@ -72,8 +68,8 @@ def fn_dict_from_llm(llm: ChatOpenAI, fn_list: list[str], code: str) -> FnDict:
     }
     return FnDict(data=fn_dict)
 
+
 SOURCE_CODE_SMALL_TEMPLATE_DEFAULT = [
-    (S.RAW, "# Overview"),
     (S.SINGLE_PROMPT_TEXT, "## Purpose", SOURCE_CODE_SYSTEM_PROMPT_GENERAL_DEFAULT, SOURCE_CODE_SMALL_PURPOSE_USER_PROMPT,),
     (S.LLM_COND_JSON, "## Global Variables", default_variable_checker, variables_dict_from_llm, None,),
     (S.LLM_COND_JSON, "## Data Structures", default_data_structure_checker, data_structure_dict_from_llm, None,),

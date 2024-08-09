@@ -26,11 +26,17 @@ In a single paragraph of 3 to 5 sentences, explain the purpose of the code provi
 - What kind of code is this? For example, is this code clearly an executable (e.g., main.c), a header file, a library file intended to be imported elsewhere, a collection of configuration variables, etc.?
 """
 
-TECHNICAL_SUMMARY_USER_PROMPT = """
-In one or more paragraphs, describe the important technical concepts of the code provided below. Choose a content length appropriate for the length and complexity of code. Longer and more complex code should have more summary content.
+TECHNICAL_CONCEPTS = """
+In a single paragraph of 3 to 5 sentences, describe the important technical features and their interactions in the code provided below.
 
-In writing your description, write about about the conceptual use cases, applications, logic, and component interactions in the code instead of focusing on particular functions, variables, etc. A new developer can read your output and conceptually understand the core technical elements of the code before diving into source code.
+In writing your description, write about about the conceptual use cases, applications, logic, and component interactions instead of focusing on particular functions, variables, etc.
 """
+
+# TECHNICAL_SUMMARY_USER_PROMPT = """
+# In one or more paragraphs, describe the important technical concepts of the code provided below. Choose a content length appropriate for the length and complexity of code. Longer and more complex code should have more summary content.
+
+# In writing your description, write about about the conceptual use cases, applications, logic, and component interactions in the code instead of focusing on particular functions, variables, etc. A new developer can read your output and conceptually understand the core technical elements of the code before diving into source code.
+# """
 
 IMPORTS_USER_PROMPT = """
 Summarize the dependencies or imports used in the code provided below.
@@ -46,7 +52,7 @@ Your job is to list any important data structures defined in the code provided b
 - An important data structure is a custom, complex, or compound data structure in the language of the provided code but does not include primitive types inherent to the programming language such as integers, floating point values, or strings.
 - You are only looking for important data structures that are **fully defined** in the code given to you. That is, the implementation of the data structure is in the source code given to you. If a data structure is imported or used without being defined in the code, do not include it.
 
-You only respond with a list of data structures. Always respond using the following JSON schema:
+You only respond with a list of data structures. **Always respond using exactly the following JSON schema**:
 {
     "data": [
         <name of first data structure>,
@@ -65,10 +71,15 @@ You focus on writing technical documentation for data structures. You are skille
 
 You will be given the name of a data structure to document and the source code where the data structure is defined.
 
-Your job is to describe the data structure. Always respond using the following JSON schema:
+Your job is to describe the data structure. **Always respond using exactly the following JSON schema**:
 {
-    "type": <type of the data structure>
-    "description": <one paragraph description of the data structure>
+    "type": <type of the data structure>,
+    "members": {
+        <member_name1>: <Terse 1 sentence description of the first member or field>,
+        <member_name2>: <Terse 1 sentence description of the second member or field>,
+        ...
+    },
+    "description": <one paragraph description of the data structure>,
 }
 
 Return JSON according to the schema above. Do not use the format ```json ... ```, just return the JSON data.
@@ -89,7 +100,7 @@ Your job is to list any functions defined in the code provided below.
 - A function may be a free function or a method associated with a class, depending on the programming language.
 - You are only looking for functions that are **fully defined and implemented** in the code given to you. That is, the implementation of the function is in the source code given to you. If a function is imported or used without being implemented in the code, do not include it.
 
-You only respond with a list of functions. Always respond using the following JSON schema:
+You only respond with a list of functions. **Always respond using exactly the following JSON schema**:
 {
     "data": [
         <name of first function>,
@@ -108,7 +119,7 @@ You focus on writing technical documentation for functions. You are skilled at e
 
 You will be given the name of a function to document and the source code where the function is defined.
 
-Your job is to describe the function. Always respond using the following JSON schema:
+Your job is to describe the function. **Always respond using exactly the following JSON schema**:
 {
     "single_sentence": <terse single sentence description of the function>,
     "inputs": {
@@ -142,7 +153,7 @@ Your job is to list any global variables defined in the code provided below.
 - You are only looking for global variables **defined** in the code given to you. If a variable is imported or used without being defined in the code, do not include it.
 
 **You only include the name of any global variable**, not its value or contents.
-You only respond with a list of global variable names. Always respond using the following JSON schema:
+You only respond with a list of global variable names. **Always respond using exactly the following JSON schema**:
 {
     "data": [
         <name of first global variable>,
@@ -161,11 +172,11 @@ You focus on writing technical documentation for variables. You are skilled at e
 
 You will be given the name of a variable to document and the source code where the data structure is defined.
 
-Your job is to describe the variable. Always respond using the following JSON schema:
+Your job is to describe the variable. **Always respond using exactly the following JSON schema**:
 {
-    "type": <type of the variable>
-    "description": <1 to 3 sentence description of the variable>
-    "use": <1 to 3 sentence description of how this variable is used>
+    "type": <type of the variable>,
+    "description": <1 to 3 sentence description of the variable>,
+    "use": <Terse 1 sentence description of how this variable is used>,
 }
 
 Return JSON according to the schema above. Do not use the format ```json ... ```, just return the JSON data.

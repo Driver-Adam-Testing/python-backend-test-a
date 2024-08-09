@@ -324,7 +324,7 @@ def create_empty_document(session: Session, user: CurrentUser, workspace_id: str
     ).first()
 
     blank_content_template = {
-        "name": "Blank Document",
+        "name": "Untitled",
         "content": " ",
         "description": ""
     }

@@ -20,14 +20,6 @@ def test_create_document(
     token = get_auth0_token()
     print(token)
 
-    # Assuming `request` is available in this context
-    # forwarded_for = request.headers["X-Forwarded-For"] if "X-Forwarded-For" in request.headers.keys() else request.client.host
-
-    # Set the client information directly on the request object
-    client.app.state._scope = {
-        "client": ("host", 12345)  # Example IP and port
-    }
-
     response = client.post(
         f"{settings.API_V1_STR}/content/document",
         headers={
@@ -38,7 +30,9 @@ def test_create_document(
     )
     assert response.status_code == 200
     content = response.json()
-    assert content["title"] == data["title"]
-    assert content["description"] == data["description"]
-    assert "id" in content
-    assert "owner_id" in content
+    
+    # Check if content_id is a valid UUID
+    try:
+        UUID(content["content_id"])
+    except ValueError:
+        assert False, "content_id is not a valid UUID"

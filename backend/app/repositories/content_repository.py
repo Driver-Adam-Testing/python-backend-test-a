@@ -57,7 +57,7 @@ class ContentRepository(BaseRepository[DerivedContent]):
         if not workspace_exists:
             raise NoResultFound("Workspace not found")
 
-            # get application note derived content type
+        # get application note derived content type
         application_note_content_type = self.derived_content_type_repository.get_by_type_name("application_note")
 
         # get codebase derived content type

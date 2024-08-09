@@ -72,7 +72,7 @@ class ContentRepository(BaseRepository[DerivedContent]):
         ).first()
 
         blank_content_template = {
-            "name": "Blank Document" if document_name is None else document_name,
+            "name": "Untitled" if document_name is None else document_name,
             "content": " ",
             "description": ""
         }

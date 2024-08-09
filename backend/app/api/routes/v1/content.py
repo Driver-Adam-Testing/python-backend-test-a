@@ -109,7 +109,7 @@ def disassociate_tag_with_content(
 
 
 @router.post(
-    "/create/document",
+    "/document",
     summary="Create a document",
 )
 def create_document(
@@ -121,7 +121,7 @@ def create_document(
 
 
 @router.post(
-    "/create/from-template",
+    "/from-template",
     summary="Create a content record from a template content record",
 )
 def create_from_template(
@@ -134,7 +134,7 @@ def create_from_template(
 
 
 @router.post(
-    "/create/template",
+    "/template",
     summary="Create a template content record",
 )
 def create_template_content_record(

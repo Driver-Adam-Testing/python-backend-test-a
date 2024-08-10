@@ -26,6 +26,40 @@ class NamedContent(BaseModel):
     content: str
 
 
+class ImportData(BaseModel):
+    data: list[NamedContent]
+
+    @classmethod
+    def from_llm(
+        cls,
+        llm: ChatOpenAI,
+        system_prompt: str,
+        user_prompt: str,
+        code: str,
+    ) -> Self:
+        user_prompt_complete = f"{user_prompt}\n\nCode:\n\n{code}"
+        content_raw = llm.generate_response(
+            system_prompt=system_prompt,
+            user_prompt=user_prompt_complete,
+            output_cfg=OutputConfig(kind=OutputConfigKind.JSON_STRICT, payload=cls),
+        )
+
+        return cls.parse_raw(content_raw)
+
+    def render_markdown(self) -> str:
+        output = ""
+        for nc in self.data:
+            description = (
+                nc.content if len(nc.content) > 0 else "Custom or 3rd party import."
+            )
+            output += f"- `{nc.name}`: {description}\n"
+        output += "\n"
+        return output
+
+    def __str__(self) -> str:
+        return self.render_markdown()
+
+
 class VariableData(BaseModel):
     type: str
     description: str

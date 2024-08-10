@@ -1,4 +1,3 @@
-import json
 from typing import Self
 
 from pydantic import BaseModel
@@ -11,7 +10,7 @@ You are skilled at explaining technical details as well as recognizing and artic
 """
 
 SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT = """
-In a single paragraph of 3 to 5 sentences, explain the purpose of the code provided below. Consider questions such as the following when providing your output:
+You will be given the content of a source code file. In a single paragraph of 3 to 5 sentences, explain the purpose of the file. Consider questions such as the following when providing your output:
 
 - Does this code provide narrow or broad functionality?
 - Is this code a collection of many different components? If so, what is the common theme or purpose?
@@ -20,29 +19,36 @@ In a single paragraph of 3 to 5 sentences, explain the purpose of the code provi
 """
 
 SOURCE_CODE_SMALL_PURPOSE_USER_PROMPT = """
-In a single paragraph of 3 to 5 sentences, explain the purpose of the code provided below. Consider questions such as the following when providing your output:
+You will be given the content of a source code file. In a single paragraph of 3 to 5 sentences, explain the purpose of the file. Consider questions such as the following when providing your output:
 
 - Does this code provide narrow or broad functionality?
 - What kind of code is this? For example, is this code clearly an executable (e.g., main.c), a header file, a library file intended to be imported elsewhere, a collection of configuration variables, etc.?
 """
 
 TECHNICAL_CONCEPTS = """
-In a single paragraph of 3 to 5 sentences, describe the important technical features and their interactions in the code provided below.
+You will be given the content of a source code file. In a single paragraph of 3 to 5 sentences, describe the important technical features and their interactions in the file.
 
 In writing your description, write about about the conceptual use cases, applications, logic, and component interactions instead of focusing on particular functions, variables, etc.
 """
 
-# TECHNICAL_SUMMARY_USER_PROMPT = """
-# In one or more paragraphs, describe the important technical concepts of the code provided below. Choose a content length appropriate for the length and complexity of code. Longer and more complex code should have more summary content.
+IMPORTS_SYSTEM_PROMPT_JSON = """
+Summarize the imports and dependencies used in the code provided below.
 
-# In writing your description, write about about the conceptual use cases, applications, logic, and component interactions in the code instead of focusing on particular functions, variables, etc. A new developer can read your output and conceptually understand the core technical elements of the code before diving into source code.
-# """
+**Always respond using exactly the following JSON schema**:
+{
+    "data": [
+        {"name": <import1_name>, "content": <1 sentence description of the first import or header>},
+        {"name": <import2_name>, "content": <1 sentence description of the second import or header>},
+        ...
+    ]
+}
+"""
 
 IMPORTS_USER_PROMPT = """
-Summarize the dependencies or imports used in the code provided below.
+Summarize the imports and dependencies used in the code provided below.
 
-- If there are no dependencies or imports, just say so and do not write anything else.
-- Do not speculate on the nature of the imports or dependencies if it is not clear what they are for. If it is not clear, just identify the name. If it is clear what an import or dependency is, briefly describe it.
+- If there are no imports or dependencies, just return an empty list.
+- If it is completely clear what an import or dependency is for, briefly describe it. Do not speculate -- if it is not completely clear what a header file provides just identify it and leave the value associated with `content` empty.
 """
 
 DATA_STRUCTURES_CHECKER_SYSTEM_PROMPT_JSON = """
@@ -205,9 +211,7 @@ class ListData(BaseModel):
             user_prompt=user_prompt_complete,
             output_cfg=OutputConfig(kind=OutputConfigKind.JSON_STRICT, payload=cls),
         )
-        content_json = json.loads(content_raw)
-        return cls(data=content_json["data"])
-        # return cls.model_validate_json(content_raw)
+        return cls.parse_raw(content_raw)
 
 
 def _default_checker(

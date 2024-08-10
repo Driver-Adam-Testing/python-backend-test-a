@@ -23,7 +23,7 @@ You specialize in effectively describing small and short source code files. Your
 """
 
 SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT = """
-In a single paragraph of 3 to 5 sentences, explain the purpose of the code provided below. Consider questions such as the following when providing your output:
+You will be given the content of a source code file. In a single paragraph of 3 to 5 sentences, explain the purpose of the file. Consider questions such as the following when providing your output:
 
 - Does this code provide narrow or broad functionality?
 - Is this code a collection of many different components? If so, what is the common theme or purpose?
@@ -39,22 +39,29 @@ In a single paragraph of 3 to 5 sentences, explain the purpose of the code provi
 """
 
 TECHNICAL_CONCEPTS = """
-In a single paragraph of 3 to 5 sentences, describe the important technical features and their interactions in the code provided below.
+You will be given the content of a source code file. In a single paragraph of 3 to 5 sentences, describe the important technical features and their interactions in the file.
 
 In writing your description, write about about the conceptual use cases, applications, logic, and component interactions instead of focusing on particular functions, variables, etc.
 """
 
-# TECHNICAL_SUMMARY_USER_PROMPT = """
-# In one or more paragraphs, describe the important technical concepts of the code provided below. Choose a content length appropriate for the length and complexity of code. Longer and more complex code should have more summary content.
+IMPORTS_SYSTEM_PROMPT_JSON = """
+Summarize the header files and imports used in the code provided below.
 
-# In writing your description, write about about the conceptual use cases, applications, logic, and component interactions in the code instead of focusing on particular functions, variables, etc. A new developer can read your output and conceptually understand the core technical elements of the code before diving into source code.
-# """
+**Always respond using exactly the following JSON schema**:
+{
+    "data": [
+        {"name": <import1_name>, "content": <1 sentence description of the first import or header>},
+        {"name": <import2_name>, "content": <1 sentence description of the second import or header>},
+        ...
+    ]
+}
+"""
 
 IMPORTS_USER_PROMPT = """
 Summarize the header files and imports used in the code provided below.
 
-- If there are no header files or imports, just say so and do not write anything else.
-- If it is completely clear what a header file or import is for, briefly describe it. Do not speculate -- if it is not completely clear what a header file provides just identify it without attempting to describe it.
+- If there are no header files or imports, just return an empty list.
+- If it is completely clear what a header file or import is for, briefly describe it. Do not speculate -- if it is not completely clear what a header file provides just identify it and leave the value associated with `content` empty.
 """
 
 DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON = """

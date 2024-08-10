@@ -79,15 +79,8 @@ class Template(BaseModel):
                 case S.RAW:
                     (raw_content,) = args
                     output += f"{raw_content}\n"
-                case (
-                    S.SINGLE_PROMPT_TEXT
-                    | S.SINGLE_PROMPT_JSON
-                ):  # Simple section header, prompt pair
-                    output_cfg = (
-                        OutputConfig(kind=OutputConfigKind.JSON_MODE)
-                        if tag.kind == S.SINGLE_PROMPT_JSON
-                        else OutputConfig(kind=OutputConfigKind.TEXT)
-                    )
+                case S.SINGLE_PROMPT_TEXT:  # Simple section header, prompt, text output
+                    output_cfg = OutputConfig(kind=OutputConfigKind.TEXT)
                     section_title, system_prompt, section_prompt = args
                     user_prompt = f"{section_prompt}\n\nCode:\n\n{code}"
                     content = llm.generate_response(
@@ -97,6 +90,11 @@ class Template(BaseModel):
                     )
                     # TODO: actually handle rendering JSON output.
                     output += f"{section_title}\n{content}\n"
+                case S.SINGLE_PROMPT_JSON:  # Simple section header, prompt, JSON structured output
+                    output_cfg = OutputConfig(kind=OutputConfigKind.JSON_STRICT)
+                    section_title, system_prompt, user_prompt, llm_gen_fn = args
+                    content = llm_gen_fn(llm, system_prompt, user_prompt, code)
+                    output += f"{section_title}\n{str(content)}\n"
                 case (
                     S.LLM_COND_TEXT
                     | S.LLM_COND_JSON

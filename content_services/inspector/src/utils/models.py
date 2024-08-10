@@ -70,6 +70,8 @@ class ChatOpenAI:
         if output_cfg.kind == OutputConfigKind.JSON_STRICT:
             response = self.client.beta.chat.completions.parse(
                 model=self.model,
+                temperature=self.temperature,
+                response_format=output_cfg.into_openai_response_format(),
                 messages=[
                     {
                         "role": "system",
@@ -80,7 +82,6 @@ class ChatOpenAI:
                         "content": user_prompt,
                     },
                 ],
-                response_format=output_cfg.into_openai_response_format(),
             )
         else:
             response = self.client.chat.completions.create(

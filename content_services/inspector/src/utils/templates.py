@@ -8,7 +8,7 @@ from typing import Any, Self
 from modal import Function
 from pydantic import UUID4, BaseModel, ValidationError
 
-from utils.models import ChatOpenAI
+from utils.models import ChatOpenAI, OutputConfig, OutputConfigKind
 
 
 def _arity(fn: Callable) -> int:
@@ -83,13 +83,17 @@ class Template(BaseModel):
                     S.SINGLE_PROMPT_TEXT
                     | S.SINGLE_PROMPT_JSON
                 ):  # Simple section header, prompt pair
-                    use_json_mode = True if tag.kind == S.SINGLE_PROMPT_JSON else False
+                    output_cfg = (
+                        OutputConfig(kind=OutputConfigKind.JSON_MODE)
+                        if tag.kind == S.SINGLE_PROMPT_JSON
+                        else OutputConfig(kind=OutputConfigKind.TEXT)
+                    )
                     section_title, system_prompt, section_prompt = args
                     user_prompt = f"{section_prompt}\n\nCode:\n\n{code}"
                     content = llm.generate_response(
                         system_prompt=system_prompt,
                         user_prompt=user_prompt,
-                        use_json_mode=use_json_mode,
+                        output_cfg=output_cfg,
                     )
                     # TODO: actually handle rendering JSON output.
                     output += f"{section_title}\n{content}\n"
@@ -97,7 +101,6 @@ class Template(BaseModel):
                     S.LLM_COND_TEXT
                     | S.LLM_COND_JSON
                 ):  # Conditional construct using an LLM
-                    use_json_mode = True if tag.kind == S.LLM_COND_JSON else False
                     section_title, conditional_llm_fn, true_action, false_action = args
                     llm_fn_output: list[str] | None = conditional_llm_fn(llm, code)
                     action = false_action if llm_fn_output is None else true_action
@@ -123,10 +126,9 @@ class Template(BaseModel):
                     S.FN_COND_TEXT
                     | S.FN_COND_JSON
                 ):  # Conditional construct using a function
-                    use_json_mode = True if tag.kind == S.FN_COND_JSON else False
                     section_title, conditional_fn, true_action, false_action = args
                     fn_output: list[str] | str | None = conditional_fn(
-                        code, root_rel_path, use_json_mode
+                        code, root_rel_path
                     )
                     action = false_action if fn_output is None else true_action
                     if (

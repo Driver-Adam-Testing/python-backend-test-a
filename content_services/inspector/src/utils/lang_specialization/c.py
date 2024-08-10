@@ -67,11 +67,11 @@ You will be given the name of a data structure to document and the source code w
 Your job is to describe the data structure. **Always respond using exactly the following JSON schema**:
 {
     "type": <type of the data structure>,
-    "members": {
-        <member_name1>: <Terse 1 sentence description of the first member or field>,
-        <member_name2>: <Terse 1 sentence description of the second member or field>,
+    "members": [
+        {"name": <member_name1>, "content": <Terse 1 sentence description of the first member or field>},
+        {"name": <member_name2>, "content": <Terse 1 sentence description of the second member or field>},
         ...
-    },
+    ],
     "description": <one paragraph description of the data structure>,
 }
 
@@ -98,11 +98,11 @@ You will be given the name of a function to document and the source code where t
 Your job is to describe the function. **Always respond using exactly the following JSON schema**:
 {
     "single_sentence": <terse single sentence description of the function>,
-    "inputs": {
-        <input_arg1>: <description of input argument 1>,
-        <input_arg2>: <description of input argument 2>,
+    "inputs": [
+        {"name": <input_arg1>, "content": <description of input argument 1>},
+        {"name": <input_arg2>, "content": <description of input argument 2>},
         ...
-    },
+    ],
     "control_flow": [
         <bullet point 1 for description of control flow>,
         <bullet point 2 for description of control flow>,
@@ -150,7 +150,7 @@ VARIABLES_NONE_CONTENT = "No global variables defined in this file."
 
 
 def c_data_structure_checker(
-    code: str, root_rel_path: Path, structured_output: bool = False
+    code: str, root_rel_path: Path, structured_output: bool = True
 ) -> list[str] | str | None:
     symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
     ds_list = []
@@ -170,7 +170,7 @@ def c_data_structure_checker(
 
 
 def c_function_checker(
-    code: str, root_rel_path: Path, structured_output: bool = False
+    code: str, root_rel_path: Path, structured_output: bool = True
 ) -> list[str] | str | None:
     symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
     fn_list = [s["name"] for s in symbols if s["kind"] in C_FUNCTIONS]
@@ -187,7 +187,7 @@ def c_function_checker(
 
 
 def c_macro_checker(
-    code: str, root_rel_path: Path, structured_output: bool = False
+    code: str, root_rel_path: Path, structured_output: bool = True
 ) -> list[str] | str | None:
     symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
     m_list = [s["name"] for s in symbols if s["kind"] in C_MACROS]
@@ -204,7 +204,7 @@ def c_macro_checker(
 
 
 def c_variables_checker(
-    code: str, root_rel_path: Path, structured_output: bool = False
+    code: str, root_rel_path: Path, structured_output: bool = True
 ) -> list[str] | str | None:
     symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
     v_list = [s["name"] for s in symbols if s["kind"] in C_VARIABLES]

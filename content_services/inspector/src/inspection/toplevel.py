@@ -20,8 +20,8 @@ from inspection.prompt_templates.toplevel.templates.getting_started_guide import
 PARENT_PATH = Path(__file__).parent
 
 # TODO: Remove hardcoded.
-WORKSPACE_ID = UUID4("2bbbac7b-af3f-4019-b9a3-a3fe18b8ddb9")
-CODEBASE_ID = UUID4("5a0a26aa-4017-4fca-bfe3-849494583941")
+# WORKSPACE_ID = UUID4("2bbbac7b-af3f-4019-b9a3-a3fe18b8ddb9")
+# CODEBASE_ID = UUID4("a1a13ca0-308c-4e6c-9668-ad807b5a2896")
 
 
 def toplevel_chunk_description(
@@ -726,14 +726,14 @@ def comprehend_codebase_top_down(
     print(f"Codebase short description:\n{short_descriptions['single_paragraph']}")
 
     # TODO: Hacking the system by smuggling a quickstart guide into the entry point data.
-    readme_template = Template(
-        system_prompt="",
-        template=GETTING_STARTED_GUIDE_TEMPLATE,
-    )
-    readme = readme_template.run_with_single_shot_edit_agent(
-        workspace_id=WORKSPACE_ID, codebase_id=CODEBASE_ID
-    )
-    quickstart["entry"] = readme
+    # readme_template = Template(
+    #     system_prompt="",
+    #     template=GETTING_STARTED_GUIDE_TEMPLATE,
+    # )
+    # readme = readme_template.run_with_single_shot_edit_agent(
+    #     workspace_id=WORKSPACE_ID, codebase_id=CODEBASE_ID
+    # )
+    # quickstart["entry"] = readme
 
     # if to_disk_dir is not None:
     #     write_to_disk(

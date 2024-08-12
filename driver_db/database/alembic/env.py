@@ -1,3 +1,4 @@
+import datetime
 from logging.config import fileConfig
 
 from alembic import context
@@ -85,12 +86,16 @@ def run_migrations_online():
                 # one container really applies the migrations.
                 # https://github.com/sqlalchemy/alembic/issues/633
                 # command.ensure_version(config=context.config)
+                print("Locking alembic_version table for migration")
                 connection.execute(
                     statement=text(
                         "LOCK TABLE alembic_version IN ACCESS EXCLUSIVE MODE"
                     )
                 )
+            now = datetime.datetime.now(datetime.UTC)
+            print("Running migrations at", now)
             context.run_migrations()
+            print("Migrations complete at", datetime.datetime.now(datetime.UTC))
             # lock is released when transaction ends
 
 

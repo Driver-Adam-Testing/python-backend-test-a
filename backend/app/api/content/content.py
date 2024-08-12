@@ -162,7 +162,7 @@ def list_content(
         statement = statement.where(or_(*tag_id_clauses))
         count_statement = count_statement.where(or_(*tag_id_clauses))
 
-    print(statement)
+    logger.debug(str(statement))
 
     total_count = session.exec(count_statement).one()
     results = session.exec(statement.offset(input.offset).limit(input.limit)).all()

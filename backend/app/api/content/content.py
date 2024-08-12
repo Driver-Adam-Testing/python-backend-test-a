@@ -1,3 +1,4 @@
+import json
 import logging
 from datetime import datetime
 from typing import Optional
@@ -169,12 +170,12 @@ def list_content(
                 content_name=(
                     json.loads(result.content).get("name")
                     if result.content_type.type_name == "application_note"
-                    and result.misc_metadata
-                    and "name" in result.misc_metadata.keys()
+                    and result.content
+                    and "name" in json.loads(result.content)
                     else "Generating content..."
                     if result.content_type.type_name == "application_note"
-                    and result.misc_metadata
-                    and "name" not in result.misc_metadata.keys()
+                    and result.content
+                    and "name" not in json.loads(result.content)
                     else result.relative_path.removeprefix("documents/")
                     if result.content_type.type_name == "pdf_summary"
                     else result.relative_path

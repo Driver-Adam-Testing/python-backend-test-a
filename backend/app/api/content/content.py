@@ -167,7 +167,7 @@ def list_content(
                 content_type_id=result.content_type_id,
                 content_type_name=result.content_type.type_name,
                 content_name=(
-                    result.misc_metadata.get("name")
+                    json.loads(result.content).get("name")
                     if result.content_type.type_name == "application_note"
                     and result.misc_metadata
                     and "name" in result.misc_metadata.keys()

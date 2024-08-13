@@ -1,6 +1,5 @@
 import json
 from datetime import datetime
-<<<<<<< HEAD
 from typing import Optional
 
 from fastapi import HTTPException, status
@@ -22,8 +21,6 @@ from app.api.session import CurrentSession
 
 from app.repositories.base_repository import BaseRepository
 from sqlalchemy.exc import NoResultFound
-=======
->>>>>>> 36eaeb0f06a314aafe85a8b61745adfc973f0b0c
 
 from database.models_v1 import (
     DerivedContent,
@@ -164,11 +161,11 @@ class ContentService:
             )
 
     def create_blank_document(
-        self,
-        organization_id: str,
-        workspace_id: str,
-        codebase_id: str,
-        document_name: str | None = None,
+            self,
+            organization_id: str,
+            workspace_id: str,
+            codebase_id: str,
+            document_name: str | None = None,
     ) -> DerivedContent:
         workspace_exists = self.workspace_repository.exists(
             workspace_id, organization_id
@@ -263,7 +260,7 @@ class ContentService:
         return new_content
 
     def get_list_content(
-        self, organization_id: str, search_input: ListContentInput
+            self, organization_id: str, search_input: ListContentInput
     ) -> ListContentResults:
         try:
             results, total_count = self._get_list_content(organization_id, search_input)
@@ -279,12 +276,12 @@ class ContentService:
                 content_name=(
                     json.loads(result.content).get("name")
                     if result.content_type.type_name == "application_note"
-                    and result.content
-                    and "name" in json.loads(result.content)
+                       and result.content
+                       and "name" in json.loads(result.content)
                     else "Generating content..."
                     if result.content_type.type_name == "application_note"
-                    and result.content
-                    and "name" not in json.loads(result.content)
+                       and result.content
+                       and "name" not in json.loads(result.content)
                     else result.relative_path.removeprefix("documents/")
                     if result.content_type.type_name == "pdf_summary"
                     else result.relative_path
@@ -313,7 +310,7 @@ class ContentService:
         )
 
     def _get_list_content(
-        self, organization_id: str, search_input: ListContentInput
+            self, organization_id: str, search_input: ListContentInput
     ) -> tuple[list[DerivedContent], int]:
         statement = (
             select(DerivedContent)
@@ -340,12 +337,8 @@ class ContentService:
         if search_input.sort_by:
             if not hasattr(self.content_repository.model, search_input.sort_by):
                 raise ValueError(
-<<<<<<< HEAD
-                    f"Invalid sort field '{search_input.sort_by}' for model '{self.content_repository.model.__tablename__}'.")
-=======
                     f"Invalid sort field '{search_input.sort_by}' for model '{self.content_repository.model.__tablename__}'."
                 )
->>>>>>> 36eaeb0f06a314aafe85a8b61745adfc973f0b0c
 
             field_name = (
                 f"{self.content_repository.model.__tablename__}.{search_input.sort_by}"
@@ -410,7 +403,7 @@ class ContentService:
         return results, total_count
 
     def get_list_content_types(
-        self, lct_inputs: ListContentTypesInput
+            self, lct_inputs: ListContentTypesInput
     ) -> ListContentTypesResults:
         try:
             results = self.derived_content_type_repository.get_all(
@@ -425,7 +418,7 @@ class ContentService:
         return ListContentTypesResults(results=results)
 
     def create_template(
-        self, organization_id: str, workspace_id: str, codebase_id: str
+            self, organization_id: str, workspace_id: str, codebase_id: str
     ) -> DerivedContent:
         workspace_exists = self.workspace_repository.exists(
             workspace_id, organization_id
@@ -470,7 +463,6 @@ class ContentService:
         )
 
         return new_content
-
 
 
 def get_content_service(session: CurrentSession) -> ContentService:

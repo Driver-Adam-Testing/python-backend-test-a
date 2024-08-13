@@ -22,41 +22,42 @@ class TagService:
         self.session = session
         self.tag_repository = BaseRepository(session, Tag)
 
-    def list_tags(self, user: CurrentUser, input: ListTagsInput) -> ListTagsResults:
+    def list_tags(self, user: CurrentUser, lt_input: ListTagsInput) -> ListTagsResults:
 
         # statement = select(Tag).where(user.organization_id == Tag.organization_id)
         statement = [user.organization_id == Tag.organization_id]
         count_by = [user.organization_id == Tag.organization_id]
 
-        if input.name:
-            statement.append(Tag.name.contains(input.name))
-            count_by.append(Tag.name.contains(input.name))
+        if lt_input.name:
+            statement.append(Tag.name.contains(lt_input.name))
+            count_by.append(Tag.name.contains(lt_input.name))
 
         # total_count = self.session.exec(count_statement).one()
         total_count = self.tag_repository.count_by(count_by)
         results = self.tag_repository.get_all(
-            input.limit,
-            input.offset,
+            lt_input.limit,
+            lt_input.offset,
             conditions=statement,
         )
         # results = self.session.exec(statement.offset(input.offset).limit(input.limit)).all()
         return ListTagsResults(
             results=results,
-            offset=input.offset,
-            limit=input.limit,
+            offset=lt_input.offset,
+            limit=lt_input.limit,
             count=total_count
         )
 
-    def create_tag(self, user: CurrentUser, input: NewTagInput) -> Tag:
+    def create_tag(self, user: CurrentUser, lt_input: NewTagInput) -> Tag:
         return self.tag_repository.create(Tag(
-            name=input.name.strip(),
-            hex_color=input.hexColor.strip(),
+            name=lt_input.name.strip(),
+            hex_color=lt_input.hexColor.strip(),
             organization_id=user.organization_id,
             created_by=user.user_id,
             updated_by=user.user_id,
         ))
 
     def edit_tag(self, user: CurrentUser, tag_id: int, input: NewTagInput) -> Tag:
+
         tag = self.session.exec(
             select(Tag).where(
                 Tag.id == tag_id and Tag.organization_id == user.organization_id

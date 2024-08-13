@@ -54,16 +54,18 @@ def read_tags(
     limit: int | None = 20,
     offset: int | None = 0,
     name: str | None = None,
+    type: TagType | None = None,
     tag_service: TagService = Depends(get_tag_service),
 
 ) -> ListTagsResults:
 
     return tag_service.list_tags(
         user=user,
-        input=ListTagsInput(
+        lt_input=ListTagsInput(
             limit=limit,
             offset=offset,
             name=name
+            #todo add type=type
         )
     )
 

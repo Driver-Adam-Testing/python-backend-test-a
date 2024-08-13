@@ -18,6 +18,7 @@ from app.api.tags.tags import (
     ListTagsInput,
     ListTagsResults,
     NewTagInput,
+    TagType,
     create_tag,
     edit_tag,
     list_tag_contents,
@@ -64,8 +65,8 @@ def read_tags(
         lt_input=ListTagsInput(
             limit=limit,
             offset=offset,
-            name=name
-            #todo add type=type
+            name=name,
+            type=type
         )
     )
 

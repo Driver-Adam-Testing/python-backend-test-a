@@ -14,7 +14,7 @@ from database.models_v1 import (
 )
 from fastapi import HTTPException, status
 from pydantic import BaseModel
-from sqlalchemy import func
+from sqlalchemy import func, text
 from sqlmodel import Session, asc, desc, or_, select
 
 from app.api.auth import CurrentUser
@@ -118,9 +118,13 @@ def list_content(
     )
     if input.sort_by:
         if input.sort_direction == "ASC":
-            statement = statement.order_by(asc(input.sort_by))
+            statement = statement.order_by(
+                asc(text("derived_contents." + input.sort_by))
+            )
         elif input.sort_direction == "DESC":
-            statement = statement.order_by(desc(input.sort_by))
+            statement = statement.order_by(
+                desc(text("derived_contents." + input.sort_by))
+            )
         else:
             raise HTTPException(
                 status_code=400,
@@ -167,8 +171,11 @@ def list_content(
         statement = statement.where(or_(*tag_id_clauses))
         count_statement = count_statement.where(or_(*tag_id_clauses))
 
+    logger.debug(str(statement))
+
     total_count = session.exec(count_statement).one()
     results = session.exec(statement.offset(input.offset).limit(input.limit)).all()
+
     return ListContentResults(
         results=(
             ListContentResult(

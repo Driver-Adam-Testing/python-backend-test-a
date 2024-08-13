@@ -47,8 +47,7 @@ def read_tags(
         offset: int | None = 0,
         name: str | None = None,
         type: TagType | None = None,
-        tag_service: TagService = Depends(get_tag_service),
-
+        tag_service: TagService = Depends(get_tag_service)
 ) -> ListTagsResults:
     return tag_service.list_tags(
         user=user,

@@ -1,4 +1,5 @@
 import logging
+from typing import Literal
 
 from database.models_v1 import Tag
 from fastapi import HTTPException
@@ -11,14 +12,23 @@ from app.api.content.content import ListContentInput, ListContentResult, list_co
 
 logger = logging.getLogger(__name__)
 
+TagType = Literal["tag", "collection"]
+
 
 class ListTagsInput(BaseModel):
     name: str | None
+    type: TagType | None
     limit: int
     offset: int
 
 
 class NewTagInput(BaseModel):
+    name: str
+    hexColor: str
+    type: TagType
+
+
+class EditTagInput(BaseModel):
     name: str
     hexColor: str
 
@@ -52,6 +62,10 @@ def list_tags(
         statement = statement.where(Tag.name.contains(input.name))
         count_statement = count_statement.where(Tag.name.contains(input.name))
 
+    if input.type:
+        statement = statement.where(Tag.type == input.type)
+        count_statement = count_statement.where(Tag.type == input.type)
+
     total_count = session.exec(count_statement).one()
     results = session.exec(statement.offset(input.offset).limit(input.limit)).all()
     return ListTagsResults(
@@ -63,6 +77,7 @@ def create_tag(session: Session, user: CurrentUser, input: NewTagInput) -> Tag:
     tag = Tag(
         name=input.name.strip(),
         hex_color=input.hexColor.strip(),
+        type=input.type,
         organization_id=user.organization_id,
         created_by=user.user_id,
         updated_by=user.user_id,
@@ -73,8 +88,9 @@ def create_tag(session: Session, user: CurrentUser, input: NewTagInput) -> Tag:
     return tag
 
 
+# Tag types cannot be changed after creation
 def edit_tag(
-    session: Session, user: CurrentUser, tag_id: int, input: NewTagInput
+    session: Session, user: CurrentUser, tag_id: int, input: EditTagInput
 ) -> Tag:
     tag = session.exec(
         select(Tag).where(

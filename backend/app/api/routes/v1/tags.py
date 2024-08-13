@@ -2,7 +2,7 @@ import logging
 from typing import Annotated
 
 from database.models_v1 import Tag
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query,Depends
 from sqlalchemy.exc import IntegrityError
 
 from app.api.auth import CurrentUser
@@ -24,6 +24,9 @@ from app.api.tags.tags import (
     list_tags,
 )
 
+from app.services.tag_service import (TagService, get_tag_service)
+
+
 router = APIRouter()
 
 
@@ -31,10 +34,14 @@ logger = logging.getLogger(__name__)
 
 
 @router.post("/", status_code=201)
-def new_tag(session: CurrentSession, user: CurrentUser, new_tag: NewTagInput) -> Tag:
+def new_tag(
+        user: CurrentUser,
+        new_tag: NewTagInput,
+        tag_service: TagService = Depends(get_tag_service),
+) -> Tag:
     logging.info("Creating new tag")
     try:
-        return create_tag(session=session, user=user, input=new_tag)
+        return tag_service.create_tag( user=user, input=new_tag)
     except IntegrityError:
         logging.error("Tag name already exists")
         raise HTTPException(status_code=400, detail="Tag name already exists.")
@@ -47,11 +54,17 @@ def read_tags(
     limit: int | None = 20,
     offset: int | None = 0,
     name: str | None = None,
+    tag_service: TagService = Depends(get_tag_service),
+
 ) -> ListTagsResults:
-    return list_tags(
-        session=session,
+
+    return tag_service.list_tags(
         user=user,
-        input=ListTagsInput(limit=limit, offset=offset, name=name),
+        input=ListTagsInput(
+            limit=limit,
+            offset=offset,
+            name=name
+        )
     )
 
 

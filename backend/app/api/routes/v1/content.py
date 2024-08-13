@@ -1,7 +1,7 @@
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Query, Depends
+from fastapi import APIRouter, Query, Depends, HTTPException, status
 from sqlmodel import Session
 
 from app.api.auth import CurrentUser
@@ -61,22 +61,6 @@ def list(
         tag_ids=tag_id,
     ))
     return results
-    # return list_content(
-    #    session,
-    #    user,
-    #    ListContentInput(
-    #        limit=limit,
-    #        offset=offset,
-    #        text=text,
-    #        content_type_id=content_type_id,
-    #        content_type_name=content_type_name,
-    #        sort_by=sort_by,
-    #        sort_direction=sort_direction,
-    #        status=status,
-    #        tags=tag,
-    #        tag_ids=tag_id,
-    #    ),
-    # )
 
 
 @router.get(
@@ -91,7 +75,10 @@ def list_types(
         content_service: ContentService = Depends(get_content_service),
 ) -> ListContentTypesResults:
     return content_service.get_list_content_types(ListContentTypesInput(
-        limit=limit, offset=offset, sort_by=sort_by, sort_direction=sort_direction
+        limit=limit,
+        offset=offset,
+        sort_by=sort_by,
+        sort_direction=sort_direction
     ))
 
 
@@ -100,12 +87,13 @@ def list_types(
     summary="Associate a tag with this content",
 )
 def associate_tag_with_content(
-        session: CurrentSession,
         user: CurrentUser,
         content_id: str,
         tag_id: str,
+        content_service: ContentService = Depends(get_content_service),
 ) -> TagAssociationResponse:
-    return associate_tag(session, user, content_id, tag_id)
+    return content_service.associate_tag(user.organization_id, content_id, tag_id)
+
 
 
 @router.delete(
@@ -113,12 +101,12 @@ def associate_tag_with_content(
     summary="Disassociate a tag with this content",
 )
 def disassociate_tag_with_content(
-        session: CurrentSession,
         user: CurrentUser,
         content_id: str,
         tag_id: str,
+        content_service: ContentService = Depends(get_content_service),
 ) -> TagAssociationResponse:
-    return disassociate_tag(session, user, content_id, tag_id)
+    return content_service.disassociate_tag(user.organization_id, content_id, tag_id)
 
 
 @router.post(
@@ -131,7 +119,7 @@ def create_document(
         content_service: ContentService = Depends(get_content_service),
 ) -> CreateContentResponse:
     return CreateContentResponse(
-        data=[
+        results=[
             content_service.create_blank_document(user.organization_id, request.workspace_id, request.codebase_id)
         ]
     )
@@ -147,7 +135,11 @@ def create_from_template(
         request: CreateTemplateRequest,
         content_service: ContentService = Depends(get_content_service)
 ) -> CreateContentResponse:
-    return content_service.create_content_from_template(session, user, request.content_id)
+    return CreateContentResponse(
+        results=[
+            content_service.create_content_from_template(session, user, request.content_id)
+        ]
+    )
 
 
 @router.post(
@@ -160,4 +152,8 @@ def create_template_content_record(
         request: CreateTemplateRequest,
         content_service: ContentService = Depends(get_content_service),
 ) -> CreateContentResponse:
-    return content_service.create_template(session, user, request.content_id)
+    return CreateContentResponse(
+        results=[
+            content_service.create_template(session, user, request.content_id)
+        ]
+    )

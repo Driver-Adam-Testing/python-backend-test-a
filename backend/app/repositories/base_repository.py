@@ -2,7 +2,7 @@ from dataclasses import field
 from uuid import UUID
 from sqlalchemy import text
 
-from sqlmodel import Session, SQLModel, select, asc, desc
+from sqlmodel import Session, SQLModel, select, asc, desc, func
 from typing import Type, TypeVar, Generic, Optional, List, Any
 
 T = TypeVar("T", bound=SQLModel)
@@ -16,14 +16,33 @@ class BaseRepository(Generic[T]):
     def get(self, pk_id: UUID) -> Optional[T]:
         return self.session.get(self.model, pk_id)
 
+    def get_by_conditions(self, conditions: List, joins: Optional[List[Type[SQLModel]]] = None):
+        query = select(self.model)
+        if joins:
+            for join_model in joins:
+                query = query.join(join_model)
+        for condition in conditions:
+            query = query.where(condition)
+        return self.session.exec(query).first()
+    
     def get_all(
             self,
             limit: int = 100,
             offset: int = 0,
             sort_by: Optional[str] = None,
-            sort_direction: str = "DESC"
+            sort_direction: str = "DESC",
+            conditions: Optional[List] = None,
+            joins: Optional[List[Type[SQLModel]]] = None
     ) -> List[T]:
         statement = select(self.model).offset(offset).limit(limit)
+
+        if joins:
+            for join_model in joins:
+                statement = statement.join(join_model)
+
+        if conditions:
+            for condition in conditions:
+                statement = statement.where(condition)
 
         if sort_by:
             # Check if the sort field exists on the model
@@ -68,3 +87,12 @@ class BaseRepository(Generic[T]):
         if not instance:
             return False
         return getattr(instance, 'organization_id', None) == organization_id
+    
+    def count_by(self, conditions: List, joins: Optional[List[Type[SQLModel]]] = None) -> int:
+        query = select(func.count()).select_from(self.model)
+        if joins:
+            for join_model in joins:
+                query = query.join(join_model)
+        for condition in conditions:
+            query = query.where(condition)
+        return self.session.exec(query).one()

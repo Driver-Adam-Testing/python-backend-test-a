@@ -2,7 +2,7 @@ import json
 from datetime import datetime
 from typing import Optional
 
-from fastapi import HTTPException
+from fastapi import HTTPException, status
 
 from sqlmodel import Session, asc, desc, or_, select, func, text
 
@@ -14,6 +14,7 @@ from app.schemas.content_schema import (
     ListContentResult,
     ListContentTypesInput,
     ListContentTypesResults,
+    TagAssociationResponse,
 )
 
 from app.api.session import CurrentSession
@@ -49,6 +50,103 @@ class ContentService:
         self.workspace_repository = BaseRepository(session, Workspace)
         self.tag_repository = BaseRepository(session, Tag)
         self.derived_content_type_repository = DerivedContentTypeRepository(session)
+
+    def associate_tag(self, organization_id: str, content_id: str, tag_id: str) -> TagAssociationResponse:
+        # Check if content exists
+        # content = self.session.exec(
+        #     select(DerivedContent)
+        #     .join(Workspace)
+        #     .where(organization_id == Workspace.organization_id)
+        #     .where(DerivedContent.id == content_id)
+        #  ).first()
+        content = self.content_repository.get_by_conditions([
+            organization_id == Workspace.organization_id,
+            DerivedContent.id == content_id,
+        ], [Workspace])
+
+        if not content:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
+            )
+
+        # Check if tag exists
+        # tag = self.session.exec(
+        #     select(Tag)
+        #     .where(Tag.id == tag_id)
+        #     .where(organization_id == Tag.organization_id)
+        # ).first()
+        tag = self.tag_repository.get_by_conditions([
+            Tag.id == tag_id,
+            Tag.organization_id == organization_id
+        ])
+
+        if not tag:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Tag not found"
+            )
+
+        # Associate tag with content
+        content.tags.append(tag)
+        self.session.commit()
+        message = "Tag associated successfully"
+        return TagAssociationResponse(tag_id=tag_id, content_id=content_id, message=message)
+
+    def disassociate_tag(self, organization_id: str, content_id: str, tag_id: str) -> TagAssociationResponse:
+        # Check if content exists
+        # content = self.session.exec(
+        #     select(DerivedContent)
+        #     .join(Workspace)
+        #     .join(DerivedContent.tags)
+        #     .where(organization_id == Workspace.organization_id)
+        #     .where(DerivedContent.id == content_id)
+        #  ).first()
+        content = self.content_repository.get_by_conditions([
+            organization_id == Workspace.organization_id,
+            DerivedContent.id == content_id,
+        ], [
+            Workspace,
+            DerivedContent.tags
+        ])
+        if not content:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
+            )
+
+        # Check if tag exists
+        # tag = self.session.exec(
+        #     select(Tag)
+        #     .where(Tag.id == tag_id)
+        #     .where(organization_id == Tag.organization_id)
+        # ).first()
+        tag = self.tag_repository.get_by_conditions([
+            Tag.id == tag_id,
+            Tag.organization_id == organization_id
+        ])
+
+        if not tag:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Tag not found"
+            )
+
+        # Disassociate tag with content
+        link = self.session.exec(
+            select(TagContent)
+            .where(TagContent.tag_id == tag_id)
+            .where(TagContent.content_id == content_id)
+        ).first()
+
+        if link:
+            self.session.delete(link)
+            self.session.commit()
+            return TagAssociationResponse(
+                tag_id=tag_id,
+                content_id=content_id,
+                message="Tag disassociated successfully",
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Tag association not found"
+            )
 
     def create_blank_document(
             self,
@@ -213,7 +311,8 @@ class ContentService:
         )
         if search_input.sort_by:
             if not hasattr(self.content_repository.model, search_input.sort_by):
-                raise ValueError(f"Invalid sort field '{search_input.sort_by}' for model '{self.content_repository.model.__tablename__}'.")
+                raise ValueError(
+                    f"Invalid sort field '{search_input.sort_by}' for model '{self.content_repository.model.__tablename__}'.")
 
             field_name = f"{self.content_repository.__tablename__}.{search_input.sort_by}"
             if search_input.sort_direction == "ASC":
@@ -320,6 +419,7 @@ class ContentService:
         ))
 
         return new_content
+
 
 
 def get_content_service(session: CurrentSession) -> ContentService:

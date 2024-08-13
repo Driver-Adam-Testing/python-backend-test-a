@@ -16,8 +16,6 @@ from database.models_v1 import (
     Workspace,
 )
 
-# class DerivedContentBase(BaseModel,DerivedContent):
-#     pass
 
 DataT = TypeVar("DataT", bound=SQLModel)
 

@@ -1,30 +1,23 @@
 import logging
 from typing import Annotated
 
-from app.schemas.tag_schema import EditTagInput
+from app.schemas.tag_schema import (
+    EditTagInput,
+    NewTagInput,
+    TagType,
+    ListTagsResults,
+    ListTagsInput,
+    ListTagContentsResults
+)
+
+from app.schemas.content_schema import ListContentInput, TagAssociationResponse
 from database.models_v1 import Tag
 from fastapi import APIRouter, HTTPException, Query, Depends
 from sqlalchemy.exc import IntegrityError
 
 from app.api.auth import CurrentUser
-from app.api.content.content import (
-    ListContentInput,
-    TagAssociationResponse,
-    associate_tag,
-    disassociate_tag,
-)
 from app.api.session import CurrentSession
-from app.api.tags.tags import (
-    ListTagContentsResults,
-    ListTagsInput,
-    ListTagsResults,
-    NewTagInput,
-    TagType,
-    create_tag,
-    edit_tag,
-    list_tag_contents,
-    list_tags,
-)
+
 
 from app.services.tag_service import (TagService, get_tag_service)
 
@@ -41,7 +34,7 @@ def new_tag(
 ) -> Tag:
     logging.info("Creating new tag")
     try:
-        return tag_service.create_tag(user=user, input=new_tag)
+        return tag_service.create_tag(user=user, lt_input=new_tag)
     except IntegrityError:
         logging.error("Tag name already exists")
         raise HTTPException(status_code=400, detail="Tag name already exists.")
@@ -49,7 +42,6 @@ def new_tag(
 
 @router.get("/")
 def read_tags(
-        session: CurrentSession,
         user: CurrentUser,
         limit: int | None = 20,
         offset: int | None = 0,
@@ -93,8 +85,9 @@ def read_tag_contents(
         text: str | None = None,
         limit: int | None = 20,
         offset: int | None = 0,
+        tag_service: TagService = Depends(get_tag_service),
 ) -> ListTagContentsResults:
-    return list_tag_contents(
+    return tag_service.list_tag_contents(
         session=session,
         user=user,
         tag_id=tag_id,
@@ -120,9 +113,10 @@ def associate_tag_with_content(
         user: CurrentUser,
         content_id: str,
         tag_id: str,
+        tag_service: TagService = Depends(get_tag_service),
 ) -> TagAssociationResponse:
     try:
-        return associate_tag(session, user, content_id, tag_id)
+        return tag_service.associate_tag(session, user, content_id, tag_id)
     except IntegrityError:
         logging.error("Association already exists.")
         raise HTTPException(
@@ -140,5 +134,6 @@ def disassociate_tag_with_content(
         user: CurrentUser,
         content_id: str,
         tag_id: str,
+        tag_service: TagService = Depends(get_tag_service),
 ) -> TagAssociationResponse:
-    return disassociate_tag(session, user, content_id, tag_id)
+    return tag_service.disassociate_tag(session, user, content_id, tag_id)

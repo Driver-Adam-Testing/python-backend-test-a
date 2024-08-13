@@ -5,20 +5,16 @@ from fastapi import APIRouter, Query, Depends, HTTPException, status
 from sqlmodel import Session
 
 from app.api.auth import CurrentUser
-from app.api.content.content import (
-    CreateContentRequest,
-    CreateContentResponse,
-    ListContentInput,
-    ListContentResults,
-    ListContentTypesInput,
-    ListContentTypesResults,
-    TagAssociationResponse,
-    associate_tag,
-    disassociate_tag,
-)
 from app.api.session import CurrentSession
 from app.schemas.content_schema import (
     CreateTemplateRequest,
+    ListContentInput,
+    ListContentResults,
+    CreateContentRequest,
+    CreateContentResponse,
+    TagAssociationResponse,
+    ListContentTypesInput,
+    ListContentTypesResults,
 )
 from app.services.content_service import ContentService, get_content_service
 

@@ -1,6 +1,7 @@
 import logging
 from typing import Literal
 
+from app.schemas.tag_schema import ListTagsInput, ListTagsResults, NewTagInput, EditTagInput, ListTagContentsResults
 from database.models_v1 import Tag
 from fastapi import HTTPException
 from pydantic import BaseModel
@@ -8,44 +9,47 @@ from sqlalchemy import func
 from sqlmodel import Session, select
 
 from app.api.auth import CurrentUser
-from app.api.content.content import ListContentInput, ListContentResult, list_content
+from app.api.content.content import (
+ListContentInput,
+ListContentResult, list_content
+)
 
 logger = logging.getLogger(__name__)
 
 TagType = Literal["tag", "collection"]
 
 
-class ListTagsInput(BaseModel):
-    name: str | None
-    type: TagType | None
-    limit: int
-    offset: int
-
-
-class NewTagInput(BaseModel):
-    name: str
-    hexColor: str
-    type: TagType
-
-
-class EditTagInput(BaseModel):
-    name: str
-    hexColor: str
-
-
-class ListTagsResults(BaseModel):
-    results: list[Tag]
-    offset: int
-    limit: int
-    count: int
-
-
-class ListTagContentsResults(BaseModel):
-    tag: Tag
-    results: list[ListContentResult]
-    offset: int
-    limit: int
-    count: int
+# class ListTagsInput(BaseModel):
+#     name: str | None
+#     type: TagType | None
+#     limit: int
+#     offset: int
+#
+#
+# class NewTagInput(BaseModel):
+#     name: str
+#     hexColor: str
+#     type: TagType
+#
+#
+# class EditTagInput(BaseModel):
+#     name: str
+#     hexColor: str
+#
+#
+# class ListTagsResults(BaseModel):
+#     results: list[Tag]
+#     offset: int
+#     limit: int
+#     count: int
+#
+#
+# class ListTagContentsResults(BaseModel):
+#     tag: Tag
+#     results: list[ListContentResult]
+#     offset: int
+#     limit: int
+#     count: int
 
 
 def list_tags(

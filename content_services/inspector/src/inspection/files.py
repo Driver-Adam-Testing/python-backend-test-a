@@ -5,6 +5,8 @@ from typing import Any, Self
 
 import openai
 from pydantic import BaseModel, ValidationError
+
+# from shared.chunking.text_splitter import TextSplitter
 from utils.dag import LiteNode
 from utils.io import (
     get_prompt_template,
@@ -27,6 +29,9 @@ from inspection.prompt_templates.files.templates.source_code_large_cpp import (
 )
 from inspection.prompt_templates.files.templates.source_code_large_default import (
     SOURCE_CODE_LARGE_TEMPLATE_DEFAULT,
+)
+from inspection.prompt_templates.files.templates.source_code_multi_context_default import (
+    SOURCE_CODE_MULTI_CONTEXT_TEMPLATE_DEFAULT,
 )
 from inspection.prompt_templates.files.templates.source_code_small_c import (
     SOURCE_CODE_SMALL_TEMPLATE_C,
@@ -239,9 +244,15 @@ def comprehend_file_top_down(
             message=description,
         )
         return success, results
+
+    # chunk_size = 100_000
+    # chunk_overlap = 3000
+    # splitter = TextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+    # chunks = splitter.split(text=source_code)
     chunks = chunk_str(
         chunk_size=chunk_size, chunk_overlap=chunk_overlap, str_in=source_code
     )
+
     if len(chunks) > max_num_chunks:
         if raise_hard_errors:
             raise ValueError(
@@ -261,188 +272,43 @@ def comprehend_file_top_down(
             )
             return (success, results)
     if len(chunks) > 1:
+        # chunk_texts = [c.text for c in chunks]
+        chunk_texts = chunks
         # TODO: Decide how/when/if to fold use of the code map for longer files like this.
         logging.info(f"Processing {len(chunks)} chunks for `{node.root_rel_path}`")
         print(f"Processing {len(chunks)} chunks for `{node.root_rel_path}` ...")
-        # if use_async:
-        #     with FastShutdownThreadPoolExecutor(max_workers=max_workers) as executor:
-        #         futures = {
-        #             executor.submit(
-        #                 file_chunk_description,
-        #                 llm,
-        #                 node.name,
-        #                 codebase_name,
-        #                 node.root_rel_path,
-        #                 c,
-        #             ): idx
-        #             for idx, c in enumerate(chunks)
-        #         }
-        #         # Make sure the original chunk order is preserved.
-        #         results = [
-        #             (futures[future], future.result())
-        #             for future in concurrent.futures.as_completed(futures.keys())
-        #         ]
-        #         chunk_detailed_descriptions = [
-        #             r for (_idx, r) in sorted(results, key=lambda tup: tup[0])
-        #         ]
-        #         # Compression steps, if needed.
-        #         aggregated_descriptions = ""
-        #         for idx, c in enumerate(chunk_detailed_descriptions, start=1):
-        #             aggregated_descriptions += f"File chunk {idx} description for file `{node.name}`:\n\n{c}\n\n"
-        #         compression_idx = 0
-        #         while len(aggregated_descriptions) >= chunk_size:
-        #             chunks = chunk_str(
-        #                 chunk_size=chunk_size,
-        #                 chunk_overlap=chunk_overlap,
-        #                 str_in=aggregated_descriptions,
-        #             )
-        #             logging.info(
-        #                 f"Compressing {len(chunks)} chunk descriptions for `{node.name}`"
-        #             )
-        #             print(
-        #                 f"Compressing {len(chunks)} chunk descriptions for `{node.name}`"
-        #             )
-        #             futures = {
-        #                 executor.submit(
-        #                     file_compress_chunks,
-        #                     llm,
-        #                     node.name,
-        #                     c,
-        #                 ): idx
-        #                 for idx, c in enumerate(chunks)
-        #             }
-        #             # Make sure the original chunk order is preserved.
-        #             results = [
-        #                 (futures[future], future.result())
-        #                 for future in concurrent.futures.as_completed(futures.keys())
-        #             ]
-        #             chunk_detailed_descriptions = [
-        #                 r for (_idx, r) in sorted(results, key=lambda tup: tup[0])
-        #             ]
-        #             aggregated_descriptions = ""
-        #             for idx, c in enumerate(chunk_detailed_descriptions, start=1):
-        #                 aggregated_descriptions += f"File chunk {idx} description for file `{node.name}`:\n\n{c}"
-        #             compression_idx += 1
-        #             if compression_idx >= compression_loop_max_itr:
-        #                 if raise_hard_errors:
-        #                     raise ValueError(
-        #                         f"Compression loop max iteration ({compression_loop_max_itr}) reached for file `{node.name}`"
-        #                     )
-        #                 else:
-        #                     logging.warning(
-        #                         f"Compression loop max iteration ({compression_loop_max_itr}) reached for file `{node.name}`"
-        #                     )
-        #                     print(
-        #                         f"WARNING: Compression loop max iteration ({compression_loop_max_itr}) reached for file `{node.name}`"
-        #                     )
-        #                     description = "File too large to process."
-        #                     success = False
-        #                     results = _return_with_simple_message(
-        #                         message=description,
-        #                         file_node=node,
-        #                         file_content=file_content,
-        #                         to_disk_dir=to_disk_dir,
-        #                     )
-        #                     return (success, results)
-        # else:
-        chunk_detailed_descriptions = []
-        num_chunks = len(chunks)
-        for idx, c in enumerate(chunks):
-            try:
-                chunk_detailed_descriptions.append(
-                    file_chunk_description(
-                        llm=llm,
-                        file_name=node.root_rel_path.name,
-                        codebase_name=codebase_name,
-                        path=node.root_rel_path,
-                        code_chunk=c,
-                    )
-                )
-                logging.info(
-                    f"Source code chunk {idx + 1}/{num_chunks} processed for file `{node.root_rel_path}`"
-                )
-                print(
-                    f"Source code chunk {idx + 1}/{num_chunks} processed for file `{node.root_rel_path}`"
-                )
-            except openai.BadRequestError:
-                description = "Could not process file"
-                success = False
-                results = _return_with_simple_message(
-                    message=description,
-                )
-                return success, results
-
-        # Compression steps, if needed.
-        aggregated_descriptions = ""
-        for idx, c in enumerate(chunk_detailed_descriptions, start=1):
-            aggregated_descriptions += f"File chunk {idx} description for file `{node.root_rel_path}`:\n\n{c}\n\n"
-        compression_idx = 0
-        while len(aggregated_descriptions) >= chunk_size:
-            chunks = chunk_str(
-                chunk_size=chunk_size,
-                chunk_overlap=chunk_overlap,
-                str_in=aggregated_descriptions,
-            )
-            num_chunks = len(chunks)
-            logging.info(
-                f"Compressing {len(chunks)} chunk descriptions for file `{node.root_rel_path}`"
-            )
-            print(
-                f"Compressing {len(chunks)} chunk descriptions for file `{node.root_rel_path}`"
-            )
-            chunk_detailed_descriptions = []
-            for idx, c in enumerate(chunks):
-                chunk_detailed_descriptions.append(
-                    file_compress_chunks(
-                        llm=llm, file_name=node.root_rel_path.name, description_chunk=c
-                    )
-                )
-                logging.info(
-                    f"Compression chunk {idx + 1}/{num_chunks} for compression iteration {compression_idx + 1} processed for file `{node.root_rel_path}`"
-                )
-                print(
-                    f"Compression chunk {idx + 1}/{num_chunks} for compression iteration {compression_idx + 1} processed for file `{node.root_rel_path}`"
-                )
-            aggregated_descriptions = ""
-            for idx, c in enumerate(chunk_detailed_descriptions, start=1):
-                aggregated_descriptions += f"File chunk {idx} description for file `{node.root_rel_path.name}`:\n\n{c}"
-            compression_idx += 1
-            if compression_idx >= compression_loop_max_itr:
-                if raise_hard_errors:
-                    raise ValueError(
-                        f"Compression loop max iteration ({compression_loop_max_itr}) reached for file `{node.root_rel_path}`"
-                    )
-                else:
-                    logging.warning(
-                        f"Compression loop max iteration ({compression_loop_max_itr}) reached for file `{node.root_rel_path}`"
-                    )
-                    print(
-                        f"WARNING: Compression loop max iteration ({compression_loop_max_itr}) reached for file `{node.root_rel_path}`"
-                    )
-                    description = "File too large to process."
-                    success = False
-                    results = _return_with_simple_message(
-                        message=description,
-                    )
-                    return (success, results)
-
-        # Now ready to generate final documentation content.
-        file_description_long = file_long_from_chunk_descriptions(
-            llm=llm,
-            chunks=chunk_detailed_descriptions,
-            file_name=node.root_rel_path.name,
-            codebase_name=codebase_name,
+        file_kind = FileKind.from_llm(
+            llm=llm, file_name=node.root_rel_path.name, code=chunk_texts[0]
         )
+
+        if file_kind.kind == FileEnum.METADATA:
+            # TODO: implement for Metadata
+            success = False
+            results = _return_with_simple_message(
+                message="Large Metadata file type not yet supported."
+            )
+            return (success, results)
+        else:
+            template = SOURCE_CODE_MULTI_CONTEXT_TEMPLATE_DEFAULT
+            long_template = Template(template=template)
+            file_description_long = long_template.run_with_code(
+                llm=llm,
+                root_rel_path=node.root_rel_path,
+                code=source_code,
+                code_chunks=chunk_texts,
+            )
+        # Now ready to generate final documentation content.
+        chunk_detailed_descriptions = [file_description_long]
         file_description_single_sentence = file_single_sentence_from_chunk_descriptions(
             llm=llm,
-            chunks=chunk_detailed_descriptions,
+            chunks=[file_description_long],
             file_name=node.root_rel_path.name,
             codebase_name=codebase_name,
         )
         file_description_single_paragraph = (
             file_single_paragraph_from_chunk_descriptions(
                 llm=llm,
-                chunks=chunk_detailed_descriptions,
+                chunks=[file_description_long],
                 file_name=node.root_rel_path.name,
                 codebase_name=codebase_name,
             )

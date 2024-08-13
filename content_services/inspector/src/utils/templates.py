@@ -23,6 +23,9 @@ class S(IntEnum):
     LLM_COND_JSON = 4
     FN_COND_TEXT = 5
     FN_COND_JSON = 6
+    MULTI_PROMPT_TEXT = 7
+    MULTI_PROMPT_JSON = 8
+    SINGLE_PROMPT_CHUNK = 9
 
 
 class TemplateError(Exception):
@@ -70,7 +73,13 @@ class Boolean(BaseModel):
 class Template(BaseModel):
     template: list[Any]
 
-    def run_with_code(self, llm: ChatOpenAI, root_rel_path: Path, code: str) -> str:
+    def run_with_code(
+        self,
+        llm: ChatOpenAI,
+        root_rel_path: Path,
+        code: str,
+        code_chunks: list[str] | None = None,
+    ) -> str:
         output = ""
         for tup in self.template:
             tag = SectionKind(kind=tup[0])
@@ -149,6 +158,36 @@ class Template(BaseModel):
                                 "`FN_COND` expects branch string or callable with arity 0 or 3"
                             )
                         output += f"{section_title}\n{str(content)}\n"  # Call `str` to render data structure
+                case S.MULTI_PROMPT_TEXT:  # Simple section, but requires multiple prompts due to context limits
+                    (
+                        section_title,
+                        system_prompt,
+                        section_prompt,
+                        aggregate_prompt,
+                    ) = args
+                    chunk_paragraphs = ""
+                    for code_chunk in code_chunks:
+                        user_prompt = f"{section_prompt}\n\nCode:\n\n{code_chunk}"
+                        content = llm.generate_response(
+                            system_prompt=system_prompt,
+                            user_prompt=user_prompt,
+                        )
+                        chunk_paragraphs += f"{content}\n"
+                    aggregate_user_prompt = f"{aggregate_prompt}\n\n{chunk_paragraphs}"
+                    content = llm.generate_response(
+                        system_prompt=system_prompt,
+                        user_prompt=aggregate_user_prompt,
+                    )
+                    output += f"{section_title}\n{content}\n"
+                case S.SINGLE_PROMPT_CHUNK:  # Simple section for a file that doesn't fit in a single context window,
+                    # but only requires first code chunk
+                    section_title, system_prompt, section_prompt = args
+                    user_prompt = f"{section_prompt}\n\nCode:\n\n{code_chunks[0]}"
+                    content = llm.generate_response(
+                        system_prompt=system_prompt,
+                        user_prompt=user_prompt,
+                    )
+                    output += f"{section_title}\n{content}\n"
                 case _:
                     raise TemplateError(
                         f"Unsupported template section kind {tag.kind} for direct llm execution"

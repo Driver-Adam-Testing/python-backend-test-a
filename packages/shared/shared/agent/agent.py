@@ -7,17 +7,9 @@ from openai import OpenAI
 from openai.types.chat.chat_completion_message import ChatCompletionMessage
 
 from shared.agent.models.claude import claude_tool_formatter
+from shared.agent.models.llm_models import ModelConfig
 from shared.agent.vector_db import VectorDb
 from shared.utils.bcolors import bcolors
-
-SUPPORTED_MODELS = [
-    {"model": "gpt-4-turbo-preview", "provider": "openai"},
-    {"model": "gpt-4-turbo", "provider": "openai"},
-    {"model": "gpt-4o", "provider": "openai"},
-    {"model": "claude-3-opus-20240229", "provider": "anthropic"},
-    {"model": "claude-3-haiku-20240307", "provider": "anthropic"},
-    {"model": "claude-3-sonnet-20240229", "provider": "anthropic"},
-]
 
 
 class AgentBase:
@@ -25,7 +17,7 @@ class AgentBase:
         self,
         workspace_id: str,
         codebase_id: str = None,
-        model: str = "gpt-4-turbo-preview",
+        model: str = None,
         max_iterations: int = 1,
         tools=None,
         id: uuid.UUID = None,
@@ -36,7 +28,9 @@ class AgentBase:
         self.codebase_id = codebase_id
         self.max_iterations = max_iterations
         self.tools = tools if tools is not None else []
-        self.model = model
+        self.model = (
+            model if model is not None else ModelConfig.get_default_model().model
+        )
         self.collection = VectorDb(workspace_id=workspace_id)
         self.messages = []
         if id is None:
@@ -333,56 +327,3 @@ class AnthropicAgent(AgentBase):
                 }
             )
         return super().invoke(prompt)
-
-
-class Agent:
-    def __init__(
-        self,
-        workspace_id: str,
-        codebase_id: str = None,
-        model: str = "gpt-4-turbo-preview",
-        max_iterations: int = 1,
-        tools=None,
-    ):
-        self.model_provider = next(
-            (item["provider"] for item in SUPPORTED_MODELS if item["model"] == model),
-            None,
-        )
-        if self.model_provider is None:
-            raise ValueError(f"Model {model} is not supported.")
-        if self.model_provider == "openai":
-            self.agent = OpenAIAgent(
-                workspace_id, codebase_id, model, max_iterations, tools
-            )
-        elif self.model_provider == "anthropic":
-            self.agent = AnthropicAgent(
-                workspace_id, codebase_id, model, max_iterations, tools
-            )
-        else:
-            raise ValueError(f"Provider {self.model_provider} is not supported.")
-
-    def add_message(self, message, log=True):
-        self.agent.add_message(message, log=log)
-
-    def invoke(self, prompt):
-        return self.agent.invoke(prompt)
-
-
-def get_agent(self, agent_instance_id: str):
-    (
-        agent_instance,
-        agent_messages,
-        agent_errors,
-        chunk_texts,
-    ) = self.collection.get_agent_instance(agent_instance_id)
-    if agent_instance is None:
-        return None
-    agent = Agent(
-        workspace_id=agent_instance.workspace_id,
-        codebase_id=agent_instance.codebase_id,
-        model=agent_instance.model,
-        id=agent_instance.id,
-    )
-    for message in agent_messages:
-        agent.add_message(message)
-    return agent

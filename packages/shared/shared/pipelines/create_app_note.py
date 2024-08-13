@@ -2,15 +2,16 @@ from urllib.parse import unquote, urlparse
 
 from pydantic import UUID4, BaseModel
 from shared import prompts
-from shared.agent import Agent
-from shared.agent.agent_tools import (
+from shared.agent.agent_factory import create_agent
+from shared.agent.tools.tool import Tool
+
+from packages.shared.shared.agent.tools.agent_tools import (
     deep_rag_tool,
     list_files_tool,
     query_uploaded_pdf_files,
     search_pdf_summaries_tool,
     search_source_code_tool,
 )
-from shared.agent.tool import Tool
 
 
 class CreateAppNoteRequest(BaseModel):
@@ -22,25 +23,23 @@ class CreateAppNoteRequest(BaseModel):
 
 
 def create_app_note(request: CreateAppNoteRequest):
-    agent = Agent(
+    agent = create_agent(
         workspace_id=request.workspace_id,
         codebase_id=request.codebase_id,
+        model=request.model,
+        max_iterations=5,
         tools=[
             deep_rag_tool,
             search_source_code_tool,
         ],
-        max_iterations=5,
-        model=request.model,
     )
-    file_ids = agent.agent.collection.get_uploaded_files(request.codebase_id)
-    file_list_length = len(
-        agent.agent.collection.get_file_system(agent.agent.codebase_id)
-    )
+    file_ids = agent.collection.get_uploaded_files(request.codebase_id)
+    file_list_length = len(agent.collection.get_file_system(agent.codebase_id))
     if file_list_length < 200:
-        agent.agent.tools.append(list_files_tool)
+        agent.tools.append(list_files_tool)
     if file_ids:
         available_files = []
-        agent.agent.tools.append(search_pdf_summaries_tool)
+        agent.tools.append(search_pdf_summaries_tool)
         for file in file_ids:
             try:
                 parsed_url = urlparse(file.misc_metadata.get("url"))
@@ -69,7 +68,7 @@ def create_app_note(request: CreateAppNoteRequest):
                 function=query_uploaded_pdf_files,
                 description=f"Ask an OpenAI assistant a question about uploaded auxiliary files. The file_ids parameter is an array of file_ids. AVAILABLE FILE LIST: {file_subset}",
             )
-            agent.agent.tools.append(pdf_tool)
+            agent.tools.append(pdf_tool)
         agent.add_message(
             {
                 "role": "system",
@@ -90,11 +89,11 @@ def create_app_note(request: CreateAppNoteRequest):
         f"""Based on the previous thought, respond with the final document in it's entirety. Remove outer ```markdown``` tags. Format it for markdown rendering. Since this document will be available in a larger group of technical documents, remove any conclusion, introduction, reference, or appendix sections. Search for additional context to deepen your understanding and provide snippets and examples. Follow the previous prompts and use the previous tool responses. Write the document while ensuring the most efficient writing, exampled, and source code rich way to answer the prompt: \n\n{request.prompt}"""
     )
 
-    copyeditor = Agent(
+    copyeditor = create_agent(
         workspace_id=request.workspace_id,
         codebase_id=request.codebase_id,
-        max_iterations=1,
         model=request.model,
+        max_iterations=1,
     )
     copyeditor.add_message(prompts.voice.copy_editor.MESSAGE)
     copyeditor.add_message(prompts.voice.copy_editor_remove_speculation.MESSAGE)

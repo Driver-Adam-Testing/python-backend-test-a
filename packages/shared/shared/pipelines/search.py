@@ -4,7 +4,7 @@ from database.models_v1 import Chunk, ContentMetadata
 from rank_bm25 import BM25Okapi
 from shared.embedding.text_embedder import TextEmbedder
 from shared.interfaces.search import SearchInput, SearchResult, SearchResults
-from sqlmodel import Session, asc, or_, select
+from sqlmodel import Session, asc, or_, select, text
 
 
 def tokenize_for_bm25(text: str):
@@ -14,6 +14,7 @@ def tokenize_for_bm25(text: str):
 def search_content_metadata(
     session: Session, organization_id: str | None, input: SearchInput
 ):
+    session.exec(text("SET ivfflat.probes = 10;"))
     embedded_query = TextEmbedder().batch_embed_text([input.query])[0]
 
     statement = select(
@@ -54,7 +55,7 @@ def search_content_metadata(
             )
 
     statement = statement.where(
-        Chunk.text_embedding_3_small.l2_distance(embedded_query) <= 1.3
+        Chunk.text_embedding_3_small.l2_distance(embedded_query) <= 1.25
     )
 
     statement = statement.order_by(asc("score"))

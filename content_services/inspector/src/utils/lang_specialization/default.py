@@ -98,7 +98,7 @@ Summarize the data structure in the code provided below.
 - When describing an important data structure, provide detail that matches the complexity of the data structure. Large and complex data structures should get longer explanations, while small ones a single sentence.
 """
 
-DATA_STRUCTURES_NONE_CONTENT = "No custom data structures defined in this file."
+DATA_STRUCTURES_NONE_CONTENT = "\n---\nNo custom data structures defined in this file."
 
 FUNCTIONS_CHECKER_SYSTEM_PROMPT_JSON = """
 Your job is to list any functions defined in the code provided below.
@@ -150,7 +150,7 @@ Summarize the function in the code provided below. Describe the inputs, control 
 - When describing a function, provide detail that matches the complexity of the function body. Large and complex functions should get longer explanations, while small ones much less.
 """
 
-FUNCTIONS_NONE_CONTENT = "No functions defined in this file."
+FUNCTIONS_NONE_CONTENT = "\n---\nNo functions defined in this file."
 
 VARIABLES_CHECKER_SYSTEM_PROMPT_JSON = """
 Your job is to list any global variables defined in the code provided below.
@@ -195,7 +195,7 @@ Summarize the variable in the code provided below.
 - When describing a variable, provide detail that matches the complexity of the variable. Large and complex global variables (e.g., containing large struct instances) should get longer explanations, while small ones (e.g., one line definitions) much less.
 """
 
-VARIABLES_NONE_CONTENT = "No global variables defined in this file."
+VARIABLES_NONE_CONTENT = "\n---\nNo global variables defined in this file."
 
 
 class ListData(BaseModel):

@@ -92,7 +92,7 @@ Summarize the data structure in the code provided below.
 - When describing an important data structure, provide detail that matches the complexity of the data structure. Large and complex data structures should get longer explanations, while small ones a single sentence.
 """
 
-DATA_STRUCTURES_NONE_CONTENT = "No custom data structures defined in this file."
+DATA_STRUCTURES_NONE_CONTENT = "\n---\nNo custom data structures defined in this file."
 
 
 FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON = """
@@ -127,7 +127,7 @@ Summarize the function or method in the code provided below. Describe the inputs
 - When describing a function, provide detail that matches the complexity of the function body. Large and complex functions should get longer explanations, while small ones much less.
 """
 
-FUNCTIONS_NONE_CONTENT = "No functions or function prototypes defined in this file."
+FUNCTIONS_NONE_CONTENT = "\n---\nNo functions or function prototypes defined in this file."
 
 VARIABLES_FOUND_SYSTEM_PROMPT_JSON = """
 You are an expert C++ programmer and a software engineering documentation expert. You write detailed documentation to explain code written in C++.
@@ -153,7 +153,7 @@ Summarize the variable in the code provided below.
 - When describing a variable, provide detail that matches the complexity of the variable. Large and complex global variables (e.g., containing large struct instances) should get longer explanations, while small ones (e.g., one line definitions) much less.
 """
 
-VARIABLES_NONE_CONTENT = "No global variables defined in this file."
+VARIABLES_NONE_CONTENT = "\n---\nNo global variables defined in this file."
 
 
 def cpp_data_structure_checker(

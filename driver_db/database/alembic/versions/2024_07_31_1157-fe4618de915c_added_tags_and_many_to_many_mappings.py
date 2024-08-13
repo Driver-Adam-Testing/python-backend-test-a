@@ -52,8 +52,8 @@ def upgrade():
     )
     op.create_table(
         "tags_contents",
-        sa.Column("tag_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
-        sa.Column("content_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
+        sa.Column("tag_id", sa.types.Uuid(), nullable=False),
+        sa.Column("content_id", sa.types.Uuid(), nullable=False),
         sa.ForeignKeyConstraint(
             ["content_id"],
             ["derived_contents.id"],

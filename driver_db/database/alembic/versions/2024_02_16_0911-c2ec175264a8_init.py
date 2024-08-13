@@ -6,7 +6,7 @@ Create Date: 2024-02-16 09:11:29.781054
 
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import pgvector
 import sqlalchemy as sa
@@ -15,9 +15,9 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "c2ec175264a8"
-down_revision: Union[str, None] = None
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = None
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -26,16 +26,16 @@ def upgrade() -> None:
     op.execute(sa.text('CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'))
     op.create_table(
         "contentprocessingsession",
-        sa.Column("id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
+        sa.Column("id", sa.types.Uuid(), nullable=False),
         sa.Column("code_revision", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
         sa.Column("arguments", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_table(
         "contentmetadata",
-        sa.Column("id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
-        sa.Column("workspace_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
-        sa.Column("codebase_id", sqlmodel.sql.sqltypes.GUID(), nullable=True),
+        sa.Column("id", sa.types.Uuid(), nullable=False),
+        sa.Column("workspace_id", sa.types.Uuid(), nullable=False),
+        sa.Column("codebase_id", sa.types.Uuid(), nullable=True),
         sa.Column(
             "content_type",
             sa.Enum(
@@ -49,9 +49,7 @@ def upgrade() -> None:
         ),
         sa.Column("relative_path", sqlmodel.sql.sqltypes.AutoString(), nullable=True),
         sa.Column("misc_metadata", sa.JSON(), nullable=False),
-        sa.Column(
-            "content_processing_session_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
-        ),
+        sa.Column("content_processing_session_id", sa.types.Uuid(), nullable=True),
         sa.ForeignKeyConstraint(
             ["content_processing_session_id"],
             ["contentprocessingsession.id"],
@@ -78,8 +76,8 @@ def upgrade() -> None:
     )
     op.create_table(
         "chunk",
-        sa.Column("id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
-        sa.Column("content_metadata_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
+        sa.Column("id", sa.types.Uuid(), nullable=False),
+        sa.Column("content_metadata_id", sa.types.Uuid(), nullable=False),
         sa.Column("text", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
         sa.Column(
             "text_embedding_3_small",

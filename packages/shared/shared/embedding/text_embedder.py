@@ -1,70 +1,43 @@
 import os
 
-from openai import OpenAI
+from openai import AsyncOpenAI, OpenAI
 from shared.chunking.text_splitter import TextChunk
 
 TEXT_EMBEDDING_MODEL = os.getenv("TEXT_EMBEDDING_MODEL", "text-embedding-3-small")
 SUPPORTED_OPENAI_MODELS = ["text-embedding-3-small"]
 
 
-class TextEmbedder:
-    """
-    A class used to embed text using a specified model.
+def _prepare_text_chunks(text_chunks: list[str | TextChunk]) -> list[str]:
+    if all(isinstance(chunk, TextChunk) for chunk in text_chunks):
+        return [chunk.text for chunk in text_chunks]
+    elif not all(isinstance(chunk, str) for chunk in text_chunks):
+        raise TypeError("text_chunks must be a list of strings or a list of TextChunks")
+    return text_chunks
 
-    Attributes
-    ----------
-    model : str
-        The model used for text embedding.
 
-    Methods
-    -------
-    batch_embed_text(text_chunks: Union[List[str], List[TextChunk]]) -> List:
-        Embeds a batch of text chunks using the specified model.
-    """
+def batch_embed_text(
+    text_chunks: list[str | TextChunk], model: str = TEXT_EMBEDDING_MODEL
+) -> list:
+    if model not in SUPPORTED_OPENAI_MODELS:
+        raise ValueError(f"Model {model} is not supported.")
 
-    def __init__(self, model: str = TEXT_EMBEDDING_MODEL) -> None:
-        """
-        Parameters
-        ----------
-        model : str, optional
-            The model used for text embedding (default is TEXT_EMBEDDING_MODEL)
-        """
-        self.model = model
+    openai_client = OpenAI()
+    prepared_chunks = _prepare_text_chunks(text_chunks)
+    return [
+        t.embedding
+        for t in openai_client.embeddings.create(
+            input=prepared_chunks, model=model
+        ).data
+    ]
 
-    def batch_embed_text(self, text_chunks: list[str] | list[TextChunk]) -> list:
-        """
-        Embeds a batch of text chunks using the specified model.
 
-        Parameters
-        ----------
-        text_chunks : Union[List[str], List[TextChunk]]
-            A list of text chunks to be embedded. The chunks can be either strings or TextChunk objects.
+async def async_batch_embed_text(
+    text_chunks: list[str | TextChunk], model: str = TEXT_EMBEDDING_MODEL
+) -> list:
+    if model not in SUPPORTED_OPENAI_MODELS:
+        raise ValueError(f"Model {model} is not supported.")
 
-        Returns
-        -------
-        list
-            A list of embeddings for the input text chunks.
-
-        Raises
-        ------
-        TypeError
-            If the input text chunks are not a list of strings or a list of TextChunk objects.
-        ValueError
-            If the specified model is not supported.
-        """
-        if self.model in SUPPORTED_OPENAI_MODELS:
-            openai_client = OpenAI()
-            if all(isinstance(chunk, TextChunk) for chunk in text_chunks):
-                text_chunks = [chunk.text for chunk in text_chunks]
-            elif not all(isinstance(chunk, str) for chunk in text_chunks):
-                raise TypeError(
-                    "text_chunks must be a list of strings or a list of TextChunks"
-                )
-            return [
-                t.embedding
-                for t in openai_client.embeddings.create(
-                    input=text_chunks, model=self.model
-                ).data
-            ]
-        else:
-            raise ValueError(f"Model {self.model} is not supported.")
+    openai_client = AsyncOpenAI()
+    prepared_chunks = _prepare_text_chunks(text_chunks)
+    response = await openai_client.embeddings.create(input=prepared_chunks, model=model)
+    return [t.embedding for t in response.data]

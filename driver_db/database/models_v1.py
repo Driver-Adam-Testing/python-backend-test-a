@@ -14,6 +14,7 @@ from sqlalchemy.dialects.postgresql import UUID as SaUuid
 from sqlmodel import JSON, Field, Relationship, SQLModel
 
 
+# TODO remove in favor of derived content types once new embeddings created
 class ContentType(str, enum.Enum):
     SOURCE_CODE = "SOURCE_CODE"
     AUXILIARY_DOCUMENTATION = "AUXILIARY_DOCUMENTATION"
@@ -45,9 +46,9 @@ class ContentMetadata(SQLModel, table=True):  # type: ignore
     content_type: ContentType = Field(Enum(ContentType), index=True)
     relative_path: str | None = Field(default=None, nullable=True, index=True)
     misc_metadata: dict = Field(default={}, sa_column=Column(JSON, nullable=False))  # type: ignore
-    chunks: list["Chunk"] = Relationship(back_populates="content_metadata")
 
 
+# TODO deprecate once all embeddings are in ChunkAndEmbedding
 class Chunk(SQLModel, table=True):  # type: ignore
     # TODO Note: these timestamps weren't updated to match the others because this
     # table is deprecated soon and there were tons of rows to populate.
@@ -71,7 +72,6 @@ class Chunk(SQLModel, table=True):  # type: ignore
     content_metadata_id: UUID = Field(
         foreign_key="contentmetadata.id", nullable=False, index=True
     )
-    content_metadata: ContentMetadata = Relationship(back_populates="chunks")
     text: str
     # Text Embeddings are actually indexed but it's not reflected in the model.py because it's using ivfflat
     text_embedding_3_small: list[float] = Field(
@@ -186,18 +186,6 @@ class Enum_Codebase_Status(str, enum.Enum):
     processing_complete = "processing-complete"
     processing_error = "processing-error"
     codebase_rejected = "codebase-rejected"
-
-
-class SetupCompleted(SQLModel, table=True):  # type: ignore
-    __tablename__ = "setup_completed"
-    id: UUID | None = Field(
-        sa_column=Column(
-            SaUuid(as_uuid=True),
-            primary_key=True,
-            server_default=text("uuid_generate_v4()"),
-        ),
-        default=None,
-    )
 
 
 class Workspace(SQLModel, table=True):  # type: ignore
@@ -396,7 +384,6 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
     derived_contents: list["DerivedContent"] = Relationship(
         back_populates="source_content"
     )
-
     order: int | None = Field(
         sa_column=Column(Integer, nullable=True, server_default=text("0"))
     )
@@ -452,4 +439,28 @@ class Tag(SQLModel, table=True):  # type: ignore
     )
     derived_contents: list["DerivedContent"] = Relationship(
         back_populates="tags", link_model=TagContent
+    )
+
+
+class ChunkAndEmbedding(SQLModel, table=True):  # type: ignore
+    id: UUID | None = Field(default_factory=uuid.uuid4, primary_key=True)
+    content_id: UUID = Field(foreign_key="derived_contents.id", nullable=False)
+    text: str
+    text_embedding_3_small: list[float] = Field(
+        sa_column=Column(Vector(1536), nullable=True)
+    )
+    chunk_number: int
+    created_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
+        default=None,
+    )
+    updated_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
+        ),
     )

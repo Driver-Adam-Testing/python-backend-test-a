@@ -251,6 +251,7 @@ def associate_tag(
     tag = session.exec(
         select(Tag)
         .where(Tag.id == tag_id)
+        .where(Tag.type == "tag")
         .where(user.organization_id == Tag.organization_id)
     ).first()
     if not tag:
@@ -286,6 +287,7 @@ def disassociate_tag(
     tag = session.exec(
         select(Tag)
         .where(Tag.id == tag_id)
+        .where(Tag.type == "tag")
         .where(user.organization_id == Tag.organization_id)
     ).first()
     if not tag:
@@ -313,7 +315,9 @@ def disassociate_tag(
         )
 
 
-def create_empty_document(session: Session, user: CurrentUser, workspace_id: str, codebase_id: str) -> CreateContentResponse:
+def create_empty_document(
+    session: Session, user: CurrentUser, workspace_id: str, codebase_id: str
+) -> CreateContentResponse:
     # Check if workspace exists and belongs to the user's organization
     workspace = session.exec(
         select(Workspace)
@@ -327,13 +331,13 @@ def create_empty_document(session: Session, user: CurrentUser, workspace_id: str
 
     # get application note derived content type
     application_note_content_type = session.exec(
-        select(DerivedContentType)
-        .where(DerivedContentType.type_name == "application_note")
+        select(DerivedContentType).where(
+            DerivedContentType.type_name == "application_note"
+        )
     ).first()
     # get codebase derived content type
     codebase_content_type = session.exec(
-        select(DerivedContentType)
-        .where(DerivedContentType.type_name == "codebase")
+        select(DerivedContentType).where(DerivedContentType.type_name == "codebase")
     ).first()
 
     # find the derived content type with content type codebase and workspace id and codebase id
@@ -344,11 +348,7 @@ def create_empty_document(session: Session, user: CurrentUser, workspace_id: str
         .where(DerivedContent.codebase_id == codebase_id)
     ).first()
 
-    blank_content_template = {
-        "name": "Untitled",
-        "content": " ",
-        "description": ""
-    }
+    blank_content_template = {"name": "Untitled", "content": " ", "description": ""}
 
     new_content = DerivedContent(
         content_type_id=application_note_content_type.id,

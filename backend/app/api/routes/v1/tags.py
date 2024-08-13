@@ -18,6 +18,7 @@ from app.api.tags.tags import (
     ListTagsInput,
     ListTagsResults,
     NewTagInput,
+    TagType,
     create_tag,
     edit_tag,
     list_tag_contents,
@@ -47,11 +48,12 @@ def read_tags(
     limit: int | None = 20,
     offset: int | None = 0,
     name: str | None = None,
+    type: TagType | None = None,
 ) -> ListTagsResults:
     return list_tags(
         session=session,
         user=user,
-        input=ListTagsInput(limit=limit, offset=offset, name=name),
+        input=ListTagsInput(limit=limit, offset=offset, name=name, type=type),
     )
 
 

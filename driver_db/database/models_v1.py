@@ -428,6 +428,10 @@ class Tag(SQLModel, table=True):  # type: ignore
         sa_column=sqlalchemy.Column(sqlalchemy.String(7), nullable=False),
     )
     organization_id: str
+    type: str = Field(
+        max_length=255,
+        sa_column=sqlalchemy.Column(sqlalchemy.String(255), nullable=False),
+    )
     created_at: None | datetime = Field(
         sa_column=Column(
             DateTime(timezone=True), server_default=func.now(), nullable=False

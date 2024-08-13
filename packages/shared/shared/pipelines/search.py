@@ -53,10 +53,9 @@ def search_content_metadata(
                 )
             )
 
-    if input.algorithm == "semantic":
-        statement = statement.where(
-            Chunk.text_embedding_3_small.l2_distance(embedded_query) <= 1.2
-        )
+    statement = statement.where(
+        Chunk.text_embedding_3_small.l2_distance(embedded_query) <= 1.3
+    )
 
     statement = statement.order_by(asc("score"))
 

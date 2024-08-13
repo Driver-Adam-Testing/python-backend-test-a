@@ -28,6 +28,7 @@ class ListContentInput(BaseModel):
     sort_direction: str | None = "DESC"
     status: str | None = None
     content_type_id: list[str] | None = None
+    content_type_name: list[str] | None = None
     tags: list[str] | None = None
     tag_ids: list[str] | None = None
 

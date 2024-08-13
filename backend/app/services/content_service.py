@@ -88,8 +88,7 @@ class ContentService:
         #     .where(organization_id == Tag.organization_id)
         # ).first()
         tag = self.tag_repository.get_by_conditions([
-            Tag.id == tag_id,
-            Tag.organization_id == organization_id
+            Tag.id == tag_id and Tag.organization_id == organization_id
         ])
 
         if not tag:

@@ -74,7 +74,6 @@ def update_tag(
 
 @router.get("/{tag_id}/content")
 def read_tag_contents(
-        session: CurrentSession,
         user: CurrentUser,
         tag_id: str,
         content_type_id: Annotated[list[str] | None, Query()] = None,
@@ -88,10 +87,9 @@ def read_tag_contents(
         tag_service: TagService = Depends(get_tag_service),
 ) -> ListTagContentsResults:
     return tag_service.list_tag_contents(
-        session=session,
         user=user,
         tag_id=tag_id,
-        input=ListContentInput(
+        lt_input=ListContentInput(
             limit=limit,
             offset=offset,
             text=text,

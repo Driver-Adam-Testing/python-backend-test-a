@@ -1,7 +1,9 @@
+import datetime
 from logging.config import fileConfig
 
 from alembic import context
-from sqlalchemy import engine_from_config, pool
+from sqlalchemy import engine_from_config, inspect, pool, text
+from sqlalchemy.engine import Connection
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -52,6 +54,11 @@ def run_migrations_offline():
         context.run_migrations()
 
 
+def table_exists(connection: Connection, table_name: str) -> bool:
+    inspector = inspect(connection)
+    return table_name in inspector.get_table_names()
+
+
 def run_migrations_online():
     """Run migrations in 'online' mode.
 
@@ -73,19 +80,22 @@ def run_migrations_online():
         )
 
         with context.begin_transaction():
-            # Since we are using Postgres, we can handle DB migration concurrency with LOCK TABLE
-            # https://github.com/sqlalchemy/alembic/issues/633
-            # command.ensure_version(config=context.config)
-            # try:
-            #     connection.execute(
-            #         statement=text("LOCK TABLE alembic_version IN ACCESS EXCLUSIVE MODE")
-            #     )
-            # except Exception as e:
-            #     if "relation \"alembic_version\" does not exist" in str(e):
-            #         print("Warning: alembic_version table does not exist.")
-            #     else:
-            #         raise RuntimeError(f"Failed to lock table alembic_version: {e}")
+            # We allow bypassing the lock for initial setup purposes when the alembic table doesn't exist.
+            if table_exists(connection, "alembic_version"):
+                # Since we are using Postgres, we can handle DB migration concurrency with LOCK TABLE so that only
+                # one container really applies the migrations.
+                # https://github.com/sqlalchemy/alembic/issues/633
+                # command.ensure_version(config=context.config)
+                print("Locking alembic_version table for migration")
+                connection.execute(
+                    statement=text(
+                        "LOCK TABLE alembic_version IN ACCESS EXCLUSIVE MODE"
+                    )
+                )
+            now = datetime.datetime.now(datetime.UTC)
+            print("Running migrations at", now)
             context.run_migrations()
+            print("Migrations complete at", datetime.datetime.now(datetime.UTC))
             # lock is released when transaction ends
 
 

@@ -1,8 +1,7 @@
 from database.models_v1 import Chunk, ContentMetadata
+from shared.embedding.text_embedder import TextEmbedder
 from shared.interfaces.search import SearchInput, SearchResult, SearchResults
 from sqlmodel import Session, asc, or_, select
-
-from app.utils.text_embedder import TextEmbedder
 
 
 def search_content_metadata(
@@ -46,8 +45,15 @@ def search_content_metadata(
 
     if input.result_limit:
         statement = statement.limit(input.result_limit)
+    print(statement)
+    import time
 
+    start_time = time.time()
     results = session.exec(statement).all()
+    end_time = time.time()
+
+    elapsed_time_ms = (end_time - start_time) * 1000
+    print(f"Query execution time: {elapsed_time_ms:.2f} ms")
     search_results = []
 
     accumulated_tokens = 0

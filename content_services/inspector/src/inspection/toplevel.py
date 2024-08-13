@@ -1,11 +1,9 @@
 import concurrent.futures
-import json
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from tqdm import tqdm
-
-from utils.dag import NodeKind, LiteNode
+from utils.dag import LiteNode, NodeKind
 from utils.io import (
     get_prompt_template,
 )
@@ -441,11 +439,15 @@ def comprehend_codebase_top_down(
     codebase_content = ""
     for node in docs:
         if node.kind == NodeKind.FILE:
-            codebase_content += (f"File `{node.root_rel_path.name}` at `{node.root_rel_path}` "
-                                 f"description:\n\n{docs[node]['long']}\n\n")
+            codebase_content += (
+                f"File `{node.root_rel_path.name}` at `{node.root_rel_path}` "
+                f"description:\n\n{docs[node]['long']}\n\n"
+            )
         elif node.kind == NodeKind.SUB_FOLDER or node.kind == NodeKind.ROOT_FOLDER:
-            codebase_content += (f"Folder `{node.root_rel_path.name}` at `{node.root_rel_path}` "
-                                 f"description:\n\n{docs[node]['short']['single_paragraph']}\n\n")
+            codebase_content += (
+                f"Folder `{node.root_rel_path.name}` at `{node.root_rel_path}` "
+                f"description:\n\n{docs[node]['short']['single_paragraph']}\n\n"
+            )
         else:
             raise Exception("Unreachable")
 
@@ -540,12 +542,12 @@ def comprehend_codebase_top_down(
         print(f"`chunk_detailed_descriptions`: {chunk_detailed_descriptions}")
         aggregation_state = "chunks"
         data = aggregated_descriptions
-        ir = [aggregation_state, data]
+        _ir = [aggregation_state, data]
         # write_to_disk(json.dumps(ir), f"{to_disk_dir}/state/intermediate2.json")
     else:
         aggregation_state = "no_chunks"
         data = codebase_content
-        ir = [aggregation_state, data]
+        _ir = [aggregation_state, data]
         # write_to_disk(json.dumps(ir), f"{to_disk_dir}/state/toplevel_intermediate.json")
 
     print("Generating final top-level content ...")

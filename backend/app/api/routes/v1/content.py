@@ -123,6 +123,20 @@ def disassociate_tag_with_content(
     return disassociate_tag(session, user, content_id, tag_id)
 
 
+# @router.post(
+#     "/{content_id}/collections/{tag_id}",
+#     summary="Associate a collection with this content. This is a snapshot of the ",
+# )
+# def associate_collection_with_content(
+#     session: CurrentSession,
+#     user: CurrentUser,
+#     content_id: str,
+#     tag_id: str,
+# ) -> TagAssociationResponse:
+# TODO - flatten all resources associated with the collection into content sources relationship
+# return associate_tag(session, user, content_id, tag_id)
+
+
 @router.post(
     "/document",
     summary="Create a document",

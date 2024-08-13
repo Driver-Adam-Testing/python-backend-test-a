@@ -239,6 +239,7 @@ def associate_tag(
     content = session.exec(
         select(DerivedContent)
         .join(Workspace)
+        .join(DerivedContentType)
         .where(user.organization_id == Workspace.organization_id)
         .where(DerivedContent.id == content_id)
     ).first()
@@ -251,7 +252,6 @@ def associate_tag(
     tag = session.exec(
         select(Tag)
         .where(Tag.id == tag_id)
-        .where(Tag.type == "tag")
         .where(user.organization_id == Tag.organization_id)
     ).first()
     if not tag:
@@ -259,11 +259,36 @@ def associate_tag(
             status_code=status.HTTP_404_NOT_FOUND, detail="Tag not found"
         )
 
-    # Associate tag with content
+    if tag.type == "collection":
+        if content.content_type.type_name not in [
+            "codebase",
+            "codebase-file",
+            "codebase-directory",
+            "pdf-summary",
+        ]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Collections can only be associated with codebases, directories, files or pdfs.",
+            )
+    # Check for existing relationship and handle so we don't throw a 500 error
+    existing_link = session.exec(
+        select(TagContent)
+        .where(TagContent.tag_id == tag_id)
+        .where(TagContent.content_id == content_id)
+    ).first()
+    if existing_link:
+        return TagAssociationResponse(
+            tag_id=tag_id,
+            content_id=content_id,
+            message=f"{tag.type} already associated with content",
+        )
+    # If we made it this far, associate tag or collection with content
     content.tags.append(tag)
     session.commit()
     return TagAssociationResponse(
-        tag_id=tag_id, content_id=content_id, message="Tag associated successfully"
+        tag_id=tag_id,
+        content_id=content_id,
+        message=f"{tag.type} associated successfully",
     )
 
 
@@ -287,7 +312,6 @@ def disassociate_tag(
     tag = session.exec(
         select(Tag)
         .where(Tag.id == tag_id)
-        .where(Tag.type == "tag")
         .where(user.organization_id == Tag.organization_id)
     ).first()
     if not tag:

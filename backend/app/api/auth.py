@@ -136,5 +136,5 @@ def get_current_m2m(
         return M2M(**token_payload)
 
 
-CurrentUser = Annotated[User | M2M, Depends(get_current_user), Depends(get_current_m2m)]
+CurrentUser = Annotated[User | M2M, Depends(get_current_user)]
 CurrentToken = Annotated[M2M, Depends(get_current_m2m)]

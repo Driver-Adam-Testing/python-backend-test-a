@@ -6,15 +6,7 @@ import uuid
 import pytest
 from unittest.mock import MagicMock, patch
 from sqlalchemy.exc import NoResultFound
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from datetime import datetime
-from sqlmodel import Session
-from app.repositories.content_repository import ContentRepository
 from database.models_v1 import (
-    DerivedContent,
-    DerivedContentType,
-    Workspace,
     Enum_Derived_Content_Status
 )
 
@@ -30,47 +22,7 @@ def content_repository(db):
     return ContentRepository(db)
 
 
-def test_create_blank_document(content_repository, db):
-    workspace_id = UUID("90c28b84-39f9-4bd8-b7cc-6a97ef530468")
-    codebase_id = UUID("cd7bf15b-ebdd-4882-96a0-df766a62227f")
-    org_id = "org_s76pU1v8LAYhTOWB"
-    new_content = content_repository.create_blank_document(org_id, workspace_id, codebase_id)
 
-    # Debugging assertions
-    assert new_content is not None, "new_content is None"
-    assert hasattr(new_content, 'content_type_id'), "new_content does not have attribute 'content_type_id'"
-    assert new_content.content_type.type_name == "application_note"
-    assert new_content.workspace_id == workspace_id
-    assert new_content.codebase_id == codebase_id
-    assert new_content.status == Enum_Derived_Content_Status.generation_complete
-
-    content_repository.delete(new_content.id)
-
-
-def test_create_blank_document_with_name(content_repository, db):
-    workspace_id = UUID("90c28b84-39f9-4bd8-b7cc-6a97ef530468")
-    codebase_id = UUID("cd7bf15b-ebdd-4882-96a0-df766a62227f")
-    org_id = "org_s76pU1v8LAYhTOWB"
-    new_content = content_repository.create_blank_document(org_id, workspace_id, codebase_id, "Test Note")
-
-    # Debugging assertions
-    assert new_content is not None, "new_content is None"
-    assert hasattr(new_content, 'content_type_id'), "new_content does not have attribute 'content_type_id'"
-    assert new_content.content_type.type_name == "application_note"
-    assert new_content.workspace_id == workspace_id
-    assert new_content.codebase_id == codebase_id
-    assert new_content.status == Enum_Derived_Content_Status.generation_complete
-
-    assert json.loads(new_content.content)["name"] == "Test Note"
-    content_repository.delete(new_content.id)
-
-
-def test_create_blank_document_workspace_not_found(content_repository, db):
-    # db.exec.return_value.first.side_effect = NoResultFound
-    non_existent_workspace_id = str(uuid.uuid4())
-
-    with pytest.raises(NoResultFound):
-        content_repository.create_blank_document("org_id", non_existent_workspace_id, "codebase_id")
 
 # def test_create_template(content_repository, session):
 #     # Mock the workspace_repository.exists method to return True

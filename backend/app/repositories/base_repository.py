@@ -65,15 +65,13 @@ class BaseRepository(Generic[T]):
         self.session.refresh(obj_in)
         return obj_in
 
-    def update(self, obj: T, obj_in: dict) -> T:
-        obj_data = obj.model_dump()
-        for field in obj_data:
-            if field in obj_in:
-                setattr(obj, field, obj_in[field])
-        self.session.add(obj)
+    def update(self, instance: T, data: T) -> T:
+        for key, value in data.model_dump(exclude_unset=True).items():
+            setattr(instance, key, value)
+        self.session.add(instance)
         self.session.commit()
-        self.session.refresh(obj)
-        return obj
+        self.session.refresh(instance)
+        return instance
 
     def delete(self, pk_id: UUID) -> Optional[T]:
         obj = self.get(pk_id)

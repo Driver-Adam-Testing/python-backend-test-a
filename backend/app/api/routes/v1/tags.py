@@ -1,8 +1,9 @@
 import logging
 from typing import Annotated
 
+from app.schemas.tag_schema import EditTagInput
 from database.models_v1 import Tag
-from fastapi import APIRouter, HTTPException, Query,Depends
+from fastapi import APIRouter, HTTPException, Query, Depends
 from sqlalchemy.exc import IntegrityError
 
 from app.api.auth import CurrentUser
@@ -27,9 +28,7 @@ from app.api.tags.tags import (
 
 from app.services.tag_service import (TagService, get_tag_service)
 
-
 router = APIRouter()
-
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +41,7 @@ def new_tag(
 ) -> Tag:
     logging.info("Creating new tag")
     try:
-        return tag_service.create_tag( user=user, input=new_tag)
+        return tag_service.create_tag(user=user, input=new_tag)
     except IntegrityError:
         logging.error("Tag name already exists")
         raise HTTPException(status_code=400, detail="Tag name already exists.")
@@ -50,16 +49,15 @@ def new_tag(
 
 @router.get("/")
 def read_tags(
-    session: CurrentSession,
-    user: CurrentUser,
-    limit: int | None = 20,
-    offset: int | None = 0,
-    name: str | None = None,
-    type: TagType | None = None,
-    tag_service: TagService = Depends(get_tag_service),
+        session: CurrentSession,
+        user: CurrentUser,
+        limit: int | None = 20,
+        offset: int | None = 0,
+        name: str | None = None,
+        type: TagType | None = None,
+        tag_service: TagService = Depends(get_tag_service),
 
 ) -> ListTagsResults:
-
     return tag_service.list_tags(
         user=user,
         lt_input=ListTagsInput(
@@ -73,25 +71,28 @@ def read_tags(
 
 @router.put("/{tag_id}")
 def update_tag(
-    session: CurrentSession, user: CurrentUser, tag_id: str, updatedTag: NewTagInput
+        user: CurrentUser,
+        tag_id: str,
+        updated_tag: EditTagInput,
+        tag_service: TagService = Depends(get_tag_service),
 ) -> Tag:
     """Update a tag. All users in an organization can edit all tags in the organization currently."""
-    return edit_tag(session=session, user=user, tag_id=tag_id, input=updatedTag)
+    return tag_service.edit_tag(user=user, tag_id=tag_id, et_input=updated_tag)
 
 
 @router.get("/{tag_id}/content")
 def read_tag_contents(
-    session: CurrentSession,
-    user: CurrentUser,
-    tag_id: str,
-    content_type_id: Annotated[list[str] | None, Query()] = None,
-    content_type_name: Annotated[list[str] | None, Query()] = None,
-    sort_by: str | None = None,
-    sort_direction: str | None = "ASC",
-    status: str | None = None,
-    text: str | None = None,
-    limit: int | None = 20,
-    offset: int | None = 0,
+        session: CurrentSession,
+        user: CurrentUser,
+        tag_id: str,
+        content_type_id: Annotated[list[str] | None, Query()] = None,
+        content_type_name: Annotated[list[str] | None, Query()] = None,
+        sort_by: str | None = None,
+        sort_direction: str | None = "ASC",
+        status: str | None = None,
+        text: str | None = None,
+        limit: int | None = 20,
+        offset: int | None = 0,
 ) -> ListTagContentsResults:
     return list_tag_contents(
         session=session,
@@ -115,10 +116,10 @@ def read_tag_contents(
     summary="Associate a tag with this content",
 )
 def associate_tag_with_content(
-    session: CurrentSession,
-    user: CurrentUser,
-    content_id: str,
-    tag_id: str,
+        session: CurrentSession,
+        user: CurrentUser,
+        content_id: str,
+        tag_id: str,
 ) -> TagAssociationResponse:
     try:
         return associate_tag(session, user, content_id, tag_id)
@@ -135,9 +136,9 @@ def associate_tag_with_content(
     summary="Disassociate a tag with this content",
 )
 def disassociate_tag_with_content(
-    session: CurrentSession,
-    user: CurrentUser,
-    content_id: str,
-    tag_id: str,
+        session: CurrentSession,
+        user: CurrentUser,
+        content_id: str,
+        tag_id: str,
 ) -> TagAssociationResponse:
     return disassociate_tag(session, user, content_id, tag_id)

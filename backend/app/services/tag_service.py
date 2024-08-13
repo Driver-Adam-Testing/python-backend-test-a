@@ -7,7 +7,13 @@ from app.repositories.base_repository import BaseRepository
 
 from app.api.auth import CurrentUser
 
-from app.schemas.tag_schema import ListTagsInput, ListTagsResults, NewTagInput, ListTagContentsResults
+from app.schemas.tag_schema import (
+    ListTagsInput,
+    ListTagsResults,
+    NewTagInput,
+    EditTagInput,
+    ListTagContentsResults
+)
 
 from app.schemas.content_schema import ListContentInput
 
@@ -56,19 +62,27 @@ class TagService:
             updated_by=user.user_id,
         ))
 
-    def edit_tag(self, user: CurrentUser, tag_id: int, input: NewTagInput) -> Tag:
+    def edit_tag(self, user: CurrentUser, tag_id: str, et_input: EditTagInput) -> Tag:
 
-        tag = self.session.exec(
-            select(Tag).where(
-                Tag.id == tag_id and Tag.organization_id == user.organization_id
-            )
-        ).first()
+        # tag = self.session.exec(
+        #     select(Tag).where(
+        #         Tag.id == tag_id and Tag.organization_id == user.organization_id
+        #     )
+        # ).first()
+
+        tag = self.tag_repository.get_by_conditions([Tag.id == tag_id and Tag.organization_id == user.organization_id])
+
         if tag:
-            tag.name = input.name.strip()
-            tag.hex_color = input.hexColor.strip()
-            tag.updated_by = user.user_id
-            self.session.commit()
-            self.session.refresh(tag)
+            tag_updates = et_input.dict(exclude_unset=True)
+            updates = Tag(**tag_updates,
+                updated_by=user.user_id,
+            )
+            tag = self.tag_repository.update(tag, updates)
+            # tag.name = input.name.strip()
+            # tag.hex_color = input.hexColor.strip()
+            # tag.updated_by = user.user_id
+            # self.session.commit()
+            # self.session.refresh(tag)
             return tag
         logger.error("Tag not found to edit")
         raise HTTPException(status_code=404, detail="Tag not found")

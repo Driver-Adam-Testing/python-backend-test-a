@@ -1,4 +1,6 @@
+from dataclasses import field
 from uuid import UUID
+from sqlalchemy import text
 
 from sqlmodel import Session, SQLModel, select, asc, desc
 from typing import Type, TypeVar, Generic, Optional, List, Any
@@ -27,10 +29,12 @@ class BaseRepository(Generic[T]):
             # Check if the sort field exists on the model
             if not hasattr(self.model, sort_by):
                 raise ValueError(f"Invalid sort field '{sort_by}' for model '{self.model.__name__}'.")
+
+            field_name = f"{self.model.__tablename__}.{sort_by}"
             if sort_direction.upper() == "ASC":
-                statement = statement.order_by(asc(getattr(self.model, sort_by)))
+                statement = statement.order_by(asc(text(field_name)))
             elif sort_direction.upper() == "DESC":
-                statement = statement.order_by(desc(getattr(self.model, sort_by)))
+                statement = statement.order_by(desc(text(field_name)))
             else:
                 raise ValueError("Invalid sort direction provided. Options are ASC or DESC")
 
@@ -58,3 +62,9 @@ class BaseRepository(Generic[T]):
             self.session.delete(obj)
             self.session.commit()
         return obj
+
+    def exists(self, id: str, organization_id: str) -> bool:
+        instance = self.get(id)
+        if not instance:
+            return False
+        return getattr(instance, 'organization_id', None) == organization_id

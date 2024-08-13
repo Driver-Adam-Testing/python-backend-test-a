@@ -14,8 +14,6 @@ from app.api.content.content import (
     TagAssociationResponse,
     associate_tag,
     disassociate_tag,
-    list_content,
-    list_content_types,
 )
 from app.api.session import CurrentSession
 from app.schemas.content_schema import (
@@ -45,10 +43,10 @@ def list(
     tag: Annotated[list[str] | None, Query()] = None,
     tag_id: Annotated[list[str] | None, Query()] = None,
     text: str | None = None,
+    content_service: ContentService = Depends(get_content_service),
 ) -> ListContentResults:
-    return list_content(
-        session,
-        user,
+    results = content_service.get_list_content(
+        user.organization_id,
         ListContentInput(
             limit=limit,
             offset=offset,
@@ -62,6 +60,23 @@ def list(
             tag_ids=tag_id,
         ),
     )
+    return results
+    # return list_content(
+    #    session,
+    #    user,
+    #    ListContentInput(
+    #        limit=limit,
+    #        offset=offset,
+    #        text=text,
+    #        content_type_id=content_type_id,
+    #        content_type_name=content_type_name,
+    #        sort_by=sort_by,
+    #        sort_direction=sort_direction,
+    #        status=status,
+    #        tags=tag,
+    #        tag_ids=tag_id,
+    #    ),
+    # )
 
 
 @router.get(
@@ -69,17 +84,16 @@ def list(
     summary="List content types",
 )
 def list_types(
-    session: CurrentSession,
     limit: int | None = 20,
     offset: int | None = 0,
     sort_by: str | None = None,
     sort_direction: str | None = "ASC",
+    content_service: ContentService = Depends(get_content_service),
 ) -> ListContentTypesResults:
-    return list_content_types(
-        session,
+    return content_service.get_list_content_types(
         ListContentTypesInput(
             limit=limit, offset=offset, sort_by=sort_by, sort_direction=sort_direction
-        ),
+        )
     )
 
 
@@ -118,8 +132,12 @@ def create_document(
     request: CreateContentRequest,
     content_service: ContentService = Depends(get_content_service),
 ) -> CreateContentResponse:
-    return content_service.create_blank_document(
-        user.organization_id, request.workspace_id, request.codebase_id
+    return CreateContentResponse(
+        data=[
+            content_service.create_blank_document(
+                user.organization_id, request.workspace_id, request.codebase_id
+            )
+        ]
     )
 
 

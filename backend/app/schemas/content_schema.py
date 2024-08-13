@@ -1,8 +1,11 @@
+from dataclasses import Field
 from datetime import datetime
-from typing import Optional
+from symtable import Class
+from typing import Optional, Generic
 from uuid import UUID
-
-from pydantic import BaseModel
+from sqlmodel import Session, SQLModel, select, asc, desc
+from typing import Type, TypeVar, Generic, Optional, List, Any
+from pydantic import BaseModel, ConfigDict
 
 from database.models_v1 import (
     DerivedContent,
@@ -12,6 +15,11 @@ from database.models_v1 import (
     TagContent,
     Workspace,
 )
+
+# class DerivedContentBase(BaseModel,DerivedContent):
+#     pass
+
+DataT = TypeVar("DataT", bound=SQLModel)
 
 
 class ListContentInput(BaseModel):
@@ -39,11 +47,13 @@ class ListContentTypesResults(BaseModel):
 
 class ListContentResult(BaseModel):
     id: UUID
+    organization_id: str
     content_type_id: UUID
-    content_type: DerivedContentType
-    # All content must be in a workspace
+    content_type_name: str
+    # All content must be in a workspace currently
     workspace_id: UUID
     workspace_name: str
+    content_name: str
     source_content_id: UUID | None
     # Content doesn't need to be associated with a codebase in our flat asset design
     codebase_id: None | UUID
@@ -76,8 +86,12 @@ class CreateContentRequest(BaseModel):
     codebase_id: str
 
 
-class CreateContentResponse(BaseModel):
-    content_id: str
+class ContentResultBase(BaseModel, Generic[DataT]):
+    results: list[Optional[DataT]] = None
+
+
+class CreateContentResponse(ContentResultBase[DerivedContent]):
+    pass
 
 
 class CreateTemplateRequest(BaseModel):

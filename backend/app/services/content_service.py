@@ -104,20 +104,11 @@ class ContentService:
 
     def disassociate_tag(self, organization_id: str, content_id: str, tag_id: str) -> TagAssociationResponse:
         # Check if content exists
-        # content = self.session.exec(
-        #     select(DerivedContent)
-        #     .join(Workspace)
-        #     .join(DerivedContent.tags)
-        #     .where(organization_id == Workspace.organization_id)
-        #     .where(DerivedContent.id == content_id)
-        #  ).first()
         content = self.content_repository.get_by_conditions([
             organization_id == Workspace.organization_id,
             DerivedContent.id == content_id,
-        ], [
-            Workspace,
-            DerivedContent.tags
-        ])
+        ], [Workspace, DerivedContent.tags])
+
         if not content:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
@@ -146,6 +137,11 @@ class ContentService:
             .where(TagContent.content_id == content_id)
         ).first()
 
+        if link is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Tag association not found"
+            )
+
         if link:
             self.session.delete(link)
             self.session.commit()
@@ -153,10 +149,6 @@ class ContentService:
                 tag_id=tag_id,
                 content_id=content_id,
                 message="Tag disassociated successfully",
-            )
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Tag association not found"
             )
 
     def create_blank_document(

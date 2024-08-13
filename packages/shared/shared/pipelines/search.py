@@ -39,14 +39,19 @@ def search_content_metadata(
             )
 
     if input.relative_path:
-        statement = statement.where(
-            or_(
-                *[
-                    ContentMetadata.relative_path.like(f"{file_path}%")
-                    for file_path in input.relative_path
-                ]
+        if isinstance(input.relative_path, str):
+            statement = statement.where(
+                ContentMetadata.relative_path.like(f"{input.relative_path}%")
             )
-        )
+        elif isinstance(input.relative_path, list):
+            statement = statement.where(
+                or_(
+                    *[
+                        ContentMetadata.relative_path.like(f"{file_path}%")
+                        for file_path in input.relative_path
+                    ]
+                )
+            )
 
     statement = statement.order_by(asc("score"))
 
@@ -55,15 +60,8 @@ def search_content_metadata(
             statement = statement.limit(max(input.result_limit * 10, 500))
         else:
             statement = statement.limit(input.result_limit)
-    print(statement)
-    import time
 
-    start_time = time.time()
     results = session.exec(statement).all()
-    end_time = time.time()
-
-    elapsed_time_ms = (end_time - start_time) * 1000
-    print(f"Query execution time: {elapsed_time_ms:.2f} ms")
     search_results = []
 
     def process_result(

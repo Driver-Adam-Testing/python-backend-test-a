@@ -32,7 +32,7 @@ def execute_backend_search(
     search_text: str,
     content_types: list[str] | None = None,
     relative_path: str | None = None,
-    result_limit: int = 7,
+    result_limit: int = 10,
 ):
     # backend_host = os.getenv("DRIVER_API_URL")
     # if not backend_host:
@@ -44,6 +44,7 @@ def execute_backend_search(
         "workspace_id": str(agent_context.workspace_id),
         "codebase_id": str(agent_context.codebase_id),
         "relative_path": relative_path,
+        "algorithm": "hybrid",
     }
     search_function = modal.Function.lookup("comprehender", "search")
     response = search_function.remote(payload)

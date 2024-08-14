@@ -10,18 +10,13 @@ from utils.io import (
 )
 from utils.llm import chunk_str
 from utils.models import ChatOpenAI
-from utils.templates import Template
 from utils.threadpool import FastShutdownThreadPoolExecutor
-
-from inspection.prompt_templates.toplevel.templates.getting_started_guide import (
-    GETTING_STARTED_GUIDE_TEMPLATE,
-)
 
 PARENT_PATH = Path(__file__).parent
 
 # TODO: Remove hardcoded.
-# WORKSPACE_ID = UUID4("2bbbac7b-af3f-4019-b9a3-a3fe18b8ddb9")
-# CODEBASE_ID = UUID4("a1a13ca0-308c-4e6c-9668-ad807b5a2896")
+WORKSPACE_ID = UUID4("5e1a9118-98b3-4310-a572-9be475a3caed")
+CODEBASE_ID = UUID4("b975b2d9-86d6-4c2e-8f5d-f38ba7e82ac2")
 
 
 def toplevel_chunk_description(

@@ -5,11 +5,14 @@ from utils.dag import LiteNode
 
 image = (
     modal.Image.debian_slim(python_version="3.12")
-    .pip_install(["openai>=1.40.2", "pydantic>=2.8.2", "tiktoken"])  # TODO lock versions down
+    .pip_install(
+        ["openai>=1.40.2", "pydantic>=2.8.2", "tiktoken"]
+    )  # TODO lock versions down
     .apt_install("universal-ctags")
+    .copy_local_dir(local_path="../../packages/shared", remote_path="/root/shared")
 )
 
-function_cfg = dict(secrets=[modal.Secret.from_name("open-ai")], image=image)
+function_cfg = {"secrets": [modal.Secret.from_name("open-ai")], "image": image}
 
 
 @app.function(

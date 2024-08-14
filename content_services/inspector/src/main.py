@@ -44,6 +44,7 @@ class FileInfo:
 @app.function(
     image=modal.Image.debian_slim(python_version="3.12")
     .copy_local_dir(local_path="../../driver_db", remote_path="/root/driver_db")
+    .copy_local_dir(local_path="../../packages/shared", remote_path="/root/shared")
     .pip_install(["boto3", "openai>=1.40.2", "pydantic>=2.8.2", "tiktoken", "/root/driver_db"]),
     secrets=[
         modal.Secret.from_name("db"),
@@ -384,7 +385,7 @@ def main(resume_from_id: str | None = None):
     try:
         # inspect_local.remote(REMOTE_CODEBASE_ROOT, str(run_id), resume=resume)
         inspect_db.remote(
-            uuid.UUID("7f65267b-af3f-43b9-bf9b-bca33b4b07bd"), run_id, resume=resume
+            uuid.UUID("b975b2d9-86d6-4c2e-8f5d-f38ba7e82ac2"), run_id, resume=resume
         )
         # asyncio.run(inspect_db.local(uuid.UUID("8dc2ecd9-1289-4359-90a3-dacdd42405a7"), run_id, resume=resume))
     finally:

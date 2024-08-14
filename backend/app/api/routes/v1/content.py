@@ -4,18 +4,16 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query
 
 from app.api.auth import CurrentUser
-from app.api.content.content import (
-    CreateContentRequest,
-    CreateContentResponse,
-    ListContentInput,
-    ListContentResults,
-    ListContentTypesInput,
-    ListContentTypesResults,
-    TagAssociationResponse,
-)
 from app.api.session import CurrentSession
 from app.schemas.content_schema import (
     CreateTemplateRequest,
+    ListContentInput,
+    ListContentResults,
+    CreateContentRequest,
+    CreateContentResponse,
+    TagAssociationResponse,
+    ListContentTypesInput,
+    ListContentTypesResults,
 )
 from app.services.content_service import ContentService, get_content_service
 

@@ -328,8 +328,14 @@ class TagContent(SQLModel, table=True):
     content_id: None | uuid.UUID = Field(
         default=None, foreign_key="derived_contents.id", primary_key=True
     )
-    tag: Optional["Tag"] = Relationship(back_populates="content_links")
-    content: Optional["DerivedContent"] = Relationship(back_populates="tag_links")
+    tag: Optional["Tag"] = Relationship(
+        back_populates="content_links",
+        sa_relationship_kwargs={"foreign_keys": "TagContent.tag_id"},
+    )
+    content: Optional["DerivedContent"] = Relationship(
+        back_populates="tag_links",
+        sa_relationship_kwargs={"foreign_keys": "TagContent.content_id"},
+    )
 
 
 class DocumentSource(SQLModel, table=True):
@@ -345,11 +351,11 @@ class DocumentSource(SQLModel, table=True):
     )
     document: "DerivedContent" = Relationship(
         back_populates="source_links",
-        sa_relationship_kwargs={"foreign_keys": "document.id"},
+        sa_relationship_kwargs={"foreign_keys": "DocumentSource.document_id"},
     )
     source: "DerivedContent" = Relationship(
         back_populates="document_links",
-        sa_relationship_kwargs={"foreign_keys": "source.id"},
+        sa_relationship_kwargs={"foreign_keys": "DocumentSource.source_id"},
     )
 
 
@@ -423,21 +429,23 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
         sa_column=Column(Integer, nullable=True, server_default=text("0"))
     )
     workspace: Workspace = Relationship(back_populates="source_contents")
+    document_links: list["DocumentSource"] = Relationship(
+        back_populates="source",
+        sa_relationship_kwargs={"foreign_keys": "DocumentSource.source_id"},
+    )
+
     source_links: list["DocumentSource"] = Relationship(
         back_populates="document",
-        link_model=DocumentSource,
+        sa_relationship_kwargs={"foreign_keys": "DocumentSource.document_id"},
     )
-    document_links: list["DocumentSource"] = Relationship(
-        back_populates="source", link_model=DocumentSource
-    )
-    tag_links: list["TagContent"] = Relationship(back_populates="content")
-    # tags: list["Tag"] = Relationship(
-    #     back_populates="derived_contents", link_model=TagContent
-    # )
-    # sources: list["DerivedContent"] = Relationship(
-    #     back_populates="derived_contents", link_model=DocumentSource
-    # )
 
+    tag_links: list["TagContent"] = Relationship(back_populates="content")
+    tags: list["Tag"] = Relationship(
+        back_populates=None,
+        sa_relationship_kwargs={
+            "secondary": "tags_contents","viewonly": True
+        },
+    )
 
 class Tag(SQLModel, table=True):  # type: ignore
     __tablename__ = "tags"
@@ -488,5 +496,13 @@ class Tag(SQLModel, table=True):  # type: ignore
         default=None,
     )
     content_links: list["TagContent"] = Relationship(
-        back_populates="tag", link_model=TagContent
+        back_populates="tag",
+        sa_relationship_kwargs={"foreign_keys": "TagContent.tag_id"},
+    )
+    contents: list["DerivedContent"] = Relationship(
+        back_populates=None,
+        sa_relationship_kwargs={
+            "secondary": "tags_contents",
+            "viewonly": True
+        },
     )

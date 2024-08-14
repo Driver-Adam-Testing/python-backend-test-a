@@ -1,5 +1,6 @@
 import json
 from datetime import datetime
+from xml.etree.ElementInclude import include
 
 from database.models_v1 import (
     DerivedContent,
@@ -8,9 +9,10 @@ from database.models_v1 import (
     Tag,
     TagContent,
     Workspace,
+    DocumentSource
 )
 from fastapi import HTTPException, status
-from sqlalchemy.exc import NoResultFound
+from sqlalchemy.exc import NoResultFound, IntegrityError
 from sqlmodel import Session, asc, desc, func, or_, select, text
 
 from app.api.session import CurrentSession
@@ -44,15 +46,9 @@ class ContentService:
         self.derived_content_type_repository = DerivedContentTypeRepository(session)
 
     def associate_tag(
-        self, organization_id: str, content_id: str, tag_id: str
+        self, organization_id: str, content_id: str, tag_id: str, include: bool | None = None
     ) -> TagAssociationResponse:
         # Check if content exists
-        # content = self.session.exec(
-        #     select(DerivedContent)
-        #     .join(Workspace)
-        #     .where(organization_id == Workspace.organization_id)
-        #     .where(DerivedContent.id == content_id)
-        #  ).first()
         content = self.content_repository.get_by_conditions(
             [
                 organization_id == Workspace.organization_id,
@@ -67,28 +63,87 @@ class ContentService:
             )
 
         # Check if tag exists
-        # tag = self.session.exec(
-        #     select(Tag)
-        #     .where(Tag.id == tag_id)
-        #     .where(organization_id == Tag.organization_id)
-        # ).first()
-
         tag = self.tag_repository.get_by_conditions(
             [Tag.id == tag_id, Tag.organization_id == organization_id]
         )
-
 
         if not tag:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Tag not found"
             )
 
+        if tag.type == "collection":
+            if content.content_type.type_name not in [
+                "codebase",
+                "codebase-file",
+                "codebase-directory",
+                "pdf-summary",
+            ]:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Collections can only be associated with codebases, directories, files or pdfs.",
+                )
+        include_tag = include if include is not None else True
         # Associate tag with content
-        content.tags.append(tag)
-        self.session.commit()
-        message = "Tag associated successfully"
+        content.tag_links.append(TagContent(tag_id=tag.id, content_id=content.id, include=True))
+
+        try:
+            self.session.commit()
+            # self.session.refresh(content)
+        except IntegrityError:
+            self.session.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Tag association already exists",
+            )
+
         return TagAssociationResponse(
-            tag_id=tag_id, content_id=content_id, message=message
+            tag_id=tag_id, content_id=content_id, message="Tag associated successfully"
+        )
+
+    def associate_collection_with_content(self, organization_id: str, content_id: str, tag_id: str) -> TagAssociationResponse:
+
+        document = self.content_repository.get(content_id)
+        if not document:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
+            )
+        # get the content source content related to the tag_id
+        tag_collection = self.tag_repository.get(tag_id)
+        tag_contents = self.session.exec(
+            select(TagContent).where(TagContent.tag_id == tag_id)
+        ).first() # fix this
+
+        codebase_dir_content_type = self.derived_content_type_repository.get_by_type_name("codebase-directory")
+        codebase_file_content_type = self.derived_content_type_repository.get_by_type_name("codebase-file")
+        # source_contents = tag_contents.content.codebase.source_contents
+        source_contents = [
+            content for content in tag_contents.content.codebase.source_contents
+            if content.content_type_id in {codebase_dir_content_type.id, codebase_file_content_type.id}
+        ]
+
+        sources = [
+            DocumentSource(
+                document_id=content_id,
+                source_id=source_content.id,
+                include=True
+            ) for source_content in source_contents
+        ]
+
+        for source in sources:
+            document.source_links.append(source)
+
+        try:
+            self.session.commit()
+        except IntegrityError:
+            self.session.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Integrity error occurred while associating collection with content"
+            )
+
+        return TagAssociationResponse(
+            tag_id=tag_id, content_id=content_id, message="Collection associated successfully"
         )
 
     def disassociate_tag(
@@ -291,7 +346,8 @@ class ContentService:
                 updated_at=result.updated_at,
                 source_content=result.source_content,
                 order=result.order,
-                tags=result.tags,
+                tags=result.tags
+                # tags=[tag_link.tag for tag_link in result.tag_links],
             )
             for result in results
         ]
@@ -410,6 +466,14 @@ class ContentService:
 
         return ListContentTypesResults(results=results)
 
+    def get_content_sources(self, content_id: str) -> list[DerivedContent]:
+        content = self.content_repository.get(content_id)
+        if not content:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
+            )
+        sources = [ds.source for ds in content.source_links]
+        return sources
     def create_template(
             self, organization_id: str, workspace_id: str, codebase_id: str
     ) -> DerivedContent:

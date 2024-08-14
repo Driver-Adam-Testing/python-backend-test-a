@@ -38,6 +38,10 @@ class TagService:
             statement.append(Tag.name.contains(lt_input.name))
             count_by.append(Tag.name.contains(lt_input.name))
 
+        if lt_input.type:
+            statement.append(Tag.type == lt_input.type)
+            count_by.append(Tag.type == lt_input.type)
+
         total_count = self.tag_repository.count_by(count_by)
         results = self.tag_repository.get_all(
             lt_input.limit,

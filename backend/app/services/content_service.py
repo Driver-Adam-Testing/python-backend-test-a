@@ -208,7 +208,7 @@ class ContentService:
 
         return new_content
 
-    def create_document_from_template(self, content_id: str) -> DerivedContent:
+    def create_document_from_template(self, organization_id: str, content_id: str) -> DerivedContent:
         # get the template content type
         template_content_type = self.derived_content_type_repository.get_by_type_name(
             "template"
@@ -269,12 +269,12 @@ class ContentService:
                 content_name=(
                     json.loads(result.content).get("name")
                     if result.content_type.type_name == "application_note"
-                    and result.content
-                    and "name" in json.loads(result.content)
+                       and result.content
+                       and "name" in json.loads(result.content)
                     else "Generating content..."
                     if result.content_type.type_name == "application_note"
-                    and result.content
-                    and "name" not in json.loads(result.content)
+                       and result.content
+                       and "name" not in json.loads(result.content)
                     else result.relative_path.removeprefix("documents/")
                     if result.content_type.type_name == "pdf_summary"
                     else result.relative_path
@@ -303,7 +303,7 @@ class ContentService:
         )
 
     def _get_list_content(
-        self, organization_id: str, search_input: ListContentInput
+            self, organization_id: str, search_input: ListContentInput
     ) -> tuple[list[DerivedContent], int]:
         statement = (
             select(DerivedContent)
@@ -396,7 +396,7 @@ class ContentService:
         return results, total_count
 
     def get_list_content_types(
-        self, lct_inputs: ListContentTypesInput
+            self, lct_inputs: ListContentTypesInput
     ) -> ListContentTypesResults:
         try:
             results = self.derived_content_type_repository.get_all(
@@ -411,7 +411,7 @@ class ContentService:
         return ListContentTypesResults(results=results)
 
     def create_template(
-        self, organization_id: str, workspace_id: str, codebase_id: str
+            self, organization_id: str, workspace_id: str, codebase_id: str
     ) -> DerivedContent:
         workspace_exists = self.workspace_repository.exists(
             workspace_id, organization_id

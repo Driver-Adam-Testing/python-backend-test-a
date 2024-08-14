@@ -1,7 +1,7 @@
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Query, Depends
 
 from app.api.auth import CurrentUser
 from app.api.session import CurrentSession
@@ -126,13 +126,7 @@ def create_document(
     request: CreateContentRequest,
     content_service: ContentService = Depends(get_content_service),
 ) -> CreateContentResponse:
-    return CreateContentResponse(
-        results=[
-            content_service.create_blank_document(
-                user.organization_id, request.workspace_id, request.codebase_id
-            )
-        ]
-    )
+    return content_service.create_blank_document(user.organization_id, request.workspace_id, request.codebase_id)
 
 
 @router.post(
@@ -145,13 +139,7 @@ def create_from_template(
     request: CreateTemplateRequest,
     content_service: ContentService = Depends(get_content_service),
 ) -> CreateContentResponse:
-    return CreateContentResponse(
-        results=[
-            content_service.create_content_from_template(
-                session, user, request.content_id
-            )
-        ]
-    )
+    return content_service.create_content_from_template(user.organization_id, request.content_id)
 
 
 @router.post(
@@ -159,11 +147,8 @@ def create_from_template(
     summary="Create a template content record",
 )
 def create_template_content_record(
-    session: CurrentSession,
-    user: CurrentUser,
-    request: CreateTemplateRequest,
-    content_service: ContentService = Depends(get_content_service),
+        user: CurrentUser,
+        request: CreateTemplateRequest,
+        content_service: ContentService = Depends(get_content_service),
 ) -> CreateContentResponse:
-    return CreateContentResponse(
-        results=[content_service.create_template(session, user, request.content_id)]
-    )
+    return content_service.create_template(user.organization_id, request.workspace_id, request.codebase_id)

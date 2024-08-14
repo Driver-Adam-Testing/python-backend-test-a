@@ -233,7 +233,11 @@ def list_content_types(session: Session, input: ListContentTypesInput):
 
 
 def associate_tag(
-    session: Session, user: CurrentUser, content_id: str, tag_id: str
+    session: Session,
+    user: CurrentUser,
+    content_id: str,
+    tag_id: str,
+    include: bool = True,
 ) -> TagAssociationResponse:
     # Check if content exists
     content = session.exec(

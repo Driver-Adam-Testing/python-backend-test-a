@@ -1,26 +1,5 @@
 import json
 from datetime import datetime
-from typing import Optional
-
-from fastapi import HTTPException, status
-
-from sqlmodel import Session, asc, desc, or_, select, func, text
-
-from app.schemas.content_schema import (
-    CreateContentResponse,
-    CreateTemplateResponse,
-    ListContentInput,
-    ListContentResults,
-    ListContentResult,
-    ListContentTypesInput,
-    ListContentTypesResults,
-    TagAssociationResponse,
-)
-
-from app.api.session import CurrentSession
-
-from app.repositories.base_repository import BaseRepository
-from sqlalchemy.exc import NoResultFound
 
 from database.models_v1 import (
     DerivedContent,
@@ -30,7 +9,7 @@ from database.models_v1 import (
     TagContent,
     Workspace,
 )
-from fastapi import HTTPException
+from fastapi import HTTPException, status
 from sqlalchemy.exc import NoResultFound
 from sqlmodel import Session, asc, desc, func, or_, select, text
 
@@ -42,6 +21,7 @@ from app.schemas.content_schema import (
     ListContentResults,
     ListContentTypesInput,
     ListContentTypesResults,
+    TagAssociationResponse,
 )
 
 
@@ -63,7 +43,9 @@ class ContentService:
         self.tag_repository = BaseRepository(session, Tag)
         self.derived_content_type_repository = DerivedContentTypeRepository(session)
 
-    def associate_tag(self, organization_id: str, content_id: str, tag_id: str) -> TagAssociationResponse:
+    def associate_tag(
+        self, organization_id: str, content_id: str, tag_id: str
+    ) -> TagAssociationResponse:
         # Check if content exists
         # content = self.session.exec(
         #     select(DerivedContent)
@@ -71,10 +53,13 @@ class ContentService:
         #     .where(organization_id == Workspace.organization_id)
         #     .where(DerivedContent.id == content_id)
         #  ).first()
-        content = self.content_repository.get_by_conditions([
-            organization_id == Workspace.organization_id,
-            DerivedContent.id == content_id,
-        ], [Workspace])
+        content = self.content_repository.get_by_conditions(
+            [
+                organization_id == Workspace.organization_id,
+                DerivedContent.id == content_id,
+            ],
+            [Workspace],
+        )
 
         if not content:
             raise HTTPException(
@@ -87,10 +72,9 @@ class ContentService:
         #     .where(Tag.id == tag_id)
         #     .where(organization_id == Tag.organization_id)
         # ).first()
-        tag = self.tag_repository.get_by_conditions([
-            Tag.id == tag_id,
-            Tag.organization_id == organization_id
-        ])
+        tag = self.tag_repository.get_by_conditions(
+            [Tag.id == tag_id, Tag.organization_id == organization_id]
+        )
 
         if not tag:
             raise HTTPException(
@@ -101,9 +85,13 @@ class ContentService:
         content.tags.append(tag)
         self.session.commit()
         message = "Tag associated successfully"
-        return TagAssociationResponse(tag_id=tag_id, content_id=content_id, message=message)
+        return TagAssociationResponse(
+            tag_id=tag_id, content_id=content_id, message=message
+        )
 
-    def disassociate_tag(self, organization_id: str, content_id: str, tag_id: str) -> TagAssociationResponse:
+    def disassociate_tag(
+        self, organization_id: str, content_id: str, tag_id: str
+    ) -> TagAssociationResponse:
         # Check if content exists
         # content = self.session.exec(
         #     select(DerivedContent)
@@ -112,13 +100,13 @@ class ContentService:
         #     .where(organization_id == Workspace.organization_id)
         #     .where(DerivedContent.id == content_id)
         #  ).first()
-        content = self.content_repository.get_by_conditions([
-            organization_id == Workspace.organization_id,
-            DerivedContent.id == content_id,
-        ], [
-            Workspace,
-            DerivedContent.tags
-        ])
+        content = self.content_repository.get_by_conditions(
+            [
+                organization_id == Workspace.organization_id,
+                DerivedContent.id == content_id,
+            ],
+            [Workspace, DerivedContent.tags],
+        )
         if not content:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
@@ -130,10 +118,9 @@ class ContentService:
         #     .where(Tag.id == tag_id)
         #     .where(organization_id == Tag.organization_id)
         # ).first()
-        tag = self.tag_repository.get_by_conditions([
-            Tag.id == tag_id,
-            Tag.organization_id == organization_id
-        ])
+        tag = self.tag_repository.get_by_conditions(
+            [Tag.id == tag_id, Tag.organization_id == organization_id]
+        )
 
         if not tag:
             raise HTTPException(
@@ -157,15 +144,16 @@ class ContentService:
             )
         else:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Tag association not found"
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Tag association not found",
             )
 
     def create_blank_document(
-            self,
-            organization_id: str,
-            workspace_id: str,
-            codebase_id: str,
-            document_name: str | None = None,
+        self,
+        organization_id: str,
+        workspace_id: str,
+        codebase_id: str,
+        document_name: str | None = None,
     ) -> DerivedContent:
         workspace_exists = self.workspace_repository.exists(
             workspace_id, organization_id
@@ -260,7 +248,7 @@ class ContentService:
         return new_content
 
     def get_list_content(
-            self, organization_id: str, search_input: ListContentInput
+        self, organization_id: str, search_input: ListContentInput
     ) -> ListContentResults:
         try:
             results, total_count = self._get_list_content(organization_id, search_input)
@@ -276,12 +264,12 @@ class ContentService:
                 content_name=(
                     json.loads(result.content).get("name")
                     if result.content_type.type_name == "application_note"
-                       and result.content
-                       and "name" in json.loads(result.content)
+                    and result.content
+                    and "name" in json.loads(result.content)
                     else "Generating content..."
                     if result.content_type.type_name == "application_note"
-                       and result.content
-                       and "name" not in json.loads(result.content)
+                    and result.content
+                    and "name" not in json.loads(result.content)
                     else result.relative_path.removeprefix("documents/")
                     if result.content_type.type_name == "pdf_summary"
                     else result.relative_path
@@ -310,7 +298,7 @@ class ContentService:
         )
 
     def _get_list_content(
-            self, organization_id: str, search_input: ListContentInput
+        self, organization_id: str, search_input: ListContentInput
     ) -> tuple[list[DerivedContent], int]:
         statement = (
             select(DerivedContent)
@@ -403,7 +391,7 @@ class ContentService:
         return results, total_count
 
     def get_list_content_types(
-            self, lct_inputs: ListContentTypesInput
+        self, lct_inputs: ListContentTypesInput
     ) -> ListContentTypesResults:
         try:
             results = self.derived_content_type_repository.get_all(
@@ -418,7 +406,7 @@ class ContentService:
         return ListContentTypesResults(results=results)
 
     def create_template(
-            self, organization_id: str, workspace_id: str, codebase_id: str
+        self, organization_id: str, workspace_id: str, codebase_id: str
     ) -> DerivedContent:
         workspace_exists = self.workspace_repository.exists(
             workspace_id, organization_id

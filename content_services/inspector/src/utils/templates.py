@@ -151,6 +151,10 @@ class Template(BaseModel):
                                     content = action()
                                 case 3:
                                     content = action(llm, fn_output, code)
+                                case 4:
+                                    content = action(
+                                        llm, fn_output, code, root_rel_path
+                                    )
                                 case _:
                                     raise
                         elif isinstance(action, str):

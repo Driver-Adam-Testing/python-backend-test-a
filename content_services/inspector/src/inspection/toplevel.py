@@ -16,7 +16,7 @@ PARENT_PATH = Path(__file__).parent
 
 # TODO: Remove hardcoded.
 WORKSPACE_ID = UUID4("5e1a9118-98b3-4310-a572-9be475a3caed")
-CODEBASE_ID = UUID4("4e50214d-d05d-4d5f-8313-78b3dd674fba")
+CODEBASE_ID = UUID4("b975b2d9-86d6-4c2e-8f5d-f38ba7e82ac2")
 
 
 def toplevel_chunk_description(

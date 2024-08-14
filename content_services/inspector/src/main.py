@@ -385,7 +385,7 @@ def main(resume_from_id: str | None = None):
     try:
         # inspect_local.remote(REMOTE_CODEBASE_ROOT, str(run_id), resume=resume)
         inspect_db.remote(
-            uuid.UUID("4e50214d-d05d-4d5f-8313-78b3dd674fba"), run_id, resume=resume
+            uuid.UUID("b975b2d9-86d6-4c2e-8f5d-f38ba7e82ac2"), run_id, resume=resume
         )
         # asyncio.run(inspect_db.local(uuid.UUID("8dc2ecd9-1289-4359-90a3-dacdd42405a7"), run_id, resume=resume))
     finally:

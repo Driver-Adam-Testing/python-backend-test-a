@@ -27,8 +27,14 @@ from inspection.prompt_templates.files.templates.metadata_multi_context_default 
 from inspection.prompt_templates.files.templates.source_code_large_c import (
     SOURCE_CODE_LARGE_TEMPLATE_C,
 )
+from inspection.prompt_templates.files.templates.source_code_large_c_multi_prompt import (
+    SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_C,
+)
 from inspection.prompt_templates.files.templates.source_code_large_cpp import (
     SOURCE_CODE_LARGE_TEMPLATE_CPP,
+)
+from inspection.prompt_templates.files.templates.source_code_large_cpp_multi_prompt import (
+    SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CPP,
 )
 from inspection.prompt_templates.files.templates.source_code_large_default import (
     SOURCE_CODE_LARGE_TEMPLATE_DEFAULT,
@@ -297,9 +303,13 @@ def comprehend_file_top_down(
         else:
             language = Lang.from_ext(ext=node.root_rel_path.suffix)
             match language:
+                case Lang.C:
+                    template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_C
+                case Lang.CPP:
+                    template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CPP
                 case _:
                     template = SOURCE_CODE_MULTI_CONTEXT_TEMPLATE_DEFAULT
-                    long_template = Template(template=template)
+            long_template = Template(template=template)
 
             file_description_long = long_template.run_with_code(
                 llm=llm,

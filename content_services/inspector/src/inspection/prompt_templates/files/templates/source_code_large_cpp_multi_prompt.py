@@ -1,23 +1,6 @@
 from pathlib import Path
 
 from utils.codemap_ctags import extract_symbols_w_ctags
-from utils.lang_specialization.c import (
-    DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
-    DATA_STRUCTURES_FOUND_USER_PROMPT,
-    DATA_STRUCTURES_NONE_CONTENT,
-    FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
-    FUNCTIONS_FOUND_USER_PROMPT,
-    FUNCTIONS_NONE_CONTENT,
-    IMPORTS_SYSTEM_PROMPT_JSON,
-    IMPORTS_USER_PROMPT,
-    SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_C,
-    VARIABLES_FOUND_SYSTEM_PROMPT_JSON,
-    VARIABLES_FOUND_USER_PROMPT,
-    VARIABLES_NONE_CONTENT,
-    c_data_structure_checker,
-    c_function_checker,
-    c_variables_checker,
-)
 from utils.lang_specialization.common import (
     DataStructureData,
     DataStructureDict,
@@ -26,6 +9,23 @@ from utils.lang_specialization.common import (
     ImportData,
     VariableData,
     VariableDict,
+)
+from utils.lang_specialization.cpp import (
+    DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
+    DATA_STRUCTURES_FOUND_USER_PROMPT,
+    DATA_STRUCTURES_NONE_CONTENT,
+    FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
+    FUNCTIONS_FOUND_USER_PROMPT,
+    FUNCTIONS_NONE_CONTENT,
+    IMPORTS_SYSTEM_PROMPT_JSON,
+    IMPORTS_USER_PROMPT,
+    SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_CPP,
+    VARIABLES_FOUND_SYSTEM_PROMPT_JSON,
+    VARIABLES_FOUND_USER_PROMPT,
+    VARIABLES_NONE_CONTENT,
+    cpp_data_structure_checker,
+    cpp_function_checker,
+    cpp_variables_checker,
 )
 from utils.lang_specialization.default_multi_context import (
     SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT_MULTI_CONTEXT,
@@ -119,19 +119,19 @@ def fn_dict_from_llm(
     return FnDict(data=fn_dict)
 
 
-SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_C = [
+SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CPP = [
     (S.RAW, "# Overview"),
     (
         S.MULTI_PROMPT_TEXT,
         "## Purpose",
-        SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_C,
+        SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_CPP,
         SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT_MULTI_CONTEXT,
         SOURCE_CODE_PURPOSE_FROM_CHUNKS,
     ),
     (
         S.MULTI_PROMPT_TEXT,
         "## Technical Summary",
-        SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_C,
+        SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_CPP,
         TECHNICAL_CONCEPTS_MULTI_CONTEXT,
         TECHNICAL_CONCEPTS_FROM_CHUNKS,
     ),
@@ -147,21 +147,21 @@ SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_C = [
     (
         S.FN_COND_JSON,
         "## Global Variables",
-        c_variables_checker,
+        cpp_variables_checker,
         variables_dict_from_llm,
         VARIABLES_NONE_CONTENT,
     ),
     (
         S.FN_COND_JSON,
         "## Data Structures",
-        c_data_structure_checker,
+        cpp_data_structure_checker,
         data_structure_dict_from_llm,
         DATA_STRUCTURES_NONE_CONTENT,
     ),
     (
         S.FN_COND_JSON,
         "## Functions",
-        c_function_checker,
+        cpp_function_checker,
         fn_dict_from_llm,
         FUNCTIONS_NONE_CONTENT,
     ),

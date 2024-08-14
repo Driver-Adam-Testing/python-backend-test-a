@@ -21,6 +21,9 @@ from utils.templates import Template
 from inspection.prompt_templates.files.templates.metadata_default import (
     METADATA_TEMPLATE,
 )
+from inspection.prompt_templates.files.templates.metadata_multi_context_default import (
+    METADATA_MULTI_CONTEXT_TEMPLATE,
+)
 from inspection.prompt_templates.files.templates.source_code_large_c import (
     SOURCE_CODE_LARGE_TEMPLATE_C,
 )
@@ -283,14 +286,21 @@ def comprehend_file_top_down(
 
         if file_kind.kind == FileEnum.METADATA:
             # TODO: implement for Metadata
-            success = False
-            results = _return_with_simple_message(
-                message="Large Metadata file type not yet supported."
-            )
-            return (success, results)
-        else:
-            template = SOURCE_CODE_MULTI_CONTEXT_TEMPLATE_DEFAULT
+            template = METADATA_MULTI_CONTEXT_TEMPLATE
             long_template = Template(template=template)
+            file_description_long = long_template.run_with_code(
+                llm=llm,
+                root_rel_path=node.root_rel_path,
+                code=source_code,
+                code_chunks=chunk_texts,
+            )
+        else:
+            language = Lang.from_ext(ext=node.root_rel_path.suffix)
+            match language:
+                case _:
+                    template = SOURCE_CODE_MULTI_CONTEXT_TEMPLATE_DEFAULT
+                    long_template = Template(template=template)
+
             file_description_long = long_template.run_with_code(
                 llm=llm,
                 root_rel_path=node.root_rel_path,

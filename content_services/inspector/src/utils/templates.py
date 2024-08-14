@@ -26,6 +26,8 @@ class S(IntEnum):
     MULTI_PROMPT_TEXT = 7
     MULTI_PROMPT_JSON = 8
     SINGLE_PROMPT_CHUNK = 9
+    MULTI_LLM_COND_JSON = 10
+    SINGLE_PROMPT_CHUNK_JSON = 11
 
 
 class TemplateError(Exception):
@@ -179,15 +181,40 @@ class Template(BaseModel):
                         user_prompt=aggregate_user_prompt,
                     )
                     output += f"{section_title}\n{content}\n"
-                case S.SINGLE_PROMPT_CHUNK:  # Simple section for a file that doesn't fit in a single context window,
+                case S.SINGLE_PROMPT_CHUNK_JSON:  # Simple section for a file that doesn't fit in a single context window,
                     # but only requires first code chunk
-                    section_title, system_prompt, section_prompt = args
-                    user_prompt = f"{section_prompt}\n\nCode:\n\n{code_chunks[0]}"
-                    content = llm.generate_response(
-                        system_prompt=system_prompt,
-                        user_prompt=user_prompt,
+                    output_cfg = OutputConfig(kind=OutputConfigKind.JSON_STRICT)
+                    section_title, system_prompt, user_prompt, llm_gen_fn = args
+                    content = llm_gen_fn(
+                        llm, system_prompt, user_prompt, code_chunks[0]
                     )
-                    output += f"{section_title}\n{content}\n"
+                    output += f"{section_title}\n{str(content)}\n"
+                case S.MULTI_LLM_COND_JSON:
+                    # TODO: could possibly generalize by passing all code as a list of chunks even if len(chunks) == 1
+                    section_title, conditional_llm_fn, true_action, false_action = args
+                    llm_fn_output: list[str] | None = conditional_llm_fn(
+                        llm, code_chunks
+                    )
+                    action = false_action if llm_fn_output is None else true_action
+                    if action is None:
+                        pass
+                    else:
+                        if isinstance(action, Callable):
+                            match _arity(action):
+                                case 0:
+                                    content = action()
+                                case 3:
+                                    content = action(llm, llm_fn_output, code_chunks)
+                                case _:
+                                    raise
+                        elif isinstance(action, str):
+                            content = action
+                        else:
+                            raise TemplateError(
+                                "`LLM_COND` expects branch string or callable with arity 0 or 3"
+                            )
+                        output += f"{section_title}\n{str(content)}\n"  # Call `str` to render data structure
+
                 case _:
                     raise TemplateError(
                         f"Unsupported template section kind {tag.kind} for direct llm execution"

@@ -1,8 +1,7 @@
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Query, Depends, HTTPException, status
-from sqlmodel import Session
+from fastapi import APIRouter, Depends, Query
 
 from app.api.auth import CurrentUser
 from app.api.session import CurrentSession
@@ -28,19 +27,19 @@ router = APIRouter()
     summary="List content matching the provided filter criteria",
 )
 def list(
-        session: CurrentSession,
-        user: CurrentUser,
-        limit: int | None = 20,
-        offset: int | None = 0,
-        content_type_id: Annotated[list[str] | None, Query()] = None,
-        content_type_name: Annotated[list[str] | None, Query()] = None,
-        sort_by: str | None = None,
-        sort_direction: str | None = "ASC",
-        status: str | None = None,
-        tag: Annotated[list[str] | None, Query()] = None,
-        tag_id: Annotated[list[str] | None, Query()] = None,
-        text: str | None = None,
-        content_service: ContentService = Depends(get_content_service),
+    session: CurrentSession,
+    user: CurrentUser,
+    limit: int | None = 20,
+    offset: int | None = 0,
+    content_type_id: Annotated[list[str] | None, Query()] = None,
+    content_type_name: Annotated[list[str] | None, Query()] = None,
+    sort_by: str | None = None,
+    sort_direction: str | None = "ASC",
+    status: str | None = None,
+    tag: Annotated[list[str] | None, Query()] = None,
+    tag_id: Annotated[list[str] | None, Query()] = None,
+    text: str | None = None,
+    content_service: ContentService = Depends(get_content_service),
 ) -> ListContentResults:
     results = content_service.get_list_content(
         user.organization_id,
@@ -65,11 +64,11 @@ def list(
     summary="List content types",
 )
 def list_types(
-        limit: int | None = 20,
-        offset: int | None = 0,
-        sort_by: str | None = None,
-        sort_direction: str | None = "ASC",
-        content_service: ContentService = Depends(get_content_service),
+    limit: int | None = 20,
+    offset: int | None = 0,
+    sort_by: str | None = None,
+    sort_direction: str | None = "ASC",
+    content_service: ContentService = Depends(get_content_service),
 ) -> ListContentTypesResults:
     return content_service.get_list_content_types(
         ListContentTypesInput(
@@ -83,10 +82,10 @@ def list_types(
     summary="Associate a tag with this content",
 )
 def associate_tag_with_content(
-        user: CurrentUser,
-        content_id: str,
-        tag_id: str,
-        content_service: ContentService = Depends(get_content_service),
+    user: CurrentUser,
+    content_id: str,
+    tag_id: str,
+    content_service: ContentService = Depends(get_content_service),
 ) -> TagAssociationResponse:
     return content_service.associate_tag(user.organization_id, content_id, tag_id)
 
@@ -96,10 +95,10 @@ def associate_tag_with_content(
     summary="Disassociate a tag with this content",
 )
 def disassociate_tag_with_content(
-        user: CurrentUser,
-        content_id: str,
-        tag_id: str,
-        content_service: ContentService = Depends(get_content_service),
+    user: CurrentUser,
+    content_id: str,
+    tag_id: str,
+    content_service: ContentService = Depends(get_content_service),
 ) -> TagAssociationResponse:
     return content_service.disassociate_tag(user.organization_id, content_id, tag_id)
 
@@ -123,13 +122,15 @@ def disassociate_tag_with_content(
     summary="Create a document",
 )
 def create_document(
-        user: CurrentUser,
-        request: CreateContentRequest,
-        content_service: ContentService = Depends(get_content_service),
+    user: CurrentUser,
+    request: CreateContentRequest,
+    content_service: ContentService = Depends(get_content_service),
 ) -> CreateContentResponse:
     return CreateContentResponse(
         results=[
-            content_service.create_blank_document(user.organization_id, request.workspace_id, request.codebase_id)
+            content_service.create_blank_document(
+                user.organization_id, request.workspace_id, request.codebase_id
+            )
         ]
     )
 
@@ -139,14 +140,16 @@ def create_document(
     summary="Create a content record from a template content record",
 )
 def create_from_template(
-        session: CurrentSession,
-        user: CurrentUser,
-        request: CreateTemplateRequest,
-        content_service: ContentService = Depends(get_content_service),
+    session: CurrentSession,
+    user: CurrentUser,
+    request: CreateTemplateRequest,
+    content_service: ContentService = Depends(get_content_service),
 ) -> CreateContentResponse:
     return CreateContentResponse(
         results=[
-            content_service.create_content_from_template(session, user, request.content_id)
+            content_service.create_content_from_template(
+                session, user, request.content_id
+            )
         ]
     )
 
@@ -156,13 +159,11 @@ def create_from_template(
     summary="Create a template content record",
 )
 def create_template_content_record(
-        session: CurrentSession,
-        user: CurrentUser,
-        request: CreateTemplateRequest,
-        content_service: ContentService = Depends(get_content_service),
+    session: CurrentSession,
+    user: CurrentUser,
+    request: CreateTemplateRequest,
+    content_service: ContentService = Depends(get_content_service),
 ) -> CreateContentResponse:
     return CreateContentResponse(
-        results=[
-            content_service.create_template(session, user, request.content_id)
-        ]
+        results=[content_service.create_template(session, user, request.content_id)]
     )

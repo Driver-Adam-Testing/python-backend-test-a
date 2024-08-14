@@ -48,6 +48,7 @@ class ImportData(BaseModel):
 
     def render_markdown(self) -> str:
         output = ""
+        output += "\n---\n"
         for nc in self.data:
             description = (
                 nc.content if len(nc.content) > 0 else "Custom or 3rd party import."
@@ -92,10 +93,11 @@ class VariableDict(BaseModel):
     def render_markdown(self) -> str:
         output = ""
         for k, v in self.data.items():
-            output += f"### {k}\n"
+            output += f"\n---\n### {k}\n"
             output += f"- **Type**: `{v.type}`\n"
             output += f"- **Description**: {v.description}\n"
             output += f"- **Use**: {v.use}\n\n"
+
         return output
 
     def __str__(self) -> str:
@@ -134,7 +136,7 @@ class DataStructureDict(BaseModel):
     def render_markdown(self) -> str:
         output = ""
         for k, v in self.data.items():
-            output += f"### {k}\n"
+            output += f"\n---\n### {k}\n"
             output += f"- **Type**: `{v.type}`\n"
             output += "\n- **Members**:\n"
             if len(v.members) > 0:
@@ -182,7 +184,7 @@ class FnDict(BaseModel):
     def render_markdown(self) -> str:
         output = ""
         for k, v in self.data.items():
-            output += f"### {k}\n"
+            output += f"\n---\n### {k}\n"
             output += f"{v.single_sentence}\n"
             output += "\n- **Inputs**:\n"
             if len(v.inputs) > 0:

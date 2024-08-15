@@ -46,6 +46,7 @@ class ContentMetadata(SQLModel, table=True):  # type: ignore
     content_type: ContentType = Field(Enum(ContentType), index=True)
     relative_path: str | None = Field(default=None, nullable=True, index=True)
     misc_metadata: dict = Field(default={}, sa_column=Column(JSON, nullable=False))  # type: ignore
+    chunks: list["Chunk"] = Relationship(back_populates="content_metadata")
 
 
 # TODO deprecate once all embeddings are in ChunkAndEmbedding
@@ -72,6 +73,7 @@ class Chunk(SQLModel, table=True):  # type: ignore
     content_metadata_id: UUID = Field(
         foreign_key="contentmetadata.id", nullable=False, index=True
     )
+    content_metadata: ContentMetadata = Relationship(back_populates="chunks")
     text: str
     # Text Embeddings are actually indexed but it's not reflected in the model.py because it's using ivfflat
     text_embedding_3_small: list[float] = Field(

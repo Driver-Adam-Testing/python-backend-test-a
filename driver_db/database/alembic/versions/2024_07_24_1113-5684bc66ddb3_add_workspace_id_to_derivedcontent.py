@@ -5,10 +5,8 @@ Revises: 3844d00aa769
 Create Date: 2024-07-24 11:13:49.012056
 
 """
-from alembic import op
 import sqlalchemy as sa
-import sqlmodel.sql.sqltypes
-
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "5684bc66ddb3"
@@ -22,7 +20,7 @@ def upgrade():
         "derived_contents",
         sa.Column(
             "workspace_id",
-            sqlmodel.sql.sqltypes.GUID(),
+            sa.types.Uuid(),
             nullable=False,
             server_default="00000000-0000-0000-0000-000000000000",
         ),

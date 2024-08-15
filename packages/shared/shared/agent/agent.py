@@ -1,10 +1,8 @@
 import json
-import os
 import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import anthropic
-import requests
 from openai import OpenAI
 from openai.types.chat.chat_completion_message import ChatCompletionMessage
 
@@ -45,32 +43,6 @@ class AgentBase:
             self.id = self.collection.log_agent(self.codebase_id, self.model)
         else:
             self.id = id
-        self._backend_token = None
-
-    @property
-    def backend_token(self):
-        if self._backend_token is None:
-            # TODO: get this from settings
-            auth0_domain = os.getenv("AUTH0_DOMAIN")
-            client_id = os.getenv("AUTH0_CLIENT_ID")
-            client_secret = os.getenv("AUTH0_CLIENT_SECRET")
-            audience = os.getenv("AUTH0_AUDIENCE")
-
-            token_url = f"https://{auth0_domain}/oauth/token"
-            payload = {
-                "client_id": client_id,
-                "client_secret": client_secret,
-                "audience": audience,
-                "grant_type": "client_credentials",
-            }
-            headers = {"content-type": "application/json"}
-
-            response = requests.post(token_url, json=payload, headers=headers)
-            if response.status_code == 200:
-                self._backend_token = response.json().get("access_token")
-            else:
-                raise Exception(f"Failed to obtain access token: {response.text}")
-        return self._backend_token
 
     def _print_message(self, message: ChatCompletionMessage | dict[str, str]):
         try:

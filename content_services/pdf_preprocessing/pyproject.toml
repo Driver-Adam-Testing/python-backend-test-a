@@ -13,11 +13,9 @@ openai = "^1.35.12"
 database = {path = "../../driver_db", develop = true}
 boto3 = "^1.34.141"
 pydantic = "^2.8.2"
-pydantic-settings = "^2.3.4"
 tiktoken = "^0.7.0"
-greenlet = "^3.0.3"
 modal = "^0.63.55"
-asyncio = "^3.4.3"
+shared = {path = "../../packages/shared", develop = true}
 
 
 [tool.poetry.group.dev.dependencies]

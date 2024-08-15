@@ -34,9 +34,6 @@ def execute_backend_search(
     relative_path: str | None = None,
     result_limit: int = 10,
 ):
-    # backend_host = os.getenv("DRIVER_API_URL")
-    # if not backend_host:
-    #     raise OSError("DRIVER_API_URL environment variable is not set.")
     payload = {
         "query": search_text,
         "result_limit": result_limit,

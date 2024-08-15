@@ -5,16 +5,11 @@ from typing import Any, Self
 
 import openai
 from pydantic import BaseModel, ValidationError
-
-# from shared.chunking.text_splitter import TextSplitter
 from utils.dag import LiteNode
 from utils.io import (
     get_prompt_template,
 )
 from utils.lang_specialization.common import Lang
-from utils.llm import (
-    chunk_str,
-)
 from utils.models import ChatOpenAI
 from utils.templates import Template
 
@@ -244,6 +239,8 @@ def comprehend_file_top_down(
     max_num_chunks: int,
     raise_hard_errors: bool = True,
 ) -> tuple[bool, dict[str, Any]]:
+    from shared.chunking.text_splitter import TextSplitter
+
     logging.info(f"Incorporating `{node.root_rel_path}`")
 
     if len(source_code.strip()) == 0:
@@ -254,13 +251,8 @@ def comprehend_file_top_down(
         )
         return success, results
 
-    # chunk_size = 100_000
-    # chunk_overlap = 3000
-    # splitter = TextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
-    # chunks = splitter.split(text=source_code)
-    chunks = chunk_str(
-        chunk_size=chunk_size, chunk_overlap=chunk_overlap, str_in=source_code
-    )
+    splitter = TextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+    chunks = splitter.split(text=source_code)
 
     if len(chunks) > max_num_chunks:
         if raise_hard_errors:
@@ -281,9 +273,8 @@ def comprehend_file_top_down(
             )
             return (success, results)
     if len(chunks) > 1:
-        # chunk_texts = [c.text for c in chunks]
-        chunk_texts = chunks
-        # TODO: Decide how/when/if to fold use of the code map for longer files like this.
+        chunk_texts = [c.text for c in chunks]
+
         logging.info(f"Processing {len(chunks)} chunks for `{node.root_rel_path}`")
         print(f"Processing {len(chunks)} chunks for `{node.root_rel_path}` ...")
         file_kind = FileKind.from_llm(
@@ -291,7 +282,6 @@ def comprehend_file_top_down(
         )
 
         if file_kind.kind == FileEnum.METADATA:
-            # TODO: implement for Metadata
             template = METADATA_MULTI_CONTEXT_TEMPLATE
             long_template = Template(template=template)
             file_description_long = long_template.run_with_code(

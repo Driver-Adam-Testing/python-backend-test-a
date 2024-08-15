@@ -375,6 +375,11 @@ async def db_test():
 def main(resume_from_id: str | None = None):
     # from dotenv import load_dotenv
     # load_dotenv()
+    codebase_id = "a1a13ca0-308c-4e6c-9668-ad807b5a2896"
+    workspace_id = "2bbbac7b-af3f-4019-b9a3-a3fe18b8ddb9"
+
+    resume = False
+    # create_embeddings = modal.Function.lookup("comprehender", "create_embeddings")
 
     if resume_from_id:
         resume = True
@@ -385,8 +390,9 @@ def main(resume_from_id: str | None = None):
     try:
         # inspect_local.remote(REMOTE_CODEBASE_ROOT, str(run_id), resume=resume)
         inspect_db.remote(
-            uuid.UUID("b975b2d9-86d6-4c2e-8f5d-f38ba7e82ac2"), run_id, resume=resume
+            uuid.UUID(codebase_id), run_id, resume=resume
         )
+        # create_embeddings.remote(str(workspace_id), str(codebase_id))
         # asyncio.run(inspect_db.local(uuid.UUID("8dc2ecd9-1289-4359-90a3-dacdd42405a7"), run_id, resume=resume))
     finally:
         print("Run id: ", run_id)

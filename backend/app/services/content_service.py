@@ -1,6 +1,5 @@
 import json
 from datetime import datetime
-from xml.etree.ElementInclude import include
 
 from database.models_v1 import (
     DerivedContent,
@@ -36,6 +35,14 @@ class DerivedContentTypeRepository(BaseRepository[DerivedContentType]):
             select(DerivedContentType).where(DerivedContentType.type_name == type_name)
         ).first()
 
+    def get_by_type_names(self, type_names: list[str]) -> DerivedContentType:
+        return self.session.exec(
+            select(DerivedContentType).where(DerivedContentType.type_name in type_names)
+        ).first()
+    @staticmethod
+    def valid_collection_type_names() -> list[str]:
+        return ["codebase", "codebase-directory", "codebase-file", "pdf_summary", "supplemental-document"]
+
 
 class ContentService:
     def __init__(self, session: Session):
@@ -46,7 +53,7 @@ class ContentService:
         self.derived_content_type_repository = DerivedContentTypeRepository(session)
 
     def associate_tag(
-        self, organization_id: str, content_id: str, tag_id: str, include: bool | None = None
+            self, organization_id: str, content_id: str, tag_id: str, include_tag: bool = True
     ) -> TagAssociationResponse:
         # Check if content exists
         content = self.content_repository.get_by_conditions(
@@ -59,7 +66,8 @@ class ContentService:
 
         if not content:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Content not found.",
             )
 
         # Check if tag exists
@@ -69,27 +77,23 @@ class ContentService:
 
         if not tag:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Tag not found"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Tag not found.",
             )
 
         if tag.type == "collection":
-            if content.content_type.type_name not in [
-                "codebase",
-                "codebase-file",
-                "codebase-directory",
-                "pdf-summary",
-            ]:
+            if content.content_type.type_name not in DerivedContentTypeRepository.valid_collection_type_names():
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Collections can only be associated with codebases, directories, files or pdfs.",
                 )
-        include_tag = include if include is not None else True
+
+        include_tag = include_tag if include_tag is not None else True
         # Associate tag with content
-        content.tag_links.append(TagContent(tag_id=tag.id, content_id=content.id, include=True))
+        content.tag_links.append(TagContent(tag_id=tag.id, content_id=content.id, include=include_tag))
 
         try:
             self.session.commit()
-            # self.session.refresh(content)
         except IntegrityError:
             self.session.rollback()
             raise HTTPException(
@@ -101,10 +105,12 @@ class ContentService:
             tag_id=tag_id, content_id=content_id, message="Tag associated successfully"
         )
 
-    def associate_collection_with_content(self, organization_id: str, content_id: str, tag_id: str) -> TagAssociationResponse:
+    def associate_collection_with_content(self, organization_id: str, content_id: str,
+                                          tag_id: str) -> TagAssociationResponse:
 
         document = self.content_repository.get(content_id)
-        if not document:
+
+        if not document or document.workspace.organization_id == organization_id:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
             )
@@ -112,14 +118,18 @@ class ContentService:
         tag_collection = self.tag_repository.get(tag_id)
         tag_contents = self.session.exec(
             select(TagContent).where(TagContent.tag_id == tag_id)
-        ).first() # fix this
+        ).first()  # fix this
 
-        codebase_dir_content_type = self.derived_content_type_repository.get_by_type_name("codebase-directory")
-        codebase_file_content_type = self.derived_content_type_repository.get_by_type_name("codebase-file")
-        # source_contents = tag_contents.content.codebase.source_contents
+        valid_content_types = [
+            content_type.id for content_type in self.derived_content_type_repository.get_by_type_names(
+                DerivedContentTypeRepository.valid_collection_type_names()
+            )
+        ]
+
         source_contents = [
-            content for content in tag_contents.content.codebase.source_contents
-            if content.content_type_id in {codebase_dir_content_type.id, codebase_file_content_type.id}
+            content for tag_content in tag_contents
+            for content in tag_content.content.codebase.source_contents
+            if content.content_type_id in valid_content_types
         ]
 
         sources = [
@@ -147,24 +157,17 @@ class ContentService:
         )
 
     def disassociate_tag(
-        self, organization_id: str, content_id: str, tag_id: str
+            self, organization_id: str, content_id: str, tag_id: str
     ) -> TagAssociationResponse:
         # Check if content exists
 
-        # content = self.session.exec(
-        #     select(DerivedContent)
-        #     .join(Workspace)
-        #     .join(DerivedContent.tags)
-        #     .where(organization_id == Workspace.organization_id)
-        #     .where(DerivedContent.id == content_id)
-        #  ).first()
-        content = self.content_repository.get_by_conditions(
-            [
-                organization_id == Workspace.organization_id,
-                DerivedContent.id == content_id,
-            ],
-            [Workspace, DerivedContent.tags],
-        )
+        content = self.session.exec(
+            select(DerivedContent)
+            .join(Workspace)
+            .join(DerivedContent.tags)
+            .where(organization_id == Workspace.organization_id)
+            .where(DerivedContent.id == content_id)
+         ).first()
 
         if not content:
             raise HTTPException(
@@ -172,14 +175,11 @@ class ContentService:
             )
 
         # Check if tag exists
-        # tag = self.session.exec(
-        #     select(Tag)
-        #     .where(Tag.id == tag_id)
-        #     .where(organization_id == Tag.organization_id)
-        # ).first()
-        tag = self.tag_repository.get_by_conditions(
-            [Tag.id == tag_id, Tag.organization_id == organization_id]
-        )
+        tag = self.session.exec(
+            select(Tag)
+            .where(Tag.id == tag_id)
+            .where(organization_id == Tag.organization_id)
+        ).first()
 
         if not tag:
             raise HTTPException(
@@ -207,13 +207,12 @@ class ContentService:
                 message="Tag disassociated successfully",
             )
 
-
     def create_blank_document(
-        self,
-        organization_id: str,
-        workspace_id: str,
-        codebase_id: str,
-        document_name: str | None = None,
+            self,
+            organization_id: str,
+            workspace_id: str,
+            codebase_id: str,
+            document_name: str | None = None,
     ) -> DerivedContent:
         workspace_exists = self.workspace_repository.exists(
             workspace_id, organization_id
@@ -228,9 +227,7 @@ class ContentService:
         )
 
         # get codebase derived content type
-        codebase_content_type = self.derived_content_type_repository.get_by_type_name(
-            "codebase"
-        )
+        codebase_content_type = self.derived_content_type_repository.get_by_type_name("codebase")
 
         # find the derived content type with content type codebase and workspace id and codebase id
         parent_content = self.session.exec(
@@ -308,12 +305,12 @@ class ContentService:
         return new_content
 
     def get_list_content(
-        self, organization_id: str, search_input: ListContentInput
+            self, organization_id: str, search_input: ListContentInput
     ) -> ListContentResults:
         try:
             results, total_count = self._get_list_content(organization_id, search_input)
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
         # format the results
         content_results = [
             ListContentResult(
@@ -462,7 +459,7 @@ class ContentService:
                 lct_inputs.sort_direction,
             )
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
         return ListContentTypesResults(results=results)
 
@@ -474,6 +471,7 @@ class ContentService:
             )
         sources = [ds.source for ds in content.source_links]
         return sources
+
     def create_template(
             self, organization_id: str, workspace_id: str, codebase_id: str
     ) -> DerivedContent:
@@ -482,7 +480,9 @@ class ContentService:
         )
 
         if not workspace_exists:
-            raise NoResultFound("Workspace not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Workspace not found"
+            )
 
         # get application note derived content type
         template_content_type = self.derived_content_type_repository.get_by_type_name(

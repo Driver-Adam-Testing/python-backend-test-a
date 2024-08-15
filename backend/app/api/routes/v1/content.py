@@ -79,16 +79,16 @@ def list_types(
     )
 
 
-@router.get(
-    "/{content_id}/document-sources",
-    summary="Get sources associated with a document",
-)
-def get_document_sources(
-        user: CurrentUser,
-        content_id: str,
-        content_service: ContentService = Depends(get_content_service),
-):
-    return content_service.get_content_sources(content_id)
+# @router.get(
+#     "/{content_id}/resolve-sources",
+#     summary="Get sources associated with a document",
+# )
+# def get_document_sources(
+#         user: CurrentUser,
+#         content_id: str,
+#         content_service: ContentService = Depends(get_content_service),
+# ):
+#     return content_service.resolve_content_sources(content_id)
 
 
 @router.post(
@@ -119,7 +119,7 @@ def disassociate_tag_with_content(
 
 @router.post(
     "/{content_id}/associate-source/{tag_id}",
-    summary="Associate source with this content. This is a snapshot of the ",
+    summary="Associate source with this content.",
 )
 def associate_source_with_content(
         session: CurrentSession,
@@ -127,25 +127,20 @@ def associate_source_with_content(
         content_id: str,
         tag_id: str,
 ) -> TagAssociationResponse:
-    # TODO - flatten all resources associated with the collection into content sources relationship
-    #     return associate_tag(session, user, content_id, tag_id)
     pass
 
 
 @router.post(
     "/{content_id}/associate-collection/{tag_id}",
-    summary="Associate a collection with this content. This is a snapshot of the ",
+    summary="Associate a collection with this content.",
 )
 def associate_collection_with_content(
-        session: CurrentSession,
         user: CurrentUser,
         content_id: str,
         tag_id: str,
         content_service: ContentService = Depends(get_content_service),
 
 ) -> TagAssociationResponse:
-    # TODO - flatten all resources associated with the collection into content sources relationship
-    #     return associate_tag(session, user, content_id, tag_id)
     return content_service.associate_collection_with_content(user.organization_id, content_id, tag_id)
 
 

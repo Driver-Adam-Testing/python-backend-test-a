@@ -30,7 +30,7 @@ class TagService:
         self.content_service = ContentService(session)
 
     def list_tags(self, user: CurrentUser, lt_input: ListTagsInput) -> ListTagsResults:
-
+        logger.info(f"Listing tags for user {user.user_id} with input {lt_input}")
         statement = [user.organization_id == Tag.organization_id]
         count_by = [user.organization_id == Tag.organization_id]
 
@@ -48,6 +48,7 @@ class TagService:
             lt_input.offset,
             conditions=statement,
         )
+        logger.info(f"Found {total_count} tags for user {user.user_id}")
         return ListTagsResults(
             results=results,
             offset=lt_input.offset,
@@ -56,26 +57,30 @@ class TagService:
         )
 
     def create_tag(self, user: CurrentUser, lt_input: NewTagInput) -> Tag:
-
-        return self.tag_repository.create(Tag(
+        logger.info(f"Creating tag for user {user.user_id} with input {lt_input}")
+        tag = self.tag_repository.create(Tag(
             **lt_input.model_dump(exclude_unset=True),
             organization_id=user.organization_id,
             created_by=user.user_id,
             updated_by=user.user_id,
         ))
+        logger.info(f"Tag created with ID {tag.id} for user {user.user_id}")
+        return tag
 
     def edit_tag(self, user: CurrentUser, tag_id: str, et_input: EditTagInput) -> Tag:
-
+        logger.info(f"Editing tag {tag_id} for user {user.user_id} with input {et_input}")
         tag = self.tag_repository.get_by_conditions([Tag.id == tag_id and Tag.organization_id == user.organization_id])
 
         if tag:
             tag_updates = et_input.model_dump(exclude_unset=True)
             tag = self.tag_repository.update(tag, Tag(**tag_updates, updated_by=user.user_id))
+            logger.info(f"Tag {tag_id} updated for user {user.user_id}")
             return tag
-        logger.error("Tag not found to edit")
+        logger.error(f"Tag {tag_id} not found for user {user.user_id}")
         raise HTTPException(status_code=404, detail="Tag not found")
 
     def list_tag_contents(self, user: CurrentUser, tag_id: str, lt_input: ListContentInput) -> ListTagContentsResults:
+        logger.info(f"Listing contents for tag {tag_id} for user {user.user_id} with input {lt_input}")
         tag = self.tag_repository.get_by_conditions([Tag.id == tag_id and Tag.organization_id == user.organization_id])
 
         if tag:
@@ -93,6 +98,7 @@ class TagService:
                     tag_ids=[tag_id],
                 ),
             )
+            logger.info(f"Found {content.count} contents for tag {tag_id} for user {user.user_id}")
             return ListTagContentsResults(
                 tag=tag,
                 results=content.results,
@@ -100,7 +106,7 @@ class TagService:
                 limit=lt_input.limit,
                 count=content.count,
             )
-        logger.error("Tag not found.")
+        logger.error(f"Tag {tag_id} not found for user {user.user_id}")
         raise HTTPException(status_code=404, detail="Tag not found")
 
 

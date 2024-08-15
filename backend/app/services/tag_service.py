@@ -1,24 +1,21 @@
 import logging
+
+from database.models_v1 import Tag
 from fastapi import HTTPException
+from sqlmodel import Session, select
 
-from sqlmodel import Session, asc, desc, or_, select, func, text
-
-from app.repositories.base_repository import BaseRepository
-from app.services.content_service import ContentService
 from app.api.auth import CurrentUser
-
+from app.api.session import CurrentSession
+from app.repositories.base_repository import BaseRepository
+from app.schemas.content_schema import ListContentInput
 from app.schemas.tag_schema import (
+    EditTagInput,
+    ListTagContentsResults,
     ListTagsInput,
     ListTagsResults,
     NewTagInput,
-    EditTagInput,
-    ListTagContentsResults
 )
-
-from app.schemas.content_schema import ListContentInput
-
-from app.api.session import CurrentSession
-from database.models_v1 import Tag
+from app.services.content_service import ContentService
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +39,7 @@ class TagService:
             statement.append(Tag.type == lt_input.type)
             count_by.append(Tag.type == lt_input.type)
 
+        # total_count = self.session.exec(count_statement).one()
         total_count = self.tag_repository.count_by(count_by)
         results = self.tag_repository.get_all(
             lt_input.limit,
@@ -53,35 +51,46 @@ class TagService:
             results=results,
             offset=lt_input.offset,
             limit=lt_input.limit,
-            count=total_count
+            count=total_count,
         )
 
     def create_tag(self, user: CurrentUser, lt_input: NewTagInput) -> Tag:
-        logger.info(f"Creating tag for user {user.user_id} with input {lt_input}")
-        tag = self.tag_repository.create(Tag(
-            **lt_input.model_dump(exclude_unset=True),
-            organization_id=user.organization_id,
-            created_by=user.user_id,
-            updated_by=user.user_id,
-        ))
-        logger.info(f"Tag created with ID {tag.id} for user {user.user_id}")
-        return tag
+        return self.tag_repository.create(
+            Tag(
+                name=lt_input.name.strip(),
+                hex_color=lt_input.hex_color.strip(),
+                type=lt_input.type,
+                organization_id=user.organization_id,
+                created_by=user.user_id,
+                updated_by=user.user_id,
+            )
+        )
 
-    def edit_tag(self, user: CurrentUser, tag_id: str, et_input: EditTagInput) -> Tag:
-        logger.info(f"Editing tag {tag_id} for user {user.user_id} with input {et_input}")
-        tag = self.tag_repository.get_by_conditions([Tag.id == tag_id and Tag.organization_id == user.organization_id])
-
+    def edit_tag(self, user: CurrentUser, tag_id: int, lt_input: EditTagInput) -> Tag:
+        tag = self.session.exec(
+            select(Tag).where(
+                Tag.id == tag_id and Tag.organization_id == user.organization_id
+            )
+        ).first()
         if tag:
-            tag_updates = et_input.model_dump(exclude_unset=True)
-            tag = self.tag_repository.update(tag, Tag(**tag_updates, updated_by=user.user_id))
+            tag_updates = lt_input.model_dump(exclude_unset=True)
+            tag = self.tag_repository.update(
+                tag, Tag(**tag_updates, updated_by=user.user_id)
+            )
             logger.info(f"Tag {tag_id} updated for user {user.user_id}")
             return tag
         logger.error(f"Tag {tag_id} not found for user {user.user_id}")
         raise HTTPException(status_code=404, detail="Tag not found")
 
-    def list_tag_contents(self, user: CurrentUser, tag_id: str, lt_input: ListContentInput) -> ListTagContentsResults:
-        logger.info(f"Listing contents for tag {tag_id} for user {user.user_id} with input {lt_input}")
-        tag = self.tag_repository.get_by_conditions([Tag.id == tag_id and Tag.organization_id == user.organization_id])
+    def list_tag_contents(
+        self, user: CurrentUser, tag_id: str, lt_input: ListContentInput
+    ) -> ListTagContentsResults:
+        logger.info(
+            f"Listing contents for tag {tag_id} for user {user.user_id} with input {lt_input}"
+        )
+        tag = self.tag_repository.get_by_conditions(
+            [Tag.id == tag_id and Tag.organization_id == user.organization_id]
+        )
 
         if tag:
             content = self.content_service.get_list_content(
@@ -98,7 +107,9 @@ class TagService:
                     tag_ids=[tag_id],
                 ),
             )
-            logger.info(f"Found {content.count} contents for tag {tag_id} for user {user.user_id}")
+            logger.info(
+                f"Found {content.count} contents for tag {tag_id} for user {user.user_id}"
+            )
             return ListTagContentsResults(
                 tag=tag,
                 results=content.results,

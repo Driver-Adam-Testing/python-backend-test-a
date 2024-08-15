@@ -442,11 +442,17 @@ class Tag(SQLModel, table=True):  # type: ignore
     derived_contents: list["DerivedContent"] = Relationship(
         back_populates="tags", link_model=TagContent
     )
+    chunks_and_embeds: list["ChunkAndEmbedding"] = Relationship(
+        back_populates="content", cascade_delete=True
+    )
 
 
 class ChunkAndEmbedding(SQLModel, table=True):  # type: ignore
     id: UUID | None = Field(default_factory=uuid.uuid4, primary_key=True)
-    content_id: UUID = Field(foreign_key="derived_contents.id", nullable=False)
+    content_id: UUID = Field(
+        foreign_key="derived_contents.id", nullable=False, ondelete="CASCADE"
+    )
+    content: DerivedContent | None = Relationship(back_populates="chunks_and_embeds")
     text: str
     text_embedding_3_small: list[float] = Field(
         sa_column=Column(

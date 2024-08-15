@@ -532,7 +532,6 @@ class TopLevelDocsTask(Task):
         return {OpenAIError}
 
 
-# TODO also embed source content rows
 class EmbeddingTask(Task):
     def __init__(
         self,
@@ -618,7 +617,9 @@ class EmbeddingTask(Task):
             print(f"Saved {len(chunks)} for {task.task_name} to database")
 
         # Chunk, embed, and write source code if provided
-        # TODO it's super hacky to reuse this class for source code too...
+        # TODO it's super hacky to embed source code directly like this.
+        # Since we will move importing of source code into inspector, we will not need this special pattern
+        # in the future. We will have separate tasks for loading source code and creating the source content.
         if self.source_code:
             # Chunk, embed, and write source code
             sc_chunks = await self.chunk_embed_and_prep_for_db(

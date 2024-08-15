@@ -447,7 +447,9 @@ class ChunkAndEmbedding(SQLModel, table=True):  # type: ignore
     content_id: UUID = Field(foreign_key="derived_contents.id", nullable=False)
     text: str
     text_embedding_3_small: list[float] = Field(
-        sa_column=Column(Vector(1536), nullable=True)
+        sa_column=Column(
+            Vector(1536), nullable=True
+        )  # TODO this column will need to be indexed ONCE POPULATED1
     )
     chunk_number: int
     created_at: None | datetime = Field(

@@ -53,7 +53,6 @@ jobs:
           MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
           MODAL_ENV: ${{ vars.MODAL_ENV }}
         run: poetry install --no-root && poetry run modal deploy --env=$MODAL_ENV --tag=${GITHUB_SHA::8} src/main.py
-
       # - name: Deploy Inspector
       #   working-directory: content_services/inspector
       #   env:
@@ -61,11 +60,15 @@ jobs:
       #     MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
       #     MODAL_ENV: ${{ vars.MODAL_ENV }}
       #   run: poetry install --no-root && poetry run modal deploy --env=$MODAL_ENV --tag=${GITHUB_SHA::8} src/main.py
-      - id: CustomAction
-        uses: actions/modal-deploy
+      - id: InspectorModalDeploy
+        name: Deploy Inspector
+        uses: ./.github/actions/modal-deploy
         with:
           working-directory: content_services/inspector
           package-name: Inspector
+          modal-token-id: ${{ secrets.MODAL_TOKEN_ID }}
+          modal-token-secret: ${{ secrets.MODAL_TOKEN_SECRET }}
+          modal-env: ${{ vars.MODAL_ENV }}
       - name: Deploy PDF Preprocessing
         working-directory: content_services/pdf_preprocessing
         env:

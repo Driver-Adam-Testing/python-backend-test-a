@@ -15,8 +15,8 @@ from utils.threadpool import FastShutdownThreadPoolExecutor
 PARENT_PATH = Path(__file__).parent
 
 # TODO: Remove hardcoded.
-WORKSPACE_ID = UUID4("5e1a9118-98b3-4310-a572-9be475a3caed")
-CODEBASE_ID = UUID4("b975b2d9-86d6-4c2e-8f5d-f38ba7e82ac2")
+# WORKSPACE_ID = UUID4("5e1a9118-98b3-4310-a572-9be475a3caed")
+# CODEBASE_ID = UUID4("b975b2d9-86d6-4c2e-8f5d-f38ba7e82ac2")
 
 
 def toplevel_chunk_description(

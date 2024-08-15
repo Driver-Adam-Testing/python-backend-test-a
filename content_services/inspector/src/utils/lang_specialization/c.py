@@ -45,23 +45,22 @@ In writing your description, write about about the conceptual use cases, applica
 """
 
 IMPORTS_SYSTEM_PROMPT_JSON = """
-Summarize the header files and imports used in the code provided below.
+Identify and list the header files and imports used in the code provided below.
 
 **Always respond using exactly the following JSON schema**:
 {
     "data": [
-        {"name": <import1_name>, "content": <1 sentence description of the first import or header>},
-        {"name": <import2_name>, "content": <1 sentence description of the second import or header>},
+        <import1_name>,
+        <import2_name>,
         ...
     ]
 }
 """
 
 IMPORTS_USER_PROMPT = """
-Summarize the header files and imports used in the code provided below.
+Identify and list the header files and imports used in the code provided below.
 
-- If there are no header files or imports, just return an empty list.
-- If it is completely clear what a header file or import is for, briefly describe it. Do not speculate -- if it is not completely clear what a header file provides just identify it and leave the value associated with `content` empty.
+If there are no header files or imports, just return an empty list.
 """
 
 DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON = """

@@ -27,7 +27,7 @@ class NamedContent(BaseModel):
 
 
 class ImportData(BaseModel):
-    data: list[NamedContent]
+    data: list[str]
 
     @classmethod
     def from_llm(
@@ -49,11 +49,8 @@ class ImportData(BaseModel):
     def render_markdown(self) -> str:
         output = ""
         output += "\n---\n"
-        for nc in self.data:
-            description = (
-                nc.content if len(nc.content) > 0 else "Custom or 3rd party import."
-            )
-            output += f"- `{nc.name}`: {description}\n"
+        for dep in self.data:
+            output += f"- `{dep}`\n"
         output += "\n"
         return output
 

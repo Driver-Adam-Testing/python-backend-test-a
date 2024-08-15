@@ -347,6 +347,7 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
     codebase_id: None | UUID = Field(
         default=None, foreign_key="codebases.id", nullable=True, index=True
     )
+
     codebase: None | Codebase = Relationship(back_populates="source_contents")
     relative_path: str = Field(sa_column=Column(sqlalchemy.Text, nullable=False))
     content: None | str = Field(
@@ -392,6 +393,9 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
     workspace: Workspace = Relationship(back_populates="source_contents")
     tags: list["Tag"] = Relationship(
         back_populates="derived_contents", link_model=TagContent
+    )
+    chunks_and_embeds: list["ChunkAndEmbedding"] = Relationship(
+        back_populates="content", cascade_delete=True
     )
 
 
@@ -441,9 +445,6 @@ class Tag(SQLModel, table=True):  # type: ignore
     )
     derived_contents: list["DerivedContent"] = Relationship(
         back_populates="tags", link_model=TagContent
-    )
-    chunks_and_embeds: list["ChunkAndEmbedding"] = Relationship(
-        back_populates="content", cascade_delete=True
     )
 
 

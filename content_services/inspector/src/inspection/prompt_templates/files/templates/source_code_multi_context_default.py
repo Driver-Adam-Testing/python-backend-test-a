@@ -81,28 +81,28 @@ SOURCE_CODE_MULTI_CONTEXT_TEMPLATE_DEFAULT = [
     # NOTE: for simplicity this only looks at the first file chunk for imports (making assumptions about the structure of the file)
     (
         S.SINGLE_PROMPT_CHUNK_JSON,
-        "## Imports and Dependencies",
+        "\n---\n## Imports and Dependencies",
         IMPORTS_SYSTEM_PROMPT_JSON,
         IMPORTS_USER_PROMPT,
         ImportData.from_llm,
     ),
     (
         S.MULTI_LLM_COND_JSON,
-        "## Global Variables",
+        "\n---\n## Global Variables",
         default_variable_checker_multi_prompt,
         variables_dict_from_llm_chunk,
         VARIABLES_NONE_CONTENT,
     ),
     (
         S.MULTI_LLM_COND_JSON,
-        "## Data Structures",
+        "\n---\n## Data Structures",
         default_data_structure_checker_multi_prompt,
         data_structure_dict_from_llm_chunk,
         DATA_STRUCTURES_NONE_CONTENT,
     ),
     (
         S.MULTI_LLM_COND_JSON,
-        "## Functions",
+        "\n---\n## Functions",
         default_function_checker_multi_prompt,
         fn_dict_from_llm_chunk,
         FUNCTIONS_NONE_CONTENT,

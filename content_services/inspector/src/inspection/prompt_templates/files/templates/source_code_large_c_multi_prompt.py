@@ -139,28 +139,28 @@ SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_C = [
     # NOTE: for simplicity this only looks at the first file chunk for imports (making assumptions about the structure of the file)
     (
         S.SINGLE_PROMPT_CHUNK_JSON,
-        "## Imports and Dependencies",
+        "\n---\n## Imports and Dependencies",
         IMPORTS_SYSTEM_PROMPT_JSON,
         IMPORTS_USER_PROMPT,
         ImportData.from_llm,
     ),
     (
         S.FN_COND_JSON,
-        "## Global Variables",
+        "\n---\n## Global Variables",
         c_variables_checker,
         variables_dict_from_llm,
         VARIABLES_NONE_CONTENT,
     ),
     (
         S.FN_COND_JSON,
-        "## Data Structures",
+        "\n---\n## Data Structures",
         c_data_structure_checker,
         data_structure_dict_from_llm,
         DATA_STRUCTURES_NONE_CONTENT,
     ),
     (
         S.FN_COND_JSON,
-        "## Functions",
+        "\n---\n## Functions",
         c_function_checker,
         fn_dict_from_llm,
         FUNCTIONS_NONE_CONTENT,

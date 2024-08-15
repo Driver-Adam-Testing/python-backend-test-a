@@ -220,4 +220,4 @@ def search(input):
     input = SearchInput(**input)
     print(input.model_dump())
     with Session(engine) as session:
-        return search_content_metadata(session, organization_id=None, input=input)
+        return search_content_metadata(session, input=input)

@@ -33,6 +33,7 @@ def execute_backend_search(
     content_types: list[str] | None = None,
     relative_path: str | None = None,
     result_limit: int = 10,
+    organization_id: str | None = None,
 ):
     payload = {
         "query": search_text,
@@ -41,6 +42,7 @@ def execute_backend_search(
         "workspace_id": str(agent_context.workspace_id),
         "codebase_id": str(agent_context.codebase_id),
         "relative_path": relative_path,
+        "organization_id": str(agent_context.organization_id),
         "algorithm": "hybrid",
     }
     search_function = modal.Function.lookup("comprehender", "search")

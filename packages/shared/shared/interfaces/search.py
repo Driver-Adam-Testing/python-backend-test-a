@@ -11,6 +11,7 @@ class SearchInput(DriverRequest):
     workspace_id: str | None = None  # TODO: lock this down in auth
     codebase_id: str | None = None
     relative_path: str | list[str] | None = None
+    organization_id: str | None = None
 
 
 class SearchResult(DriverResponse):

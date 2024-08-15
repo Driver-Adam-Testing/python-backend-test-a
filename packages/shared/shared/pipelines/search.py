@@ -1,6 +1,6 @@
 import re
 
-from database.models_v1 import Chunk, ContentMetadata
+from database.models_v1 import ChunkAndEmbedding, DerivedContent
 from rank_bm25 import BM25Okapi
 from shared.embedding.text_embedder import TextEmbedder
 from shared.interfaces.search import SearchInput, SearchResult, SearchResults
@@ -12,50 +12,55 @@ def tokenize_for_bm25(text: str):
 
 
 # TODO deprecate in favor of search once embeddings migrated
-def search_content_metadata(
-    session: Session, organization_id: str | None, input: SearchInput
-):
+def search_content_metadata(session: Session, input: SearchInput):
     embedded_query = TextEmbedder().batch_embed_text([input.query])[0]
 
     statement = select(
-        Chunk,
-        ContentMetadata,
-        Chunk.text_embedding_3_small.l2_distance(embedded_query).label("score"),
-    ).where(ContentMetadata.id == Chunk.content_metadata_id)
+        ChunkAndEmbedding,
+        DerivedContent,
+        ChunkAndEmbedding.text_embedding_3_small.l2_distance(embedded_query).label(
+            "score"
+        ),
+    ).where(DerivedContent.id == ChunkAndEmbedding.content_metadata_id)
 
     if input.workspace_id:
-        statement = statement.where(ContentMetadata.workspace_id == input.workspace_id)
+        statement = statement.where(DerivedContent.workspace_id == input.workspace_id)
 
     if input.codebase_id:
-        statement = statement.where(ContentMetadata.codebase_id == input.codebase_id)
+        statement = statement.where(DerivedContent.codebase_id == input.codebase_id)
+
+    if input.organization_id:
+        statement = statement.where(
+            DerivedContent.workspace.organization_id == input.organization_id
+        )
 
     if input.content_type:
         if isinstance(input.content_type, str):
             statement = statement.where(
-                ContentMetadata.content_type == input.content_type
+                DerivedContent.content_type.type_name == input.content_type
             )
         elif isinstance(input.content_type, list):
             statement = statement.where(
-                ContentMetadata.content_type.in_(input.content_type)
+                DerivedContent.content_type.type_name.in_(input.content_type)
             )
 
     if input.relative_path:
         if isinstance(input.relative_path, str):
             statement = statement.where(
-                ContentMetadata.relative_path.like(f"{input.relative_path}%")
+                DerivedContent.relative_path.like(f"{input.relative_path}%")
             )
         elif isinstance(input.relative_path, list):
             statement = statement.where(
                 or_(
                     *[
-                        ContentMetadata.relative_path.like(f"{file_path}%")
+                        DerivedContent.relative_path.like(f"{file_path}%")
                         for file_path in input.relative_path
                     ]
                 )
             )
 
     statement = statement.where(
-        Chunk.text_embedding_3_small.l2_distance(embedded_query) <= 1.25
+        ChunkAndEmbedding.text_embedding_3_small.l2_distance(embedded_query) <= 1.25
     )
 
     statement = statement.order_by(asc("score"))
@@ -70,32 +75,25 @@ def search_content_metadata(
     search_results = []
 
     def process_result(
-        c,
-        cm,
-        score,
-        aggregate_score,
-        accumulated_tokens,
-        text_score=None,
-        path_score=None,
+        c: ChunkAndEmbedding,
+        dc: DerivedContent,
+        score: float,
+        aggregate_score: float,
+        accumulated_tokens: int,
+        text_score: float = None,
+        path_score: float = None,
     ):
-        c: Chunk = c
-        cm: ContentMetadata = cm
         if input.token_limit is not None:
             if accumulated_tokens > input.token_limit:
                 return False, accumulated_tokens
-        token_count = (
-            c.token_count
-            if c.token_count is not None
-            else int(len(c.text.split()) / 2.5)
-        )
+        token_count = int(len(c.text.split()) / 2.5)
         accumulated_tokens += token_count
         metadata = {
-            "content_type": cm.content_type,
-            "relative_path": cm.relative_path,
-            "workspace_id": cm.workspace_id,
-            "codebase_id": cm.codebase_id,
+            "content_type": dc.content_type.type_name,
+            "relative_path": dc.relative_path,
+            "workspace_id": dc.workspace_id,
+            "codebase_id": dc.codebase_id,
             "chunk_number": c.chunk_number,
-            "line_number": c.line_number,
             "semantic_score": score,
         }
         if text_score is not None and path_score is not None:

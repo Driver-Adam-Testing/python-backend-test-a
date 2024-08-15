@@ -10,9 +10,8 @@ import requests
 from boto3 import resource
 from botocore.client import ClientError
 from database.db import engine
-from sqlmodel import Session, select
-
 from database.models_v1 import DerivedContentType
+from sqlmodel import Session, select
 
 
 # TODO dedup
@@ -241,8 +240,12 @@ def evaluate_file_hex(filepath: Path) -> bool:
 
 
 def is_on_blacklist(filepath: Path) -> bool:
-    blacklist_dirs = [".git"]
-    blacklist_file_exts = []
+    blacklist_dirs = [
+        ".git",
+    ]
+    blacklist_file_exts = [
+        ".svg",
+    ]
     is_blacklisted = False
 
     if any(dir in filepath.parts for dir in blacklist_dirs):

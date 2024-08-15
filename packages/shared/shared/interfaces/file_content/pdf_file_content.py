@@ -4,11 +4,11 @@ from shared.interfaces.file_content.file_content import ProcessedFileContent
 
 
 class ProcessedPdfFileContentType(enum.Enum):
-    EXTRACTED_TABLE = "extracted_table"
-    EXTRACTED_TEXT = "extracted_text"
-    EXTRACTED_IMAGE_SUMMARY = "extracted_image"
-    VISUAL_SUMMARY = "visual_summary"
-    TEXT_SUMMARY = "text_summary"
+    EXTRACTED_TABLE = "pdf-extracted-table"
+    EXTRACTED_TEXT = "pdf-extracted-text"
+    EXTRACTED_IMAGE_SUMMARY = "pdf-image-summary"
+    VISUAL_SUMMARY = "pdf-visual-summary"
+    TEXT_SUMMARY = "pdf-text-summary"
 
 
 class ProcessedPdfFileContent(ProcessedFileContent):

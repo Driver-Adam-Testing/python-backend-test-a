@@ -72,20 +72,25 @@ def run_process_pdf(file_content: io.BytesIO) -> list[ProcessedPdfFileContent]:
                     content_type=ProcessedPdfFileContentType.EXTRACTED_TABLE,
                 )
             )
-        for image in extract_images_from_pdf(page_content):
-            image_file_id = upload_file_to_open_ai(image)
-            processed_contents.append(
-                ProcessedPdfFileContent(
-                    content=query_file(
-                        file_id=image_file_id,
-                        query=summarization_query,
-                        assistant_id=assistant.id,
-                    ),
-                    page=index + 1,
-                    content_type=ProcessedPdfFileContentType.EXTRACTED_IMAGE_SUMMARY,
-                    open_ai_file_id=image_file_id,
-                )
-            )
+        # TODO: Add open source image processing in a different way. OpenAI Doesn't support jpg or pngs through this api anymore.
+
+        # for image in extract_images_from_pdf(page_content):
+        #     try:
+        #         image_file_id = upload_file_to_open_ai(image)
+        #         processed_contents.append(
+        #             ProcessedPdfFileContent(
+        #                 content=query_file(
+        #                     file_id=image_file_id,
+        #                     query=summarization_query,
+        #                     assistant_id=assistant.id,
+        #                 ),
+        #                 page=index + 1,
+        #                 content_type=ProcessedPdfFileContentType.EXTRACTED_IMAGE_SUMMARY,
+        #                 open_ai_file_id=image_file_id,
+        #             )
+        #         )
+        #     except Exception as e:
+        #         print(f"An error occurred while processing the image on page {index + 1}: {e}")
     return processed_contents
 
 

@@ -170,13 +170,15 @@ class ContentService:
             select(TagContent).where(TagContent.tag_id == tag_id)
         ).all()
 
-        source_contents = [tag_content.content for tag_content in tag_contents]
+        # source_contents = [tag_content.content for tag_content in tag_contents]
 
         sources = [
             DocumentSource(
-                document_id=content_id, source_id=source_content.id, include=True
+                document_id=content_id,
+                source_id=tag_content.content_id,
+                include=tag_content.include,
             )
-            for source_content in source_contents
+            for tag_content in tag_contents
         ]
 
         for source in sources:
@@ -192,10 +194,10 @@ class ContentService:
             logger.error(
                 f"Integrity error while associating collection tag {tag_id} with content {content_id}"
             )
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Integrity error occurred while associating collection with content",
-            )
+            # raise HTTPException(
+            #     status_code=status.HTTP_400_BAD_REQUEST,
+            #     detail="Integrity error occurred while associating collection with content",
+            # )
 
         return TagAssociationResponse(
             tag_id=tag_id,
@@ -415,7 +417,7 @@ class ContentService:
                     and result.content
                     and "name" not in json.loads(result.content)
                     else result.relative_path.removeprefix("documents/")
-                    if result.content_type.type_name == "pdf_summary"
+                    if result.content_type.type_name == "supplemental-document"
                     else result.relative_path
                 ),
                 workspace_id=result.workspace_id,

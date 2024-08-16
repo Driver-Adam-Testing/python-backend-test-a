@@ -133,17 +133,17 @@ def associate_source_with_content(
 
 
 @router.post(
-    "/{content_id}/associate-collection/{tag_id}",
+    "/{content_id}/associate-collection/{collection_id}",
     summary="Associate a collection with this content.",
 )
 def associate_collection_with_content(
     user: CurrentUser,
     content_id: str,
-    tag_id: str,
+    collection_id: str,
     content_service: ContentService = Depends(get_content_service),
 ) -> TagAssociationResponse:
     return content_service.associate_collection_with_content(
-        user.organization_id, content_id, tag_id
+        user.organization_id, content_id, collection_id
     )
 
 

@@ -33,7 +33,7 @@ def upgrade():
         ),
         sa.PrimaryKeyConstraint("document_id", "source_id"),
     )
-    op.add_column("tags_contents", sa.Column("include", sa.Boolean(), nullable=True))
+    op.add_column("tags_contents", sa.Column("include", sa.Boolean(), nullable=False))
     # ### end Alembic commands ###
 
 

@@ -5,14 +5,14 @@ from datetime import datetime
 from database.models_v1 import (
     DerivedContent,
     DerivedContentType,
+    DocumentSource,
     Enum_Derived_Content_Status,
     Tag,
     TagContent,
     Workspace,
-    DocumentSource
 )
 from fastapi import HTTPException, status
-from sqlalchemy.exc import NoResultFound, IntegrityError
+from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlmodel import Session, asc, desc, func, or_, select, text
 
 from app.api.session import CurrentSession
@@ -28,6 +28,7 @@ from app.schemas.content_schema import (
 
 logger = logging.getLogger(__name__)
 
+
 class DerivedContentTypeRepository(BaseRepository[DerivedContentType]):
     def __init__(self, session: Session):
         super().__init__(session, DerivedContentType)
@@ -41,12 +42,20 @@ class DerivedContentTypeRepository(BaseRepository[DerivedContentType]):
     def get_by_type_names(self, type_names: list[str]) -> DerivedContentType:
         logger.info(f"Fetching DerivedContentType by type_names: {type_names}")
         return self.session.exec(
-            select(DerivedContentType).where(DerivedContentType.type_name.in_(type_names))
+            select(DerivedContentType).where(
+                DerivedContentType.type_name.in_(type_names)
+            )
         ).first()
 
     @staticmethod
     def valid_collection_type_names() -> list[str]:
-        return ["codebase", "codebase-directory", "codebase-file", "pdf_summary", "supplemental-document"]
+        return [
+            "codebase",
+            "codebase-directory",
+            "codebase-file",
+            "pdf_summary",
+            "supplemental-document",
+        ]
 
 
 class ContentService:
@@ -58,9 +67,15 @@ class ContentService:
         self.derived_content_type_repository = DerivedContentTypeRepository(session)
 
     def associate_tag(
-            self, organization_id: str, content_id: str, tag_id: str, include_tag: bool = True
+        self,
+        organization_id: str,
+        content_id: str,
+        tag_id: str,
+        include_tag: bool = True,
     ) -> TagAssociationResponse:
-        logger.info(f"Associating tag {tag_id} with content {content_id} for organization {organization_id}")
+        logger.info(
+            f"Associating tag {tag_id} with content {content_id} for organization {organization_id}"
+        )
         # Check if content exists
         content = self.content_repository.get_by_conditions(
             [
@@ -71,7 +86,9 @@ class ContentService:
         )
 
         if not content:
-            logger.error(f"Content {content_id} not found for organization {organization_id}")
+            logger.error(
+                f"Content {content_id} not found for organization {organization_id}"
+            )
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Content not found.",
@@ -90,23 +107,35 @@ class ContentService:
             )
 
         if tag.type == "collection":
-            if content.content_type.type_name not in DerivedContentTypeRepository.valid_collection_type_names():
-                logger.error(f"Invalid content type for collection tag {tag_id} and content {content_id}")
+            if (
+                content.content_type.type_name
+                not in DerivedContentTypeRepository.valid_collection_type_names()
+            ):
+                logger.error(
+                    f"Invalid content type for collection tag {tag_id} and content {content_id}"
+                )
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Collections can only be associated with codebases, directories, files or pdfs.",
                 )
 
+        logger.debug("Include = " + str(include_tag))
         include_tag = include_tag if include_tag is not None else True
         # Associate tag with content
-        content.tag_links.append(TagContent(tag_id=tag.id, content_id=content.id, include=include_tag))
+        content.tag_links.append(
+            TagContent(tag_id=tag.id, content_id=content.id, include=include_tag)
+        )
 
         try:
             self.session.commit()
-            logger.info(f"Tag {tag_id} associated with content {content_id} successfully")
+            logger.info(
+                f"Tag {tag_id} associated with content {content_id} successfully"
+            )
         except IntegrityError:
             self.session.rollback()
-            logger.error(f"Integrity error while associating tag {tag_id} with content {content_id}")
+            logger.error(
+                f"Integrity error while associating tag {tag_id} with content {content_id}"
+            )
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Tag association already exists",
@@ -115,16 +144,21 @@ class ContentService:
         return TagAssociationResponse(
             tag_id=tag_id,
             content_id=content_id,
-            message=f"{tag.type} associated successfully"
+            message=f"{tag.type} associated successfully",
         )
 
-    def associate_collection_with_content(self, organization_id: str, content_id: str,
-                                          tag_id: str) -> TagAssociationResponse:
-        logger.info(f"Associating collection tag {tag_id} with content {content_id} for organization {organization_id}")
+    def associate_collection_with_content(
+        self, organization_id: str, content_id: str, tag_id: str
+    ) -> TagAssociationResponse:
+        logger.info(
+            f"Associating collection tag {tag_id} with content {content_id} for organization {organization_id}"
+        )
         document = self.content_repository.get(content_id)
 
         if not document or document.workspace.organization_id != organization_id:
-            logger.error(f"Content {content_id} not found for organization {organization_id}")
+            logger.error(
+                f"Content {content_id} not found for organization {organization_id}"
+            )
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
             )
@@ -137,10 +171,9 @@ class ContentService:
 
         sources = [
             DocumentSource(
-                document_id=content_id,
-                source_id=source_content.id,
-                include=True
-            ) for source_content in source_contents
+                document_id=content_id, source_id=source_content.id, include=True
+            )
+            for source_content in source_contents
         ]
 
         for source in sources:
@@ -148,23 +181,31 @@ class ContentService:
 
         try:
             self.session.commit()
-            logger.info(f"Collection tag {tag_id} associated with content {content_id} successfully")
+            logger.info(
+                f"Collection tag {tag_id} associated with content {content_id} successfully"
+            )
         except IntegrityError:
             self.session.rollback()
-            logger.error(f"Integrity error while associating collection tag {tag_id} with content {content_id}")
+            logger.error(
+                f"Integrity error while associating collection tag {tag_id} with content {content_id}"
+            )
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Integrity error occurred while associating collection with content"
+                detail="Integrity error occurred while associating collection with content",
             )
 
         return TagAssociationResponse(
-            tag_id=tag_id, content_id=content_id, message="Collection associated successfully"
+            tag_id=tag_id,
+            content_id=content_id,
+            message="Collection associated successfully",
         )
 
     def disassociate_tag(
-            self, organization_id: str, content_id: str, tag_id: str
+        self, organization_id: str, content_id: str, tag_id: str
     ) -> TagAssociationResponse:
-        logger.info(f"Disassociating tag {tag_id} from content {content_id} for organization {organization_id}")
+        logger.info(
+            f"Disassociating tag {tag_id} from content {content_id} for organization {organization_id}"
+        )
         # Check if content exists
 
         content = self.session.exec(
@@ -176,7 +217,9 @@ class ContentService:
         ).first()
 
         if not content:
-            logger.error(f"Content {content_id} not found for organization {organization_id}")
+            logger.error(
+                f"Content {content_id} not found for organization {organization_id}"
+            )
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
             )
@@ -201,15 +244,20 @@ class ContentService:
         ).first()
 
         if link is None:
-            logger.error(f"Tag association not found for tag {tag_id} and content {content_id}")
+            logger.error(
+                f"Tag association not found for tag {tag_id} and content {content_id}"
+            )
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Tag association not found"
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Tag association not found",
             )
 
         if link:
             self.session.delete(link)
             self.session.commit()
-            logger.info(f"Tag {tag_id} disassociated from content {content_id} successfully")
+            logger.info(
+                f"Tag {tag_id} disassociated from content {content_id} successfully"
+            )
             return TagAssociationResponse(
                 tag_id=tag_id,
                 content_id=content_id,
@@ -217,19 +265,23 @@ class ContentService:
             )
 
     def create_blank_document(
-            self,
-            organization_id: str,
-            workspace_id: str,
-            codebase_id: str,
-            document_name: str | None = None,
+        self,
+        organization_id: str,
+        workspace_id: str,
+        codebase_id: str,
+        document_name: str | None = None,
     ) -> DerivedContent:
-        logger.info(f"Creating blank document for organization {organization_id}, workspace {workspace_id}, codebase {codebase_id}")
+        logger.info(
+            f"Creating blank document for organization {organization_id}, workspace {workspace_id}, codebase {codebase_id}"
+        )
         workspace_exists = self.workspace_repository.exists(
             workspace_id, organization_id
         )
 
         if not workspace_exists:
-            logger.error(f"Workspace {workspace_id} not found for organization {organization_id}")
+            logger.error(
+                f"Workspace {workspace_id} not found for organization {organization_id}"
+            )
             raise NoResultFound("Workspace not found")
 
         # get application note derived content type
@@ -238,7 +290,9 @@ class ContentService:
         )
 
         # get codebase derived content type
-        codebase_content_type = self.derived_content_type_repository.get_by_type_name("codebase")
+        codebase_content_type = self.derived_content_type_repository.get_by_type_name(
+            "codebase"
+        )
 
         # find the derived content type with content type codebase and workspace id and codebase id
         parent_content = self.session.exec(
@@ -268,11 +322,17 @@ class ContentService:
                 updated_at=datetime.now(),
             )
         )
-        logger.info(f"Blank document created with ID {new_content.id} for organization {organization_id}")
+        logger.info(
+            f"Blank document created with ID {new_content.id} for organization {organization_id}"
+        )
         return new_content
 
-    def create_document_from_template(self, organization_id: str, content_id: str) -> DerivedContent:
-        logger.info(f"Creating document from template for organization {organization_id}, content {content_id}")
+    def create_document_from_template(
+        self, organization_id: str, content_id: str
+    ) -> DerivedContent:
+        logger.info(
+            f"Creating document from template for organization {organization_id}, content {content_id}"
+        )
         # get the template content type
         template_content_type = self.derived_content_type_repository.get_by_type_name(
             "template"
@@ -285,7 +345,9 @@ class ContentService:
         ).first()
 
         if not content:
-            logger.error(f"Content {content_id} not found for organization {organization_id}")
+            logger.error(
+                f"Content {content_id} not found for organization {organization_id}"
+            )
             raise NoResultFound("Content not found")
 
         content_template = json.loads(content.content)
@@ -315,17 +377,23 @@ class ContentService:
                 updated_at=datetime.now(),
             )
         )
-        logger.info(f"Document created from template with ID {new_content.id} for organization {organization_id}")
+        logger.info(
+            f"Document created from template with ID {new_content.id} for organization {organization_id}"
+        )
         return new_content
 
     def get_list_content(
-            self, organization_id: str, search_input: ListContentInput
+        self, organization_id: str, search_input: ListContentInput
     ) -> ListContentResults:
-        logger.info(f"Getting list of content for organization {organization_id} with input {search_input}")
+        logger.info(
+            f"Getting list of content for organization {organization_id} with input {search_input}"
+        )
         try:
             results, total_count = self._get_list_content(organization_id, search_input)
         except ValueError as e:
-            logger.error(f"Error getting list of content for organization {organization_id}: {str(e)}")
+            logger.error(
+                f"Error getting list of content for organization {organization_id}: {str(e)}"
+            )
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
         # format the results
         content_results = [
@@ -359,12 +427,14 @@ class ContentService:
                 updated_at=result.updated_at,
                 source_content=result.source_content,
                 order=result.order,
-                tags=result.tags
+                tags=result.tags,
                 # tags=[tag_link.tag for tag_link in result.tag_links],
             )
             for result in results
         ]
-        logger.info(f"List of content retrieved successfully for organization {organization_id}")
+        logger.info(
+            f"List of content retrieved successfully for organization {organization_id}"
+        )
         return ListContentResults(
             results=content_results,
             offset=search_input.offset,
@@ -373,7 +443,7 @@ class ContentService:
         )
 
     def _get_list_content(
-            self, organization_id: str, search_input: ListContentInput
+        self, organization_id: str, search_input: ListContentInput
     ) -> tuple[list[DerivedContent], int]:
         statement = (
             select(DerivedContent)
@@ -466,7 +536,7 @@ class ContentService:
         return results, total_count
 
     def get_list_content_types(
-            self, lct_inputs: ListContentTypesInput
+        self, lct_inputs: ListContentTypesInput
     ) -> ListContentTypesResults:
         logger.info(f"Getting list of content types with input {lct_inputs}")
         try:
@@ -517,15 +587,19 @@ class ContentService:
         return sources
 
     def create_template(
-            self, organization_id: str, workspace_id: str, codebase_id: str
+        self, organization_id: str, workspace_id: str, codebase_id: str
     ) -> DerivedContent:
-        logger.info(f"Creating template for organization {organization_id}, workspace {workspace_id}, codebase {codebase_id}")
+        logger.info(
+            f"Creating template for organization {organization_id}, workspace {workspace_id}, codebase {codebase_id}"
+        )
         workspace_exists = self.workspace_repository.exists(
             workspace_id, organization_id
         )
 
         if not workspace_exists:
-            logger.error(f"Workspace {workspace_id} not found for organization {organization_id}")
+            logger.error(
+                f"Workspace {workspace_id} not found for organization {organization_id}"
+            )
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Workspace not found"
             )
@@ -564,7 +638,9 @@ class ContentService:
                 updated_at=datetime.now(),
             )
         )
-        logger.info(f"Template created with ID {new_content.id} for organization {organization_id}")
+        logger.info(
+            f"Template created with ID {new_content.id} for organization {organization_id}"
+        )
         return new_content
 
 

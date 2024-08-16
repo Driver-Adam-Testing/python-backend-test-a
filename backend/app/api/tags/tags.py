@@ -1,17 +1,19 @@
 import logging
 from typing import Literal
 
-from app.schemas.tag_schema import ListTagsInput, ListTagsResults, NewTagInput, EditTagInput, ListTagContentsResults
 from database.models_v1 import Tag
 from fastapi import HTTPException
-from pydantic import BaseModel
 from sqlalchemy import func
 from sqlmodel import Session, select
 
 from app.api.auth import CurrentUser
-from app.api.content.content import (
-ListContentInput,
-ListContentResult, list_content
+from app.api.content.content import ListContentInput, list_content
+from app.schemas.tag_schema import (
+    EditTagInput,
+    ListTagContentsResults,
+    ListTagsInput,
+    ListTagsResults,
+    NewTagInput,
 )
 
 logger = logging.getLogger(__name__)

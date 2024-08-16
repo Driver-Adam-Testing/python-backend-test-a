@@ -48,6 +48,10 @@ class EditTagInput(TagInputBase):
     hex_color: str | None = None
 
 
+class CollectionSourceInput(BaseModel):
+    include: bool
+
+
 class ListTagsResults(BaseModel):
     results: list[Tag]
     offset: int

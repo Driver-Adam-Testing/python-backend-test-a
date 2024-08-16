@@ -1,7 +1,5 @@
-from typing import Self
-
-from pydantic import BaseModel
-from utils.models import ChatOpenAI, OutputConfig, OutputConfigKind
+from .common import ListData
+from utils.models import ChatOpenAI
 
 SOURCE_CODE_SYSTEM_PROMPT_GENERAL_DEFAULT = """
 You are a software engineering documentation expert. You write detailed documentation to explain software.
@@ -34,7 +32,7 @@ In writing your description, write about about the conceptual use cases, applica
 IMPORTS_SYSTEM_PROMPT_JSON = """
 Identify and list the imports and dependencies used in the code provided below.
 
-**Always respond using exactly the following JSON schema**:
+You only respond with a list of imports and dependencies. **Always respond using exactly the following JSON schema**:
 {
     "data": [
         <import1_name>,
@@ -42,13 +40,12 @@ Identify and list the imports and dependencies used in the code provided below.
         ...
     ]
 }
+
+If there are no imports or dependencies return an empty array.
 """
 
-IMPORTS_USER_PROMPT = """
-Identify and list the imports and dependencies used in the code provided below.
+IMPORTS_NONE_CONTENT = "\n---\nNo imports or dependencies defined in this file."
 
-If there are no imports and dependencies, just return an empty list.
-"""
 
 DATA_STRUCTURES_CHECKER_SYSTEM_PROMPT_JSON = """
 Your job is to list any important data structures defined in the code provided below.
@@ -197,35 +194,33 @@ Summarize the variable in the code provided below.
 VARIABLES_NONE_CONTENT = "\n---\nNo global variables defined in this file."
 
 
-class ListData(BaseModel):
-    data: list[str]
-
-    @classmethod
-    def from_llm(
-        cls, llm: ChatOpenAI, system_prompt: str, user_prompt: str, code: str
-    ) -> Self:
-        user_prompt_complete = f"{user_prompt}\n\nCode:\n\n{code}"
-        content_raw = llm.generate_response(
-            system_prompt=system_prompt,
-            user_prompt=user_prompt_complete,
-            output_cfg=OutputConfig(kind=OutputConfigKind.JSON_STRICT, payload=cls),
-        )
-        return cls.parse_raw(content_raw)
-
-
 def _default_checker(
     llm: ChatOpenAI,
     user_prompt: str,
     system_prompt: str,
     code: str,
-) -> list[str] | None:
+    as_list_data_ds: bool = False,
+) -> list[str] | ListData | None:
     list_data = ListData.from_llm(
         llm=llm, system_prompt=system_prompt, user_prompt=user_prompt, code=code
     )
     if len(list_data.data) > 0:
-        return list_data.data
+        if as_list_data_ds:
+            return list_data
+        else:
+            return list_data.data
     else:
         return None
+
+
+def default_imports_checker(llm: ChatOpenAI, code: str) -> ListData | None:
+    return _default_checker(
+        llm=llm,
+        user_prompt="",
+        system_prompt=IMPORTS_SYSTEM_PROMPT_JSON,
+        code=code,
+        as_list_data_ds=True,
+    )
 
 
 def default_variable_checker(llm: ChatOpenAI, code: str) -> list[str] | None:

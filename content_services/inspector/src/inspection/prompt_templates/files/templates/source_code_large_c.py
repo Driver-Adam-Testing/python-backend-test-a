@@ -5,8 +5,6 @@ from utils.lang_specialization.c import (
     FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
     FUNCTIONS_FOUND_USER_PROMPT,
     FUNCTIONS_NONE_CONTENT,
-    IMPORTS_SYSTEM_PROMPT_JSON,
-    IMPORTS_USER_PROMPT,
     SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT,
     SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_C,
     TECHNICAL_CONCEPTS,
@@ -22,9 +20,12 @@ from utils.lang_specialization.common import (
     DataStructureDict,
     FnData,
     FnDict,
-    ImportData,
     VariableData,
     VariableDict,
+)
+from utils.lang_specialization.default import (
+    IMPORTS_NONE_CONTENT,
+    default_imports_checker,
 )
 from utils.models import ChatOpenAI
 from utils.templates import S
@@ -77,11 +78,11 @@ def fn_dict_from_llm(llm: ChatOpenAI, fn_list: list[str], code: str) -> FnDict:
 
 
 SOURCE_CODE_LARGE_TEMPLATE_C = [
-    (S.RAW,                 "# Overview"),
+    (S.RAW,                "# Overview"),
     (S.SINGLE_PROMPT_TEXT, "## Purpose", SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_C, SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT,),
     (S.SINGLE_PROMPT_TEXT, "## Technical Summary", SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_C, TECHNICAL_CONCEPTS,),
-    (S.RAW,                 "# Symbol Documentation"),
-    (S.SINGLE_PROMPT_JSON, "\n---\n## Imports and Dependencies", IMPORTS_SYSTEM_PROMPT_JSON, IMPORTS_USER_PROMPT, ImportData.from_llm,),
+    (S.RAW,                "# Symbol Documentation"),
+    (S.LLM_COND_JSON,      "\n---\n## Imports and Dependencies", default_imports_checker, lambda _llm, output, _code: output, IMPORTS_NONE_CONTENT,),
     (S.FN_COND_JSON,       "\n---\n## Global Variables", c_variables_checker, variables_dict_from_llm, VARIABLES_NONE_CONTENT),
     (S.FN_COND_JSON,       "\n---\n## Data Structures", c_data_structure_checker, data_structure_dict_from_llm, DATA_STRUCTURES_NONE_CONTENT,),
     (S.FN_COND_JSON,       "\n---\n## Functions", c_function_checker, fn_dict_from_llm, FUNCTIONS_NONE_CONTENT,),

@@ -26,16 +26,12 @@ class NamedContent(BaseModel):
     content: str
 
 
-class ImportData(BaseModel):
+class ListData(BaseModel):
     data: list[str]
 
     @classmethod
     def from_llm(
-        cls,
-        llm: ChatOpenAI,
-        system_prompt: str,
-        user_prompt: str,
-        code: str,
+        cls, llm: ChatOpenAI, system_prompt: str, user_prompt: str, code: str
     ) -> Self:
         user_prompt_complete = f"{user_prompt}\n\nCode:\n\n{code}"
         content_raw = llm.generate_response(

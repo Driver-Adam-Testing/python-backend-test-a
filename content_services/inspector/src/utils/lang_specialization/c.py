@@ -44,25 +44,6 @@ You will be given the content of a source code file. In a single paragraph of 3 
 In writing your description, write about about the conceptual use cases, applications, logic, and component interactions instead of focusing on particular functions, variables, etc.
 """
 
-IMPORTS_SYSTEM_PROMPT_JSON = """
-Identify and list the header files and imports used in the code provided below.
-
-**Always respond using exactly the following JSON schema**:
-{
-    "data": [
-        <import1_name>,
-        <import2_name>,
-        ...
-    ]
-}
-"""
-
-IMPORTS_USER_PROMPT = """
-Identify and list the header files and imports used in the code provided below.
-
-If there are no header files or imports, just return an empty list.
-"""
-
 DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON = """
 You are an expert C programmer and a software engineering documentation expert. You write detailed documentation to explain code written in C.
 
@@ -126,7 +107,9 @@ Summarize the function in the code provided below. Describe the inputs, control 
 - When describing a function, provide detail that matches the complexity of the function body. Large and complex functions should get longer explanations, while small ones much less.
 """
 
-FUNCTIONS_NONE_CONTENT = "\n---\nNo functions or function prototypes defined in this file."
+FUNCTIONS_NONE_CONTENT = (
+    "\n---\nNo functions or function prototypes defined in this file."
+)
 
 VARIABLES_FOUND_SYSTEM_PROMPT_JSON = """
 You are an expert C programmer and a software engineering documentation expert. You write detailed documentation to explain code written in C.

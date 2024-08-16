@@ -19,6 +19,7 @@ from utils.lang_specialization.cpp import (
     cpp_function_checker,
     cpp_variables_checker,
 )
+from utils.lang_specialization.default import default_imports_checker
 from utils.models import ChatOpenAI
 from utils.templates import S
 
@@ -71,6 +72,7 @@ def fn_dict_from_llm(llm: ChatOpenAI, fn_list: list[str], code: str) -> FnDict:
 
 SOURCE_CODE_SMALL_TEMPLATE_CPP = [
     (S.SINGLE_PROMPT_TEXT, "## Purpose", SOURCE_CODE_SMALL_SYSTEM_PROMPT_GENERAL_CPP, SOURCE_CODE_SMALL_PURPOSE_USER_PROMPT),
+    (S.LLM_COND_JSON,      "\n---\n## Imports and Dependencies", default_imports_checker, lambda _llm, output, _code: output, None,),
     (S.FN_COND_JSON,       "\n---\n## Global Variables", cpp_variables_checker, variables_dict_from_llm, None),
     (S.FN_COND_JSON,       "\n---\n## Data Structures", cpp_data_structure_checker, data_structure_dict_from_llm, None,),
     (S.FN_COND_JSON,       "\n---\n## Functions", cpp_function_checker, fn_dict_from_llm, None,),

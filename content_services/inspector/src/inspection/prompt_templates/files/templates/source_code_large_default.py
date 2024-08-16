@@ -3,7 +3,6 @@ from utils.lang_specialization.common import (
     DataStructureDict,
     FnData,
     FnDict,
-    ImportData,
     VariableData,
     VariableDict,
 )
@@ -14,8 +13,7 @@ from utils.lang_specialization.default import (
     FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
     FUNCTIONS_FOUND_USER_PROMPT,
     FUNCTIONS_NONE_CONTENT,
-    IMPORTS_SYSTEM_PROMPT_JSON,
-    IMPORTS_USER_PROMPT,
+    IMPORTS_NONE_CONTENT,
     SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT,
     SOURCE_CODE_SYSTEM_PROMPT_GENERAL_DEFAULT,
     TECHNICAL_CONCEPTS,
@@ -24,6 +22,7 @@ from utils.lang_specialization.default import (
     VARIABLES_NONE_CONTENT,
     default_data_structure_checker,
     default_function_checker,
+    default_imports_checker,
     default_variable_checker,
 )
 from utils.models import ChatOpenAI
@@ -77,11 +76,11 @@ def fn_dict_from_llm(llm: ChatOpenAI, fn_list: list[str], code: str) -> FnDict:
 
 
 SOURCE_CODE_LARGE_TEMPLATE_DEFAULT = [
-    (S.RAW, "# Overview"),
+    (S.RAW,                "# Overview"),
     (S.SINGLE_PROMPT_TEXT, "## Purpose", SOURCE_CODE_SYSTEM_PROMPT_GENERAL_DEFAULT, SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT,),
     (S.SINGLE_PROMPT_TEXT, "## Technical Summary", SOURCE_CODE_SYSTEM_PROMPT_GENERAL_DEFAULT, TECHNICAL_CONCEPTS,),
-    (S.RAW,                 "# Symbol Documentation"),
-    (S.SINGLE_PROMPT_JSON, "\n---\n## Imports and Dependencies", IMPORTS_SYSTEM_PROMPT_JSON, IMPORTS_USER_PROMPT, ImportData.from_llm,),
+    (S.RAW,                "# Symbol Documentation"),
+    (S.LLM_COND_JSON,      "\n---\n## Imports and Dependencies", default_imports_checker, lambda _llm, output, _code: output, IMPORTS_NONE_CONTENT,),
     (S.LLM_COND_JSON,      "\n---\n## Global Variables", default_variable_checker, variables_dict_from_llm, VARIABLES_NONE_CONTENT,),
     (S.LLM_COND_JSON,      "\n---\n## Data Structures", default_data_structure_checker, data_structure_dict_from_llm, DATA_STRUCTURES_NONE_CONTENT,),
     (S.LLM_COND_JSON,      "\n---\n## Functions", default_function_checker, fn_dict_from_llm, FUNCTIONS_NONE_CONTENT,),

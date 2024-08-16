@@ -8,8 +8,6 @@ from utils.lang_specialization.c import (
     FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
     FUNCTIONS_FOUND_USER_PROMPT,
     FUNCTIONS_NONE_CONTENT,
-    IMPORTS_SYSTEM_PROMPT_JSON,
-    IMPORTS_USER_PROMPT,
     SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_C,
     VARIABLES_FOUND_SYSTEM_PROMPT_JSON,
     VARIABLES_FOUND_USER_PROMPT,
@@ -23,15 +21,16 @@ from utils.lang_specialization.common import (
     DataStructureDict,
     FnData,
     FnDict,
-    ImportData,
     VariableData,
     VariableDict,
 )
+from utils.lang_specialization.default import IMPORTS_NONE_CONTENT
 from utils.lang_specialization.default_multi_context import (
     SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT_MULTI_CONTEXT,
     SOURCE_CODE_PURPOSE_FROM_CHUNKS,
     TECHNICAL_CONCEPTS_FROM_CHUNKS,
     TECHNICAL_CONCEPTS_MULTI_CONTEXT,
+    default_imports_checker_multi_prompt,
 )
 from utils.models import ChatOpenAI
 from utils.templates import S
@@ -120,49 +119,13 @@ def fn_dict_from_llm(
 
 
 SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_C = [
-    (S.RAW, "# Overview"),
-    (
-        S.MULTI_PROMPT_TEXT,
-        "## Purpose",
-        SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_C,
-        SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT_MULTI_CONTEXT,
-        SOURCE_CODE_PURPOSE_FROM_CHUNKS,
-    ),
-    (
-        S.MULTI_PROMPT_TEXT,
-        "## Technical Summary",
-        SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_C,
-        TECHNICAL_CONCEPTS_MULTI_CONTEXT,
-        TECHNICAL_CONCEPTS_FROM_CHUNKS,
-    ),
-    (S.RAW, "# Symbol Documentation"),
+    (S.RAW,                 "# Overview"),
+    (S.MULTI_PROMPT_TEXT,   "## Purpose", SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_C, SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT_MULTI_CONTEXT, SOURCE_CODE_PURPOSE_FROM_CHUNKS,),
+    (S.MULTI_PROMPT_TEXT,   "## Technical Summary", SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_C, TECHNICAL_CONCEPTS_MULTI_CONTEXT, TECHNICAL_CONCEPTS_FROM_CHUNKS,),
+    (S.RAW,                 "# Symbol Documentation"),
     # NOTE: for simplicity this only looks at the first file chunk for imports (making assumptions about the structure of the file)
-    (
-        S.SINGLE_PROMPT_CHUNK_JSON,
-        "\n---\n## Imports and Dependencies",
-        IMPORTS_SYSTEM_PROMPT_JSON,
-        IMPORTS_USER_PROMPT,
-        ImportData.from_llm,
-    ),
-    (
-        S.FN_COND_JSON,
-        "\n---\n## Global Variables",
-        c_variables_checker,
-        variables_dict_from_llm,
-        VARIABLES_NONE_CONTENT,
-    ),
-    (
-        S.FN_COND_JSON,
-        "\n---\n## Data Structures",
-        c_data_structure_checker,
-        data_structure_dict_from_llm,
-        DATA_STRUCTURES_NONE_CONTENT,
-    ),
-    (
-        S.FN_COND_JSON,
-        "\n---\n## Functions",
-        c_function_checker,
-        fn_dict_from_llm,
-        FUNCTIONS_NONE_CONTENT,
-    ),
+    (S.MULTI_LLM_COND_JSON, "\n---\n## Imports and Dependencies", default_imports_checker_multi_prompt, lambda _llm, output, _code: output, IMPORTS_NONE_CONTENT,),
+    (S.FN_COND_JSON,        "\n---\n## Global Variables", c_variables_checker, variables_dict_from_llm, VARIABLES_NONE_CONTENT,),
+    (S.FN_COND_JSON,        "\n---\n## Data Structures", c_data_structure_checker, data_structure_dict_from_llm, DATA_STRUCTURES_NONE_CONTENT,),
+    (S.FN_COND_JSON,        "\n---\n## Functions", c_function_checker, fn_dict_from_llm, FUNCTIONS_NONE_CONTENT,),
 ]

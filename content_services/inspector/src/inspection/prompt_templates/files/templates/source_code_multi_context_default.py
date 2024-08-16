@@ -6,14 +6,12 @@ from inspection.prompt_templates.files.templates.source_code_large_default impor
 from utils.lang_specialization.common import (
     DataStructureDict,
     FnDict,
-    ImportData,
     VariableDict,
 )
 from utils.lang_specialization.default import (
     DATA_STRUCTURES_NONE_CONTENT,
     FUNCTIONS_NONE_CONTENT,
-    IMPORTS_SYSTEM_PROMPT_JSON,
-    IMPORTS_USER_PROMPT,
+    IMPORTS_NONE_CONTENT,
     SOURCE_CODE_SYSTEM_PROMPT_GENERAL_DEFAULT,
     VARIABLES_NONE_CONTENT,
 )
@@ -24,6 +22,7 @@ from utils.lang_specialization.default_multi_context import (
     TECHNICAL_CONCEPTS_MULTI_CONTEXT,
     default_data_structure_checker_multi_prompt,
     default_function_checker_multi_prompt,
+    default_imports_checker_multi_prompt,
     default_variable_checker_multi_prompt,
 )
 from utils.models import ChatOpenAI
@@ -62,49 +61,13 @@ def fn_dict_from_llm_chunk(
 
 
 SOURCE_CODE_MULTI_CONTEXT_TEMPLATE_DEFAULT = [
-    (S.RAW, "# Overview"),
-    (
-        S.MULTI_PROMPT_TEXT,
-        "## Purpose",
-        SOURCE_CODE_SYSTEM_PROMPT_GENERAL_DEFAULT,
-        SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT_MULTI_CONTEXT,
-        SOURCE_CODE_PURPOSE_FROM_CHUNKS,
-    ),
-    (
-        S.MULTI_PROMPT_TEXT,
-        "## Technical Summary",
-        SOURCE_CODE_SYSTEM_PROMPT_GENERAL_DEFAULT,
-        TECHNICAL_CONCEPTS_MULTI_CONTEXT,
-        TECHNICAL_CONCEPTS_FROM_CHUNKS,
-    ),
+    (S.RAW,                 "# Overview"),
+    (S.MULTI_PROMPT_TEXT,   "## Purpose", SOURCE_CODE_SYSTEM_PROMPT_GENERAL_DEFAULT, SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT_MULTI_CONTEXT, SOURCE_CODE_PURPOSE_FROM_CHUNKS,),
+    (S.MULTI_PROMPT_TEXT,   "## Technical Summary", SOURCE_CODE_SYSTEM_PROMPT_GENERAL_DEFAULT, TECHNICAL_CONCEPTS_MULTI_CONTEXT, TECHNICAL_CONCEPTS_FROM_CHUNKS,),
     (S.RAW, "# Symbol Documentation"),
     # NOTE: for simplicity this only looks at the first file chunk for imports (making assumptions about the structure of the file)
-    (
-        S.SINGLE_PROMPT_CHUNK_JSON,
-        "\n---\n## Imports and Dependencies",
-        IMPORTS_SYSTEM_PROMPT_JSON,
-        IMPORTS_USER_PROMPT,
-        ImportData.from_llm,
-    ),
-    (
-        S.MULTI_LLM_COND_JSON,
-        "\n---\n## Global Variables",
-        default_variable_checker_multi_prompt,
-        variables_dict_from_llm_chunk,
-        VARIABLES_NONE_CONTENT,
-    ),
-    (
-        S.MULTI_LLM_COND_JSON,
-        "\n---\n## Data Structures",
-        default_data_structure_checker_multi_prompt,
-        data_structure_dict_from_llm_chunk,
-        DATA_STRUCTURES_NONE_CONTENT,
-    ),
-    (
-        S.MULTI_LLM_COND_JSON,
-        "\n---\n## Functions",
-        default_function_checker_multi_prompt,
-        fn_dict_from_llm_chunk,
-        FUNCTIONS_NONE_CONTENT,
-    ),
+    (S.MULTI_LLM_COND_JSON, "\n---\n## Imports and Dependencies", default_imports_checker_multi_prompt, lambda _llm, output, _code: output, IMPORTS_NONE_CONTENT,),
+    (S.MULTI_LLM_COND_JSON, "\n---\n## Global Variables", default_variable_checker_multi_prompt, variables_dict_from_llm_chunk, VARIABLES_NONE_CONTENT,),
+    (S.MULTI_LLM_COND_JSON, "\n---\n## Data Structures", default_data_structure_checker_multi_prompt, data_structure_dict_from_llm_chunk, DATA_STRUCTURES_NONE_CONTENT,),
+    (S.MULTI_LLM_COND_JSON, "\n---\n## Functions", default_function_checker_multi_prompt, fn_dict_from_llm_chunk, FUNCTIONS_NONE_CONTENT,),
 ]

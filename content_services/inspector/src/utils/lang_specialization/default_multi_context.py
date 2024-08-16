@@ -1,6 +1,7 @@
 from utils.lang_specialization.default import (
     DATA_STRUCTURES_CHECKER_SYSTEM_PROMPT_JSON,
     FUNCTIONS_CHECKER_SYSTEM_PROMPT_JSON,
+    IMPORTS_SYSTEM_PROMPT_JSON,
     VARIABLES_CHECKER_SYSTEM_PROMPT_JSON,
     _default_checker,
 )
@@ -38,6 +39,17 @@ You will be provided two or more paragraphs describing the technical concepts of
 
 In a single paragraph of 3 to 5 sentences, combine the multiple technical concept paragraphs into a single cohesive paragraph that describes the technical concepts of the entire code.
 """
+
+
+def default_imports_checker_multi_prompt(
+    llm: ChatOpenAI, code_chunks: list[str]
+) -> list[str] | None:
+    return _default_checker(
+        llm=llm,
+        user_prompt="",
+        system_prompt=IMPORTS_SYSTEM_PROMPT_JSON,
+        code=code_chunks[0],
+    )
 
 
 def default_variable_checker_multi_prompt(

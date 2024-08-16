@@ -21,7 +21,7 @@ def upgrade():
     op.create_table(
         "document_sources",
         sa.Column("document_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
-        sa.Column("include", sa.Boolean(), nullable=True),
+        sa.Column("include", sa.Boolean(), nullable=False),
         sa.Column("source_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
         sa.ForeignKeyConstraint(
             ["document_id"],

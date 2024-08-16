@@ -119,8 +119,11 @@ class ContentService:
                     detail="Collections can only be associated with codebases, directories, files or pdfs.",
                 )
 
-        logger.debug("Include = " + str(include_tag))
-        include_tag = include_tag if include_tag is not None else True
+        include_tag = (
+            include_tag
+            if include_tag is not None and tag.type == "collection"
+            else True
+        )
         # Associate tag with content
         content.tag_links.append(
             TagContent(tag_id=tag.id, content_id=content.id, include=include_tag)

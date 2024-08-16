@@ -49,6 +49,7 @@ def default_imports_checker_multi_prompt(
         user_prompt="",
         system_prompt=IMPORTS_SYSTEM_PROMPT_JSON,
         code=code_chunks[0],
+        as_list_data_ds=True,
     )
 
 

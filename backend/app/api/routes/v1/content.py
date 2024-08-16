@@ -120,7 +120,7 @@ def disassociate_tag_with_content(
 
 
 @router.post(
-    "/{content_id}/associate-source/{tag_id}",
+    "/{content_id}/associate-source/{source_content_id}",
     summary="Associate source with this content.",
 )
 def associate_source_with_content(

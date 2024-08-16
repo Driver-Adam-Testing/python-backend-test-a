@@ -19,25 +19,6 @@ class LimitOffsetPagination:
 
 
 @strawberry.input
-class ContentMetadataQuery:
-    id: UUID | None = None
-    workspace_id: UUID | None = None
-    codebase_id: UUID | None = None
-    content_type: str | None = None
-    relative_path: str | None = None
-
-
-@strawberry.input
-class ChunkQuery:
-    id: UUID | None = None
-    content_metadata_id: UUID | None = None
-    text: str | None = None
-    chunk_number: int | None = None
-    token_count: int | None = None
-    line_number: int | None = None
-
-
-@strawberry.input
 class RuntimeLogAgentInstanceQuery:
     id: UUID | None = None
     workspace_id: str | None = None
@@ -113,9 +94,6 @@ class WorkspaceResults:
         pass
 
     codebases: list[WorkspaceCodebaseResults]
-
-
-# type: ignore
 
 
 # type: ignore

@@ -5,8 +5,6 @@ from uuid import UUID, uuid4
 
 import modal
 
-from database.models_v1 import DerivedContent
-
 app = modal.App("codebase-onboarding")
 
 # TODO: configuration
@@ -44,10 +42,7 @@ def run_codebase_onboarding(
     provider: str,
 ) -> None:
     from database.db import engine
-    from database.models_v1 import (
-        Codebase,
-        Enum_Codebase_Status,
-    )
+    from database.models_v1 import Codebase, DerivedContent, Enum_Codebase_Status
     from sqlmodel import Session
     from utils import (
         create_base_storage_url,
@@ -69,6 +64,7 @@ def run_codebase_onboarding(
     if provider == "github":
         codebase_name = archive_name.rsplit(".", 1)[0]
 
+    # Override so unpack from github doesn't have hash in name.
     extracted_path = unpack_archive(download_dest, override_codebase_name=codebase_name)
     codebase_name = str(extracted_path)
     print("Codebase name : ", codebase_name)
@@ -149,7 +145,7 @@ def run_codebase_onboarding(
                         )
                         session.add(dir_sc)
                         print(
-                            f"Created but not commited source content for: {directory}."
+                            f"Created but not committed source content for: {directory}."
                         )
 
                 # Add file source contents
@@ -206,7 +202,6 @@ def onboard_and_inspect(
     )
     try:
         inspect_db = modal.Function.lookup("inspector-v2", "inspect_db")
-        create_embeddings = modal.Function.lookup("comprehender", "create_embeddings")
 
         codebase_id = run_codebase_onboarding.remote(
             presigned_url, archive_name, org_id, creator_id, workspace_id, provider
@@ -218,8 +213,8 @@ def onboard_and_inspect(
         print("Inspection ID: ", run_id)
         inspect_db.remote(codebase_id, run_id)
         print("Inspection complete")
-        print("Creating embeddings...")
-
+        print("Making embeddings using the 'old' tables")
+        create_embeddings = modal.Function.lookup("comprehender", "create_embeddings")
         create_embeddings.remote(str(workspace_id), str(codebase_id))
         print("Embeddings created")
 
@@ -271,11 +266,11 @@ def send_exception_email(exception_details):
 
 @app.local_entrypoint()
 def main():
-    presigned_url = ""
-    archive_name = "infinity-core.zip"
-    org_id = "6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641"
+    presigned_url = "https://development-codebase-dropzone.s3.us-east-1.amazonaws.com/codebases/470aeda416cbd987632d5d931bff4d7923b93ea7e89ab5ed8499599adef0943/bat-test-2.zip?response-content-disposition=inline&X-Amz-Security-Token=IQoJb3JpZ2luX2VjELD%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIArdoBeV5ZRmec2vqLvPLEBxoHzPVYJCEBBs2WM8VC58AiEA4Jowe71KItsIApqEeTB7qbohN0oSBXVIAAWhWqyWx2Eq1wMIqf%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARABGgw1NTAwODI3NjExMDkiDOGfksQjgFR3nQUEzCqrA0oBzNfvpczG9CXbA%2FpNuuE79vA9hDjPusl1YKr61tjRSa%2BAo%2FOyKRe53lW%2BKpEDMnp4PdLL3Rq3mBWRru5ekk2Wpo98ps7756XorL0a2%2Fk%2BLFLu1Q74isvoEP%2BfLHCk06WNVGbgae2mKHIDKHPQtiAj3KD618rvms9wlxYcY1Frp689Bp4Ae7ptbjRAxtY6F1uRGD4TEgMqwxudJI9yLMJbr3LVIspPyAzXIb%2FXPTPI6ebvtIlrgfs13wdZjNL7IwY6ddv0pGxAeb2hkxNZHvKTFfMSqSVW%2FYdFJK4C7sSSF2trlPAfV4o2g%2FsL1LrTepuz4dsugc%2BcZJNRDmWnPu36r%2BhZoSv6Salc6hkvu4Sq4cZ225EnvPTa3gAEhot88uLEW7zrhL5TOU%2Bra8CzrJugNvC5qgWB1nsd0ckg1dHAKaW%2BVkGRGdg%2B1BlhKGvYfUJvkBh0NEYPSvEgcn%2BfDdqeoje32chOcVM%2B1Q24dMgK4IKpeQTVeLPus7KURpwnmRHnb5R2s%2FkhIBybUv5DxIGjs4HiuFCXi06fDozFlQ8wj7nrgj2KExqOA2wwjPjttQY6lAJ49ExUgmbZMqqlKhG126q4AiRE7CreY%2FPS53VtTvg2QlVkwwYQ3KbPcBXNLB02hJdlp6Jv0WGaVGa6YiAh5qJWgEOhSVa6GJiCMiDbuCy%2B0VVUCMs09MbVjT6yW1%2FDxoRXFjlUCOP1O7ZR7SKormDFqP5FMiHF8tdRWVv4vJEIeVn6aWYY%2FV%2B%2FmEgOk%2Bbl3aXTVgWQvm7IvzGJ6xIhx3mizYYFZks704BdT%2BtG3eACRmAK995gR4XfZZa%2F2Nu3JFm%2BN3R0XG64S3OOt1PLttk4BSLR4nXMB%2FUX0hE18K4r%2FgxhBiol5yqhuusUx1xj9Xtb8qJ38XRNc9twt3VlXgMNuH9QkX87pu%2FkiibjvAYml72HANk%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20240813T193033Z&X-Amz-SignedHeaders=host&X-Amz-Expires=43200&X-Amz-Credential=ASIAYAE342GK7DGKERXL%2F20240813%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Signature=c785d8fa4f2bd3459eac7997286174c6ac762891ad71bb7cb5739a4ad204b417"
+    archive_name = "bat-test-2.zip"
+    org_id = "470aeda416cbd987632d5d931bff4d7923b93ea7e89ab5ed8499599adef0943"
     creator_id = "auth0|6650e02b9812cd674f78cf75"
-    workspace_id = UUID("2fb6c92d-68cb-4864-a457-8031589e3210")
+    workspace_id = UUID("7fe232eb-37ae-4820-8439-0a10dabde8b2")
 
     # if modal.is_local():
     #     from dotenv import load_dotenv

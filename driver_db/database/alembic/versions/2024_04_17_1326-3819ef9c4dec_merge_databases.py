@@ -6,7 +6,7 @@ Create Date: 2024-04-17 13:26:14.805855
 
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import sqlalchemy as sa
 import sqlmodel
@@ -15,9 +15,9 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = "3819ef9c4dec"
-down_revision: Union[str, None] = "77b384e95c97"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "77b384e95c97"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -110,7 +110,7 @@ def upgrade() -> None:
             server_default=sa.text("uuid_generate_v4()"),
             nullable=False,
         ),
-        sa.Column("organization_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
+        sa.Column("organization_id", sa.types.Uuid(), nullable=False),
         sa.Column("first_name", sa.String(length=255), nullable=False),
         sa.Column("last_name", sa.String(length=255), nullable=False),
         sa.Column("email", sa.String(length=255), nullable=False),
@@ -146,7 +146,7 @@ def upgrade() -> None:
         ),
         sa.Column("display_name", sa.String(length=255), nullable=True),
         sa.Column("description", sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-        sa.Column("organization_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
+        sa.Column("organization_id", sa.types.Uuid(), nullable=False),
         sa.Column(
             "created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=True
         ),
@@ -165,7 +165,7 @@ def upgrade() -> None:
             server_default=sa.text("uuid_generate_v4()"),
             nullable=False,
         ),
-        sa.Column("workspace_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
+        sa.Column("workspace_id", sa.types.Uuid(), nullable=False),
         sa.Column("codebase_name", sa.String(length=255), nullable=False),
         sa.Column("description", sa.Text(), nullable=True),
         sa.Column(
@@ -181,7 +181,7 @@ def upgrade() -> None:
         ),
         sa.Column("storage_url", sa.Text(), nullable=True),
         sa.Column("resource_root", sa.Text(), nullable=True),
-        sa.Column("creator_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
+        sa.Column("creator_id", sa.types.Uuid(), nullable=False),
         sa.Column(
             "created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=True
         ),
@@ -207,11 +207,9 @@ def upgrade() -> None:
             server_default=sa.text("uuid_generate_v4()"),
             nullable=False,
         ),
-        sa.Column(
-            "source_content_type_id", sqlmodel.sql.sqltypes.GUID(), nullable=False
-        ),
-        sa.Column("workspace_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
-        sa.Column("codebase_id", sqlmodel.sql.sqltypes.GUID(), nullable=True),
+        sa.Column("source_content_type_id", sa.types.Uuid(), nullable=False),
+        sa.Column("workspace_id", sa.types.Uuid(), nullable=False),
+        sa.Column("codebase_id", sa.types.Uuid(), nullable=True),
         sa.Column("relative_path", sa.Text(), nullable=False),
         sa.Column(
             "created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=True
@@ -239,13 +237,11 @@ def upgrade() -> None:
             server_default=sa.text("uuid_generate_v4()"),
             nullable=False,
         ),
-        sa.Column(
-            "derived_content_type_id", sqlmodel.sql.sqltypes.GUID(), nullable=False
-        ),
-        sa.Column("source_content_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
+        sa.Column("derived_content_type_id", sa.types.Uuid(), nullable=False),
+        sa.Column("source_content_id", sa.types.Uuid(), nullable=False),
         sa.Column("content", sa.Text(), nullable=True),
         sa.Column("metadata", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
-        sa.Column("llm_id", sqlmodel.sql.sqltypes.GUID(), nullable=True),
+        sa.Column("llm_id", sa.types.Uuid(), nullable=True),
         sa.Column(
             "status",
             sa.Enum(

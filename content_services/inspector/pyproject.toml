@@ -9,12 +9,12 @@ packages = [{include = "src.inspection"}, {include = "src.utils"}]
 # Note: this file is just used to create the venv for the local ide. Modal installs the dependencies for the containers
 [tool.poetry.dependencies]
 python = "^3.12"
-modal = "^0.62.170"
 openai = "^1.30.1"
 tiktoken = "^0.7.0"
 tqdm = "^4.66.4"
 boto3 = "^1.34.114"
 database = {path = "../../driver_db", develop = true}
+shared = {path = "../../packages/shared", develop = true}
 
 
 [tool.poetry.group.dev.dependencies]

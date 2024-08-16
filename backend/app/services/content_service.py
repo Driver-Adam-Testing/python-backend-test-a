@@ -431,6 +431,7 @@ class ContentService:
                 source_content=result.source_content,
                 order=result.order,
                 tags=result.tags,
+                source_links=result.source_links,
                 # tags=[tag_link.tag for tag_link in result.tag_links],
             )
             for result in results
@@ -454,6 +455,11 @@ class ContentService:
             .join(Workspace)
             .join(TagContent, isouter=True)
             .join(Tag, isouter=True)
+            .join(
+                DocumentSource,
+                isouter=True,
+                onclause=DerivedContent.id == DocumentSource.document_id,
+            )
             # TODO: Current plan is for workspaces to be removed from the application.
             # In this intermediate state, we are maintaining the existing workspace
             # table and joining them all together to obtain all content that is currently

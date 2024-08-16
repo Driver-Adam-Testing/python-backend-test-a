@@ -1,8 +1,13 @@
 import re
 
-from database.models_v1 import ChunkAndEmbedding, DerivedContent
+from database.models_v1 import (
+    ChunkAndEmbedding,
+    DerivedContent,
+    DerivedContentType,
+    Workspace,
+)
 from rank_bm25 import BM25Okapi
-from shared.embedding.text_embedder import TextEmbedder
+from shared.embedding.text_embedder import batch_embed_text
 from shared.interfaces.search import SearchInput, SearchResult, SearchResults
 from sqlmodel import Session, asc, or_, select
 
@@ -13,15 +18,22 @@ def tokenize_for_bm25(text: str):
 
 # TODO deprecate in favor of search once embeddings migrated
 def search_content_metadata(session: Session, input: SearchInput):
-    embedded_query = TextEmbedder().batch_embed_text([input.query])[0]
+    embedded_query = batch_embed_text([input.query])[0]
 
-    statement = select(
-        ChunkAndEmbedding,
-        DerivedContent,
-        ChunkAndEmbedding.text_embedding_3_small.l2_distance(embedded_query).label(
-            "score"
-        ),
-    ).where(DerivedContent.id == ChunkAndEmbedding.content_metadata_id)
+    statement = (
+        select(
+            ChunkAndEmbedding,
+            DerivedContent,
+            ChunkAndEmbedding.text_embedding_3_small.l2_distance(embedded_query).label(
+                "score"
+            ),
+        )
+        .join(Workspace)
+        .join(DerivedContentType)
+        .where(DerivedContent.id == ChunkAndEmbedding.content_id)
+        .where(DerivedContent.workspace_id == Workspace.id)
+        .where(DerivedContentType.id == DerivedContent.content_type_id)
+    )
 
     if input.workspace_id:
         statement = statement.where(DerivedContent.workspace_id == input.workspace_id)
@@ -30,18 +42,16 @@ def search_content_metadata(session: Session, input: SearchInput):
         statement = statement.where(DerivedContent.codebase_id == input.codebase_id)
 
     if input.organization_id:
-        statement = statement.where(
-            DerivedContent.workspace.organization_id == input.organization_id
-        )
+        statement = statement.where(Workspace.organization_id == input.organization_id)
 
     if input.content_type:
         if isinstance(input.content_type, str):
             statement = statement.where(
-                DerivedContent.content_type.type_name == input.content_type
+                DerivedContentType.type_name == input.content_type
             )
         elif isinstance(input.content_type, list):
             statement = statement.where(
-                DerivedContent.content_type.type_name.in_(input.content_type)
+                DerivedContentType.type_name.in_(input.content_type)
             )
 
     if input.relative_path:
@@ -93,6 +103,7 @@ def search_content_metadata(session: Session, input: SearchInput):
             "relative_path": dc.relative_path,
             "workspace_id": dc.workspace_id,
             "codebase_id": dc.codebase_id,
+            "content_id": dc.id,
             "chunk_number": c.chunk_number,
             "semantic_score": score,
         }

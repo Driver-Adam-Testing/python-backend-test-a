@@ -54,7 +54,7 @@ def search_tech_docs(agent_context, search_text: str, rationale: str) -> str:
     return execute_backend_search(
         agent_context=agent_context,
         search_text=f"`{search_text}`. information on {search_text} because {rationale}",
-        content_types=["FILE_SUMMARY", "CODE_SYMBOL"],
+        content_types=["codebase-file", "symbol"],
     )
 
 
@@ -68,7 +68,7 @@ def search_source_code(agent_context, search_text: str, rationale: str) -> str:
     return execute_backend_search(
         agent_context=agent_context,
         search_text=f"`{search_text}` information on {search_text}",
-        content_types=["SOURCE_CODE"],
+        content_types=["codebase-file"],
     )
 
 
@@ -156,7 +156,11 @@ def search_pdf_summaries(agent_context, query: str, rationale: str) -> dict:
         result_limit=20,
         search_text=f"`{query}`. information on {query} because {rationale}",
         content_types=[
-            "PDF_SUMMARY",  # TODO: Look into why this isn't importing when deployed but is when it's local
+            "pdf_summary",
+            "pdf-visual-summary",
+            "pdf-text-summary",
+            "pdf-extracted-text",
+            "pdf-extracted-table",  # TODO: Look into why this isn't importing when deployed but is when it's local
         ],
     )
 

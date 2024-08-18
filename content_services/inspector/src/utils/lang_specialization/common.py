@@ -9,6 +9,7 @@ class Lang(IntEnum):
     DEFAULT = 0
     C = 1
     CPP = 2
+    PYTHON = 3
 
     @classmethod
     def from_ext(cls, ext: str) -> Self:
@@ -17,6 +18,8 @@ class Lang(IntEnum):
                 return cls.C
             case ".cpp" | ".cc" | ".cxx" | ".c++" | ".hpp" | ".hh" | ".hxx" | ".h++":
                 return cls.CPP
+            case ".py" | ".pyw" | ".pyi":
+                return cls.PYTHON
             case _:
                 return cls.DEFAULT
 

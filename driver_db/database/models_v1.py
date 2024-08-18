@@ -14,6 +14,7 @@ from sqlalchemy.dialects.postgresql import UUID as SaUuid
 from sqlmodel import JSON, Field, Relationship, SQLModel
 
 
+# TODO remove in favor of derived content types once new embeddings created
 class ContentType(str, enum.Enum):
     SOURCE_CODE = "SOURCE_CODE"
     AUXILIARY_DOCUMENTATION = "AUXILIARY_DOCUMENTATION"
@@ -24,24 +25,19 @@ class ContentType(str, enum.Enum):
     UNKNOWN = "UNKNOWN"
 
 
-# TODO: index content_type
-
-
 class ContentMetadata(SQLModel, table=True):  # type: ignore
-    created_at: datetime = Field(
-        default=None,
+    created_at: None | datetime = Field(
         sa_column=Column(
-            DateTime(timezone=True),
-            default=functools.partial(datetime.now, tz=timezone.utc),
-            nullable=True,
+            DateTime(timezone=True), server_default=func.now(), nullable=False
         ),
-    )
-    updated_at: datetime = Field(
         default=None,
+    )
+    updated_at: None | datetime = Field(
         sa_column=Column(
             DateTime(timezone=True),
-            onupdate=functools.partial(datetime.now, tz=timezone.utc),
-            nullable=True,
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
         ),
     )
     id: UUID | None = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -53,7 +49,10 @@ class ContentMetadata(SQLModel, table=True):  # type: ignore
     chunks: list["Chunk"] = Relationship(back_populates="content_metadata")
 
 
+# TODO deprecate once all embeddings are in ChunkAndEmbedding
 class Chunk(SQLModel, table=True):  # type: ignore
+    # TODO Note: these timestamps weren't updated to match the others because this
+    # table is deprecated soon and there were tons of rows to populate.
     created_at: datetime = Field(
         default=None,
         sa_column=Column(
@@ -86,20 +85,18 @@ class Chunk(SQLModel, table=True):  # type: ignore
 
 
 class RuntimeLogAgentInstance(SQLModel, table=True):  # type: ignore
-    created_at: datetime = Field(
-        default=None,
+    created_at: None | datetime = Field(
         sa_column=Column(
-            DateTime(timezone=True),
-            default=functools.partial(datetime.now, tz=timezone.utc),
-            nullable=True,
+            DateTime(timezone=True), server_default=func.now(), nullable=False
         ),
-    )
-    updated_at: datetime = Field(
         default=None,
+    )
+    updated_at: None | datetime = Field(
         sa_column=Column(
             DateTime(timezone=True),
-            onupdate=functools.partial(datetime.now, tz=timezone.utc),
-            nullable=True,
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
         ),
     )
     id: UUID | None = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -116,13 +113,11 @@ class RuntimeLogAgentInstance(SQLModel, table=True):  # type: ignore
 
 
 class RuntimeLogAgentMessage(SQLModel, table=True):  # type: ignore
-    created_at: datetime = Field(
-        default=None,
+    created_at: None | datetime = Field(
         sa_column=Column(
-            DateTime(timezone=True),
-            default=functools.partial(datetime.now, tz=timezone.utc),
-            nullable=True,
+            DateTime(timezone=True), server_default=func.now(), nullable=False
         ),
+        default=None,
     )
     id: UUID | None = Field(default_factory=uuid.uuid4, primary_key=True)
     message: dict = Field(default={}, sa_column=Column(JSON, nullable=False))  # type: ignore
@@ -134,13 +129,11 @@ class RuntimeLogAgentMessage(SQLModel, table=True):  # type: ignore
 
 
 class RuntimeLogAgentError(SQLModel, table=True):  # type: ignore
-    created_at: datetime = Field(
-        default=None,
+    created_at: None | datetime = Field(
         sa_column=Column(
-            DateTime(timezone=True),
-            default=functools.partial(datetime.now, tz=timezone.utc),
-            nullable=True,
+            DateTime(timezone=True), server_default=func.now(), nullable=False
         ),
+        default=None,
     )
     id: UUID | None = Field(default_factory=uuid.uuid4, primary_key=True)
     agent_instance_id: UUID = Field(
@@ -151,13 +144,11 @@ class RuntimeLogAgentError(SQLModel, table=True):  # type: ignore
 
 
 class RuntimeLogContentRetrieval(SQLModel, table=True):  # type: ignore
-    created_at: datetime = Field(
-        default=None,
+    created_at: None | datetime = Field(
         sa_column=Column(
-            DateTime(timezone=True),
-            default=functools.partial(datetime.now, tz=timezone.utc),
-            nullable=True,
+            DateTime(timezone=True), server_default=func.now(), nullable=False
         ),
+        default=None,
     )
     id: UUID | None = Field(default_factory=uuid.uuid4, primary_key=True)
     agent_instance_id: UUID = Field(
@@ -170,6 +161,7 @@ class RuntimeLogContentRetrieval(SQLModel, table=True):  # type: ignore
 
 
 # class RuntimeLogOperation(SQLModel, table=True):  # type: ignore
+# TODO this need to match the other created_at columns!
 #     created_at: datetime = Field(
 #         default=None,
 #         sa_column=Column(
@@ -198,18 +190,6 @@ class Enum_Codebase_Status(str, enum.Enum):
     codebase_rejected = "codebase-rejected"
 
 
-class SetupCompleted(SQLModel, table=True):  # type: ignore
-    __tablename__ = "setup_completed"
-    id: UUID | None = Field(
-        sa_column=Column(
-            SaUuid(as_uuid=True),
-            primary_key=True,
-            server_default=text("uuid_generate_v4()"),
-        ),
-        default=None,
-    )
-
-
 class Workspace(SQLModel, table=True):  # type: ignore
     __tablename__ = "workspaces"
     id: UUID | None = Field(
@@ -227,12 +207,18 @@ class Workspace(SQLModel, table=True):  # type: ignore
     description: None | str = None
     organization_id: str
     created_at: None | datetime = Field(
-        sa_column=Column(DateTime(timezone=False), server_default=func.now()),
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
         default=None,
     )
-
     updated_at: None | datetime = Field(
-        sa_column=Column(DateTime(timezone=False), onupdate=func.now()), default=None
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
+        ),
     )
     codebases: list["Codebase"] = Relationship(back_populates="workspace")
     source_contents: list["DerivedContent"] = Relationship(back_populates="workspace")
@@ -271,44 +257,21 @@ class Codebase(SQLModel, table=True):  # type: ignore
     resource_root: None | str = Field(sa_column=Column(sqlalchemy.Text, nullable=True))
     creator_id: str | None
     created_at: None | datetime = Field(
-        sa_column=Column(DateTime(timezone=False), server_default=func.now()),
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
         default=None,
     )
-
     updated_at: None | datetime = Field(
-        sa_column=Column(DateTime(timezone=False), onupdate=func.now()), default=None
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
+        ),
     )
     workspace: Workspace = Relationship(back_populates="codebases")
     source_contents: list["DerivedContent"] = Relationship(back_populates="codebase")
-
-
-# class SourceContentType(SQLModel, table=True):  # type: ignore
-#     __tablename__ = "source_content_types"
-#     id: UUID | None = Field(
-#         sa_column=Column(
-#             SaUuid(as_uuid=True),
-#             primary_key=True,
-#             server_default=text("uuid_generate_v4()"),
-#         ),
-#         default=None,
-#     )
-#     type_name: str = Field(
-#         max_length=255,
-#         sa_column=sqlalchemy.Column(
-#             sqlalchemy.String(255), unique=True, nullable=False
-#         ),
-#     )
-#     created_at: None | datetime = Field(
-#         sa_column=Column(DateTime(timezone=False), server_default=func.now()),
-#         default=None,
-#     )
-#
-#     updated_at: None | datetime = Field(
-#         sa_column=Column(DateTime(timezone=False), onupdate=func.now()), default=None
-#     )
-#     # source_contents: list["SourceContent"] = Relationship(
-#     #     back_populates="source_content_type"
-#     # )
 
 
 class DerivedContentType(SQLModel, table=True):  # type: ignore
@@ -328,12 +291,18 @@ class DerivedContentType(SQLModel, table=True):  # type: ignore
         ),
     )
     created_at: None | datetime = Field(
-        sa_column=Column(DateTime(timezone=False), server_default=func.now()),
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
         default=None,
     )
-
     updated_at: None | datetime = Field(
-        sa_column=Column(DateTime(timezone=False), onupdate=func.now()), default=None
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
+        ),
     )
     contents: list["DerivedContent"] = Relationship(back_populates="content_type")
 
@@ -378,6 +347,7 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
     codebase_id: None | UUID = Field(
         default=None, foreign_key="codebases.id", nullable=True, index=True
     )
+
     codebase: None | Codebase = Relationship(back_populates="source_contents")
     relative_path: str = Field(sa_column=Column(sqlalchemy.Text, nullable=False))
     content: None | str = Field(
@@ -397,12 +367,18 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
         default=None,
     )
     created_at: None | datetime = Field(
-        sa_column=Column(DateTime(timezone=False), server_default=func.now()),
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
         default=None,
     )
-
     updated_at: None | datetime = Field(
-        sa_column=Column(DateTime(timezone=False), onupdate=func.now()), default=None
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
+        ),
     )
     source_content: Optional["DerivedContent"] = Relationship(
         back_populates="derived_contents",
@@ -411,13 +387,15 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
     derived_contents: list["DerivedContent"] = Relationship(
         back_populates="source_content"
     )
-
     order: int | None = Field(
         sa_column=Column(Integer, nullable=True, server_default=text("0"))
     )
     workspace: Workspace = Relationship(back_populates="source_contents")
     tags: list["Tag"] = Relationship(
         back_populates="derived_contents", link_model=TagContent
+    )
+    chunks_and_embeds: list["ChunkAndEmbedding"] = Relationship(
+        back_populates="content", cascade_delete=True
     )
 
 
@@ -467,4 +445,33 @@ class Tag(SQLModel, table=True):  # type: ignore
     )
     derived_contents: list["DerivedContent"] = Relationship(
         back_populates="tags", link_model=TagContent
+    )
+
+
+class ChunkAndEmbedding(SQLModel, table=True):  # type: ignore
+    id: UUID | None = Field(default_factory=uuid.uuid4, primary_key=True)
+    content_id: UUID = Field(
+        foreign_key="derived_contents.id", nullable=False, ondelete="CASCADE"
+    )
+    content: DerivedContent | None = Relationship(back_populates="chunks_and_embeds")
+    text: str
+    text_embedding_3_small: list[float] = Field(
+        sa_column=Column(
+            Vector(1536), nullable=True
+        )  # TODO this column will need to be indexed ONCE POPULATED1
+    )
+    chunk_number: int
+    created_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
+        default=None,
+    )
+    updated_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
+        ),
     )

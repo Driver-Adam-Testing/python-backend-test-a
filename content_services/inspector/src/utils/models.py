@@ -53,6 +53,7 @@ class ChatOpenAI:
             openai.RateLimitError,
             openai.InternalServerError,
             openai.APIConnectionError,
+            openai.NotFoundError,
         ),
     )
     def generate_response(

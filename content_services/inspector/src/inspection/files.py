@@ -251,7 +251,7 @@ def comprehend_file_top_down(
     max_num_chunks: int,
     raise_hard_errors: bool = True,
 ) -> tuple[bool, dict[str, Any]]:
-    from shared.chunking.text_splitter import TextSplitter
+    from shared.chunking.text_splitter import split_text
 
     logging.info(f"Incorporating `{node.root_rel_path}`")
 
@@ -263,8 +263,9 @@ def comprehend_file_top_down(
         )
         return success, results
 
-    splitter = TextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
-    chunks = splitter.split(text=source_code)
+    chunks = split_text(
+        text=source_code, chunk_size=chunk_size, chunk_overlap=chunk_overlap
+    )
 
     if len(chunks) > max_num_chunks:
         if raise_hard_errors:

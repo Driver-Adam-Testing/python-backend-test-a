@@ -21,7 +21,7 @@ def upgrade():
     op.create_table(
         "document_sources",
         sa.Column("document_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
-        sa.Column("include", sa.Boolean(), nullable=True),
+        sa.Column("include", sa.Boolean(), nullable=False),
         sa.Column("source_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
         sa.ForeignKeyConstraint(
             ["document_id"],
@@ -33,7 +33,7 @@ def upgrade():
         ),
         sa.PrimaryKeyConstraint("document_id", "source_id"),
     )
-    op.add_column("tags_contents", sa.Column("include", sa.Boolean(), nullable=True))
+    op.add_column("tags_contents", sa.Column("include", sa.Boolean(), nullable=False))
     # ### end Alembic commands ###
 
 

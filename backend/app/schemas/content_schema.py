@@ -1,21 +1,16 @@
-from dataclasses import Field
 from datetime import datetime
-from symtable import Class
-from typing import Optional, Generic
+from typing import Generic, Optional, TypeVar
 from uuid import UUID
-from sqlmodel import Session, SQLModel, select, asc, desc
-from typing import Type, TypeVar, Generic, Optional, List, Any
-from pydantic import BaseModel, ConfigDict
 
 from database.models_v1 import (
     DerivedContent,
     DerivedContentType,
+    DocumentSource,
     Enum_Derived_Content_Status,
     Tag,
-    TagContent,
-    Workspace,
 )
-
+from pydantic import BaseModel
+from sqlmodel import SQLModel
 
 DataT = TypeVar("DataT", bound=SQLModel)
 
@@ -61,6 +56,7 @@ class ListContentResult(BaseModel):
     misc_metadata: dict | None
     status: Enum_Derived_Content_Status | None
     tags: list[Tag]
+    source_links: list[DocumentSource] | None
     created_at: None | datetime
     updated_at: None | datetime
     source_content: Optional["DerivedContent"]
@@ -86,7 +82,7 @@ class CreateContentRequest(BaseModel):
 
 
 class ContentResultBase(BaseModel, Generic[DataT]):
-    results: list[Optional[DataT]] = None
+    results: list[DataT | None] = None
 
 
 class CreateContentResponse(ContentResultBase[DerivedContent]):

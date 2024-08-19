@@ -46,6 +46,7 @@ class ContentMetadata(SQLModel, table=True):  # type: ignore
     content_type: ContentType = Field(Enum(ContentType), index=True)
     relative_path: str | None = Field(default=None, nullable=True, index=True)
     misc_metadata: dict = Field(default={}, sa_column=Column(JSON, nullable=False))  # type: ignore
+    chunks: list["Chunk"] = Relationship(back_populates="content_metadata")
 
 
 # TODO deprecate once all embeddings are in ChunkAndEmbedding
@@ -72,6 +73,7 @@ class Chunk(SQLModel, table=True):  # type: ignore
     content_metadata_id: UUID = Field(
         foreign_key="contentmetadata.id", nullable=False, index=True
     )
+    content_metadata: ContentMetadata = Relationship(back_populates="chunks")
     text: str
     # Text Embeddings are actually indexed but it's not reflected in the model.py because it's using ivfflat
     text_embedding_3_small: list[float] = Field(
@@ -345,6 +347,7 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
     codebase_id: None | UUID = Field(
         default=None, foreign_key="codebases.id", nullable=True, index=True
     )
+
     codebase: None | Codebase = Relationship(back_populates="source_contents")
     relative_path: str = Field(sa_column=Column(sqlalchemy.Text, nullable=False))
     content: None | str = Field(
@@ -390,6 +393,9 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
     workspace: Workspace = Relationship(back_populates="source_contents")
     tags: list["Tag"] = Relationship(
         back_populates="derived_contents", link_model=TagContent
+    )
+    chunks_and_embeds: list["ChunkAndEmbedding"] = Relationship(
+        back_populates="content", cascade_delete=True
     )
 
 
@@ -444,10 +450,15 @@ class Tag(SQLModel, table=True):  # type: ignore
 
 class ChunkAndEmbedding(SQLModel, table=True):  # type: ignore
     id: UUID | None = Field(default_factory=uuid.uuid4, primary_key=True)
-    content_id: UUID = Field(foreign_key="derived_contents.id", nullable=False)
+    content_id: UUID = Field(
+        foreign_key="derived_contents.id", nullable=False, ondelete="CASCADE"
+    )
+    content: DerivedContent | None = Relationship(back_populates="chunks_and_embeds")
     text: str
     text_embedding_3_small: list[float] = Field(
-        sa_column=Column(Vector(1536), nullable=True)
+        sa_column=Column(
+            Vector(1536), nullable=True
+        )  # TODO this column will need to be indexed ONCE POPULATED1
     )
     chunk_number: int
     created_at: None | datetime = Field(

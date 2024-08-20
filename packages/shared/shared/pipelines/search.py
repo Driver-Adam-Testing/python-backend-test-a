@@ -1,13 +1,14 @@
 from database.models_v1 import Chunk, ContentMetadata
-from shared.embedding.text_embedder import TextEmbedder
+from shared.embedding.text_embedder import batch_embed_text
 from shared.interfaces.search import SearchInput, SearchResult, SearchResults
 from sqlmodel import Session, asc, or_, select
 
 
+# TODO deprecate in favor of search once embeddings migrated
 def search_content_metadata(
     session: Session, organization_id: str | None, input: SearchInput
-):
-    embedded_query = TextEmbedder().batch_embed_text([input.query])[0]
+) -> SearchResults:
+    embedded_query = batch_embed_text([input.query])[0]
 
     statement = select(
         Chunk,

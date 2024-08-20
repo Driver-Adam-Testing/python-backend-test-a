@@ -39,12 +39,19 @@ def execute_backend_search(
         "query": search_text,
         "result_limit": result_limit,
         "content_type": content_types,
-        "workspace_id": str(agent_context.workspace_id),
-        "codebase_id": str(agent_context.codebase_id),
+        "workspace_id": str(agent_context.workspace_id)
+        if agent_context.workspace_id
+        else None,
+        "codebase_id": str(agent_context.codebase_id)
+        if agent_context.codebase_id
+        else None,
         "relative_path": relative_path,
-        "organization_id": str(agent_context.organization_id),
+        "organization_id": str(agent_context.organization_id)
+        if agent_context.organization_id
+        else None,
         "algorithm": "hybrid",
     }
+
     search_function = modal.Function.lookup("comprehender", "search")
     response = search_function.remote(payload)
     return format_search_results(response.dict())

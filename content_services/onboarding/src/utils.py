@@ -10,9 +10,8 @@ import requests
 from boto3 import resource
 from botocore.client import ClientError
 from database.db import engine
-from sqlmodel import Session, select
-
 from database.models_v1 import DerivedContentType
+from sqlmodel import Session, select
 
 
 # TODO dedup
@@ -131,6 +130,31 @@ def evaluate_file_size_processable(filepath: Path):
     return is_proc
 
 
+def get_non_ascii_file_encoding(file_bytes: bytes) -> str:
+    chunk_size = 2500
+    num_chunks = 20
+    min_confidence = 0.7
+    found_encoding = None
+
+    byte_chunks = [
+        file_bytes[i : i + chunk_size] for i in range(0, len(file_bytes), chunk_size)
+    ][:num_chunks]
+    for chunk in byte_chunks:
+        pred_enc = chardet.detect(chunk)
+        if (
+            pred_enc["encoding"] is not None
+            and pred_enc["encoding"] != "ascii"
+            and pred_enc["confidence"] > min_confidence
+        ):
+            try:
+                file_bytes.decode(pred_enc["encoding"])
+                found_encoding = pred_enc["encoding"]
+            except UnicodeDecodeError:
+                print(f"Chardet predicted encoding {pred_enc['encoding']} failed")
+            break
+    return found_encoding
+
+
 def evaluate_file_binary(filepath: Path) -> bool:
     is_binary = False
     chunk_size = 2500
@@ -209,17 +233,9 @@ def evaluate_file_binary(filepath: Path) -> bool:
                 is_binary = False
             else:
                 # Last effort - use chardet
-                pred_enc = chardet.detect(file_bytes[:chunk_size])
-                if (
-                    pred_enc["confidence"] > min_confidence
-                    and pred_enc["encoding"] is not None
-                ):
-                    try:
-                        file_bytes.decode(pred_enc["encoding"])
-                        is_binary = False
-                    except UnicodeDecodeError:
-                        # Chardet's predicted encoding failed, pass on this file
-                        is_binary = True
+                file_encoding = get_non_ascii_file_encoding(file_bytes)
+                if file_encoding is not None:
+                    is_binary = False
                 else:
                     is_binary = True
 
@@ -256,7 +272,6 @@ def is_on_blacklist(filepath: Path) -> bool:
 
 def reencode_file(filepath: Path) -> None:
     is_utf8 = False
-    chunk_size = 2500
     decoded_str = None
 
     with open(filepath, "rb") as r_file:
@@ -269,14 +284,14 @@ def reencode_file(filepath: Path) -> None:
             is_utf8 = False
 
         if not is_utf8:
-            pred_enc = chardet.detect(file_bytes[:chunk_size])
-            if pred_enc["encoding"]:
+            file_encoding = get_non_ascii_file_encoding(file_bytes)
+            if file_encoding:
                 try:
-                    decoded_str = file_bytes.decode(pred_enc["encoding"])
+                    decoded_str = file_bytes.decode(file_encoding)
                 except UnicodeDecodeError as e:
                     print(
                         f"Error: {e} decoding {filepath} \
-                          with predicted encoding: {pred_enc['encoding']}"
+                          with predicted encoding: {file_encoding}"
                     )
                     # TODO: force UTF-8 encoding with ignored characters?
             else:

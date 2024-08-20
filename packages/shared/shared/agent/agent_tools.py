@@ -1,6 +1,7 @@
 import re
 
 import modal
+from database.derived_content_types import DerivedContentTypeNames
 from openai import OpenAI
 
 from .tool import Tool
@@ -33,7 +34,6 @@ def execute_backend_search(
     content_types: list[str] | None = None,
     relative_path: str | None = None,
     result_limit: int = 10,
-    organization_id: str | None = None,
 ):
     payload = {
         "query": search_text,
@@ -61,7 +61,10 @@ def search_tech_docs(agent_context, search_text: str, rationale: str) -> str:
     return execute_backend_search(
         agent_context=agent_context,
         search_text=f"`{search_text}`. information on {search_text} because {rationale}",
-        content_types=["codebase-file", "symbol"],
+        content_types=[
+            DerivedContentTypeNames.CODEBASE_FILE.value,
+            DerivedContentTypeNames.SYMBOL.value,
+        ],
     )
 
 
@@ -75,7 +78,7 @@ def search_source_code(agent_context, search_text: str, rationale: str) -> str:
     return execute_backend_search(
         agent_context=agent_context,
         search_text=f"`{search_text}` information on {search_text}",
-        content_types=["codebase-file"],
+        content_types=[DerivedContentTypeNames.CODEBASE_FILE.value],
     )
 
 
@@ -163,11 +166,11 @@ def search_pdf_summaries(agent_context, query: str, rationale: str) -> dict:
         result_limit=20,
         search_text=f"`{query}`. information on {query} because {rationale}",
         content_types=[
-            "pdf_summary",
-            "pdf-visual-summary",
-            "pdf-text-summary",
-            "pdf-extracted-text",
-            "pdf-extracted-table",  # TODO: Look into why this isn't importing when deployed but is when it's local
+            DerivedContentTypeNames.PDF_SUMMARY.value,
+            DerivedContentTypeNames.PDF_VISUAL_SUMMARY.value,
+            DerivedContentTypeNames.PDF_TEXT_SUMMARY.value,
+            DerivedContentTypeNames.PDF_EXTRACTED_TEXT.value,
+            DerivedContentTypeNames.PDF_EXTRACTED_TABLE.value,  # TODO: Look into why this isn't importing when deployed but is when it's local
         ],
     )
 

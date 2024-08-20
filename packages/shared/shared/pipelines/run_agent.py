@@ -1,7 +1,6 @@
 import re
 from urllib.parse import unquote, urlparse
 
-from database.models_v1 import ContentType
 from pydantic import UUID4, BaseModel
 from shared import prompts
 from shared.agent import Agent
@@ -66,10 +65,15 @@ def run_agent(request: RunAgentRequest):
                 agent.agent,
                 search_text=f"{prompt} {selected_text if selected_text else ''}",
                 content_types=[
-                    ContentType.CODE_SYMBOL.value,
-                    ContentType.FILE_SUMMARY.value,
-                    "PDF_SUMMARY",
-                    ContentType.SOURCE_CODE.value,
+                    "symbol",
+                    "codebase-file",
+                    "long_description",
+                    "pdf_summary",
+                    "pdf_summary",
+                    "pdf-visual-summary",
+                    "pdf-text-summary",
+                    "pdf-extracted-text",
+                    "pdf-extracted-table",
                 ],
                 result_limit=25,
                 relative_path=relative_path,

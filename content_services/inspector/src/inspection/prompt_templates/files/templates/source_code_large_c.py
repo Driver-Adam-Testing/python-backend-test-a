@@ -78,9 +78,9 @@ def fn_dict_from_llm(llm: ChatOpenAI, fn_list: list[str], code: str) -> FnDict:
 
 
 SOURCE_CODE_LARGE_TEMPLATE_C = [
-    (S.RAW,                "# Overview"),
-    (S.SINGLE_PROMPT_TEXT, "## Purpose", SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_C, SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT,),
-    (S.SINGLE_PROMPT_TEXT, "## Technical Summary", SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_C, TECHNICAL_CONCEPTS,),
+    # (S.RAW,                "# Overview"),
+    (S.SINGLE_PROMPT_TEXT, "# Purpose", SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_C, SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT,),
+    # (S.SINGLE_PROMPT_TEXT, "## Technical Summary", SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_C, TECHNICAL_CONCEPTS,),
     (S.RAW,                "# Symbol Documentation"),
     (S.LLM_COND_JSON,      "\n---\n## Imports and Dependencies", default_imports_checker, lambda _llm, output, _code: output, IMPORTS_NONE_CONTENT,),
     (S.FN_COND_JSON,       "\n---\n## Global Variables", c_variables_checker, variables_dict_from_llm, VARIABLES_NONE_CONTENT),

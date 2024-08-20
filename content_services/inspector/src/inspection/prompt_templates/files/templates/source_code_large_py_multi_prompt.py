@@ -119,9 +119,9 @@ def fn_dict_from_llm(
 
 
 SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_PY = [
-    (S.RAW,                 "# Overview"),
-    (S.MULTI_PROMPT_TEXT,   "## Purpose", SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_PY, SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT_MULTI_CONTEXT, SOURCE_CODE_PURPOSE_FROM_CHUNKS,),
-    (S.MULTI_PROMPT_TEXT,   "## Technical Summary", SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_PY, TECHNICAL_CONCEPTS_MULTI_CONTEXT, TECHNICAL_CONCEPTS_FROM_CHUNKS,),
+    # (S.RAW,                 "# Overview"),
+    (S.MULTI_PROMPT_TEXT,   "# Purpose", SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_PY, SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT_MULTI_CONTEXT, SOURCE_CODE_PURPOSE_FROM_CHUNKS,),
+    # (S.MULTI_PROMPT_TEXT,   "## Technical Summary", SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_PY, TECHNICAL_CONCEPTS_MULTI_CONTEXT, TECHNICAL_CONCEPTS_FROM_CHUNKS,),
     (S.RAW,                 "# Symbol Documentation"),
     # NOTE: for simplicity this only looks at the first file chunk for imports (making assumptions about the structure of the file)
     (S.MULTI_LLM_COND_JSON, "\n---\n## Imports and Dependencies", default_imports_checker_multi_prompt, lambda _llm, output, _code: output, IMPORTS_NONE_CONTENT,),

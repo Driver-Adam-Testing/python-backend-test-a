@@ -14,7 +14,7 @@ You are skilled at explaining technical details as well as recognizing and artic
 """
 
 SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT_MULTI_CONTEXT = """
-In a single paragraph of 3 to 5 sentences, explain the purpose of the code provided below. Consider questions such as the following when providing your output:
+In 1 to 3 paragraphs, explain the purpose of the code provided below. Consider questions such as the following when providing your output:
 
 - Does this code provide narrow or broad functionality?
 - Is this code a collection of many different components? If so, what is the common theme or purpose?

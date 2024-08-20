@@ -22,7 +22,7 @@ You specialize in effectively describing small and short source code files. Your
 """
 
 SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT = """
-You will be given the content of a source code file. In a single paragraph of 3 to 5 sentences, explain the purpose of the file. Consider questions such as the following when providing your output:
+You will be given the content of a source code file. In 1 to 3 paragraphs, explain the purpose of the file. Consider questions such as the following when providing your output:
 
 - Does this code provide narrow or broad functionality?
 - Is this code a collection of many different components? If so, what is the common theme or purpose?

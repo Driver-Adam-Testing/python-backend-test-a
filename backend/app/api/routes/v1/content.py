@@ -14,9 +14,13 @@ from app.schemas.content_schema import (
     ListContentTypesInput,
     ListContentTypesResults,
     TagAssociationResponse,
+    ContentSourceAssociationRequest,
+    ContentSourceAssociationResponse,
+    ContentSourceResponse
 )
 from app.schemas.tag_schema import CollectionSourceInput
 from app.services.content_service import ContentService, get_content_service
+
 
 logger = logging.getLogger(__name__)
 
@@ -78,16 +82,16 @@ def list_types(
     )
 
 
-# @router.get(
-#     "/{content_id}/resolve-sources",
-#     summary="Get sources associated with a document",
-# )
-# def get_document_sources(
-#         user: CurrentUser,
-#         content_id: str,
-#         content_service: ContentService = Depends(get_content_service),
-# ):
-#     return content_service.resolve_content_sources(content_id)
+@router.get(
+    "/{content_id}/sources",
+    summary="Get sources associated with a document",
+)
+def get_document_sources(
+        user: CurrentUser,
+        content_id: str,
+        content_service: ContentService = Depends(get_content_service),
+)-> ContentSourceResponse:
+    return content_service.get_content_sources(content_id)
 
 
 @router.post(
@@ -120,16 +124,20 @@ def disassociate_tag_with_content(
 
 
 @router.post(
-    "/{content_id}/associate-source/{source_content_id}",
-    summary="Associate source with this content.",
+    "/{content_id}/associate-sources",
+    summary="Associate sources with this content.",
 )
 def associate_source_with_content(
-    session: CurrentSession,
     user: CurrentUser,
     content_id: str,
-    tag_id: str,
-) -> TagAssociationResponse:
-    pass
+    content_source_associations: ContentSourceAssociationRequest,
+    content_service: ContentService = Depends(get_content_service),
+) -> ContentSourceAssociationResponse:
+    return content_service.associate_source_with_content(
+        user.organization_id,
+        content_id,
+        content_source_associations
+    )
 
 
 @router.post(
@@ -143,7 +151,7 @@ def associate_collection_with_content(
     content_service: ContentService = Depends(get_content_service),
 ) -> TagAssociationResponse:
     return content_service.associate_collection_with_content(
-        user.organization_id, content_id, collection_id
+        user.organization_id, content_id, collection_id,
     )
 
 
@@ -165,8 +173,7 @@ def create_document(
     "/from-template",
     summary="Create a content record from a template content record",
 )
-def create_from_template(
-    session: CurrentSession,
+def create_content_from_template(
     user: CurrentUser,
     request: CreateTemplateRequest,
     content_service: ContentService = Depends(get_content_service),
@@ -180,7 +187,7 @@ def create_from_template(
     "/template",
     summary="Create a template content record",
 )
-def create_template_content_record(
+def create_template(
     user: CurrentUser,
     request: CreateTemplateRequest,
     content_service: ContentService = Depends(get_content_service),

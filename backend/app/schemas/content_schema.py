@@ -75,7 +75,6 @@ class TagAssociationResponse(BaseModel):
     content_id: str
     message: str
 
-
 class CreateContentRequest(BaseModel):
     workspace_id: str
     codebase_id: str
@@ -88,6 +87,9 @@ class ContentResultBase(BaseModel, Generic[DataT]):
 class CreateContentResponse(ContentResultBase[DerivedContent]):
     pass
 
+class ContentSourceResponse(ContentResultBase[ListContentResult]):
+    pass
+
 
 class CreateTemplateRequest(BaseModel):
     content_id: str
@@ -95,3 +97,15 @@ class CreateTemplateRequest(BaseModel):
 
 class CreateTemplateResponse(BaseModel):
     created: bool
+
+class ContentSourceAssociationItem(BaseModel):
+    source_content_id: str
+    include: bool
+
+class ContentSourceAssociationRequest(BaseModel):
+    sources: list[ContentSourceAssociationItem]
+
+class ContentSourceAssociationResponse(BaseModel):
+    content_id: str
+    sources: list[ContentSourceAssociationItem]
+    message: str

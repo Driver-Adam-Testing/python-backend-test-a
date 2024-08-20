@@ -24,6 +24,9 @@ from app.schemas.content_schema import (
     ListContentTypesInput,
     ListContentTypesResults,
     TagAssociationResponse,
+    ContentSourceAssociationRequest,
+    ContentSourceAssociationResponse,
+    ContentSourceResponse
 )
 
 logger = logging.getLogger(__name__)
@@ -67,11 +70,11 @@ class ContentService:
         self.derived_content_type_repository = DerivedContentTypeRepository(session)
 
     def associate_tag(
-        self,
-        organization_id: str,
-        content_id: str,
-        tag_id: str,
-        include_tag: bool = True,
+            self,
+            organization_id: str,
+            content_id: str,
+            tag_id: str,
+            include_tag: bool = True,
     ) -> TagAssociationResponse:
         logger.info(
             f"Associating tag {tag_id} with content {content_id} for organization {organization_id}"
@@ -108,8 +111,8 @@ class ContentService:
 
         if tag.type == "collection":
             if (
-                content.content_type.type_name
-                not in DerivedContentTypeRepository.valid_collection_type_names()
+                    content.content_type.type_name
+                    not in DerivedContentTypeRepository.valid_collection_type_names()
             ):
                 logger.error(
                     f"Invalid content type for collection tag {tag_id} and content {content_id}"
@@ -151,7 +154,7 @@ class ContentService:
         )
 
     def associate_collection_with_content(
-        self, organization_id: str, content_id: str, tag_id: str
+            self, organization_id: str, content_id: str, tag_id: str
     ) -> TagAssociationResponse:
         logger.info(
             f"Associating collection tag {tag_id} with content {content_id} for organization {organization_id}"
@@ -194,10 +197,6 @@ class ContentService:
             logger.error(
                 f"Integrity error while associating collection tag {tag_id} with content {content_id}"
             )
-            # raise HTTPException(
-            #     status_code=status.HTTP_400_BAD_REQUEST,
-            #     detail="Integrity error occurred while associating collection with content",
-            # )
 
         return TagAssociationResponse(
             tag_id=tag_id,
@@ -205,8 +204,89 @@ class ContentService:
             message="Collection associated successfully",
         )
 
+    def associate_source_with_content(
+            self, organization_id: str, content_id: str, content_source_associations: ContentSourceAssociationRequest
+    ) -> ContentSourceAssociationResponse:
+        logger.info(
+            f"Associating  {len(content_source_associations.sources)} with content {content_id} for organization {organization_id}"
+        )
+        document = self.content_repository.get(content_id)
+
+        if not document or document.workspace.organization_id != organization_id:
+            logger.error(
+                f"Content {content_id} not found for organization {organization_id}"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
+            )
+
+        sources = [
+            DocumentSource(
+                document_id=content_id,
+                source_id=source.source_content_id,
+                include=source.include,
+            ) for source in content_source_associations.sources
+        ]
+
+        for source in sources:
+            document.source_links.append(source)
+
+        try:
+            self.session.commit()
+            logger.info(
+                f"Source content association with content {content_id} successfully"
+            )
+        except IntegrityError:
+            self.session.rollback()
+
+        return ContentSourceAssociationResponse(
+            content_id=content_id,
+            sources=content_source_associations.sources,
+            message="Source content associated successfully",
+        )
+
+    def associate_sources_with_content(
+            self, organization_id: str, content_id: str
+    ) -> ContentSourceAssociationResponse:
+        logger.info(
+            f"Associating source {source_content_id} with content {content_id} for organization {organization_id}"
+        )
+        document = self.content_repository.get(content_id)
+
+        if not document or document.workspace.organization_id != organization_id:
+            logger.error(
+                f"Content {content_id} not found for organization {organization_id}"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
+            )
+
+        # for source in sources:
+        document.source_links.append(DocumentSource(
+            document_id=content_id,
+            source_id=source_content_id,
+            include=include_source,
+        ))
+
+        try:
+            self.session.commit()
+            logger.info(
+                f"Source content {source_content_id} associated with content {content_id} successfully"
+            )
+        except IntegrityError:
+            self.session.rollback()
+            logger.error(
+                f"Integrity error while associating source content {source_content_id} with content {content_id}"
+            )
+
+        return ContentSourceAssociationResponse(
+            content_id=content_id,
+            source_content_id=source_content_id,
+            message="Source content associated successfully",
+        )
+
     def disassociate_tag(
-        self, organization_id: str, content_id: str, tag_id: str
+            self, organization_id: str, content_id: str, tag_id: str
     ) -> TagAssociationResponse:
         logger.info(
             f"Disassociating tag {tag_id} from content {content_id} for organization {organization_id}"
@@ -270,11 +350,11 @@ class ContentService:
             )
 
     def create_blank_document(
-        self,
-        organization_id: str,
-        workspace_id: str,
-        codebase_id: str,
-        document_name: str | None = None,
+            self,
+            organization_id: str,
+            workspace_id: str,
+            codebase_id: str,
+            document_name: str | None = None,
     ) -> DerivedContent:
         logger.info(
             f"Creating blank document for organization {organization_id}, workspace {workspace_id}, codebase {codebase_id}"
@@ -333,7 +413,7 @@ class ContentService:
         return new_content
 
     def create_document_from_template(
-        self, organization_id: str, content_id: str
+            self, organization_id: str, content_id: str
     ) -> DerivedContent:
         logger.info(
             f"Creating document from template for organization {organization_id}, content {content_id}"
@@ -388,7 +468,7 @@ class ContentService:
         return new_content
 
     def get_list_content(
-        self, organization_id: str, search_input: ListContentInput
+            self, organization_id: str, search_input: ListContentInput
     ) -> ListContentResults:
         logger.info(
             f"Getting list of content for organization {organization_id} with input {search_input}"
@@ -410,12 +490,12 @@ class ContentService:
                 content_name=(
                     json.loads(result.content).get("name")
                     if result.content_type.type_name == "application_note"
-                    and result.content
-                    and "name" in json.loads(result.content)
+                       and result.content
+                       and "name" in json.loads(result.content)
                     else "Generating content..."
                     if result.content_type.type_name == "application_note"
-                    and result.content
-                    and "name" not in json.loads(result.content)
+                       and result.content
+                       and "name" not in json.loads(result.content)
                     else result.relative_path.removeprefix("documents/")
                     if result.content_type.type_name == "supplemental-document"
                     else result.relative_path
@@ -434,7 +514,6 @@ class ContentService:
                 order=result.order,
                 tags=result.tags,
                 source_links=result.source_links,
-                # tags=[tag_link.tag for tag_link in result.tag_links],
             )
             for result in results
         ]
@@ -449,7 +528,7 @@ class ContentService:
         )
 
     def _get_list_content(
-        self, organization_id: str, search_input: ListContentInput
+            self, organization_id: str, search_input: ListContentInput
     ) -> tuple[list[DerivedContent], int]:
         statement = (
             select(DerivedContent)
@@ -547,7 +626,7 @@ class ContentService:
         return results, total_count
 
     def get_list_content_types(
-        self, lct_inputs: ListContentTypesInput
+            self, lct_inputs: ListContentTypesInput
     ) -> ListContentTypesResults:
         logger.info(f"Getting list of content types with input {lct_inputs}")
         try:
@@ -564,7 +643,7 @@ class ContentService:
         logger.info("List of content types retrieved successfully")
         return ListContentTypesResults(results=results)
 
-    def resolve_content_sources(self, content_id: str) -> list[DerivedContent]:
+    def get_content_sources(self, content_id: str) -> ContentSourceResponse:
         logger.info(f"Resolving content sources for content {content_id}")
         content = self.content_repository.get(content_id)
         if not content:
@@ -575,30 +654,67 @@ class ContentService:
 
         sources = [link.source for link in content.source_links]
 
-        for source in sources:
-            # resolve codebase content
-            if source.content_type.type_name == "codebase":
-                pass
-            # resolve codebase-directory content
-            elif source.content_type.type_name == "codebase-directory":
-                pass
-            # resolve codebase-file content
-            elif source.content_type.type_name == "codebase-file":
-                pass
-            # resolve pdf_summary content
-            elif source.content_type.type_name == "pdf_summary":
-                pass
-            # resolve supplemental-document content
-            elif source.content_type.type_name == "supplemental-document":
-                pass
-            else:
-                pass
+        # for source in sources:
+        #     # resolve codebase content
+        #     if source.content_type.type_name == "codebase":
+        #         pass
+        #     # resolve codebase-directory content
+        #     elif source.content_type.type_name == "codebase-directory":
+        #         pass
+        #     # resolve codebase-file content
+        #     elif source.content_type.type_name == "codebase-file":
+        #         pass
+        #     # resolve pdf_summary content
+        #     elif source.content_type.type_name == "pdf_summary":
+        #         pass
+        #     # resolve supplemental-document content
+        #     elif source.content_type.type_name == "supplemental-document":
+        #         pass
+        #     else:
+        #         pass
 
         logger.info(f"Content sources resolved for content {content_id}")
-        return sources
+        # return sources
+        source_results = [
+            ListContentResult(
+                id=result.id,
+                organization_id=result.workspace.organization_id,
+                content_type_id=result.content_type_id,
+                content_type_name=result.content_type.type_name,
+                content_name=(
+                    json.loads(result.content).get("name")
+                    if result.content_type.type_name == "application_note"
+                       and result.content
+                       and "name" in json.loads(result.content)
+                    else "Generating content..."
+                    if result.content_type.type_name == "application_note"
+                       and result.content
+                       and "name" not in json.loads(result.content)
+                    else result.relative_path.removeprefix("documents/")
+                    if result.content_type.type_name == "supplemental-document"
+                    else result.relative_path
+                ),
+                workspace_id=result.workspace_id,
+                workspace_name=result.workspace.display_name,
+                source_content_id=result.source_content_id,
+                codebase_id=result.codebase_id,
+                relative_path=result.relative_path,
+                content=result.content,
+                misc_metadata=result.misc_metadata,
+                status=result.status,
+                created_at=result.created_at,
+                updated_at=result.updated_at,
+                source_content=result.source_content,
+                order=result.order,
+                tags=result.tags,
+                source_links=result.source_links,
+            )
+            for result in sources
+        ]
+        return ContentSourceResponse(results=source_results)
 
     def create_template(
-        self, organization_id: str, workspace_id: str, codebase_id: str
+            self, organization_id: str, workspace_id: str, codebase_id: str
     ) -> DerivedContent:
         logger.info(
             f"Creating template for organization {organization_id}, workspace {workspace_id}, codebase {codebase_id}"

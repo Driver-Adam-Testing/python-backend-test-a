@@ -6,7 +6,7 @@ Create Date: 2024-03-28 16:19:09.857369
 
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import sqlalchemy as sa
 import sqlmodel
@@ -15,9 +15,9 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = "77b384e95c97"
-down_revision: Union[str, None] = "0d7d67c8730d"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "0d7d67c8730d"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -26,7 +26,7 @@ def upgrade() -> None:
         "runtimelogagentinstance",
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
+        sa.Column("id", sa.types.Uuid(), nullable=False),
         sa.Column("workspace_id", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
         sa.Column("codebase_id", sqlmodel.sql.sqltypes.AutoString(), nullable=True),
         sa.Column("model", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
@@ -35,8 +35,8 @@ def upgrade() -> None:
     op.create_table(
         "runtimelogagenterror",
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
-        sa.Column("agent_instance_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
+        sa.Column("id", sa.types.Uuid(), nullable=False),
+        sa.Column("agent_instance_id", sa.types.Uuid(), nullable=False),
         sa.Column("error", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
         sa.ForeignKeyConstraint(
             ["agent_instance_id"],
@@ -47,10 +47,10 @@ def upgrade() -> None:
     op.create_table(
         "runtimelogagentmessage",
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
+        sa.Column("id", sa.types.Uuid(), nullable=False),
         sa.Column("message", sa.JSON(), nullable=False),
         sa.Column("order", sa.Integer(), autoincrement=True, nullable=True),
-        sa.Column("agent_instance_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
+        sa.Column("agent_instance_id", sa.types.Uuid(), nullable=False),
         sa.ForeignKeyConstraint(
             ["agent_instance_id"],
             ["runtimelogagentinstance.id"],
@@ -60,9 +60,9 @@ def upgrade() -> None:
     op.create_table(
         "runtimelogcontentretrieval",
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
-        sa.Column("agent_instance_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
-        sa.Column("chunk_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
+        sa.Column("id", sa.types.Uuid(), nullable=False),
+        sa.Column("agent_instance_id", sa.types.Uuid(), nullable=False),
+        sa.Column("chunk_id", sa.types.Uuid(), nullable=False),
         sa.ForeignKeyConstraint(
             ["agent_instance_id"],
             ["runtimelogagentinstance.id"],

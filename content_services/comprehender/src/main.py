@@ -30,7 +30,6 @@ comprehender_modal_config = {
         ),
     ],
     "secrets": [
-        modal.Secret.from_name("driver-api-credentials"),
         modal.Secret.from_name("open-ai"),
         modal.Secret.from_name("db"),
     ],

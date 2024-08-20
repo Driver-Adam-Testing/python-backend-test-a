@@ -170,11 +170,7 @@ def search_content_metadata(session: Session, input: SearchInput):
             if not success:
                 break
     search_results.sort(key=lambda x: x.score, reverse=True)
-
-    # Trim the search_results to only include up to input.result_limit
     search_results = search_results[: input.result_limit]
-
-    # Add result_number to metadata
     for idx, result in enumerate(search_results):
         result.metadata["result_number"] = idx + 1
 

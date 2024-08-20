@@ -30,3 +30,4 @@ def process_file(request: ProcessFileRequest) -> ProcessFileResponse:
             file_content.name = request.file_path
 
         return ProcessFileResponse(contents=run_process_pdf(file_content))
+    raise Exception("No parser found for filetype")

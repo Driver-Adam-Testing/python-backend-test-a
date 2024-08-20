@@ -80,6 +80,8 @@ def create_and_embed_pdf_summaries(content_id) -> None:
                     f"DerivedContentType not found for value: {result.content_type.value}"
                 )
 
+            # TODO: This should all be in a service.
+
             derived_content = DerivedContent(
                 workspace_id=content.workspace.id,
                 codebase_id=content.codebase_id,
@@ -96,16 +98,20 @@ def create_and_embed_pdf_summaries(content_id) -> None:
             session.commit()
             session.refresh(derived_content)
             splits = split_text(result.content)
-            embeds = batch_embed_text(splits)
-            for i, split in enumerate(splits):
-                session.add(
-                    ChunkAndEmbedding(
-                        content_id=derived_content.id,
-                        text=split.text,
-                        chunk_number=i,
-                        text_embedding_3_small=embeds[i],
+            try:
+                embeds = batch_embed_text(splits)
+                for i, split in enumerate(splits):
+                    session.add(
+                        ChunkAndEmbedding(
+                            content_id=derived_content.id,
+                            text=split.text,
+                            chunk_number=i,
+                            text_embedding_3_small=embeds[i],
+                        )
                     )
-                )
+            except Exception as e:
+                print(e)
+                # sEnd a n email here
             session.commit()
 
     return results

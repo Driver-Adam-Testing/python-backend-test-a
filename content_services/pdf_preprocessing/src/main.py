@@ -1,6 +1,3 @@
-import hashlib
-
-import boto3
 import modal
 
 app = modal.App("pdf-summary-embedding")
@@ -33,20 +30,6 @@ pdf_preprocessing_modal_config = {
 }
 
 
-def generate_get_presigned_url(key, bucket, expires=3600):
-    s3_client = boto3.client(
-        "s3",
-    )
-    return s3_client.generate_presigned_url(
-        ClientMethod="get_object",
-        Params={
-            "Bucket": bucket,
-            "Key": key,
-        },
-        ExpiresIn=expires,
-    )
-
-
 @app.function(timeout=3600, **pdf_preprocessing_modal_config)
 def create_and_embed_pdf_summaries(content_id) -> None:
     import io
@@ -57,6 +40,7 @@ def create_and_embed_pdf_summaries(content_id) -> None:
     from shared.chunking.text_splitter import split_text
     from shared.embedding.text_embedder import batch_embed_text
     from shared.pipelines.process_file.process_file_pdf import run_process_pdf
+    from shared.storage.s3 import get_presigned_url_from_content_information
     from sqlalchemy.orm import selectinload
     from sqlmodel import Session, select
 
@@ -71,24 +55,17 @@ def create_and_embed_pdf_summaries(content_id) -> None:
             raise Exception("Wrong content_id value")
         content: DerivedContent = content_results[0]
 
-        # TODO: make an S3 helper in shared that is bulletproof. This can break VERY easily. It should not be in the modal function.
-        organization_id = content.workspace.organization_id
-        org_id_hash = hashlib.sha256(organization_id.encode()).hexdigest()[:63]
-        object_key = f"{content.codebase_id}/{content.relative_path}"
+        presigned_url = get_presigned_url_from_content_information(
+            codebase_id=content.codebase_id,
+            organization_id=content.workspace.organization_id,
+            relative_path=content.relative_path,
+        )
 
-        presigned_url = generate_get_presigned_url(key=object_key, bucket=org_id_hash)
-
-    # Fetch the PDF from the URL
     response = requests.get(presigned_url)
-    response.raise_for_status()  # Ensure we notice bad responses
+    response.raise_for_status()
 
-    # Convert the content to a BytesIO object
     pdf_content = io.BytesIO(response.content)
-    pdf_content.name = content.relative_path.split("/")[
-        -1
-    ]  # Set a name for the BytesIO object
-
-    # Process the PDF content
+    pdf_content.name = content.relative_path.split("/")[-1]
     results = run_process_pdf(pdf_content)
 
     for result in results:

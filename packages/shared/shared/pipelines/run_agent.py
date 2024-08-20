@@ -17,6 +17,7 @@ class RunAgentRequest(BaseModel):
 
 
 def run_agent(request: RunAgentRequest):
+    # TODO: Totally remove Workspace and replace with search scopes and org
     workspace_id = request.workspace_id
     prompt = request.prompt
     codebase_id = request.codebase_id

@@ -4,6 +4,8 @@ import modal
 from database.derived_content_types import DerivedContentTypeNames
 from openai import OpenAI
 
+from shared.interfaces.search import SearchInput
+
 from .tool import Tool
 
 
@@ -35,22 +37,21 @@ def execute_backend_search(
     relative_path: str | None = None,
     result_limit: int = 10,
 ):
-    payload = {
-        "query": search_text,
-        "result_limit": result_limit,
-        "content_type": content_types,
-        "workspace_id": str(agent_context.workspace_id)
+    payload = SearchInput(
+        query=search_text,
+        content_type=content_types,
+        workspace_id=str(agent_context.workspace_id)
         if agent_context.workspace_id
         else None,
-        "codebase_id": str(agent_context.codebase_id)
-        if agent_context.codebase_id
-        else None,
-        "relative_path": relative_path,
-        "organization_id": str(agent_context.organization_id)
+        organization_id=str(agent_context.organization_id)
         if agent_context.organization_id
         else None,
-        "algorithm": "hybrid",
-    }
+        codebase_id=str(agent_context.codebase_id)
+        if agent_context.codebase_id
+        else None,
+        algorithm="hybrid",
+        relative_path=relative_path,
+    )
 
     search_function = modal.Function.lookup("comprehender", "search")
     response = search_function.remote(payload)
@@ -170,7 +171,7 @@ def search_pdf_summaries(agent_context, query: str, rationale: str) -> dict:
             DerivedContentTypeNames.PDF_VISUAL_SUMMARY.value,
             DerivedContentTypeNames.PDF_TEXT_SUMMARY.value,
             DerivedContentTypeNames.PDF_EXTRACTED_TEXT.value,
-            DerivedContentTypeNames.PDF_EXTRACTED_TABLE.value,  # TODO: Look into why this isn't importing when deployed but is when it's local
+            DerivedContentTypeNames.PDF_EXTRACTED_TABLE.value,
         ],
     )
 

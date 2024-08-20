@@ -17,7 +17,7 @@ def tokenize_for_bm25(text: str):
 
 
 # TODO deprecate in favor of search once embeddings migrated
-def search_content_metadata(session: Session, input: SearchInput):
+def search_content(session: Session, input: SearchInput):
     embedded_query = batch_embed_text([input.query])[0]
 
     statement = (

@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from shared.interfaces.search import SearchInput, SearchResults
-from shared.pipelines.search import search_content_metadata
+from shared.pipelines.search import search_content
 
 from app.api.auth import CurrentUser
 from app.api.session import CurrentSession
@@ -19,4 +19,4 @@ def search(
     # TODO: figure out how to do this without transforming the input.
 
     input.organization_id = user.organization_id
-    return search_content_metadata(session=session, input=input)
+    return search_content(session=session, input=input)

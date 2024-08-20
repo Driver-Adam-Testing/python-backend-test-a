@@ -8,9 +8,14 @@ You are skilled at explaining technical details as well as recognizing and artic
 """
 
 SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT = """
-You will be given the content of a source code file. In 1 to 3 paragraphs, explain the purpose of the file. Consider questions such as the following when providing your output:
+You will be given the content of a source code file. In 1 to 3 paragraphs, explain the purpose of the file.
+
+When writing your paragraphs, do not use speculative language.
+
+When writing your paragraphs, consider questions like the following. You do not need to explicitly state these ideas, they are just given as examples of the kind of information to provide:
 
 - Does this code provide narrow or broad functionality?
+- What are the most important technical components?
 - Is this code a collection of many different components? If so, what is the common theme or purpose?
 - What kind of code is this? For example, is this code clearly an executable (e.g., main.c), a header file, a library file intended to be imported elsewhere, a collection of configuration variables, etc.?
 - Does it define public APIs or external interfaces?

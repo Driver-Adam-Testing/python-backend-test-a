@@ -22,9 +22,14 @@ You specialize in effectively describing small and short source code files. Your
 """
 
 SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT = """
-You will be given the content of a source code file. In 1 to 3 paragraphs, explain the purpose of the file. Consider questions such as the following when providing your output:
+You will be given the content of a source code file. In 1 or 2 paragraphs, explain the purpose of the file.
+
+When writing your paragraphs, do not use speculative language.
+
+When writing your paragraphs, consider questions like the following. You do not need to explicitly state these ideas, they are just given as examples of the kind of information to provide:
 
 - Does this code provide narrow or broad functionality?
+- What are the most important technical components?
 - Is this code a collection of many different components? If so, what is the common theme or purpose?
 - What kind of code is this? For example, is this code clearly as script, a library file intended to be imported elsewhere, etc.?
 - Does it define public APIs or external interfaces?
@@ -161,7 +166,10 @@ def py_function_checker(
     code: str, root_rel_path: Path, structured_output: bool = True
 ) -> list[str] | str | None:
     symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-    fn_list = [s["name"] for s in symbols if s["kind"] in PY_FUNCTIONS]
+    fn_list = []
+    for s in symbols:
+        if s["kind"] in PY_FUNCTIONS and not s["name"].startswith("__anon"):
+            fn_list.append(s["name"])
     if len(fn_list) > 0:
         if structured_output:
             output = fn_list

@@ -1,8 +1,7 @@
-import os
-
 import requests
+from database.db import engine
 from database.models_v1 import ContentMetadata, ContentType
-from sqlmodel import Session, create_engine
+from sqlmodel import Session
 
 from packages.shared.shared.utils.openai_file import (
     upload_file_to_open_ai as upload_file,
@@ -13,8 +12,6 @@ def upload_file_to_open_ai(
     workspace: str, file_content: bytes, codebase_id: str = None, url: str = None
 ) -> str:
     file_id = upload_file(file_content=file_content)
-
-    engine = create_engine(os.environ["DATABASE_URL"], pool_size=1, max_overflow=10)
 
     with Session(engine) as session:
         session.add(

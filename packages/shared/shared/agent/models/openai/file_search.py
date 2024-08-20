@@ -1,7 +1,7 @@
 from openai import OpenAI
 
 
-def query_file(file_id, query, assistant_id: str | None = None):
+def query_file(file_id, query, assistant_id: str | None = None) -> str:
     client = OpenAI()
     if assistant_id is None:
         assistant = client.beta.assistants.create(
@@ -34,3 +34,4 @@ def query_file(file_id, query, assistant_id: str | None = None):
         messages = client.beta.threads.messages.list(thread_id=thread.id)
         summary = messages.data[0].content[0].text.value
         return summary
+    raise Exception(f"Could not query file {file_id}")

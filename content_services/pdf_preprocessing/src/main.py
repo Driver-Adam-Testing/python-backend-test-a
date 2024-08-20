@@ -67,9 +67,8 @@ def create_and_embed_pdf_summaries(content_id) -> None:
     pdf_content = io.BytesIO(response.content)
     pdf_content.name = content.relative_path.split("/")[-1]
     results = run_process_pdf(pdf_content)
-
-    for result in results:
-        with Session(engine) as session:
+    with Session(engine) as session:
+        for result in results:
             content_type_id = session.exec(
                 select(DerivedContentType.id).where(
                     DerivedContentType.type_name == result.content_type.value

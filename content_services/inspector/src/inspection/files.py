@@ -304,7 +304,9 @@ def comprehend_file_top_down(
                 code_chunks=chunk_texts,
             )
         else:
-            language = Lang.from_ext(ext=node.root_rel_path.suffix)
+            language = Lang.from_ext_and_source(
+                ext=node.root_rel_path.suffix, source=chunk_texts[0]
+            )
             match language:
                 case Lang.C:
                     template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_C
@@ -351,7 +353,9 @@ def comprehend_file_top_down(
             file_kind = FileKind.from_llm(
                 llm=llm, file_name=node.root_rel_path.name, code=source_code
             )
-            language = Lang.from_ext(ext=node.root_rel_path.suffix)
+            language = Lang.from_ext_and_source(
+                ext=node.root_rel_path.suffix, source=source_code
+            )
             template = TEMPLATE_DATA[file_kind.kind][language]
             long_template = Template(template=template)
             file_description_long = long_template.run_with_code(

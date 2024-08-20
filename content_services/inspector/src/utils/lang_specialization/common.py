@@ -1,3 +1,4 @@
+import logging
 from enum import IntEnum
 from typing import Self
 
@@ -6,22 +7,61 @@ from utils.models import ChatOpenAI, OutputConfig, OutputConfigKind
 
 
 class Lang(IntEnum):
-    DEFAULT = 0
-    C = 1
-    CPP = 2
-    PYTHON = 3
+    C = 0
+    CPP = 1
+    PYTHON = 2
+    DEFAULT = 3
 
     @classmethod
-    def from_ext(cls, ext: str) -> Self:
+    def from_ext_and_source(cls, ext: str, source: str) -> Self:
         match ext:
-            case ".c" | ".h":
+            case ".c":
                 return cls.C
             case ".cpp" | ".cc" | ".cxx" | ".c++" | ".hpp" | ".hh" | ".hxx" | ".h++":
                 return cls.CPP
+            case ".h":
+                return _disambiguate_header(source=source, fallback=cls.C)
             case ".py" | ".pyw" | ".pyi":
                 return cls.PYTHON
             case _:
                 return cls.DEFAULT
+
+
+def _disambiguate_header(source: str, fallback: Lang) -> Lang:
+    llm = ChatOpenAI(model="gpt-4o-2024-08-06", temperature=0, request_timeout=120)
+    system_prompt = """
+    You are a software engineering expert that determines whether a header file corresponds to the C or C++ language.
+
+    Header files ('.h' extension) are used both in C and C++. You will be given source code from a header file and will answer whether it corresponds to C or C++ code.
+
+    You will be given the source code in the following format:
+
+    File contents:
+
+    <file_contents>
+
+    You only respond with a single number to indicate your response:
+    - 0 if the code corresponds to C
+    - 1 if the code corresponds to C++
+    """
+    user_prompt = f"File contents:\n\n{source}"
+    c_or_cpp_raw = llm.generate_response(
+        system_prompt=system_prompt, user_prompt=user_prompt
+    )
+    try:
+        zero_or_one = int(c_or_cpp_raw)
+        match zero_or_one:
+            case 0:
+                return Lang.C
+            case 1:
+                return Lang.CPP
+            case _:
+                return fallback
+    except ValueError as e:
+        logging.warn(
+            f"Failed to parse integer from LLM response to determine if a header file is C or C++: {e}"
+        )
+        return fallback
 
 
 class NamedContent(BaseModel):

@@ -1,35 +1,34 @@
-from pathlib import Path
-
 import modal
-
 from common import app
-
-from utils.dag import LiteNode
 from inspection.files import comprehend_file_top_down
+from utils.dag import LiteNode
 
 image = (
     modal.Image.debian_slim(python_version="3.12")
-    .pip_install(["openai", "tiktoken"]) # TODO lock versions down
+    .copy_local_dir(local_path="../../driver_db", remote_path="/driver_db")
+    .copy_local_dir(local_path="../../packages/shared", remote_path="/shared_pkg")
+    .pip_install(
+        ["openai>=1.40.2", "pydantic>=2.8.2", "tiktoken", "/shared_pkg"]
+    )  # TODO lock versions down
     .apt_install("universal-ctags")
 )
 
-function_cfg = dict(secrets=[modal.Secret.from_name("open-ai")], image=image)
+function_cfg = {"secrets": [modal.Secret.from_name("open-ai")], "image": image}
 
 
 @app.function(
     concurrency_limit=12,
-    timeout=15*60,
+    timeout=120 * 60,
     **function_cfg,
 )
 def make_tech_doc(
     node: LiteNode, source_code: str, codebase_name: str
 ) -> tuple[bool, dict, LiteNode]:
-    from inspection.files import comprehend_file_top_down
     from utils.models import ChatOpenAI
 
     print(f"Processing tech docs ({node})")
     raise_hard_errors = False
-    llm = ChatOpenAI(model="gpt-4o", temperature=0, request_timeout=120)
+    llm = ChatOpenAI(model="gpt-4o-2024-08-06", temperature=0, request_timeout=120)
 
     file_docs_successful, file_doc = comprehend_file_top_down(
         llm=llm,
@@ -46,7 +45,7 @@ def make_tech_doc(
     return file_docs_successful, file_doc, node
 
 
-@app.function(concurrency_limit=15,timeout=60*60, **function_cfg)
+@app.function(concurrency_limit=15, timeout=60 * 60, **function_cfg)
 def make_symbol_docs(
     node: LiteNode,
     source_code: str,
@@ -66,14 +65,14 @@ def make_symbol_docs(
     return symbols
 
 
-@app.function(concurrency_limit=4, timeout=15*60, **function_cfg)
+@app.function(concurrency_limit=4, timeout=30 * 60, **function_cfg)
 def make_folder_tech_doc(
     codebase_name: str, node: LiteNode, child_nodes_to_docs: dict[LiteNode, dict]
 ) -> dict[str, any]:
     from inspection.folders import comprehend_folder_top_down
     from utils.models import ChatOpenAI
 
-    llm = ChatOpenAI(model="gpt-4o", temperature=0, request_timeout=120)
+    llm = ChatOpenAI(model="gpt-4o-2024-08-06", temperature=0, request_timeout=120)
 
     print(f"Processing folder tech docs for ({node})")
     folder_docs = comprehend_folder_top_down(
@@ -90,14 +89,14 @@ def make_folder_tech_doc(
     return folder_docs
 
 
-@app.function(concurrency_limit=3, timeout=60*60, **function_cfg)
+@app.function(concurrency_limit=3, timeout=60 * 60, **function_cfg)
 def make_toplevel_tech_docs(
     codebase_name: str, nodes_to_docs: dict[LiteNode, dict]
 ) -> dict[str, any]:
     from inspection.toplevel import comprehend_codebase_top_down
     from utils.models import ChatOpenAI
 
-    llm = ChatOpenAI(model="gpt-4o", temperature=0, request_timeout=120)
+    llm = ChatOpenAI(model="gpt-4o-2024-08-06", temperature=0, request_timeout=120)
 
     print(f"Processing top-level docs for `{codebase_name}`")
     top_level_docs = comprehend_codebase_top_down(
@@ -114,7 +113,7 @@ def make_toplevel_tech_docs(
     return top_level_docs
 
 
-CHUNK_SIZE = 280_000
-CHUNK_OVERLAP = 10_000
+CHUNK_SIZE = 64_000
+CHUNK_OVERLAP = 3_000
 COMPRESSION_LOOP_MAX_ITR = 10
-MAX_NUM_CHUNKS_FILE = 3
+MAX_NUM_CHUNKS_FILE = 5

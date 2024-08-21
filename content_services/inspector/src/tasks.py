@@ -1,9 +1,12 @@
 import asyncio
 import uuid
-from pathlib import Path
 from typing import Union
 
-from database.models_v1 import DerivedContent, Enum_Derived_Content_Status
+from database.models_v1 import (
+    ChunkAndEmbedding,
+    DerivedContent,
+    Enum_Derived_Content_Status,
+)
 from modal_funcs import (
     make_folder_tech_doc,
     make_symbol_docs,
@@ -11,7 +14,8 @@ from modal_funcs import (
     make_toplevel_tech_docs,
 )
 from openai import OpenAIError
-from sqlalchemy import delete
+from sqlalchemy.orm import selectinload
+from sqlmodel import delete, select
 from utils.dag import LiteNode
 from utils.db import (
     DerivedContentTypeMap,
@@ -122,7 +126,7 @@ class FolderTechDocTask(Task):
                 # TODO: we aren't deleting here. When we create embeddings, we'll want to cascade
                 # delete everything related to old derived content
 
-                del_statement = delete(DerivedContent).where(
+                dc_query = select(DerivedContent).where(
                     DerivedContent.source_content_id == self.source_content_id,
                     DerivedContent.content_type_id.in_(
                         [
@@ -132,14 +136,24 @@ class FolderTechDocTask(Task):
                         ]
                     ),
                 )
-                await session.exec(del_statement)
+                result = await session.exec(dc_query)
+                dc_rows = result.all()
+                for dc_row in dc_rows:
+                    await session.delete(dc_row)
                 await session.commit()
 
                 dc_records = [short_sent_dc, short_para_dc, long_desc_dc]
                 session.add_all(dc_records)
                 await session.commit()
 
-        return {"docs": docs}
+                content_ids = []
+                for record in dc_records:
+                    await session.refresh(record)
+                    content_ids.append(record.id)
+                content_ids = [
+                    str(cid) for cid in content_ids
+                ]  # Must be json serializable... TODO
+        return {"docs": docs, "content_ids": content_ids}
 
     def hashable_attrs(self) -> tuple:
         return (self.task_name, self.node, self.codebase_name, self.dependencies)
@@ -255,7 +269,7 @@ class FileTechDocTask(Task):
                 # TODO: we aren't deleting here. When we create embeddings, we'll want to cascade
                 # delete everything related to old derived content
 
-                del_statement = delete(DerivedContent).where(
+                dc_query = select(DerivedContent).where(
                     DerivedContent.source_content_id == self.source_content_id,
                     DerivedContent.content_type_id.in_(
                         [
@@ -266,7 +280,10 @@ class FileTechDocTask(Task):
                         ]
                     ),
                 )
-                await session.exec(del_statement)
+                result = await session.exec(dc_query)
+                dc_rows = result.all()
+                for dc_row in dc_rows:
+                    await session.delete(dc_row)
                 await session.commit()
 
                 dc_records = [short_sent_dc, short_para_dc, long_desc_dc]
@@ -274,7 +291,19 @@ class FileTechDocTask(Task):
                 session.add_all(dc_records)
                 await session.commit()
 
-        return {"success": success, "docs": docs}
+                content_ids = []
+                for record in dc_records:
+                    await session.refresh(record)
+                    content_ids.append(record.id)
+                content_ids = [
+                    str(cid) for cid in content_ids
+                ]  # Make json serializable for result writer by converting to string... TODO
+
+        return {
+            "success": success,
+            "docs": docs,
+            "content_ids": content_ids,
+        }
 
     def hashable_attrs(self) -> tuple:
         return (self.task_name, self.node, self.codebase_name, self.source_code)
@@ -287,13 +316,11 @@ class SymbolsTask(Task):
     def __init__(
         self,
         task_name: str,
-        codebase_root: Path,
         node: LiteNode,
         source_code: str,
         tech_docs_task: FileTechDocTask,
         source_content_id: uuid.UUID,
     ):
-        self.codebase_root = codebase_root
         self.node = node
         self.source_code = source_code
         self.tech_docs_task = tech_docs_task
@@ -351,26 +378,36 @@ class SymbolsTask(Task):
                 symbol_dcs.append(symbol_dc)
 
             async with AsyncSession(async_engine) as session:
-                del_statement = (
-                    delete(DerivedContent)
+                dc_query = (
+                    select(DerivedContent)
                     .where(DerivedContent.source_content_id == self.source_content_id)
                     .where(DerivedContent.content_type_id == symbol_derived_content_id)
                 )
-                await session.exec(del_statement)
+                result = await session.exec(dc_query)
+                dc_rows = result.all()
+                for dc_row in dc_rows:
+                    await session.delete(dc_row)
                 await session.commit()
 
                 for i in range(0, len(symbol_dcs), session_chunk_size):
                     session.add_all(symbol_dcs[i : i + session_chunk_size])
                     await session.commit()
 
-        return {"symbols": symbols}
+                content_ids = []
+                for record in symbol_dcs:
+                    await session.refresh(record)
+                    content_ids.append(record.id)
+                content_ids = [
+                    str(cid) for cid in content_ids
+                ]  # Must be json serializable... TODO
+
+        return {"symbols": symbols, "content_ids": content_ids}
 
     def hashable_attrs(self) -> tuple:
         # Put class name in here too
         return (
             self.task_name,
             self.node,
-            self.codebase_root,
             self.source_code,
             self.dependencies,
         )
@@ -474,23 +511,190 @@ class TopLevelDocsTask(Task):
             async with AsyncSession(async_engine) as session:
                 # TODO: we aren't deleting here. When we create embeddings, we'll want to cascade
                 # delete everything related to old derived content
-
-                del_statement = delete(DerivedContent).where(
+                dc_query = select(DerivedContent).where(
                     DerivedContent.source_content_id == self.source_content_id,
                     DerivedContent.content_type_id.in_(
                         [dc_id for dc_id, _ in top_level_tups]
                     ),
                 )
-                await session.exec(del_statement)
+                result = await session.exec(dc_query)
+                dc_rows = result.all()
+                for dc_row in dc_rows:
+                    await session.delete(dc_row)
                 await session.commit()
 
                 session.add_all(dc_contents)
                 await session.commit()
 
-        return {"docs": docs}
+                content_ids = []
+                for record in dc_contents:
+                    await session.refresh(record)
+                    content_ids.append(record.id)
+                content_ids = [
+                    str(cid) for cid in content_ids
+                ]  # Must be json serializable... TODO
+
+        return {"docs": docs, "content_ids": content_ids}
 
     def hashable_attrs(self) -> tuple:
         return (self.task_name, self.codebase_name, self.dependencies)
+
+    def recoverable_errors(self) -> set[type[Exception]]:
+        return {OpenAIError}
+
+
+class EmbeddingTask(Task):
+    def __init__(
+        self,
+        task_name: str,
+        source_code: str | None = None,
+        source_content_id: uuid.UUID | None = None,
+        dependent_tasks: list[Task] | None = None,
+    ):
+        if source_code:
+            if not all([source_code, source_content_id]):
+                raise ValueError(
+                    "If source_code is provided, source_content_id must also be provided"
+                )
+
+        self.source_code = source_code
+        self.source_code_sc_id = source_content_id
+
+        dependent_tasks = dependent_tasks or []
+        deduped_tasks = tuple(set(dependent_tasks))
+        super().__init__(task_name=task_name, dependencies=deduped_tasks)
+
+    async def run_implementation(
+        self, dependent_results: dict["Task", TaskResult]
+    ) -> dict[str, any]:
+        # TODO can we move imports here up?
+        from database.db import async_engine
+        from database.models_v1 import ChunkAndEmbedding, DerivedContentType
+        from sqlmodel.ext.asyncio.session import AsyncSession
+
+        type_names_to_embed = [
+            "long_description",
+            "symbol",
+        ]
+
+        for task, dr in dependent_results.items():
+            content_ids_to_embed = [
+                uuid.UUID(uid) for uid in dr.result["content_ids"]
+            ]  # TODO may not be needed
+
+            async with database_sem:
+                async with AsyncSession(async_engine) as session:
+                    contents_query = (
+                        select(DerivedContent)
+                        .join(
+                            DerivedContentType,
+                            DerivedContent.content_type_id == DerivedContentType.id,
+                        )
+                        .where(
+                            DerivedContent.id.in_(content_ids_to_embed),
+                            DerivedContentType.type_name.in_(type_names_to_embed),
+                        )
+                        .options(selectinload(DerivedContent.content_type))
+                    )
+                    print(f"Querying '{task.task_name}' content to embed")
+                    result = await session.exec(contents_query)
+                    content_rows = result.all()
+                    print(f"Queried {len(content_rows)} for '{task.task_name}'")
+                    if not content_rows:
+                        continue
+                    body = [
+                        (c.content, c.id, c.content_type.type_name, c.misc_metadata)
+                        for c in content_rows
+                    ]
+                    contents, ids, type_names, metadata = zip(*body, strict=False)
+            print(f"Chunking {len(contents)} contents for {task.task_name}")
+
+            # Chunk, embed, and write the chunks based on source content ids
+            chunks = await self.chunk_embed_and_prep_for_db(
+                list(contents), list(ids), list(type_names), list(metadata)
+            )
+            print(f"Embedded {len(chunks)} chunks for '{task.task_name}'")
+
+            async with database_sem:
+                async with AsyncSession(async_engine) as session:
+                    async with session.begin():
+                        for cid in ids:
+                            delete_statement = delete(ChunkAndEmbedding).where(
+                                ChunkAndEmbedding.content_id == cid
+                            )
+                            await session.exec(delete_statement)
+                        session.add_all(chunks)
+                        await session.commit()
+            print(f"Saved {len(chunks)} for {task.task_name} to database")
+
+        # Chunk, embed, and write source code if provided
+        # TODO it's super hacky to embed source code directly like this.
+        # Since we will move importing of source code into inspector, we will not need this special pattern
+        # in the future. We will have separate tasks for loading source code and creating the source content.
+        if self.source_code:
+            # Chunk, embed, and write source code
+            sc_chunks = await self.chunk_embed_and_prep_for_db(
+                [self.source_code],
+                [self.source_code_sc_id],
+                ["source-file"],
+                [{}],
+            )
+
+            async with database_sem:
+                async with AsyncSession(async_engine) as session:
+                    async with session.begin():
+                        delete_statement = delete(ChunkAndEmbedding).where(
+                            ChunkAndEmbedding.content_id == self.source_code_sc_id
+                        )
+                        await session.exec(delete_statement)
+                        session.add_all(sc_chunks)
+                        await session.commit()
+            print(
+                f"Saved {len(sc_chunks)} chunks of source code for task '{self.task_name}' to database"
+            )
+
+        return {}
+
+    @staticmethod
+    async def chunk_embed_and_prep_for_db(
+        contents: list[str],
+        content_ids: list[uuid.UUID],
+        content_types: list[str],
+        metadatas: list[dict[str, any]],
+    ) -> list[ChunkAndEmbedding]:
+        from database.models_v1 import ChunkAndEmbedding
+        from shared.chunking.text_splitter import split_text
+        from shared.embedding.text_embedder import async_batch_embed_text
+
+        chunks = []
+        for content, content_id, content_type, metadata in zip(
+            contents, content_ids, content_types, metadatas, strict=False
+        ):
+            if content_type == "symbol":
+                content = metadata.get("description")
+                if not content:
+                    continue
+
+            split_documents = split_text(content)
+            embeds = await async_batch_embed_text([d.text for d in split_documents])
+            chunks.extend(
+                [
+                    ChunkAndEmbedding(
+                        text_embedding_3_small=e,
+                        text=d.text,
+                        content_id=content_id,
+                        chunk_number=i,
+                        token_count=len(d.tokens),
+                    )
+                    for i, (d, e) in enumerate(
+                        zip(split_documents, embeds, strict=False)
+                    )
+                ]
+            )
+        return chunks
+
+    def hashable_attrs(self) -> tuple:
+        return (self.task_name, self.dependencies)
 
     def recoverable_errors(self) -> set[type[Exception]]:
         return {OpenAIError}

@@ -2,6 +2,7 @@ import concurrent.futures
 from pathlib import Path
 from typing import Any
 
+from pydantic import UUID4
 from tqdm import tqdm
 from utils.dag import LiteNode, NodeKind
 from utils.io import (
@@ -12,6 +13,10 @@ from utils.models import ChatOpenAI
 from utils.threadpool import FastShutdownThreadPoolExecutor
 
 PARENT_PATH = Path(__file__).parent
+
+# TODO: Remove hardcoded.
+# WORKSPACE_ID = UUID4("5e1a9118-98b3-4310-a572-9be475a3caed")
+# CODEBASE_ID = UUID4("b975b2d9-86d6-4c2e-8f5d-f38ba7e82ac2")
 
 
 def toplevel_chunk_description(
@@ -714,6 +719,16 @@ def comprehend_codebase_top_down(
         "getting_started": quickstart_getting_started,
     }
     print(f"Codebase short description:\n{short_descriptions['single_paragraph']}")
+
+    # TODO: Hacking the system by smuggling a quickstart guide into the entry point data.
+    # readme_template = Template(
+    #     system_prompt="",
+    #     template=GETTING_STARTED_GUIDE_TEMPLATE,
+    # )
+    # readme = readme_template.run_with_single_shot_edit_agent(
+    #     workspace_id=WORKSPACE_ID, codebase_id=CODEBASE_ID
+    # )
+    # quickstart["entry"] = readme
 
     # if to_disk_dir is not None:
     #     write_to_disk(

@@ -3,8 +3,8 @@ from pathlib import Path
 from uuid import UUID
 
 from database.models_v1 import DerivedContentType
-from shared.chunking.text_splitter import TextSplitter
-from shared.embedding.text_embedder import TextEmbedder
+from shared.chunking.text_splitter import split_text
+from shared.embedding.text_embedder import async_batch_embed_text
 
 
 async def get_source_content_type_uuid(content_type: str, session) -> UUID:
@@ -57,17 +57,13 @@ def download_source_content_file(
 
 
 async def generate_embeddings_for_string(content: str) -> tuple[list, list]:
-    text_splitter = TextSplitter()
-    text_embedder = TextEmbedder()
-    split_documents = text_splitter.split(content)
+    split_documents = split_text(content)
 
     if len(split_documents) > 0:
         max_retries = 10
         for attempt in range(max_retries):
             try:
-                embeds = text_embedder.batch_embed_text(
-                    [d.text for d in split_documents]
-                )
+                embeds = await async_batch_embed_text([d.text for d in split_documents])
                 break
             except Exception as e:
                 if attempt < max_retries - 1:

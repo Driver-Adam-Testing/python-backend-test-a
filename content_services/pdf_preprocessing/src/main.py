@@ -6,17 +6,17 @@ from pathlib import Path
 from urllib.parse import urlparse
 from uuid import UUID
 
+import boto3
 import modal
 import requests
 from database.models_v1 import (
     Chunk,
-    ContentMetadata,
-    ContentType,
+    ContentMetadata,  # TODO
+    ContentType,  # TODO
     DerivedContent,
     DerivedContentType,
 )
-from embed_helpers import generate_embeddings_for_string
-from utils.aws_s3 import generate_get_presigned_url
+from shared.embedding.embed_helpers import generate_embeddings_for_string
 
 LLM_MODEL = "gpt-4o"
 
@@ -25,8 +25,23 @@ app = modal.App("pdf-summary-embedding")
 image = (
     modal.Image.debian_slim(python_version="3.12")
     .copy_local_dir("../../driver_db/", remote_path="/driver_db")
+    .copy_local_dir("../../packages/shared/", remote_path="/packages/shared/")
     .poetry_install_from_file("pyproject.toml")
 )
+
+
+def generate_get_presigned_url(key, bucket, expires=3600):
+    s3_client = boto3.client(
+        "s3",
+    )
+    return s3_client.generate_presigned_url(
+        ClientMethod="get_object",
+        Params={
+            "Bucket": bucket,
+            "Key": key,
+        },
+        ExpiresIn=expires,
+    )
 
 
 def download_pdf(presigned_url, download_path):
@@ -260,11 +275,9 @@ async def persist_embeddings(
         return True
 
 
-# TODO: consolidate all embeddings into one place / service
 # TODO: Replace pre-signed url with boto3 impl.
 
 
-# async def preprocess(input: PdfInput):
 async def preprocess(source_content_id: str):
     from database.db import async_engine
     from sqlmodel.ext.asyncio.session import AsyncSession

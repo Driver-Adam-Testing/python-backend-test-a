@@ -1,13 +1,11 @@
-import tiktoken
-
 # from document_generation_api.utils.dag import Dag, Node
-
 import logging
 
-from utils import decorators
+import tiktoken
+
+from . import decorators
 
 logger = logging.getLogger(__name__)
-
 
 
 def chunk_str(
@@ -63,8 +61,8 @@ def num_tokens_from_messages_open_ai(messages, model="gpt-3.5-turbo-0613"):
         return num_tokens_from_messages_open_ai(messages, model="gpt-4-0613")
     else:
         raise NotImplementedError(
-            f"""num_tokens_from_messages() is not implemented for model {model}. 
-            See https://github.com/openai/openai-python/blob/main/chatml.md for 
+            f"""num_tokens_from_messages() is not implemented for model {model}.
+            See https://github.com/openai/openai-python/blob/main/chatml.md for
             information on how messages are converted to tokens."""
         )
     num_tokens = 0

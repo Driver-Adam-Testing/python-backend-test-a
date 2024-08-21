@@ -333,7 +333,7 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
         default=None,
     )
     content_type_id: UUID = Field(
-        foreign_key="derived_content_types.id", nullable=False
+        foreign_key="derived_content_types.id", nullable=False, index=True
     )
     content_type: DerivedContentType = Relationship(back_populates="contents")
     # All content must be in a workspace
@@ -349,7 +349,9 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
     )
 
     codebase: None | Codebase = Relationship(back_populates="source_contents")
-    relative_path: str = Field(sa_column=Column(sqlalchemy.Text, nullable=False))
+    relative_path: str = Field(
+        sa_column=Column(sqlalchemy.Text, nullable=False, index=True)
+    )
     content: None | str = Field(
         sa_column=Column(sqlalchemy.Text, nullable=True), default=None
     )
@@ -451,7 +453,10 @@ class Tag(SQLModel, table=True):  # type: ignore
 class ChunkAndEmbedding(SQLModel, table=True):  # type: ignore
     id: UUID | None = Field(default_factory=uuid.uuid4, primary_key=True)
     content_id: UUID = Field(
-        foreign_key="derived_contents.id", nullable=False, ondelete="CASCADE"
+        foreign_key="derived_contents.id",
+        nullable=False,
+        ondelete="CASCADE",
+        index=True,
     )
     content: DerivedContent | None = Relationship(back_populates="chunks_and_embeds")
     text: str

@@ -1,7 +1,7 @@
 """content types and vec index
 
 Revision ID: 37da9f662cf0
-Revises: 4c4d18f5c22a
+Revises: 2f79ea9294a7
 Create Date: 2024-08-20 15:28:49.101478
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "37da9f662cf0"
-down_revision = "4c4d18f5c22a"
+down_revision = "2f79ea9294a7"
 branch_labels = None
 depends_on = None
 
@@ -28,7 +28,7 @@ def upgrade() -> None:
     existing_types_query = "SELECT type_name FROM derived_content_types;"
     conn = op.get_bind()
     existing_types_result = conn.execute(sa.text(existing_types_query))
-    existing_types = {row["type_name"] for row in existing_types_result}
+    existing_types = {row[0] for row in existing_types_result}
 
     # Build the SQL insert statement only for new types not existing
     new_types = [
@@ -44,9 +44,7 @@ def upgrade() -> None:
     op.execute(
         "CREATE INDEX IF NOT EXISTS ix_chunkandembedding_text_embedding_3_small_vector_l2_ops ON chunkandembedding USING ivfflat (text_embedding_3_small vector_l2_ops) WITH (lists = 500);"
     )
-    op.execute(
-        "SET ivfflat.probes = 22;"
-    )
+    op.execute("SET ivfflat.probes = 22;")
 
 
 def downgrade() -> None:

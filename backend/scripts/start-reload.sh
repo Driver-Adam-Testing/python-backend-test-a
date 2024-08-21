@@ -24,4 +24,4 @@ else
     echo "There is no script $PRE_START_PATH"
 fi
 
-exec uvicorn --reload --host $HOST --port $PORT --log-level $LOG_LEVEL "$APP_MODULE"
+exec uvicorn --reload --host $HOST --port $PORT --log-level $LOG_LEVEL --reload-dir /packages --reload-dir /driver_db "$APP_MODULE"

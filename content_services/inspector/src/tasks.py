@@ -126,7 +126,7 @@ class FolderTechDocTask(Task):
                 # TODO: we aren't deleting here. When we create embeddings, we'll want to cascade
                 # delete everything related to old derived content
 
-                del_statement = delete(DerivedContent).where(
+                dc_query = select(DerivedContent).where(
                     DerivedContent.source_content_id == self.source_content_id,
                     DerivedContent.content_type_id.in_(
                         [
@@ -136,7 +136,10 @@ class FolderTechDocTask(Task):
                         ]
                     ),
                 )
-                await session.exec(del_statement)
+                result = await session.exec(dc_query)
+                dc_rows = result.all()
+                for dc_row in dc_rows:
+                    await session.delete(dc_row)
                 await session.commit()
 
                 dc_records = [short_sent_dc, short_para_dc, long_desc_dc]
@@ -266,7 +269,7 @@ class FileTechDocTask(Task):
                 # TODO: we aren't deleting here. When we create embeddings, we'll want to cascade
                 # delete everything related to old derived content
 
-                del_statement = delete(DerivedContent).where(
+                dc_query = select(DerivedContent).where(
                     DerivedContent.source_content_id == self.source_content_id,
                     DerivedContent.content_type_id.in_(
                         [
@@ -277,7 +280,10 @@ class FileTechDocTask(Task):
                         ]
                     ),
                 )
-                await session.exec(del_statement)
+                result = await session.exec(dc_query)
+                dc_rows = result.all()
+                for dc_row in dc_rows:
+                    await session.delete(dc_row)
                 await session.commit()
 
                 dc_records = [short_sent_dc, short_para_dc, long_desc_dc]
@@ -372,12 +378,15 @@ class SymbolsTask(Task):
                 symbol_dcs.append(symbol_dc)
 
             async with AsyncSession(async_engine) as session:
-                del_statement = (
-                    delete(DerivedContent)
+                dc_query = (
+                    select(DerivedContent)
                     .where(DerivedContent.source_content_id == self.source_content_id)
                     .where(DerivedContent.content_type_id == symbol_derived_content_id)
                 )
-                await session.exec(del_statement)
+                result = await session.exec(dc_query)
+                dc_rows = result.all()
+                for dc_row in dc_rows:
+                    await session.delete(dc_row)
                 await session.commit()
 
                 for i in range(0, len(symbol_dcs), session_chunk_size):
@@ -502,14 +511,16 @@ class TopLevelDocsTask(Task):
             async with AsyncSession(async_engine) as session:
                 # TODO: we aren't deleting here. When we create embeddings, we'll want to cascade
                 # delete everything related to old derived content
-
-                del_statement = delete(DerivedContent).where(
+                dc_query = select(DerivedContent).where(
                     DerivedContent.source_content_id == self.source_content_id,
                     DerivedContent.content_type_id.in_(
                         [dc_id for dc_id, _ in top_level_tups]
                     ),
                 )
-                await session.exec(del_statement)
+                result = await session.exec(dc_query)
+                dc_rows = result.all()
+                for dc_row in dc_rows:
+                    await session.delete(dc_row)
                 await session.commit()
 
                 session.add_all(dc_contents)

@@ -31,7 +31,7 @@ class FileInfo:
     image=modal.Image.debian_slim(python_version="3.12")
     .copy_local_dir(local_path="../../driver_db", remote_path="/driver_db")
     .copy_local_dir(local_path="../../packages/shared", remote_path="/shared_pkg")
-    .pip_install(["boto3", "openai", "tiktoken", "/shared_pkg"]),
+    .pip_install(["boto3", "openai>=1.40.2", "pydantic>=2.8.2", "tiktoken", "/shared_pkg"]),
     secrets=[
         modal.Secret.from_name("db"),
         modal.Secret.from_name("aws-inspector-s3"),

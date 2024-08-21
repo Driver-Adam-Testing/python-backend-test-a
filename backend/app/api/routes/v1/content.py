@@ -133,7 +133,7 @@ def associate_source_with_content(
     content_source_associations: ContentSourceAssociationRequest,
     content_service: ContentService = Depends(get_content_service),
 ) -> ContentSourceAssociationResponse:
-    return content_service.associate_source_with_content(
+    return content_service.associate_sources_with_content(
         user.organization_id,
         content_id,
         content_source_associations
@@ -164,9 +164,11 @@ def create_document(
     request: CreateContentRequest,
     content_service: ContentService = Depends(get_content_service),
 ) -> CreateContentResponse:
-    return content_service.create_blank_document(
+
+    result = content_service.create_blank_document(
         user.organization_id, request.workspace_id, request.codebase_id
     )
+    return CreateContentResponse(results=[result])
 
 
 @router.post(
@@ -178,9 +180,10 @@ def create_content_from_template(
     request: CreateTemplateRequest,
     content_service: ContentService = Depends(get_content_service),
 ) -> CreateContentResponse:
-    return content_service.create_content_from_template(
+    result = content_service.create_document_from_template(
         user.organization_id, request.content_id
     )
+    return CreateContentResponse(results=[result])
 
 
 @router.post(
@@ -192,6 +195,8 @@ def create_template(
     request: CreateTemplateRequest,
     content_service: ContentService = Depends(get_content_service),
 ) -> CreateContentResponse:
-    return content_service.create_template(
+    result = content_service.create_template(
         user.organization_id, request.workspace_id, request.codebase_id
     )
+    return CreateContentResponse(results=[result])
+

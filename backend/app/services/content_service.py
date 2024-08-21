@@ -204,7 +204,7 @@ class ContentService:
             message="Collection associated successfully",
         )
 
-    def associate_source_with_content(
+    def associate_sources_with_content(
             self, organization_id: str, content_id: str, content_source_associations: ContentSourceAssociationRequest
     ) -> ContentSourceAssociationResponse:
         logger.info(
@@ -236,8 +236,12 @@ class ContentService:
             logger.info(
                 f"Source content association with content {content_id} successfully"
             )
-        except IntegrityError:
-            self.session.rollback()
+        except IntegrityError as e:
+            # self.session.rollback()
+            print(e)
+            logger.error(
+                f"Integrity error while associating source content with content {content_id}"
+            )
 
         return ContentSourceAssociationResponse(
             content_id=content_id,
@@ -245,45 +249,45 @@ class ContentService:
             message="Source content associated successfully",
         )
 
-    def associate_sources_with_content(
-            self, organization_id: str, content_id: str
-    ) -> ContentSourceAssociationResponse:
-        logger.info(
-            f"Associating source {source_content_id} with content {content_id} for organization {organization_id}"
-        )
-        document = self.content_repository.get(content_id)
-
-        if not document or document.workspace.organization_id != organization_id:
-            logger.error(
-                f"Content {content_id} not found for organization {organization_id}"
-            )
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
-            )
-
-        # for source in sources:
-        document.source_links.append(DocumentSource(
-            document_id=content_id,
-            source_id=source_content_id,
-            include=include_source,
-        ))
-
-        try:
-            self.session.commit()
-            logger.info(
-                f"Source content {source_content_id} associated with content {content_id} successfully"
-            )
-        except IntegrityError:
-            self.session.rollback()
-            logger.error(
-                f"Integrity error while associating source content {source_content_id} with content {content_id}"
-            )
-
-        return ContentSourceAssociationResponse(
-            content_id=content_id,
-            source_content_id=source_content_id,
-            message="Source content associated successfully",
-        )
+    # def associate_sources_with_content(
+    #         self, organization_id: str, content_id: str
+    # ) -> ContentSourceAssociationResponse:
+    #     logger.info(
+    #         f"Associating source {source_content_id} with content {content_id} for organization {organization_id}"
+    #     )
+    #     document = self.content_repository.get(content_id)
+    #
+    #     if not document or document.workspace.organization_id != organization_id:
+    #         logger.error(
+    #             f"Content {content_id} not found for organization {organization_id}"
+    #         )
+    #         raise HTTPException(
+    #             status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
+    #         )
+    #
+    #     # for source in sources:
+    #     document.source_links.append(DocumentSource(
+    #         document_id=content_id,
+    #         source_id=source_content_id,
+    #         include=include_source,
+    #     ))
+    #
+    #     try:
+    #         self.session.commit()
+    #         logger.info(
+    #             f"Source content {source_content_id} associated with content {content_id} successfully"
+    #         )
+    #     except IntegrityError:
+    #         self.session.rollback()
+    #         logger.error(
+    #             f"Integrity error while associating source content {source_content_id} with content {content_id}"
+    #         )
+    #
+    #     return ContentSourceAssociationResponse(
+    #         content_id=content_id,
+    #         source_content_id=source_content_id,
+    #         message="Source content associated successfully",
+    #     )
 
     def disassociate_tag(
             self, organization_id: str, content_id: str, tag_id: str
@@ -644,7 +648,7 @@ class ContentService:
         return ListContentTypesResults(results=results)
 
     def get_content_sources(self, content_id: str) -> ContentSourceResponse:
-        logger.info(f"Resolving content sources for content {content_id}")
+        logger.info(f"Fetching content sources for content {content_id}")
         content = self.content_repository.get(content_id)
         if not content:
             logger.error(f"Content {content_id} not found")
@@ -653,25 +657,6 @@ class ContentService:
             )
 
         sources = [link.source for link in content.source_links]
-
-        # for source in sources:
-        #     # resolve codebase content
-        #     if source.content_type.type_name == "codebase":
-        #         pass
-        #     # resolve codebase-directory content
-        #     elif source.content_type.type_name == "codebase-directory":
-        #         pass
-        #     # resolve codebase-file content
-        #     elif source.content_type.type_name == "codebase-file":
-        #         pass
-        #     # resolve pdf_summary content
-        #     elif source.content_type.type_name == "pdf_summary":
-        #         pass
-        #     # resolve supplemental-document content
-        #     elif source.content_type.type_name == "supplemental-document":
-        #         pass
-        #     else:
-        #         pass
 
         logger.info(f"Content sources resolved for content {content_id}")
         # return sources

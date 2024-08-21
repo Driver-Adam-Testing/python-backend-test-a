@@ -41,13 +41,6 @@ def upgrade() -> None:
         )
         conn.execute(sa.text(insert_query))
 
-    op.execute(
-        "CREATE INDEX IF NOT EXISTS ix_chunkandembedding_text_embedding_3_small_vector_l2_ops ON chunkandembedding USING ivfflat (text_embedding_3_small vector_l2_ops) WITH (lists = 500);"
-    )
-    op.execute(
-        "SET ivfflat.probes = 22;"
-    )
-
 
 def downgrade() -> None:
     values_clause = ", ".join(f"'{type_name}'" for type_name in content_types)
@@ -56,8 +49,3 @@ def downgrade() -> None:
     )
     conn = op.get_bind()
     conn.execute(sa.text(delete_query))
-
-    op.drop_index(
-        op.f("ix_chunkandembedding_text_embedding_3_small_vector_l2_ops"),
-        table_name="chunkandembedding",
-    )

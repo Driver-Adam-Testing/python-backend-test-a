@@ -132,7 +132,7 @@ def evaluate_file_size_processable(filepath: Path):
 
 def get_non_ascii_file_encoding(file_bytes: bytes) -> str:
     chunk_size = 2500
-    num_chunks = 20
+    num_chunks = 40
     min_confidence = 0.7
     found_encoding = None
 
@@ -234,10 +234,7 @@ def evaluate_file_binary(filepath: Path) -> bool:
             else:
                 # Last effort - use chardet
                 file_encoding = get_non_ascii_file_encoding(file_bytes)
-                if file_encoding is not None:
-                    is_binary = False
-                else:
-                    is_binary = True
+                is_binary = True if file_encoding is None else False
 
     return is_binary
 

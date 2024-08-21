@@ -217,7 +217,8 @@ def search(input):
         search_content,
     )
 
-    input = SearchInput(**input)
+    if isinstance(input, dict):
+        input = SearchInput(**input)
     print(input.model_dump())
     with Session(engine) as session:
         return search_content(session, input=input)

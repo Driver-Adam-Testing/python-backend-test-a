@@ -1,5 +1,13 @@
-from .common import ListData
+from functools import partial
+
 from utils.models import ChatOpenAI
+
+from .common import (
+    ListData,
+    data_structure_dict_from_llm,
+    fn_dict_from_llm,
+    variables_dict_from_llm,
+)
 
 SOURCE_CODE_SYSTEM_PROMPT_GENERAL_DEFAULT = """
 You are a software engineering documentation expert. You write detailed documentation to explain software.
@@ -253,3 +261,22 @@ def default_function_checker(llm: ChatOpenAI, code: str) -> list[str] | None:
         system_prompt=FUNCTIONS_CHECKER_SYSTEM_PROMPT_JSON,
         code=code,
     )
+
+
+variables_dict_from_llm_default = partial(
+    variables_dict_from_llm,
+    VARIABLES_FOUND_SYSTEM_PROMPT_JSON,
+    VARIABLES_FOUND_USER_PROMPT,
+)
+
+data_structure_dict_from_llm_default = partial(
+    data_structure_dict_from_llm,
+    DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
+    DATA_STRUCTURES_FOUND_USER_PROMPT,
+)
+
+fn_dict_from_llm_default = partial(
+    fn_dict_from_llm,
+    FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
+    FUNCTIONS_FOUND_USER_PROMPT,
+)

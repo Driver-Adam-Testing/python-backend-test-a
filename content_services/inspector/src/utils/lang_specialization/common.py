@@ -1,26 +1,29 @@
 import logging
 from enum import IntEnum
+from pathlib import Path
 from typing import Self
 
 from pydantic import BaseModel
+from utils.codemap_ctags import extract_symbols_w_ctags
 from utils.models import ChatOpenAI, OutputConfig, OutputConfigKind
 
 
 class Lang(IntEnum):
     C = 0
     CPP = 1
-    PYTHON = 2
-    DEFAULT = 3
+    HEADER = 2
+    PYTHON = 3
+    DEFAULT = 4
 
     @classmethod
     def from_ext_and_source(cls, ext: str, source: str) -> Self:
         match ext:
             case ".c":
                 return cls.C
-            case ".cpp" | ".cc" | ".cxx" | ".c++" | ".hpp" | ".hh" | ".hxx" | ".h++":
+            case ".cpp" | ".cc" | ".cxx" | ".c++":
                 return cls.CPP
-            case ".h":
-                return _disambiguate_header(source=source, fallback=cls.C)
+            case ".h" | ".hpp" | ".hh" | ".hxx" | ".h++":
+                return cls.HEADER
             case ".py" | ".pyw" | ".pyi":
                 return cls.PYTHON
             case _:
@@ -238,3 +241,162 @@ class FnDict(BaseModel):
 
     def __str__(self) -> str:
         return self.render_markdown()
+
+
+MAX_VARIABLES_TO_DOCUMENT = 100
+MAX_DATA_STRUCTURES_TO_DOCUMENT = 100
+MAX_FUNCTIONS_TO_DOCUMENT = 100
+
+
+def variables_dict_from_llm(
+    system_prompt: str,
+    user_prompt: str,
+    llm: ChatOpenAI,
+    vars_list: list[str],
+    code: str,
+) -> VariableDict:
+    vars_dict = {
+        v: VariableData.from_llm(
+            llm=llm,
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            var_name=v,
+            code=code,
+        )
+        for v in vars_list[:MAX_VARIABLES_TO_DOCUMENT]
+    }
+    return VariableDict(data=vars_dict)
+
+
+def data_structure_dict_from_llm(
+    system_prompt: str, user_prompt: str, llm: ChatOpenAI, ds_list: list[str], code: str
+) -> DataStructureDict:
+    ds_dict = {
+        ds: DataStructureData.from_llm(
+            llm=llm,
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            ds_name=ds,
+            code=code,
+        )
+        for ds in ds_list[:MAX_DATA_STRUCTURES_TO_DOCUMENT]
+    }
+    return DataStructureDict(data=ds_dict)
+
+
+def fn_dict_from_llm(
+    system_prompt: str, user_prompt: str, llm: ChatOpenAI, fn_list: list[str], code: str
+) -> FnDict:
+    fn_dict = {
+        fn: FnData.from_llm(
+            llm=llm,
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            fn_name=fn,
+            code=code,
+        )
+        for fn in fn_list[:MAX_FUNCTIONS_TO_DOCUMENT]
+    }
+    return FnDict(data=fn_dict)
+
+
+PADDING_LINES_TOP = 100
+PADDING_LINES_BOTTOM = 100
+
+
+def symbols_dict_from_llm_multi_prompt(
+    llm: ChatOpenAI,
+    symbols_list: list[str],
+    code: str,
+    root_rel_path: Path,
+    data_class: VariableData | DataStructureData | FnData,
+    system_prompt: str,
+    user_prompt: str,
+    max_symbols_to_document: int,
+):
+    symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
+    symbols_dict = {}
+    for symbol in symbols:
+        for s in symbols_list:
+            if symbol["name"] == s:
+                start_line = symbol["line"]
+                end_line = symbol.get("end", symbol["line"])
+                symbol_code = "\n".join(
+                    code.splitlines()[
+                        start_line - PADDING_LINES_TOP : end_line + PADDING_LINES_BOTTOM
+                    ]
+                )
+                symbols_dict[s] = data_class.from_llm(
+                    llm,
+                    system_prompt,
+                    user_prompt,
+                    s,
+                    symbol_code,
+                )
+                break
+        if len(symbols_dict) >= max_symbols_to_document:
+            break
+    return symbols_dict
+
+
+def variables_dict_from_llm_multi_prompt(
+    system_prompt: str,
+    user_prompt: str,
+    llm: ChatOpenAI,
+    variables_list: list[str],
+    code: str,
+    root_rel_path: Path,
+):
+    symbols_dict = symbols_dict_from_llm_multi_prompt(
+        llm,
+        variables_list,
+        code,
+        root_rel_path,
+        VariableData,
+        system_prompt,
+        user_prompt,
+        MAX_VARIABLES_TO_DOCUMENT,
+    )
+    return VariableDict(data=symbols_dict)
+
+
+def data_structure_dict_from_llm_multi_prompt(
+    system_prompt: str,
+    user_prompt: str,
+    llm: ChatOpenAI,
+    data_structures_list: list[str],
+    code: str,
+    root_rel_path: Path,
+):
+    symbols_dict = symbols_dict_from_llm_multi_prompt(
+        llm,
+        data_structures_list,
+        code,
+        root_rel_path,
+        DataStructureData,
+        system_prompt,
+        user_prompt,
+        MAX_DATA_STRUCTURES_TO_DOCUMENT,
+    )
+    return DataStructureDict(data=symbols_dict)
+
+
+def fn_dict_from_llm_multi_prompt(
+    system_prompt: str,
+    user_prompt: str,
+    llm: ChatOpenAI,
+    functions_list: list[str],
+    code: str,
+    root_rel_path: Path,
+):
+    symbols_dict = symbols_dict_from_llm_multi_prompt(
+        llm,
+        functions_list,
+        code,
+        root_rel_path,
+        FnData,
+        system_prompt,
+        user_prompt,
+        MAX_FUNCTIONS_TO_DOCUMENT,
+    )
+    return FnDict(data=symbols_dict)

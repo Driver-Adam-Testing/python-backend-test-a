@@ -1,6 +1,16 @@
+from functools import partial
 from pathlib import Path
 
 from utils.codemap_ctags import extract_symbols_w_ctags
+
+from .common import (
+    data_structure_dict_from_llm,
+    data_structure_dict_from_llm_multi_prompt,
+    fn_dict_from_llm,
+    fn_dict_from_llm_multi_prompt,
+    variables_dict_from_llm,
+    variables_dict_from_llm_multi_prompt,
+)
 
 CPP_DATA_STRUCTURES = {"enum", "union", "struct", "class", "typedef"}
 CPP_FUNCTIONS = {"function", "prototype"}
@@ -216,3 +226,40 @@ def cpp_namespace_checker(
     else:
         output = None
     return output
+
+
+variables_dict_from_llm_cpp = partial(
+    variables_dict_from_llm,
+    VARIABLES_FOUND_SYSTEM_PROMPT_JSON,
+    VARIABLES_FOUND_USER_PROMPT,
+)
+
+data_structure_dict_from_llm_cpp = partial(
+    data_structure_dict_from_llm,
+    DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
+    DATA_STRUCTURES_FOUND_USER_PROMPT,
+)
+
+fn_dict_from_llm_cpp = partial(
+    fn_dict_from_llm,
+    FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
+    FUNCTIONS_FOUND_USER_PROMPT,
+)
+
+variables_dict_from_llm_cpp_multi_prompt = partial(
+    variables_dict_from_llm_multi_prompt,
+    VARIABLES_FOUND_SYSTEM_PROMPT_JSON,
+    VARIABLES_FOUND_USER_PROMPT,
+)
+
+data_structure_dict_from_llm_cpp_multi_prompt = partial(
+    data_structure_dict_from_llm_multi_prompt,
+    DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
+    DATA_STRUCTURES_FOUND_USER_PROMPT,
+)
+
+fn_dict_from_llm_cpp_multi_prompt = partial(
+    fn_dict_from_llm_multi_prompt,
+    FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
+    FUNCTIONS_FOUND_USER_PROMPT,
+)

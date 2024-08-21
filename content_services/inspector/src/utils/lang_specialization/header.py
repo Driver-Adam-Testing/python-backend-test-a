@@ -12,56 +12,48 @@ from .common import (
     variables_dict_from_llm_multi_prompt,
 )
 
-C_DATA_STRUCTURES = {"enum", "union", "struct", "typedef"}
-C_FUNCTIONS = {"function", "prototype"}
-C_MACROS = {"macro"}
-C_VARIABLES = {"variable", "externvar"}
+C_OR_CPP_HEADER_DATA_STRUCTURES = {"enum", "union", "struct", "class", "typedef"}
+# TODO: Actually force `ctags` to return prototype kind information.
+C_OR_CPP_HEADER_FUNCTIONS = {"function", "prototype"}
+C_OR_CPP_HEADER_MACROS = {"macro"}
+C_OR_CPP_HEADER_VARIABLES = {"variable", "externvar"}
 
 
-SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_C = """
-You are an expert C programmer and a software engineering documentation expert. You write detailed documentation to explain code written in C.
+SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_C_OR_CPP_HEADER = """
+You are an expert C and C++ programmer and a software engineering documentation expert. You write detailed documentation to explain code in C and C++ header files.
 
-You are skilled at explaining technical details as well as recognizing and articulating the key conceptual components and purpose of software.
+You are skilled at explaining technical details as well as recognize and articulate the key conceptual components and purpose of software.
 """
 
-SOURCE_CODE_SMALL_SYSTEM_PROMPT_GENERAL_C = """
-You are an expert C programmer and a software engineering documentation expert. You write detailed documentation to explain code written in C.
+SOURCE_CODE_SMALL_SYSTEM_PROMPT_GENERAL_C_OR_CPP_HEADER = """
+You are an expert C and C++ programmer and a software engineering documentation expert. You write detailed documentation to explain code in C and C++ header files.
 
-You are skilled at explaining technical details as well as recognizing and articulating the key conceptual components and purpose of software.
+You are skilled at explaining technical details as well as recognize and articulate the key conceptual components and purpose of software.
 
 You specialize in effectively describing small and short source code files. Your goal is to be terse and clear, since the source code you are describing is small and simple.
 """
 
 SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT = """
-You will be given the content of a source code file. In 1 or 2 paragraphs, explain the purpose of the file.
+You will be given the source code contents of a header file. In 1 or 2 paragraphs, explain the purpose of the header file.
 
 When writing your paragraphs, do not use speculative language.
 
 When writing your paragraphs, consider questions like the following. You do not need to explicitly state these ideas, they are just given as examples of the kind of information to provide:
 
-- Does this code provide narrow or broad functionality?
+- Does the code provide narrow or broad functionality?
 - What are the most important technical components?
 - Is this code a collection of many different components? If so, what is the common theme or purpose?
-- What kind of code is this? For example, is this code clearly an executable (e.g., main.c), a C header file, a C file or library intended to be imported elsewhere?
 - Does it define public APIs or external interfaces?
 """
 
 SOURCE_CODE_SMALL_PURPOSE_USER_PROMPT = """
-You will be given the content of a source code file. In a single paragraph of 3 to 5 sentences, explain the purpose of the file. Consider questions such as the following when providing your output:
-
-- What kind of code is this? For example, is this code a short script, a simple C header file, a collection of global variables or configuration variables, etc.?
-"""
-
-TECHNICAL_CONCEPTS = """
-You will be given the content of a source code file. In a single paragraph of 3 to 5 sentences, describe the important technical features and their interactions in the file.
-
-In writing your description, write about about the conceptual use cases, applications, logic, and component interactions instead of focusing on particular functions, variables, etc.
+In a single paragraph of 3 to 5 sentences, explain the purpose of the header file code provided below.
 """
 
 DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON = """
-You are an expert C programmer and a software engineering documentation expert. You write detailed documentation to explain code written in C.
+You are an expert systems programmer and a software engineering documentation expert. You write detailed documentation to explain C and C++ code, especially header files.
 
-You focus on writing technical documentation for data structures. You are skilled at explaining technical details as well as recognizing and articulating the key conceptual components and purpose of software.
+You focus on writing technical documentation for data structures such as structs, enums, and classes. You are skilled at explaining technical details as well as recognizing and articulating the key conceptual components and purpose of software.
 
 You will be given the name of a data structure to document and the source code where the data structure is defined.
 
@@ -90,9 +82,9 @@ DATA_STRUCTURES_NONE_CONTENT = "\n---\nNo custom data structures defined in this
 
 
 FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON = """
-You are an expert C programmer and a software engineering documentation expert. You write detailed documentation to explain code written in C.
+You are an expert systems programmer and a software engineering documentation expert. You write detailed documentation to explain C and C++ code, especially header files.
 
-You focus on writing technical documentation for functions. You are skilled at explaining technical details as well as recognizing and articulating the key conceptual components and purpose of software.
+You focus on writing technical documentation for functions and class methods. You are skilled at explaining technical details as well as recognizing and articulating the key conceptual components and purpose of software.
 
 You will be given the name of a function to document and the source code where the function is defined.
 
@@ -116,7 +108,7 @@ Return JSON according to the schema above. Do not use the format ```json ... ```
 """
 
 FUNCTIONS_FOUND_USER_PROMPT = """
-Summarize the function in the code provided below. Describe the inputs, control flow and logic, and output.
+Summarize the function or method in the code provided below. Describe the inputs, control flow and logic, and output.
 
 - When describing a function, provide detail that matches the complexity of the function body. Large and complex functions should get longer explanations, while small ones much less.
 """
@@ -126,7 +118,7 @@ FUNCTIONS_NONE_CONTENT = (
 )
 
 VARIABLES_FOUND_SYSTEM_PROMPT_JSON = """
-You are an expert C programmer and a software engineering documentation expert. You write detailed documentation to explain code written in C.
+You are an expert systems programmer and a software engineering documentation expert. You write detailed documentation to explain C and C++ code, especially header files.
 
 You focus on writing technical documentation for variables. You are skilled at explaining technical details as well as recognizing and articulating the key conceptual components and purpose of software.
 
@@ -152,13 +144,15 @@ Summarize the variable in the code provided below.
 VARIABLES_NONE_CONTENT = "\n---\nNo global variables defined in this file."
 
 
-def c_data_structure_checker(
+def header_data_structure_checker(
     code: str, root_rel_path: Path, structured_output: bool = True
 ) -> list[str] | str | None:
     symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
     ds_list = []
     for s in symbols:
-        if s["kind"] in C_DATA_STRUCTURES and not s["name"].startswith("__anon"):
+        if s["kind"] in C_OR_CPP_HEADER_DATA_STRUCTURES and not s["name"].startswith(
+            "__anon"
+        ):
             ds_list.append(s["name"])
     if len(ds_list) > 0:
         if structured_output:
@@ -172,13 +166,15 @@ def c_data_structure_checker(
     return output
 
 
-def c_function_checker(
+def header_function_checker(
     code: str, root_rel_path: Path, structured_output: bool = True
 ) -> list[str] | str | None:
     symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
     fn_list = []
     for s in symbols:
-        if s["kind"] in C_FUNCTIONS and not s["name"].startswith("__anon"):
+        if s["kind"] in C_OR_CPP_HEADER_FUNCTIONS and not s["name"].startswith(
+            "__anon"
+        ):
             fn_list.append(s["name"])
     if len(fn_list) > 0:
         if structured_output:
@@ -192,11 +188,11 @@ def c_function_checker(
     return output
 
 
-def c_variables_checker(
+def header_variables_checker(
     code: str, root_rel_path: Path, structured_output: bool = True
 ) -> list[str] | str | None:
     symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-    v_list = [s["name"] for s in symbols if s["kind"] in C_VARIABLES]
+    v_list = [s["name"] for s in symbols if s["kind"] in C_OR_CPP_HEADER_VARIABLES]
     if len(v_list) > 0:
         if structured_output:
             output = v_list
@@ -209,37 +205,37 @@ def c_variables_checker(
     return output
 
 
-variables_dict_from_llm_c = partial(
+variables_dict_from_llm_header = partial(
     variables_dict_from_llm,
     VARIABLES_FOUND_SYSTEM_PROMPT_JSON,
     VARIABLES_FOUND_USER_PROMPT,
 )
 
-data_structure_dict_from_llm_c = partial(
+data_structure_dict_from_llm_header = partial(
     data_structure_dict_from_llm,
     DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
     DATA_STRUCTURES_FOUND_USER_PROMPT,
 )
 
-fn_dict_from_llm_c = partial(
+fn_dict_from_llm_header = partial(
     fn_dict_from_llm,
     FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
     FUNCTIONS_FOUND_USER_PROMPT,
 )
 
-variables_dict_from_llm_c_multi_prompt = partial(
+variables_dict_from_llm_header_multi_prompt = partial(
     variables_dict_from_llm_multi_prompt,
     VARIABLES_FOUND_SYSTEM_PROMPT_JSON,
     VARIABLES_FOUND_USER_PROMPT,
 )
 
-data_structure_dict_from_llm_c_multi_prompt = partial(
+data_structure_dict_from_llm_header_multi_prompt = partial(
     data_structure_dict_from_llm_multi_prompt,
     DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
     DATA_STRUCTURES_FOUND_USER_PROMPT,
 )
 
-fn_dict_from_llm_c_multi_prompt = partial(
+fn_dict_from_llm_header_multi_prompt = partial(
     fn_dict_from_llm_multi_prompt,
     FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
     FUNCTIONS_FOUND_USER_PROMPT,

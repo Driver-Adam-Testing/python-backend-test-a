@@ -1,7 +1,7 @@
 from inspection.prompt_templates.files.templates.source_code_large_default import (
-    data_structure_dict_from_llm,
-    fn_dict_from_llm,
-    variables_dict_from_llm,
+    data_structure_dict_from_llm_default,
+    fn_dict_from_llm_default,
+    variables_dict_from_llm_default,
 )
 from utils.lang_specialization.common import (
     DataStructureDict,
@@ -34,7 +34,7 @@ def variables_dict_from_llm_chunk(
 ) -> VariableDict:
     vars_dict = {}
     for idx, vars_list in chunk_indexed_vars_list:
-        chunk_vars_dict = variables_dict_from_llm(llm, vars_list, code_chunks[idx])
+        chunk_vars_dict = variables_dict_from_llm_default(llm, vars_list, code_chunks[idx])
         vars_dict.update(chunk_vars_dict.data)
 
     return VariableDict(data=vars_dict)
@@ -45,7 +45,7 @@ def data_structure_dict_from_llm_chunk(
 ) -> DataStructureDict:
     ds_dict = {}
     for idx, ds_list in chunk_indexed_ds_lists:
-        chunk_ds_dict = data_structure_dict_from_llm(llm, ds_list, code_chunks[idx])
+        chunk_ds_dict = data_structure_dict_from_llm_default(llm, ds_list, code_chunks[idx])
         ds_dict.update(chunk_ds_dict.data)
     return DataStructureDict(data=ds_dict)
 
@@ -55,7 +55,7 @@ def fn_dict_from_llm_chunk(
 ) -> FnDict:
     fn_dict = {}
     for idx, fn_list in chunk_indexed_fn_lists:
-        chunk_fn_dict = fn_dict_from_llm(llm, fn_list, code_chunks[idx])
+        chunk_fn_dict = fn_dict_from_llm_default(llm, fn_list, code_chunks[idx])
         fn_dict.update(chunk_fn_dict.data)
     return FnDict(data=fn_dict)
 

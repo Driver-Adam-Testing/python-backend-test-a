@@ -20,7 +20,7 @@ from utils.lang_specialization.header import (
 )
 from utils.templates import S
 
-SOURCE_CODE_LARGE_TEMPLATE_HEADER = [
+SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_HEADER = [
     (
         S.MULTI_PROMPT_TEXT,
         "# Purpose",

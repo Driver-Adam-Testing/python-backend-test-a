@@ -37,6 +37,9 @@ from inspection.prompt_templates.files.templates.source_code_large_default impor
 from inspection.prompt_templates.files.templates.source_code_large_header import (
     SOURCE_CODE_LARGE_TEMPLATE_HEADER,
 )
+from inspection.prompt_templates.files.templates.source_code_large_header_multi_prompt import (
+    SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_HEADER,
+)
 from inspection.prompt_templates.files.templates.source_code_large_py import (
     SOURCE_CODE_LARGE_TEMPLATE_PY,
 )
@@ -322,8 +325,7 @@ def comprehend_file_top_down(
                 case Lang.CPP:
                     template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CPP
                 case Lang.HEADER:
-                    # TODO: Implement multi-chunk header analysis.
-                    template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CPP
+                    template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_HEADER
                 case Lang.PYTHON:
                     template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_PY
                 case _:

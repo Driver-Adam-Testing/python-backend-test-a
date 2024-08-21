@@ -5,8 +5,11 @@ from utils.codemap_ctags import extract_symbols_w_ctags
 
 from .common import (
     data_structure_dict_from_llm,
+    data_structure_dict_from_llm_multi_prompt,
     fn_dict_from_llm,
+    fn_dict_from_llm_multi_prompt,
     variables_dict_from_llm,
+    variables_dict_from_llm_multi_prompt,
 )
 
 PY_DATA_STRUCTURES = {"class"}
@@ -220,6 +223,24 @@ data_structure_dict_from_llm_py = partial(
 
 fn_dict_from_llm_py = partial(
     fn_dict_from_llm,
+    FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
+    FUNCTIONS_FOUND_USER_PROMPT,
+)
+
+variables_dict_from_llm_py_multi_prompt = partial(
+    variables_dict_from_llm_multi_prompt,
+    VARIABLES_FOUND_SYSTEM_PROMPT_JSON,
+    VARIABLES_FOUND_USER_PROMPT,
+)
+
+data_structure_dict_from_llm_py_multi_prompt = partial(
+    data_structure_dict_from_llm_multi_prompt,
+    DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
+    DATA_STRUCTURES_FOUND_USER_PROMPT,
+)
+
+fn_dict_from_llm_py_multi_prompt = partial(
+    fn_dict_from_llm_multi_prompt,
     FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
     FUNCTIONS_FOUND_USER_PROMPT,
 )

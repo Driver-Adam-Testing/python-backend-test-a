@@ -1,8 +1,3 @@
-from inspection.prompt_templates.files.templates.source_code_multi_prompt_common import (
-    data_structure_dict_from_llm,
-    fn_dict_from_llm,
-    variables_dict_from_llm,
-)
 from utils.lang_specialization.cpp import (
     DATA_STRUCTURES_NONE_CONTENT,
     FUNCTIONS_NONE_CONTENT,
@@ -11,6 +6,9 @@ from utils.lang_specialization.cpp import (
     cpp_data_structure_checker,
     cpp_function_checker,
     cpp_variables_checker,
+    data_structure_dict_from_llm_cpp_multi_prompt,
+    fn_dict_from_llm_cpp_multi_prompt,
+    variables_dict_from_llm_cpp_multi_prompt,
 )
 from utils.lang_specialization.default import IMPORTS_NONE_CONTENT
 from utils.lang_specialization.default_multi_context import (
@@ -43,21 +41,21 @@ SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CPP = [
         S.FN_COND_JSON,
         "\n---\n## Global Variables",
         cpp_variables_checker,
-        variables_dict_from_llm,
+        variables_dict_from_llm_cpp_multi_prompt,
         VARIABLES_NONE_CONTENT,
     ),
     (
         S.FN_COND_JSON,
         "\n---\n## Data Structures",
         cpp_data_structure_checker,
-        data_structure_dict_from_llm,
+        data_structure_dict_from_llm_cpp_multi_prompt,
         DATA_STRUCTURES_NONE_CONTENT,
     ),
     (
         S.FN_COND_JSON,
         "\n---\n## Functions",
         cpp_function_checker,
-        fn_dict_from_llm,
+        fn_dict_from_llm_cpp_multi_prompt,
         FUNCTIONS_NONE_CONTENT,
     ),
 ]

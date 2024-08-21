@@ -34,6 +34,12 @@ from inspection.prompt_templates.files.templates.source_code_large_cpp_multi_pro
 from inspection.prompt_templates.files.templates.source_code_large_default import (
     SOURCE_CODE_LARGE_TEMPLATE_DEFAULT,
 )
+from inspection.prompt_templates.files.templates.source_code_large_header import (
+    SOURCE_CODE_LARGE_TEMPLATE_HEADER,
+)
+from inspection.prompt_templates.files.templates.source_code_large_header_multi_prompt import (
+    SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_HEADER,
+)
 from inspection.prompt_templates.files.templates.source_code_large_py import (
     SOURCE_CODE_LARGE_TEMPLATE_PY,
 )
@@ -51,6 +57,9 @@ from inspection.prompt_templates.files.templates.source_code_small_cpp import (
 )
 from inspection.prompt_templates.files.templates.source_code_small_default import (
     SOURCE_CODE_SMALL_TEMPLATE_DEFAULT,
+)
+from inspection.prompt_templates.files.templates.source_code_small_header import (
+    SOURCE_CODE_SMALL_TEMPLATE_HEADER,
 )
 from inspection.prompt_templates.files.templates.source_code_small_py import (
     SOURCE_CODE_SMALL_TEMPLATE_PY,
@@ -102,18 +111,21 @@ SOURCE_CODE_LARGE_BY_LANG = {
     Lang.DEFAULT: SOURCE_CODE_LARGE_TEMPLATE_DEFAULT,
     Lang.C: SOURCE_CODE_LARGE_TEMPLATE_C,
     Lang.CPP: SOURCE_CODE_LARGE_TEMPLATE_CPP,
+    Lang.HEADER: SOURCE_CODE_LARGE_TEMPLATE_HEADER,
     Lang.PYTHON: SOURCE_CODE_LARGE_TEMPLATE_PY,
 }
 SOURCE_CODE_SMALL_BY_LANG = {
     Lang.DEFAULT: SOURCE_CODE_SMALL_TEMPLATE_DEFAULT,
     Lang.C: SOURCE_CODE_SMALL_TEMPLATE_C,
     Lang.CPP: SOURCE_CODE_SMALL_TEMPLATE_CPP,
+    Lang.HEADER: SOURCE_CODE_SMALL_TEMPLATE_HEADER,
     Lang.PYTHON: SOURCE_CODE_SMALL_TEMPLATE_PY,
 }
 METADATA_BY_LANG = {
     Lang.DEFAULT: METADATA_TEMPLATE,
     Lang.C: METADATA_TEMPLATE,
     Lang.CPP: METADATA_TEMPLATE,
+    Lang.HEADER: METADATA_TEMPLATE,
     Lang.PYTHON: METADATA_TEMPLATE,
 }
 TEMPLATE_DATA = {
@@ -312,6 +324,8 @@ def comprehend_file_top_down(
                     template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_C
                 case Lang.CPP:
                     template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CPP
+                case Lang.HEADER:
+                    template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_HEADER
                 case Lang.PYTHON:
                     template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_PY
                 case _:

@@ -1,6 +1,13 @@
+from functools import partial
 from pathlib import Path
 
 from utils.codemap_ctags import extract_symbols_w_ctags
+
+from .common import (
+    data_structure_dict_from_llm,
+    fn_dict_from_llm,
+    variables_dict_from_llm,
+)
 
 C_DATA_STRUCTURES = {"enum", "union", "struct", "typedef"}
 C_FUNCTIONS = {"function", "prototype"}
@@ -197,3 +204,22 @@ def c_variables_checker(
     else:
         output = None
     return output
+
+
+variables_dict_from_llm_c = partial(
+    variables_dict_from_llm,
+    VARIABLES_FOUND_SYSTEM_PROMPT_JSON,
+    VARIABLES_FOUND_USER_PROMPT,
+)
+
+data_structure_dict_from_llm_c = partial(
+    data_structure_dict_from_llm,
+    DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
+    DATA_STRUCTURES_FOUND_USER_PROMPT,
+)
+
+fn_dict_from_llm_c = partial(
+    fn_dict_from_llm,
+    FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
+    FUNCTIONS_FOUND_USER_PROMPT,
+)

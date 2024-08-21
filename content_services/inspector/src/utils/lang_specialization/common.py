@@ -238,3 +238,60 @@ class FnDict(BaseModel):
 
     def __str__(self) -> str:
         return self.render_markdown()
+
+
+MAX_VARIABLES_TO_DOCUMENT = 100
+MAX_DATA_STRUCTURES_TO_DOCUMENT = 100
+MAX_FUNCTIONS_TO_DOCUMENT = 100
+
+
+def variables_dict_from_llm(
+    system_prompt: str,
+    user_prompt: str,
+    llm: ChatOpenAI,
+    vars_list: list[str],
+    code: str,
+) -> VariableDict:
+    vars_dict = {
+        v: VariableData.from_llm(
+            llm=llm,
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            var_name=v,
+            code=code,
+        )
+        for v in vars_list[:MAX_VARIABLES_TO_DOCUMENT]
+    }
+    return VariableDict(data=vars_dict)
+
+
+def data_structure_dict_from_llm(
+    system_prompt: str, user_prompt: str, llm: ChatOpenAI, ds_list: list[str], code: str
+) -> DataStructureDict:
+    ds_dict = {
+        ds: DataStructureData.from_llm(
+            llm=llm,
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            ds_name=ds,
+            code=code,
+        )
+        for ds in ds_list[:MAX_DATA_STRUCTURES_TO_DOCUMENT]
+    }
+    return DataStructureDict(data=ds_dict)
+
+
+def fn_dict_from_llm(
+    system_prompt: str, user_prompt: str, llm: ChatOpenAI, fn_list: list[str], code: str
+) -> FnDict:
+    fn_dict = {
+        fn: FnData.from_llm(
+            llm=llm,
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            fn_name=fn,
+            code=code,
+        )
+        for fn in fn_list[:MAX_FUNCTIONS_TO_DOCUMENT]
+    }
+    return FnDict(data=fn_dict)

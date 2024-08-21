@@ -9,18 +9,19 @@ from utils.models import ChatOpenAI, OutputConfig, OutputConfigKind
 class Lang(IntEnum):
     C = 0
     CPP = 1
-    PYTHON = 2
-    DEFAULT = 3
+    HEADER = 2
+    PYTHON = 3
+    DEFAULT = 4
 
     @classmethod
     def from_ext_and_source(cls, ext: str, source: str) -> Self:
         match ext:
             case ".c":
                 return cls.C
-            case ".cpp" | ".cc" | ".cxx" | ".c++" | ".hpp" | ".hh" | ".hxx" | ".h++":
+            case ".cpp" | ".cc" | ".cxx" | ".c++":
                 return cls.CPP
-            case ".h":
-                return _disambiguate_header(source=source, fallback=cls.C)
+            case ".h" | ".hpp" | ".hh" | ".hxx" | ".h++":
+                return cls.HEADER
             case ".py" | ".pyw" | ".pyi":
                 return cls.PYTHON
             case _:

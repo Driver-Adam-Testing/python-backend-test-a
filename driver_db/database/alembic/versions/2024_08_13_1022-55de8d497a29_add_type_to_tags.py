@@ -1,7 +1,7 @@
 """Add type to Tags
 
 Revision ID: 55de8d497a29
-Revises: 95c5d718968c
+Revises: 2f79ea9294a7
 Create Date: 2024-08-13 08:22:59.013335
 
 """
@@ -10,7 +10,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "55de8d497a29"
-down_revision = "95c5d718968c"
+down_revision = "2f79ea9294a7"
 branch_labels = None
 depends_on = None
 

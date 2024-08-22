@@ -35,7 +35,7 @@ def execute_instruction(
         raise HTTPException(status_code=400, detail="Invalid workspace or codebase")
 
     call_id = modal_interface.execute_instruction(
-        body.workspace_id, body.codebase_id, body.prompt
+        str(body.workspace_id), str(body.codebase_id), body.prompt
     )
     return ExecuteInstructionResponse(call_id=call_id)
 

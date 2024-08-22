@@ -19,22 +19,28 @@ router = APIRouter()
 def execute_instruction(
     session: CurrentSession, body: ExecuteInstructionRequest, user: CurrentUser
 ) -> ExecuteInstructionResponse:
-    if (
-        user.organization_id
-        == session.exec(select(Workspace).where(Workspace.id == body.workspace_id))
-        .first()
-        .organization_id
-    ):
-        call_id = modal_interface.execute_instruction(
-            body.workspace_id, body.codebase_id, body.prompt
+    try:
+        requested_org_id = (
+            session.exec(select(Workspace).where(Workspace.id == body.workspace_id))
+            .first()
+            .organization_id
         )
-        return ExecuteInstructionResponse(
-            call_id=call_id,
+        if user.organization_id == requested_org_id:
+            call_id = modal_interface.execute_instruction(
+                body.workspace_id, body.codebase_id, body.prompt
+            )
+            return ExecuteInstructionResponse(
+                call_id=call_id,
+            )
+        raise HTTPException(
+            status_code=403,
+            detail="Invalid organization provided",
         )
-    raise HTTPException(
-        status_code=403,
-        detail="Invalid organization provided",
-    )
+    except Exception as e:
+        raise HTTPException(
+            status_code=404,
+            detail="Workspace not found",
+        ) from e
 
 
 @router.post("/results", response_model=InstructionResultsResponse)

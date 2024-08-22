@@ -22,6 +22,7 @@ class CreateAppNoteRequest(BaseModel):
 
 
 def create_app_note(request: CreateAppNoteRequest):
+    # TODO: Totally remove Workspace and replace with search scopes and org
     agent = Agent(
         workspace_id=request.workspace_id,
         codebase_id=request.codebase_id,

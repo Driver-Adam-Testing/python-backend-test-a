@@ -29,6 +29,7 @@ class AgentBase:
         max_iterations: int = 1,
         tools=None,
         id: uuid.UUID = None,
+        organization_id: str | None = None,
     ):
         self.iterations = 0
         self.max_iterations = max_iterations
@@ -39,6 +40,7 @@ class AgentBase:
         self.model = model
         self.collection = VectorDb(workspace_id=workspace_id)
         self.messages = []
+        self.organization_id = organization_id
         if id is None:
             self.id = self.collection.log_agent(self.codebase_id, self.model)
         else:
@@ -161,8 +163,11 @@ class OpenAIAgent(AgentBase):
         max_iterations: int = 1,
         tools=None,
         id=None,
+        organization_id: str | None = None,
     ):
-        super().__init__(workspace_id, codebase_id, model, max_iterations, tools, id)
+        super().__init__(
+            workspace_id, codebase_id, model, max_iterations, tools, id, organization_id
+        )
         self.client = OpenAI()
 
     @property

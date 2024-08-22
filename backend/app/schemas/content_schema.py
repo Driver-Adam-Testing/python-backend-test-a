@@ -51,6 +51,7 @@ class ListContentResult(BaseModel):
     source_content_id: UUID | None
     # Content doesn't need to be associated with a codebase in our flat asset design
     codebase_id: None | UUID
+    codebase_name: str | None
     relative_path: str
     content: None | str
     misc_metadata: dict | None
@@ -71,17 +72,24 @@ class ListContentResults(BaseModel):
 
 
 class TagAssociationRequest(BaseModel):
-    tag_id: str
+    tag_id: UUID
     include: bool
 
 class TagAssociationResponse(BaseModel):
-    tag_id: str
-    content_id: str
+    tag_id: UUID
+    content_id: UUID
     message: str
 
+class BatchTagAssociationRequest(BaseModel):
+    tags: list[TagAssociationRequest]
+
+
+class BatchTagAssociationResponse(BaseModel):
+    results: list[TagAssociationResponse]
+
 class CreateContentRequest(BaseModel):
-    workspace_id: str
-    codebase_id: str
+    workspace_id: UUID
+    codebase_id: UUID
 
 
 class ContentResultBase(BaseModel, Generic[DataT]):
@@ -96,23 +104,42 @@ class ContentSourceResponse(ContentResultBase[ListContentResult]):
 
 
 class CreateTemplateRequest(BaseModel):
-    content_id: str
+    content_id: UUID
 
 
 class CreateTemplateResponse(BaseModel):
     created: bool
 
+class ContentSourceAssociationRequest(BaseModel):
+    include: bool
+
 class ContentSourceAssociationItem(BaseModel):
-    source_content_id: str
+    source_content_id: UUID
     include: bool
 
 class ContentCollectionAssociationRequest(BaseModel):
-    collection_id: str
+    collection_id: UUID
 
-class ContentSourceAssociationRequest(BaseModel):
+class BatchContentSourceAssociationRequest(BaseModel):
     sources: list[ContentSourceAssociationItem]
+
+class DeleteContentSourcesRequest(BaseModel):
+    source_ids: list[UUID]
 
 class ContentSourceAssociationResponse(BaseModel):
-    content_id: str
+    content_id: UUID
+    source_id: UUID
+    message: str
+
+class BatchContentSourceAssociationResponse(BaseModel):
+    content_id: UUID
     sources: list[ContentSourceAssociationItem]
     message: str
+
+class DeleteDocumentSourceResponse(BaseModel):
+    document_id: UUID
+    source_id: UUID
+    message: str
+
+class BatchDeleteDocumentSourceResponse(BaseModel):
+    results: list[DeleteDocumentSourceResponse]

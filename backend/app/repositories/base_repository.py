@@ -15,6 +15,18 @@ class BaseRepository(Generic[T]):
 
     def get(self, pk_id: UUID) -> Optional[T]:
         return self.session.get(self.model, pk_id)
+    
+    def get_by_pk(self, **kwargs) -> Optional[T]:
+        """
+        Retrieve an instance by its primary key(s).
+        
+        :param kwargs: Key-value pairs of primary key fields and their values.
+        :return: The instance if found, otherwise None.
+        """
+        query = select(self.model)
+        for key, value in kwargs.items():
+            query = query.where(getattr(self.model, key) == value)
+        return self.session.exec(query).first()
 
     def get_by_conditions(self, conditions: List, joins: Optional[List[Type[SQLModel]]] = None):
         query = select(self.model)
@@ -79,8 +91,15 @@ class BaseRepository(Generic[T]):
             self.session.delete(obj)
             self.session.commit()
         return obj
+   
+    def delete_by_pk(self, **kwargs) -> Optional[T]:
+        obj = self.get_by_pk(**kwargs)
+        if obj:
+            self.session.delete(obj)
+            self.session.commit()
+        return obj
 
-    def exists(self, id: str, organization_id: str | None = None) -> bool:
+    def exists(self, id: UUID, organization_id: str | None = None) -> bool:
         instance = self.get(id)
         if not instance:
             return False

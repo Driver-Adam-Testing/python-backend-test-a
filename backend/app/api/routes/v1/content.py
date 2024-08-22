@@ -16,7 +16,7 @@ from app.schemas.content_schema import (
     TagAssociationResponse,
     ContentSourceAssociationRequest,
     ContentSourceAssociationResponse,
-    ContentSourceResponse
+    ContentSourceResponse, TagAssociationRequest, ContentCollectionAssociationRequest
 )
 from app.schemas.tag_schema import CollectionSourceInput
 from app.services.content_service import ContentService, get_content_service
@@ -44,8 +44,8 @@ def list(
     tag: Annotated[list[str] | None, Query()] = None,
     tag_id: Annotated[list[str] | None, Query()] = None,
     text: str | None = None,
-    content_service: ContentService = Depends(get_content_service),
 ) -> ListContentResults:
+    content_service = ContentService(session)
     results = content_service.get_list_content(
         user.organization_id,
         ListContentInput(
@@ -69,12 +69,14 @@ def list(
     summary="List content types",
 )
 def list_types(
+    session: CurrentSession,
+    user: CurrentUser,
     limit: int | None = 20,
     offset: int | None = 0,
     sort_by: str | None = None,
     sort_direction: str | None = "ASC",
-    content_service: ContentService = Depends(get_content_service),
 ) -> ListContentTypesResults:
+    content_service = ContentService(session)
     return content_service.get_list_content_types(
         ListContentTypesInput(
             limit=limit, offset=offset, sort_by=sort_by, sort_direction=sort_direction
@@ -87,52 +89,58 @@ def list_types(
     summary="Get sources associated with a document",
 )
 def get_document_sources(
+        session: CurrentSession,
         user: CurrentUser,
         content_id: str,
-        content_service: ContentService = Depends(get_content_service),
 )-> ContentSourceResponse:
+    content_service = ContentService(session)
     return content_service.get_content_sources(content_id)
 
 
+# @router.post(
+#     "/{content_id}/tags/{tag_id}",
+#     summary="Associate a tag with this content",
+# )
+# def associate_tag_with_content(
+#     session: CurrentSession,
+#     user: CurrentUser,
+#     content_id: str,
+#     tag_id: str,
+#     input: CollectionSourceInput,
+# ) -> TagAssociationResponse:
+#     content_service = ContentService(session)
+#     return content_service.associate_tag(
+#         user.organization_id, content_id, tag_id, include_tag=input.include
+#     )
+
 @router.post(
-    "/{content_id}/tags/{tag_id}",
+    "/{content_id}/tags",
     summary="Associate a tag with this content",
 )
 def associate_tag_with_content(
+    session: CurrentSession,
     user: CurrentUser,
     content_id: str,
-    tag_id: str,
-    input: CollectionSourceInput,
-    content_service: ContentService = Depends(get_content_service),
+    body: TagAssociationRequest
 ) -> TagAssociationResponse:
+    content_service = ContentService(session)
     return content_service.associate_tag(
-        user.organization_id, content_id, tag_id, include_tag=input.include
+        user.organization_id, content_id, body.tag_id, include_tag=body.include
     )
 
 
-@router.delete(
-    "/{content_id}/tags/{tag_id}",
-    summary="Disassociate a tag with this content",
-)
-def disassociate_tag_with_content(
-    user: CurrentUser,
-    content_id: str,
-    tag_id: str,
-    content_service: ContentService = Depends(get_content_service),
-) -> TagAssociationResponse:
-    return content_service.disassociate_tag(user.organization_id, content_id, tag_id)
-
 
 @router.post(
-    "/{content_id}/associate-sources",
+    "/{content_id}/sources",
     summary="Associate sources with this content.",
 )
 def associate_source_with_content(
+    session: CurrentSession,
     user: CurrentUser,
     content_id: str,
     content_source_associations: ContentSourceAssociationRequest,
-    content_service: ContentService = Depends(get_content_service),
 ) -> ContentSourceAssociationResponse:
+    content_service = ContentService(session)
     return content_service.associate_sources_with_content(
         user.organization_id,
         content_id,
@@ -140,31 +148,45 @@ def associate_source_with_content(
     )
 
 
+# @router.post(
+#     "/{content_id}/associate-collection/{collection_id}",
+#     summary="Associate a collection with this content.",
+# )
+# def associate_collection_with_content(
+#     session: CurrentSession,
+#     user: CurrentUser,
+#     content_id: str,
+#     collection_id: str,
+# ) -> TagAssociationResponse:
+#     content_service = ContentService(session)
+#     return content_service.associate_collection_with_content(
+#         user.organization_id, content_id, collection_id,
+#     )
+
 @router.post(
-    "/{content_id}/associate-collection/{collection_id}",
+    "/{content_id}/collections",
     summary="Associate a collection with this content.",
 )
 def associate_collection_with_content(
+    session: CurrentSession,
     user: CurrentUser,
     content_id: str,
-    collection_id: str,
-    content_service: ContentService = Depends(get_content_service),
+    body:ContentCollectionAssociationRequest
 ) -> TagAssociationResponse:
+    content_service = ContentService(session)
     return content_service.associate_collection_with_content(
-        user.organization_id, content_id, collection_id,
+        user.organization_id, content_id, body.collection_id,
     )
-
-
 @router.post(
     "/document",
     summary="Create a document",
 )
 def create_document(
+    session: CurrentSession,
     user: CurrentUser,
     request: CreateContentRequest,
-    content_service: ContentService = Depends(get_content_service),
 ) -> CreateContentResponse:
-
+    content_service = ContentService(session)
     result = content_service.create_blank_document(
         user.organization_id, request.workspace_id, request.codebase_id
     )
@@ -176,10 +198,11 @@ def create_document(
     summary="Create a content record from a template content record",
 )
 def create_content_from_template(
+    session: CurrentSession,
     user: CurrentUser,
     request: CreateTemplateRequest,
-    content_service: ContentService = Depends(get_content_service),
 ) -> CreateContentResponse:
+    content_service = ContentService(session)
     result = content_service.create_document_from_template(
         user.organization_id, request.content_id
     )
@@ -191,12 +214,39 @@ def create_content_from_template(
     summary="Create a template content record",
 )
 def create_template(
+    session: CurrentSession,
     user: CurrentUser,
     request: CreateTemplateRequest,
-    content_service: ContentService = Depends(get_content_service),
 ) -> CreateContentResponse:
+    content_service = ContentService(session)
     result = content_service.create_template(
         user.organization_id, request.workspace_id, request.codebase_id
     )
     return CreateContentResponse(results=[result])
 
+@router.delete(
+    "/{content_id}/tags/{tag_id}",
+    summary="Disassociate a tag with this content",
+)
+def disassociate_tag_with_content(
+    session: CurrentSession,
+    user: CurrentUser,
+    content_id: str,
+    tag_id: str,
+) -> TagAssociationResponse:
+    content_service = ContentService(session)
+    return content_service.disassociate_tag(user.organization_id, content_id, tag_id)
+
+@router.delete(
+    "/{content_id}/sources/{source_content_id}",
+    summary="Disassociate a source with this content",
+)
+def disassociate_source_with_content(
+    session: CurrentSession,
+    user: CurrentUser,
+    content_id: str,
+    source_content_id: str,
+) -> TagAssociationResponse:
+    # content_service = ContentService(session)
+    # return content_service.disassociate_tag(user.organization_id, content_id, tag_id)
+    pass

@@ -185,7 +185,7 @@ class ContentService:
         ]
 
         for source in sources:
-            document.source_links.append(source)
+            self.session.merge(source)
 
         try:
             self.session.commit()
@@ -219,29 +219,31 @@ class ContentService:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
             )
+        # validate the source content ids
+        for source in content_source_associations.sources:
+            if self.content_repository.exists(source.source_content_id) is False:
+                logger.error(
+                    f"Source content {source.source_content_id} not found."
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND, detail="Source content not found"
+                )
 
-        sources = [
-            DocumentSource(
-                document_id=content_id,
-                source_id=source.source_content_id,
-                include=source.include,
-            ) for source in content_source_associations.sources
-        ]
-
-        for source in sources:
-            document.source_links.append(source)
-
-        try:
-            self.session.commit()
-            logger.info(
-                f"Source content association with content {content_id} successfully"
+        for source in content_source_associations.sources:
+            #perform upsert
+            self.session.merge(
+                DocumentSource(
+                    document_id=content_id,
+                    source_id=source.source_content_id,
+                    include=source.include,
+                )
             )
-        except IntegrityError as e:
-            # self.session.rollback()
-            print(e)
-            logger.error(
-                f"Integrity error while associating source content with content {content_id}"
-            )
+
+        self.session.commit()
+
+        logger.info(
+            f"Source content association with content {content_id} successfully"
+        )
 
         return ContentSourceAssociationResponse(
             content_id=content_id,
@@ -536,6 +538,7 @@ class ContentService:
     ) -> tuple[list[DerivedContent], int]:
         statement = (
             select(DerivedContent)
+            .distinct(DerivedContent.id)  # Ensure distinct records
             .join(DerivedContentType)
             .join(Workspace)
             .join(TagContent, isouter=True)
@@ -551,6 +554,7 @@ class ContentService:
             # housed under the given organization. This will need updated if/when the
             # workspace data is being migrated.
             .where(organization_id == Workspace.organization_id)
+            .order_by(DerivedContent.id)  # Ensure ORDER BY matches DISTINCT ON
         )
         count_statement = (
             select(func.count())

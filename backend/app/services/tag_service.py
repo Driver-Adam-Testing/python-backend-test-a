@@ -3,6 +3,7 @@ import logging
 from database.models_v1 import Tag
 from fastapi import HTTPException
 from sqlmodel import Session, select
+from sqlalchemy.exc import IntegrityError, NoResultFound
 
 from app.api.auth import CurrentUser
 from app.api.session import CurrentSession
@@ -55,18 +56,23 @@ class TagService:
         )
 
     def create_tag(self, user: CurrentUser, lt_input: NewTagInput) -> Tag:
-        return self.tag_repository.create(
-            Tag(
-                name=lt_input.name.strip(),
-                hex_color=lt_input.hex_color.strip(),
-                type=lt_input.type,
-                organization_id=user.organization_id,
-                created_by=user.user_id,
-                updated_by=user.user_id,
+        try:
+            return self.tag_repository.create(
+                Tag(
+                    name=lt_input.name.strip(),
+                    hex_color=lt_input.hex_color.strip(),
+                    type=lt_input.type,
+                    organization_id=user.organization_id,
+                    created_by=user.user_id,
+                    updated_by=user.user_id,
+                )
             )
-        )
+        except IntegrityError:
+            logging.error("Tag name already exists")
+            raise HTTPException(status_code=400, detail="Tag name already exists.")
 
-    def edit_tag(self, user: CurrentUser, tag_id: int, lt_input: EditTagInput) -> Tag:
+
+    def edit_tag(self, user: CurrentUser, tag_id: str, lt_input: EditTagInput) -> Tag:
         tag = self.session.exec(
             select(Tag).where(
                 Tag.id == tag_id and Tag.organization_id == user.organization_id

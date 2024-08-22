@@ -1,6 +1,7 @@
 import logging
 from typing import Annotated
 
+from app.services.content_service import ContentService
 from database.models_v1 import Tag
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.exc import IntegrityError
@@ -15,8 +16,9 @@ from app.schemas.tag_schema import (
     ListTagsResults,
     NewTagInput,
     TagType,
+    CollectionSourceInput
 )
-from app.services.tag_service import TagService, get_tag_service
+from app.services.tag_service import TagService
 
 router = APIRouter()
 
@@ -25,28 +27,26 @@ logger = logging.getLogger(__name__)
 
 @router.post("/", status_code=201)
 def new_tag(
+    session: CurrentSession,
     user: CurrentUser,
     new_tag: NewTagInput,
-    tag_service: TagService = Depends(get_tag_service),
 ) -> Tag:
     logging.info("Creating new tag")
-    logging.debug(new_tag)
-    try:
-        return tag_service.create_tag(user=user, lt_input=new_tag)
-    except IntegrityError:
-        logging.error("Tag name already exists")
-        raise HTTPException(status_code=400, detail="Tag name already exists.")
+    tag_service = TagService(session)
+    return tag_service.create_tag(user=user, lt_input=new_tag)
+
 
 
 @router.get("/")
 def read_tags(
+    session: CurrentSession,
     user: CurrentUser,
     limit: int | None = 20,
     offset: int | None = 0,
     name: str | None = None,
     type: TagType | None = None,
-    tag_service: TagService = Depends(get_tag_service),
 ) -> ListTagsResults:
+    tag_service = TagService(session)
     return tag_service.list_tags(
         user=user,
         lt_input=ListTagsInput(limit=limit, offset=offset, name=name, type=type),
@@ -55,17 +55,19 @@ def read_tags(
 
 @router.put("/{tag_id}")
 def update_tag(
+    session: CurrentSession,
     user: CurrentUser,
     tag_id: str,
     updated_tag: EditTagInput,
-    tag_service: TagService = Depends(get_tag_service),
 ) -> Tag:
     """Update a tag. All users in an organization can edit all tags in the organization currently."""
+    tag_service = TagService(session)
     return tag_service.edit_tag(user=user, tag_id=tag_id, lt_input=updated_tag)
 
 
 @router.get("/{tag_id}/content")
 def read_tag_contents(
+    session: CurrentSession,
     user: CurrentUser,
     tag_id: str,
     content_type_id: Annotated[list[str] | None, Query()] = None,
@@ -76,8 +78,8 @@ def read_tag_contents(
     text: str | None = None,
     limit: int | None = 20,
     offset: int | None = 0,
-    tag_service: TagService = Depends(get_tag_service),
 ) -> ListTagContentsResults:
+    tag_service = TagService(session)
     return tag_service.list_tag_contents(
         user=user,
         tag_id=tag_id,
@@ -103,16 +105,15 @@ def associate_tag_with_content(
     user: CurrentUser,
     content_id: str,
     tag_id: str,
-    tag_service: TagService = Depends(get_tag_service),
+    input: CollectionSourceInput,
 ) -> TagAssociationResponse:
-    try:
-        return tag_service.associate_tag(session, user, content_id, tag_id)
-    except IntegrityError:
-        logging.error("Association already exists.")
-        raise HTTPException(
-            status_code=400,
-            detail="Association already exists, please check your parameters.",
-        )
+    content_service = ContentService(session)
+    return content_service.associate_tag(
+        user.organization_id,
+        content_id,
+        tag_id,
+        input.include,
+    )
 
 
 @router.delete(
@@ -124,6 +125,7 @@ def disassociate_tag_with_content(
     user: CurrentUser,
     content_id: str,
     tag_id: str,
-    tag_service: TagService = Depends(get_tag_service),
 ) -> TagAssociationResponse:
-    return tag_service.disassociate_tag(session, user, content_id, tag_id)
+    content_service = ContentService(session)
+
+    return content_service.disassociate_tag(user.organization_id, content_id, tag_id)

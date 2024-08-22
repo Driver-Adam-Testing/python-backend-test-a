@@ -70,6 +70,10 @@ class ListContentResults(BaseModel):
     count: int
 
 
+class TagAssociationRequest(BaseModel):
+    tag_id: str
+    include: bool
+
 class TagAssociationResponse(BaseModel):
     tag_id: str
     content_id: str
@@ -101,6 +105,9 @@ class CreateTemplateResponse(BaseModel):
 class ContentSourceAssociationItem(BaseModel):
     source_content_id: str
     include: bool
+
+class ContentCollectionAssociationRequest(BaseModel):
+    collection_id: str
 
 class ContentSourceAssociationRequest(BaseModel):
     sources: list[ContentSourceAssociationItem]

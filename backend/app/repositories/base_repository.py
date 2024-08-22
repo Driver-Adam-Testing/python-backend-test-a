@@ -80,11 +80,13 @@ class BaseRepository(Generic[T]):
             self.session.commit()
         return obj
 
-    def exists(self, id: str, organization_id: str) -> bool:
+    def exists(self, id: str, organization_id: str | None = None) -> bool:
         instance = self.get(id)
         if not instance:
             return False
-        return getattr(instance, 'organization_id', None) == organization_id
+        if organization_id is not None:
+            return getattr(instance, 'organization_id', None) == organization_id
+        return True
     
     def count_by(self, conditions: List, joins: Optional[List[Type[SQLModel]]] = None) -> int:
         query = select(func.count()).select_from(self.model)

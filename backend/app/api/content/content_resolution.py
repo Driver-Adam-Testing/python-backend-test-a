@@ -1,8 +1,7 @@
 from uuid import UUID
 
 from database.models_v1 import DerivedContent, Workspace
-from sqlalchemy.sql import exists
-from sqlmodel import select
+from sqlmodel import or_, select
 
 
 def build_resolve_content_query(
@@ -20,36 +19,26 @@ def build_resolve_content_query(
       - Including a parent path will automatically include all its sub-paths.
     """
 
-    include_subquery = (
-        select(DerivedContent.relative_path)
-        .join(Workspace, DerivedContent.workspace_id == Workspace.id)
-        .where(
-            DerivedContent.id.in_(include_ids),
-            Workspace.organization_id == org_id,
-        )
-    ).subquery()
-
-    query = (
+    content_for_org_query = (
         select(DerivedContent)
         .join(Workspace, DerivedContent.workspace_id == Workspace.id)
-        .where(
-            Workspace.organization_id == org_id,
-            (
-                exists(
-                    select(DerivedContent.relative_path).where(
-                        DerivedContent.relative_path == include_subquery.c.relative_path
-                    )
-                )
-            )
-            | (
-                exists(
-                    select(DerivedContent.relative_path).where(
-                        DerivedContent.relative_path.startswith(
-                            include_subquery.c.relative_path + "/"
-                        )
-                    )
-                )
-            ),
-        )
+        .where(Workspace.organization_id == org_id)
     )
-    return query
+
+    path_conditions = []
+    for include_id in include_ids:
+        # The relative path for the current include_id
+        path = (
+            select(DerivedContent.relative_path)
+            .where(DerivedContent.id == include_id)
+            .limit(1)
+        ).scalar_subquery()
+
+        exact_path_match_condition = DerivedContent.relative_path == path
+        child_path_match_condition = DerivedContent.relative_path.startswith(path + "/")
+        path_conditions.extend([exact_path_match_condition, child_path_match_condition])
+
+    if path_conditions:
+        content_for_org_query = content_for_org_query.where(or_(*path_conditions))
+
+    return content_for_org_query

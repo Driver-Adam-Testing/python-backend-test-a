@@ -26,6 +26,7 @@ def execute_instruction(
         select(Workspace).where(Workspace.id == body.workspace_id)
     ).first()
     if requested_org is None:
+        logger.error(f"Workspace {body.workspace_id} not found")
         raise HTTPException(
             status_code=404,
             detail="Workspace not found",
@@ -37,6 +38,9 @@ def execute_instruction(
         return ExecuteInstructionResponse(
             call_id=call_id,
         )
+    logger.error(
+        f"User {user.user_id} requested execution outside of their organization."
+    )
     raise HTTPException(
         status_code=403,
         detail="Invalid organization provided",

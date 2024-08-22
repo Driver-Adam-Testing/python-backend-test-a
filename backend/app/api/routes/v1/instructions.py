@@ -1,3 +1,5 @@
+import logging
+
 from database.models_v1 import Workspace
 from fastapi import APIRouter, HTTPException
 from sqlmodel import select
@@ -13,34 +15,32 @@ from app.instructions.types import (
 )
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 @router.post("/execute", response_model=ExecuteInstructionResponse)
 def execute_instruction(
     session: CurrentSession, body: ExecuteInstructionRequest, user: CurrentUser
 ) -> ExecuteInstructionResponse:
-    try:
-        requested_org_id = (
-            session.exec(select(Workspace).where(Workspace.id == body.workspace_id))
-            .first()
-            .organization_id
-        )
-        if user.organization_id == requested_org_id:
-            call_id = modal_interface.execute_instruction(
-                body.workspace_id, body.codebase_id, body.prompt
-            )
-            return ExecuteInstructionResponse(
-                call_id=call_id,
-            )
-        raise HTTPException(
-            status_code=403,
-            detail="Invalid organization provided",
-        )
-    except Exception as e:
+    requested_org = session.exec(
+        select(Workspace).where(Workspace.id == body.workspace_id)
+    ).first()
+    if requested_org is None:
         raise HTTPException(
             status_code=404,
             detail="Workspace not found",
-        ) from e
+        )
+    if user.organization_id == requested_org.organization_id:
+        call_id = modal_interface.execute_instruction(
+            body.workspace_id, body.codebase_id, body.prompt
+        )
+        return ExecuteInstructionResponse(
+            call_id=call_id,
+        )
+    raise HTTPException(
+        status_code=403,
+        detail="Invalid organization provided",
+    )
 
 
 @router.post("/results", response_model=InstructionResultsResponse)

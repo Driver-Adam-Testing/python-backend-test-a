@@ -3,9 +3,10 @@ from urllib.parse import unquote, urlparse
 
 from database.derived_content_types import DerivedContentTypeNames
 from pydantic import UUID4, BaseModel
+
+from packages.shared.shared.agent.tools.agent_tools import execute_backend_search
 from shared import prompts
-from shared.agent import Agent
-from shared.agent.agent_tools import execute_backend_search
+from shared.agent.agent_factory import create_agent
 
 # TODO: something is wrong with options defaulting to {}
 
@@ -50,11 +51,12 @@ def run_agent(request: RunAgentRequest):
     if relative_path == "executive-summary" or relative_path == "entry-point":
         relative_path = None
 
-    agent = Agent(
+    agent = create_agent(
         workspace_id=workspace_id,
         codebase_id=codebase_id,
-        max_iterations=1,
         model=model,
+        max_iterations=1,
+        tools=None,
     )
     agent.add_message(prompts.interface.technical_context_interface.MESSAGE)
     agent.add_message(prompts.voice.copy_editor_remove_speculation.MESSAGE)
@@ -120,7 +122,7 @@ def run_agent(request: RunAgentRequest):
                 for file in file_ids
                 if file.misc_metadata.get("file_id", None) is not None
             ]
-            file_selection_agent = Agent(
+            file_selection_agent = create_agent(
                 workspace_id=workspace_id, codebase_id=codebase_id, max_iterations=1
             )
             file_results = file_selection_agent.invoke(

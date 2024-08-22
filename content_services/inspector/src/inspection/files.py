@@ -1,18 +1,138 @@
 import logging
+from enum import IntEnum
 from pathlib import Path
-from typing import Any
+from typing import Any, Self
 
 import openai
+from pydantic import BaseModel, ValidationError
 from utils.dag import LiteNode
 from utils.io import (
     get_prompt_template,
 )
-from utils.llm import (
-    chunk_str,
-)
+from utils.lang_specialization.common import Lang
 from utils.models import ChatOpenAI
+from utils.templates import Template
+
+from inspection.prompt_templates.files.templates.metadata_default import (
+    METADATA_TEMPLATE,
+)
+from inspection.prompt_templates.files.templates.metadata_multi_context_default import (
+    METADATA_MULTI_CONTEXT_TEMPLATE,
+)
+from inspection.prompt_templates.files.templates.source_code_large_c import (
+    SOURCE_CODE_LARGE_TEMPLATE_C,
+)
+from inspection.prompt_templates.files.templates.source_code_large_c_multi_prompt import (
+    SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_C,
+)
+from inspection.prompt_templates.files.templates.source_code_large_cpp import (
+    SOURCE_CODE_LARGE_TEMPLATE_CPP,
+)
+from inspection.prompt_templates.files.templates.source_code_large_cpp_multi_prompt import (
+    SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CPP,
+)
+from inspection.prompt_templates.files.templates.source_code_large_default import (
+    SOURCE_CODE_LARGE_TEMPLATE_DEFAULT,
+)
+from inspection.prompt_templates.files.templates.source_code_large_header import (
+    SOURCE_CODE_LARGE_TEMPLATE_HEADER,
+)
+from inspection.prompt_templates.files.templates.source_code_large_header_multi_prompt import (
+    SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_HEADER,
+)
+from inspection.prompt_templates.files.templates.source_code_large_py import (
+    SOURCE_CODE_LARGE_TEMPLATE_PY,
+)
+from inspection.prompt_templates.files.templates.source_code_large_py_multi_prompt import (
+    SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_PY,
+)
+from inspection.prompt_templates.files.templates.source_code_multi_context_default import (
+    SOURCE_CODE_MULTI_CONTEXT_TEMPLATE_DEFAULT,
+)
+from inspection.prompt_templates.files.templates.source_code_small_c import (
+    SOURCE_CODE_SMALL_TEMPLATE_C,
+)
+from inspection.prompt_templates.files.templates.source_code_small_cpp import (
+    SOURCE_CODE_SMALL_TEMPLATE_CPP,
+)
+from inspection.prompt_templates.files.templates.source_code_small_default import (
+    SOURCE_CODE_SMALL_TEMPLATE_DEFAULT,
+)
+from inspection.prompt_templates.files.templates.source_code_small_header import (
+    SOURCE_CODE_SMALL_TEMPLATE_HEADER,
+)
+from inspection.prompt_templates.files.templates.source_code_small_py import (
+    SOURCE_CODE_SMALL_TEMPLATE_PY,
+)
 
 PARENT_PATH = Path(__file__).parent
+
+
+class FileEnum(IntEnum):
+    SOURCE_CODE_LARGE = 0
+    SOURCE_CODE_SMALL = 1
+    METADATA = 2
+
+
+class FileKind(BaseModel):
+    kind: FileEnum
+
+    @classmethod
+    def from_llm(
+        cls,
+        llm: ChatOpenAI,
+        file_name: str,
+        code: str,
+        fallback_kind: FileEnum = FileEnum.SOURCE_CODE_LARGE,
+    ) -> Self:
+        system_prompt = get_prompt_template(
+            PARENT_PATH / "prompt_templates/files/determine_file_kind.txt"
+        )
+        human_prompt = ""
+        human_prompt += f"File name: {file_name}\n\nFile contents:\n\n{code}"
+        file_kind_raw = llm.generate_response(system_prompt, human_prompt)
+        try:
+            file_kind = cls(kind=int(file_kind_raw))
+        except ValueError as e:
+            logging.warn(
+                f"Failed to parse integer from LLM response to determine file kind for file {file_name}: {e}"
+            )
+            file_kind = cls(kind=fallback_kind)
+        except ValidationError as e:
+            logging.warn(
+                f"Invalid integer enum variant parsed from LLM to determine file kind for file {file_name}: {e}"
+            )
+            file_kind = cls(kind=fallback_kind)
+
+        return file_kind
+
+
+SOURCE_CODE_LARGE_BY_LANG = {
+    Lang.DEFAULT: SOURCE_CODE_LARGE_TEMPLATE_DEFAULT,
+    Lang.C: SOURCE_CODE_LARGE_TEMPLATE_C,
+    Lang.CPP: SOURCE_CODE_LARGE_TEMPLATE_CPP,
+    Lang.HEADER: SOURCE_CODE_LARGE_TEMPLATE_HEADER,
+    Lang.PYTHON: SOURCE_CODE_LARGE_TEMPLATE_PY,
+}
+SOURCE_CODE_SMALL_BY_LANG = {
+    Lang.DEFAULT: SOURCE_CODE_SMALL_TEMPLATE_DEFAULT,
+    Lang.C: SOURCE_CODE_SMALL_TEMPLATE_C,
+    Lang.CPP: SOURCE_CODE_SMALL_TEMPLATE_CPP,
+    Lang.HEADER: SOURCE_CODE_SMALL_TEMPLATE_HEADER,
+    Lang.PYTHON: SOURCE_CODE_SMALL_TEMPLATE_PY,
+}
+METADATA_BY_LANG = {
+    Lang.DEFAULT: METADATA_TEMPLATE,
+    Lang.C: METADATA_TEMPLATE,
+    Lang.CPP: METADATA_TEMPLATE,
+    Lang.HEADER: METADATA_TEMPLATE,
+    Lang.PYTHON: METADATA_TEMPLATE,
+}
+TEMPLATE_DATA = {
+    FileEnum.SOURCE_CODE_LARGE: SOURCE_CODE_LARGE_BY_LANG,
+    FileEnum.SOURCE_CODE_SMALL: SOURCE_CODE_SMALL_BY_LANG,
+    FileEnum.METADATA: METADATA_BY_LANG,
+}
 
 
 def file_long_from_code(
@@ -143,6 +263,8 @@ def comprehend_file_top_down(
     max_num_chunks: int,
     raise_hard_errors: bool = True,
 ) -> tuple[bool, dict[str, Any]]:
+    from shared.chunking.text_splitter import split_text
+
     logging.info(f"Incorporating `{node.root_rel_path}`")
 
     if len(source_code.strip()) == 0:
@@ -152,9 +274,11 @@ def comprehend_file_top_down(
             message=description,
         )
         return success, results
-    chunks = chunk_str(
-        chunk_size=chunk_size, chunk_overlap=chunk_overlap, str_in=source_code
+
+    chunks = split_text(
+        text=source_code, chunk_size=chunk_size, chunk_overlap=chunk_overlap
     )
+
     if len(chunks) > max_num_chunks:
         if raise_hard_errors:
             raise ValueError(
@@ -174,188 +298,58 @@ def comprehend_file_top_down(
             )
             return (success, results)
     if len(chunks) > 1:
-        # TODO: Decide how/when/if to fold use of the code map for longer files like this.
+        chunk_texts = [c.text for c in chunks]
+
         logging.info(f"Processing {len(chunks)} chunks for `{node.root_rel_path}`")
         print(f"Processing {len(chunks)} chunks for `{node.root_rel_path}` ...")
-        # if use_async:
-        #     with FastShutdownThreadPoolExecutor(max_workers=max_workers) as executor:
-        #         futures = {
-        #             executor.submit(
-        #                 file_chunk_description,
-        #                 llm,
-        #                 node.name,
-        #                 codebase_name,
-        #                 node.root_rel_path,
-        #                 c,
-        #             ): idx
-        #             for idx, c in enumerate(chunks)
-        #         }
-        #         # Make sure the original chunk order is preserved.
-        #         results = [
-        #             (futures[future], future.result())
-        #             for future in concurrent.futures.as_completed(futures.keys())
-        #         ]
-        #         chunk_detailed_descriptions = [
-        #             r for (_idx, r) in sorted(results, key=lambda tup: tup[0])
-        #         ]
-        #         # Compression steps, if needed.
-        #         aggregated_descriptions = ""
-        #         for idx, c in enumerate(chunk_detailed_descriptions, start=1):
-        #             aggregated_descriptions += f"File chunk {idx} description for file `{node.name}`:\n\n{c}\n\n"
-        #         compression_idx = 0
-        #         while len(aggregated_descriptions) >= chunk_size:
-        #             chunks = chunk_str(
-        #                 chunk_size=chunk_size,
-        #                 chunk_overlap=chunk_overlap,
-        #                 str_in=aggregated_descriptions,
-        #             )
-        #             logging.info(
-        #                 f"Compressing {len(chunks)} chunk descriptions for `{node.name}`"
-        #             )
-        #             print(
-        #                 f"Compressing {len(chunks)} chunk descriptions for `{node.name}`"
-        #             )
-        #             futures = {
-        #                 executor.submit(
-        #                     file_compress_chunks,
-        #                     llm,
-        #                     node.name,
-        #                     c,
-        #                 ): idx
-        #                 for idx, c in enumerate(chunks)
-        #             }
-        #             # Make sure the original chunk order is preserved.
-        #             results = [
-        #                 (futures[future], future.result())
-        #                 for future in concurrent.futures.as_completed(futures.keys())
-        #             ]
-        #             chunk_detailed_descriptions = [
-        #                 r for (_idx, r) in sorted(results, key=lambda tup: tup[0])
-        #             ]
-        #             aggregated_descriptions = ""
-        #             for idx, c in enumerate(chunk_detailed_descriptions, start=1):
-        #                 aggregated_descriptions += f"File chunk {idx} description for file `{node.name}`:\n\n{c}"
-        #             compression_idx += 1
-        #             if compression_idx >= compression_loop_max_itr:
-        #                 if raise_hard_errors:
-        #                     raise ValueError(
-        #                         f"Compression loop max iteration ({compression_loop_max_itr}) reached for file `{node.name}`"
-        #                     )
-        #                 else:
-        #                     logging.warning(
-        #                         f"Compression loop max iteration ({compression_loop_max_itr}) reached for file `{node.name}`"
-        #                     )
-        #                     print(
-        #                         f"WARNING: Compression loop max iteration ({compression_loop_max_itr}) reached for file `{node.name}`"
-        #                     )
-        #                     description = "File too large to process."
-        #                     success = False
-        #                     results = _return_with_simple_message(
-        #                         message=description,
-        #                         file_node=node,
-        #                         file_content=file_content,
-        #                         to_disk_dir=to_disk_dir,
-        #                     )
-        #                     return (success, results)
-        # else:
-        chunk_detailed_descriptions = []
-        num_chunks = len(chunks)
-        for idx, c in enumerate(chunks):
-            try:
-                chunk_detailed_descriptions.append(
-                    file_chunk_description(
-                        llm=llm,
-                        file_name=node.root_rel_path.name,
-                        codebase_name=codebase_name,
-                        path=node.root_rel_path,
-                        code_chunk=c,
-                    )
-                )
-                logging.info(
-                    f"Source code chunk {idx + 1}/{num_chunks} processed for file `{node.root_rel_path}`"
-                )
-                print(
-                    f"Source code chunk {idx + 1}/{num_chunks} processed for file `{node.root_rel_path}`"
-                )
-            except openai.BadRequestError:
-                description = "Could not process file"
-                success = False
-                results = _return_with_simple_message(
-                    message=description,
-                )
-                return success, results
-
-        # Compression steps, if needed.
-        aggregated_descriptions = ""
-        for idx, c in enumerate(chunk_detailed_descriptions, start=1):
-            aggregated_descriptions += f"File chunk {idx} description for file `{node.root_rel_path}`:\n\n{c}\n\n"
-        compression_idx = 0
-        while len(aggregated_descriptions) >= chunk_size:
-            chunks = chunk_str(
-                chunk_size=chunk_size,
-                chunk_overlap=chunk_overlap,
-                str_in=aggregated_descriptions,
-            )
-            num_chunks = len(chunks)
-            logging.info(
-                f"Compressing {len(chunks)} chunk descriptions for file `{node.root_rel_path}`"
-            )
-            print(
-                f"Compressing {len(chunks)} chunk descriptions for file `{node.root_rel_path}`"
-            )
-            chunk_detailed_descriptions = []
-            for idx, c in enumerate(chunks):
-                chunk_detailed_descriptions.append(
-                    file_compress_chunks(
-                        llm=llm, file_name=node.root_rel_path.name, description_chunk=c
-                    )
-                )
-                logging.info(
-                    f"Compression chunk {idx + 1}/{num_chunks} for compression iteration {compression_idx + 1} processed for file `{node.root_rel_path}`"
-                )
-                print(
-                    f"Compression chunk {idx + 1}/{num_chunks} for compression iteration {compression_idx + 1} processed for file `{node.root_rel_path}`"
-                )
-            aggregated_descriptions = ""
-            for idx, c in enumerate(chunk_detailed_descriptions, start=1):
-                aggregated_descriptions += f"File chunk {idx} description for file `{node.root_rel_path.name}`:\n\n{c}"
-            compression_idx += 1
-            if compression_idx >= compression_loop_max_itr:
-                if raise_hard_errors:
-                    raise ValueError(
-                        f"Compression loop max iteration ({compression_loop_max_itr}) reached for file `{node.root_rel_path}`"
-                    )
-                else:
-                    logging.warning(
-                        f"Compression loop max iteration ({compression_loop_max_itr}) reached for file `{node.root_rel_path}`"
-                    )
-                    print(
-                        f"WARNING: Compression loop max iteration ({compression_loop_max_itr}) reached for file `{node.root_rel_path}`"
-                    )
-                    description = "File too large to process."
-                    success = False
-                    results = _return_with_simple_message(
-                        message=description,
-                    )
-                    return (success, results)
-
-        # Now ready to generate final documentation content.
-        file_description_long = file_long_from_chunk_descriptions(
-            llm=llm,
-            chunks=chunk_detailed_descriptions,
-            file_name=node.root_rel_path.name,
-            codebase_name=codebase_name,
+        file_kind = FileKind.from_llm(
+            llm=llm, file_name=node.root_rel_path.name, code=chunk_texts[0]
         )
+
+        if file_kind.kind == FileEnum.METADATA:
+            template = METADATA_MULTI_CONTEXT_TEMPLATE
+            long_template = Template(template=template)
+            file_description_long = long_template.run_with_code(
+                llm=llm,
+                root_rel_path=node.root_rel_path,
+                code=source_code,
+                code_chunks=chunk_texts,
+            )
+        else:
+            language = Lang.from_ext_and_source(
+                ext=node.root_rel_path.suffix, source=chunk_texts[0]
+            )
+            match language:
+                case Lang.C:
+                    template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_C
+                case Lang.CPP:
+                    template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CPP
+                case Lang.HEADER:
+                    template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_HEADER
+                case Lang.PYTHON:
+                    template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_PY
+                case _:
+                    template = SOURCE_CODE_MULTI_CONTEXT_TEMPLATE_DEFAULT
+            long_template = Template(template=template)
+
+            file_description_long = long_template.run_with_code(
+                llm=llm,
+                root_rel_path=node.root_rel_path,
+                code=source_code,
+                code_chunks=chunk_texts,
+            )
+        # Now ready to generate final documentation content.
+        chunk_detailed_descriptions = [file_description_long]
         file_description_single_sentence = file_single_sentence_from_chunk_descriptions(
             llm=llm,
-            chunks=chunk_detailed_descriptions,
+            chunks=[file_description_long],
             file_name=node.root_rel_path.name,
             codebase_name=codebase_name,
         )
         file_description_single_paragraph = (
             file_single_paragraph_from_chunk_descriptions(
                 llm=llm,
-                chunks=chunk_detailed_descriptions,
+                chunks=[file_description_long],
                 file_name=node.root_rel_path.name,
                 codebase_name=codebase_name,
             )
@@ -363,12 +357,23 @@ def comprehend_file_top_down(
     # TODO: Vulnerable to edge case with code map + source code is over the context window length.
     else:
         try:
-            file_description_long = file_long_from_code(
-                llm=llm,
-                file_name=node.root_rel_path.name,
-                codebase_name=codebase_name,
-                path=node.root_rel_path,
-                code=source_code,
+            # file_description_long = file_long_from_code(
+            #     llm=llm,
+            #     file_name=node.root_rel_path.name,
+            #     codebase_name=codebase_name,
+            #     path=node.root_rel_path,
+            #     code=source_code,
+            # )
+            file_kind = FileKind.from_llm(
+                llm=llm, file_name=node.root_rel_path.name, code=source_code
+            )
+            language = Lang.from_ext_and_source(
+                ext=node.root_rel_path.suffix, source=source_code
+            )
+            template = TEMPLATE_DATA[file_kind.kind][language]
+            long_template = Template(template=template)
+            file_description_long = long_template.run_with_code(
+                llm=llm, root_rel_path=node.root_rel_path, code=source_code
             )
             chunk_detailed_descriptions = [file_description_long]
             file_description_single_sentence = file_single_sentence_from_code(

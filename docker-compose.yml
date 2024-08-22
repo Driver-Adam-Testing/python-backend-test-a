@@ -18,6 +18,8 @@ services:
      - "8888:8888"
    volumes:
      - ./backend/:/app
+     - ./driver_db/:/driver_db
+     - ./packages/:/packages
    build:
      dockerfile: ./Dockerfile
      args:

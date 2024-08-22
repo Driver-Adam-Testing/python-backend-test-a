@@ -14,10 +14,10 @@ tiktoken = "^0.7.0"
 anthropic = "^0.31.2"
 boto3 = "^1.34.149"
 modal = "^0.63.92"
+rank-bm25 = "^0.2.2"
 pymupdf = "^1.24.9"
 tabula-py = "^2.9.3"
 psycopg = "^3.2.1"
-rank-bm25 = "^0.2.2"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.2.2"

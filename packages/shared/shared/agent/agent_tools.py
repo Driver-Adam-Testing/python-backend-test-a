@@ -1,7 +1,10 @@
 import re
 
 import modal
+from database.derived_content_types import DerivedContentTypeNames
 from openai import OpenAI
+
+from shared.interfaces.search import SearchInput
 
 from .tool import Tool
 
@@ -32,16 +35,24 @@ def execute_backend_search(
     search_text: str,
     content_types: list[str] | None = None,
     relative_path: str | None = None,
-    result_limit: int = 7,
+    result_limit: int = 10,
 ):
-    payload = {
-        "query": search_text,
-        "result_limit": result_limit,
-        "content_type": content_types,
-        "workspace_id": str(agent_context.workspace_id),
-        "codebase_id": str(agent_context.codebase_id),
-        "relative_path": relative_path,
-    }
+    payload = SearchInput(
+        query=search_text,
+        content_type=content_types,
+        workspace_id=str(agent_context.workspace_id)
+        if agent_context.workspace_id
+        else None,
+        organization_id=str(agent_context.organization_id)
+        if agent_context.organization_id
+        else None,
+        codebase_id=str(agent_context.codebase_id)
+        if agent_context.codebase_id
+        else None,
+        algorithm="hybrid",
+        relative_path=relative_path,
+    )
+
     search_function = modal.Function.lookup("comprehender", "search")
     response = search_function.remote(payload)
     return format_search_results(response.dict())
@@ -51,7 +62,10 @@ def search_tech_docs(agent_context, search_text: str, rationale: str) -> str:
     return execute_backend_search(
         agent_context=agent_context,
         search_text=f"`{search_text}`. information on {search_text} because {rationale}",
-        content_types=["FILE_SUMMARY", "CODE_SYMBOL"],
+        content_types=[
+            DerivedContentTypeNames.CODEBASE_FILE.value,
+            DerivedContentTypeNames.SYMBOL.value,
+        ],
     )
 
 
@@ -65,7 +79,7 @@ def search_source_code(agent_context, search_text: str, rationale: str) -> str:
     return execute_backend_search(
         agent_context=agent_context,
         search_text=f"`{search_text}` information on {search_text}",
-        content_types=["SOURCE_CODE"],
+        content_types=[DerivedContentTypeNames.CODEBASE_FILE.value],
     )
 
 
@@ -153,7 +167,11 @@ def search_pdf_summaries(agent_context, query: str, rationale: str) -> dict:
         result_limit=20,
         search_text=f"`{query}`. information on {query} because {rationale}",
         content_types=[
-            "PDF_SUMMARY",  # TODO: Look into why this isn't importing when deployed but is when it's local
+            DerivedContentTypeNames.PDF_SUMMARY.value,
+            DerivedContentTypeNames.PDF_VISUAL_SUMMARY.value,
+            DerivedContentTypeNames.PDF_TEXT_SUMMARY.value,
+            DerivedContentTypeNames.PDF_EXTRACTED_TEXT.value,
+            DerivedContentTypeNames.PDF_EXTRACTED_TABLE.value,
         ],
     )
 

@@ -28,7 +28,11 @@ def make_tech_doc(
 
     print(f"Processing tech docs ({node})")
     raise_hard_errors = False
-    llm = ChatOpenAI(model="gpt-4o-2024-08-06", temperature=0, request_timeout=120)
+    llm = ChatOpenAI(
+        model="gpt-4o-2024-08-06",
+        temperature=0,
+        request_timeout=FILE_TECH_DOC_LLM_TIMEOUT,
+    )
 
     file_docs_successful, file_doc = comprehend_file_top_down(
         llm=llm,
@@ -72,7 +76,11 @@ def make_folder_tech_doc(
     from inspection.folders import comprehend_folder_top_down
     from utils.models import ChatOpenAI
 
-    llm = ChatOpenAI(model="gpt-4o-2024-08-06", temperature=0, request_timeout=120)
+    llm = ChatOpenAI(
+        model="gpt-4o-2024-08-06",
+        temperature=0,
+        request_timeout=FOLDER_TECH_DOC_LLM_TIMEOUT,
+    )
 
     print(f"Processing folder tech docs for ({node})")
     folder_docs = comprehend_folder_top_down(
@@ -96,7 +104,11 @@ def make_toplevel_tech_docs(
     from inspection.toplevel import comprehend_codebase_top_down
     from utils.models import ChatOpenAI
 
-    llm = ChatOpenAI(model="gpt-4o-2024-08-06", temperature=0, request_timeout=120)
+    llm = ChatOpenAI(
+        model="gpt-4o-2024-08-06",
+        temperature=0,
+        request_timeout=TOP_LEVEL_DOC_LLM_TIMEOUT,
+    )
 
     print(f"Processing top-level docs for `{codebase_name}`")
     top_level_docs = comprehend_codebase_top_down(
@@ -117,3 +129,6 @@ CHUNK_SIZE = 64_000
 CHUNK_OVERLAP = 3_000
 COMPRESSION_LOOP_MAX_ITR = 10
 MAX_NUM_CHUNKS_FILE = 5
+FILE_TECH_DOC_LLM_TIMEOUT = 120
+FOLDER_TECH_DOC_LLM_TIMEOUT = 250
+TOP_LEVEL_DOC_LLM_TIMEOUT = 120

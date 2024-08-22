@@ -43,6 +43,8 @@ def num_tokens_from_messages_open_ai(messages, model="gpt-3.5-turbo-0613"):
         "gpt-4-32k-0314",
         "gpt-4-0613",
         "gpt-4-32k-0613",
+        "gpt-4o-2024-08-06",
+        "gpt-4o",
     }:
         tokens_per_message = 3
     elif model == "gpt-3.5-turbo-0301":

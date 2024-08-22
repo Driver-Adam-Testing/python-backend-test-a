@@ -1,8 +1,8 @@
 from fastapi import APIRouter
 from shared.interfaces.search import SearchInput, SearchResults
-from shared.pipelines.search import search_content_metadata
+from shared.pipelines.search import search_content
 
-from app.api.auth import CurrentToken
+from app.api.auth import CurrentUser
 from app.api.session import CurrentSession
 
 router = APIRouter()
@@ -14,6 +14,9 @@ router = APIRouter()
     response_description="Return Search Results",
 )
 def search(
-    session: CurrentSession, m2m: CurrentToken, input: SearchInput
+    session: CurrentSession, user: CurrentUser, input: SearchInput
 ) -> SearchResults:
-    return search_content_metadata(session=session, organization_id=None, input=input)
+    # TODO: figure out how to do this without transforming the input.
+
+    input.organization_id = user.organization_id
+    return search_content(session=session, input=input)

@@ -1,22 +1,21 @@
 import re
 
+import modal
 from database.derived_content_types import DerivedContentTypeNames
 from openai import OpenAI
 
-from shared.interfaces.search import SearchInput, SearchResults
-from shared.pipelines.search import search_content_without_session
+from shared.interfaces.search import SearchInput
 
 from .tool import Tool
 
 
-def format_search_results(results: SearchResults):
-    if not results.results:
+def format_search_results(results):
+    if results.get("results") == []:
         return "Search returned no results"
-
     formatted_results = []
-    for result in results.results:
-        content = result.content
-        metadata = result.metadata
+    for result in results.get("results"):
+        content = result.get("content", "")
+        metadata = result.get("metadata", {})
         content_type = metadata.get("content_type", "")
         relative_path = metadata.get("relative_path", "")
 
@@ -24,7 +23,8 @@ def format_search_results(results: SearchResults):
             <content>{content}</content>
             <content_type>{content_type}</content_type>
             <relative_path>{relative_path}</relative_path>
-        </result>"""
+        </result>
+        """
         formatted_results.append(formatted_result.strip())
 
     return "\n".join(formatted_results)
@@ -34,6 +34,7 @@ def execute_backend_search(
     agent_context,
     search_text: str,
     content_types: list[str] | None = None,
+    relative_path: str | None = None,
     result_limit: int = 10,
 ):
     payload = SearchInput(
@@ -43,12 +44,13 @@ def execute_backend_search(
         if agent_context.organization_id
         else None,
         algorithm="hybrid",
-        paths=agent_context.paths,
+        paths=relative_path,
         result_limit=result_limit,
     )
-    search_results = search_content_without_session(payload)
 
-    return format_search_results(search_results)
+    search_function = modal.Function.lookup("comprehender", "search")
+    response = search_function.remote(payload)
+    return format_search_results(response.dict())
 
 
 def search_tech_docs(agent_context, search_text: str, rationale: str) -> str:

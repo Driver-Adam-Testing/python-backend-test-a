@@ -3,8 +3,8 @@ from shared.agent.models.llm_models import ModelConfig, ModelProvider
 
 
 def create_agent(
-    workspace_id: str,
-    codebase_id: str = None,
+    organization_id: str,
+    paths: list[str] | None,
     model: str | None = None,
     max_iterations: int = 1,
     tools=None,
@@ -19,11 +19,19 @@ def create_agent(
 
     if model.provider == ModelProvider.OPENAI:
         return OpenAIAgent(
-            workspace_id, codebase_id, model.model_id, max_iterations, tools
+            model=model.model_id,
+            max_iterations=max_iterations,
+            tools=tools,
+            organization_id=organization_id,
+            paths=paths,
         )
     elif model.provider == ModelProvider.ANTHROPIC:
         return AnthropicAgent(
-            workspace_id, codebase_id, model.model_id, max_iterations, tools
+            model=model.model_id,
+            max_iterations=max_iterations,
+            tools=tools,
+            organization_id=organization_id,
+            paths=paths,
         )
     else:
         raise ValueError(f"Provider {model.provider} is not supported.")
@@ -39,8 +47,6 @@ def get_agent(self, agent_instance_id: str):
     if agent_instance is None:
         return None
     agent = OpenAIAgent(
-        workspace_id=agent_instance.workspace_id,
-        codebase_id=agent_instance.codebase_id,
         model=agent_instance.model,
         id=agent_instance.id,
     )

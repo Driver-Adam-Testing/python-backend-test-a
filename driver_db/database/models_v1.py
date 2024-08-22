@@ -100,7 +100,7 @@ class RuntimeLogAgentInstance(SQLModel, table=True):  # type: ignore
         ),
     )
     id: UUID | None = Field(default_factory=uuid.uuid4, primary_key=True)
-    workspace_id: str
+    workspace_id: str | None
     codebase_id: str | None
     model: str
     messages: list["RuntimeLogAgentMessage"] = Relationship(
@@ -110,6 +110,7 @@ class RuntimeLogAgentInstance(SQLModel, table=True):  # type: ignore
     content_retrievals: list["RuntimeLogContentRetrieval"] = Relationship(
         back_populates="agent_instance"
     )
+    organization_id: str
 
 
 class RuntimeLogAgentMessage(SQLModel, table=True):  # type: ignore

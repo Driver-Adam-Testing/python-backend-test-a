@@ -3,40 +3,47 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import anthropic
+from database.db import get_session
+from database.models_v1 import RuntimeLogAgentInstance, RuntimeLogAgentMessage
 from openai import OpenAI
 from openai.types.chat.chat_completion_message import ChatCompletionMessage
 
 from shared.agent.models.claude import claude_tool_formatter
-from shared.agent.models.llm_models import ModelConfig
-from shared.agent.vector_db import VectorDb
 from shared.utils.bcolors import bcolors
 
 
 class AgentBase:
     def __init__(
         self,
-        workspace_id: str,
-        codebase_id: str = None,
-        model: str = None,
+        organization_id: str,
+        model: str,
+        paths: list[str] | None = None,
         max_iterations: int = 1,
         tools=None,
-        id: uuid.UUID = None,
-        organization_id: str | None = None,
+        id: uuid.UUID | None = None,
     ):
+        if paths is None:
+            paths = ["/"]
         self.iterations = 0
         self.max_iterations = max_iterations
-        self.workspace_id = workspace_id
-        self.codebase_id = codebase_id
         self.max_iterations = max_iterations
         self.tools = tools if tools is not None else []
-        self.model = (
-            model if model is not None else ModelConfig.get_default_model().model
-        )
-        self.collection = VectorDb(workspace_id=workspace_id)
+        self.model = model
         self.messages = []
         self.organization_id = organization_id
+        self.paths = paths
         if id is None:
-            self.id = self.collection.log_agent(self.codebase_id, self.model)
+            agent_instance = RuntimeLogAgentInstance(
+                workspace_id=None,
+                codebase_id=None,
+                model=model,
+                organization_id=organization_id,
+            )
+            with get_session() as session:
+                session.add(agent_instance)
+                session.commit()
+                session.refresh(agent_instance)
+                self.id = agent_instance.id
         else:
             self.id = id
 
@@ -77,9 +84,17 @@ class AgentBase:
         self._print_message(message)
         if log and self.id is not None:
             if isinstance(message, ChatCompletionMessage):
-                self.collection.log_agent_message(self.id, message.model_dump())
+                log_message = RuntimeLogAgentMessage(
+                    agent_instance_id=self.id, message=message.model_dump()
+                )
             else:
-                self.collection.log_agent_message(self.id, message)
+                log_message = RuntimeLogAgentMessage(
+                    agent_instance_id=self.id, message=message
+                )
+            with get_session() as session:
+                session.add(log_message)
+                session.commit()
+                session.refresh(log_message)
 
     def _execute_tool_call(self, tool_call):
         # TODO: there's probably a better  hierarchical version of determining whether the tool was correctly called.
@@ -149,19 +164,9 @@ class AgentBase:
 
 
 class OpenAIAgent(AgentBase):
-    def __init__(
-        self,
-        workspace_id: str,
-        codebase_id: str = None,
-        model: str = "gpt-4-turbo-preview",
-        max_iterations: int = 1,
-        tools=None,
-        id=None,
-        organization_id: str | None = None,
-    ):
-        super().__init__(
-            workspace_id, codebase_id, model, max_iterations, tools, id, organization_id
-        )
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
         self.client = OpenAI()
 
     @property
@@ -233,16 +238,8 @@ class OpenAIAgent(AgentBase):
 
 
 class AnthropicAgent(AgentBase):
-    def __init__(
-        self,
-        workspace_id: str,
-        codebase_id: str = None,
-        model: str = "gpt-4-turbo-preview",
-        max_iterations: int = 1,
-        tools=None,
-        id=None,
-    ):
-        super().__init__(workspace_id, codebase_id, model, max_iterations, tools, id)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.client = anthropic.Anthropic()
 
     def _execute_tool_calls(self, tool_calls):

@@ -7,17 +7,26 @@ from database.models_v1 import (
     Workspace,
 )
 from rank_bm25 import BM25Okapi
+from sqlmodel import Session, asc, or_, select
+
 from shared.embedding.text_embedder import batch_embed_text
 from shared.interfaces.search import SearchInput, SearchResult, SearchResults
-from sqlmodel import Session, asc, or_, select
 
 
 def tokenize_for_bm25(text: str):
     return re.findall(r"\b[\w_]+(?:'[\w_]+)?\b", text.lower())
 
 
+def search_content_without_session(input: SearchInput):
+    from database.db import get_session
+
+    with get_session() as session:
+        return search_content(session=session, input=input)
+
+
 # TODO deprecate in favor of search once embeddings migrated
 def search_content(session: Session, input: SearchInput):
+    print(input)
     embedded_query = batch_embed_text([input.query])[0]
 
     statement = (
@@ -31,15 +40,8 @@ def search_content(session: Session, input: SearchInput):
         .join(Workspace)
         .join(DerivedContentType)
         .where(DerivedContent.id == ChunkAndEmbedding.content_id)
-        .where(DerivedContent.workspace_id == Workspace.id)
         .where(DerivedContentType.id == DerivedContent.content_type_id)
     )
-
-    if input.workspace_id:
-        statement = statement.where(DerivedContent.workspace_id == input.workspace_id)
-
-    if input.codebase_id:
-        statement = statement.where(DerivedContent.codebase_id == input.codebase_id)
 
     if input.organization_id:
         statement = statement.where(Workspace.organization_id == input.organization_id)
@@ -54,17 +56,17 @@ def search_content(session: Session, input: SearchInput):
                 DerivedContentType.type_name.in_(input.content_type)
             )
 
-    if input.relative_path:
-        if isinstance(input.relative_path, str):
+    if input.paths:
+        if isinstance(input.paths, str):
             statement = statement.where(
-                DerivedContent.relative_path.like(f"{input.relative_path}%")
+                DerivedContent.relative_path.like(f"{input.paths}%")
             )
-        elif isinstance(input.relative_path, list):
+        elif isinstance(input.paths, list):
             statement = statement.where(
                 or_(
                     *[
                         DerivedContent.relative_path.like(f"{file_path}%")
-                        for file_path in input.relative_path
+                        for file_path in input.paths
                     ]
                 )
             )

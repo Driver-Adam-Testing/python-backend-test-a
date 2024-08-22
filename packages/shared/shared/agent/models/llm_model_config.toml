@@ -1,5 +1,8 @@
-[model_config]
-default_model = "gpt-4o"
+[models.default]
+model_id = "gpt-4o"
+provider = "openai"
+context_window_size = 128000
+max_output_tokens = 4096
 
 [models.gpt_4o]
 model_id = "gpt-4o"

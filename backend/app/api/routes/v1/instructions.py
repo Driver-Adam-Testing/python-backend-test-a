@@ -1,6 +1,6 @@
 import logging
 
-from database.models_v1 import Workspace
+from database.models_v1 import Workspace, Codebase
 from fastapi import APIRouter, HTTPException
 from sqlmodel import select
 
@@ -22,29 +22,22 @@ logger = logging.getLogger(__name__)
 def execute_instruction(
     session: CurrentSession, body: ExecuteInstructionRequest, user: CurrentUser
 ) -> ExecuteInstructionResponse:
-    requested_org = session.exec(
-        select(Workspace).where(Workspace.id == body.workspace_id)
+    result = session.exec(
+        select(Workspace, Codebase)
+        .where(Workspace.id == body.workspace_id)
+        .where(Workspace.organization_id == user.organization_id)
+        .where(Codebase.id == body.codebase_id)
+        .where(Codebase.workspace_id == body.workspace_id)
     ).first()
-    if requested_org is None:
-        logger.error(f"Workspace {body.workspace_id} not found")
-        raise HTTPException(
-            status_code=404,
-            detail="Workspace not found",
-        )
-    if user.organization_id == requested_org.organization_id:
-        call_id = modal_interface.execute_instruction(
-            body.workspace_id, body.codebase_id, body.prompt
-        )
-        return ExecuteInstructionResponse(
-            call_id=call_id,
-        )
-    logger.error(
-        f"User {user.user_id} requested execution outside of their organization."
+    
+    if not result:
+        logger.error(f"Invalid workspace or codebase for workspace_id {body.workspace_id} and codebase_id {body.codebase_id}")
+        raise HTTPException(status_code=400, detail="Invalid workspace or codebase")
+
+    call_id = modal_interface.execute_instruction(
+        body.workspace_id, body.codebase_id, body.prompt
     )
-    raise HTTPException(
-        status_code=403,
-        detail="Invalid organization provided",
-    )
+    return ExecuteInstructionResponse(call_id=call_id)
 
 
 @router.post("/results", response_model=InstructionResultsResponse)

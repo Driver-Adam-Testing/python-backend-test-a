@@ -1,6 +1,7 @@
 import json
 import logging
 from datetime import datetime
+from uuid import UUID
 
 from database.models_v1 import (
     DerivedContent,
@@ -10,6 +11,7 @@ from database.models_v1 import (
     Tag,
     TagContent,
     Workspace,
+    Codebase
 )
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError, NoResultFound
@@ -26,10 +28,32 @@ from app.schemas.content_schema import (
     TagAssociationResponse,
     ContentSourceAssociationRequest,
     ContentSourceAssociationResponse,
-    ContentSourceResponse
+    ContentSourceResponse, ContentSourceAssociationItem, DeleteDocumentSourceResponse,
+    BatchContentSourceAssociationResponse
 )
 
 logger = logging.getLogger(__name__)
+
+
+def is_authorized(session: Session, user_org_id: str, workspace_id: UUID, codebase_id: UUID) -> bool:
+    # Check if the workspace belongs to the organization
+    workspace = session.exec(
+        select(Workspace).where(Workspace.id == workspace_id, Workspace.organization_id == user_org_id)
+    ).first()
+    
+    if not workspace:
+        return False
+
+    # Check if the codebase belongs to the workspace
+    codebase = session.exec(
+        select(Codebase).where(Codebase.id == codebase_id, Codebase.workspace_id == workspace_id)
+    ).first()
+    
+    if not codebase:
+        return False
+
+    return True
+
 
 
 class DerivedContentTypeRepository(BaseRepository[DerivedContentType]):
@@ -61,6 +85,8 @@ class DerivedContentTypeRepository(BaseRepository[DerivedContentType]):
         ]
 
 
+
+
 class ContentService:
     def __init__(self, session: Session):
         self.session = session
@@ -68,12 +94,13 @@ class ContentService:
         self.workspace_repository = BaseRepository(session, Workspace)
         self.tag_repository = BaseRepository(session, Tag)
         self.derived_content_type_repository = DerivedContentTypeRepository(session)
+        self.document_source_repository = BaseRepository(session, DocumentSource)
 
     def associate_tag(
             self,
             organization_id: str,
-            content_id: str,
-            tag_id: str,
+            content_id: UUID,
+            tag_id: UUID,
             include_tag: bool = True,
     ) -> TagAssociationResponse:
         logger.info(
@@ -154,7 +181,7 @@ class ContentService:
         )
 
     def associate_collection_with_content(
-            self, organization_id: str, content_id: str, tag_id: str
+            self, organization_id: str, content_id: UUID, tag_id: UUID
     ) -> TagAssociationResponse:
         logger.info(
             f"Associating collection tag {tag_id} with content {content_id} for organization {organization_id}"
@@ -205,10 +232,10 @@ class ContentService:
         )
 
     def associate_sources_with_content(
-            self, organization_id: str, content_id: str, content_source_associations: ContentSourceAssociationRequest
-    ) -> ContentSourceAssociationResponse:
+            self, organization_id: str, content_id: UUID, content_source_associations: list[ContentSourceAssociationItem]
+    ) -> BatchContentSourceAssociationResponse:
         logger.info(
-            f"Associating  {len(content_source_associations.sources)} with content {content_id} for organization {organization_id}"
+            f"Associating {len(content_source_associations)} sources with content {content_id} for organization {organization_id}"
         )
         document = self.content_repository.get(content_id)
 
@@ -219,18 +246,28 @@ class ContentService:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
             )
-        # validate the source content ids
-        for source in content_source_associations.sources:
-            if self.content_repository.exists(source.source_content_id) is False:
-                logger.error(
-                    f"Source content {source.source_content_id} not found."
-                )
+
+        # Fetch existing sources
+        existing_sources = self.session.exec(
+            select(DocumentSource).where(DocumentSource.document_id == content_id)
+        ).all()
+
+        # Validate the source content ids
+        incoming_source_ids = {source.source_content_id for source in content_source_associations}
+        for source in content_source_associations:
+            if not self.content_repository.exists(source.source_content_id):
+                logger.error(f"Source content {source.source_content_id} not found.")
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND, detail="Source content not found"
                 )
 
-        for source in content_source_associations.sources:
-            #perform upsert
+        # Delete sources that are not in the incoming list
+        for existing_source in existing_sources:
+            if existing_source.source_id not in incoming_source_ids:
+                self.session.delete(existing_source)
+
+        # Upsert incoming sources
+        for source in content_source_associations:
             self.session.merge(
                 DocumentSource(
                     document_id=content_id,
@@ -241,58 +278,47 @@ class ContentService:
 
         self.session.commit()
 
-        logger.info(
-            f"Source content association with content {content_id} successfully"
-        )
+        logger.info(f"Source content association with content {content_id} successfully updated")
 
-        return ContentSourceAssociationResponse(
+        return BatchContentSourceAssociationResponse(
             content_id=content_id,
-            sources=content_source_associations.sources,
+            sources=content_source_associations,
             message="Source content associated successfully",
         )
 
-    # def associate_sources_with_content(
-    #         self, organization_id: str, content_id: str
-    # ) -> ContentSourceAssociationResponse:
-    #     logger.info(
-    #         f"Associating source {source_content_id} with content {content_id} for organization {organization_id}"
-    #     )
-    #     document = self.content_repository.get(content_id)
-    #
-    #     if not document or document.workspace.organization_id != organization_id:
-    #         logger.error(
-    #             f"Content {content_id} not found for organization {organization_id}"
-    #         )
-    #         raise HTTPException(
-    #             status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
-    #         )
-    #
-    #     # for source in sources:
-    #     document.source_links.append(DocumentSource(
-    #         document_id=content_id,
-    #         source_id=source_content_id,
-    #         include=include_source,
-    #     ))
-    #
-    #     try:
-    #         self.session.commit()
-    #         logger.info(
-    #             f"Source content {source_content_id} associated with content {content_id} successfully"
-    #         )
-    #     except IntegrityError:
-    #         self.session.rollback()
-    #         logger.error(
-    #             f"Integrity error while associating source content {source_content_id} with content {content_id}"
-    #         )
-    #
-    #     return ContentSourceAssociationResponse(
-    #         content_id=content_id,
-    #         source_content_id=source_content_id,
-    #         message="Source content associated successfully",
-    #     )
+    def associate_document_source(
+            self, organization_id: str, content_id: UUID, source_id: UUID, include: bool = True
+    ) -> ContentSourceAssociationResponse:
+        logger.info(
+            f"Associating content {content_id} with {source_id} for organization {organization_id}"
+        )
+        document = self.content_repository.get(content_id)
+
+        if not document or document.workspace.organization_id != organization_id:
+            logger.error(
+                f"Content {content_id} not found for organization {organization_id}"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
+            )
+        existing_document_source = self.document_source_repository.get_by_pk(document_id=content_id, source_id=source_id)
+        if existing_document_source:
+            raise HTTPException(status_code=400, detail="Document source already exists")
+
+        document_source = self.document_source_repository.create(DocumentSource(
+            document_id=content_id,
+            source_id=source_id,
+            include=include
+        ))
+
+        return ContentSourceAssociationResponse(
+            content_id=str(document_source.document_id),
+            source_id=str(document_source.source_id),
+            message="Source content associated successfully",
+        )
 
     def disassociate_tag(
-            self, organization_id: str, content_id: str, tag_id: str
+            self, organization_id: str, content_id: UUID, tag_id: UUID
     ) -> TagAssociationResponse:
         logger.info(
             f"Disassociating tag {tag_id} from content {content_id} for organization {organization_id}"
@@ -355,11 +381,49 @@ class ContentService:
                 message="Tag disassociated successfully",
             )
 
+    def disassociate_document_source(
+            self, organization_id: str, content_id: UUID, source_content_id: UUID
+    ) -> DeleteDocumentSourceResponse:
+        logger.info(
+            f"Disassociating source {source_content_id} from content {content_id} for organization {organization_id}"
+        )
+
+        content = self.content_repository.get(content_id)
+        if not content:
+            logger.error(
+                f"Content {content_id} not found for organization {organization_id}"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
+            )
+
+        if not is_authorized(self.session, organization_id, content.workspace_id, content.codebase_id):
+            logger.error(f"User {organization_id} is not authorized to access content {content_id}")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized"
+            )
+
+        deleted_item = self.document_source_repository.delete_by_pk(document_id=content_id, source_id=source_content_id)
+
+        if not deleted_item:
+            logger.error(
+                f"Source {source_content_id} not found for content {content_id}"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Document Source not found"
+            )
+
+        return DeleteDocumentSourceResponse(
+            document_id=deleted_item.document_id,
+            source_id=deleted_item.source_id,
+            message="Document source disassociated successfully",
+        )
+
     def create_blank_document(
             self,
             organization_id: str,
-            workspace_id: str,
-            codebase_id: str,
+            workspace_id: UUID,
+            codebase_id: UUID,
             document_name: str | None = None,
     ) -> DerivedContent:
         logger.info(
@@ -419,7 +483,7 @@ class ContentService:
         return new_content
 
     def create_document_from_template(
-            self, organization_id: str, content_id: str
+            self, organization_id: str, content_id: UUID
     ) -> DerivedContent:
         logger.info(
             f"Creating document from template for organization {organization_id}, content {content_id}"
@@ -487,13 +551,10 @@ class ContentService:
             )
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
         # format the results
-        content_results = [
-            ListContentResult(
-                id=result.id,
-                organization_id=result.workspace.organization_id,
-                content_type_id=result.content_type_id,
-                content_type_name=result.content_type.type_name,
-                content_name=(
+        content_results = []
+        for result in results:
+            try:
+                content_name = (
                     json.loads(result.content).get("name")
                     if result.content_type.type_name == "application_note"
                        and result.content
@@ -505,24 +566,35 @@ class ContentService:
                     else result.relative_path.removeprefix("documents/")
                     if result.content_type.type_name == "supplemental-document"
                     else result.relative_path
-                ),
-                workspace_id=result.workspace_id,
-                workspace_name=result.workspace.display_name,
-                source_content_id=result.source_content_id,
-                codebase_id=result.codebase_id,
-                relative_path=result.relative_path,
-                content=result.content,
-                misc_metadata=result.misc_metadata,
-                status=result.status,
-                created_at=result.created_at,
-                updated_at=result.updated_at,
-                source_content=result.source_content,
-                order=result.order,
-                tags=result.tags,
-                source_links=result.source_links,
+                )
+            except json.JSONDecodeError as e:
+                logger.error(f"Error decoding JSON for content ID {result.id}: {str(e)}")
+                content_name = "Invalid JSON content"
+
+            content_results.append(
+                ListContentResult(
+                    id=result.id,
+                    organization_id=result.workspace.organization_id,
+                    content_type_id=result.content_type_id,
+                    content_type_name=result.content_type.type_name,
+                    content_name=content_name,
+                    workspace_id=result.workspace_id,
+                    workspace_name=result.workspace.display_name,
+                    source_content_id=result.source_content_id,
+                    codebase_id=result.codebase_id,
+                    codebase_name=result.codebase.codebase_name,
+                    relative_path=result.relative_path,
+                    content=result.content,
+                    misc_metadata=result.misc_metadata,
+                    status=result.status,
+                    created_at=result.created_at,
+                    updated_at=result.updated_at,
+                    source_content=result.source_content,
+                    order=result.order,
+                    tags=result.tags,
+                    source_links=result.source_links,
+                )
             )
-            for result in results
-        ]
         logger.info(
             f"List of content retrieved successfully for organization {organization_id}"
         )
@@ -592,6 +664,13 @@ class ContentService:
             )
 
         if search_input.status:
+            valid_statuses = [content_status.value for content_status in Enum_Derived_Content_Status]
+            if search_input.status not in valid_statuses:
+                logger.error(f"Invalid status value: {search_input.status}")
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Invalid status value: {search_input.status}",
+                )
             statement = statement.where(DerivedContent.status == search_input.status)
             count_statement = count_statement.where(
                 DerivedContent.status == search_input.status
@@ -606,6 +685,7 @@ class ContentService:
             )
 
         if search_input.content_type_name:
+            logger.info(f"Filtering by content_type_name: {search_input.content_type_name}")
             statement = statement.where(
                 DerivedContentType.type_name.in_(search_input.content_type_name)
             )
@@ -651,13 +731,19 @@ class ContentService:
         logger.info("List of content types retrieved successfully")
         return ListContentTypesResults(results=results)
 
-    def get_content_sources(self, content_id: str) -> ContentSourceResponse:
+    def get_content_sources(self, content_id: UUID, organization_id:str) -> ContentSourceResponse:
         logger.info(f"Fetching content sources for content {content_id}")
         content = self.content_repository.get(content_id)
         if not content:
             logger.error(f"Content {content_id} not found")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
+            )
+
+        if not is_authorized(self.session, organization_id, content.workspace_id, content.codebase_id):
+            logger.error(f"User {organization_id} is not authorized to access content {content_id}")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized"
             )
 
         sources = [link.source for link in content.source_links]
@@ -687,6 +773,7 @@ class ContentService:
                 workspace_name=result.workspace.display_name,
                 source_content_id=result.source_content_id,
                 codebase_id=result.codebase_id,
+                codebase_name=result.codebase.codebase_name,
                 relative_path=result.relative_path,
                 content=result.content,
                 misc_metadata=result.misc_metadata,
@@ -701,6 +788,23 @@ class ContentService:
             for result in sources
         ]
         return ContentSourceResponse(results=source_results)
+    #TODO return ListContentItem
+    def get_content_by_id(self, content_id: UUID, user_org_id: str) -> DerivedContent:
+        logger.info(f"Fetching content by ID {content_id}")
+        content = self.content_repository.get(content_id)
+        if not content:
+            logger.error(f"Content {content_id} not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
+            )
+        
+        if not is_authorized(self.session, user_org_id, content.workspace_id, content.codebase_id):
+            logger.error(f"User {user_org_id} is not authorized to access content {content_id}")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized"
+            )
+
+        return content
 
     def create_template(
             self, organization_id: str, workspace_id: str, codebase_id: str

@@ -1,4 +1,5 @@
 import logging
+from uuid import UUID
 
 from database.models_v1 import Tag
 from fastapi import HTTPException
@@ -8,7 +9,7 @@ from sqlalchemy.exc import IntegrityError, NoResultFound
 from app.api.auth import CurrentUser
 from app.api.session import CurrentSession
 from app.repositories.base_repository import BaseRepository
-from app.schemas.content_schema import ListContentInput
+from app.schemas.content_schema import ListContentInput, TagAssociationResponse
 from app.schemas.tag_schema import (
     EditTagInput,
     ListTagContentsResults,
@@ -26,6 +27,17 @@ class TagService:
         self.session = session
         self.tag_repository = BaseRepository(session, Tag)
         self.content_service = ContentService(session)
+
+    def associate_tag(
+            self,
+            organization_id: str,
+            content_id: UUID,
+            tag_id: UUID,
+            include_tag: bool = True,
+    ) -> TagAssociationResponse:
+        return self.content_service.associate_tag(
+            organization_id, content_id, tag_id, include_tag
+        )
 
     def list_tags(self, user: CurrentUser, lt_input: ListTagsInput) -> ListTagsResults:
         logger.info(f"Listing tags for user {user.user_id} with input {lt_input}")
@@ -71,6 +83,12 @@ class TagService:
             logging.error("Tag name already exists")
             raise HTTPException(status_code=400, detail="Tag name already exists.")
 
+    def disassociate_tag(
+            self, organization_id: str, content_id: UUID, tag_id: UUID
+    ) -> TagAssociationResponse:
+        return self.content_service.disassociate_tag(
+            organization_id, content_id, tag_id
+        )
 
     def edit_tag(self, user: CurrentUser, tag_id: str, lt_input: EditTagInput) -> Tag:
         tag = self.session.exec(
@@ -89,7 +107,7 @@ class TagService:
         raise HTTPException(status_code=404, detail="Tag not found")
 
     def list_tag_contents(
-        self, user: CurrentUser, tag_id: str, lt_input: ListContentInput
+            self, user: CurrentUser, tag_id: str, lt_input: ListContentInput
     ) -> ListTagContentsResults:
         logger.info(
             f"Listing contents for tag {tag_id} for user {user.user_id} with input {lt_input}"

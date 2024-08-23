@@ -1,7 +1,7 @@
 import logging
 from typing import Annotated
+from uuid import UUID
 
-from app.services.content_service import ContentService
 from database.models_v1 import Tag
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.exc import IntegrityError
@@ -107,12 +107,12 @@ def associate_tag_with_content(
     tag_id: str,
     input: CollectionSourceInput,
 ) -> TagAssociationResponse:
-    content_service = ContentService(session)
-    return content_service.associate_tag(
+    tag_service = TagService(session)
+    return tag_service.associate_tag(
         user.organization_id,
-        content_id,
-        tag_id,
-        input.include,
+        UUID(content_id),
+        UUID(tag_id),
+        input.include
     )
 
 
@@ -126,6 +126,9 @@ def disassociate_tag_with_content(
     content_id: str,
     tag_id: str,
 ) -> TagAssociationResponse:
-    content_service = ContentService(session)
-
-    return content_service.disassociate_tag(user.organization_id, content_id, tag_id)
+    tag_service = TagService(session)
+    return tag_service.disassociate_tag(
+        user.organization_id,
+        UUID(content_id),
+        UUID(tag_id)
+    )

@@ -833,6 +833,7 @@ class ContentService:
         # content.codebase_id
 
         return parent
+
     def create_template(
             self, organization_id: str, workspace_id: str, codebase_id: str
     ) -> DerivedContent:

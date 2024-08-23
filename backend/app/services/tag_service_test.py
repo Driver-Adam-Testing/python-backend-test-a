@@ -4,8 +4,14 @@ from uuid import uuid4
 import pytest
 
 from app.schemas.content_schema import ListContentInput
-from database.models_v1 import DerivedContent, DerivedContentType, Workspace, Codebase, Enum_Codebase_Status, \
+from database.models_v1 import (
+    DerivedContent,
+    DerivedContentType,
+    Workspace,
+    Codebase,
+    Enum_Codebase_Status,
     Enum_Derived_Content_Status
+)
 from database.derived_content_types import DerivedContentTypeNames
 from app.schemas.tag_schema import NewTagInput, EditTagInput, ListTagsInput
 from app.services.tag_service import TagService
@@ -27,6 +33,7 @@ def workspace(db, current_user_with_org):
     db.add(workspace)
     db.commit()
     return workspace
+
 
 @pytest.fixture
 def org_b_workspace(db, current_user_with_org):
@@ -80,6 +87,7 @@ def codebase_content(tag_service, current_user_with_org, workspace, codebase):
     )
     return tag_service.content_service.content_repository.create(codebase_record)
 
+
 @pytest.fixture
 def org_b_codebase_content(tag_service, current_user_with_org, org_b_workspace, codebase):
     workspace_id = org_b_workspace.id
@@ -99,6 +107,7 @@ def org_b_codebase_content(tag_service, current_user_with_org, org_b_workspace, 
     )
     return tag_service.content_service.content_repository.create(codebase_record)
 
+
 @pytest.fixture
 def content(tag_service, current_user_with_org, workspace, codebase, codebase_content):
     organization_id = current_user_with_org.organization_id
@@ -111,6 +120,7 @@ def content(tag_service, current_user_with_org, workspace, codebase, codebase_co
         codebase_id,
         document_name
     )
+
 
 @pytest.fixture
 def org_b_content(tag_service, current_user_with_org, org_b_workspace, codebase, org_b_codebase_content):
@@ -125,6 +135,7 @@ def org_b_content(tag_service, current_user_with_org, org_b_workspace, codebase,
         document_name
     )
 
+
 @pytest.fixture(scope="function", autouse=True)
 def create_content_types(db):
     # insert all DerivedContentTypeNames
@@ -132,6 +143,7 @@ def create_content_types(db):
         content_type = DerivedContentType(type_name=type_name.value)  # Convert enum to its value
         db.add(content_type)
     db.commit()
+
 
 def test_create_tag(db, current_user_with_org):
     tag_service = TagService(db)
@@ -144,9 +156,11 @@ def test_create_tag(db, current_user_with_org):
     assert new_tag.organization_id == current_user_with_org.organization_id
     assert new_tag.created_by == current_user_with_org.user_id
 
+
 def test_create_existing_tag(tag_service, tag, current_user_with_org):
     with pytest.raises(HTTPException):
         tag_service.create_tag(current_user_with_org, NewTagInput(**tag.model_dump(exclude_unset=True)))
+
 
 def test_invalid_tag_update(tag_service, tag, current_user_with_org):
     new_name = "UPDATED_TAG"
@@ -154,6 +168,7 @@ def test_invalid_tag_update(tag_service, tag, current_user_with_org):
     new_type = "category"
     with pytest.raises(ValidationError):
         EditTagInput(name=new_name, hex_color=new_hex_color, type=new_type)
+
 
 def test_update_tag(tag_service, tag, current_user_with_org):
     new_name = "UPDATED_TAG"
@@ -164,12 +179,14 @@ def test_update_tag(tag_service, tag, current_user_with_org):
     assert updated_tag.name == new_name
     assert updated_tag.hex_color == new_hex_color
 
+
 def test_list_tags(tag_service, current_user_with_org, tag):
     lt_input = ListTagsInput(limit=10, offset=0, name=tag.name, type=tag.type)
     results = tag_service.list_tags(current_user_with_org, lt_input)
     assert results is not None
     assert results.limit == lt_input.limit
     assert results.offset == lt_input.offset
+
 
 def test_associate_tag(tag_service, current_user_with_org, tag, content):
     content_id = content.id
@@ -178,12 +195,14 @@ def test_associate_tag(tag_service, current_user_with_org, tag, content):
     response = tag_service.associate_tag(current_user_with_org.organization_id, content_id, tag_id, include)
     assert response is not None
 
+
 def test_associate_tag_from_other_org(tag_service, current_user_with_org, tag, content):
     content_id = content.id
     tag_id = tag.id
     include = True
     with pytest.raises(HTTPException):
         tag_service.associate_tag("some_other_org", content_id, tag_id, include)
+
 
 def test_associate_tag_content_from_other_org(tag_service, current_user_with_org, tag, org_b_content):
     content_id = org_b_content.id
@@ -192,6 +211,7 @@ def test_associate_tag_content_from_other_org(tag_service, current_user_with_org
     with pytest.raises(HTTPException):
         tag_service.associate_tag(current_user_with_org.organization_id, content_id, tag_id, include)
 
+
 def test_disassociate_tag(tag_service, current_user_with_org, tag, content):
     content_id = content.id
     tag_id = tag.id
@@ -199,6 +219,7 @@ def test_disassociate_tag(tag_service, current_user_with_org, tag, content):
 
     response = tag_service.disassociate_tag(current_user_with_org.organization_id, content_id, tag_id)
     assert response is not None
+
 
 def test_list_tag_contents(tag_service, current_user_with_org, tag, content):
     lt_input = ListContentInput(limit=10, offset=0)

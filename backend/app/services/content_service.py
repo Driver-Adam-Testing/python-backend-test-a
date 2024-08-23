@@ -2,7 +2,7 @@ import json
 import logging
 from datetime import datetime
 from uuid import UUID
-
+from typing import Callable
 from database.models_v1 import (
     DerivedContent,
     DerivedContentType,
@@ -31,6 +31,7 @@ from app.schemas.content_schema import (
     ContentSourceResponse, ContentSourceAssociationItem, DeleteDocumentSourceResponse,
     BatchContentSourceAssociationResponse
 )
+from app.utils.authorization_chain import AuthorizationChain, perform_authorization_checks
 
 logger = logging.getLogger(__name__)
 
@@ -93,6 +94,9 @@ class ContentService:
         self.derived_content_type_repository = DerivedContentTypeRepository(session)
         self.document_source_repository = BaseRepository(session, DocumentSource)
 
+    def perform_authorization_checks(self, checks: list[Callable[[Session], bool]]):
+        perform_authorization_checks(self.session, checks)
+
     def associate_tag(
             self,
             organization_id: str,
@@ -103,7 +107,23 @@ class ContentService:
         logger.info(
             f"Associating tag {tag_id} with content {content_id} for organization {organization_id}"
         )
-        # Check if content exists
+
+        checks = [
+            lambda session: self.content_repository.is_authorized(
+                id=content_id,
+                relationship_chain=["workspace"],
+                field_name="organization_id",
+                field_value=organization_id,
+            ),
+            lambda session: self.tag_repository.is_authorized(
+                id=tag_id,
+                field_name="organization_id",
+                field_value=organization_id
+            )
+        ]
+
+        self.perform_authorization_checks(checks)
+
         content = self.content_repository.get_by_conditions(
             [
                 organization_id == Workspace.organization_id,
@@ -121,7 +141,6 @@ class ContentService:
                 detail="Content not found.",
             )
 
-        # Check if tag exists
         tag = self.tag_repository.get_by_conditions(
             [Tag.id == tag_id, Tag.organization_id == organization_id]
         )
@@ -151,7 +170,7 @@ class ContentService:
             if include_tag is not None and tag.type == "collection"
             else True
         )
-        # Associate tag with content
+
         content.tag_links.append(
             TagContent(tag_id=tag.id, content_id=content.id, include=include_tag)
         )
@@ -183,6 +202,23 @@ class ContentService:
         logger.info(
             f"Associating collection tag {tag_id} with content {content_id} for organization {organization_id}"
         )
+
+        checks = [
+            lambda session: self.content_repository.is_authorized(
+                id=content_id,
+                relationship_chain=["workspace"],
+                field_name="organization_id",
+                field_value=organization_id,
+            ),
+            lambda session: self.tag_repository.is_authorized(
+                id=tag_id,
+                field_name="organization_id",
+                field_value=organization_id
+            )
+        ]
+
+        self.perform_authorization_checks(checks)
+
         document = self.content_repository.get(content_id)
 
         if not document or document.workspace.organization_id != organization_id:
@@ -192,12 +228,10 @@ class ContentService:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
             )
-        # get the content source content related to the tag_id
+
         tag_contents = self.session.exec(
             select(TagContent).where(TagContent.tag_id == tag_id)
         ).all()
-
-        # source_contents = [tag_content.content for tag_content in tag_contents]
 
         sources = [
             DocumentSource(
@@ -235,6 +269,18 @@ class ContentService:
         logger.info(
             f"Associating {len(content_source_associations)} sources with content {content_id} for organization {organization_id}"
         )
+
+        checks = [
+            lambda session: self.content_repository.is_authorized(
+                id=content_id,
+                relationship_chain=["workspace"],
+                field_name="organization_id",
+                field_value=organization_id,
+            )
+        ]
+
+        self.perform_authorization_checks(checks)
+
         document = self.content_repository.get(content_id)
 
         if not document or document.workspace.organization_id != organization_id:
@@ -245,12 +291,10 @@ class ContentService:
                 status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
             )
 
-        # Fetch existing sources
         existing_sources = self.session.exec(
             select(DocumentSource).where(DocumentSource.document_id == content_id)
         ).all()
 
-        # Validate the source content ids
         incoming_source_ids = {source.source_content_id for source in content_source_associations}
         for source in content_source_associations:
             if not self.content_repository.exists(source.source_content_id):
@@ -259,12 +303,10 @@ class ContentService:
                     status_code=status.HTTP_404_NOT_FOUND, detail="Source content not found"
                 )
 
-        # Delete sources that are not in the incoming list
         for existing_source in existing_sources:
             if existing_source.source_id not in incoming_source_ids:
                 self.session.delete(existing_source)
 
-        # Upsert incoming sources
         for source in content_source_associations:
             self.session.merge(
                 DocumentSource(
@@ -290,6 +332,18 @@ class ContentService:
         logger.info(
             f"Associating content {content_id} with {source_id} for organization {organization_id}"
         )
+
+        checks = [
+            lambda session: self.content_repository.is_authorized(
+                id=content_id,
+                relationship_chain=["workspace"],
+                field_name="organization_id",
+                field_value=organization_id,
+            )
+        ]
+
+        self.perform_authorization_checks(checks)
+
         document = self.content_repository.get(content_id)
 
         if not document or document.workspace.organization_id != organization_id:
@@ -299,6 +353,7 @@ class ContentService:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
             )
+
         existing_document_source = self.document_source_repository.get_by_pk(document_id=content_id,
                                                                              source_id=source_id)
         if existing_document_source:
@@ -322,7 +377,22 @@ class ContentService:
         logger.info(
             f"Disassociating tag {tag_id} from content {content_id} for organization {organization_id}"
         )
-        # Check if content exists
+
+        checks = [
+            lambda session: self.content_repository.is_authorized(
+                id=content_id,
+                relationship_chain=["workspace"],
+                field_name="organization_id",
+                field_value=organization_id,
+            ),
+            lambda session: self.tag_repository.is_authorized(
+                id=tag_id,
+                field_name="organization_id",
+                field_value=organization_id
+            )
+        ]
+
+        self.perform_authorization_checks(checks)
 
         content = self.session.exec(
             select(DerivedContent)
@@ -339,7 +409,7 @@ class ContentService:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
             )
-        # Check if tag exists
+
         tag = self.session.exec(
             select(Tag)
             .where(Tag.id == tag_id)
@@ -352,7 +422,6 @@ class ContentService:
                 status_code=status.HTTP_404_NOT_FOUND, detail="Tag not found"
             )
 
-        # Disassociate tag with content
         link = self.session.exec(
             select(TagContent)
             .where(TagContent.tag_id == tag_id)
@@ -387,6 +456,17 @@ class ContentService:
             f"Disassociating source {source_content_id} from content {content_id} for organization {organization_id}"
         )
 
+        checks = [
+            lambda session: self.content_repository.is_authorized(
+                id=content_id,
+                relationship_chain=["workspace"],
+                field_name="organization_id",
+                field_value=organization_id,
+            )
+        ]
+
+        self.perform_authorization_checks(checks)
+
         content = self.content_repository.get(content_id)
         if not content:
             logger.error(
@@ -394,12 +474,6 @@ class ContentService:
             )
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
-            )
-
-        if not is_authorized(self.session, organization_id, content.workspace_id, content.codebase_id):
-            logger.error(f"User {organization_id} is not authorized to access content {content_id}")
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized"
             )
 
         deleted_item = self.document_source_repository.delete_by_pk(document_id=content_id, source_id=source_content_id)
@@ -428,6 +502,17 @@ class ContentService:
         logger.info(
             f"Creating blank document for organization {organization_id}, workspace {workspace_id}, codebase {codebase_id}"
         )
+
+        checks = [
+            lambda session: self.workspace_repository.is_authorized(
+                id=workspace_id,
+                field_name="organization_id",
+                field_value=organization_id
+            )
+        ]
+
+        self.perform_authorization_checks(checks)
+
         workspace_exists = self.workspace_repository.exists(
             workspace_id, organization_id
         )
@@ -438,17 +523,14 @@ class ContentService:
             )
             raise NoResultFound("Workspace not found")
 
-        # get application note derived content type
         application_note_content_type = (
             self.derived_content_type_repository.get_by_type_name("application_note")
         )
 
-        # get codebase derived content type
         codebase_content_type = self.derived_content_type_repository.get_by_type_name(
             "codebase"
         )
 
-        # find the derived content type with content type codebase and workspace id and codebase id
         parent_content = self.session.exec(
             select(DerivedContent)
             .where(DerivedContent.content_type_id == codebase_content_type.id)
@@ -487,11 +569,22 @@ class ContentService:
         logger.info(
             f"Creating document from template for organization {organization_id}, content {content_id}"
         )
-        # get the template content type
+
+        checks = [
+            lambda session: self.content_repository.is_authorized(
+                id=content_id,
+                relationship_chain=["workspace"],
+                field_name="organization_id",
+                field_value=organization_id,
+            )
+        ]
+
+        self.perform_authorization_checks(checks)
+
         template_content_type = self.derived_content_type_repository.get_by_type_name(
             "template"
         )
-        # get the content
+
         content = self.session.exec(
             select(DerivedContent)
             .where(DerivedContent.id == content_id)
@@ -505,8 +598,6 @@ class ContentService:
             raise NoResultFound("Content not found")
 
         content_template = json.loads(content.content)
-
-        # copy content_template to new_content_template
         new_content_template = content_template.copy()
         new_content_name = new_content_template["name"]
         new_content_template["name"] = f"{new_content_name} (Copy)"
@@ -516,7 +607,6 @@ class ContentService:
             self.derived_content_type_repository.get_by_type_name("application_note")
         )
 
-        # create a new content from the template
         new_content = self.content_repository.create(
             DerivedContent(
                 content_type_id=application_note_content_type.id,
@@ -549,7 +639,7 @@ class ContentService:
                 f"Error getting list of content for organization {organization_id}: {str(e)}"
             )
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-        # format the results
+
         content_results = []
         for result in results:
             try:
@@ -609,7 +699,7 @@ class ContentService:
     ) -> tuple[list[DerivedContent], int]:
         statement = (
             select(DerivedContent)
-            .distinct(DerivedContent.id)  # Ensure distinct records
+            .distinct(DerivedContent.id)
             .join(DerivedContentType)
             .join(Workspace)
             .join(TagContent, isouter=True)
@@ -619,13 +709,8 @@ class ContentService:
                 isouter=True,
                 onclause=DerivedContent.id == DocumentSource.document_id,
             )
-            # TODO: Current plan is for workspaces to be removed from the application.
-            # In this intermediate state, we are maintaining the existing workspace
-            # table and joining them all together to obtain all content that is currently
-            # housed under the given organization. This will need updated if/when the
-            # workspace data is being migrated.
             .where(organization_id == Workspace.organization_id)
-            .order_by(DerivedContent.id)  # Ensure ORDER BY matches DISTINCT ON
+            .order_by(DerivedContent.id)
         )
         count_statement = (
             select(func.count())
@@ -732,6 +817,18 @@ class ContentService:
 
     def get_content_sources(self, content_id: UUID, organization_id: str) -> ContentSourceResponse:
         logger.info(f"Fetching content sources for content {content_id}")
+
+        checks = [
+            lambda session: self.content_repository.is_authorized(
+                id=content_id,
+                relationship_chain=["workspace"],
+                field_name="organization_id",
+                field_value=organization_id,
+            )
+        ]
+
+        self.perform_authorization_checks(checks)
+
         content = self.content_repository.get(content_id)
         if not content:
             logger.error(f"Content {content_id} not found")
@@ -739,16 +836,9 @@ class ContentService:
                 status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
             )
 
-        if not is_authorized(self.session, organization_id, content.workspace_id, content.codebase_id):
-            logger.error(f"User {organization_id} is not authorized to access content {content_id}")
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized"
-            )
-
         sources = [link.source for link in content.source_links]
 
         logger.info(f"Content sources resolved for content {content_id}")
-        # return sources
         source_results = [
             ListContentResult(
                 id=result.id,
@@ -787,21 +877,21 @@ class ContentService:
             for result in sources
         ]
         return ContentSourceResponse(results=source_results)
-
-    # TODO return ListContentItem
+    
     def get_content_by_id(self, content_id: UUID, user_org_id: str) -> DerivedContent:
         logger.info(f"Fetching content by ID {content_id}")
+
+        checks = [
+            lambda session: is_authorized(session, user_org_id, content.workspace_id, content.codebase_id)
+        ]
+
+        self.perform_authorization_checks(checks)
+
         content = self.content_repository.get(content_id)
         if not content:
             logger.error(f"Content {content_id} not found")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
-            )
-
-        if not is_authorized(self.session, user_org_id, content.workspace_id, content.codebase_id):
-            logger.error(f"User {user_org_id} is not authorized to access content {content_id}")
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized"
             )
 
         return content
@@ -819,18 +909,16 @@ class ContentService:
                 status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
             )
 
-        if not is_authorized(self.session, user_org_id, content.workspace_id, content.codebase_id):
-            logger.error(f"User {user_org_id} is not authorized to access content {content_id}")
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized"
-            )
+        checks = [
+            lambda session: is_authorized(session, user_org_id, content.workspace_id, content.codebase_id)
+        ]
+
+        self.perform_authorization_checks(checks)
+
         parent = self.session.exec(select(DerivedContent)
                                    .join(DerivedContentType)
                                    .where(DerivedContent.codebase_id == content.codebase_id)
                                    .where(DerivedContentType.type_name == "codebase")).first()
-
-        # parent = self.content_repository.get_by_conditions()
-        # content.codebase_id
 
         return parent
 
@@ -840,6 +928,17 @@ class ContentService:
         logger.info(
             f"Creating template for organization {organization_id}, workspace {workspace_id}, codebase {codebase_id}"
         )
+
+        checks = [
+            lambda session: self.workspace_repository.is_authorized(
+                id=workspace_id,
+                field_name="organization_id",
+                field_value=organization_id
+            )
+        ]
+
+        self.perform_authorization_checks(checks)
+
         workspace_exists = self.workspace_repository.exists(
             workspace_id, organization_id
         )
@@ -852,17 +951,14 @@ class ContentService:
                 status_code=status.HTTP_404_NOT_FOUND, detail="Workspace not found"
             )
 
-        # get application note derived content type
         template_content_type = self.derived_content_type_repository.get_by_type_name(
             "template"
         )
 
-        # get codebase derived content type
         codebase_content_type = self.derived_content_type_repository.get_by_type_name(
             "codebase"
         )
 
-        # find the derived content type with content type codebase and workspace id and codebase id
         parent_content = self.session.exec(
             select(DerivedContent)
             .where(DerivedContent.content_type_id == codebase_content_type.id)
@@ -871,7 +967,6 @@ class ContentService:
         ).first()
 
         blank_content_template = {"name": "Template", "content": " ", "description": ""}
-        # Add the new content to the session and commit
         new_content = self.content_repository.create(
             DerivedContent(
                 content_type_id=template_content_type.id,

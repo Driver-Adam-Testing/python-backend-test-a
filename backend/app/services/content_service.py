@@ -806,6 +806,33 @@ class ContentService:
 
         return content
 
+    def get_content_root_by_id(self, content_id: UUID, user_org_id: str) -> DerivedContent:
+        """
+        Get the root codebase content record for a given content ID. this is need by the frontend to appropriately
+        add document sources.
+        """
+        logger.info(f"Fetching content by ID {content_id}")
+        content = self.content_repository.get(content_id)
+        if not content:
+            logger.error(f"Content {content_id} not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
+            )
+
+        if not is_authorized(self.session, user_org_id, content.workspace_id, content.codebase_id):
+            logger.error(f"User {user_org_id} is not authorized to access content {content_id}")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized"
+            )
+        parent = self.session.exec(select(DerivedContent)
+                  .join(DerivedContentType)
+                  .where(DerivedContent.codebase_id == content.codebase_id)
+                  .where(DerivedContentType.type_name == "codebase")).first()
+
+        # parent = self.content_repository.get_by_conditions()
+        # content.codebase_id
+
+        return parent
     def create_template(
             self, organization_id: str, workspace_id: str, codebase_id: str
     ) -> DerivedContent:

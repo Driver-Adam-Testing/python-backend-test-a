@@ -1,6 +1,7 @@
 from uuid import UUID
 
 from database.models_v1 import DerivedContent, Workspace
+from sqlalchemy import func
 from sqlmodel import or_, select
 
 
@@ -27,15 +28,16 @@ def build_resolve_content_query(
 
     path_conditions = []
     for include_id in include_ids:
-        # The relative path for the current include_id
-        path = (
-            select(DerivedContent.relative_path)
+        # The relative path for the current include_id, trimmed of any trailing slashes
+        content_path_query = (
+            select(func.rtrim(DerivedContent.relative_path, "/"))
             .where(DerivedContent.id == include_id)
             .limit(1)
         ).scalar_subquery()
 
-        exact_path_match_condition = DerivedContent.relative_path == path
-        child_path_match_condition = DerivedContent.relative_path.startswith(path + "/")
+        path = func.rtrim(DerivedContent.relative_path, "/")
+        exact_path_match_condition = path == content_path_query
+        child_path_match_condition = path.startswith(content_path_query + "/")
         path_conditions.extend([exact_path_match_condition, child_path_match_condition])
 
     if path_conditions:

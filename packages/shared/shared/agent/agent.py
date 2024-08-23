@@ -86,7 +86,7 @@ class AgentBase:
             message = {"role": "user", "content": message}
         else:
             self.messages.append(message)
-        # self._print_message(message)
+        self._print_message(message)
         if log and self.id is not None:
             if isinstance(message, ChatCompletionMessage):
                 log_message = RuntimeLogAgentMessage(
@@ -171,7 +171,6 @@ class AgentBase:
 class OpenAIAgent(AgentBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.parallelize_tool_calls = False
         self.client = OpenAI()
 
     @property
@@ -186,59 +185,30 @@ class OpenAIAgent(AgentBase):
             return
         futures = []
 
-        if self.parallelize_tool_calls:
-            with ThreadPoolExecutor() as executor:
-                messages = []
-                for tool_call in tool_calls:
-                    messages.append(
-                        {
-                            "tool_call_id": tool_call.id,
-                            "role": "tool",
-                            "name": tool_call.function.name,
-                            "content": "Error in tool call",
-                        }
-                    )
-                    future = executor.submit(self._execute_tool_call, tool_call)
-                    futures.append(future)
-
-                for future in as_completed(futures):
-                    try:
-                        function_response, tool_call_id, _ = future.result()
-                        if function_response:
-                            for message in messages:
-                                if message["tool_call_id"] == tool_call_id:
-                                    message["content"] = function_response
-                                    break
-                    except Exception:
-                        pass
-                for message in messages:
-                    self.add_message(message)
-        else:
+        with ThreadPoolExecutor() as executor:
             messages = []
             for tool_call in tool_calls:
+                messages.append(
+                    {
+                        "tool_call_id": tool_call.id,
+                        "role": "tool",
+                        "name": tool_call.function.name,
+                        "content": "Error in tool call",
+                    }
+                )
+                future = executor.submit(self._execute_tool_call, tool_call)
+                futures.append(future)
+
+            for future in as_completed(futures):
                 try:
-                    function_response, tool_call_id, _ = self._execute_tool_call(
-                        tool_call
-                    )
-                    messages.append(
-                        {
-                            "tool_call_id": tool_call.id,
-                            "role": "tool",
-                            "name": tool_call.function.name,
-                            "content": function_response
-                            if function_response
-                            else "Error in tool call",
-                        }
-                    )
+                    function_response, tool_call_id, _ = future.result()
+                    if function_response:
+                        for message in messages:
+                            if message["tool_call_id"] == tool_call_id:
+                                message["content"] = function_response
+                                break
                 except Exception:
-                    messages.append(
-                        {
-                            "tool_call_id": tool_call.id,
-                            "role": "tool",
-                            "name": tool_call.function.name,
-                            "content": "Error in tool call",
-                        }
-                    )
+                    pass
             for message in messages:
                 self.add_message(message)
 

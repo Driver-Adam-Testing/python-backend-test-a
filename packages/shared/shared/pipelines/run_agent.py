@@ -4,7 +4,10 @@ from urllib.parse import unquote, urlparse
 from database.derived_content_types import DerivedContentTypeNames
 from pydantic import UUID4, BaseModel
 
-from packages.shared.shared.agent.tools.agent_tools import execute_backend_search
+from packages.shared.shared.agent.tools.agent_tools import (
+    execute_backend_search,
+    format_search_results,
+)
 from shared import prompts
 from shared.agent.agent_factory import create_agent
 
@@ -65,22 +68,24 @@ def run_agent(request: RunAgentRequest):
         {
             "role": "user",
             "content": "The following is search context taken from the codebase descriptions, source code, and pdf summaries: \n\n"
-            + execute_backend_search(
-                agent.agent,
-                search_text=f"{prompt} {selected_text if selected_text else ''}",
-                content_types=[
-                    DerivedContentTypeNames.SYMBOL.value,
-                    DerivedContentTypeNames.CODEBASE_FILE.value,
-                    DerivedContentTypeNames.LONG_DESCRIPTION.value,
-                    DerivedContentTypeNames.PDF_SUMMARY.value,
-                    DerivedContentTypeNames.PDF_SUMMARY.value,
-                    DerivedContentTypeNames.PDF_VISUAL_SUMMARY.value,
-                    DerivedContentTypeNames.PDF_TEXT_SUMMARY.value,
-                    DerivedContentTypeNames.PDF_EXTRACTED_TEXT.value,
-                    DerivedContentTypeNames.PDF_EXTRACTED_TABLE.value,
-                ],
-                result_limit=25,
-                relative_path=relative_path,
+            + format_search_results(
+                execute_backend_search(
+                    agent.agent,
+                    search_text=f"{prompt} {selected_text if selected_text else ''}",
+                    content_types=[
+                        DerivedContentTypeNames.SYMBOL.value,
+                        DerivedContentTypeNames.CODEBASE_FILE.value,
+                        DerivedContentTypeNames.LONG_DESCRIPTION.value,
+                        DerivedContentTypeNames.PDF_SUMMARY.value,
+                        DerivedContentTypeNames.PDF_SUMMARY.value,
+                        DerivedContentTypeNames.PDF_VISUAL_SUMMARY.value,
+                        DerivedContentTypeNames.PDF_TEXT_SUMMARY.value,
+                        DerivedContentTypeNames.PDF_EXTRACTED_TEXT.value,
+                        DerivedContentTypeNames.PDF_EXTRACTED_TABLE.value,
+                    ],
+                    result_limit=25,
+                    relative_path=relative_path,
+                )
             ),
         }
     )

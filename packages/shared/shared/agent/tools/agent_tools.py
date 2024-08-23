@@ -54,7 +54,7 @@ def search_tech_docs(agent_context, search_text: str, rationale: str) -> str:
         agent_context=agent_context,
         search_text=f"`{search_text}`. information on {search_text} because {rationale}",
         content_types=[
-            DerivedContentTypeNames.CODEBASE_FILE.value,
+            DerivedContentTypeNames.LONG_DESCRIPTION.value,
             DerivedContentTypeNames.SYMBOL.value,
         ],
     )

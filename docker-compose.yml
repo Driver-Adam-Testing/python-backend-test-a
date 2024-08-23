@@ -63,6 +63,7 @@ services:
      - MODAL_TOKEN_SECRET=${MODAL_TOKEN_SECRET?Variable not set}
      - MODAL_ENVIRONMENT=${MODAL_ENVIRONMENT?dev}
      - OPENAI_API_KEY=${OPENAI_API_KEY?Variable not set}
+     - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY?Variable not set}
      - INSTALL_DEV=true
   s3:
    image: quay.io/minio/minio:latest

@@ -52,6 +52,7 @@ class Settings(BaseSettings):
     GH_WEBHOOK_SECRET: str | None = None
 
     OPENAI_API_KEY: str | None = None
+    ANTHROPIC_API_KEY: str | None = None
 
     MODAL_ENVIRONMENT: str | None = None
 

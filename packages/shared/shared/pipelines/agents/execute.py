@@ -4,6 +4,7 @@ import shared.agent.tools.agent_tools as agent_tools
 from pydantic import BaseModel
 from shared.agent.agent_factory import create_agent
 from shared.agent.tools.tool import Tool
+from shared.interfaces.search import SearchResults
 
 
 class PromptConfiguration(BaseModel):
@@ -48,7 +49,7 @@ class AgentScope(BaseModel):
     organization_id: str | None = None
 
 
-class AgentExecutionConfiguration(BaseModel):
+class AgentExecuteSequenceInput(BaseModel):
     agent_configs: list[AgentConfiguration] | None = [
         AgentConfiguration(agent_type=AgentType.DEFAULT)
     ]
@@ -56,9 +57,14 @@ class AgentExecutionConfiguration(BaseModel):
     prompt: str | None
 
 
+class AgentResult(BaseModel):
+    result: str
+    search_results: list[SearchResults]
+
+
 class AgentExecutionResponse(BaseModel):
     result: str
-    agent_results: list[str]
+    agent_results: list[AgentResult]
 
 
 class UserPromptWithContext(BaseModel):
@@ -77,7 +83,7 @@ class UserPromptWithContext(BaseModel):
         return user_prompt
 
 
-def execute(input: AgentExecutionConfiguration):
+def execute_sequence(input: AgentExecuteSequenceInput):
     user_prompt = UserPromptWithContext(prompt=input.prompt, context=[])
     output = input.prompt
     agent_results = []
@@ -91,28 +97,38 @@ def execute(input: AgentExecutionConfiguration):
 
         if agent_config.agent_type == AgentType.DEFAULT:
             output = run_agent_default(
-                user_prompt.create_user_prompt(),
+                prompt=user_prompt.create_user_prompt(),
                 agent_config=agent_config,
                 scope=input.scope,
             )
-
+        if agent_config.agent_type == AgentType.PROMPT_AUGMENTATION:
+            output = run_agent_prompt_augmentation(
+                prompt=user_prompt.create_user_prompt(),
+                agent_config=agent_config,
+                scope=input.scope,
+            )
         agent_results.append(output)
 
-    return AgentExecutionResponse(result=output, agent_results=agent_results)
+    return AgentExecutionResponse(
+        result=agent_results[-1].result, agent_results=agent_results
+    )
 
 
 def run_agent_prompt_augmentation(
     prompt: str, agent_config: AgentConfiguration, scope: AgentScope
-):
+) -> AgentResult:
     agent = create_agent(
         model=agent_config.model,
         organization_id=scope.organization_id,
-        max_iterations=agent_config.iterations,
-        tools=agent_config.get_tool_functions(),
+        max_iterations=3,
+        tools=[agent_tools.search_tech_docs_tool],
         paths=scope.paths,
     )
 
-    return agent.invoke(prompt)
+    response = agent.invoke(
+        f"Return only a rewritten prompt for the following: \n\n{prompt}\n\n To better address the type of request that the user probably wants. Keep in mind that they may want a short or long response."
+    )
+    return AgentResult(result=response, search_results=agent.search_results)
 
 
 def run_agent_default(prompt: str, agent_config: AgentConfiguration, scope: AgentScope):
@@ -123,4 +139,5 @@ def run_agent_default(prompt: str, agent_config: AgentConfiguration, scope: Agen
         tools=agent_config.get_tool_functions(),
         paths=scope.paths,
     )
-    return agent.invoke(prompt)
+    response = agent.invoke(prompt)
+    return AgentResult(result=response, search_results=agent.search_results)

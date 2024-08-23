@@ -1,8 +1,8 @@
 from fastapi import APIRouter
 from shared.pipelines.agents.execute import (
-    AgentExecutionConfiguration,
+    AgentExecuteSequenceInput,
     AgentExecutionResponse,
-    execute,
+    execute_sequence,
 )
 
 from app.api.auth import CurrentUser
@@ -17,7 +17,7 @@ router = APIRouter()
 )
 def execute_agent_pipeline(
     user: CurrentUser,
-    input: AgentExecutionConfiguration,
+    input: AgentExecuteSequenceInput,
 ) -> AgentExecutionResponse:
     input.scope.organization_id = user.organization_id
-    return execute(input)
+    return execute_sequence(input)

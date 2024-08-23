@@ -32,6 +32,7 @@ class AgentBase:
         self.messages = []
         self.organization_id = organization_id
         self.paths = paths
+        self.search_results = []
         if id is None:
             agent_instance = RuntimeLogAgentInstance(
                 workspace_id=None,
@@ -46,6 +47,10 @@ class AgentBase:
                 self.id = agent_instance.id
         else:
             self.id = id
+
+    def add_search_results(self, results):
+        print("here we are")
+        self.search_results.append(results)
 
     def _print_message(self, message: ChatCompletionMessage | dict[str, str]):
         try:
@@ -81,7 +86,7 @@ class AgentBase:
             message = {"role": "user", "content": message}
         else:
             self.messages.append(message)
-        self._print_message(message)
+        # self._print_message(message)
         if log and self.id is not None:
             if isinstance(message, ChatCompletionMessage):
                 log_message = RuntimeLogAgentMessage(
@@ -166,7 +171,7 @@ class AgentBase:
 class OpenAIAgent(AgentBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
+        self.parallelize_tool_calls = False
         self.client = OpenAI()
 
     @property
@@ -181,30 +186,59 @@ class OpenAIAgent(AgentBase):
             return
         futures = []
 
-        with ThreadPoolExecutor() as executor:
+        if self.parallelize_tool_calls:
+            with ThreadPoolExecutor() as executor:
+                messages = []
+                for tool_call in tool_calls:
+                    messages.append(
+                        {
+                            "tool_call_id": tool_call.id,
+                            "role": "tool",
+                            "name": tool_call.function.name,
+                            "content": "Error in tool call",
+                        }
+                    )
+                    future = executor.submit(self._execute_tool_call, tool_call)
+                    futures.append(future)
+
+                for future in as_completed(futures):
+                    try:
+                        function_response, tool_call_id, _ = future.result()
+                        if function_response:
+                            for message in messages:
+                                if message["tool_call_id"] == tool_call_id:
+                                    message["content"] = function_response
+                                    break
+                    except Exception:
+                        pass
+                for message in messages:
+                    self.add_message(message)
+        else:
             messages = []
             for tool_call in tool_calls:
-                messages.append(
-                    {
-                        "tool_call_id": tool_call.id,
-                        "role": "tool",
-                        "name": tool_call.function.name,
-                        "content": "Error in tool call",
-                    }
-                )
-                future = executor.submit(self._execute_tool_call, tool_call)
-                futures.append(future)
-
-            for future in as_completed(futures):
                 try:
-                    function_response, tool_call_id, _ = future.result()
-                    if function_response:
-                        for message in messages:
-                            if message["tool_call_id"] == tool_call_id:
-                                message["content"] = function_response
-                                break
+                    function_response, tool_call_id, _ = self._execute_tool_call(
+                        tool_call
+                    )
+                    messages.append(
+                        {
+                            "tool_call_id": tool_call.id,
+                            "role": "tool",
+                            "name": tool_call.function.name,
+                            "content": function_response
+                            if function_response
+                            else "Error in tool call",
+                        }
+                    )
                 except Exception:
-                    pass
+                    messages.append(
+                        {
+                            "tool_call_id": tool_call.id,
+                            "role": "tool",
+                            "name": tool_call.function.name,
+                            "content": "Error in tool call",
+                        }
+                    )
             for message in messages:
                 self.add_message(message)
 

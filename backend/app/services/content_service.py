@@ -154,8 +154,8 @@ class ContentService:
 
         if tag.type == "collection":
             if (
-                content.content_type.type_name
-                not in DerivedContentTypeRepository.valid_collection_type_names()
+                    content.content_type.type_name
+                    not in DerivedContentTypeRepository.valid_collection_type_names()
             ):
                 logger.error(
                     f"Invalid content type for collection tag {tag_id} and content {content_id}"
@@ -580,10 +580,13 @@ class ContentService:
         ]
 
         self.perform_authorization_checks(checks)
-
+        # TODO: add template content type
         template_content_type = self.derived_content_type_repository.get_by_type_name(
             "template"
         )
+        if not template_content_type:
+            logger.error(f"Template content type not found")
+            raise NoResultFound("Template content type not found")
 
         content = self.session.exec(
             select(DerivedContent)
@@ -877,22 +880,22 @@ class ContentService:
             for result in sources
         ]
         return ContentSourceResponse(results=source_results)
-    
+
     def get_content_by_id(self, content_id: UUID, user_org_id: str) -> DerivedContent:
         logger.info(f"Fetching content by ID {content_id}")
+
+        content: DerivedContent = self.content_repository.get(content_id)
+        if not content:
+            logger.error(f"Content {content_id} not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
+            )
 
         checks = [
             lambda session: is_authorized(session, user_org_id, content.workspace_id, content.codebase_id)
         ]
 
         self.perform_authorization_checks(checks)
-
-        content = self.content_repository.get(content_id)
-        if not content:
-            logger.error(f"Content {content_id} not found")
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
-            )
 
         return content
 
@@ -923,37 +926,24 @@ class ContentService:
         return parent
 
     def create_template(
-            self, organization_id: str, workspace_id: str, codebase_id: str
+            self, organization_id: str, workspace_id: UUID, codebase_id: UUID
     ) -> DerivedContent:
         logger.info(
             f"Creating template for organization {organization_id}, workspace {workspace_id}, codebase {codebase_id}"
         )
-
         checks = [
-            lambda session: self.workspace_repository.is_authorized(
-                id=workspace_id,
-                field_name="organization_id",
-                field_value=organization_id
-            )
+            lambda session: is_authorized(session, organization_id, workspace_id, codebase_id)
         ]
 
         self.perform_authorization_checks(checks)
 
-        workspace_exists = self.workspace_repository.exists(
-            workspace_id, organization_id
-        )
-
-        if not workspace_exists:
-            logger.error(
-                f"Workspace {workspace_id} not found for organization {organization_id}"
-            )
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Workspace not found"
-            )
-
         template_content_type = self.derived_content_type_repository.get_by_type_name(
             "template"
         )
+
+        if not template_content_type:
+            logger.error(f"Template content type not found")
+            raise NoResultFound("Template content type not found")
 
         codebase_content_type = self.derived_content_type_repository.get_by_type_name(
             "codebase"

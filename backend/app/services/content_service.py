@@ -40,7 +40,7 @@ def is_authorized(session: Session, user_org_id: str, workspace_id: UUID, codeba
     workspace = session.exec(
         select(Workspace).where(Workspace.id == workspace_id, Workspace.organization_id == user_org_id)
     ).first()
-    
+
     if not workspace:
         return False
 
@@ -48,12 +48,11 @@ def is_authorized(session: Session, user_org_id: str, workspace_id: UUID, codeba
     codebase = session.exec(
         select(Codebase).where(Codebase.id == codebase_id, Codebase.workspace_id == workspace_id)
     ).first()
-    
+
     if not codebase:
         return False
 
     return True
-
 
 
 class DerivedContentTypeRepository(BaseRepository[DerivedContentType]):
@@ -83,8 +82,6 @@ class DerivedContentTypeRepository(BaseRepository[DerivedContentType]):
             "pdf_summary",
             "supplemental-document",
         ]
-
-
 
 
 class ContentService:
@@ -138,8 +135,8 @@ class ContentService:
 
         if tag.type == "collection":
             if (
-                    content.content_type.type_name
-                    not in DerivedContentTypeRepository.valid_collection_type_names()
+                content.content_type.type_name
+                not in DerivedContentTypeRepository.valid_collection_type_names()
             ):
                 logger.error(
                     f"Invalid content type for collection tag {tag_id} and content {content_id}"
@@ -232,7 +229,8 @@ class ContentService:
         )
 
     def associate_sources_with_content(
-            self, organization_id: str, content_id: UUID, content_source_associations: list[ContentSourceAssociationItem]
+            self, organization_id: str, content_id: UUID,
+            content_source_associations: list[ContentSourceAssociationItem]
     ) -> BatchContentSourceAssociationResponse:
         logger.info(
             f"Associating {len(content_source_associations)} sources with content {content_id} for organization {organization_id}"
@@ -301,7 +299,8 @@ class ContentService:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
             )
-        existing_document_source = self.document_source_repository.get_by_pk(document_id=content_id, source_id=source_id)
+        existing_document_source = self.document_source_repository.get_by_pk(document_id=content_id,
+                                                                             source_id=source_id)
         if existing_document_source:
             raise HTTPException(status_code=400, detail="Document source already exists")
 
@@ -731,7 +730,7 @@ class ContentService:
         logger.info("List of content types retrieved successfully")
         return ListContentTypesResults(results=results)
 
-    def get_content_sources(self, content_id: UUID, organization_id:str) -> ContentSourceResponse:
+    def get_content_sources(self, content_id: UUID, organization_id: str) -> ContentSourceResponse:
         logger.info(f"Fetching content sources for content {content_id}")
         content = self.content_repository.get(content_id)
         if not content:
@@ -788,7 +787,8 @@ class ContentService:
             for result in sources
         ]
         return ContentSourceResponse(results=source_results)
-    #TODO return ListContentItem
+
+    # TODO return ListContentItem
     def get_content_by_id(self, content_id: UUID, user_org_id: str) -> DerivedContent:
         logger.info(f"Fetching content by ID {content_id}")
         content = self.content_repository.get(content_id)
@@ -797,7 +797,7 @@ class ContentService:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
             )
-        
+
         if not is_authorized(self.session, user_org_id, content.workspace_id, content.codebase_id):
             logger.error(f"User {user_org_id} is not authorized to access content {content_id}")
             raise HTTPException(
@@ -825,9 +825,9 @@ class ContentService:
                 status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized"
             )
         parent = self.session.exec(select(DerivedContent)
-                  .join(DerivedContentType)
-                  .where(DerivedContent.codebase_id == content.codebase_id)
-                  .where(DerivedContentType.type_name == "codebase")).first()
+                                   .join(DerivedContentType)
+                                   .where(DerivedContent.codebase_id == content.codebase_id)
+                                   .where(DerivedContentType.type_name == "codebase")).first()
 
         # parent = self.content_repository.get_by_conditions()
         # content.codebase_id

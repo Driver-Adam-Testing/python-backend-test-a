@@ -2,7 +2,7 @@ import pytest
 from collections.abc import Generator
 from unittest.mock import Mock
 
-from database.db import engine, init_db
+from database.db import engine
 from sqlmodel import Session, SQLModel
 from app.api.auth import CurrentUser
 

@@ -6,7 +6,6 @@ from app.api.auth import CurrentUser
 from app.api.session import CurrentSession
 router = APIRouter()
 
-# Stub for creating a document source
 @router.post("/")
 def create_document_source(
     session: CurrentSession,

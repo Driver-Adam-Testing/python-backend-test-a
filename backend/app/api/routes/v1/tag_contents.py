@@ -11,8 +11,6 @@ from database.models_v1 import TagContent
 router = APIRouter()
 
 
-
-
 @router.post("/", response_model=TagContent)
 def create_tag_content(
     session: CurrentSession,

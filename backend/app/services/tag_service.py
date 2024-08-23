@@ -22,6 +22,7 @@ from app.services.content_service import ContentService
 logger = logging.getLogger(__name__)
 
 
+
 class TagService:
     def __init__(self, session: Session):
         self.session = session
@@ -35,6 +36,22 @@ class TagService:
             tag_id: UUID,
             include_tag: bool = True,
     ) -> TagAssociationResponse:
+        logger.debug(
+            f"associate_tag called with organization_id: {organization_id}, content_id: {content_id}, tag_id: {tag_id}")
+
+        is_content_authorized = self.content_service.content_repository.is_authorized(
+            id=content_id,
+            relationship_chain=["workspace"],
+            field_name="organization_id",
+            field_value=organization_id
+        )
+        is_tag_authorized = self.tag_repository.is_authorized(
+            id=tag_id,
+            field_name="organization_id",
+            field_value=organization_id
+        )
+        if not is_content_authorized or not is_tag_authorized:
+            raise HTTPException(status_code=403, detail="Forbidden")
         return self.content_service.associate_tag(
             organization_id, content_id, tag_id, include_tag
         )

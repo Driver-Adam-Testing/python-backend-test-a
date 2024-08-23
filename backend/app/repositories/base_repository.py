@@ -1,6 +1,7 @@
 from dataclasses import field
 from uuid import UUID
 from sqlalchemy import text
+from sqlalchemy.orm import joinedload
 
 from sqlmodel import Session, SQLModel, select, asc, desc, func
 from typing import Type, TypeVar, Generic, Optional, List, Any
@@ -115,3 +116,20 @@ class BaseRepository(Generic[T]):
         for condition in conditions:
             query = query.where(condition)
         return self.session.exec(query).one()
+
+    def is_authorized(self, id: UUID, relationship_chain: Optional[List[str]] = None, field_name: Optional[str] = None,
+               field_value: Optional[Any] = None) -> bool:
+        query = select(self.model).where(self.model.id == id)
+
+        if relationship_chain and field_name and field_value:
+            # Traverse the relationship chain
+            current_model = self.model
+            for relationship in relationship_chain:
+                query = query.options(joinedload(getattr(current_model, relationship)))
+                current_model = getattr(current_model, relationship).property.mapper.class_
+
+            # Add the condition on the final model in the chain
+            query = query.where(getattr(current_model, field_name) == field_value)
+
+        instance = self.session.exec(query).first()
+        return instance is not None

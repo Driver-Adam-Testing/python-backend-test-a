@@ -39,8 +39,8 @@ def create_and_embed_pdf_summaries(content_id) -> None:
     from database.models_v1 import ChunkAndEmbedding, DerivedContent, DerivedContentType
     from shared.chunking.text_splitter import split_text
     from shared.embedding.text_embedder import batch_embed_text
+    from shared.file_storage.s3 import get_presigned_url_from_content_information
     from shared.pipelines.process_file.process_file_pdf import run_process_pdf
-    from shared.storage.s3 import get_presigned_url_from_content_information
     from sqlalchemy.orm import selectinload
     from sqlmodel import Session, select
 

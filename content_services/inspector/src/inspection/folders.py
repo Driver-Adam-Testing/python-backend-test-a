@@ -244,27 +244,27 @@ def comprehend_folder_top_down(
             [child_folder_list], llm.model
         )
         if folder_list_tokens < MAX_TOKENS_FOR_PRIORITY_ORDERING:
-            child_folder_list_ordered = folder_item_priority_ordering(
+            child_folder_list_finalized = folder_item_priority_ordering(
                 llm=llm, raw_list_str=f"{folder_prefix}{child_folder_list}"
             )
         else:
-            child_folder_list_ordered = f"{folder_prefix}{child_folder_list}"
+            child_folder_list_finalized = f"{folder_prefix}{child_folder_list}"
     else:
-        child_folder_list_ordered = ""
+        child_folder_list_finalized = ""
     if child_file_list:
         file_prefix = "## Files\n"
         file_list_tokens = num_tokens_from_messages_open_ai(
             [child_file_list], llm.model
         )
         if file_list_tokens < MAX_TOKENS_FOR_PRIORITY_ORDERING:
-            child_file_list_ordered = folder_item_priority_ordering(
+            child_file_list_finalized = folder_item_priority_ordering(
                 llm=llm, raw_list_str=f"{file_prefix}{child_file_list}"
             )
         else:
-            child_file_list_ordered = f"{file_prefix}{child_file_list}"
+            child_file_list_finalized = f"{file_prefix}{child_file_list}"
     else:
-        child_file_list_ordered = ""
-    completed_child_lists = f"{child_folder_list_ordered}\n{child_file_list_ordered}"
+        child_file_list_finalized = ""
+    completed_child_lists = f"{child_folder_list_finalized}\n{child_file_list_finalized}"
 
     # Proceed according to child list content length relative to chunk size.
     print(f"Checking if compression is required for folder `{folder_name}` content...")

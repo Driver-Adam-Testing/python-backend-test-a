@@ -14,7 +14,7 @@ from tasks import (
     TopLevelDocsTask,
 )
 from utils.dag import FileTreeDag, Node, NodeKind
-from utils.task import TaskManager, flatten_tasks
+from utils.task import TaskManager
 
 # TODO considering using concurrent inputs when we're just calling open AI. This should
 # save some cost (though costs are negligible today)
@@ -31,7 +31,9 @@ class FileInfo:
     image=modal.Image.debian_slim(python_version="3.12")
     .copy_local_dir(local_path="../../driver_db", remote_path="/driver_db")
     .copy_local_dir(local_path="../../packages/shared", remote_path="/shared_pkg")
-    .pip_install(["boto3", "openai>=1.40.2", "pydantic>=2.8.2", "tiktoken", "/shared_pkg"]),
+    .pip_install(
+        ["boto3", "openai>=1.40.2", "pydantic>=2.8.2", "tiktoken", "/shared_pkg"]
+    ),
     secrets=[
         modal.Secret.from_name("db"),
         modal.Secret.from_name("aws-inspector-s3"),
@@ -146,7 +148,7 @@ async def inspect_files(
             child_doc_tasks = tuple(
                 {
                     t
-                    for t in flatten_tasks(tasks)
+                    for t in tasks
                     if (
                         isinstance(t, FileTechDocTask)
                         or isinstance(t, FolderTechDocTask)
@@ -212,7 +214,7 @@ async def inspect_files(
 
     all_tech_docs_tasks = tuple(
         t
-        for t in flatten_tasks(tasks)
+        for t in tasks
         if (isinstance(t, FileTechDocTask) or isinstance(t, FolderTechDocTask))
     )
     top_level_tech_docs_task = TopLevelDocsTask(
@@ -272,7 +274,7 @@ def main(resume_from_id: str | None = None):
         run_id = uuid.uuid4()  # When rerunning we would supply this. This is used to identify the run in the db
     try:
         inspect_db.remote(
-            uuid.UUID("7f65267b-af3f-43b9-bf9b-bca33b4b07bd"), run_id, resume=resume
+            uuid.UUID("4e50214d-d05d-4d5f-8313-78b3dd674fba"), run_id, resume=resume
         )
         # asyncio.run(inspect_db.local(uuid.UUID("8dc2ecd9-1289-4359-90a3-dacdd42405a7"), run_id, resume=resume))
     finally:

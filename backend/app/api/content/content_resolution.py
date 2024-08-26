@@ -1,8 +1,9 @@
+from pathlib import Path
 from uuid import UUID
 
 from database.models_v1 import DerivedContent, Workspace
 from sqlalchemy import func
-from sqlmodel import or_, select
+from sqlmodel import Session, or_, select
 
 
 def build_resolve_content_query(
@@ -44,6 +45,64 @@ def build_resolve_content_query(
         content_for_org_query = content_for_org_query.where(or_(*path_conditions))
 
     return content_for_org_query
+
+
+def build_resolve_paths_query(
+    org_id: str,
+    include_ids: list[UUID] | None = None,
+):
+    """
+    Constructs a SQL query to fetch unique, normalized relative paths associated with the given content IDs.
+
+    This function generates a query that retrieves distinct `relative_path` entries associated with a specific
+    organization (`org_id`) based on a list of `include_ids`. Paths are normalized to remove trailing slashes.
+
+    This function does NOT smartly attempt find the shortest path to include. It simply includes the paths as they are.
+    """
+
+    if not org_id:
+        raise ValueError("Organization ID cannot be empty.")
+
+    path_query = (
+        select(func.distinct(func.rtrim(DerivedContent.relative_path, "/")))
+        .join(Workspace, DerivedContent.workspace_id == Workspace.id)
+        .where(Workspace.organization_id == org_id)
+    )
+
+    if include_ids:
+        path_query = path_query.where(DerivedContent.id.in_(include_ids))
+
+    return path_query
+
+
+def find_minimal_inclusion_paths(paths: list[str]) -> set[str]:
+    """
+    Given a list of paths, returns the minimal set of paths to include, filtering out any paths
+    that are already included by a parent path.
+    """
+    path_objects = [Path(path) for path in paths]
+    path_objects.sort()
+
+    minimal_paths = []
+    for path in path_objects:
+        if not any(path.is_relative_to(parent) for parent in minimal_paths):
+            minimal_paths.append(path)
+
+    return {str(path) for path in minimal_paths}
+
+
+def content_ids_to_minimal_paths(
+    sesh: Session,
+    org_id: str,
+    include_ids: list[UUID],
+) -> set[str]:
+    """
+    Given a list of content IDs, returns the minimal set of associated paths to include, filtering out any paths
+    that are already included by a parent path.
+    """
+    query = build_resolve_paths_query(org_id, include_ids)
+    paths = sesh.exec(query).all()
+    return find_minimal_inclusion_paths(paths)
 
 
 if __name__ == "__main__":

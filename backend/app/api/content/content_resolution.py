@@ -44,3 +44,28 @@ def build_resolve_content_query(
         content_for_org_query = content_for_org_query.where(or_(*path_conditions))
 
     return content_for_org_query
+
+
+if __name__ == "__main__":
+    """
+    Test script for content resolution.
+    """
+
+    from pprint import PrettyPrinter
+
+    from database.db import dev_engine
+    from sqlalchemy.orm import selectinload
+    from sqlmodel import Session
+
+    pp = PrettyPrinter(indent=4)
+
+    with Session(dev_engine) as session:
+        org_id = ""
+        include_ids = []
+        query = build_resolve_content_query(org_id, include_ids).options(
+            selectinload(DerivedContent.content_type)
+        )
+        results = session.exec(query).all()
+
+        for result in results:
+            print(f"{result.content_type.type_name:<20} {result.relative_path}")

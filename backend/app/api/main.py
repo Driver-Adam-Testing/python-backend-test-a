@@ -9,8 +9,6 @@ from app.api.routes.v1 import (
     onboarding,
     search,
     tags,
-    tag_contents,
-    document_sources,
 )
 from app.core.config import settings
 
@@ -27,7 +25,9 @@ api_router.include_router(onboarding.router, prefix="/onboarding", tags=["onboar
 api_router.include_router(search.router, prefix="/search", tags=["search"])
 api_router.include_router(content.router, prefix="/content", tags=["content"])
 api_router.include_router(tags.router, prefix="/tags", tags=["tags"])
-api_router.include_router(instructions.router, prefix="/instructions", tags=["instructions"])
+api_router.include_router(
+    instructions.router, prefix="/instructions", tags=["instructions"]
+)
 if settings.ENVIRONMENT != "production":
     api_router.include_router(
         sandbox_router, prefix="/sandbox", tags=["legacy-sandbox"]

@@ -1,10 +1,12 @@
-from aws_cdk import (
-    Stack,
-)
+from aws_cdk import Stack
 from constructs import Construct
 
 from cdk.constructs.backend import Backend, BackendParams
-from cdk.constructs.onboarding_lambda import OnboardingLambda, OnboardingLambdaParams
+from cdk.constructs.code_onboarding_lambda import (
+    CodeOnboardingLambda,
+    CodeOnboardingLambdaParams,
+)
+from cdk.constructs.inspector import Inspector, InspectorParams
 
 
 class DevelopmentStack(Stack):
@@ -20,12 +22,16 @@ class DevelopmentStack(Stack):
                 allowed_ips=["98.142.217.111/32"],
             ),
         )
-        onboarding_lambda = OnboardingLambda(
+        onboarding_lambda = CodeOnboardingLambda(
             self,
             "OnboardingLambda",
-            OnboardingLambdaParams(
+            CodeOnboardingLambdaParams(
                 environment="development",
                 api_url="https://api.dev.driverai.com/api/v1",
                 auth0_url="https://auth.dev.driverai.com",
+                dropzone_bucket_name="development-codebase-dropzone",
             ),
+        )
+        inspector = Inspector(
+            self, "Inspector", InspectorParams(environment="development")
         )

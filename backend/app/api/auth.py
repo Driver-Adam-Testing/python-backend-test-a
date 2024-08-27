@@ -89,10 +89,9 @@ security = HTTPBearer()
 
 
 class User(BaseModel):
-    organization_id: str = Field(..., alias="orgId")
-    organization_display_name: str = Field(..., alias="org_display_name")
-    user_id: str = Field(..., alias="userId")
-    is_service_account: bool = Field(..., alias="isServiceAccount")
+    organization_id: str = Field(..., alias="org_id")
+    organization_display_name: str = Field(..., alias="org_name")
+    user_id: str = Field(..., alias="sub")
     issuer: str = Field(..., alias="iss")
     subject: str = Field(..., alias="sub")
     audience: list[str] | str = Field(..., alias="aud")

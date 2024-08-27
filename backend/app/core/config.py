@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     # 60 minutes * 24 hours * 8 days = 8 days
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
     DOMAIN: str = "localhost"
-    ENVIRONMENT: Literal["local", "development", "production"] = "local"
+    ENVIRONMENT: Literal["local", "development", "staging", "production"] = "local"
     AUTH0_DOMAIN: str | None = None
     AUTH0_CLIENT_ID: str | None = None
     AUTH0_AUDIENCE: str | None = None

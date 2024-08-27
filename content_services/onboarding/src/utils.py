@@ -254,8 +254,12 @@ def evaluate_file_hex(filepath: Path) -> bool:
 
 
 def is_on_blacklist(filepath: Path) -> bool:
-    blacklist_dirs = [".git"]
-    blacklist_file_exts = []
+    blacklist_dirs = [
+        ".git",
+    ]
+    blacklist_file_exts = [
+        ".svg",
+    ]
     is_blacklisted = False
 
     if any(dir in filepath.parts for dir in blacklist_dirs):

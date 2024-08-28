@@ -25,7 +25,7 @@ If you abort or crash, you can use the printed run ID and rerun
 modal run --env=dev src/main.py resume-from-id="myuuid"
 ```
 
-If you want to rerun parts of the tree, simply supply the path to the nodes
+If you want to rerun parts of the tree, simply supply the path to the nodes. Any node that matches the path or is a child of the path will be rerun.
 ```
 modal run --env=dev src/main.py --codebase-id="<UUID>" --rerun-paths="/path/1,/path/2"
 ```

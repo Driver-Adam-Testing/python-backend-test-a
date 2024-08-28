@@ -1,4 +1,4 @@
-from aws_cdk import Stack, aws_s3
+from aws_cdk import Stack
 from constructs import Construct
 
 from cdk.constructs.backend import Backend, BackendParams
@@ -15,42 +15,27 @@ class DevelopmentStack(Stack):
 
         cors_origins = "https://app.dev.driverai.com,https://labs.dev.driverai.com,https://app2.dev.driverai.com,http://localhost:3000,https://app.beta.driverai.com"
 
-        dropzone_bucket = aws_s3.Bucket(
-            self,
-            "DropzoneBucket",
-            cors=[
-                {
-                    "allowedMethods": [
-                        aws_s3.HttpMethods.PUT,
-                        aws_s3.HttpMethods.POST,
-                        aws_s3.HttpMethods.GET,
-                    ],
-                    "allowedOrigins": cors_origins.split(","),
-                    "allowedHeaders": ["*"],
-                }
-            ],
-        )
-        backend = Backend(
+        self.backend = Backend(
             self,
             "ApiBackend",
             BackendParams(
                 environment="development",
-                cors_origins="https://app.dev.driverai.com,https://labs.dev.driverai.com,https://app2.dev.driverai.com,http://localhost:3000,https://app.beta.driverai.com",
+                cors_origins=cors_origins,
                 allowed_ips=["98.142.217.111/32"],
-                dropzone_bucket_name=dropzone_bucket.bucket_name,
                 use_legacy_dropzone=True,
             ),
         )
-        onboarding_lambda = CodeOnboardingLambda(
+        self.onboarding_lambda = CodeOnboardingLambda(
             self,
-            "OnboardingLambda",
+            "CodeOnboardingLambda",
             CodeOnboardingLambdaParams(
                 environment="development",
                 api_url="https://api.dev.driverai.com/api/v1",
                 auth0_url="https://auth.dev.driverai.com",
-                dropzone_bucket_name="development-codebase-dropzone",
+                dropzone_bucket=self.backend.dropzone_bucket,
+                use_legacy_dropzone=True,
             ),
         )
-        inspector = Inspector(
+        self.inspector = Inspector(
             self, "Inspector", InspectorParams(environment="development")
         )

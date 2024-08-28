@@ -15,13 +15,13 @@ class DocumentOnboardingLambdaParams:
     environment: str
     api_url: str
     auth0_url: str
-    dropzone_bucket_name: str
+    dropzone_bucket: aws_s3.Bucket
 
-    def __init__(self, environment, api_url, auth0_url, dropzone_bucket_name):
+    def __init__(self, environment, api_url, auth0_url, dropzone_bucket):
         self.environment = environment
         self.api_url = api_url
         self.auth0_url = auth0_url
-        self.dropzone_bucket_name = dropzone_bucket_name
+        self.dropzone_bucket = dropzone_bucket
 
 
 class DocumentOnboardingLambda(Construct):
@@ -33,9 +33,6 @@ class DocumentOnboardingLambda(Construct):
         # dropzone_bucket = aws_s3.Bucket.from_bucket_name(
         #     scope, "dropzone-bucket", params.environment + "-codebase-dropzone"
         # )
-        dropzone_bucket = aws_s3.Bucket.from_bucket_name(
-            scope, params.dropzone_bucket_name
-        )
 
         client_id_secret = aws_secretsmanager.Secret(scope, "ClientIdSecret")
         client_secret_secret = aws_secretsmanager.Secret(scope, "ClientSecretSecret")
@@ -60,13 +57,13 @@ class DocumentOnboardingLambda(Construct):
         )
         client_id_secret.grant_read(lambda_function)
         client_secret_secret.grant_read(lambda_function)
-        dropzone_bucket.grant_read(lambda_function)
+        params.dropzone_bucket.grant_read(lambda_function)
 
         sns_topic = aws_sns.Topic(scope, "DocumentOnboardingTopic")
         lambda_function.add_event_source(
             aws_lambda_event_sources.SnsEventSource(sns_topic)
         )
-        dropzone_bucket.add_event_notification(
+        params.dropzone_bucket.add_event_notification(
             aws_s3.EventType.OBJECT_CREATED,
             aws_s3_notifications.SnsDestination(sns_topic),
             aws_s3.NotificationKeyFilter(prefix="documents/"),

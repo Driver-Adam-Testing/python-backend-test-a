@@ -1,8 +1,7 @@
-import secrets
-import warnings
-from typing import Annotated, Any, Literal
+from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -12,8 +11,11 @@ class Settings(BaseSettings):
     AUTH0_URL: str
     CLIENT_ID_SECRET: str
     CLIENT_SECRET_SECRET: str
-    ENVIRONMENT: Literal["local", "ops", "development", "production"]
+    ENVIRONMENT: Literal["local", "ops", "development", "staging", "production"]
     AWS_S3_ENDPOINT_URL: str | None = None
     AWS_S3_CODE_BUCKET_SUFFIX: str = "codebase-dropzone"
+    USE_LEGACY_DROPZONE: bool = True
+    DROPZONE_BUCKET_NAME: str | None = None
+
 
 settings = Settings()  # type: ignore

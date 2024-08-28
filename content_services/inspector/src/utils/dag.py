@@ -64,14 +64,14 @@ class Node(LiteNode):
             del self.children[child_key]
 
     def traverse_upstream(self) -> Generator["Node", None, None]:
-        """Yield all nodes upstream of this node, including itself."""
+        """Yields all nodes upstream of this node, including itself."""
         current = self
         while current is not None:
             yield current
             current = current.parent
 
     def traverse_downstream(self) -> Generator["Node", None, None]:
-        """Yield all downstream nodes, including itself."""
+        """Yields all downstream nodes, including itself."""
         yield self
         for child in self.children.values():
             yield from child.traverse_downstream()
@@ -145,7 +145,7 @@ class FileTreeDag:
         # When a new node is added, ensure upstream nodes are correctly marked
         if node_added and change_status:
             for node in current.traverse_upstream():
-                # Only mark as MODIFIED if the node was already existing
+                # Only mark as MODIFIED if the node already existed
                 if node.status == NodeStatus.UNMODIFIED:
                     node.status = NodeStatus.MODIFIED
 

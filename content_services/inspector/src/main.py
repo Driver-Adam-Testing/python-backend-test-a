@@ -284,7 +284,9 @@ def main(
     codebase_id: str, resume_from_id: str | None = None, rerun_paths: str | None = None
 ):
     print("Processing codebase with id: ", codebase_id)
-    rerun_node_paths = rerun_paths.split(",") if rerun_paths else None
+    rerun_node_paths = (
+        rerun_paths.split(",") if rerun_paths and rerun_paths.strip() else None
+    )
     if rerun_node_paths:
         print("Rerunning nodes:")
         for path in rerun_node_paths:

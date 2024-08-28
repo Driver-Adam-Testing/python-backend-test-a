@@ -1,4 +1,5 @@
-from shared.agent.agent import AnthropicAgent, OpenAIAgent
+from shared.agent.agent_anthropic import AnthropicAgent
+from shared.agent.agent_openai import OpenAIAgent
 from shared.agent.models.llm_models import ModelConfig, ModelProvider
 
 

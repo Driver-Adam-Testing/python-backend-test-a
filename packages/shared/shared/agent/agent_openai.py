@@ -3,6 +3,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from openai import OpenAI
 
 from shared.agent.base import AgentBase
+from shared.agent.tools.tool_call import ToolCall
 
 
 class OpenAIAgent(AgentBase):
@@ -24,12 +25,13 @@ class OpenAIAgent(AgentBase):
 
         with ThreadPoolExecutor() as executor:
             messages = []
-            for tool_call in tool_calls:
+            for tc in tool_calls:
+                tool_call = ToolCall.from_openai_tool_call(tc)
                 messages.append(
                     {
                         "tool_call_id": tool_call.id,
                         "role": "tool",
-                        "name": tool_call.function.name,
+                        "name": tool_call.name,
                         "content": "Error in tool call",
                     }
                 )
@@ -38,12 +40,18 @@ class OpenAIAgent(AgentBase):
 
             for future in as_completed(futures):
                 try:
-                    function_response, tool_call_id, _ = future.result()
-                    if function_response:
-                        for message in messages:
-                            if message["tool_call_id"] == tool_call_id:
-                                message["content"] = function_response
-                                break
+                    tool_call = future.result()
+                    if tool_call.response:
+                        message = next(
+                            (
+                                msg
+                                for msg in messages
+                                if msg["tool_call_id"] == tool_call.id
+                            ),
+                            None,
+                        )
+                        if message:
+                            message["content"] = str(tool_call.response)
                 except Exception:
                     pass
             for message in messages:

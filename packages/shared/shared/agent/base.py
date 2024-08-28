@@ -1,10 +1,9 @@
-import json
 import uuid
 
 from database.db import get_session
 from database.models_v1 import RuntimeLogAgentInstance, RuntimeLogAgentMessage
-from openai.types.chat.chat_completion_message import ChatCompletionMessage
 
+from shared.agent.tools.tool_call import ToolCall
 from shared.utils.bcolors import print_dict
 
 
@@ -57,92 +56,43 @@ class AgentBase:
     def add_search_results(self, results):
         self.search_results.append(results)
 
-    def _print_message(self, message: ChatCompletionMessage | dict[str, str]):
-        try:
-            if not isinstance(message, dict):
-                if hasattr(message, "to_dict") and callable(message.to_dict):
-                    message = message.to_dict()
-                else:
-                    message = {
-                        attr: getattr(message, attr)
-                        for attr in dir(message)
-                        if not attr.startswith("_")
-                        and not callable(getattr(message, attr))
-                    }
-            print_dict(message)
-        except Exception as e:
-            print(f"Could not print {e}")
-
-    def add_message(self, message: ChatCompletionMessage | dict[str, str] | str):
-        if isinstance(message, ChatCompletionMessage):
-            self.messages.append(message)
-        elif isinstance(message, str):
+    def add_message(self, message: any):
+        if isinstance(message, str):
             message = {"role": "user", "content": message}
-        else:
-            self.messages.append(message)
+        elif hasattr(message, "to_dict") and callable(message.to_dict):
+            message = message.to_dict()
+        elif isinstance(dict, str):
+            pass
+        self.messages.append(message)
         if self.debug:
-            self._print_message(message)
+            self._print_agent_message(message)
         if self.log:
             self._log_agent_message(message)
 
-    def _log_agent_message(self, message: ChatCompletionMessage | dict[str, str]):
-        if isinstance(message, ChatCompletionMessage):
-            log_message = RuntimeLogAgentMessage(
-                agent_instance_id=self.agent_id, message=message.model_dump()
-            )
-        else:
-            log_message = RuntimeLogAgentMessage(
-                agent_instance_id=self.agent_id, message=message
-            )
+    def _print_agent_message(self, message: any):
+        print_dict(message)
+
+    def _log_agent_message(self, message: any):
+        log_message = RuntimeLogAgentMessage(
+            agent_instance_id=self.agent_id, message=message
+        )
         with get_session() as session:
             session.add(log_message)
             session.commit()
             session.refresh(log_message)
 
-    def _execute_tool_call(self, tool_call):
-        # TODO: there's probably a better  hierarchical version of determining whether the tool was correctly called.
-        function_id = getattr(tool_call, "id", None)
-        if not hasattr(tool_call, "function"):
-            return (
-                "Error: 'tool_call' does not have 'function' attribute.",
-                function_id,
-                None,
-            )
-        function_name = getattr(tool_call.function, "name", None)
-        function_arguments = getattr(tool_call.function, "arguments", None)
-
-        if not function_name or not function_arguments or not function_id:
-            return (
-                "Error: Invalid tool call structure. Expected 'name', 'arguments', and 'id'.",
-                function_id,
-                function_name,
-            )
-
+    def _execute_tool_call(self, tool_call: ToolCall):
         try:
-            function = next(
-                tool.function for tool in self.tools if tool.name == function_name
+            function_to_execute = next(
+                tool.function for tool in self.tools if tool.name == tool_call.name
             )
-            if self.debug:
-                print_dict(
-                    {
-                        "function_name": function_name,
-                        "function_arguments": function_arguments,
-                    }
-                )
-
-            if isinstance(function_arguments, str):
-                function_args = json.loads(function_arguments)
-            elif isinstance(function_arguments, dict):
-                function_args = function_arguments
-            else:
-                raise TypeError("Arguments must be either a string or a dictionary.")
-            if "agent_context" in function.__code__.co_varnames:
-                if function_args is None:
-                    function_args = {}
-                function_args["agent_context"] = self
-            return (function(**function_args), function_id, function_name)
+            execution_kwargs = tool_call.args
+            if "agent_context" in function_to_execute.__code__.co_varnames:
+                execution_kwargs["agent_context"] = self
+            tool_call.response = function_to_execute(**execution_kwargs)
         except Exception as e:
-            return (f"Error: {str(e)}", function_id, function_name)
+            tool_call.response = f"Error: {str(e)}"
+        return tool_call
 
     def _iterate(self):
         self.iteration += 1

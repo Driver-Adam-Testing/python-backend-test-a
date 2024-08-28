@@ -22,7 +22,7 @@ class Tool:
     def render_tool_for_prompt(self):
         return self.name + self.description
 
-    def __open_ai_dict__(self):
+    def to_open_ai_dict(self):
         sig = signature(self._function)
         return {
             "type": "function",

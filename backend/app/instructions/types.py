@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import Literal
-
+from uuid import UUID
 
 class Instruction(BaseModel):
     call_id: str
@@ -11,8 +11,8 @@ class Instruction(BaseModel):
 
 
 class ExecuteInstructionRequest(BaseModel):
-    workspace_id: str
-    codebase_id: str
+    workspace_id: UUID
+    codebase_id: UUID
     prompt: str
 
 

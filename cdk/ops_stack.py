@@ -1,5 +1,6 @@
 from aws_cdk import (
     Stack,
+    aws_s3,
 )
 from constructs import Construct
 
@@ -15,6 +16,24 @@ class OpsStack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
+        cors_origins = "https://app.dev.driverai.com,https://labs.dev.driverai.com,https://app2.dev.driverai.com,http://localhost:3000,https://app.beta.driverai.com"
+
+        dropzone_bucket = aws_s3.Bucket(
+            self,
+            "DropzoneBucket",
+            cors=[
+                {
+                    "allowedMethods": [
+                        aws_s3.HttpMethods.PUT,
+                        aws_s3.HttpMethods.POST,
+                        aws_s3.HttpMethods.GET,
+                    ],
+                    "allowedOrigins": cors_origins.split(","),
+                    "allowedHeaders": ["*"],
+                }
+            ],
+        )
+
         backend = Backend(
             self,
             "ApiBackend",
@@ -22,6 +41,8 @@ class OpsStack(Stack):
                 environment="development",
                 cors_origins="https://app.dev.driverai.com,https://labs.dev.driverai.com,https://app2.dev.driverai.com,http://localhost:3000",
                 allowed_ips=["98.142.217.111/32"],
+                dropzone_bucket_name=dropzone_bucket.bucket_name,
+                use_legacy_dropzone=False,
             ),
         )
         onboarding_lambda = CodeOnboardingLambda(

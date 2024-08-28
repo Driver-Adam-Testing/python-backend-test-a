@@ -42,6 +42,8 @@ class Settings(BaseSettings):
     AWS_REGION: str | None = None
     AWS_S3_ENDPOINT_URL: str | None = None
     AWS_S3_CODE_BUCKET_SUFFIX: str | None = None
+    DROPZONE_BUCKET_NAME: str | None = None
+    USE_LEGACY_DROPZONE: bool | None = True
 
     PORT: int | None = None
     HOST: str | None = None

@@ -206,7 +206,6 @@ class TestFileTreeDag:
         file_tree_dag.add_file(test_file1, change_status=True)
         file_tree_dag.add_file(test_file2, change_status=True)
 
-        # Test
         file_tree_dag.mark_file_removal(test_file1)
 
         # Verify that the ancestor is not marked as removed because it still has an active child
@@ -236,7 +235,6 @@ class TestFileTreeDag:
         file_tree_dag.add_file(test_file1, change_status=False)
         file_tree_dag.add_file(test_file2, change_status=False)
 
-        # Test
         file_tree_dag.mark_as_modified(
             test_file1, include_upstream=True, include_downstream=False
         )
@@ -303,7 +301,6 @@ class TestFileTreeDag:
         file_tree_dag.add_file(test_file1, change_status=False)
         file_tree_dag.add_file(test_file2, change_status=False)
 
-        # Test
         file_tree_dag.mark_as_modified(
             test_file1, include_upstream=False, include_downstream=False
         )

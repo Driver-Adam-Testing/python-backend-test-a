@@ -75,10 +75,12 @@ class TagAssociationRequest(BaseModel):
     tag_id: UUID
     include: bool
 
+
 class TagAssociationResponse(BaseModel):
     tag_id: UUID
     content_id: UUID
     message: str
+
 
 class BatchTagAssociationRequest(BaseModel):
     tags: list[TagAssociationRequest]
@@ -86,6 +88,7 @@ class BatchTagAssociationRequest(BaseModel):
 
 class BatchTagAssociationResponse(BaseModel):
     results: list[TagAssociationResponse]
+
 
 class CreateContentRequest(BaseModel):
     workspace_id: UUID
@@ -96,8 +99,17 @@ class ContentResultBase(BaseModel, Generic[DataT]):
     results: list[DataT | None] = None
 
 
+class ContentRequestBase(BaseModel, Generic[DataT]):
+    result: DataT | None = None
+
+
 class CreateContentResponse(ContentResultBase[DerivedContent]):
     pass
+
+
+# class ContentResponse(DerivedContent):
+#     pass
+
 
 class ContentSourceResponse(ContentResultBase[ListContentResult]):
     pass
@@ -110,36 +122,59 @@ class CreateTemplateRequest(BaseModel):
 class CreateTemplateResponse(BaseModel):
     created: bool
 
+
 class ContentSourceAssociationRequest(BaseModel):
     include: bool
+
 
 class ContentSourceAssociationItem(BaseModel):
     source_content_id: UUID
     include: bool
 
+
 class ContentCollectionAssociationRequest(BaseModel):
     collection_id: UUID
+
 
 class BatchContentSourceAssociationRequest(BaseModel):
     sources: list[ContentSourceAssociationItem]
 
+
 class DeleteContentSourcesRequest(BaseModel):
     source_ids: list[UUID]
+
 
 class ContentSourceAssociationResponse(BaseModel):
     content_id: UUID
     source_id: UUID
     message: str
 
+
 class BatchContentSourceAssociationResponse(BaseModel):
     content_id: UUID
     sources: list[ContentSourceAssociationItem]
     message: str
+
 
 class DeleteDocumentSourceResponse(BaseModel):
     document_id: UUID
     source_id: UUID
     message: str
 
+
 class BatchDeleteDocumentSourceResponse(BaseModel):
     results: list[DeleteDocumentSourceResponse]
+
+
+class BatchDeleteTagsRequest(BaseModel):
+    tag_ids: list[UUID]
+
+
+class DeleteTagItemResponse(BaseModel):
+    content_id: UUID
+    tag_id: UUID
+    message: str
+
+
+class BatchDeleteTagsResponse(BaseModel):
+    results: list[DeleteTagItemResponse]

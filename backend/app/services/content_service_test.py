@@ -1,5 +1,4 @@
 from datetime import datetime
-from unittest.mock import Mock
 from uuid import uuid4
 
 import pytest
@@ -15,7 +14,6 @@ from database.models_v1 import (
 from fastapi import HTTPException
 from sqlalchemy.exc import NoResultFound
 
-from app.api.auth import CurrentUser
 from app.schemas.content_schema import (
     ContentSourceAssociationItem,
     CreateContentRequest,
@@ -169,15 +167,6 @@ def content(
     )
 
 
-@pytest.fixture(scope="function")
-def current_user_with_org_no_workspace() -> CurrentUser:
-    current_user = Mock(spec=CurrentUser)
-    current_user.user_id = "other_test_user_id"
-    current_user.organization_id = "other_test_org_id"
-    current_user.is_service_account = False
-    return current_user
-
-
 def test_create_blank_document(
     content_service, current_user_with_org, workspace, codebase, codebase_content
 ):
@@ -204,9 +193,9 @@ def test_create_application_note(content_service, current_user_with_org):
 
 
 def test_create_application_note_no_default_workspace(
-    content_service, current_user_with_org_no_workspace
+    content_service, current_user_with_other_org
 ):
-    organization_id = current_user_with_org_no_workspace.organization_id
+    organization_id = current_user_with_other_org.organization_id
     with pytest.raises(HTTPException):
         content_service.create_content(
             organization_id, CreateContentRequest(content_type="application_note")

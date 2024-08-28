@@ -1,5 +1,4 @@
 import json
-import logging
 from collections.abc import Callable
 from datetime import datetime
 from uuid import UUID
@@ -19,7 +18,12 @@ from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlmodel import Session, asc, desc, func, or_, select, text
 
+from app.core.logger import logger
 from app.repositories.base_repository import BaseRepository
+from app.repositories.derived_content_type_repository import (
+    DerivedContentTypeRepository,
+)
+from app.repositories.workspace_repository import WorkspaceRepository
 from app.schemas.content_schema import (
     BatchContentSourceAssociationResponse,
     ContentSourceAssociationItem,
@@ -35,8 +39,6 @@ from app.schemas.content_schema import (
     TagAssociationResponse,
 )
 from app.utils.authorization_chain import perform_authorization_checks
-
-logger = logging.getLogger(__name__)
 
 
 def is_authorized(
@@ -65,40 +67,11 @@ def is_authorized(
     return True
 
 
-class DerivedContentTypeRepository(BaseRepository[DerivedContentType]):
-    def __init__(self, session: Session):
-        super().__init__(session, DerivedContentType)
-
-    def get_by_type_name(self, type_name: str) -> DerivedContentType:
-        logger.info(f"Fetching DerivedContentType by type_name: {type_name}")
-        return self.session.exec(
-            select(DerivedContentType).where(DerivedContentType.type_name == type_name)
-        ).first()
-
-    def get_by_type_names(self, type_names: list[str]) -> DerivedContentType:
-        logger.info(f"Fetching DerivedContentType by type_names: {type_names}")
-        return self.session.exec(
-            select(DerivedContentType).where(
-                DerivedContentType.type_name.in_(type_names)
-            )
-        ).first()
-
-    @staticmethod
-    def valid_collection_type_names() -> list[str]:
-        return [
-            "codebase",
-            "codebase-directory",
-            "codebase-file",
-            "pdf_summary",
-            "supplemental-document",
-        ]
-
-
 class ContentService:
     def __init__(self, session: Session):
         self.session = session
         self.content_repository = BaseRepository(session, DerivedContent)
-        self.workspace_repository = BaseRepository(session, Workspace)
+        self.workspace_repository = WorkspaceRepository(session)
         self.tag_repository = BaseRepository(session, Tag)
         self.derived_content_type_repository = DerivedContentTypeRepository(session)
         self.document_source_repository = BaseRepository(session, DocumentSource)
@@ -598,11 +571,8 @@ class ContentService:
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid content type"
             )
 
-        default_workspace = self.workspace_repository.get_by_conditions(
-            [
-                Workspace.organization_id == organization_id,
-                Workspace.display_name == "Default",
-            ]
+        default_workspace = self.workspace_repository.get_default_workspace(
+            organization_id
         )
 
         if not default_workspace:

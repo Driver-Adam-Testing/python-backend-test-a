@@ -9,6 +9,7 @@ from app.api.routes.v1 import (
     onboarding,
     search,
     tags,
+    upload,
 )
 from app.core.config import settings
 
@@ -28,6 +29,8 @@ api_router.include_router(tags.router, prefix="/tags", tags=["tags"])
 api_router.include_router(
     instructions.router, prefix="/instructions", tags=["instructions"]
 )
+api_router.include_router(upload.router, prefix="/upload", tags=["upload"])
+
 if settings.ENVIRONMENT != "production":
     api_router.include_router(
         sandbox_router, prefix="/sandbox", tags=["legacy-sandbox"]

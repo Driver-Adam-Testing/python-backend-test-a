@@ -22,5 +22,16 @@ def current_user_with_org() -> CurrentUser:
     current_user = Mock(spec=CurrentUser)
     current_user.user_id = "test_user_id"
     current_user.organization_id = "test_org_id"
+    current_user.organization_name = "test_org_name"
+    current_user.is_service_account = False
+    return current_user
+
+
+@pytest.fixture(scope="function")
+def current_user_with_other_org() -> CurrentUser:
+    current_user = Mock(spec=CurrentUser)
+    current_user.user_id = "other_test_user_id"
+    current_user.organization_id = "other_test_org_id"
+    current_user.organization_name = "other_test_org_name"
     current_user.is_service_account = False
     return current_user

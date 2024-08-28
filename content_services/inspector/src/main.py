@@ -51,7 +51,12 @@ class FileInfo:
     region="us-east",
     concurrency_limit=5,
 )
-async def inspect_db(codebase_id: uuid.UUID, run_id: str, resume: bool = False):
+async def inspect_db(
+    codebase_id: uuid.UUID,
+    run_id: str,
+    resume: bool = False,
+    rerun_node_paths: list[str] | None = None,
+):
     import tempfile
 
     import boto3
@@ -93,7 +98,17 @@ async def inspect_db(codebase_id: uuid.UUID, run_id: str, resume: bool = False):
         codebase_dag: FileTreeDag = build_dag(
             root_path=download_root, file_paths=file_paths
         )
-        sorted_nodes = codebase_dag.topological_sort()
+
+        if rerun_node_paths:
+            for rerun_path in rerun_node_paths:
+                rerun_path = download_root / rerun_path
+                codebase_dag.mark_as_modified(rerun_path, include_downstream=True)
+
+        if rerun_node_paths:
+            sorted_nodes = codebase_dag.topological_sort(changed_nodes_only=True)
+        else:
+            sorted_nodes = codebase_dag.topological_sort()
+
         path_to_source_content_id = {
             Path(sc.relative_path): sc.id for sc in source_contents_all
         }
@@ -265,7 +280,16 @@ def get_file_content(path: Path) -> str:
 
 
 @app.local_entrypoint()
-def main(resume_from_id: str | None = None):
+def main(
+    codebase_id: str, resume_from_id: str | None = None, rerun_paths: str | None = None
+):
+    print("Processing codebase with id: ", codebase_id)
+    rerun_node_paths = rerun_paths.split(",") if rerun_paths else None
+    if rerun_node_paths:
+        print("Rerunning nodes:")
+        for path in rerun_node_paths:
+            print("--> ", path)
+
     if resume_from_id:
         resume = True
         run_id = resume_from_id
@@ -274,8 +298,10 @@ def main(resume_from_id: str | None = None):
         run_id = uuid.uuid4()  # When rerunning we would supply this. This is used to identify the run in the db
     try:
         inspect_db.remote(
-            uuid.UUID("4e50214d-d05d-4d5f-8313-78b3dd674fba"), run_id, resume=resume
+            uuid.UUID(codebase_id),
+            run_id,
+            resume=resume,
+            rerun_node_paths=rerun_node_paths,
         )
-        # asyncio.run(inspect_db.local(uuid.UUID("8dc2ecd9-1289-4359-90a3-dacdd42405a7"), run_id, resume=resume))
     finally:
         print("Run id: ", run_id)

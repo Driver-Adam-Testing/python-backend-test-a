@@ -17,7 +17,7 @@ REMOTE_CODEBASE_ROOT = Path("/data/content-database")
 
 From within the environment, you can run with
 ```
-modal run --env=dev src/main.py
+modal run --env=dev src/main.py codebase-id="<UUID>"
 ```
 
 If you abort or crash, you can use the printed run ID and rerun
@@ -25,9 +25,12 @@ If you abort or crash, you can use the printed run ID and rerun
 modal run --env=dev src/main.py resume-from-id="myuuid"
 ```
 
+If you want to rerun parts of the tree, simply supply the path to the nodes
+```
+modal run --env=dev src/main.py --codebase-id="<UUID>" --rerun-paths="/path/1,/path/2"
+```
 ## Deploying app service to cloud
 
 ```
 modal deploy --env=dev src/main.py
 ```
-

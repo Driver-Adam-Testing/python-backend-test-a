@@ -8,6 +8,7 @@ from aws_cdk import (
     aws_iam,
     aws_logs,
     aws_route53,
+    aws_s3,
     aws_secretsmanager,
     aws_ssm,
 )
@@ -19,7 +20,6 @@ class BackendParams:
     cors_origins: str
     allowed_ips: list[str]
     environment: str
-    dropzone_bucket_name: str
     use_legacy_dropzone: bool
 
     def __init__(
@@ -27,13 +27,11 @@ class BackendParams:
         cors_origins,
         allowed_ips,
         environment,
-        dropzone_bucket_name,
         use_legacy_dropzone,
     ):
         self.cors_origins = cors_origins
         self.allowed_ips = allowed_ips
         self.environment = environment
-        self.dropzone_bucket_name = dropzone_bucket_name
         self.use_legacy_dropzone = use_legacy_dropzone
 
 
@@ -112,15 +110,32 @@ class Backend(Construct):
             self, "OpenAIApiKeyCredentials", secret_name=openai_secret_name
         )
 
+        self.dropzone_bucket = aws_s3.Bucket(
+            self,
+            "DropzoneBucket",
+            cors=[
+                {
+                    "allowedMethods": [
+                        aws_s3.HttpMethods.PUT,
+                        aws_s3.HttpMethods.POST,
+                        aws_s3.HttpMethods.GET,
+                    ],
+                    "allowedOrigins": params.cors_origins.split(","),
+                    "allowedHeaders": ["*"],
+                }
+            ],
+        )
+
         container_environment_vars = {
             "BACKEND_CORS_ORIGINS": params.cors_origins,
             "PORT": "8000",
             "PROJECT_NAME": "DriverAI API",
             "ENVIRONMENT": params.environment,
-            "DROPZONE_BUCKET_NAME": params.dropzone_bucket_name,
+            "DROPZONE_BUCKET_NAME": self.dropzone_bucket.bucket_name,
             "AWS_S3_CODE_BUCKET_SUFFIX": "codebase-dropzone",
             "USE_LEGACY_DROPZONE": "True" if params.use_legacy_dropzone else "False",
         }
+
         container_secrets = {
             "POSTGRES_SERVER": aws_ecs.Secret.from_secrets_manager(
                 postgres_secret, "SERVER"
@@ -196,7 +211,7 @@ class Backend(Construct):
                 log_retention=aws_logs.RetentionDays.ONE_YEAR,
             ),
         )
-        service = aws_ecs_patterns.ApplicationLoadBalancedFargateService(
+        self.service = aws_ecs_patterns.ApplicationLoadBalancedFargateService(
             self,
             "BackendApi",
             protocol=aws_elasticloadbalancingv2.ApplicationProtocol.HTTPS,
@@ -226,10 +241,10 @@ class Backend(Construct):
             cpu=2048,
             memory_limit_mib=4096,
         )
-        service.target_group.configure_health_check(
+        self.service.target_group.configure_health_check(
             path="/api/v1/healthcheck/", port="8000"
         )
-        service.task_definition.task_role.attach_inline_policy(
+        self.service.task_definition.task_role.attach_inline_policy(
             aws_iam.Policy(
                 self,
                 "CustomerSecretsRW",

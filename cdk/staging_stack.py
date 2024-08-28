@@ -1,4 +1,4 @@
-from aws_cdk import Stack, aws_s3
+from aws_cdk import Stack
 from constructs import Construct
 
 from cdk.constructs.backend import Backend, BackendParams
@@ -15,40 +15,28 @@ class StagingStack(Stack):
 
         cors_origins = "https://app.staging.driverai.com"
 
-        dropzone_bucket = aws_s3.Bucket(
-            self,
-            "DropzoneBucket",
-            cors=[
-                {
-                    "allowedMethods": [
-                        aws_s3.HttpMethods.PUT,
-                        aws_s3.HttpMethods.POST,
-                        aws_s3.HttpMethods.GET,
-                    ],
-                    "allowedOrigins": cors_origins.split(","),
-                    "allowedHeaders": ["*"],
-                }
-            ],
-        )
-        backend = Backend(
+        self.backend = Backend(
             self,
             "ApiBackend",
             BackendParams(
                 environment="staging",
                 cors_origins=cors_origins,
                 allowed_ips=[],  # All IPs currently allowed
-                dropzone_bucket_name=dropzone_bucket.bucket_name,
                 use_legacy_dropzone=False,
             ),
         )
-        onboarding_lambda = CodeOnboardingLambda(
+
+        self.onboarding_lambda = CodeOnboardingLambda(
             self,
-            "OnboardingLambda",
+            "CodeOnboardingLambda",
             CodeOnboardingLambdaParams(
                 environment="staging",
                 api_url="https://api.staging.driverai.com/api/v1",
                 auth0_url="https://auth.staging.driverai.com",
-                dropzone_bucket_name=dropzone_bucket.bucket_name,
+                dropzone_bucket=self.backend.dropzone_bucket,
+                use_legacy_dropzone=False,
             ),
         )
-        inspector = Inspector(self, "Inspector", InspectorParams(environment="staging"))
+        self.inspector = Inspector(
+            self, "Inspector", InspectorParams(environment="staging")
+        )

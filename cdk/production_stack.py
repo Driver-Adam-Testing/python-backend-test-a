@@ -1,4 +1,4 @@
-from aws_cdk import Stack, aws_s3
+from aws_cdk import Stack
 from constructs import Construct
 
 from cdk.constructs.backend import Backend, BackendParams
@@ -15,42 +15,27 @@ class ProductionStack(Stack):
 
         cors_origins = "https://app.driverai.com"
 
-        dropzone_bucket = aws_s3.Bucket(
-            self,
-            "DropzoneBucket",
-            cors=[
-                {
-                    "allowedMethods": [
-                        aws_s3.HttpMethods.PUT,
-                        aws_s3.HttpMethods.POST,
-                        aws_s3.HttpMethods.GET,
-                    ],
-                    "allowedOrigins": cors_origins.split(","),
-                    "allowedHeaders": ["*"],
-                }
-            ],
-        )
-        backend = Backend(
+        self.backend = Backend(
             self,
             "ApiBackend",
             BackendParams(
                 environment="production",
                 cors_origins=cors_origins,
                 allowed_ips=[],  # All IPs currently allowed
-                dropzone_bucket_name=dropzone_bucket.bucket_name,
                 use_legacy_dropzone=True,
             ),
         )
-        onboarding_lambda = CodeOnboardingLambda(
+        self.onboarding_lambda = CodeOnboardingLambda(
             self,
-            "OnboardingLambda",
+            "CodeOnboardingLambda",
             CodeOnboardingLambdaParams(
                 environment="production",
                 api_url="https://api.us1.driverai.com/api/v1",
                 auth0_url="https://auth.driverai.com",
-                dropzone_bucket_name=dropzone_bucket.bucket_name,
+                dropzone_bucket=self.backend.dropzone_bucket,
+                use_legacy_dropzone=True,
             ),
         )
-        inspector = Inspector(
+        self.inspector = Inspector(
             self, "Inspector", InspectorParams(environment="production")
         )

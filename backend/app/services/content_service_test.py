@@ -1,4 +1,5 @@
 from datetime import datetime
+from unittest.mock import Mock
 from uuid import uuid4
 
 import pytest
@@ -14,8 +15,10 @@ from database.models_v1 import (
 from fastapi import HTTPException
 from sqlalchemy.exc import NoResultFound
 
+from app.api.auth import CurrentUser
 from app.schemas.content_schema import (
     ContentSourceAssociationItem,
+    CreateContentRequest,
     ListContentInput,
     ListContentTypesInput,
 )
@@ -52,7 +55,7 @@ def create_content_types(db):
 @pytest.fixture
 def workspace(db, current_user_with_org):
     workspace = Workspace(
-        display_name="Default Workspace",
+        display_name="Default",
         organization_id=current_user_with_org.organization_id,
     )
     db.add(workspace)
@@ -166,6 +169,15 @@ def content(
     )
 
 
+@pytest.fixture(scope="function")
+def current_user_with_org_no_workspace() -> CurrentUser:
+    current_user = Mock(spec=CurrentUser)
+    current_user.user_id = "other_test_user_id"
+    current_user.organization_id = "other_test_org_id"
+    current_user.is_service_account = False
+    return current_user
+
+
 def test_create_blank_document(
     content_service, current_user_with_org, workspace, codebase, codebase_content
 ):
@@ -182,16 +194,38 @@ def test_create_blank_document(
     assert new_content.content_type_id is not None
 
 
+def test_create_application_note(content_service, current_user_with_org):
+    organization_id = current_user_with_org.organization_id
+    new_content = content_service.create_content(
+        organization_id, CreateContentRequest(content_type="application_note")
+    )
+    assert new_content is not None
+    assert new_content.content_type.type_name == "application_note"
+
+
+def test_create_application_note_no_default_workspace(
+    content_service, current_user_with_org_no_workspace
+):
+    organization_id = current_user_with_org_no_workspace.organization_id
+    with pytest.raises(HTTPException):
+        content_service.create_content(
+            organization_id, CreateContentRequest(content_type="application_note")
+        )
+
+
+def test_create_other_content_type(content_service, current_user_with_org):
+    organization_id = current_user_with_org.organization_id
+    with pytest.raises(HTTPException):
+        content_service.create_content(
+            organization_id, CreateContentRequest(content_type="symbol")
+        )
+
+
 def test_create_document_from_template(content_service, current_user_with_org, content):
     with pytest.raises(NoResultFound):
         content_service.create_document_from_template(
             current_user_with_org.organization_id, content.id
         )
-    # new_content = content_service.create_document_from_template(
-    #     current_user_with_org.organization_id, content.id
-    # )
-    # assert new_content is not None
-    # assert new_content.source_content_id == content.id
 
 
 def test_get_list_content(content_service, current_user_with_org, content):
@@ -240,9 +274,6 @@ def test_create_template(content_service, current_user_with_org, workspace, code
         content_service.create_template(
             current_user_with_org.organization_id, workspace.id, codebase.id
         )
-    # assert new_template is not None
-    # assert new_template.workspace_id == workspace.id
-    # assert new_template.codebase_id == codebase.id
 
 
 def test_associate_tag(content_service, current_user_with_org, content, tag):

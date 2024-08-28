@@ -1,8 +1,9 @@
+import graphlib
+from collections.abc import Generator
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Optional, Generator
-import graphlib
+from typing import Optional
 
 
 class NodeStatus(Enum):
@@ -58,6 +59,8 @@ class Node(LiteNode):
     def remove_child(self, path: Path) -> None:
         child_key = path.as_posix()
         if child_key in self.children:
+            child = self.children[child_key]
+            child.parent = None
             del self.children[child_key]
 
     def traverse_upstream(self) -> Generator["Node", None, None]:
@@ -66,6 +69,12 @@ class Node(LiteNode):
         while current is not None:
             yield current
             current = current.parent
+
+    def traverse_downstream(self) -> Generator["Node", None, None]:
+        """Yield all downstream nodes, including itself."""
+        yield self
+        for child in self.children.values():
+            yield from child.traverse_downstream()
 
     def into_lite_node(self) -> LiteNode:
         return LiteNode(kind=self.kind, root_rel_path=self.root_rel_path)
@@ -78,6 +87,7 @@ class Node(LiteNode):
     def __hash__(self):
         return super().__hash__()
 
+
 @dataclass
 class FileTreeDag:
     root: Node = field(init=False)
@@ -85,7 +95,9 @@ class FileTreeDag:
 
     def __post_init__(self):
         if not self.root_abs_path.exists():
-            raise FileNotFoundError(f"Codebase root path {self.root_abs_path} does not exist.")
+            raise FileNotFoundError(
+                f"Codebase root path {self.root_abs_path} does not exist."
+            )
         self.root = Node(kind=NodeKind.ROOT_FOLDER, root_rel_path=Path(""), parent=None)
 
     def add_file(self, path: Path, change_status=True) -> None:
@@ -126,14 +138,15 @@ class FileTreeDag:
                 current = new_node
             else:
                 current = current.children[path_key]
-                current.status = (
-                    NodeStatus.MODIFIED if change_status else NodeStatus.UNMODIFIED
-                )  # This is so that if we marked for deltion a node with a removal status, and then re-added it, it will be marked as modified
+                # current.status = (
+                #     NodeStatus.MODIFIED if change_status else NodeStatus.UNMODIFIED
+                # )  # This is so that if we marked for deltion a node with a removal status, and then re-added it, it will be marked as modified
 
-        # When a new node is added, mark all upstream nodes as MODIFIED if status changing is enabled
+        # When a new node is added, ensure upstream nodes are correctly marked
         if node_added and change_status:
-            for node in current.parent.traverse_upstream():
-                if node.status != NodeStatus.ADDED:
+            for node in current.traverse_upstream():
+                # Only mark as MODIFIED if the node was already existing
+                if node.status == NodeStatus.UNMODIFIED:
                     node.status = NodeStatus.MODIFIED
 
     def mark_file_removal(self, path: Path) -> None:
@@ -181,7 +194,12 @@ class FileTreeDag:
                 break  # Stop marking as removed if there are active children
             node = node.parent
 
-    def mark_as_modified(self, path: Path) -> None:
+    def mark_as_modified(
+        self,
+        path: Path,
+        include_upstream: bool = True,
+        include_downstream: bool = False,
+    ) -> None:
         relative_path = path.relative_to(self.root_abs_path)
         parts = relative_path.parts
 
@@ -194,9 +212,15 @@ class FileTreeDag:
                 raise KeyError(f"Cannot mark as modified. {path} not found in tree.")
             current = current.children[path_key]
 
-        # Now mark this node and all upstream nodes as MODIFIED
-        for node in current.traverse_upstream():
-            node.status = NodeStatus.MODIFIED
+        current.status = NodeStatus.MODIFIED
+
+        if include_upstream:
+            for node in current.traverse_upstream():
+                node.status = NodeStatus.MODIFIED
+
+        if include_downstream:
+            for node in current.traverse_downstream():
+                node.status = NodeStatus.MODIFIED
 
     def topological_sort(
         self,

@@ -9,9 +9,6 @@ from database.models_v1 import (
     ContentMetadata,
     DerivedContent,
     DerivedContentType,
-    Llm,
-    SourceContent,
-    SourceContentType,
     Workspace,
 )
 from sqlalchemy import create_engine
@@ -31,10 +28,7 @@ models = [
     Workspace,
     Codebase,
     DerivedContentType,
-    SourceContentType,
-    Llm,
     DerivedContent,
-    SourceContent,
     ContentMetadata,
     Chunk,
 ]
@@ -79,7 +73,9 @@ target_s3 = boto3.client(
     "s3",
     endpoint_url="http://localhost:9000",  # LocalStack default endpoint
     aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),  # Minio credentials from .env
-    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),  # Minio credentials from .env
+    aws_secret_access_key=os.getenv(
+        "AWS_SECRET_ACCESS_KEY"
+    ),  # Minio credentials from .env
     region_name="us-east-1",  # Default region for LocalStack
 )
 try:
@@ -88,8 +84,8 @@ try:
     if "Buckets" in source_buckets:
         for bucket in source_buckets["Buckets"]:
             source_bucket_name = bucket["Name"]
-            if(source_bucket_name.startswith("cdk")):
-                continue # Skip CDK resources at least
+            if source_bucket_name.startswith("cdk"):
+                continue  # Skip CDK resources at least
             target_bucket_name = (
                 source_bucket_name  # Assuming target bucket name is the same as source
             )

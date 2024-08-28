@@ -15,9 +15,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
         now = datetime.now()
         response = await call_next(request)
         response_time = datetime.now() - now
-        client_host = request.client.host if request.client and request.client.host else "unknown"
-        forwarded_for = request.headers.get("X-Forwarded-For", client_host)
         logger.info(
-            f"{request_id} {request.method} {request.url.path} {forwarded_for} Status={response.status_code} ResponseTime={int(response_time.total_seconds() * 1000)}ms"
+            f"{request_id} {request.method} {request.url.path} {request.headers["X-Fowarded-For"] if "X-Fowarded-For" in request.headers.keys() else request.client.host} Status={response.status_code} ResponseTime={int(response_time.total_seconds() * 1000)}ms"
         )
         return response

@@ -19,11 +19,22 @@ class BackendParams:
     cors_origins: str
     allowed_ips: list[str]
     environment: str
+    dropzone_bucket_name: str
+    use_legacy_dropzone: bool
 
-    def __init__(self, cors_origins, allowed_ips, environment):
+    def __init__(
+        self,
+        cors_origins,
+        allowed_ips,
+        environment,
+        dropzone_bucket_name,
+        use_legacy_dropzone,
+    ):
         self.cors_origins = cors_origins
         self.allowed_ips = allowed_ips
         self.environment = environment
+        self.dropzone_bucket_name = dropzone_bucket_name
+        self.use_legacy_dropzone = use_legacy_dropzone
 
 
 class Backend(Construct):
@@ -106,7 +117,9 @@ class Backend(Construct):
             "PORT": "8000",
             "PROJECT_NAME": "DriverAI API",
             "ENVIRONMENT": params.environment,
+            "DROPZONE_BUCKET_NAME": params.dropzone_bucket_name,
             "AWS_S3_CODE_BUCKET_SUFFIX": "codebase-dropzone",
+            "USE_LEGACY_DROPZONE": "True" if params.use_legacy_dropzone else "False",
         }
         container_secrets = {
             "POSTGRES_SERVER": aws_ecs.Secret.from_secrets_manager(

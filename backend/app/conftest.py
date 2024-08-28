@@ -1,17 +1,20 @@
-import pytest
 from collections.abc import Generator
 from unittest.mock import Mock
 
+import pytest
 from database.db import engine
-from sqlmodel import Session, SQLModel
+from sqlmodel import Session
+
 from app.api.auth import CurrentUser
+
 
 @pytest.fixture(scope="function", autouse=True)
 def db() -> Generator[Session, None, None]:
-    SQLModel.metadata.create_all(engine)
+    # commenting out the drop_all and create_all calls to avoid dropping the tables in deployed environments
+    # SQLModel.metadata.create_all(engine)
     with Session(engine) as session:
         yield session
-    SQLModel.metadata.drop_all(engine)
+    # SQLModel.metadata.drop_all(engine)
 
 
 @pytest.fixture(scope="function")

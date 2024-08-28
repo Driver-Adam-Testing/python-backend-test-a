@@ -2,23 +2,26 @@ from datetime import datetime
 from uuid import uuid4
 
 import pytest
-
-from app.schemas.content_schema import ListContentInput, ContentSourceAssociationItem, ListContentTypesInput
-from app.schemas.tag_schema import NewTagInput
-from app.services.tag_service import TagService
+from database.derived_content_types import DerivedContentTypeNames
 from database.models_v1 import (
+    Codebase,
     DerivedContent,
     DerivedContentType,
-    Workspace,
-    Codebase,
     Enum_Codebase_Status,
-    Enum_Derived_Content_Status
+    Enum_Derived_Content_Status,
+    Workspace,
 )
-from database.derived_content_types import DerivedContentTypeNames
-from app.services.content_service import ContentService
-from sqlalchemy.exc import IntegrityError, NoResultFound
-
 from fastapi import HTTPException
+from sqlalchemy.exc import NoResultFound
+
+from app.schemas.content_schema import (
+    ContentSourceAssociationItem,
+    ListContentInput,
+    ListContentTypesInput,
+)
+from app.schemas.tag_schema import NewTagInput
+from app.services.content_service import ContentService
+from app.services.tag_service import TagService
 
 
 @pytest.fixture
@@ -33,18 +36,24 @@ def tag_service(db):
 
 @pytest.fixture(scope="function", autouse=True)
 def create_content_types(db):
-    # insert all DerivedContentTypeNames
-    for type_name in DerivedContentTypeNames:
-        content_type = DerivedContentType(type_name=type_name.value)  # Convert enum to its value
-        db.add(content_type)
-    db.commit()
+    try:
+        for type_name in DerivedContentTypeNames:
+            content_type = DerivedContentType(
+                type_name=type_name.value
+            )  # Convert enum to its value
+            db.add(content_type)
+        db.commit()
+
+    except Exception as e:
+        print(e)
+        db.rollback()
 
 
 @pytest.fixture
 def workspace(db, current_user_with_org):
     workspace = Workspace(
         display_name="Default Workspace",
-        organization_id=current_user_with_org.organization_id
+        organization_id=current_user_with_org.organization_id,
     )
     db.add(workspace)
     db.commit()
@@ -69,7 +78,9 @@ def codebase(db, workspace, current_user_with_org):
 
 @pytest.fixture
 def tag(tag_service, current_user_with_org):
-    new_tag_input = NewTagInput(name=f"TEST_TAG_{datetime.now()}", hex_color="#FFFFFF", type="tag")
+    new_tag_input = NewTagInput(
+        name=f"TEST_TAG_{datetime.now()}", hex_color="#FFFFFF", type="tag"
+    )
     return tag_service.create_tag(current_user_with_org, new_tag_input)
 
 
@@ -100,9 +111,11 @@ def parent_content(db, workspace, codebase, content_type):
 
 @pytest.fixture
 def source_content(db, content_service, workspace, codebase):
-    content_type_id = (content_service
-                       .derived_content_type_repository
-                       .get_by_type_name(DerivedContentTypeNames.CODEBASE.value)).id
+    content_type_id = (
+        content_service.derived_content_type_repository.get_by_type_name(
+            DerivedContentTypeNames.CODEBASE.value
+        )
+    ).id
     source_content = DerivedContent(
         content_type_id=content_type_id,
         workspace_id=workspace.id,
@@ -122,9 +135,11 @@ def source_content(db, content_service, workspace, codebase):
 def codebase_content(content_service, current_user_with_org, workspace, codebase):
     workspace_id = workspace.id
     codebase_id = codebase.id
-    content_type_id = (content_service
-                       .derived_content_type_repository
-                       .get_by_type_name(DerivedContentTypeNames.CODEBASE.value)).id
+    content_type_id = (
+        content_service.derived_content_type_repository.get_by_type_name(
+            DerivedContentTypeNames.CODEBASE.value
+        )
+    ).id
     codebase_record = DerivedContent(
         content_type_id=content_type_id,
         workspace_id=workspace_id,
@@ -139,29 +154,27 @@ def codebase_content(content_service, current_user_with_org, workspace, codebase
 
 
 @pytest.fixture
-def content(content_service, current_user_with_org, workspace, codebase, codebase_content):
+def content(
+    content_service, current_user_with_org, workspace, codebase, codebase_content
+):
     organization_id = current_user_with_org.organization_id
     workspace_id = workspace.id
     codebase_id = codebase.id
     document_name = f"TEST_CONTENT_{datetime.now()}"
     return content_service.create_blank_document(
-        organization_id,
-        workspace_id,
-        codebase_id,
-        document_name
+        organization_id, workspace_id, codebase_id, document_name
     )
 
 
-def test_create_blank_document(content_service, current_user_with_org, workspace, codebase, codebase_content):
+def test_create_blank_document(
+    content_service, current_user_with_org, workspace, codebase, codebase_content
+):
     organization_id = current_user_with_org.organization_id
     workspace_id = workspace.id
     codebase_id = codebase.id
     document_name = f"TEST_CONTENT_{datetime.now()}"
     new_content = content_service.create_blank_document(
-        organization_id,
-        workspace_id,
-        codebase_id,
-        document_name
+        organization_id, workspace_id, codebase_id, document_name
     )
     assert new_content is not None
     assert new_content.workspace_id == workspace_id
@@ -183,7 +196,9 @@ def test_create_document_from_template(content_service, current_user_with_org, c
 
 def test_get_list_content(content_service, current_user_with_org, content):
     lc_input = ListContentInput(limit=10, offset=0)
-    results = content_service.get_list_content(current_user_with_org.organization_id, lc_input)
+    results = content_service.get_list_content(
+        current_user_with_org.organization_id, lc_input
+    )
     assert results is not None
     assert results.limit == lc_input.limit
     assert results.offset == lc_input.offset
@@ -197,19 +212,25 @@ def test_get_list_content_types(content_service):
 
 
 def test_get_content_sources(content_service, current_user_with_org, content):
-    response = content_service.get_content_sources(content.id, current_user_with_org.organization_id)
+    response = content_service.get_content_sources(
+        content.id, current_user_with_org.organization_id
+    )
     assert response is not None
     assert response.results is not None
 
 
 def test_get_content_by_id(content_service, current_user_with_org, content):
-    fetched_content = content_service.get_content_by_id(content.id, current_user_with_org.organization_id)
+    fetched_content = content_service.get_content_by_id(
+        content.id, current_user_with_org.organization_id
+    )
     assert fetched_content is not None
     assert fetched_content.id == content.id
 
 
 def test_get_content_root_by_id(content_service, current_user_with_org, content):
-    root_content = content_service.get_content_root_by_id(content.id, current_user_with_org.organization_id)
+    root_content = content_service.get_content_root_by_id(
+        content.id, current_user_with_org.organization_id
+    )
     assert root_content is not None
     assert root_content.codebase_id == content.codebase_id
 
@@ -228,13 +249,17 @@ def test_associate_tag(content_service, current_user_with_org, content, tag):
     content_id = content.id
     tag_id = tag.id
     include = True
-    response = content_service.associate_tag(current_user_with_org.organization_id, content_id, tag_id, include)
+    response = content_service.associate_tag(
+        current_user_with_org.organization_id, content_id, tag_id, include
+    )
     assert response is not None
     assert response.tag_id == tag_id
     assert response.content_id == content_id
 
 
-def test_associate_tag_from_other_org(content_service, current_user_with_org, content, tag):
+def test_associate_tag_from_other_org(
+    content_service, current_user_with_org, content, tag
+):
     content_id = content.id
     tag_id = tag.id
     include = True
@@ -245,22 +270,28 @@ def test_associate_tag_from_other_org(content_service, current_user_with_org, co
 def test_disassociate_tag(content_service, current_user_with_org, content, tag):
     content_id = content.id
     tag_id = tag.id
-    content_service.associate_tag(current_user_with_org.organization_id, content_id, tag_id, True)
+    content_service.associate_tag(
+        current_user_with_org.organization_id, content_id, tag_id, True
+    )
 
-    response = content_service.disassociate_tag(current_user_with_org.organization_id, content_id, tag_id)
+    response = content_service.disassociate_tag(
+        current_user_with_org.organization_id, content_id, tag_id
+    )
     assert response is not None
     assert response.tag_id == tag_id
     assert response.content_id == content_id
 
 
-def test_associate_sources_with_content(content_service, current_user_with_org, content, source_content):
+def test_associate_sources_with_content(
+    content_service, current_user_with_org, content, source_content
+):
     content_id = content.id
     source_content_id = source_content.id
-    content_source_associations = [ContentSourceAssociationItem(source_content_id=source_content_id, include=True)]
+    content_source_associations = [
+        ContentSourceAssociationItem(source_content_id=source_content_id, include=True)
+    ]
     response = content_service.associate_sources_with_content(
-        current_user_with_org.organization_id,
-        content_id,
-        content_source_associations
+        current_user_with_org.organization_id, content_id, content_source_associations
     )
     assert response is not None
     assert response.content_id == content_id
@@ -268,32 +299,39 @@ def test_associate_sources_with_content(content_service, current_user_with_org, 
     assert response.sources[0].source_content_id == source_content_id
 
 
-def test_associate_invalid_sources_with_content(content_service, current_user_with_org, content):
+def test_associate_invalid_sources_with_content(
+    content_service, current_user_with_org, content
+):
     content_id = content.id
     source_content_id = uuid4()
-    content_source_associations = [ContentSourceAssociationItem(source_content_id=source_content_id, include=True)]
+    content_source_associations = [
+        ContentSourceAssociationItem(source_content_id=source_content_id, include=True)
+    ]
     with pytest.raises(HTTPException):
         content_service.associate_sources_with_content(
             current_user_with_org.organization_id,
             content_id,
-            content_source_associations
+            content_source_associations,
         )
 
 
-def test_disassociate_document_source(content_service, current_user_with_org, content, source_content):
+def test_disassociate_document_source(
+    content_service, current_user_with_org, content, source_content
+):
     content_id = content.id
     source_content_id = source_content.id
     content_service.associate_sources_with_content(
         current_user_with_org.organization_id,
-        content_id, [
-            ContentSourceAssociationItem(source_content_id=source_content_id, include=True)
-        ]
+        content_id,
+        [
+            ContentSourceAssociationItem(
+                source_content_id=source_content_id, include=True
+            )
+        ],
     )
 
     response = content_service.disassociate_document_source(
-        current_user_with_org.organization_id,
-        content_id,
-        source_content_id
+        current_user_with_org.organization_id, content_id, source_content_id
     )
     assert response is not None
     assert response.document_id == content_id

@@ -230,15 +230,13 @@ def create_blank_document(
     Parameters:
     - session: Current session object
     - user: Current user object
-    - request: CreateContentRequest object containing the workspace_id and codebase_id
+    - request: CreateContentRequest object containing the optional workspace_id and codebase_id and content_type
 
     Returns:
     - DerivedContent: Created content details
     """
     content_service = ContentService(session)
-    return content_service.create_blank_document(
-        user.organization_id, request.workspace_id, request.codebase_id
-    )
+    return content_service.create_content(user.organization_id, request)
 
 
 @router.delete(

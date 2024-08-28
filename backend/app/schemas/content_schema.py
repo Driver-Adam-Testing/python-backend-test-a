@@ -91,8 +91,9 @@ class BatchTagAssociationResponse(BaseModel):
 
 
 class CreateContentRequest(BaseModel):
-    workspace_id: UUID
-    codebase_id: UUID
+    workspace_id: UUID | None = None
+    codebase_id: UUID | None = None
+    content_type: str
 
 
 class ContentResultBase(BaseModel, Generic[DataT]):
@@ -105,10 +106,6 @@ class ContentRequestBase(BaseModel, Generic[DataT]):
 
 class CreateContentResponse(ContentResultBase[DerivedContent]):
     pass
-
-
-# class ContentResponse(DerivedContent):
-#     pass
 
 
 class ContentSourceResponse(ContentResultBase[ListContentResult]):

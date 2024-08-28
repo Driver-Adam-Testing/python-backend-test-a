@@ -14,6 +14,7 @@ from database.models_v1 import (
     TagContent,
     Workspace,
 )
+from driver_db.database.derived_content_types import DerivedContentTypeNames
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlmodel import Session, asc, desc, func, or_, select, text
@@ -24,6 +25,7 @@ from app.schemas.content_schema import (
     ContentSourceAssociationItem,
     ContentSourceAssociationResponse,
     ContentSourceResponse,
+    CreateContentRequest,
     DeleteDocumentSourceResponse,
     ListContentInput,
     ListContentResult,
@@ -576,6 +578,58 @@ class ContentService:
         )
         logger.info(
             f"Blank document created with ID {new_content.id} for organization {organization_id}"
+        )
+        return new_content
+
+    def create_content(
+        self, organization_id: str, request: CreateContentRequest
+    ) -> DerivedContent:
+        logger.info(
+            f"Creating content for organization {organization_id} with input {request}"
+        )
+        # if codebase_id is None: and workspace_id is None: find the default workspace for the organization
+        if request.codebase_id is not None and request.workspace_id is not None:
+            return self.create_blank_document(
+                organization_id, request.workspace_id, request.codebase_id
+            )
+
+        if request.content_type != DerivedContentTypeNames.APPLICATION_NOTE.value:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid content type"
+            )
+
+        default_workspace = self.workspace_repository.get_by_conditions(
+            [
+                Workspace.organization_id == organization_id,
+                Workspace.display_name == "Default",
+            ]
+        )
+
+        if not default_workspace:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Default workspace not found",
+            )
+        application_note_content_type = (
+            self.derived_content_type_repository.get_by_type_name("application_note")
+        )
+        blank_content_template = {
+            "name": "Untitled",
+            "content": " ",
+            "description": "",
+        }
+
+        new_content = self.content_repository.create(
+            DerivedContent(
+                content_type_id=application_note_content_type.id,
+                workspace_id=default_workspace.id,
+                relative_path="",
+                content=json.dumps(blank_content_template),
+                misc_metadata={},
+                status=Enum_Derived_Content_Status.generation_complete,
+                created_at=datetime.now(),
+                updated_at=datetime.now(),
+            )
         )
         return new_content
 

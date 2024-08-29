@@ -746,7 +746,7 @@ class ContentService:
     ) -> tuple[list[DerivedContent], int]:
         statement = (
             select(DerivedContent)
-            .distinct(DerivedContent.id)
+            .distinct()
             .join(DerivedContentType)
             .join(Workspace)
             .join(TagContent, isouter=True)
@@ -757,7 +757,6 @@ class ContentService:
                 onclause=DerivedContent.id == DocumentSource.document_id,
             )
             .where(organization_id == Workspace.organization_id)
-            .order_by(DerivedContent.id)
         )
         count_statement = (
             select(func.count())

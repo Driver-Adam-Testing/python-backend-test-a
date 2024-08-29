@@ -1,7 +1,7 @@
 """Add type to Tags
 
 Revision ID: 55de8d497a29
-Revises: 2f79ea9294a7
+Revises: 8cdbf2c4608d
 Create Date: 2024-08-13 08:22:59.013335
 
 """

@@ -10,6 +10,7 @@ class AgentType(enum.Enum):
     DEFAULT = "default"
     PROMPT_AUGMENTATION = "prompt_augmentation"
     COPY_EDITOR = "copy_editor"
+    CODE_CRITIC = "code_critic"
 
 
 class ToolConfig(BaseModel):

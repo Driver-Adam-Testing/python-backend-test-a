@@ -1,3 +1,4 @@
+import json
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from openai import OpenAI
@@ -8,8 +9,11 @@ from shared.agent.tools.tool_call import ToolCall
 
 class OpenAIAgent(AgentBase):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        response_format = kwargs.pop("response_format", None)
+        self.response_format = response_format
         self.client = OpenAI()
+
+        super().__init__(*args, **kwargs)
 
     @property
     def _tool_list(self):
@@ -58,18 +62,17 @@ class OpenAIAgent(AgentBase):
                 self.add_message(message)
 
     def _create_completion(self):
+        completion_kwargs = {}
+        completion_kwargs["model"] = self.model
+        completion_kwargs["messages"] = self.messages
         if self.tools:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=self.messages,
-                tools=self._tool_list,
-                tool_choice="auto",
-            )
+            completion_kwargs["tools"] = self._tool_list
+            completion_kwargs["tool_choice"] = "auto"
+        if self.response_format:
+            completion_kwargs["response_format"] = self.response_format
+            response = self.client.beta.chat.completions.parse(**completion_kwargs)
         else:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=self.messages,
-            )
+            response = self.client.chat.completions.create(**completion_kwargs)
         return response
 
     def _iterate(self):
@@ -83,4 +86,7 @@ class OpenAIAgent(AgentBase):
             return False
 
     def invoke(self, prompt: str):
-        return super().invoke(prompt)
+        response = super().invoke(prompt)
+        if self.response_format:
+            return self.response_format(**json.loads(response))
+        return response

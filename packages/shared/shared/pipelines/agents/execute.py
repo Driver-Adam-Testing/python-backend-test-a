@@ -4,6 +4,7 @@ from shared.interfaces.agents.execute import (
     AgentExecutionResponse,
     AgentType,
 )
+from shared.pipelines.agents.agent_code_critic import run_agent_code_critic
 from shared.pipelines.agents.agent_copy_editor import run_agent_copy_editor
 from shared.pipelines.agents.agent_default import run_agent_default
 from shared.pipelines.agents.agent_prompt_augmentation import (
@@ -51,6 +52,12 @@ def execute_single(input: AgentExecuteInput):
     if input.agent_config.agent_type == AgentType.COPY_EDITOR:
         output = run_agent_copy_editor(
             prompt=input.create_user_prompt(),
+            agent_config=input.agent_config,
+            scope=input.scope,
+        )
+    if input.agent_config.agent_type == AgentType.CODE_CRITIC:
+        output = run_agent_code_critic(
+            input.create_user_prompt(),
             agent_config=input.agent_config,
             scope=input.scope,
         )

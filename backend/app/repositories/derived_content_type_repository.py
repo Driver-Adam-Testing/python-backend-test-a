@@ -15,14 +15,6 @@ class DerivedContentTypeRepository(BaseRepository[DerivedContentType]):
             select(DerivedContentType).where(DerivedContentType.type_name == type_name)
         ).first()
 
-    def get_by_type_names(self, type_names: list[str]) -> DerivedContentType:
-        logger.info(f"Fetching DerivedContentType by type_names: {type_names}")
-        return self.session.exec(
-            select(DerivedContentType).where(
-                DerivedContentType.type_name.in_(type_names)
-            )
-        ).first()
-
     @staticmethod
     def valid_collection_type_names() -> list[str]:
         return [

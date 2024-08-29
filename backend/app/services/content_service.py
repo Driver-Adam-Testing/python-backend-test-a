@@ -3,6 +3,7 @@ from collections.abc import Callable
 from datetime import datetime
 from uuid import UUID
 
+from database.derived_content_types import DerivedContentTypeNames
 from database.models_v1 import (
     Codebase,
     DerivedContent,
@@ -13,7 +14,6 @@ from database.models_v1 import (
     TagContent,
     Workspace,
 )
-from driver_db.database.derived_content_types import DerivedContentTypeNames
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlmodel import Session, asc, desc, func, or_, select, text

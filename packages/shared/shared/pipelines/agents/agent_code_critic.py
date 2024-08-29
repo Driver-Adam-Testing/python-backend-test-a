@@ -1,8 +1,7 @@
-import openai
 from pydantic import BaseModel
 from shared.agent.agent_openai_strict import OpenAIStrictAgent
 from shared.agent.models.llm_models import ModelConfig
-from shared.agent.tools import agent_tools_strict
+from shared.agent.tools.search_tool import SearchTool
 from shared.interfaces.agents.execute import AgentConfiguration, AgentResult, AgentScope
 
 
@@ -38,7 +37,7 @@ def run_agent_code_critic(
     agent.add_message(
         {
             "role": "user",
-            "content": "Extract all code snippets in this document. <document>{document}</document>",
+            "content": f"Extract all code snippets in this document. <document>{prompt}</document>",
         }
     )
 
@@ -50,7 +49,7 @@ def run_agent_code_critic(
             paths=scope.paths,
             organization_id=scope.organization_id,
             max_iterations=3,
-            tools=[openai.pydantic_function_tool(agent_tools_strict.SearchToolInput)],
+            tools=[SearchTool],
             response_format=CodeVerification,
         )
         verification_response = verification_agent.invoke(

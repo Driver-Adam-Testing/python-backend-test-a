@@ -1,5 +1,6 @@
 import json
 
+import openai
 from openai import OpenAI
 
 from shared.agent.base import AgentBase
@@ -9,8 +10,12 @@ class OpenAIStrictAgent(AgentBase):
     def __init__(self, *args, **kwargs):
         response_format = kwargs.pop("response_format", None)
         self.response_format = response_format
-        self.client = OpenAI()
 
+        tools = kwargs.get("tools", [])
+        for i, tool in enumerate(tools):
+            tools[i] = openai.pydantic_function_tool(tool)
+        kwargs["tools"] = tools
+        self.client = OpenAI()
         super().__init__(*args, **kwargs)
 
     def _execute_tool_calls(self, tool_calls):

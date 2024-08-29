@@ -1,11 +1,10 @@
 import logging
-from typing import Callable, Generator
 from uuid import UUID
 
-from database.models_v1 import Tag, DerivedContent
+from database.models_v1 import DerivedContent, Tag
 from fastapi import HTTPException
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
-from sqlalchemy.exc import IntegrityError, NoResultFound
 
 from app.api.auth import CurrentUser
 from app.api.session import CurrentSession
@@ -31,16 +30,16 @@ class TagService:
         self.content_repository = BaseRepository(session, DerivedContent)
         self.content_service = ContentService(session)
 
-
     def associate_tag(
-            self,
-            organization_id: str,
-            content_id: UUID,
-            tag_id: UUID,
-            include_tag: bool = True,
+        self,
+        organization_id: str,
+        content_id: UUID,
+        tag_id: UUID,
+        include_tag: bool = True,
     ) -> TagAssociationResponse:
         logger.debug(
-            f"associate_tag called with organization_id: {organization_id}, content_id: {content_id}, tag_id: {tag_id}")
+            f"associate_tag called with organization_id: {organization_id}, content_id: {content_id}, tag_id: {tag_id}"
+        )
 
         checks = [
             lambda session: self.content_repository.is_authorized(
@@ -50,14 +49,12 @@ class TagService:
                 field_value=organization_id,
             ),
             lambda session: self.tag_repository.is_authorized(
-                id=tag_id,
-                field_name="organization_id",
-                field_value=organization_id
-            )
+                id=tag_id, field_name="organization_id", field_value=organization_id
+            ),
         ]
 
         perform_authorization_checks(self.session, checks)
-        
+
         return self.content_service.associate_tag(
             organization_id, content_id, tag_id, include_tag
         )
@@ -107,7 +104,7 @@ class TagService:
             raise HTTPException(status_code=400, detail="Tag name already exists.")
 
     def disassociate_tag(
-            self, organization_id: str, content_id: UUID, tag_id: UUID
+        self, organization_id: str, content_id: UUID, tag_id: UUID
     ) -> TagAssociationResponse:
         checks = [
             lambda session: self.content_repository.is_authorized(
@@ -117,14 +114,12 @@ class TagService:
                 field_value=organization_id,
             ),
             lambda session: self.tag_repository.is_authorized(
-                id=tag_id,
-                field_name="organization_id",
-                field_value=organization_id
-            )
+                id=tag_id, field_name="organization_id", field_value=organization_id
+            ),
         ]
 
         perform_authorization_checks(self.session, checks)
-        
+
         return self.content_service.disassociate_tag(
             organization_id, content_id, tag_id
         )
@@ -132,7 +127,7 @@ class TagService:
     def edit_tag(self, user: CurrentUser, tag_id: str, lt_input: EditTagInput) -> Tag:
         tag = self.session.exec(
             select(Tag).where(
-                Tag.id == tag_id and Tag.organization_id == user.organization_id
+                Tag.id == tag_id, Tag.organization_id == user.organization_id
             )
         ).first()
         if tag:
@@ -146,7 +141,7 @@ class TagService:
         raise HTTPException(status_code=404, detail="Tag not found")
 
     def list_tag_contents(
-            self, user: CurrentUser, tag_id: str, lt_input: ListContentInput
+        self, user: CurrentUser, tag_id: str, lt_input: ListContentInput
     ) -> ListTagContentsResults:
         logger.info(
             f"Listing contents for tag {tag_id} for user {user.user_id} with input {lt_input}"

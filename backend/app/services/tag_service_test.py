@@ -18,31 +18,39 @@ from app.schemas.tag_schema import EditTagInput, ListTagsInput, NewTagInput
 from app.services.tag_service import TagService
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def tag_service(db):
     return TagService(db)
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def workspace(db, current_user_with_org):
     workspace = Workspace(
-        display_name="Default Workspace",
+        display_name="Default",
         organization_id=current_user_with_org.organization_id,
     )
     db.add(workspace)
     db.commit()
-    return workspace
+
+    yield workspace
+
+    db.delete(workspace)
+    db.commit()
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def org_b_workspace(db, current_user_with_org):
-    workspace = Workspace(display_name="Default Workspace", organization_id="org_b")
+    workspace = Workspace(display_name="Default", organization_id="org_b")
     db.add(workspace)
     db.commit()
-    return workspace
+
+    yield workspace
+
+    db.delete(workspace)
+    db.commit()
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def codebase(db, workspace, current_user_with_org):
     codebase = Codebase(
         workspace_id=workspace.id,
@@ -55,18 +63,26 @@ def codebase(db, workspace, current_user_with_org):
     )
     db.add(codebase)
     db.commit()
-    return codebase
+
+    yield codebase
+
+    db.delete(codebase)
+    db.commit()
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def tag(tag_service, current_user_with_org):
     new_tag_input = NewTagInput(
         name=f"TEST_TAG_{datetime.now()}", hex_color="#FFFFFF", type="tag"
     )
-    return tag_service.create_tag(current_user_with_org, new_tag_input)
+    tag = tag_service.create_tag(current_user_with_org, new_tag_input)
+
+    yield tag
+
+    tag_service.delete_tag(current_user_with_org, tag.id)
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def codebase_content(tag_service, current_user_with_org, workspace, codebase):
     workspace_id = workspace.id
     codebase_id = codebase.id
@@ -85,10 +101,16 @@ def codebase_content(tag_service, current_user_with_org, workspace, codebase):
         created_at=datetime.now(),
         updated_at=datetime.now(),
     )
-    return tag_service.content_service.content_repository.create(codebase_record)
+    codebase_content = tag_service.content_service.content_repository.create(
+        codebase_record
+    )
+
+    yield codebase_content
+
+    tag_service.content_service.content_repository.delete(codebase_content.id)
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def org_b_codebase_content(
     tag_service, current_user_with_org, org_b_workspace, codebase
 ):
@@ -109,21 +131,31 @@ def org_b_codebase_content(
         created_at=datetime.now(),
         updated_at=datetime.now(),
     )
-    return tag_service.content_service.content_repository.create(codebase_record)
+    codebase_content = tag_service.content_service.content_repository.create(
+        codebase_record
+    )
+
+    yield codebase_content
+
+    tag_service.content_service.content_repository.delete(codebase_content.id)
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def content(tag_service, current_user_with_org, workspace, codebase, codebase_content):
     organization_id = current_user_with_org.organization_id
     workspace_id = workspace.id
     codebase_id = codebase.id
     document_name = f"TEST_CONTENT_{datetime.now()}"
-    return tag_service.content_service.create_blank_document(
+    content = tag_service.content_service.create_blank_document(
         organization_id, workspace_id, codebase_id, document_name
     )
 
+    yield content
 
-@pytest.fixture
+    tag_service.content_service.content_repository.delete(content.id)
+
+
+@pytest.fixture(scope="function")
 def org_b_content(
     tag_service,
     current_user_with_org,
@@ -135,9 +167,13 @@ def org_b_content(
     workspace_id = org_b_workspace.id
     codebase_id = codebase.id
     document_name = f"TEST_CONTENT_{datetime.now()}"
-    return tag_service.content_service.create_blank_document(
+    content = tag_service.content_service.create_blank_document(
         organization_id, workspace_id, codebase_id, document_name
     )
+
+    yield content
+
+    tag_service.content_service.content_repository.delete(content.id)
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -157,7 +193,9 @@ def create_content_types(db):
 
 def test_create_tag(db, current_user_with_org):
     tag_service = TagService(db)
-    new_tag_input = NewTagInput(name="TEST_TAG", hex_color="#FFFFFF", type="tag")
+    new_tag_input = NewTagInput(
+        name=f"TEST_TAG_{datetime.now()}", hex_color="#FFFFFF", type="tag"
+    )
     new_tag = tag_service.create_tag(current_user_with_org, new_tag_input)
     assert new_tag is not None
     assert new_tag.name == new_tag_input.name
@@ -183,7 +221,7 @@ def test_invalid_tag_update(tag_service, tag, current_user_with_org):
 
 
 def test_update_tag(tag_service, tag, current_user_with_org):
-    new_name = "UPDATED_TAG"
+    new_name = f"UPDATED_TAG_{datetime.now()}"
     new_hex_color = "#000000"
     edit_tag_input = EditTagInput(name=new_name, hex_color=new_hex_color)
     updated_tag = tag_service.edit_tag(
@@ -208,6 +246,11 @@ def test_associate_tag(tag_service, current_user_with_org, tag, content):
     include = True
     response = tag_service.associate_tag(
         current_user_with_org.organization_id, content_id, tag_id, include
+    )
+    assert response is not None
+
+    response = tag_service.disassociate_tag(
+        current_user_with_org.organization_id, content_id, tag_id
     )
     assert response is not None
 

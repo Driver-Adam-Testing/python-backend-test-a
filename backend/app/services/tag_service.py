@@ -1,14 +1,22 @@
 import logging
 from uuid import UUID
 
-from database.models_v1 import DerivedContent, Tag
-from fastapi import HTTPException
+from database.models_v1 import (
+    DerivedContent,
+    DocumentSource,
+    Tag,
+    TagContent,
+    Workspace,
+)
+from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
 from app.api.auth import CurrentUser
-from app.api.session import CurrentSession
 from app.repositories.base_repository import BaseRepository
+from app.repositories.derived_content_type_repository import (
+    DerivedContentTypeRepository,
+)
 from app.schemas.content_schema import ListContentInput, TagAssociationResponse
 from app.schemas.tag_schema import (
     EditTagInput,
@@ -37,8 +45,8 @@ class TagService:
         tag_id: UUID,
         include_tag: bool = True,
     ) -> TagAssociationResponse:
-        logger.debug(
-            f"associate_tag called with organization_id: {organization_id}, content_id: {content_id}, tag_id: {tag_id}"
+        logger.info(
+            f"Associating tag {tag_id} with content {content_id} for organization {organization_id}"
         )
 
         checks = [
@@ -55,9 +63,253 @@ class TagService:
 
         perform_authorization_checks(self.session, checks)
 
-        return self.content_service.associate_tag(
-            organization_id, content_id, tag_id, include_tag
+        content = self.content_repository.get_by_conditions(
+            [
+                organization_id == Workspace.organization_id,
+                DerivedContent.id == content_id,
+            ],
+            [Workspace],
         )
+
+        if not content:
+            logger.error(
+                f"Content {content_id} not found for organization {organization_id}"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Content not found.",
+            )
+
+        tag = self.tag_repository.get_by_conditions(
+            [Tag.id == tag_id, Tag.organization_id == organization_id]
+        )
+
+        if not tag:
+            logger.error(f"Tag {tag_id} not found for organization {organization_id}")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Tag not found.",
+            )
+
+        if tag.type == "collection":
+            if (
+                content.content_type.type_name
+                not in DerivedContentTypeRepository.valid_collection_type_names()
+            ):
+                logger.error(
+                    f"Invalid content type for collection tag {tag_id} and content {content_id}"
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Collections can only be associated with codebases, directories, files or pdfs.",
+                )
+
+        include_tag = (
+            include_tag
+            if include_tag is not None and tag.type == "collection"
+            else True
+        )
+
+        content.tag_links.append(
+            TagContent(tag_id=tag.id, content_id=content.id, include=include_tag)
+        )
+
+        try:
+            self.session.commit()
+            logger.info(
+                f"Tag {tag_id} associated with content {content_id} successfully"
+            )
+        except IntegrityError:
+            self.session.rollback()
+            logger.error(
+                f"Integrity error while associating tag {tag_id} with content {content_id}"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Tag association already exists",
+            )
+
+        return TagAssociationResponse(
+            tag_id=tag_id,
+            content_id=content_id,
+            message=f"{tag.type} associated successfully",
+        )
+
+    def associate_collection_with_content(
+        self, organization_id: str, content_id: UUID, tag_id: UUID
+    ) -> TagAssociationResponse:
+        logger.info(
+            f"Associating collection tag {tag_id} with content {content_id} for organization {organization_id}"
+        )
+
+        checks = [
+            lambda session: self.content_repository.is_authorized(
+                id=content_id,
+                relationship_chain=["workspace"],
+                field_name="organization_id",
+                field_value=organization_id,
+            ),
+            lambda session: self.tag_repository.is_authorized(
+                id=tag_id, field_name="organization_id", field_value=organization_id
+            ),
+        ]
+
+        perform_authorization_checks(self.session, checks)
+
+        document = self.content_repository.get(content_id)
+
+        if not document or document.workspace.organization_id != organization_id:
+            logger.error(
+                f"Content {content_id} not found for organization {organization_id}"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
+            )
+
+        tag_contents = self.session.exec(
+            select(TagContent).where(TagContent.tag_id == tag_id)
+        ).all()
+
+        sources = [
+            DocumentSource(
+                document_id=content_id,
+                source_id=tag_content.content_id,
+                include=tag_content.include,
+            )
+            for tag_content in tag_contents
+        ]
+
+        for source in sources:
+            self.session.merge(source)
+
+        try:
+            self.session.commit()
+            logger.info(
+                f"Collection tag {tag_id} associated with content {content_id} successfully"
+            )
+        except IntegrityError:
+            self.session.rollback()
+            logger.error(
+                f"Integrity error while associating collection tag {tag_id} with content {content_id}"
+            )
+
+        return TagAssociationResponse(
+            tag_id=tag_id,
+            content_id=content_id,
+            message="Collection associated successfully",
+        )
+
+    def create_tag(self, user: CurrentUser, lt_input: NewTagInput) -> Tag:
+        try:
+            return self.tag_repository.create(
+                Tag(
+                    name=lt_input.name.strip(),
+                    hex_color=lt_input.hex_color.strip(),
+                    type=lt_input.type,
+                    organization_id=user.organization_id,
+                    created_by=user.user_id,
+                    updated_by=user.user_id,
+                )
+            )
+        except IntegrityError as e:
+            self.session.rollback()  # Rollback the session to clear the failed transaction
+            if "duplicate key value violates unique constraint" in str(e.orig):
+                logging.error("Tag name already exists")
+                raise HTTPException(status_code=400, detail="Tag name already exists.")
+            else:
+                logging.error(f"Unexpected error: {e}")
+                raise HTTPException(status_code=500, detail="Internal server error.")
+
+    def disassociate_tag(
+        self, organization_id: str, content_id: UUID, tag_id: UUID
+    ) -> TagAssociationResponse:
+        logger.info(
+            f"Disassociating tag {tag_id} from content {content_id} for organization {organization_id}"
+        )
+
+        checks = [
+            lambda session: self.content_repository.is_authorized(
+                id=content_id,
+                relationship_chain=["workspace"],
+                field_name="organization_id",
+                field_value=organization_id,
+            ),
+            lambda session: self.tag_repository.is_authorized(
+                id=tag_id, field_name="organization_id", field_value=organization_id
+            ),
+        ]
+
+        perform_authorization_checks(self.session, checks)
+
+        content = self.session.exec(
+            select(DerivedContent)
+            .join(Workspace)
+            .join(DerivedContent.tags)
+            .where(organization_id == Workspace.organization_id)
+            .where(DerivedContent.id == content_id)
+        ).first()
+
+        if not content:
+            logger.error(
+                f"Content {content_id} not found for organization {organization_id}"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
+            )
+
+        tag = self.session.exec(
+            select(Tag)
+            .where(Tag.id == tag_id)
+            .where(organization_id == Tag.organization_id)
+        ).first()
+
+        if not tag:
+            logger.error(f"Tag {tag_id} not found for organization {organization_id}")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Tag not found"
+            )
+
+        link = self.session.exec(
+            select(TagContent)
+            .where(TagContent.tag_id == tag_id)
+            .where(TagContent.content_id == content_id)
+        ).first()
+
+        if link is None:
+            logger.error(
+                f"Tag association not found for tag {tag_id} and content {content_id}"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Tag association not found",
+            )
+
+        self.session.delete(link)
+        self.session.commit()
+        logger.info(
+            f"Tag {tag_id} disassociated from content {content_id} successfully"
+        )
+        return TagAssociationResponse(
+            tag_id=tag_id,
+            content_id=content_id,
+            message="Tag disassociated successfully",
+        )
+
+    def edit_tag(self, user: CurrentUser, tag_id: str, lt_input: EditTagInput) -> Tag:
+        tag = self.session.exec(
+            select(Tag).where(
+                Tag.id == tag_id, Tag.organization_id == user.organization_id
+            )
+        ).first()
+        if tag:
+            tag_updates = lt_input.model_dump(exclude_unset=True)
+            tag = self.tag_repository.update(
+                tag, Tag(**tag_updates, updated_by=user.user_id)
+            )
+            logger.info(f"Tag {tag_id} updated for user {user.user_id}")
+            return tag
+        logger.error(f"Tag {tag_id} not found for user {user.user_id}")
+        raise HTTPException(status_code=404, detail="Tag not found")
 
     def list_tags(self, user: CurrentUser, lt_input: ListTagsInput) -> ListTagsResults:
         logger.info(f"Listing tags for user {user.user_id} with input {lt_input}")
@@ -87,59 +339,6 @@ class TagService:
             count=total_count,
         )
 
-    def create_tag(self, user: CurrentUser, lt_input: NewTagInput) -> Tag:
-        try:
-            return self.tag_repository.create(
-                Tag(
-                    name=lt_input.name.strip(),
-                    hex_color=lt_input.hex_color.strip(),
-                    type=lt_input.type,
-                    organization_id=user.organization_id,
-                    created_by=user.user_id,
-                    updated_by=user.user_id,
-                )
-            )
-        except IntegrityError:
-            logging.error("Tag name already exists")
-            raise HTTPException(status_code=400, detail="Tag name already exists.")
-
-    def disassociate_tag(
-        self, organization_id: str, content_id: UUID, tag_id: UUID
-    ) -> TagAssociationResponse:
-        checks = [
-            lambda session: self.content_repository.is_authorized(
-                id=content_id,
-                relationship_chain=["workspace"],
-                field_name="organization_id",
-                field_value=organization_id,
-            ),
-            lambda session: self.tag_repository.is_authorized(
-                id=tag_id, field_name="organization_id", field_value=organization_id
-            ),
-        ]
-
-        perform_authorization_checks(self.session, checks)
-
-        return self.content_service.disassociate_tag(
-            organization_id, content_id, tag_id
-        )
-
-    def edit_tag(self, user: CurrentUser, tag_id: str, lt_input: EditTagInput) -> Tag:
-        tag = self.session.exec(
-            select(Tag).where(
-                Tag.id == tag_id, Tag.organization_id == user.organization_id
-            )
-        ).first()
-        if tag:
-            tag_updates = lt_input.model_dump(exclude_unset=True)
-            tag = self.tag_repository.update(
-                tag, Tag(**tag_updates, updated_by=user.user_id)
-            )
-            logger.info(f"Tag {tag_id} updated for user {user.user_id}")
-            return tag
-        logger.error(f"Tag {tag_id} not found for user {user.user_id}")
-        raise HTTPException(status_code=404, detail="Tag not found")
-
     def list_tag_contents(
         self, user: CurrentUser, tag_id: str, lt_input: ListContentInput
     ) -> ListTagContentsResults:
@@ -150,34 +349,41 @@ class TagService:
             [Tag.id == tag_id and Tag.organization_id == user.organization_id]
         )
 
-        if tag:
-            content = self.content_service.get_list_content(
-                user.organization_id,
-                search_input=ListContentInput(
-                    limit=lt_input.limit,
-                    offset=lt_input.offset,
-                    text=lt_input.text,
-                    content_type_id=lt_input.content_type_id,
-                    content_type_name=lt_input.content_type_name,
-                    sort_by=lt_input.sort_by,
-                    sort_direction=lt_input.sort_direction,
-                    status=lt_input.status,
-                    tag_ids=[tag_id],
-                ),
-            )
-            logger.info(
-                f"Found {content.count} contents for tag {tag_id} for user {user.user_id}"
-            )
-            return ListTagContentsResults(
-                tag=tag,
-                results=content.results,
-                offset=lt_input.offset,
+        if tag is None:
+            logger.error(f"Tag {tag_id} not found for user {user.user_id}")
+            raise HTTPException(status_code=404, detail="Tag not found")
+
+        content = self.content_service.get_list_content(
+            user.organization_id,
+            search_input=ListContentInput(
                 limit=lt_input.limit,
-                count=content.count,
-            )
-        logger.error(f"Tag {tag_id} not found for user {user.user_id}")
-        raise HTTPException(status_code=404, detail="Tag not found")
+                offset=lt_input.offset,
+                text=lt_input.text,
+                content_type_id=lt_input.content_type_id,
+                content_type_name=lt_input.content_type_name,
+                sort_by=lt_input.sort_by,
+                sort_direction=lt_input.sort_direction,
+                status=lt_input.status,
+                tag_ids=[tag_id],
+            ),
+        )
+        logger.info(
+            f"Found {content.count} contents for tag {tag_id} for user {user.user_id}"
+        )
+        return ListTagContentsResults(
+            tag=tag,
+            results=content.results,
+            offset=lt_input.offset,
+            limit=lt_input.limit,
+            count=content.count,
+        )
 
-
-def get_tag_service(session: CurrentSession) -> TagService:
-    return TagService(session=session)
+    def delete_tag(self, user: CurrentUser, tag_id: UUID) -> bool:
+        try:
+            self.tag_repository.delete(tag_id)
+            logger.info(f"Tag {tag_id} deleted for user {user.user_id}")
+            return True
+        except Exception as e:
+            self.session.rollback()
+            logger.error(f"Error deleting tag {tag_id} for user {user.user_id}: {e}")
+            return False

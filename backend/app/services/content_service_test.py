@@ -265,43 +265,6 @@ def test_create_template(content_service, current_user_with_org, workspace, code
         )
 
 
-def test_associate_tag(content_service, current_user_with_org, content, tag):
-    content_id = content.id
-    tag_id = tag.id
-    include = True
-    response = content_service.associate_tag(
-        current_user_with_org.organization_id, content_id, tag_id, include
-    )
-    assert response is not None
-    assert response.tag_id == tag_id
-    assert response.content_id == content_id
-
-
-def test_associate_tag_from_other_org(
-    content_service, current_user_with_org, content, tag
-):
-    content_id = content.id
-    tag_id = tag.id
-    include = True
-    with pytest.raises(HTTPException):
-        content_service.associate_tag("some_other_org", content_id, tag_id, include)
-
-
-def test_disassociate_tag(content_service, current_user_with_org, content, tag):
-    content_id = content.id
-    tag_id = tag.id
-    content_service.associate_tag(
-        current_user_with_org.organization_id, content_id, tag_id, True
-    )
-
-    response = content_service.disassociate_tag(
-        current_user_with_org.organization_id, content_id, tag_id
-    )
-    assert response is not None
-    assert response.tag_id == tag_id
-    assert response.content_id == content_id
-
-
 def test_associate_sources_with_content(
     content_service, current_user_with_org, content, source_content
 ):

@@ -130,117 +130,116 @@ class Query:
             raise GraphQLError("Access denied", extensions={"code": "NOT_FOUND"})
         return get_application_note(id_str, session, info.context.user.organization_id)
 
+    @strawberry.field
+    def tree(
+        self, info: Info, codebaseId: ID, workspaceId: ID | None = None
+    ) -> list[FlatNode]:
+        session = info.context.session
+        user = info.context.user
+        if not check_access(session, user.organization_id, codebase_id=str(codebaseId)):
+            raise GraphQLError("Access denied", extensions={"code": "NOT_FOUND"})
+        return get_codebase_tree(str(codebaseId), session, user.organization_id)
 
-@strawberry.field
-def tree(
-    self, info: Info, codebaseId: ID, workspaceId: ID | None = None
-) -> list[FlatNode]:
-    session = info.context.session
-    user = info.context.user
-    if not check_access(session, user.organization_id, codebase_id=str(codebaseId)):
-        raise GraphQLError("Access denied", extensions={"code": "NOT_FOUND"})
-    return get_codebase_tree(str(codebaseId), session, user.organization_id)
+    @strawberry.field
+    def symbolSet(
+        self, info: Info, sourceContentId: ID, page: int = 1, pageSize: int = 10
+    ) -> SymbolSetResponse:
+        session = info.context.session
+        organization_id = info.context.user.organization_id
+        if not check_access(
+            session, organization_id, source_content_id=str(sourceContentId)
+        ):
+            raise GraphQLError("Access denied", extensions={"code": "NOT_FOUND"})
+        return symbol_set(
+            session, str(sourceContentId), organization_id, page, pageSize
+        )
 
+    @strawberry.mutation
+    def applicationNoteEdit(self, call_id: ID) -> ApplicationNoteEditResponse:
+        # Assuming access check is performed within the application_note_edit function or not required due to the nature of the mutation.
+        return application_note_edit(str(call_id))
 
-@strawberry.field
-def symbolSet(
-    self, info: Info, sourceContentId: ID, page: int = 1, pageSize: int = 10
-) -> SymbolSetResponse:
-    session = info.context.session
-    organization_id = info.context.user.organization_id
-    if not check_access(
-        session, organization_id, source_content_id=str(sourceContentId)
-    ):
-        raise GraphQLError("Access denied", extensions={"code": "NOT_FOUND"})
-    return symbol_set(session, str(sourceContentId), organization_id, page, pageSize)
+    @strawberry.field
+    def supplementalContent(
+        self, info: Info, codebaseId: ID
+    ) -> list[SupplementalContent]:
+        session = info.context.session
+        user = info.context.user
+        organization_id = user.organization_id
+        if not check_access(session, organization_id, codebase_id=str(codebaseId)):
+            raise GraphQLError("Access denied", extensions={"code": "NOT_FOUND"})
+        get_metadata = False
+        # Determine if the GraphQL query includes SupplementalContent.file_size_bytes
+        if "file_size_bytes" or "pages" in info.selected_fields:
+            get_metadata = True
 
+        return supplemental_content_by_codebase_id(
+            session=session, codebase_id=str(codebaseId), get_metadata=get_metadata
+        )
 
-@strawberry.mutation
-def applicationNoteEdit(self, call_id: ID) -> ApplicationNoteEditResponse:
-    # Assuming access check is performed within the application_note_edit function or not required due to the nature of the mutation.
-    return application_note_edit(str(call_id))
+    @strawberry.field
+    def me(self, info: Info) -> MeResponse:
+        user = info.context.user
+        return MeResponse(id=user.subject)  # type: ignore
 
+    @strawberry.field
+    def connectedGitProviders(self, info: Info) -> list[GitProvider]:
+        providers = []
+        user = info.context.user
+        for provider in ["github"]:
+            secret_key = format_secret_key(
+                user_id=user.user_id, org_id=user.organization_id, provider=provider
+            )
+            value = read_secret(secret_key)
+            if value is not None:
+                providers.append(
+                    GitProvider(
+                        display_name="GitHub",
+                        name="github",
+                        logo_url="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
+                    )
+                )
+        return providers
 
-@strawberry.field
-def supplementalContent(self, info: Info, codebaseId: ID) -> list[SupplementalContent]:
-    session = info.context.session
-    user = info.context.user
-    organization_id = user.organization_id
-    if not check_access(session, organization_id, codebase_id=str(codebaseId)):
-        raise GraphQLError("Access denied", extensions={"code": "NOT_FOUND"})
-    get_metadata = False
-    # Determine if the GraphQL query includes SupplementalContent.file_size_bytes
-    if "file_size_bytes" or "pages" in info.selected_fields:
-        get_metadata = True
+    @strawberry.field
+    async def reposByGitProvider(
+        self, info: Info, provider: str
+    ) -> list[GitRepository]:
+        repos = []
+        user = info.context.user
 
-    return supplemental_content_by_codebase_id(
-        session=session, codebase_id=str(codebaseId), get_metadata=get_metadata
-    )
-
-
-@strawberry.field
-def me(self, info: Info) -> MeResponse:
-    user = info.context.user
-    return MeResponse(id=user.subject)  # type: ignore
-
-
-@strawberry.field
-def connectedGitProviders(self, info: Info) -> list[GitProvider]:
-    providers = []
-    user = info.context.user
-    for provider in ["github"]:
         secret_key = format_secret_key(
             user_id=user.user_id, org_id=user.organization_id, provider=provider
         )
         value = read_secret(secret_key)
         if value is not None:
-            providers.append(
-                GitProvider(
-                    display_name="GitHub",
-                    name="github",
-                    logo_url="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
+            # Assuming the value is stored as a dictionary
+            s = value["SecretString"]
+            secret_sauce = json.loads(s)
+            token = secret_sauce["access_token"]
+            refresh_token = secret_sauce["refresh_token"]
+
+            # Check if the token is valid (pseudo-code, replace with actual validation)
+            if not await is_token_valid(token):
+                # Refresh the token using the refresh token
+                # TODO: Handle the case where the refresh token is expired
+                new_tokens = await refresh_access_token(refresh_token)
+                token = new_tokens["access_token"]
+                # Update the stored secret with new tokens
+                secret_value = json.dumps(new_tokens)
+                write_secret(secret_key, secret_value)
+
+            # Fetch repos using the token
+            git_repos = await fetch_repos(token)
+            repos = [
+                GitRepository(
+                    provider_name=provider,
+                    repo_name=repo["name"],
+                    org=repo["owner"]["login"],
+                    last_updated=datetime.fromisoformat(repo["updated_at"]),
+                    metadata=repo,
                 )
-            )
-    return providers
-
-
-@strawberry.field
-async def reposByGitProvider(self, info: Info, provider: str) -> list[GitRepository]:
-    repos = []
-    user = info.context.user
-
-    secret_key = format_secret_key(
-        user_id=user.user_id, org_id=user.organization_id, provider=provider
-    )
-    value = read_secret(secret_key)
-    if value is not None:
-        # Assuming the value is stored as a dictionary
-        s = value["SecretString"]
-        secret_sauce = json.loads(s)
-        token = secret_sauce["access_token"]
-        refresh_token = secret_sauce["refresh_token"]
-
-        # Check if the token is valid (pseudo-code, replace with actual validation)
-        if not await is_token_valid(token):
-            # Refresh the token using the refresh token
-            # TODO: Handle the case where the refresh token is expired
-            new_tokens = await refresh_access_token(refresh_token)
-            token = new_tokens["access_token"]
-            # Update the stored secret with new tokens
-            secret_value = json.dumps(new_tokens)
-            write_secret(secret_key, secret_value)
-
-        # Fetch repos using the token
-        git_repos = await fetch_repos(token)
-        repos = [
-            GitRepository(
-                provider_name=provider,
-                repo_name=repo["name"],
-                org=repo["owner"]["login"],
-                last_updated=datetime.fromisoformat(repo["updated_at"]),
-                metadata=repo,
-            )
-            for repo in git_repos
-        ]
-        # Assuming the response from fetch_repos is a list of dictionaries
-    return repos
+                for repo in git_repos
+            ]
+            # Assuming the response from fetch_repos is a list of dictionaries
+        return repos

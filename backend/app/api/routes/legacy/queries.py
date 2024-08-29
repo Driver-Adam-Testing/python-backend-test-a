@@ -122,8 +122,10 @@ class Query:
             raise GraphQLError(
                 "id must not be None", extensions={"code": "BAD_REQUEST"}
             )
+        organization_id = info.context.user.organization_id
+        derived_content_id = id_str
         if not check_access(
-            session, info.context.user.organization_id, derived_content_id=id_str
+            session, organization_id, derived_content_id=derived_content_id
         ):
             raise GraphQLError("Access denied", extensions={"code": "NOT_FOUND"})
         return get_application_note(id_str, session, info.context.user.organization_id)

@@ -177,7 +177,7 @@ async def persist_embeddings(
         ),
     ],
     secrets=[modal.Secret.from_name("aws-inspector-s3"), modal.Secret.from_name("db")],
-    proxy=modal.Proxy.from_name("pg-proxy"),
+    # proxy=modal.Proxy.from_name("pg-proxy"),
     timeout=60 * 60 * 5,
     concurrency_limit=2,
     region="us-east",

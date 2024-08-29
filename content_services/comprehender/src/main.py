@@ -33,7 +33,7 @@ comprehender_modal_config = {
         modal.Secret.from_name("open-ai"),
         modal.Secret.from_name("db"),
     ],
-    "proxy": modal.Proxy.from_name("pg-proxy"),
+    # "proxy": modal.Proxy.from_name("pg-proxy"),
     "concurrency_limit": 5,
     "region": "us-east",
 }

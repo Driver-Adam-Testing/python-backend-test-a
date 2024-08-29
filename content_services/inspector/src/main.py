@@ -45,7 +45,7 @@ class FileInfo:
             remote_path="/root/data/",
         ),
     ],
-    proxy=modal.Proxy.from_name("pg-proxy"),
+    # proxy=modal.Proxy.from_name("pg-proxy"),
     memory="2048",
     timeout=3600 * 8,
     region="us-east",

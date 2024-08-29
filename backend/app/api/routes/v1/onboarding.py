@@ -1,4 +1,5 @@
 import logging
+import os
 from pathlib import Path
 from uuid import UUID
 
@@ -45,6 +46,7 @@ def trigger_onboarding(
     """
 
     logging.info("Triggering codebase onboarding...")
+    logging.info(f"modal env = {os.getenv("MODAL_ENVIRONMENT")}")
     archive_name = Path(trigger_body.object_key).name
     onboard_and_inspect = modal.Function.lookup(
         "codebase-onboarding", "onboard_and_inspect"

@@ -24,7 +24,7 @@ pdf_preprocessing_modal_config = {
         modal.Secret.from_name("db"),
         modal.Secret.from_name("aws-inspector-s3"),
     ],
-    "proxy": modal.Proxy.from_name("pg-proxy"),
+    # "proxy": modal.Proxy.from_name("pg-proxy"),
     "concurrency_limit": 5,
     "region": "us-east",
 }

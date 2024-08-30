@@ -42,6 +42,8 @@ class UploadService:
         try:
             org_id_hash = hashlib.sha256(organization_id.encode()).hexdigest()[:63]
             upload_key = f"codebases/{org_id_hash}/{os.path.basename(file_path)}"
+            # upload_key = self.get_file_path(codebase_id, relative_path)
+
             logger.info(f"Upload URL generated for {upload_key}")
             codebase_metadata = {
                 "organization_id": org_id_hash,
@@ -66,7 +68,50 @@ class UploadService:
 
         return UploadResponse(upload_url=upload_url)
 
+    def get_file_path(
+        self, codebase_id: str, relative_path: str, prefix: str = "/source"
+    ) -> str:
+        adjusted_relative_path = os.path.join(prefix, relative_path.lstrip("/"))
+        return f"{codebase_id}/{adjusted_relative_path}"
+
     def upload_pdf(
         self, user: CurrentUser, request: UploadPDFRequest
     ) -> UploadResponse:
-        pass
+        workspace_id = request.workspace_id
+        codebase_id = request.codebase_id
+        file_path = request.file_path
+        creator_id = user.user_id
+        org_id = user.organization_id
+        logger.info(
+            f"Uploading content for orgId: {org_id}, workspaceId: {workspace_id}, ownerId: {creator_id}"
+        )
+
+        if not codebase_id or not file_path or not workspace_id or not creator_id:
+            raise HTTPException(status_code=400, detail="Invalid Request")
+
+        try:
+            relative_path = os.path.basename(file_path)
+            org_id_hash = hashlib.sha256(org_id.encode()).hexdigest()[:63]
+            upload_key = self.get_file_path(
+                codebase_id, relative_path, prefix="/documents"
+            )
+            codebase_metadata = {
+                "organization_id": org_id_hash,
+                "org_bucket": org_id_hash,
+                "org_name": user.organization_name,
+                "workspace_id": workspace_id,
+                "codebase_id": codebase_id,
+                "creator_id": creator_id,
+                "file_path": file_path,
+                "content_type": "supplemental-document",
+            }
+            upload_url = generate_put_presigned_url(
+                key=upload_key,
+                content_type="application/pdf",
+                metadata=codebase_metadata,
+            )
+            logger.info(f"Upload URL generated for {relative_path}")
+            return UploadResponse(upload_url=upload_url)
+        except Exception as e:
+            logger.error(f"Error uploading PDF: {e}")
+            raise HTTPException(status_code=500, detail="Error uploading PDF")

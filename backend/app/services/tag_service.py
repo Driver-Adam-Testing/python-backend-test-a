@@ -87,8 +87,7 @@ class TagService:
         if not tag:
             logger.error(f"Tag {tag_id} not found for organization {organization_id}")
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Tag not found.",
+                status_code=status.HTTP_404_NOT_FOUND, detail="Tag not found"
             )
 
         if tag.type == "collection":
@@ -379,17 +378,14 @@ class TagService:
         )
 
     def delete_tag(self, user: CurrentUser, tag_id: UUID) -> bool:
-        # try:
         organization_id = user.organization_id
-        checks = [
-            lambda session: self.tag_repository.is_authorized(
-                id=tag_id, field_name="organization_id", field_value=organization_id
-            ),
-        ]
-        perform_authorization_checks(self.session, checks)
 
         tag = self.tag_repository.get(tag_id)
         if tag is None:
+            logger.error(f"Tag {tag_id} not found for user {user.user_id}")
+            raise HTTPException(status_code=404, detail="Tag not found")
+
+        if tag.organization_id != organization_id:
             logger.error(f"Tag {tag_id} not found for user {user.user_id}")
             raise HTTPException(status_code=404, detail="Tag not found")
 
@@ -402,11 +398,12 @@ class TagService:
                 detail="Tag has associated content. Disassociate content before deleting",
             )
 
-        self.tag_repository.delete(tag_id)
-        logger.info(f"Tag {tag_id} deleted for user {user.user_id}")
-        return True
-        # except Exception as e:
-        #     self.session.rollback()
-        #     logger.error(f"Error deleting tag {tag_id} for user {user.user_id}: {e}")
-        #     raise IntegrityError(e)
-        # return False
+        try:
+            self.tag_repository.delete(tag_id)
+            self.session.commit()
+            logger.info(f"Tag {tag_id} deleted for user {user.user_id}")
+            return True
+        except Exception as e:
+            self.session.rollback()
+            logger.error(f"Error deleting tag {tag_id} for user {user.user_id}: {e}")
+            raise HTTPException(status_code=500, detail="Internal server error")

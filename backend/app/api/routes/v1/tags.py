@@ -138,6 +138,6 @@ def delete_tag(
     tag_service = TagService(session)
     try:
         tag_service.delete_tag(user=user, tag_id=tag_id)
-        return {"message": "Tag deleted successfully"}
+        return  # No content should be returned for 204 status code
     except IntegrityError as e:
         raise HTTPException(status_code=400, detail=str(e))

@@ -51,25 +51,30 @@ class FileInfo:
     region="us-east",
     concurrency_limit=5,
 )
-async def inspect_db(codebase_id: uuid.UUID, run_id: str, resume: bool = False):
+async def inspect_db(
+    codebase_id: uuid.UUID,
+    run_id: str,
+    resume: bool = False,
+    rerun_node_paths: list[str] | None = None,
+):
     import tempfile
 
     import boto3
     from utils.db import (
         SourceContentTypeMap,
         download_source_content_file,
+        get_analyzable_source_contents_by_codebase_id,
         get_codebase_by_id,
-        get_source_contents_by_codebase_id,
     )
 
     codebase = await get_codebase_by_id(codebase_id)
-    source_contents_files = await get_source_contents_by_codebase_id(
+    source_contents_files = await get_analyzable_source_contents_by_codebase_id(
         codebase_id, {SourceContentTypeMap.FILE}
     )
-    source_contents_all = await get_source_contents_by_codebase_id(
+    source_contents_all = await get_analyzable_source_contents_by_codebase_id(
         codebase_id, {SourceContentTypeMap.FILE, SourceContentTypeMap.DIRECTORY}
     )
-    source_content_codebase = await get_source_contents_by_codebase_id(
+    source_content_codebase = await get_analyzable_source_contents_by_codebase_id(
         codebase_id, {SourceContentTypeMap.CODEBASE_ROOT}
     )
     assert len(source_content_codebase) == 1
@@ -80,6 +85,7 @@ async def inspect_db(codebase_id: uuid.UUID, run_id: str, resume: bool = False):
     with tempfile.TemporaryDirectory() as download_dir:
         download_root = Path(download_dir)
         file_paths = []
+        print("Downloading all source files for codebase from s3...")
         for sc in source_contents_files:
             download_abs_path = download_source_content_file(
                 s3_client=s3_client,
@@ -89,20 +95,32 @@ async def inspect_db(codebase_id: uuid.UUID, run_id: str, resume: bool = False):
                 download_root=download_root,
             )
             file_paths.append(download_abs_path)
+        print("Download complete")
 
         codebase_dag: FileTreeDag = build_dag(
             root_path=download_root, file_paths=file_paths
         )
-        sorted_nodes = codebase_dag.topological_sort()
+
+        if rerun_node_paths:
+            for rerun_path in rerun_node_paths:
+                rerun_path = download_root / rerun_path
+                codebase_dag.mark_as_modified(
+                    rerun_path, include_upstream=False, include_downstream=True
+                )
+
+        if rerun_node_paths:
+            sorted_nodes = codebase_dag.topological_sort(changed_nodes_only=True)
+        else:
+            sorted_nodes = codebase_dag.topological_sort()
+
         path_to_source_content_id = {
             Path(sc.relative_path): sc.id for sc in source_contents_all
         }
 
-        for k in path_to_source_content_id.keys():
-            print(k)
-        print("=======")
+        print("======= Paths being processed =======")
         for node in sorted_nodes:
             print(node.root_rel_path)
+
         nodes_with_id: list[tuple[Node, uuid.UUID | None]] = [
             (node, path_to_source_content_id[node.root_rel_path])
             for node in sorted_nodes
@@ -116,6 +134,7 @@ async def inspect_db(codebase_id: uuid.UUID, run_id: str, resume: bool = False):
             codebase_name=codebase.codebase_name,
             run_id=run_id,
             resume=resume,
+            is_rerun=bool(rerun_node_paths),
         )
 
 
@@ -135,6 +154,7 @@ async def inspect_files(
     codebase_name: str,
     run_id: str,
     resume: bool,
+    is_rerun: bool,
 ):
     print("---------- All nodes ----------")
     for node, _ in nodes_with_id:
@@ -212,21 +232,23 @@ async def inspect_files(
                 ]
             )
 
-    all_tech_docs_tasks = tuple(
-        t
-        for t in tasks
-        if (isinstance(t, FileTechDocTask) or isinstance(t, FolderTechDocTask))
-    )
-    top_level_tech_docs_task = TopLevelDocsTask(
-        codebase_name=codebase_name,
-        ordered_tech_docs_tasks=all_tech_docs_tasks,  # TODO where does source content go here?
-        source_content_id=sc_codebase_id,
-    )
-    top_level_embedding_task = EmbeddingTask(
-        task_name="Embedding TopLevelDocs",
-        dependent_tasks=[top_level_tech_docs_task],
-    )
-    tasks.extend([top_level_tech_docs_task, top_level_embedding_task])
+    if not is_rerun:
+        # We never update top level docs in a rerun where specific nodes have been specified for simplicity.
+        all_tech_docs_tasks = tuple(
+            t
+            for t in tasks
+            if (isinstance(t, FileTechDocTask) or isinstance(t, FolderTechDocTask))
+        )
+        top_level_tech_docs_task = TopLevelDocsTask(
+            codebase_name=codebase_name,
+            ordered_tech_docs_tasks=all_tech_docs_tasks,  # TODO where does source content go here?
+            source_content_id=sc_codebase_id,
+        )
+        top_level_embedding_task = EmbeddingTask(
+            task_name="Embedding TopLevelDocs",
+            dependent_tasks=[top_level_tech_docs_task],
+        )
+        tasks.extend([top_level_tech_docs_task, top_level_embedding_task])
 
     print("\n---------- All tasks ----------")
     for t in tasks:
@@ -265,7 +287,20 @@ def get_file_content(path: Path) -> str:
 
 
 @app.local_entrypoint()
-def main(resume_from_id: str | None = None):
+def main(
+    codebase_id: str, resume_from_id: str | None = None, rerun_paths: str | None = None
+):
+    print("Processing codebase with id: ", codebase_id)
+
+    rerun_node_paths = (
+        rerun_paths.split(",") if rerun_paths and rerun_paths.strip() else None
+    )
+    if rerun_node_paths:
+        print("Rerunning nodes:")
+        rerun_node_paths = [path.lstrip("/") for path in rerun_node_paths]
+        for path in rerun_node_paths:
+            print("--> ", path)
+
     if resume_from_id:
         resume = True
         run_id = resume_from_id
@@ -274,8 +309,10 @@ def main(resume_from_id: str | None = None):
         run_id = uuid.uuid4()  # When rerunning we would supply this. This is used to identify the run in the db
     try:
         inspect_db.remote(
-            uuid.UUID("4e50214d-d05d-4d5f-8313-78b3dd674fba"), run_id, resume=resume
+            uuid.UUID(codebase_id),
+            run_id,
+            resume=resume,
+            rerun_node_paths=rerun_node_paths,
         )
-        # asyncio.run(inspect_db.local(uuid.UUID("8dc2ecd9-1289-4359-90a3-dacdd42405a7"), run_id, resume=resume))
     finally:
         print("Run id: ", run_id)

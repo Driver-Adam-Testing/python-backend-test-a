@@ -1,7 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import anthropic
-
 from shared.agent.base import AgentBase
 from shared.agent.models.claude import helpers
 
@@ -67,8 +66,8 @@ class AnthropicAgent(AgentBase):
         )
         return response
 
-    def _iterate(self):
-        super()._iterate()
+    def _increment_iterator(self):
+        super()._increment_iterator()
         user_messages = []
         for message in reversed(self.messages):
             if message["role"] == "user":

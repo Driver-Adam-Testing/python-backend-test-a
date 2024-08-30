@@ -4,12 +4,12 @@ from urllib.parse import unquote, urlparse
 from database.derived_content_types import DerivedContentTypeNames
 from pydantic import UUID4, BaseModel
 
-from packages.shared.shared.agent.tools.agent_tools import (
+from shared import prompts
+from shared.agent.agent_factory import create_agent
+from shared.agent.deprecated.agent_tools import (
     execute_backend_search,
     format_search_results,
 )
-from shared import prompts
-from shared.agent.agent_factory import create_agent
 
 # TODO: something is wrong with options defaulting to {}
 

@@ -2,9 +2,8 @@ import json
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from openai import OpenAI
-
 from shared.agent.base import AgentBase
-from shared.agent.deprecated.tool_call import ToolCall
+from shared.agent.tools.tool_call import ToolCall
 
 
 class OpenAIAgent(AgentBase):

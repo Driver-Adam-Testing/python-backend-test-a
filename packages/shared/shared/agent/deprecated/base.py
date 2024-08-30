@@ -2,8 +2,7 @@ import uuid
 
 from database.db import get_session
 from database.models_v1 import RuntimeLogAgentInstance, RuntimeLogAgentMessage
-
-from shared.agent.tools import ToolStrict
+from shared.agent.deprecated.tool_call import ToolCall
 from shared.utils.bcolors import print_dict
 
 
@@ -14,7 +13,7 @@ class AgentBase:
         model: str,
         paths: list[str] | None = None,
         max_iterations: int = 1,
-        tools: list[ToolStrict] | None = None,
+        tools=None,
         agent_id: uuid.UUID | None = None,
         log: bool = True,
         debug: bool = True,
@@ -81,7 +80,20 @@ class AgentBase:
             session.commit()
             session.refresh(log_message)
 
-    def _increment_iterator(self):
+    def _execute_tool_call(self, tool_call: ToolCall):
+        try:
+            function_to_execute = next(
+                tool.function for tool in self.tools if tool.name == tool_call.name
+            )
+            execution_kwargs = tool_call.args
+            if "agent_context" in function_to_execute.__code__.co_varnames:
+                execution_kwargs["agent_context"] = self
+            tool_call.response = function_to_execute(**execution_kwargs)
+        except Exception as e:
+            tool_call.response = f"Error: {str(e)}"
+        return tool_call
+
+    def _iterate(self):
         self.iteration += 1
         if self.max_iterations > 1:
             self.add_message(
@@ -94,7 +106,7 @@ class AgentBase:
     def invoke(self, prompt: str):
         self.iteration = 0
         self.add_message({"role": "user", "content": prompt})
-        while self._increment_iterator():
+        while self._iterate():
             if self.iteration > self.max_iterations:
                 break
         try:

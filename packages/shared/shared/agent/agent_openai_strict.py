@@ -46,13 +46,10 @@ class OpenAIStrictAgent(AgentBase):
             completion_kwargs["tool_choice"] = "auto"
         if self.response_format:
             completion_kwargs["response_format"] = self.response_format
-            response = self.client.beta.chat.completions.parse(**completion_kwargs)
-        else:
-            response = self.client.chat.completions.create(**completion_kwargs)
-        return response
+        return self.client.beta.chat.completions.parse(**completion_kwargs)
 
-    def _iterate(self):
-        super()._iterate()
+    def _increment_iterator(self):
+        super()._increment_iterator()
         response = self._create_completion()
         self.add_message(response.choices[0].message)
         if response.choices[0].message.tool_calls:

@@ -1,5 +1,5 @@
-from shared.agent.agent_anthropic import AnthropicAgent
-from shared.agent.agent_openai import OpenAIAgent
+from shared.agent.agent_anthropic_strict import AnthropicStrictAgent
+from shared.agent.agent_openai_strict import OpenAIStrictAgent
 from shared.agent.models.llm_models import ModelConfig, ModelProvider
 
 
@@ -19,7 +19,7 @@ def create_agent(
         raise ValueError("Model is not supported.")
 
     if model.provider == ModelProvider.OPENAI:
-        return OpenAIAgent(
+        return OpenAIStrictAgent(
             model=model.model_id,
             max_iterations=max_iterations,
             tools=tools,
@@ -27,7 +27,7 @@ def create_agent(
             paths=paths,
         )
     elif model.provider == ModelProvider.ANTHROPIC:
-        return AnthropicAgent(
+        return AnthropicStrictAgent(
             model=model.model_id,
             max_iterations=max_iterations,
             tools=tools,
@@ -36,21 +36,3 @@ def create_agent(
         )
     else:
         raise ValueError(f"Provider {model.provider} is not supported.")
-
-
-def get_agent(self, agent_instance_id: str):
-    (
-        agent_instance,
-        agent_messages,
-        agent_errors,
-        chunk_texts,
-    ) = self.collection.get_agent_instance(agent_instance_id)
-    if agent_instance is None:
-        return None
-    agent = OpenAIAgent(
-        model=agent_instance.model,
-        id=agent_instance.id,
-    )
-    for message in agent_messages:
-        agent.add_message(message)
-    return agent

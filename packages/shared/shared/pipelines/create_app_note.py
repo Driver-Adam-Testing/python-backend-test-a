@@ -2,16 +2,16 @@ from urllib.parse import unquote, urlparse
 
 from pydantic import UUID4, BaseModel
 
-from packages.shared.shared.agent.tools.agent_tools import (
+from shared import prompts
+from shared.agent.agent_factory import create_agent
+from shared.agent.deprecated.agent_tools import (
     deep_rag_tool,
     list_files_tool,
     query_uploaded_pdf_files,
     search_pdf_summaries_tool,
     search_source_code_tool,
 )
-from shared import prompts
-from shared.agent.agent_factory import create_agent
-from shared.agent.tools.tool import Tool
+from shared.agent.deprecated.tool import Tool
 
 
 class CreateAppNoteRequest(BaseModel):

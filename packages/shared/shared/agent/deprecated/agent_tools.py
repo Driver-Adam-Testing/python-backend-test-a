@@ -2,7 +2,6 @@ import re
 
 from database.derived_content_types import DerivedContentTypeNames
 from openai import OpenAI
-
 from shared.interfaces.search import SearchInput, SearchResults
 from shared.pipelines.search import search_content_without_session
 

@@ -1,8 +1,7 @@
 import enum
 
-import shared.agent.tools.agent_tools as agent_tools
 from pydantic import BaseModel
-from shared.agent.tools.tool import Tool
+from shared.agent import tools as agent_tools
 from shared.interfaces.search import SearchResults
 
 
@@ -48,7 +47,7 @@ class AgentConfiguration(BaseModel):
     iterations: int = 1
     tools: list[ToolConfig] = []
 
-    def get_tool_functions(self) -> list[Tool]:
+    def get_tool_functions(self) -> list[agent_tools.ToolStrict]:
         """
         Retrieve the tool functions based on the tool configurations.
 
@@ -62,13 +61,8 @@ class AgentConfiguration(BaseModel):
         tools = []
         for tool_name in [t.name for t in self.tools]:
             if hasattr(agent_tools, tool_name):
-                tool = getattr(agent_tools, tool_name)
-                if isinstance(tool, Tool):
-                    tools.append(tool)
-                else:
-                    raise TypeError(f"{tool_name} is not an instance of Tool")
-            else:
-                raise AttributeError(f"{tool_name} does not exist in agent_tools")
+                tool_class = getattr(agent_tools, tool_name)
+                tools.append(tool_class)
         return tools
 
 

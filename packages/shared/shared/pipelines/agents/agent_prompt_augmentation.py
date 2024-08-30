@@ -1,6 +1,6 @@
 from shared import prompts
 from shared.agent.agent_factory import create_agent
-from shared.agent.tools import agent_tools
+from shared.agent.tools import SearchTool
 from shared.interfaces.agents.execute import AgentConfiguration, AgentResult, AgentScope
 
 
@@ -11,7 +11,7 @@ def run_agent_prompt_augmentation(
         model=agent_config.model,
         organization_id=scope.organization_id,
         max_iterations=3,
-        tools=[agent_tools.search_tech_docs_tool],
+        tools=[SearchTool],
         paths=scope.paths,
     )
     agent.add_message(prompts.interface.batch_tools.MESSAGE)

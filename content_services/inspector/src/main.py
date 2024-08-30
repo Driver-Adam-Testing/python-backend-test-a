@@ -63,18 +63,18 @@ async def inspect_db(
     from utils.db import (
         SourceContentTypeMap,
         download_source_content_file,
+        get_analyzable_source_contents_by_codebase_id,
         get_codebase_by_id,
-        get_source_contents_by_codebase_id,
     )
 
     codebase = await get_codebase_by_id(codebase_id)
-    source_contents_files = await get_source_contents_by_codebase_id(
+    source_contents_files = await get_analyzable_source_contents_by_codebase_id(
         codebase_id, {SourceContentTypeMap.FILE}
     )
-    source_contents_all = await get_source_contents_by_codebase_id(
+    source_contents_all = await get_analyzable_source_contents_by_codebase_id(
         codebase_id, {SourceContentTypeMap.FILE, SourceContentTypeMap.DIRECTORY}
     )
-    source_content_codebase = await get_source_contents_by_codebase_id(
+    source_content_codebase = await get_analyzable_source_contents_by_codebase_id(
         codebase_id, {SourceContentTypeMap.CODEBASE_ROOT}
     )
     assert len(source_content_codebase) == 1
@@ -85,6 +85,7 @@ async def inspect_db(
     with tempfile.TemporaryDirectory() as download_dir:
         download_root = Path(download_dir)
         file_paths = []
+        print("Downloading all source files for codebase from s3...")
         for sc in source_contents_files:
             download_abs_path = download_source_content_file(
                 s3_client=s3_client,
@@ -94,6 +95,7 @@ async def inspect_db(
                 download_root=download_root,
             )
             file_paths.append(download_abs_path)
+        print("Download complete")
 
         codebase_dag: FileTreeDag = build_dag(
             root_path=download_root, file_paths=file_paths
@@ -102,7 +104,9 @@ async def inspect_db(
         if rerun_node_paths:
             for rerun_path in rerun_node_paths:
                 rerun_path = download_root / rerun_path
-                codebase_dag.mark_as_modified(rerun_path, include_downstream=True)
+                codebase_dag.mark_as_modified(
+                    rerun_path, include_upstream=False, include_downstream=True
+                )
 
         if rerun_node_paths:
             sorted_nodes = codebase_dag.topological_sort(changed_nodes_only=True)
@@ -113,11 +117,10 @@ async def inspect_db(
             Path(sc.relative_path): sc.id for sc in source_contents_all
         }
 
-        for k in path_to_source_content_id.keys():
-            print(k)
-        print("=======")
+        print("======= Paths being processed =======")
         for node in sorted_nodes:
             print(node.root_rel_path)
+
         nodes_with_id: list[tuple[Node, uuid.UUID | None]] = [
             (node, path_to_source_content_id[node.root_rel_path])
             for node in sorted_nodes
@@ -131,6 +134,7 @@ async def inspect_db(
             codebase_name=codebase.codebase_name,
             run_id=run_id,
             resume=resume,
+            is_rerun=bool(rerun_node_paths),
         )
 
 
@@ -150,6 +154,7 @@ async def inspect_files(
     codebase_name: str,
     run_id: str,
     resume: bool,
+    is_rerun: bool,
 ):
     print("---------- All nodes ----------")
     for node, _ in nodes_with_id:
@@ -227,21 +232,23 @@ async def inspect_files(
                 ]
             )
 
-    all_tech_docs_tasks = tuple(
-        t
-        for t in tasks
-        if (isinstance(t, FileTechDocTask) or isinstance(t, FolderTechDocTask))
-    )
-    top_level_tech_docs_task = TopLevelDocsTask(
-        codebase_name=codebase_name,
-        ordered_tech_docs_tasks=all_tech_docs_tasks,  # TODO where does source content go here?
-        source_content_id=sc_codebase_id,
-    )
-    top_level_embedding_task = EmbeddingTask(
-        task_name="Embedding TopLevelDocs",
-        dependent_tasks=[top_level_tech_docs_task],
-    )
-    tasks.extend([top_level_tech_docs_task, top_level_embedding_task])
+    if not is_rerun:
+        # We never update top level docs in a rerun where specific nodes have been specified for simplicity.
+        all_tech_docs_tasks = tuple(
+            t
+            for t in tasks
+            if (isinstance(t, FileTechDocTask) or isinstance(t, FolderTechDocTask))
+        )
+        top_level_tech_docs_task = TopLevelDocsTask(
+            codebase_name=codebase_name,
+            ordered_tech_docs_tasks=all_tech_docs_tasks,  # TODO where does source content go here?
+            source_content_id=sc_codebase_id,
+        )
+        top_level_embedding_task = EmbeddingTask(
+            task_name="Embedding TopLevelDocs",
+            dependent_tasks=[top_level_tech_docs_task],
+        )
+        tasks.extend([top_level_tech_docs_task, top_level_embedding_task])
 
     print("\n---------- All tasks ----------")
     for t in tasks:
@@ -284,11 +291,13 @@ def main(
     codebase_id: str, resume_from_id: str | None = None, rerun_paths: str | None = None
 ):
     print("Processing codebase with id: ", codebase_id)
+
     rerun_node_paths = (
         rerun_paths.split(",") if rerun_paths and rerun_paths.strip() else None
     )
     if rerun_node_paths:
         print("Rerunning nodes:")
+        rerun_node_paths = [path.lstrip("/") for path in rerun_node_paths]
         for path in rerun_node_paths:
             print("--> ", path)
 

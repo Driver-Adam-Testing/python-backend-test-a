@@ -358,6 +358,53 @@ class TestFileTreeDag:
         assert sorted_nodes[2].root_rel_path == Path("folder1")
         assert sorted_nodes[3].root_rel_path == Path("")
 
+    def test_mark_downstream_only_and_sort_changed_nodes(self, setup_file_tree):
+        (
+            root_abs_path,
+            test_file0,
+            test_file1,
+            test_file2,
+            folder1,
+            subfolder1,
+        ) = setup_file_tree
+        file_tree_dag = FileTreeDag(root_abs_path=root_abs_path)
+
+        file_tree_dag.add_file(test_file1, change_status=False)
+        file_tree_dag.add_file(test_file2, change_status=False)
+
+        # Mark only downstream nodes of folder1 as modified
+        file_tree_dag.mark_as_modified(
+            folder1, include_upstream=False, include_downstream=True
+        )
+
+        sorted_nodes = file_tree_dag.topological_sort(changed_nodes_only=True)
+        for node in sorted_nodes:
+            print(node)
+
+        assert len(sorted_nodes) == 4
+
+        sorted_paths = [node.root_rel_path for node in sorted_nodes]
+
+        expected_paths = {
+            Path("folder1"),
+            Path("folder1/subfolder1"),
+            Path("folder1/subfolder1/file1.txt"),
+            Path("folder1/subfolder1/file2.txt"),
+        }
+
+        assert set(sorted_paths) == expected_paths
+        # Ensuring the topological order respects dependencies
+        assert sorted_paths[0] in {
+            Path("folder1/subfolder1/file1.txt"),
+            Path("folder1/subfolder1/file2.txt"),
+        }
+        assert sorted_paths[1] in {
+            Path("folder1/subfolder1/file1.txt"),
+            Path("folder1/subfolder1/file2.txt"),
+        }
+        assert sorted_paths[2] == Path("folder1/subfolder1")
+        assert sorted_paths[3] == Path("folder1")
+
     def test_topological_sort_files_only(self, setup_file_tree):
         root_abs_path, test_file0, test_file1, test_file2, *_ = setup_file_tree
         file_tree_dag = FileTreeDag(root_abs_path=root_abs_path)

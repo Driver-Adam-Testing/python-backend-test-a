@@ -231,19 +231,21 @@ class FileTreeDag:
         sorter = graphlib.TopologicalSorter()
 
         def add_nodes_and_edges(node: Node):
-            # Only add nodes that are modified or added, if the flag is set
-            if not changed_nodes_only or node.status != NodeStatus.UNMODIFIED:
-                for child in node.children.values():
-                    # Recursively add children if they are also modified or added
-                    if not changed_nodes_only or child.status != NodeStatus.UNMODIFIED:
-                        sorter.add(node, child)
-                    add_nodes_and_edges(child)
+            sorter.add(node)
+            for child in node.children.values():
+                sorter.add(node, child)
+                add_nodes_and_edges(child)
 
         add_nodes_and_edges(self.root)
         sorted_nodes = list(sorter.static_order())
+
+        if changed_nodes_only:
+            sorted_nodes = [
+                node for node in sorted_nodes if node.status != NodeStatus.UNMODIFIED
+            ]
         if files_only:
             sorted_nodes = [node for node in sorted_nodes if node.kind == NodeKind.FILE]
-        if folders_only:
+        elif folders_only:
             sorted_nodes = [
                 node
                 for node in sorted_nodes

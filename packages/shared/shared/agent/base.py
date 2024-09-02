@@ -3,7 +3,7 @@ import uuid
 from database.db import get_session
 from database.models_v1 import RuntimeLogAgentInstance, RuntimeLogAgentMessage
 
-from shared.agent.tools import ToolStrict
+from shared.agent.tools.tool_strict import ToolStrict
 from shared.utils.bcolors import print_dict
 
 

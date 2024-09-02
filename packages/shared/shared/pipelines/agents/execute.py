@@ -10,6 +10,10 @@ from shared.pipelines.agents.agent_default import run_agent_default
 from shared.pipelines.agents.agent_prompt_augmentation import (
     run_agent_prompt_augmentation,
 )
+from shared.pipelines.agents.agent_smart_instruction import (
+    SmartInstructionInput,
+    run_agent_smart_instruction,
+)
 
 
 def execute_sequence(input: AgentExecuteSequenceInput):
@@ -60,5 +64,11 @@ def execute_single(input: AgentExecuteInput):
             input.create_user_prompt(),
             agent_config=input.agent_config,
             scope=input.scope,
+        )
+    if input.agent_config.agent_type == AgentType.SMART_INSTRUCTION:
+        output = run_agent_smart_instruction(
+            SmartInstructionInput(
+                prompt=input.prompt, context=input.context, scope=input.scope
+            )
         )
     return AgentExecutionResponse(result=output.result, agent_results=[output])

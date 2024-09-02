@@ -14,6 +14,7 @@ class AgentType(str, enum.Enum):
     PROMPT_AUGMENTATION = "prompt_augmentation"
     COPY_EDITOR = "copy_editor"
     CODE_CRITIC = "code_critic"
+    SMART_INSTRUCTION = "smart_instruction"
 
 
 class ToolConfig(BaseModel):
@@ -72,11 +73,11 @@ class UserPromptWithContext(BaseModel):
 
     Attributes:
         prompt (str): The user prompt.
-        context (list[str]): List of context strings.
+        context (dict): Dictionary containing context information.
     """
 
     prompt: str
-    context: list[str]
+    context: dict
 
     def create_user_prompt(self):
         """
@@ -85,11 +86,29 @@ class UserPromptWithContext(BaseModel):
         Returns:
             str: The user prompt with context in XML format.
         """
+
+        def dict_to_xml(d):
+            """
+            Convert a dictionary to an XML string.
+
+            Args:
+                d (dict): The dictionary to convert.
+
+            Returns:
+                str: The XML string representation of the dictionary.
+            """
+            xml = ""
+            for key, value in d.items():
+                if isinstance(value, dict):
+                    xml += f"<{key}>{dict_to_xml(value)}</{key}>"
+                else:
+                    xml += f"<{key}>{value}</{key}>"
+            return xml
+
         context_xml = ""
         if self.context:
             context_xml += "<context>"
-            for ctx in reversed(self.context):
-                context_xml += f"<context_chunk>{ctx}</context_chunk>"
+            context_xml += dict_to_xml(self.context)
             context_xml += "</context>"
 
         user_prompt = f"<prompt>{self.prompt}</prompt>{context_xml}"
@@ -109,7 +128,7 @@ class AgentScope(BaseModel):
     organization_id: str | None = None
 
 
-class AgentExecuteSequenceInput(BaseModel):
+class AgentExecuteSequenceInput(UserPromptWithContext):
     """
     Input for executing a sequence of agent configurations.
 
@@ -121,7 +140,6 @@ class AgentExecuteSequenceInput(BaseModel):
 
     agent_configs: list[AgentConfiguration] | None = [AgentConfiguration()]
     scope: AgentScope = AgentScope(paths=[], organization_id=None)
-    prompt: str | None
 
 
 class AgentExecuteInput(UserPromptWithContext):

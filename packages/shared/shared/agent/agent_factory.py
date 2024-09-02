@@ -9,6 +9,7 @@ def create_agent(
     model: str | None = None,
     max_iterations: int = 1,
     tools=None,
+    response_type=None,
 ):
     if model is None:
         model = ModelConfig.get_default_model()
@@ -25,6 +26,7 @@ def create_agent(
             tools=tools,
             organization_id=organization_id,
             paths=paths,
+            response_format=response_type,
         )
     elif model.provider == ModelProvider.ANTHROPIC:
         return AnthropicStrictAgent(

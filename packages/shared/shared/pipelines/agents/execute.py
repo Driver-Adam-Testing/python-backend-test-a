@@ -1,74 +1,55 @@
 from shared.interfaces.agents.execute import (
     AgentExecuteInput,
-    AgentExecuteSequenceInput,
     AgentExecutionResponse,
+    AgentExecutionSequenceResponse,
     AgentType,
 )
 from shared.pipelines.agents.agent_code_critic import run_agent_code_critic
 from shared.pipelines.agents.agent_copy_editor import run_agent_copy_editor
 from shared.pipelines.agents.agent_default import run_agent_default
+from shared.pipelines.agents.agent_edit_document import (
+    AgentEditDocumentExecuteInput,
+    run_agent_edit_document,
+)
 from shared.pipelines.agents.agent_prompt_augmentation import (
     run_agent_prompt_augmentation,
 )
-from shared.pipelines.agents.agent_smart_instruction import (
-    SmartInstructionInput,
-    run_agent_smart_instruction,
-)
 
 
-def execute_sequence(input: AgentExecuteSequenceInput):
-    agent_results = []
-    output = input.prompt
-    context = []
+def execute_sequence(input: AgentExecuteInput):
+    context = {}
+    response = AgentExecutionSequenceResponse(responses=[])
 
-    for agent_config in input.agent_configs:
-        context.append(output)
+    for agent_config in input.agent_config:
+        prompt = input.create_user_prompt()
+        if len(response.responses) > 0:
+            prompt = response.responses[-1].agent_result
+        if agent_config.user_prompt:
+            prompt = agent_config.user_prompt
+
         single_input = AgentExecuteInput(
-            prompt=agent_config.user_prompt if agent_config.user_prompt else output,
+            prompt=prompt,
             agent_config=agent_config,
             scope=input.scope,
             context=context,
         )
         single_response = execute_single(single_input)
-        output = single_response.result
-        agent_results.append(single_response.agent_results[0])
+        response.responses.append(single_response)
 
-    return AgentExecutionResponse(
-        result=agent_results[-1].result, agent_results=agent_results
-    )
+    return response
 
 
-def execute_single(input: AgentExecuteInput):
-    output = input.prompt
-
+def execute_single(
+    input: AgentExecuteInput | AgentEditDocumentExecuteInput,
+) -> AgentExecutionResponse:
     if input.agent_config.agent_type == AgentType.DEFAULT:
-        output = run_agent_default(
-            prompt=input.create_user_prompt(),
-            agent_config=input.agent_config,
-            scope=input.scope,
-        )
+        return run_agent_default(input)
     if input.agent_config.agent_type == AgentType.PROMPT_AUGMENTATION:
-        output = run_agent_prompt_augmentation(
-            prompt=input.prompt,
-            agent_config=input.agent_config,
-            scope=input.scope,
-        )
+        return run_agent_prompt_augmentation(input)
     if input.agent_config.agent_type == AgentType.COPY_EDITOR:
-        output = run_agent_copy_editor(
-            prompt=input.create_user_prompt(),
-            agent_config=input.agent_config,
-            scope=input.scope,
-        )
+        return run_agent_copy_editor(input)
     if input.agent_config.agent_type == AgentType.CODE_CRITIC:
-        output = run_agent_code_critic(
-            input.create_user_prompt(),
-            agent_config=input.agent_config,
-            scope=input.scope,
-        )
-    if input.agent_config.agent_type == AgentType.SMART_INSTRUCTION:
-        output = run_agent_smart_instruction(
-            SmartInstructionInput(
-                prompt=input.prompt, context=input.context, scope=input.scope
-            )
-        )
-    return AgentExecutionResponse(result=output.result, agent_results=[output])
+        return run_agent_code_critic(input)
+    if input.agent_config.agent_type == AgentType.EDIT_DOCUMENT:
+        return run_agent_edit_document(input)
+    raise ValueError(f"Unknown agent type: {input.agent_config.agent_type}")

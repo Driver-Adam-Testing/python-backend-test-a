@@ -1,23 +1,21 @@
-from shared import prompts
 from shared.agent.agent_factory import create_agent
-from shared.interfaces.agents.execute import AgentConfiguration, AgentResult, AgentScope
+from shared.interfaces.agents.execute import AgentExecuteInput, AgentExecutionResponse
 
 
-def run_agent_default(prompt: str, agent_config: AgentConfiguration, scope: AgentScope):
+def run_agent_default(input: AgentExecuteInput):
     agent = create_agent(
-        model=agent_config.model,
-        organization_id=scope.organization_id,
-        max_iterations=agent_config.iterations,
-        tools=agent_config.get_tool_functions(),
-        paths=scope.paths,
+        model=input.agent_config.model,
+        organization_id=input.scope.organization_id,
+        max_iterations=input.agent_config.iterations,
+        tools=input.agent_config.get_tool_functions(),
+        paths=input.scope.paths,
     )
-    if agent_config.system_prompts:
-        for system_prompt in agent_config.system_prompts:
-            module_name, attribute_name = system_prompt.rsplit(".", 1)
-            try:
-                module = getattr(prompts, module_name)
-                agent.add_message(getattr(module, attribute_name).MESSAGE)
-            except AttributeError:
-                agent.add_message({"role": "system", "content": system_prompt})
-    response = agent.invoke(prompt)
-    return AgentResult(result=response, search_results=agent.search_results)
+    for system_prompt in input.agent_config.create_system_prompts():
+        agent.add_message(system_prompt)
+    response = agent.invoke(input.create_user_prompt())
+    print("SEARCH RESULTS: " + str(len(agent.search_results)))
+    return AgentExecutionResponse(
+        agent_id=agent.agent_id,
+        agent_result=response,
+        search_results=agent.search_results,
+    )

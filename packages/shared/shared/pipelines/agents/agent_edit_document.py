@@ -3,9 +3,10 @@ from shared.agent.tools.open_file_tool import OpenFileTool
 from shared.agent.tools.search_tool import SearchTool
 from shared.interfaces.agents.execute import (
     AgentConfiguration,
+    AgentExecuteInput,
+    AgentExecutionResponse,
     AgentScope,
     AgentType,
-    UserPromptWithContext,
 )
 from shared.pipelines.agents.agent_copy_editor import run_agent_copy_editor
 from shared.pipelines.agents.agent_default import run_agent_default
@@ -14,7 +15,7 @@ from shared.pipelines.agents.agent_prompt_augmentation import (
 )
 
 
-class SmartInstructionContext(BaseModel):
+class EditDocumentContext(BaseModel):
     """
     Context for smart instruction generation.
 
@@ -29,7 +30,7 @@ class SmartInstructionContext(BaseModel):
     text_after_selection: str
 
 
-class SmartInstructionInput(BaseModel):
+class AgentEditDocumentExecuteInput(AgentExecuteInput):
     """
     Input model for smart instruction generation.
 
@@ -39,29 +40,32 @@ class SmartInstructionInput(BaseModel):
     """
 
     prompt: str
-    context: SmartInstructionContext
+    context: EditDocumentContext
     scope: AgentScope
 
 
 INSTRUCTION_PROMPT = "Rewrite the selected text part of document. Respond with replacement or appended text for the selected text, which will be rendered as markdown, according to the user prompt."
 
 
-def run_agent_smart_instruction(input: SmartInstructionInput):
+def run_agent_edit_document(input: AgentEditDocumentExecuteInput):
+    prompt_augmentation_agent_configuration = AgentConfiguration(**input.agent_config)
+    prompt_augmentation_agent_configuration.iterations = 1
     prompt_augmentation_prompt = run_agent_prompt_augmentation(
-        prompt=UserPromptWithContext(
-            prompt=input.prompt, context=input.context
-        ).create_user_prompt(),
-        agent_config=AgentConfiguration(model=None, iterations=2),
-        scope=input.scope,
+        AgentExecuteInput(
+            prompt=input.prompt,
+            context=input.context.model_dump(),
+            agent_config=prompt_augmentation_agent_configuration,
+            scope=input.scope,
+        )
     )
     default_agent_result = run_agent_default(
-        prompt=prompt_augmentation_prompt,
+        prompt=prompt_augmentation_prompt.agent_result,
         agent_config=AgentConfiguration(
             system_prompts=[
                 "interface.technical_context_interface",
                 INSTRUCTION_PROMPT,
             ],
-            iterations=2,
+            iterations=3,
             tools=[SearchTool, OpenFileTool],
         ),
         scope=input.scope,
@@ -70,4 +74,8 @@ def run_agent_smart_instruction(input: SmartInstructionInput):
         prompt=default_agent_result,
         agent_config=AgentConfiguration(agent_type=AgentType.COPY_EDITOR, iterations=1),
     )
-    return copy_editor_result
+    return AgentExecutionResponse(
+        agent_result=copy_editor_result.agent_result,
+        search_results=default_agent_result.search_results,
+        agent_id=default_agent_result.id,
+    )

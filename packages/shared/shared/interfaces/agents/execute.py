@@ -1,7 +1,9 @@
 import enum
+import uuid
 
 from pydantic import BaseModel
 from shared.agent import tools as agent_tools
+from shared.agent.tools.tool_strict import ToolStrict
 from shared.interfaces.search import SearchResults
 
 
@@ -15,6 +17,7 @@ class AgentType(str, enum.Enum):
     COPY_EDITOR = "copy_editor"
     CODE_CRITIC = "code_critic"
     SMART_INSTRUCTION = "smart_instruction"
+    EDIT_DOCUMENT = "edit_document"
 
 
 class ToolConfig(BaseModel):
@@ -48,7 +51,7 @@ class AgentConfiguration(BaseModel):
     iterations: int = 1
     tools: list[ToolConfig] = []
 
-    def get_tool_functions(self) -> list[agent_tools.ToolStrict]:
+    def get_tool_functions(self) -> list[ToolStrict]:
         """
         Retrieve the tool functions based on the tool configurations.
 
@@ -66,6 +69,31 @@ class AgentConfiguration(BaseModel):
                 tools.append(tool_class)
         return tools
 
+    def create_system_prompts(self) -> list[str]:
+        """
+        Create a list of system prompts in the required format.
+
+        Args:
+            system_prompts (list[str]): List of system prompts as strings.
+
+        Returns:
+            list[dict]: List of system prompts formatted as dictionaries.
+        """
+        from shared import prompts
+
+        formatted_prompts = []
+        if self.system_prompts:
+            for system_prompt in self.system_prompts:
+                module_name, attribute_name = system_prompt.rsplit(".", 1)
+                try:
+                    module = getattr(prompts, module_name)
+                    formatted_prompts.append(getattr(module, attribute_name).MESSAGE)
+                except AttributeError:
+                    formatted_prompts.append(
+                        {"role": "system", "content": system_prompt}
+                    )
+        return formatted_prompts
+
 
 class UserPromptWithContext(BaseModel):
     """
@@ -77,7 +105,7 @@ class UserPromptWithContext(BaseModel):
     """
 
     prompt: str
-    context: dict
+    context: dict | list[str] | None = None
 
     def create_user_prompt(self):
         """
@@ -105,10 +133,28 @@ class UserPromptWithContext(BaseModel):
                     xml += f"<{key}>{value}</{key}>"
             return xml
 
+        def list_to_xml(lst):
+            """
+            Convert a list of strings to an XML string.
+
+            Args:
+                lst (list[str]): The list of strings to convert.
+
+            Returns:
+                str: The XML string representation of the list.
+            """
+            xml = ""
+            for item in lst:
+                xml += f"<item>{item}</item>"
+            return xml
+
         context_xml = ""
         if self.context:
             context_xml += "<context>"
-            context_xml += dict_to_xml(self.context)
+            if isinstance(self.context, dict):
+                context_xml += dict_to_xml(self.context)
+            elif isinstance(self.context, list):
+                context_xml += list_to_xml(self.context)
             context_xml += "</context>"
 
         user_prompt = f"<prompt>{self.prompt}</prompt>{context_xml}"
@@ -128,20 +174,6 @@ class AgentScope(BaseModel):
     organization_id: str | None = None
 
 
-class AgentExecuteSequenceInput(UserPromptWithContext):
-    """
-    Input for executing a sequence of agent configurations.
-
-    Attributes:
-        agent_configs (list[AgentConfiguration] | None): List of agent configurations.
-        scope (AgentScope): The scope of the agent's operation.
-        prompt (str | None): The prompt to be executed.
-    """
-
-    agent_configs: list[AgentConfiguration] | None = [AgentConfiguration()]
-    scope: AgentScope = AgentScope(paths=[], organization_id=None)
-
-
 class AgentExecuteInput(UserPromptWithContext):
     """
     Input for executing an agent.
@@ -151,21 +183,10 @@ class AgentExecuteInput(UserPromptWithContext):
         scope (AgentScope): The scope of the agent's operation.
     """
 
-    agent_config: AgentConfiguration = AgentConfiguration(agent_type=AgentType.DEFAULT)
+    agent_config: AgentConfiguration | list[
+        AgentConfiguration
+    ] | None = AgentConfiguration(agent_type=AgentType.DEFAULT)
     scope: AgentScope = AgentScope(paths=[], organization_id=None)
-
-
-class AgentResult(BaseModel):
-    """
-    Result of an agent's execution.
-
-    Attributes:
-        result (str): The result of the agent's execution.
-        search_results (list[SearchResults]): List of search results.
-    """
-
-    result: str
-    search_results: list[SearchResults]
 
 
 class AgentExecutionResponse(BaseModel):
@@ -177,5 +198,10 @@ class AgentExecutionResponse(BaseModel):
         agent_results (list[AgentResult]): List of agent results.
     """
 
-    result: str
-    agent_results: list[AgentResult]
+    agent_id: str | uuid.UUID | None
+    agent_result: str | object
+    search_results: list[SearchResults] = []
+
+
+class AgentExecutionSequenceResponse(BaseModel):
+    responses: list[AgentExecutionResponse]

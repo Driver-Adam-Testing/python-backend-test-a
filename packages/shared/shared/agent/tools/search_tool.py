@@ -103,7 +103,7 @@ class SearchTool(ToolStrict):
 
         if not results.results:
             return "Search returned no results"
-
+        agent.add_search_results(results)
         formatted_results = []
         for result in results.results:
             content = result.content

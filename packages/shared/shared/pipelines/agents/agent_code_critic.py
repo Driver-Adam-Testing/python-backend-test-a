@@ -3,7 +3,11 @@ from shared.agent.agent_openai_strict import OpenAIStrictAgent
 from shared.agent.models.llm_models import ModelConfig
 from shared.agent.tools.open_file_tool import OpenFileTool
 from shared.agent.tools.search_tool import SearchTool
-from shared.interfaces.agents.execute import AgentConfiguration, AgentResult, AgentScope
+from shared.interfaces.agents.execute import (
+    AgentExecuteInput,
+    AgentExecutionResponse,
+    AgentExecutionSequenceResponse,
+)
 
 
 class CodeSnippets(BaseModel):
@@ -18,13 +22,15 @@ class CodeVerification(BaseModel):
     rationale_for_fixing: str
 
 
-def run_agent_code_critic(
-    prompt: str, agent_config: AgentConfiguration, scope: AgentScope
-):
+class FindCodeSnippetsInput(AgentExecuteInput):
+    document_content: str
+
+
+def run_agent_find_code_snippets(input: FindCodeSnippetsInput):
     agent = OpenAIStrictAgent(
         model=ModelConfig.get_default_model().model_id,
-        paths=scope.paths,
-        organization_id=scope.organization_id,
+        paths=input.scope.paths,
+        organization_id=input.scope.organization_id,
         response_format=CodeSnippets,
     )
 
@@ -39,17 +45,46 @@ def run_agent_code_critic(
     agent.add_message(
         {
             "role": "user",
-            "content": f"Extract all code snippets in this document. <document>{prompt}</document>",
+            "content": f"Extract and list all code snippets in this document. <document>{input.document_content}</document>",
         }
     )
 
-    snippets = agent.invoke(prompt)
+    snippets = agent.invoke()
+    return AgentExecutionResponse(
+        agent_id=agent.agent_id, agent_result=snippets, search_results=[]
+    )
+
+
+def run_agent_code_critic(input: AgentExecuteInput):
+    agent = OpenAIStrictAgent(
+        model=ModelConfig.get_default_model().model_id,
+        paths=input.scope.paths,
+        organization_id=input.scope.organization_id,
+        response_format=CodeSnippets,
+    )
+
+    agent.add_message(
+        {
+            "role": "system",
+            "content": """
+            You are a system that identifies code snippets in a document and extracts them.
+        """,
+        }
+    )
+    agent.add_message(
+        {
+            "role": "user",
+            "content": f"Extract and list all code snippets in this document. <document>{input.document_content}</document>",
+        }
+    )
+
+    snippets = agent.invoke()
     verifications = []
     for snippet in snippets.snippets:
         verification_agent = OpenAIStrictAgent(
             model=ModelConfig.get_default_model().model_id,
-            paths=scope.paths,
-            organization_id=scope.organization_id,
+            paths=input.scope.paths,
+            organization_id=input.scope.organization_id,
             max_iterations=4,
             tools=[SearchTool, OpenFileTool],
             response_format=CodeVerification,
@@ -61,4 +96,4 @@ def run_agent_code_critic(
                                              Depending on search results if the code is incorrect, respond with a fixed code snippet. then  either respond with supporting paths that prove the code example was correct, or prove that the fixed code is correct. If a code snippet gets fixed, return the rationale for fixing it. Respond with whether or not the original snippet was altered, and supporting paths that prove that the source code will execute correctly."""
         )
         verifications.append(verification_response)
-    return AgentResult(result=str(verifications), search_results=agent.search_results)
+    return AgentExecutionSequenceResponse()

@@ -4,7 +4,7 @@ This file exposes the modal (https://www.modal.com) interface for the comprehend
 
 import modal
 
-app = modal.App("comprehender")
+app = modal.App("agent")
 
 
 # Note, all these schenanigans are required because `poetry_install_from_file` doesn't install our comprehender-database
@@ -36,9 +36,13 @@ agent_model_config = {
 
 @app.function(timeout=3600, **agent_model_config, keep_warm=1)
 def run(input: dict):
-    from shared.interfaces.agents.execute import AgentExecuteSequenceInput
-    from shared.pipelines.agents.execute import execute_sequence
+    from shared.interfaces.agents.execute import AgentExecuteInput
+    from shared.pipelines.agents.execute import execute_sequence, execute_single
 
     if isinstance(input, dict):
-        input = AgentExecuteSequenceInput(**input)
-    return execute_sequence(input)
+        input = AgentExecuteInput(**input)
+
+    if isinstance(input.agent_config, list):
+        return execute_sequence(input)
+    else:
+        return execute_single(input)

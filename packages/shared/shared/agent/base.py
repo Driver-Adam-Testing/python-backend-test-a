@@ -19,6 +19,8 @@ class AgentBase:
         log: bool = True,
         debug: bool = True,
     ):
+        # NOTE: After the migration is deployed, change this to be an input
+        self.log = False
         self.organization_id = organization_id
         self.model = model
         self.log = log
@@ -91,9 +93,10 @@ class AgentBase:
                 }
             )
 
-    def invoke(self, prompt: str):
+    def invoke(self, prompt: str = None):
         self.iteration = 0
-        self.add_message({"role": "user", "content": prompt})
+        if prompt is not None:
+            self.add_message({"role": "user", "content": prompt})
         while self._increment_iterator():
             if self.iteration > self.max_iterations:
                 break

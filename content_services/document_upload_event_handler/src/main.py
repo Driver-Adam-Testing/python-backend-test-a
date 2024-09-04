@@ -90,6 +90,7 @@ def handler(event, context):
                 print(
                     f"Triggering document upload onboarding for bucket = {bucket_name}, key = {object_key}"
                 )
+                # TODO: These parameters are wrong, we just need to pass source content id
                 return exec_document_onboarding_service(
                     {
                         "download_url": presigned_url,
@@ -98,7 +99,7 @@ def handler(event, context):
                         "creator_id": metadata["Metadata"]["creator_id"],
                         "workspace_id": metadata["Metadata"]["workspace_id"],
                         "filepath": metadata["Metadata"]["file_path"],
-                        # "codebase_name": metadata["Metadata"]["codebase_name"],
+                        "codebase_name": metadata["Metadata"]["codebase_name"],
                         "provider": metadata["Metadata"]["provider"],
                     },
                     token_json["access_token"],

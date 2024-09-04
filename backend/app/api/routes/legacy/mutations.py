@@ -118,8 +118,6 @@ class WebhookInput:
 class Mutation:
     @strawberry.mutation
     def createSourceContent(self, info: Info, input: SourceContentInput) -> str:
-        # For some reason, this appears to be throwing errors in staging when
-        # using an m2m token
         user = info.context.user
         m2m = info.context.m2m
         session = info.context.session

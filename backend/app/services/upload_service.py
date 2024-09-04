@@ -68,12 +68,6 @@ class UploadService:
 
         return UploadResponse(upload_url=upload_url)
 
-    def get_file_path(
-        self, codebase_id: str, relative_path: str, prefix: str = "/source"
-    ) -> str:
-        adjusted_relative_path = os.path.join(prefix, relative_path.lstrip("/"))
-        return f"{codebase_id}/{adjusted_relative_path}"
-
     def upload_pdf(
         self, user: CurrentUser, request: UploadPDFRequest
     ) -> UploadResponse:
@@ -92,9 +86,10 @@ class UploadService:
         try:
             relative_path = os.path.basename(file_path)
             org_id_hash = hashlib.sha256(org_id.encode()).hexdigest()[:63]
-            upload_key = self.get_file_path(
-                codebase_id, relative_path, prefix="/documents"
-            )
+            upload_key = f"documents/{org_id_hash}/{os.path.basename(file_path)}"
+            # upload_key = self.get_file_path(
+            #     codebase_id, relative_path, prefix="/documents"
+            # )
             codebase_metadata = {
                 "organization_id": org_id_hash,
                 "org_bucket": org_id_hash,

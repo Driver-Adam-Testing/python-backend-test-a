@@ -30,16 +30,14 @@ class DocumentOnboardingLambda(Construct):
     ):
         super().__init__(scope, id)
 
-        # dropzone_bucket = aws_s3.Bucket.from_bucket_name(
-        #     scope, "dropzone-bucket", params.environment + "-codebase-dropzone"
-        # )
-
-        client_id_secret = aws_secretsmanager.Secret(scope, "ClientIdSecret")
-        client_secret_secret = aws_secretsmanager.Secret(scope, "ClientSecretSecret")
+        client_id_secret = aws_secretsmanager.Secret(scope, "DocLambdaClientIdSecret")
+        client_secret_secret = aws_secretsmanager.Secret(
+            scope, "DocLambdaClientSecretSecret"
+        )
         lambda_function = aws_lambda_python_alpha.PythonFunction(
             scope,
             "DocumentOnboardingLambdaPy",
-            entry="content_services/onboarding_event_handler",
+            entry="content_services/document_upload_event_handler",
             runtime=aws_lambda.Runtime.PYTHON_3_12,
             index="src/main.py",
             environment={

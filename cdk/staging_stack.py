@@ -6,6 +6,7 @@ from cdk.constructs.code_onboarding_lambda import (
     CodeOnboardingLambda,
     CodeOnboardingLambdaParams,
 )
+from cdk.constructs.document_onboarding_lambda import DocumentOnboardingLambda
 from cdk.constructs.inspector import Inspector, InspectorParams
 
 
@@ -29,6 +30,17 @@ class StagingStack(Stack):
         self.onboarding_lambda = CodeOnboardingLambda(
             self,
             "CodeOnboardingLambda",
+            CodeOnboardingLambdaParams(
+                environment="staging",
+                api_url="https://api.staging.driverai.com/api/v1",
+                auth0_url="https://auth.staging.driverai.com",
+                dropzone_bucket=self.backend.dropzone_bucket,
+                use_legacy_dropzone=False,
+            ),
+        )
+        self.document_onboarding_lambda = DocumentOnboardingLambda(
+            self,
+            "DocumentOnboardingLambda",
             CodeOnboardingLambdaParams(
                 environment="staging",
                 api_url="https://api.staging.driverai.com/api/v1",

@@ -17,6 +17,11 @@ from src.utils.config import settings
 # # https://stackoverflow.com/questions/60455830/can-you-have-an-async-handler-in-lambda-python-3-6
 def handler(event, context):
     # TODO - Verify org S3 bucket exists
+    # const orgBucketExists = await storageService.bucketExists(orgBucket)
+    # if (!orgBucketExists) {
+    #         logger.warn(`Creating organization bucket`, {orgBucket})
+    #         await storageService.createBucket(orgBucket)//organization.id!)
+    #     }
 
     # TOOD - We should probably move bucket creation elsewhere so that these lambdas
     # don't require "Create Bucket" permissions. Maybe a "Create Organization"
@@ -72,10 +77,8 @@ def handler(event, context):
                 presigned_url = generate_get_presigned_url(
                     bucket=bucket_name, key=real_object_key
                 )
-                print(
-                    f"Triggering document upload onboarding for bucket = {bucket_name}, key = {object_key}"
-                )
 
+                print("Creating source content...")
                 # I changed relative path from documents/filename to just filename
                 create_src_content_response = exec_create_source_content(
                     source_content_type="supplemental-document",
@@ -84,7 +87,9 @@ def handler(event, context):
                     token=token_json["access_token"],
                 )
                 print("Source content created.")
-
+                print(
+                    f"Triggering document upload onboarding for bucket = {bucket_name}, key = {object_key}"
+                )
                 return exec_document_onboarding_service(
                     {
                         "download_url": presigned_url,
@@ -93,7 +98,7 @@ def handler(event, context):
                         "creator_id": metadata["Metadata"]["creator_id"],
                         "workspace_id": metadata["Metadata"]["workspace_id"],
                         "filepath": metadata["Metadata"]["file_path"],
-                        "codebase_name": metadata["Metadata"]["codebase_name"],
+                        # "codebase_name": metadata["Metadata"]["codebase_name"],
                         "provider": metadata["Metadata"]["provider"],
                     },
                     token_json["access_token"],

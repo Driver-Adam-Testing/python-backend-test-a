@@ -120,7 +120,7 @@ def get_current_user(
     token_payload: dict = Depends(get_token_payload),
 ) -> User:
     # Making this optional since some endpoints are called w/ M2M tokens
-    if token_payload.get("sub") is not None:
+    if token_payload.get("userId") is not None:
         return User(**token_payload)
     return None
 
@@ -130,7 +130,7 @@ def get_current_m2m(
     token_payload: dict = Depends(get_token_payload),
 ) -> M2M:
     # Making this optional since most endpoints are called w/ User tokens
-    if token_payload.get("sub") is None:
+    if token_payload.get("userId") is None:
         return M2M(**token_payload)
 
 

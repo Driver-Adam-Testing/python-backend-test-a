@@ -4,17 +4,6 @@ import os
 from datetime import datetime
 
 import strawberry
-from database.models_v1 import (
-    DerivedContent,
-    DerivedContentType,
-    Workspace,
-)
-from graphql import GraphQLError
-from modal import Function
-from sqlalchemy.future import select
-from sqlmodel import Session
-from strawberry.types import Info
-
 from app.api.routes.legacy.api_types import SourceContentInput
 from app.api.routes.legacy.application_note import (
     ContentStatus,
@@ -28,6 +17,16 @@ from app.api.routes.legacy.orm_ops import (
 from app.api.routes.legacy.scalars import ID, JSON
 from app.core.logger import logger
 from app.utils.aws_s3 import generate_put_presigned_url
+from database.models_v1 import (
+    DerivedContent,
+    DerivedContentType,
+    Workspace,
+)
+from graphql import GraphQLError
+from modal import Function
+from sqlalchemy.future import select
+from sqlmodel import Session
+from strawberry.types import Info
 
 
 @strawberry.type
@@ -119,6 +118,8 @@ class WebhookInput:
 class Mutation:
     @strawberry.mutation
     def createSourceContent(self, info: Info, input: SourceContentInput) -> str:
+        # For some reason, this appears to be throwing errors in staging when
+        # using an m2m token
         user = info.context.user
         m2m = info.context.m2m
         session = info.context.session

@@ -516,8 +516,7 @@ class ContentService:
             .where(organization_id == Workspace.organization_id)
         )
         count_statement = (
-            select(func.count())
-            .select_from(DerivedContent)
+            select(func.count(DerivedContent.id))
             .join(DerivedContentType)
             .join(Workspace)
             .join(TagContent, isouter=True)

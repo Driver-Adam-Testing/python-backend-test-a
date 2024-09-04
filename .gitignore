@@ -1,6 +1,7 @@
 .vscode
 .idea
 .DS_Store
+.envrc
 .env.dev
 .env.prod
 .env.local

@@ -7,9 +7,10 @@ from database.models_v1 import (
     Workspace,
 )
 from rank_bm25 import BM25Okapi
+from sqlmodel import Session, asc, or_, select
+
 from shared.embedding.text_embedder import batch_embed_text
 from shared.interfaces.search import SearchInput, SearchResult, SearchResults
-from sqlmodel import Session, asc, or_, select
 
 
 def tokenize_for_bm25(text: str):
@@ -82,6 +83,10 @@ def search_content(session: Session, input: SearchInput):
             statement = statement.limit(input.result_limit)
 
     results = session.exec(statement).all()
+
+    if not results:
+        return SearchResults(results=[])
+
     search_results = []
 
     def process_result(

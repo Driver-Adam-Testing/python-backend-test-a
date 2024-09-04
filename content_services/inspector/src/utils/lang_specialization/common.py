@@ -1,8 +1,8 @@
-import logging
 from enum import IntEnum
 from pathlib import Path
 from typing import Self
 
+import openai
 from pydantic import BaseModel
 from utils.codemap_ctags import extract_symbols_w_ctags
 from utils.models import ChatOpenAI, OutputConfig, OutputConfigKind
@@ -61,7 +61,7 @@ def _disambiguate_header(source: str, fallback: Lang) -> Lang:
             case _:
                 return fallback
     except ValueError as e:
-        logging.warn(
+        print(
             f"Failed to parse integer from LLM response to determine if a header file is C or C++: {e}"
         )
         return fallback
@@ -160,11 +160,16 @@ class DataStructureData(BaseModel):
         user_prompt_complete = (
             f"{user_prompt}Data structure to document: {ds_name}\n\nCode:\n\n{code}"
         )
-        content_raw = llm.generate_response(
-            system_prompt=system_prompt,
-            user_prompt=user_prompt_complete,
-            output_cfg=OutputConfig(kind=OutputConfigKind.JSON_STRICT, payload=cls),
-        )
+        try:
+            content_raw = llm.generate_response(
+                system_prompt=system_prompt,
+                user_prompt=user_prompt_complete,
+                output_cfg=OutputConfig(kind=OutputConfigKind.JSON_STRICT, payload=cls),
+            )
+        except openai.LengthFinishReasonError as _:
+            return cls(
+                type="", members=[], description="Data structure too large to process"
+            )
 
         return cls.parse_raw(content_raw)
 

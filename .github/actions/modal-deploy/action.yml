@@ -1,0 +1,37 @@
+name: 'Modal Deployment'
+description: 'Deploy a modal package'
+inputs:
+  working-directory:
+    description: 'The directory of the modal package to be deployed'
+    required: true
+  package-name:
+    description: 'The name of the modal package to be deployed'
+    required: true
+  modal-env:
+    description: 'The environment of the modal package to be deployed'
+    required: true
+  modal-token-id:
+    description: 'The Modal token ID'
+    required: true
+  modal-token-secret:
+    description: 'The Modal token secret'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+   - name: Install dependencies
+     shell: bash
+     working-directory: ${{ inputs.working-directory }}
+     run: poetry install --no-root
+   - name: Run Tests
+     shell: bash
+     working-directory: ${{ inputs.working-directory }}
+     run: poetry run pytest
+   - name: Deploy ${{ inputs.package-name }}
+     shell: bash
+     working-directory: ${{ inputs.working-directory }}
+     env:
+       MODAL_TOKEN_ID: ${{ inputs.modal-token-id }}
+       MODAL_TOKEN_SECRET: ${{ inputs.modal-token-secret }}
+       MODAL_ENV: ${{ inputs.modal-env }}
+     run: poetry run modal deploy --env=${{ inputs.modal-env }} --tag=${GITHUB_SHA::8} src/main.py

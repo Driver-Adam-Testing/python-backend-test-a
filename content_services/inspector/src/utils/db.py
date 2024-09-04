@@ -89,7 +89,7 @@ async def get_source_content_type_uuid(content_type: SourceContentTypeMap) -> UU
 
 
 # TODO this actually would get source and derived content if the incoming types weren't correct
-async def get_source_contents_by_codebase_id(
+async def get_analyzable_source_contents_by_codebase_id(
     codebase_id: uuid.UUID, content_types: set[SourceContentTypeMap]
 ) -> list[DerivedContent]:
     from database.db import async_engine
@@ -142,9 +142,9 @@ def download_source_content_file(
     local_download_path = download_root / source_content_rel_path
     local_download_path.parent.mkdir(parents=True, exist_ok=True)
 
-    print("Bucket name:", bucket_name)
-    print("S3 key:", s3_key)
-    print("Local download path:", local_download_path)
+    # print("Bucket name:", bucket_name)
+    # print("S3 key:", s3_key)
+    # print("Local download path:", local_download_path)
     s3_client.download_file(bucket_name, s3_key, str(local_download_path))
-    print(f"File downloaded to {local_download_path}")
+    # print(f"File downloaded to {local_download_path}")
     return local_download_path

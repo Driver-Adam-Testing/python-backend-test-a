@@ -1,10 +1,12 @@
 import os
+from itertools import batched
 
 from openai import AsyncOpenAI, OpenAI
 from shared.chunking.text_splitter import TextChunk
 
 TEXT_EMBEDDING_MODEL = os.getenv("TEXT_EMBEDDING_MODEL", "text-embedding-3-small")
 SUPPORTED_OPENAI_MODELS = ["text-embedding-3-small"]
+BATCH_SIZE = 2000
 
 
 def _prepare_text_chunks(text_chunks: list[str | TextChunk]) -> list[str]:
@@ -39,5 +41,8 @@ async def async_batch_embed_text(
 
     openai_client = AsyncOpenAI()
     prepared_chunks = _prepare_text_chunks(text_chunks)
-    response = await openai_client.embeddings.create(input=prepared_chunks, model=model)
-    return [t.embedding for t in response.data]
+    embeddings = []
+    for batch in batched(prepared_chunks, BATCH_SIZE):
+        response = await openai_client.embeddings.create(input=batch, model=model)
+        embeddings.extend([t.embedding for t in response.data])
+    return embeddings

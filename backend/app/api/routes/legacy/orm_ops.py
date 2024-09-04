@@ -148,8 +148,7 @@ def check_access(
         ).first()
         access_checks.append(
             derived_content
-            and derived_content.source_content.codebase.workspace.organization_id
-            == organization_id
+            and derived_content.workspace.organization_id == organization_id
         )
 
     return all(access_checks)

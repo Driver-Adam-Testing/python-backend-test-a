@@ -26,8 +26,8 @@ from utils.task import Task, TaskResult, TaskResultKind
 
 TechDocsTask = Union["FileTechDocTask", "FolderTechDocTask", "TopLevelDocsTask"]
 
-symbols_sem = asyncio.Semaphore(20)
-tech_docs_sem = asyncio.Semaphore(20)
+symbols_sem = asyncio.Semaphore(55)
+tech_docs_sem = asyncio.Semaphore(40)
 folder_tech_docs_sem = asyncio.Semaphore(20)
 database_sem = asyncio.Semaphore(5)
 
@@ -458,28 +458,12 @@ class TopLevelDocsTask(Task):
             long_descrip_dc_id = await get_derived_content_type_uuid(
                 DerivedContentTypeMap.LONG_DESCRIPTION
             )
-            quickstart_use_dc_id = await get_derived_content_type_uuid(
-                DerivedContentTypeMap.QUICK_START_USE
-            )
-            quickstart_dependencies_dc_id = await get_derived_content_type_uuid(
-                DerivedContentTypeMap.QUICK_START_DEPENDENCIES
-            )
-            quickstart_entry_dc_id = await get_derived_content_type_uuid(
-                DerivedContentTypeMap.QUICK_START_ENTRY
-            )
-            quickstart_get_started_dc_id = await get_derived_content_type_uuid(
-                DerivedContentTypeMap.QUICK_START_GETTING_STARTED
-            )
 
             top_level_tups = [
                 (short_single_sentence_dc_id, docs["short"]["single_sentence"]),
                 (short_single_paragraph_dc_id, docs["short"]["single_paragraph"]),
                 (terse_sentence_dc_id, docs["short"]["terse_sentence"]),
                 (long_descrip_dc_id, docs["long"]),
-                (quickstart_use_dc_id, docs["quickstart"]["use"]),
-                (quickstart_dependencies_dc_id, docs["quickstart"]["dependencies"]),
-                (quickstart_entry_dc_id, docs["quickstart"]["entry"]),
-                (quickstart_get_started_dc_id, docs["quickstart"]["getting_started"]),
             ]
 
             (
@@ -509,8 +493,6 @@ class TopLevelDocsTask(Task):
             from sqlmodel.ext.asyncio.session import AsyncSession
 
             async with AsyncSession(async_engine) as session:
-                # TODO: we aren't deleting here. When we create embeddings, we'll want to cascade
-                # delete everything related to old derived content
                 dc_query = select(DerivedContent).where(
                     DerivedContent.source_content_id == self.source_content_id,
                     DerivedContent.content_type_id.in_(

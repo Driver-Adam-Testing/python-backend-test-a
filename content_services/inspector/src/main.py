@@ -47,7 +47,7 @@ class FileInfo:
     ],
     proxy=modal.Proxy.from_name("pg-proxy"),
     memory="2048",
-    timeout=3600 * 5,
+    timeout=3600 * 8,
     region="us-east",
     concurrency_limit=5,
 )

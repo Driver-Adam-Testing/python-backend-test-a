@@ -1,14 +1,12 @@
+import copy
 import textwrap
 from pathlib import Path
 
-from utils.llm import num_tokens_from_messages_open_ai
-from utils.io import get_prompt_template
-from utils.dag import LiteNode
-import copy
-
-from utils.models import ChatOpenAI
-
 from utils.codemap_ctags import extract_symbols_w_ctags
+from utils.dag import LiteNode
+from utils.io import get_prompt_template
+from utils.llm import num_tokens_from_messages_open_ai
+from utils.models import ChatOpenAI
 
 PARENT_PATH = Path(__file__).parent
 
@@ -79,12 +77,11 @@ def document_symbols_in_file(
     file_description_paragraph: str,
     symbol_count_limit: int | None = None,
 ) -> list[dict[str, any]]:
-
     # TODO revert; temporarily silence printing
-    import sys, io
+    import io
+    import sys
+
     sys.stdout = io.StringIO()
-
-
 
     print(f"Extracting and documenting symbols in `{file_node.root_rel_path}`")
     file_content = source_code
@@ -95,7 +92,9 @@ def document_symbols_in_file(
         return []
 
     try:
-        symbols = extract_symbols_w_ctags(root_rel_path=file_node.root_rel_path, file_content=source_code)
+        symbols = extract_symbols_w_ctags(
+            root_rel_path=file_node.root_rel_path, file_content=source_code
+        )
     except Exception as e:
         print(f"Failed to extract symbols from `{file_node.root_rel_path}`: {e}")
         return []
@@ -176,8 +175,7 @@ def symbol_single_paragraph_from_code_and_file_description(
         800  # Very conservative estimate for a paragraph's worth of tokens
     )
     model_limits = {
-        "gpt-3.5-turbo": 16_385 - max_tokens_paragraph,
-        "gpt-4-turbo": 128_000 - max_tokens_paragraph,
+        "gpt-4o-mini": 128_000 - max_tokens_paragraph,
     }
 
     def select_model(input_tokens: int):
@@ -190,7 +188,7 @@ def symbol_single_paragraph_from_code_and_file_description(
 
     # Assume token counts for 3.5 turbo and 4 turbo are the same (True today)
     input_tokens = num_tokens_from_messages_open_ai(
-        [system_prompt, human_prompt], "gpt-3.5-turbo"
+        [system_prompt, human_prompt], "gpt-4o-mini"
     )
 
     selected_model_name = select_model(input_tokens)

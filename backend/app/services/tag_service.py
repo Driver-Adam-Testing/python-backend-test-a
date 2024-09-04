@@ -243,8 +243,8 @@ class TagService:
         content = self.session.exec(
             select(DerivedContent)
             .join(Workspace)
-            .join(DerivedContent.tags)
-            .where(organization_id == Workspace.organization_id)
+            .join(TagContent, TagContent.content_id == DerivedContent.id)
+            .where(Workspace.organization_id == organization_id)
             .where(DerivedContent.id == content_id)
         ).first()
 

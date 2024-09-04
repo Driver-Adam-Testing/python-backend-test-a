@@ -32,10 +32,11 @@ def workspace(db, current_user_with_org):
     db.add(workspace)
     db.commit()
 
-    yield workspace
-
-    db.delete(workspace)
-    db.commit()
+    try:
+        yield workspace
+    finally:
+        db.delete(workspace)
+        db.commit()
 
 
 @pytest.fixture(scope="function")
@@ -44,10 +45,11 @@ def org_b_workspace(db, current_user_with_org):
     db.add(workspace)
     db.commit()
 
-    yield workspace
-
-    db.delete(workspace)
-    db.commit()
+    try:
+        yield workspace
+    finally:
+        db.delete(workspace)
+        db.commit()
 
 
 @pytest.fixture(scope="function")
@@ -64,10 +66,11 @@ def codebase(db, workspace, current_user_with_org):
     db.add(codebase)
     db.commit()
 
-    yield codebase
-
-    db.delete(codebase)
-    db.commit()
+    try:
+        yield codebase
+    finally:
+        db.delete(codebase)
+        db.commit()
 
 
 @pytest.fixture(scope="function")
@@ -77,9 +80,10 @@ def tag(tag_service, current_user_with_org):
     )
     tag = tag_service.create_tag(current_user_with_org, new_tag_input)
 
-    yield tag
-
-    tag_service.delete_tag(current_user_with_org, tag.id)
+    try:
+        yield tag
+    finally:
+        tag_service.delete_tag(current_user_with_org, tag.id)
 
 
 @pytest.fixture(scope="function")
@@ -105,9 +109,10 @@ def codebase_content(tag_service, current_user_with_org, workspace, codebase):
         codebase_record
     )
 
-    yield codebase_content
-
-    tag_service.content_service.content_repository.delete(codebase_content.id)
+    try:
+        yield codebase_content
+    finally:
+        tag_service.content_service.content_repository.delete(codebase_content.id)
 
 
 @pytest.fixture(scope="function")
@@ -135,9 +140,10 @@ def org_b_codebase_content(
         codebase_record
     )
 
-    yield codebase_content
-
-    tag_service.content_service.content_repository.delete(codebase_content.id)
+    try:
+        yield codebase_content
+    finally:
+        tag_service.content_service.content_repository.delete(codebase_content.id)
 
 
 @pytest.fixture(scope="function")
@@ -150,9 +156,10 @@ def content(tag_service, current_user_with_org, workspace, codebase, codebase_co
         organization_id, workspace_id, codebase_id, document_name
     )
 
-    yield content
-
-    tag_service.content_service.content_repository.delete(content.id)
+    try:
+        yield content
+    finally:
+        tag_service.content_service.content_repository.delete(content.id)
 
 
 @pytest.fixture(scope="function")
@@ -171,9 +178,10 @@ def org_b_content(
         organization_id, workspace_id, codebase_id, document_name
     )
 
-    yield content
-
-    tag_service.content_service.content_repository.delete(content.id)
+    try:
+        yield content
+    finally:
+        tag_service.content_service.content_repository.delete(content.id)
 
 
 @pytest.fixture(scope="function", autouse=True)

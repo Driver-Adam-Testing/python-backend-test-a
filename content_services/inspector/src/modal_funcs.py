@@ -17,7 +17,7 @@ function_cfg = {"secrets": [modal.Secret.from_name("open-ai")], "image": image}
 
 
 @app.function(
-    concurrency_limit=12,
+    concurrency_limit=36,
     timeout=120 * 60,
     **function_cfg,
 )
@@ -49,7 +49,7 @@ def make_tech_doc(
     return file_docs_successful, file_doc, node
 
 
-@app.function(concurrency_limit=15, timeout=60 * 60, **function_cfg)
+@app.function(concurrency_limit=50, timeout=60 * 60, **function_cfg)
 def make_symbol_docs(
     node: LiteNode,
     source_code: str,
@@ -69,7 +69,7 @@ def make_symbol_docs(
     return symbols
 
 
-@app.function(concurrency_limit=4, timeout=30 * 60, **function_cfg)
+@app.function(concurrency_limit=12, timeout=30 * 60, **function_cfg)
 def make_folder_tech_doc(
     codebase_name: str, node: LiteNode, child_nodes_to_docs: dict[LiteNode, dict]
 ) -> dict[str, any]:
@@ -117,7 +117,7 @@ def make_toplevel_tech_docs(
         codebase_name=codebase_name,
         chunk_size=CHUNK_SIZE,
         chunk_overlap=CHUNK_OVERLAP,
-        max_workers=1,
+        max_workers=20,
         include_exploratory_generation=False,
         compression_loop_max_itr=COMPRESSION_LOOP_MAX_ITR,
     )
@@ -128,7 +128,7 @@ def make_toplevel_tech_docs(
 CHUNK_SIZE = 64_000
 CHUNK_OVERLAP = 3_000
 COMPRESSION_LOOP_MAX_ITR = 10
-MAX_NUM_CHUNKS_FILE = 5
+MAX_NUM_CHUNKS_FILE = 10
 FILE_TECH_DOC_LLM_TIMEOUT = 300
 FOLDER_TECH_DOC_LLM_TIMEOUT = 300
 TOP_LEVEL_DOC_LLM_TIMEOUT = 300

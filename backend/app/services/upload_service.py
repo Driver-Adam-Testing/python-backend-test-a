@@ -42,7 +42,6 @@ class UploadService:
         try:
             org_id_hash = hashlib.sha256(organization_id.encode()).hexdigest()[:63]
             upload_key = f"codebases/{org_id_hash}/{os.path.basename(file_path)}"
-            # upload_key = self.get_file_path(codebase_id, relative_path)
 
             logger.info(f"Upload URL generated for {upload_key}")
             codebase_metadata = {
@@ -71,31 +70,28 @@ class UploadService:
     def upload_pdf(
         self, user: CurrentUser, request: UploadPDFRequest
     ) -> UploadResponse:
-        workspace_id = request.workspace_id
-        codebase_id = request.codebase_id
         file_path = request.file_path
         creator_id = user.user_id
         org_id = user.organization_id
-        logger.info(
-            f"Uploading content for orgId: {org_id}, workspaceId: {workspace_id}, ownerId: {creator_id}"
+        logger.info(f"Uploading content for orgId: {org_id}, ownerId: {creator_id}")
+
+        default_workspace = self.workspace_repository.get_default_workspace(
+            user.organization_id
         )
+        if not default_workspace:
+            raise HTTPException(status_code=400, detail="Default workspace not found")
 
-        if not codebase_id or not file_path or not workspace_id or not creator_id:
-            raise HTTPException(status_code=400, detail="Invalid Request")
-
+        workspace_id = str(default_workspace.id)
         try:
             relative_path = os.path.basename(file_path)
             org_id_hash = hashlib.sha256(org_id.encode()).hexdigest()[:63]
+            # Upload the PDF to the S3 bucket documents folder not the codebases folder
             upload_key = f"documents/{org_id_hash}/{os.path.basename(file_path)}"
-            # upload_key = self.get_file_path(
-            #     codebase_id, relative_path, prefix="/documents"
-            # )
             codebase_metadata = {
                 "organization_id": org_id_hash,
                 "org_bucket": org_id_hash,
                 "org_name": user.organization_name,
                 "workspace_id": workspace_id,
-                "codebase_id": codebase_id,
                 "creator_id": creator_id,
                 "file_path": file_path,
                 "content_type": "supplemental-document",

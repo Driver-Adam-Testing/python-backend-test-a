@@ -243,7 +243,6 @@ class TagService:
         content = self.session.exec(
             select(DerivedContent)
             .join(Workspace)
-            .join(TagContent, TagContent.content_id == DerivedContent.id)
             .where(Workspace.organization_id == organization_id)
             .where(DerivedContent.id == content_id)
         ).first()
@@ -282,17 +281,23 @@ class TagService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Tag association not found",
             )
-
-        self.session.delete(link)
-        self.session.commit()
-        logger.info(
-            f"Tag {tag_id} disassociated from content {content_id} successfully"
-        )
-        return TagAssociationResponse(
-            tag_id=tag_id,
-            content_id=content_id,
-            message="Tag disassociated successfully",
-        )
+        try:
+            self.session.delete(link)
+            self.session.commit()
+            logger.info(
+                f"Tag {tag_id} disassociated from content {content_id} successfully"
+            )
+            return TagAssociationResponse(
+                tag_id=tag_id,
+                content_id=content_id,
+                message="Tag disassociated successfully",
+            )
+        except Exception as e:
+            self.session.rollback()
+            logger.error(
+                f"Error disassociating tag {tag_id} from content {content_id}: {e}"
+            )
+            raise HTTPException(status_code=500, detail="Internal server error.")
 
     def edit_tag(self, user: CurrentUser, tag_id: str, lt_input: EditTagInput) -> Tag:
         tag = self.session.exec(
@@ -300,15 +305,26 @@ class TagService:
                 Tag.id == tag_id, Tag.organization_id == user.organization_id
             )
         ).first()
-        if tag:
+
+        if not tag:
+            logger.error(
+                f"Tag {tag_id} not found for organization {user.organization_id}"
+            )
+            raise HTTPException(status_code=404, detail="Tag not found")
+        try:
             tag_updates = lt_input.model_dump(exclude_unset=True)
             tag = self.tag_repository.update(
                 tag, Tag(**tag_updates, updated_by=user.user_id)
             )
-            logger.info(f"Tag {tag_id} updated for user {user.user_id}")
+
+            logger.info(f"Tag {tag_id} updated for organization {user.organization_id}")
             return tag
-        logger.error(f"Tag {tag_id} not found for user {user.user_id}")
-        raise HTTPException(status_code=404, detail="Tag not found")
+        except Exception as e:
+            self.session.rollback()  # Rollback the session on failure
+            logger.error(
+                f"Error updating tag {tag_id} for organization {user.organization_id}: {e}"
+            )
+            raise HTTPException(status_code=500, detail="Internal server error")
 
     def list_tags(self, user: CurrentUser, lt_input: ListTagsInput) -> ListTagsResults:
         logger.info(f"Listing tags for user {user.user_id} with input {lt_input}")

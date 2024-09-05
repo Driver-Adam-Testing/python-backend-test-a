@@ -6,6 +6,8 @@ from pydantic import BaseModel, field_validator
 class UploadRequestBase(BaseModel):
     file_path: str
 
+
+class UploadCodebaseRequest(UploadRequestBase):
     @field_validator("file_path")
     def must_be_zip(cls, v: Any) -> Any:
         if not v.lower().endswith(".zip"):
@@ -13,12 +15,12 @@ class UploadRequestBase(BaseModel):
         return v
 
 
-class UploadCodebaseRequest(UploadRequestBase):
-    pass
-
-
 class UploadPDFRequest(UploadRequestBase):
-    pass
+    @field_validator("file_path")
+    def must_be_zip(cls, v: Any) -> Any:
+        if not v.lower().endswith(".pdf"):
+            raise ValueError("file_path must be a pdf file")
+        return v
 
 
 class UploadResponse(BaseModel):

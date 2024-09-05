@@ -3,20 +3,20 @@ from typing import Annotated
 from uuid import UUID
 
 from database.models_v1 import Tag
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy.exc import IntegrityError
 
 from app.api.auth import CurrentUser
 from app.api.session import CurrentSession
 from app.schemas.content_schema import ListContentInput, TagAssociationResponse
 from app.schemas.tag_schema import (
+    CollectionSourceInput,
     EditTagInput,
     ListTagContentsResults,
     ListTagsInput,
     ListTagsResults,
     NewTagInput,
     TagType,
-    CollectionSourceInput
 )
 from app.services.tag_service import TagService
 
@@ -34,7 +34,6 @@ def new_tag(
     logging.info("Creating new tag")
     tag_service = TagService(session)
     return tag_service.create_tag(user=user, lt_input=new_tag)
-
 
 
 @router.get("/")
@@ -109,10 +108,7 @@ def associate_tag_with_content(
 ) -> TagAssociationResponse:
     tag_service = TagService(session)
     return tag_service.associate_tag(
-        user.organization_id,
-        UUID(content_id),
-        UUID(tag_id),
-        input.include
+        user.organization_id, UUID(content_id), UUID(tag_id), input.include
     )
 
 
@@ -128,7 +124,20 @@ def disassociate_tag_with_content(
 ) -> TagAssociationResponse:
     tag_service = TagService(session)
     return tag_service.disassociate_tag(
-        user.organization_id,
-        UUID(content_id),
-        UUID(tag_id)
+        user.organization_id, UUID(content_id), UUID(tag_id)
     )
+
+
+@router.delete("/{tag_id}", status_code=204)
+def delete_tag(
+    session: CurrentSession,
+    user: CurrentUser,
+    tag_id: UUID,
+):
+    """Delete a tag by its ID."""
+    tag_service = TagService(session)
+    try:
+        tag_service.delete_tag(user=user, tag_id=tag_id)
+        return  # No content should be returned for 204 status code
+    except IntegrityError as e:
+        raise HTTPException(status_code=400, detail=str(e))

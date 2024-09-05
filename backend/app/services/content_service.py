@@ -1,5 +1,4 @@
 import json
-from collections.abc import Callable
 from datetime import datetime
 from uuid import UUID
 
@@ -15,7 +14,7 @@ from database.models_v1 import (
     Workspace,
 )
 from fastapi import HTTPException, status
-from sqlalchemy.exc import IntegrityError, NoResultFound
+from sqlalchemy.exc import NoResultFound
 from sqlmodel import Session, asc, desc, func, or_, select, text
 
 from app.core.logger import logger
@@ -36,7 +35,6 @@ from app.schemas.content_schema import (
     ListContentResults,
     ListContentTypesInput,
     ListContentTypesResults,
-    TagAssociationResponse,
 )
 from app.utils.authorization_chain import perform_authorization_checks
 
@@ -72,173 +70,8 @@ class ContentService:
         self.session = session
         self.content_repository = BaseRepository(session, DerivedContent)
         self.workspace_repository = WorkspaceRepository(session)
-        self.tag_repository = BaseRepository(session, Tag)
         self.derived_content_type_repository = DerivedContentTypeRepository(session)
         self.document_source_repository = BaseRepository(session, DocumentSource)
-
-    def perform_authorization_checks(self, checks: list[Callable[[Session], bool]]):
-        perform_authorization_checks(self.session, checks)
-
-    def associate_tag(
-        self,
-        organization_id: str,
-        content_id: UUID,
-        tag_id: UUID,
-        include_tag: bool = True,
-    ) -> TagAssociationResponse:
-        logger.info(
-            f"Associating tag {tag_id} with content {content_id} for organization {organization_id}"
-        )
-
-        checks = [
-            lambda session: self.content_repository.is_authorized(
-                id=content_id,
-                relationship_chain=["workspace"],
-                field_name="organization_id",
-                field_value=organization_id,
-            ),
-            lambda session: self.tag_repository.is_authorized(
-                id=tag_id, field_name="organization_id", field_value=organization_id
-            ),
-        ]
-
-        self.perform_authorization_checks(checks)
-
-        content = self.content_repository.get_by_conditions(
-            [
-                organization_id == Workspace.organization_id,
-                DerivedContent.id == content_id,
-            ],
-            [Workspace],
-        )
-
-        if not content:
-            logger.error(
-                f"Content {content_id} not found for organization {organization_id}"
-            )
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Content not found.",
-            )
-
-        tag = self.tag_repository.get_by_conditions(
-            [Tag.id == tag_id, Tag.organization_id == organization_id]
-        )
-
-        if not tag:
-            logger.error(f"Tag {tag_id} not found for organization {organization_id}")
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Tag not found.",
-            )
-
-        if tag.type == "collection":
-            if (
-                content.content_type.type_name
-                not in DerivedContentTypeRepository.valid_collection_type_names()
-            ):
-                logger.error(
-                    f"Invalid content type for collection tag {tag_id} and content {content_id}"
-                )
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Collections can only be associated with codebases, directories, files or pdfs.",
-                )
-
-        include_tag = (
-            include_tag
-            if include_tag is not None and tag.type == "collection"
-            else True
-        )
-
-        content.tag_links.append(
-            TagContent(tag_id=tag.id, content_id=content.id, include=include_tag)
-        )
-
-        try:
-            self.session.commit()
-            logger.info(
-                f"Tag {tag_id} associated with content {content_id} successfully"
-            )
-        except IntegrityError:
-            self.session.rollback()
-            logger.error(
-                f"Integrity error while associating tag {tag_id} with content {content_id}"
-            )
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Tag association already exists",
-            )
-
-        return TagAssociationResponse(
-            tag_id=tag_id,
-            content_id=content_id,
-            message=f"{tag.type} associated successfully",
-        )
-
-    def associate_collection_with_content(
-        self, organization_id: str, content_id: UUID, tag_id: UUID
-    ) -> TagAssociationResponse:
-        logger.info(
-            f"Associating collection tag {tag_id} with content {content_id} for organization {organization_id}"
-        )
-
-        checks = [
-            lambda session: self.content_repository.is_authorized(
-                id=content_id,
-                relationship_chain=["workspace"],
-                field_name="organization_id",
-                field_value=organization_id,
-            ),
-            lambda session: self.tag_repository.is_authorized(
-                id=tag_id, field_name="organization_id", field_value=organization_id
-            ),
-        ]
-
-        self.perform_authorization_checks(checks)
-
-        document = self.content_repository.get(content_id)
-
-        if not document or document.workspace.organization_id != organization_id:
-            logger.error(
-                f"Content {content_id} not found for organization {organization_id}"
-            )
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
-            )
-
-        tag_contents = self.session.exec(
-            select(TagContent).where(TagContent.tag_id == tag_id)
-        ).all()
-
-        sources = [
-            DocumentSource(
-                document_id=content_id,
-                source_id=tag_content.content_id,
-                include=tag_content.include,
-            )
-            for tag_content in tag_contents
-        ]
-
-        for source in sources:
-            self.session.merge(source)
-
-        try:
-            self.session.commit()
-            logger.info(
-                f"Collection tag {tag_id} associated with content {content_id} successfully"
-            )
-        except IntegrityError:
-            self.session.rollback()
-            logger.error(
-                f"Integrity error while associating collection tag {tag_id} with content {content_id}"
-            )
-
-        return TagAssociationResponse(
-            tag_id=tag_id,
-            content_id=content_id,
-            message="Collection associated successfully",
-        )
 
     def associate_sources_with_content(
         self,
@@ -259,7 +92,7 @@ class ContentService:
             )
         ]
 
-        self.perform_authorization_checks(checks)
+        perform_authorization_checks(self.session, checks)
 
         document = self.content_repository.get(content_id)
 
@@ -331,7 +164,7 @@ class ContentService:
             )
         ]
 
-        self.perform_authorization_checks(checks)
+        perform_authorization_checks(self.session, checks)
 
         document = self.content_repository.get(content_id)
 
@@ -361,82 +194,6 @@ class ContentService:
             message="Source content associated successfully",
         )
 
-    def disassociate_tag(
-        self, organization_id: str, content_id: UUID, tag_id: UUID
-    ) -> TagAssociationResponse:
-        logger.info(
-            f"Disassociating tag {tag_id} from content {content_id} for organization {organization_id}"
-        )
-
-        checks = [
-            lambda session: self.content_repository.is_authorized(
-                id=content_id,
-                relationship_chain=["workspace"],
-                field_name="organization_id",
-                field_value=organization_id,
-            ),
-            lambda session: self.tag_repository.is_authorized(
-                id=tag_id, field_name="organization_id", field_value=organization_id
-            ),
-        ]
-
-        self.perform_authorization_checks(checks)
-
-        content = self.session.exec(
-            select(DerivedContent)
-            .join(Workspace)
-            .join(DerivedContent.tags)
-            .where(organization_id == Workspace.organization_id)
-            .where(DerivedContent.id == content_id)
-        ).first()
-
-        if not content:
-            logger.error(
-                f"Content {content_id} not found for organization {organization_id}"
-            )
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
-            )
-
-        tag = self.session.exec(
-            select(Tag)
-            .where(Tag.id == tag_id)
-            .where(organization_id == Tag.organization_id)
-        ).first()
-
-        if not tag:
-            logger.error(f"Tag {tag_id} not found for organization {organization_id}")
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Tag not found"
-            )
-
-        link = self.session.exec(
-            select(TagContent)
-            .where(TagContent.tag_id == tag_id)
-            .where(TagContent.content_id == content_id)
-        ).first()
-
-        if link is None:
-            logger.error(
-                f"Tag association not found for tag {tag_id} and content {content_id}"
-            )
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Tag association not found",
-            )
-
-        if link:
-            self.session.delete(link)
-            self.session.commit()
-            logger.info(
-                f"Tag {tag_id} disassociated from content {content_id} successfully"
-            )
-            return TagAssociationResponse(
-                tag_id=tag_id,
-                content_id=content_id,
-                message="Tag disassociated successfully",
-            )
-
     def disassociate_document_source(
         self, organization_id: str, content_id: UUID, source_content_id: UUID
     ) -> DeleteDocumentSourceResponse:
@@ -453,7 +210,7 @@ class ContentService:
             )
         ]
 
-        self.perform_authorization_checks(checks)
+        perform_authorization_checks(self.session, checks)
 
         content = self.content_repository.get(content_id)
         if not content:
@@ -502,7 +259,7 @@ class ContentService:
             )
         ]
 
-        self.perform_authorization_checks(checks)
+        perform_authorization_checks(self.session, checks)
 
         workspace_exists = self.workspace_repository.exists(
             workspace_id, organization_id
@@ -619,7 +376,7 @@ class ContentService:
             )
         ]
 
-        self.perform_authorization_checks(checks)
+        perform_authorization_checks(self.session, checks)
         # TODO: add template content type
         template_content_type = self.derived_content_type_repository.get_by_type_name(
             "template"
@@ -759,8 +516,7 @@ class ContentService:
             .where(organization_id == Workspace.organization_id)
         )
         count_statement = (
-            select(func.count())
-            .select_from(DerivedContent)
+            select(func.count(DerivedContent.id))
             .join(DerivedContentType)
             .join(Workspace)
             .join(TagContent, isouter=True)
@@ -879,7 +635,7 @@ class ContentService:
             )
         ]
 
-        self.perform_authorization_checks(checks)
+        perform_authorization_checks(self.session, checks)
 
         content = self.content_repository.get(content_id)
         if not content:
@@ -946,7 +702,7 @@ class ContentService:
             )
         ]
 
-        self.perform_authorization_checks(checks)
+        perform_authorization_checks(self.session, checks)
 
         return content
 
@@ -971,7 +727,7 @@ class ContentService:
             )
         ]
 
-        self.perform_authorization_checks(checks)
+        perform_authorization_checks(self.session, checks)
 
         parent = self.session.exec(
             select(DerivedContent)
@@ -994,7 +750,7 @@ class ContentService:
             )
         ]
 
-        self.perform_authorization_checks(checks)
+        perform_authorization_checks(self.session, checks)
 
         template_content_type = self.derived_content_type_repository.get_by_type_name(
             "template"

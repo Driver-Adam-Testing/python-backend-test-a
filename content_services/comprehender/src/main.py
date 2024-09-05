@@ -116,21 +116,6 @@ def upload_auxiliary_doc(workspace_id: str, codebase_id: str, url: str) -> str:
     )
 
 
-@app.function(
-    timeout=3600 * 16,  # 16 hours
-    **comprehender_modal_config,
-)
-def create_embeddings(workspace_id: str, codebase_id: str):
-    embed_content_for_codebase = modal.Function.lookup(
-        "embedding", "embed_content_for_codebase"
-    )
-
-    print(
-        f"Loading tech docs into vector db for workspace `{workspace_id}` and codebase `{codebase_id}`."
-    )
-    embed_content_for_codebase.remote(codebase_id, workspace_id)
-
-
 ### TODO: This is the wrong place in general for db operations.
 ### When we migrate comprehender, look into changing this.
 class ContentStatus:

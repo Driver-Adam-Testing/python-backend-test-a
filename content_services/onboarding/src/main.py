@@ -217,10 +217,6 @@ def onboard_and_inspect(
         print("Inspection ID: ", run_id)
         inspect_db.remote(codebase_id, run_id)
         print("Inspection complete")
-        print("Making embeddings using the 'old' tables")
-        create_embeddings = modal.Function.lookup("comprehender", "create_embeddings")
-        create_embeddings.remote(str(workspace_id), str(codebase_id))
-        print("Embeddings created")
 
         # Update codebase status to processing-complete
         with Session(engine) as session:

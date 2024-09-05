@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     POSTGRES_USER: str | None = None
     POSTGRES_PASSWORD: str | None = None
     POSTGRES_DB: str = ""
-    ENVIRONMENT: Literal["local", "development", "production"] = "local"
+    ENVIRONMENT: Literal["local", "development", "staging", "production"] = "local"
     SSL_MODE: str = "" if ENVIRONMENT == "local" else "sslmode=require"
 
     # NOTE: if DATABASE_URL is set, it overrides the other postgres params

@@ -35,7 +35,7 @@ aws-cdk-lib = "^2.144.0"
 constructs = "^10.3.0"
 openai = "^1.35.12"
 tiktoken = "^0.7.0"
-modal = "^0.63.92"
+modal = "^0.64.61"
 
 
 [tool.poetry.group.dev.dependencies]

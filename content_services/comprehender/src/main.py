@@ -3,6 +3,7 @@ This file exposes the modal (https://www.modal.com) interface for the comprehend
 """
 
 import json
+import os
 import traceback
 from datetime import datetime
 
@@ -33,10 +34,12 @@ comprehender_modal_config = {
         modal.Secret.from_name("open-ai"),
         modal.Secret.from_name("db"),
     ],
-    "proxy": modal.Proxy.from_name("pg-proxy"),
     "concurrency_limit": 5,
     "region": "us-east",
 }
+
+if os.environ["MODAL_ENVIRONMENT"] != "staging":
+    comprehender_modal_config["proxy"] = modal.Proxy.from_name("pg-proxy")
 
 
 @app.function(timeout=3600, **comprehender_modal_config, keep_warm=1)

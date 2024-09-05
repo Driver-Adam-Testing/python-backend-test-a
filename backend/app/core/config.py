@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     # 60 minutes * 24 hours * 8 days = 8 days
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
     DOMAIN: str = "localhost"
-    ENVIRONMENT: Literal["local", "development", "production"] = "local"
+    ENVIRONMENT: Literal["local", "development", "staging", "production"] = "local"
     AUTH0_DOMAIN: str | None = None
     AUTH0_CLIENT_ID: str | None = None
     AUTH0_AUDIENCE: str | None = None
@@ -42,6 +42,8 @@ class Settings(BaseSettings):
     AWS_REGION: str | None = None
     AWS_S3_ENDPOINT_URL: str | None = None
     AWS_S3_CODE_BUCKET_SUFFIX: str | None = None
+    DROPZONE_BUCKET_NAME: str | None = None
+    USE_LEGACY_DROPZONE: bool | None = True
 
     PORT: int | None = None
     HOST: str | None = None

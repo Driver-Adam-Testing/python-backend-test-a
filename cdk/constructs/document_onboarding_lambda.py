@@ -15,13 +15,25 @@ class DocumentOnboardingLambdaParams:
     environment: str
     api_url: str
     auth0_url: str
+    use_legacy_dropzone: bool
     dropzone_bucket: aws_s3.Bucket
+    s3_endpoint_url: str | None
 
-    def __init__(self, environment, api_url, auth0_url, dropzone_bucket):
+    def __init__(
+        self,
+        environment,
+        api_url,
+        auth0_url,
+        use_legacy_dropzone,
+        dropzone_bucket,
+        s3_endpoint_url,
+    ):
         self.environment = environment
         self.api_url = api_url
         self.auth0_url = auth0_url
+        self.use_legacy_dropzone = use_legacy_dropzone
         self.dropzone_bucket = dropzone_bucket
+        self.s3_endpoint_url = s3_endpoint_url
 
 
 class DocumentOnboardingLambda(Construct):
@@ -47,6 +59,11 @@ class DocumentOnboardingLambda(Construct):
                 "API_URL": params.api_url,
                 "AUTH0_URL": params.auth0_url,
                 "AWS_S3_CODE_BUCKET_SUFFIX": "codebase-dropzone",
+                "AWS_S3_ENDPOINT_URL": params.s3_endpoint_url,
+                "DROPZONE_BUCKET_NAME": params.dropzone_bucket.bucket_name,
+                "USE_LEGACY_DROPZONE": "True"
+                if params.use_legacy_dropzone
+                else "False",
             },
             bundling=aws_lambda_python_alpha.BundlingOptions(
                 asset_excludes=[".venv", ".env", "tests/", ".pytest*"]

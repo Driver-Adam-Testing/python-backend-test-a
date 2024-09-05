@@ -186,11 +186,12 @@ def symbol_single_paragraph_from_code_and_file_description(
             f"Input context size {input_tokens} exceeds all available model limits"
         )
 
-    # Assume token counts for 3.5 turbo and 4 turbo are the same (True today)
     input_tokens = num_tokens_from_messages_open_ai(
         [system_prompt, human_prompt], "gpt-4o-mini"
     )
 
+    # We maintain the model selection here to cover the edge case of a symbol being
+    # too large for the selected model. Potential for further use with open source models
     selected_model_name = select_model(input_tokens)
     print(f"Selected model for symbol `{symbol_name}`: {selected_model_name}")
 

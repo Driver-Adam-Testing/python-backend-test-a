@@ -27,7 +27,7 @@ pdf_preprocessing_modal_config = {
         modal.Secret.from_name("aws-inspector-s3"),
     ],
     "proxy": modal.Proxy.from_name("pg-proxy")
-    if os.getenv("MODAL_ENVIRONMENT") != "staging"
+    if os.environ["MODAL_ENVIRONMENT"] != "staging"
     else None,
     "concurrency_limit": 5,
     "region": "us-east",

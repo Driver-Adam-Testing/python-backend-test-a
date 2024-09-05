@@ -38,7 +38,7 @@ comprehender_modal_config = {
     "region": "us-east",
 }
 
-if os.getenv("MODAL_ENVIRONMENT") != "staging":
+if os.environ["MODAL_ENVIRONMENT"] != "staging":
     comprehender_modal_config["proxy"] = modal.Proxy.from_name("pg-proxy")
 
 

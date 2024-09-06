@@ -112,23 +112,57 @@ def escape_pdf_name_sns_event():
 
 def test_document_upload_lambda_handler(sns_event):
     # Assuming the environment and AWS resources are mocked appropriately
-    # print("YYYY")
     response = handler(sns_event, {})
-    assert response == "OK", "Handler response should be 'OK'"
+    assert isinstance(response, list), "Handler response should be a list"
+    assert len(response) > 0, "Handler response list should not be empty"
+    for result in response:
+        assert (
+            "source_content_id" in result
+        ), "Result should contain 'source_content_id'"
+        assert "bucket" in result, "Result should contain 'bucket'"
+        assert "key" in result, "Result should contain 'key'"
+        assert (
+            "pdf_summary_response" in result
+        ), "Result should contain 'pdf_summary_response'"
+        assert (
+            result["pdf_summary_response"] == "OK"
+        ), "PDF summary response should be 'OK'"
 
 
-# TODO: Mock this
 def test_real_document_upload_lambda_handler(real_sns_event):
-    # Assuming the environment and AWS resources are mocked appropriately
     response = handler(real_sns_event, {})
-    assert response == "OK", "Handler response should be 'OK'"
+    assert isinstance(response, list), "Handler response should be a list"
+    assert len(response) > 0, "Handler response list should not be empty"
+    for result in response:
+        assert (
+            "source_content_id" in result
+        ), "Result should contain 'source_content_id'"
+        assert "bucket" in result, "Result should contain 'bucket'"
+        assert "key" in result, "Result should contain 'key'"
+        assert (
+            "pdf_summary_response" in result
+        ), "Result should contain 'pdf_summary_response'"
+        assert (
+            result["pdf_summary_response"] == "OK"
+        ), "PDF summary response should be 'OK'"
 
 
-# TODO: Mock this
 def test_escape_pdf_name_document_upload_lambda_handler(escape_pdf_name_sns_event):
-    # Assuming the environment and AWS resources are mocked appropriately
     response = handler(escape_pdf_name_sns_event, {})
-    assert response == "OK", "Handler response should be 'OK'"
+    assert isinstance(response, list), "Handler response should be a list"
+    assert len(response) > 0, "Handler response list should not be empty"
+    for result in response:
+        assert (
+            "source_content_id" in result
+        ), "Result should contain 'source_content_id'"
+        assert "bucket" in result, "Result should contain 'bucket'"
+        assert "key" in result, "Result should contain 'key'"
+        assert (
+            "pdf_summary_response" in result
+        ), "Result should contain 'pdf_summary_response'"
+        assert (
+            result["pdf_summary_response"] == "OK"
+        ), "PDF summary response should be 'OK'"
 
 
 if __name__ == "__main__":

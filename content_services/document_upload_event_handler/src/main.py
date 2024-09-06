@@ -15,6 +15,7 @@ from src.utils.config import settings
 # # https://stackoverflow.com/questions/60455830/can-you-have-an-async-handler-in-lambda-python-3-6
 def handler(event, context):
     logging.info(event)
+    results = []
 
     # Parse the SNS message
     for record in event["Records"]:
@@ -98,12 +99,22 @@ def handler(event, context):
                         f"Triggering pdf summary generation for bucket = {destination_bucket_name}, key = {destination_real_object_key}"
                     )
 
-                    return exec_generate_pdf_summaries(
+                    pdf_summary_response = exec_generate_pdf_summaries(
                         {
                             "source_content_id": source_content_id,
                         },
                         token_json["access_token"],
                     )
+                    results.append(
+                        {
+                            "source_content_id": source_content_id,
+                            "bucket": destination_bucket_name,
+                            "key": destination_real_object_key,
+                            "pdf_summary_response": pdf_summary_response,
+                        }
+                    )
+
+    return results
 
 
 def exec_generate_pdf_summaries(event, token):

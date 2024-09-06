@@ -88,7 +88,7 @@ class UploadService:
             # Upload the PDF to the S3 bucket documents folder not the codebases folder
             upload_key = f"documents/{org_id_hash}/{os.path.basename(file_path)}"
             codebase_metadata = {
-                "organization_id": org_id_hash,
+                "organization_id": org_id,
                 "org_bucket": org_id_hash,
                 "org_name": user.organization_name,
                 "workspace_id": workspace_id,

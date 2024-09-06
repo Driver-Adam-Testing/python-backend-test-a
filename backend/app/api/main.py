@@ -6,6 +6,7 @@ from app.api.routes.v1 import (
     git_provider,
     healthcheck,
     instructions,
+    internal,
     onboarding,
     search,
     tags,
@@ -29,6 +30,7 @@ api_router.include_router(tags.router, prefix="/tags", tags=["tags"])
 api_router.include_router(
     instructions.router, prefix="/instructions", tags=["instructions"]
 )
+api_router.include_router(internal.router, prefix="/internal", tags=["internal"])
 api_router.include_router(upload.router, prefix="/upload", tags=["upload"])
 
 if settings.ENVIRONMENT != "production":

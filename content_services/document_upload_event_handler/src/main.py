@@ -56,70 +56,74 @@ def handler(event, context):
             token_response.raise_for_status()
             token_json = token_response.json()
 
-            logging.info("Processing S3 event(s)...")
-            # Extract information from the S3 event
-            for s3_record in sns_message["Records"]:
-                bucket_name = s3_record["s3"]["bucket"]["name"]
-                object_key = s3_record["s3"]["object"]["key"]
-                real_object_key = unquote_plus(
-                    object_key
-                )  # Decode URL-encoded object key
+        logging.info("Processing S3 event(s)...")
+        # Extract information from the S3 event
+        for s3_record in sns_message["Records"]:
+            bucket_name = s3_record["s3"]["bucket"]["name"]
+            object_key = s3_record["s3"]["object"]["key"]
+            real_object_key = unquote_plus(object_key)  # Decode URL-encoded object key
 
-                logging.info("key = " + real_object_key)
-                logging.info("bucket = " + bucket_name)
-                metadata = head_object(bucket=bucket_name, key=real_object_key)
-                # Check if the destination bucket exists, and create it if it doesn't
-                bucket_exists = ensure_bucket_exists(
-                    metadata["Metadata"]["org_bucket"], region="us-east-1"
+            logging.info("key = " + real_object_key)
+            logging.info("bucket = " + bucket_name)
+            metadata = head_object(bucket=bucket_name, key=real_object_key)
+            # Check if the destination bucket exists, and create it if it doesn't
+            bucket_exists = ensure_bucket_exists(
+                metadata["Metadata"]["org_bucket"], region="us-east-1"
+            )
+            org_id = metadata["Metadata"]["organization_id"]
+            if fetch_existing_pdf_by_workspace_and_relative_path(
+                os.path.basename(real_object_key), org_id, token_json["access_token"]
+            ):
+                logging.error("PDF already exists in workspace. Skipping...")
+                continue
+
+            if bucket_exists:
+                logging.info("Copying to organization bucket...")
+                destination_bucket_name = metadata["Metadata"]["org_bucket"]
+                real_file_name = os.path.basename(real_object_key)
+                destination_real_object_key = f"documents/{real_file_name}"
+                copy_s3_object(
+                    source_bucket=bucket_name,
+                    source_key=real_object_key,
+                    dest_bucket=destination_bucket_name,
+                    dest_key=destination_real_object_key,
                 )
-                if bucket_exists:
-                    logging.info("Copying to organization bucket...")
-                    destination_bucket_name = metadata["Metadata"]["org_bucket"]
-                    real_file_name = os.path.basename(real_object_key)
-                    destination_real_object_key = f"documents/{real_file_name}"
-                    copy_s3_object(
-                        source_bucket=bucket_name,
-                        source_key=real_object_key,
-                        dest_bucket=destination_bucket_name,
-                        dest_key=destination_real_object_key,
-                    )
 
-                    logging.info("Creating source content...")
-                    # I changed relative path from documents/filename to just filename
-                    # TODO: right now duplicate records can be created. We need to check if the pdf exists already exists
-                    create_src_content_response = exec_create_source_content(
-                        source_content_type="supplemental-document",
-                        relative_path=os.path.basename(destination_real_object_key),
-                        workspace_id=metadata["Metadata"]["workspace_id"],
-                        token=token_json["access_token"],
-                    )
-                    source_content_id = create_src_content_response["data"][
-                        "createSourceContent"
-                    ]
-                    logging.info(f"Source content created with ID:{ source_content_id}")
-                    logging.info(
-                        f"Triggering pdf summary generation for bucket = {destination_bucket_name}, key = {destination_real_object_key}"
-                    )
+                logging.info("Creating source content...")
+                # I changed relative path from documents/filename to just filename
+                create_src_content_response = exec_create_source_content(
+                    source_content_type="supplemental-document",
+                    relative_path=os.path.basename(destination_real_object_key),
+                    workspace_id=metadata["Metadata"]["workspace_id"],
+                    token=token_json["access_token"],
+                )
+                source_content_id = create_src_content_response["data"][
+                    "createSourceContent"
+                ]
+                logging.info(f"Source content created with ID:{ source_content_id}")
+                logging.info(
+                    f"Triggering pdf summary generation for bucket = {destination_bucket_name}, key = {destination_real_object_key}"
+                )
 
-                    pdf_summary_response = exec_generate_pdf_summaries(
-                        {
-                            "source_content_id": source_content_id,
-                        },
-                        token_json["access_token"],
-                    )
-                    results.append(
-                        {
-                            "source_content_id": source_content_id,
-                            "bucket": destination_bucket_name,
-                            "key": destination_real_object_key,
-                            "pdf_summary_response": pdf_summary_response,
-                        }
-                    )
+                pdf_summary_response = exec_generate_pdf_summaries(
+                    {
+                        "source_content_id": source_content_id,
+                    },
+                    token_json["access_token"],
+                )
+                results.append(
+                    {
+                        "source_content_id": source_content_id,
+                        "bucket": destination_bucket_name,
+                        "key": destination_real_object_key,
+                        "pdf_summary_response": pdf_summary_response,
+                    }
+                )
 
     return results
 
 
-def exec_generate_pdf_summaries(event, token):
+def exec_generate_pdf_summaries(event: dict, token: str):
     with httpx.Client(base_url=settings.API_URL, follow_redirects=True) as driverClient:
         payload = {**event}
         headers = {
@@ -130,14 +134,33 @@ def exec_generate_pdf_summaries(event, token):
         response = driverClient.post(
             "/onboarding/generate-pdf-summaries", headers=headers, json=payload
         )
-        response.raise_for_status()  # Raises an exception for 4XX/5XX responses
+        response.raise_for_status()
         event_response = response.json()
         logging.info(event_response)
-        # Make sure event was received successfully
+
         return "OK"
 
 
-# Codebase ID is also included as an optional input. It seems like we want to move away from using that?
+def fetch_existing_pdf_by_workspace_and_relative_path(
+    relative_path: str, target_organization_id: str, token: str
+):
+    with httpx.Client(base_url=settings.API_URL, follow_redirects=True) as driverClient:
+        headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {token}",
+        }
+        response = driverClient.get(
+            f"/internal/{target_organization_id}/content?text={relative_path}&content_type_name=supplemental-document&limit=1&sort_direction=DESC",
+            headers=headers,
+        )
+        response.raise_for_status()
+        event_response = response.json()
+        logging.info(event_response)
+
+        return len(event_response["results"]) > 0
+
+
 def exec_create_source_content(
     relative_path: str, source_content_type: str, workspace_id: str, token: str
 ):

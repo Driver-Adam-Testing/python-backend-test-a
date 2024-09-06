@@ -1,5 +1,6 @@
 import json
 from datetime import datetime
+from urllib.parse import quote
 from uuid import UUID
 
 from database.derived_content_types import DerivedContentTypeNames
@@ -542,11 +543,14 @@ class ContentService:
                 )
 
         if search_input.text:
+            encoded_text = quote(search_input.text)
+            encoded_text = encoded_text.replace("%20", "+")
+
             statement = statement.where(
-                DerivedContent.relative_path.contains(search_input.text)
+                DerivedContent.relative_path.contains(encoded_text)
             )
             count_statement = count_statement.where(
-                DerivedContent.relative_path.contains(search_input.text)
+                DerivedContent.relative_path.contains(encoded_text)
             )
 
         if search_input.status:

@@ -30,6 +30,7 @@ symbols_sem = asyncio.Semaphore(55)
 tech_docs_sem = asyncio.Semaphore(40)
 folder_tech_docs_sem = asyncio.Semaphore(20)
 database_sem = asyncio.Semaphore(5)
+embed_sem = asyncio.Semaphore(10)
 
 
 class FolderTechDocTask(Task):
@@ -658,7 +659,8 @@ class EmbeddingTask(Task):
                     continue
 
             split_documents = split_text(content)
-            embeds = await async_batch_embed_text([d.text for d in split_documents])
+            async with embed_sem:
+                embeds = await async_batch_embed_text([d.text for d in split_documents])
             chunks.extend(
                 [
                     ChunkAndEmbedding(

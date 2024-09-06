@@ -4,7 +4,7 @@ from typing import Self
 
 import openai
 from openai import OpenAI
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from .decorators import retry_with_exponential_backoff
 
@@ -54,6 +54,7 @@ class ChatOpenAI:
             openai.InternalServerError,
             openai.APIConnectionError,
             openai.NotFoundError,
+            ValidationError,
         ),
     )
     def generate_response(

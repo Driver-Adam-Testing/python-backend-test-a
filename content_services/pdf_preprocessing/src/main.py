@@ -43,7 +43,10 @@ def create_and_embed_pdf_summaries(content_id) -> None:
     from database.models_v1 import ChunkAndEmbedding, DerivedContent, DerivedContentType
     from shared.chunking.text_splitter import split_text
     from shared.embedding.text_embedder import batch_embed_text
-    from shared.file_storage.s3 import get_presigned_url_from_content_information
+    from shared.file_storage.s3 import (
+        get_presigned_url_from_content_information,
+        get_presigned_url_without_codebase,
+    )
     from shared.pipelines.process_file.process_file_pdf import run_process_pdf
     from sqlalchemy.orm import selectinload
     from sqlmodel import Session, select
@@ -59,11 +62,18 @@ def create_and_embed_pdf_summaries(content_id) -> None:
             raise Exception("Wrong content_id value")
         content: DerivedContent = content_results[0]
 
-        presigned_url = get_presigned_url_from_content_information(
-            codebase_id=content.codebase_id,
-            organization_id=content.workspace.organization_id,
-            relative_path=content.relative_path,
-        )
+        if content.codebase_id is None:
+            # this document is not associated with a codebase
+            presigned_url = get_presigned_url_without_codebase(
+                organization_id=content.workspace.organization_id,
+                relative_path=content.relative_path,
+            )
+        else:
+            presigned_url = get_presigned_url_from_content_information(
+                codebase_id=content.codebase_id,
+                organization_id=content.workspace.organization_id,
+                relative_path=content.relative_path,
+            )
 
     response = requests.get(presigned_url)
     response.raise_for_status()

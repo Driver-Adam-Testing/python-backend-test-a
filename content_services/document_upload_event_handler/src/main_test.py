@@ -97,7 +97,7 @@ def escape_pdf_name_sns_event():
                     "MessageId": "9331655e-f7c3-5dab-9c8f-3a0a98b3dd43",
                     "TopicArn": "arn:aws:sns:us-east-1:550082761109:CdkInfraStackCodebaseOnboardingLambdaStackE7027C30-TopicBFC7AF6E-T41t4VpPQduq",
                     "Subject": "Amazon S3 Notification",
-                    "Message": '{"Records":[{"eventVersion":"2.1","eventSource":"aws:s3","awsRegion":"us-east-1","eventTime":"2024-09-06T02:47:11.318Z","eventName":"ObjectCreated:Put","userIdentity":{"principalId":"AWS:AIDAYAE342GKYWJN6UVW7"},"requestParameters":{"sourceIPAddress":"70.123.26.135"},"responseElements":{"x-amz-request-id":"Z7JKDEV4R8N887D2","x-amz-id-2":"PqJN412Cs48OLqbO1gQQkaTm/+w/+JYnZHISY69OV2RfHjOC65XSX/lymg10utikoZ7geBlBPSSU+ToD6QLn2TqmAMQ3z/VI"},"s3":{"s3SchemaVersion":"1.0","configurationId":"file-drop","bucket":{"name":"development-codebase-dropzone","ownerIdentity":{"principalId":"A3AP0FXFCX5FDS"},"arn":"arn:aws:s3:::development-codebase-dropzone"},"object":{"key":"documents/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/pyadi-iio_%2BDevice%2BSpecific%2BPython%2BInterfaces%2BFor%2BIIO%2BDrivers%2B%255BAnalog%2BDevices%2BWiki%255D.pdf","size":262311,"eTag":"cc6c72ee1fdc77e02404fce331790ae6","versionId":".AndLC5Du_ggCvc1tyD5AwJIdOtgij7A","sequencer":"0066DA6D2F40E8B061"}}}]}',
+                    "Message": '{"Records":[{"eventVersion":"2.1","eventSource":"aws:s3","awsRegion":"us-east-1","eventTime":"2024-09-06T02:47:11.318Z","eventName":"ObjectCreated:Put","userIdentity":{"principalId":"AWS:AIDAYAE342GKYWJN6UVW7"},"requestParameters":{"sourceIPAddress":"70.123.26.135"},"responseElements":{"x-amz-request-id":"Z7JKDEV4R8N887D2","x-amz-id-2":"PqJN412Cs48OLqbO1gQQkaTm/+w/+JYnZHISY69OV2RfHjOC65XSX/lymg10utikoZ7geBlBPSSU+ToD6QLn2TqmAMQ3z/VI"},"s3":{"s3SchemaVersion":"1.0","configurationId":"file-drop","bucket":{"name":"development-codebase-dropzone","ownerIdentity":{"principalId":"A3AP0FXFCX5FDS"},"arn":"arn:aws:s3:::development-codebase-dropzone"},"object":{"key":"documents/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/pyadi-iio%2BDevice%2BSpecific%2BPython%2BInterfaces%2BFor%2BIIO%2BDrivers%2B%255BAnalog%2BDevices%2BWiki%255D.pdf","size":262311,"eTag":"cc6c72ee1fdc77e02404fce331790ae6","versionId":".AndLC5Du_ggCvc1tyD5AwJIdOtgij7A","sequencer":"0066DA6D2F40E8B061"}}}]}',
                     "Timestamp": "2024-09-06T02:47:12.445Z",
                     "SignatureVersion": "1",
                     "Signature": "IwogCs6Ky3cmnBYJyydVdrtVqls5DLyFemQuP9sU+LWm9759/VjUaI0r7zljtTQzAPzQjS1AAD6R3AYn/yhfW5kg/nLtixAJRd+NBZQewbF0A52ZJhDQ4RkYVevs12atJu1RAzvEVczHhDKvpdaDM8t/LQv9POeld212ChVaQBkFD54KAGhy2AVfMLJGRAObtMR/M+o2wvWtpj1K8CfJHVUWlZisfvZmvsZZrU0xMIXvqL0xJDTnhtXG0LVcpYqtK24aTHP6RheSouBAhf1WQZaYDnZWjMPy1/CHM5qJNgIYxQSJtfJd4bO4n46Dpy/7uxOg82ekU1mFW1e2EhtPTQ==",
@@ -110,7 +110,39 @@ def escape_pdf_name_sns_event():
     }
 
 
+@pytest.fixture
+def pdf_name_with_whitespace_sns_event():
+    return {
+        "Records": [
+            {
+                "EventSource": "aws:sns",
+                "EventVersion": "1.0",
+                "EventSubscriptionArn": "arn:aws:sns:us-east-1:550082761109:CdkInfraStackCodebaseOnboardingLambdaStackE7027C30-TopicBFC7AF6E-T41t4VpPQduq:33410862-0d11-4c7d-a93c-39d27f43b269",
+                "Sns": {
+                    "Type": "Notification",
+                    "MessageId": "e4adf322-79be-58cf-823e-ac77622302c3",
+                    "TopicArn": "arn:aws:sns:us-east-1:550082761109:CdkInfraStackCodebaseOnboardingLambdaStackE7027C30-TopicBFC7AF6E-T41t4VpPQduq",
+                    "Subject": "Amazon S3 Notification",
+                    "Message": '{"Records":[{"eventVersion":"2.1","eventSource":"aws:s3","awsRegion":"us-east-1","eventTime":"2024-09-06T15:01:47.949Z","eventName":"ObjectCreated:Put","userIdentity":{"principalId":"AWS:AIDAYAE342GKYWJN6UVW7"},"requestParameters":{"sourceIPAddress":"65.201.88.74"},"responseElements":{"x-amz-request-id":"KSCVQZPV1WABH47P","x-amz-id-2":"8gn5i1hDSKYyBNAxIpsVNQIAeoOTDh5SzNUvv1aLj7Dp/r0+qMd1ptoIeKRixmFAgRjC968UkhXoWWxpjxWrrweZBy07tL26"},"s3":{"s3SchemaVersion":"1.0","configurationId":"file-drop","bucket":{"name":"development-codebase-dropzone","ownerIdentity":{"principalId":"A3AP0FXFCX5FDS"},"arn":"arn:aws:s3:::development-codebase-dropzone"},"object":{"key":"documents/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/Basic+Document+Reference+Tracking.pdf","size":1172539,"eTag":"aac3975a3073a7180cfe0cc13016af6a","versionId":"Izbsxbr8In7aL.wYGmOZU_jpZD.gcp79","sequencer":"0066DB195BD59E3C47"}}}]}',
+                    "Timestamp": "2024-09-06T15:01:49.367Z",
+                    "SignatureVersion": "1",
+                    "Signature": "KpXjtwL6VP59iZL9kxWaZPk2y+iWgVkcUDYIS/zZPWLrB7QuDwC+DbpysbJdre7omMyyCRaGqW/6qlQarYRfrjbzRU/j/MWvZxyRKoK0GAAC03O+zuHxpEOfLxZRRliEDVBaKX4IooWNaCKFXrWNSMR36KScMkWtJPsbk/BWD7TELbFTGg77kd3+UnRAWDTe7r1d6lxfU/SY6k2vHIou0HTbftPrG9IXIojXydBOebDJjoG6twDjFX9v7rSoqovx3Y5EzzWnCM9whATsExuHj90oudKR8ljwAmbYY1+BMqZn7NxjerNmWdH4jHzvs5Z9btK53zNf4sAjUSXHiKwaMw==",
+                    "SigningCertUrl": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-60eadc530605d63b8e62a523676ef735.pem",
+                    "UnsubscribeUrl": "https://sns.us-east-1.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:us-east-1:550082761109:CdkInfraStackCodebaseOnboardingLambdaStackE7027C30-TopicBFC7AF6E-T41t4VpPQduq:33410862-0d11-4c7d-a93c-39d27f43b269",
+                    "MessageAttributes": {},
+                },
+            }
+        ]
+    }
+
+
 def test_document_upload_lambda_handler(sns_event):
+    """
+    Test the document upload lambda handler with a mock SNS event.
+
+    This test checks if the handler returns a list of results, and each result contains
+    the expected keys and values.
+    """
     # Assuming the environment and AWS resources are mocked appropriately
     response = handler(sns_event, {})
     assert isinstance(response, list), "Handler response should be a list"
@@ -130,6 +162,12 @@ def test_document_upload_lambda_handler(sns_event):
 
 
 def test_real_document_upload_lambda_handler(real_sns_event):
+    """
+    Test the document upload lambda handler with a real SNS event.
+
+    This test checks if the handler returns a list of results, and each result contains
+    the expected keys and values.
+    """
     response = handler(real_sns_event, {})
     assert isinstance(response, list), "Handler response should be a list"
     assert len(response) > 0, "Handler response list should not be empty"
@@ -148,7 +186,39 @@ def test_real_document_upload_lambda_handler(real_sns_event):
 
 
 def test_escape_pdf_name_document_upload_lambda_handler(escape_pdf_name_sns_event):
+    """
+    Test the document upload lambda handler with an SNS event containing escaped PDF names.
+
+    This test checks if the handler returns a list of results, and each result contains
+    the expected keys and values.
+    """
     response = handler(escape_pdf_name_sns_event, {})
+    assert isinstance(response, list), "Handler response should be a list"
+    assert len(response) > 0, "Handler response list should not be empty"
+    for result in response:
+        assert (
+            "source_content_id" in result
+        ), "Result should contain 'source_content_id'"
+        assert "bucket" in result, "Result should contain 'bucket'"
+        assert "key" in result, "Result should contain 'key'"
+        assert (
+            "pdf_summary_response" in result
+        ), "Result should contain 'pdf_summary_response'"
+        assert (
+            result["pdf_summary_response"] == "OK"
+        ), "PDF summary response should be 'OK'"
+
+
+def test_pdf_name_with_whitespace_document_upload_lambda_handler(
+    pdf_name_with_whitespace_sns_event,
+):
+    """
+    Test the document upload lambda handler with an SNS event containing PDF names with whitespace.
+
+    This test checks if the handler returns a list of results, and each result contains
+    the expected keys and values.
+    """
+    response = handler(pdf_name_with_whitespace_sns_event, {})
     assert isinstance(response, list), "Handler response should be a list"
     assert len(response) > 0, "Handler response list should not be empty"
     for result in response:

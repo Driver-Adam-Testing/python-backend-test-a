@@ -21,6 +21,7 @@ def handler(event, context):
     for record in event["Records"]:
         sns_message = json.loads(record["Sns"]["Message"])
 
+        # Create a Secrets Manager client
         sm_client = botocore.session.get_session().create_client(
             "secretsmanager",
             region_name="us-east-1",  # Specify the region here
@@ -28,6 +29,7 @@ def handler(event, context):
         cache_config = SecretCacheConfig()
         cache = SecretCache(config=cache_config, client=sm_client)
 
+        # Retrieve client ID and secret from Secrets Manager or settings
         client_id = (
             cache.get_secret_string(settings.CLIENT_ID_SECRET)
             if settings.ENVIRONMENT != "local"
@@ -47,9 +49,9 @@ def handler(event, context):
             }
         )
 
+        # Fetch M2M token from Auth0
         with httpx.Client(base_url=settings.AUTH0_URL) as auth0Client:
             logging.info("Fetching M2M token from Auth0...")
-            # Fetch one M2M token per invocation of the lambda. This could be cached but would require additional impl similar to SecretCache above
             token_response = auth0Client.post(
                 "/oauth/token",
                 headers={"content-type": "application/json"},
@@ -63,17 +65,24 @@ def handler(event, context):
             for s3_record in sns_message["Records"]:
                 bucket_name = s3_record["s3"]["bucket"]["name"]
                 object_key = s3_record["s3"]["object"]["key"]
-                real_object_key = unquote_plus(object_key)
+                real_object_key = unquote_plus(
+                    object_key
+                )  # Decode URL-encoded object key
                 logging.info("key = " + real_object_key)
                 logging.info("bucket = " + bucket_name)
-                metadata = head_object(bucket=bucket_name, key=real_object_key)
+                metadata = head_object(
+                    bucket=bucket_name, key=real_object_key
+                )  # Get object metadata
+                # Check if the destination bucket exists, and create it if it doesn't
                 bucket_exists = ensure_bucket_exists(
                     metadata["Metadata"]["org_bucket"], region="us-east-1"
                 )
                 if bucket_exists:
                     logging.info("Copying to organization bucket...")
                     destination_bucket_name = metadata["Metadata"]["org_bucket"]
-                    real_file_name = os.path.basename(real_object_key)
+                    real_file_name = os.path.basename(
+                        real_object_key
+                    )  # Extract file name from object key
                     destination_real_object_key = f"documents/{real_file_name}"
                     copy_s3_object(
                         source_bucket=bucket_name,

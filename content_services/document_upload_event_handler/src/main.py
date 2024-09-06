@@ -1,7 +1,7 @@
 import json
 import logging
 import os
-from urllib.parse import unquote_plus
+from urllib.parse import unquote
 
 import botocore
 import botocore.session
@@ -65,9 +65,20 @@ def handler(event, context):
             for s3_record in sns_message["Records"]:
                 bucket_name = s3_record["s3"]["bucket"]["name"]
                 object_key = s3_record["s3"]["object"]["key"]
-                real_object_key = unquote_plus(
-                    object_key
+                # # object_key = object_key.replace('%2B', '+')
+                # pattern = r"_\+"
+                #
+                # # Use re.search to find the pattern in the object key
+                # match = re.search(pattern, object_key)
+                # if match:
+                #     real_object_key = object_key
+                #     print("Pattern '_+' found in the object key!")
+                # else:
+                real_object_key = unquote(
+                    object_key, encoding="utf-8"
                 )  # Decode URL-encoded object key
+                # print("Pattern '_+' not found in the object key.")
+
                 logging.info("key = " + real_object_key)
                 logging.info("bucket = " + bucket_name)
                 metadata = head_object(

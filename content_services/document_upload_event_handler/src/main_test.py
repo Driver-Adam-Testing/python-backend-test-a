@@ -94,13 +94,39 @@ def escape_pdf_name_sns_event():
                 "EventSubscriptionArn": "arn:aws:sns:us-east-1:550082761109:CdkInfraStackCodebaseOnboardingLambdaStackE7027C30-TopicBFC7AF6E-T41t4VpPQduq:33410862-0d11-4c7d-a93c-39d27f43b269",
                 "Sns": {
                     "Type": "Notification",
-                    "MessageId": "9331655e-f7c3-5dab-9c8f-3a0a98b3dd43",
+                    "MessageId": "f4c9007b-6738-5647-921f-5f2e24a63f4b",
                     "TopicArn": "arn:aws:sns:us-east-1:550082761109:CdkInfraStackCodebaseOnboardingLambdaStackE7027C30-TopicBFC7AF6E-T41t4VpPQduq",
                     "Subject": "Amazon S3 Notification",
-                    "Message": '{"Records":[{"eventVersion":"2.1","eventSource":"aws:s3","awsRegion":"us-east-1","eventTime":"2024-09-06T02:47:11.318Z","eventName":"ObjectCreated:Put","userIdentity":{"principalId":"AWS:AIDAYAE342GKYWJN6UVW7"},"requestParameters":{"sourceIPAddress":"70.123.26.135"},"responseElements":{"x-amz-request-id":"Z7JKDEV4R8N887D2","x-amz-id-2":"PqJN412Cs48OLqbO1gQQkaTm/+w/+JYnZHISY69OV2RfHjOC65XSX/lymg10utikoZ7geBlBPSSU+ToD6QLn2TqmAMQ3z/VI"},"s3":{"s3SchemaVersion":"1.0","configurationId":"file-drop","bucket":{"name":"development-codebase-dropzone","ownerIdentity":{"principalId":"A3AP0FXFCX5FDS"},"arn":"arn:aws:s3:::development-codebase-dropzone"},"object":{"key":"documents/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/pyadi-iio%2BDevice%2BSpecific%2BPython%2BInterfaces%2BFor%2BIIO%2BDrivers%2B%255BAnalog%2BDevices%2BWiki%255D.pdf","size":262311,"eTag":"cc6c72ee1fdc77e02404fce331790ae6","versionId":".AndLC5Du_ggCvc1tyD5AwJIdOtgij7A","sequencer":"0066DA6D2F40E8B061"}}}]}',
-                    "Timestamp": "2024-09-06T02:47:12.445Z",
+                    "Message": '{"Records":[{"eventVersion":"2.1","eventSource":"aws:s3","awsRegion":"us-east-1","eventTime":"2024-09-06T17:52:28.924Z","eventName":"ObjectCreated:Put","userIdentity":{"principalId":"AWS:AIDAYAE342GKYWJN6UVW7"},"requestParameters":{"sourceIPAddress":"65.201.88.74"},"responseElements":{"x-amz-request-id":"G2Z8P9X2XFKWE6T4","x-amz-id-2":"O9mZ32Y9/++mn75g4imVxMJa2xJl8lu+3oQhzGfA6us1p0WzO1vPWq2hJjE4JSRVt48dCh9gVJeN1ZjcAnmVaQjvXxg76OWC"},"s3":{"s3SchemaVersion":"1.0","configurationId":"file-drop","bucket":{"name":"development-codebase-dropzone","ownerIdentity":{"principalId":"A3AP0FXFCX5FDS"},"arn":"arn:aws:s3:::development-codebase-dropzone"},"object":{"key":"documents/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/pyadi-iio_%2BDevice%2BSpecific%2BPython%2BInterfaces%2BFor%2BIIO%2BDrivers%2B%255BAnalog%2BDevices%2BWiki%255D.pdf","size":262311,"eTag":"cc6c72ee1fdc77e02404fce331790ae6","versionId":"ohtNdMFSAZMZqyA.j5kkgrFpW_C1DI.r","sequencer":"0066DB415CCA68F2B5"}}}]}',
+                    "Timestamp": "2024-09-06T17:52:30.094Z",
                     "SignatureVersion": "1",
-                    "Signature": "IwogCs6Ky3cmnBYJyydVdrtVqls5DLyFemQuP9sU+LWm9759/VjUaI0r7zljtTQzAPzQjS1AAD6R3AYn/yhfW5kg/nLtixAJRd+NBZQewbF0A52ZJhDQ4RkYVevs12atJu1RAzvEVczHhDKvpdaDM8t/LQv9POeld212ChVaQBkFD54KAGhy2AVfMLJGRAObtMR/M+o2wvWtpj1K8CfJHVUWlZisfvZmvsZZrU0xMIXvqL0xJDTnhtXG0LVcpYqtK24aTHP6RheSouBAhf1WQZaYDnZWjMPy1/CHM5qJNgIYxQSJtfJd4bO4n46Dpy/7uxOg82ekU1mFW1e2EhtPTQ==",
+                    "Signature": "qOsf6xjPdwRo9mOVQjklnCkNMstwJ3KVmAr/SZbM7iW2wkVQpJ84OwYg3uHUuDUWHps1W7BjOuWasZrzDHW27s4fVWt7LIL3/IYn2LNlMTUG6WCGavglz3n+5AsfEVmwQq9e1if7l7hBbdzVduTYEQSKeClBcbxe79wkvBnojyBc317YpKrcDwvGBUuExgsy/fglzjTLOpHZWY6R16VHp2z7athxTnv06ifEJvj2eSN0kHmPwgpruga2VTqVS3EA3Xiu3GqqtJfWYTD30Mtu0ERWQYJeGcgkl9ema1EEqIkXMW0pDMPbZJ0/Cd84ygAOteI596/Y4WAk9OL43OKrxw==",
+                    "SigningCertUrl": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-60eadc530605d63b8e62a523676ef735.pem",
+                    "UnsubscribeUrl": "https://sns.us-east-1.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:us-east-1:550082761109:CdkInfraStackCodebaseOnboardingLambdaStackE7027C30-TopicBFC7AF6E-T41t4VpPQduq:33410862-0d11-4c7d-a93c-39d27f43b269",
+                    "MessageAttributes": {},
+                },
+            }
+        ]
+    }
+
+
+@pytest.fixture
+def escape_pdf_name_sns_event2():
+    return {
+        "Records": [
+            {
+                "EventSource": "aws:sns",
+                "EventVersion": "1.0",
+                "EventSubscriptionArn": "arn:aws:sns:us-east-1:550082761109:CdkInfraStackCodebaseOnboardingLambdaStackE7027C30-TopicBFC7AF6E-T41t4VpPQduq:33410862-0d11-4c7d-a93c-39d27f43b269",
+                "Sns": {
+                    "Type": "Notification",
+                    "MessageId": "4876799c-951b-57bd-b580-26c9ad806e1d",
+                    "TopicArn": "arn:aws:sns:us-east-1:550082761109:CdkInfraStackCodebaseOnboardingLambdaStackE7027C30-TopicBFC7AF6E-T41t4VpPQduq",
+                    "Subject": "Amazon S3 Notification",
+                    "Message": '{"Records":[{"eventVersion":"2.1","eventSource":"aws:s3","awsRegion":"us-east-1","eventTime":"2024-09-06T17:05:30.349Z","eventName":"ObjectCreated:Put","userIdentity":{"principalId":"AWS:AIDAYAE342GKYWJN6UVW7"},"requestParameters":{"sourceIPAddress":"65.201.88.74"},"responseElements":{"x-amz-request-id":"VJVDA67KENEH383Y","x-amz-id-2":"6Xtt703qqkgxG1Gib5lHGaaKd+p4PTxDWGaf0RF8+3nLGKKp33TcflNWu60IN4S2PQ7S8aNjheXUdkBfHW1ukq5l0CxlCIb7"},"s3":{"s3SchemaVersion":"1.0","configurationId":"file-drop","bucket":{"name":"development-codebase-dropzone","ownerIdentity":{"principalId":"A3AP0FXFCX5FDS"},"arn":"arn:aws:s3:::development-codebase-dropzone"},"object":{"key":"documents/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/pyadi-iio%2BD_evice%2BSpecific%2BPython%2BInterfaces%2BFor%2BIIO%2BDrivers%2B%255BAnalog%2BDevices%2BWiki%255D.pdf","size":262311,"eTag":"cc6c72ee1fdc77e02404fce331790ae6","versionId":"HttUdUgTD6dK.1bABQT7yLZRMeqZDosB","sequencer":"0066DB365A2BEC5530"}}}]}',
+                    "Timestamp": "2024-09-06T17:05:31.735Z",
+                    "SignatureVersion": "1",
+                    "Signature": "CS9cDAUS6ARvW1bIxL+x8Cf1QS4WFfAJWRGLi0dU0pqjoAhINPgSOw5+bm0i9zhAsZEQ9z4+AvzW1Shi8ZsBlQajEoz4S8VsIjeEfKfcaiqwghueSNPKBrD4/gePmgofO+sys9eqO1Ve4hIjYFe5CmNJXpfR13UaC2xD+xWDfobF2rxngt6N5cVb80OvqQET/yNYnljqjfP2E1XWvvYUwXiMlkkmZjhK0iF61TpWd/Gnx6AdL1d5ddfg+tHSe1SKycWbdWoP6sOmqY4ItFceZNcHRJzZbvJzr5z1sd8NqqOigw6GlxYbgFve7D9FTAB+BzW6F/uIBiEZGAEWOULFUA==",
                     "SigningCertUrl": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-60eadc530605d63b8e62a523676ef735.pem",
                     "UnsubscribeUrl": "https://sns.us-east-1.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:us-east-1:550082761109:CdkInfraStackCodebaseOnboardingLambdaStackE7027C30-TopicBFC7AF6E-T41t4VpPQduq:33410862-0d11-4c7d-a93c-39d27f43b269",
                     "MessageAttributes": {},

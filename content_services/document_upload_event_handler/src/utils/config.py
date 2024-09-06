@@ -16,10 +16,6 @@ class Settings(BaseSettings):
     AWS_S3_CODE_BUCKET_SUFFIX: str = "codebase-dropzone"
     USE_LEGACY_DROPZONE: bool = True
     DROPZONE_BUCKET_NAME: str | None = None
-    # TODO: Need these for testing locally
-    AWS_ACCESS_KEY_ID: str | None = None
-    AWS_SECRET_ACCESS_KEY: str | None = None
-    AWS_REGION: str | None = None
 
 
 settings = Settings()  # type: ignore

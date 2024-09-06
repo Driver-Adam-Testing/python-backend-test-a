@@ -1,9 +1,8 @@
-import time
+import logging
 import random
+import time
 import traceback
 import typing
-
-import logging
 from functools import wraps
 
 
@@ -22,6 +21,7 @@ def suppress_logging(func):
             logger.setLevel(current_level)
 
     return wrapper
+
 
 def retry_with_exponential_backoff(
     initial_delay: float = 1,

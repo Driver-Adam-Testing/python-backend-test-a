@@ -5,8 +5,7 @@ from typing import Self
 import openai
 from openai import OpenAI
 from pydantic import BaseModel, ValidationError
-
-from .decorators import retry_with_exponential_backoff
+from shared.utils.decorators import retry_with_exponential_backoff
 
 
 class OutputConfigKind(Enum):

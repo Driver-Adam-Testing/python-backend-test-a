@@ -3,27 +3,27 @@ import logging
 import os
 from urllib.parse import unquote_plus
 
-import boto3
 import botocore
 import botocore.session
 import httpx
 from aws_secretsmanager_caching import SecretCache, SecretCacheConfig
-from botocore.exceptions import ClientError
-from src.utils.aws_s3 import generate_get_presigned_url, head_object
+from src.utils.aws_s3 import copy_s3_object, ensure_bucket_exists, head_object
 from src.utils.config import settings
-
-# def handler(event, context):
-#     logging.info(event)
 
 
 # # Python lambdas have to be synchronous ¯\_(ツ)_/¯
 # # https://stackoverflow.com/questions/60455830/can-you-have-an-async-handler-in-lambda-python-3-6
 def handler(event, context):
+    logging.info(event)
+
     # Parse the SNS message
     for record in event["Records"]:
         sns_message = json.loads(record["Sns"]["Message"])
 
-        sm_client = botocore.session.get_session().create_client("secretsmanager")
+        sm_client = botocore.session.get_session().create_client(
+            "secretsmanager",
+            region_name="us-east-1",  # Specify the region here
+        )
         cache_config = SecretCacheConfig()
         cache = SecretCache(config=cache_config, client=sm_client)
 
@@ -71,45 +71,42 @@ def handler(event, context):
                 )
                 if bucket_exists:
                     logging.info("Copying to organization bucket...")
+                    destination_bucket_name = metadata["Metadata"]["org_bucket"]
+                    real_file_name = os.path.basename(real_object_key)
+                    destination_real_object_key = f"documents/{real_file_name}"
                     copy_s3_object(
                         source_bucket=bucket_name,
-                        source_key=object_key,
-                        dest_bucket=metadata["Metadata"]["org_bucket"],
-                        dest_key=f"documents/{object_key}",  # TODO - change as appropriate
+                        source_key=real_object_key,
+                        dest_bucket=destination_bucket_name,
+                        dest_key=destination_real_object_key,
                     )
 
                     logging.info("Creating source content...")
                     # I changed relative path from documents/filename to just filename
+                    # TODO: right now duplicate records can be created. We need to check if the pdf exists already exists
                     create_src_content_response = exec_create_source_content(
                         source_content_type="supplemental-document",
-                        relative_path=os.path.basename(object_key),
+                        relative_path=os.path.basename(destination_real_object_key),
                         workspace_id=metadata["Metadata"]["workspace_id"],
                         token=token_json["access_token"],
                     )
-                    logging.info("Source content created.")
+                    source_content_id = create_src_content_response["data"][
+                        "createSourceContent"
+                    ]
+                    logging.info(f"Source content created with ID:{ source_content_id}")
                     logging.info(
-                        f"Triggering document upload onboarding for bucket = {bucket_name}, key = {object_key}"
+                        f"Triggering pdf summary generation for bucket = {destination_bucket_name}, key = {destination_real_object_key}"
                     )
-                    presigned_url = generate_get_presigned_url(
-                        bucket=bucket_name, key=real_object_key
-                    )
-                    # TODO: These parameters are wrong, we just need to pass source content id
-                    exec_document_onboarding_service(
+
+                    return exec_generate_pdf_summaries(
                         {
-                            "download_url": presigned_url,
-                            "object_key": object_key,
-                            "org_id": metadata["Metadata"]["organization_id"],
-                            "creator_id": metadata["Metadata"]["creator_id"],
-                            "workspace_id": metadata["Metadata"]["workspace_id"],
-                            "filepath": metadata["Metadata"]["file_path"],
-                            "codebase_name": metadata["Metadata"]["codebase_name"],
-                            "provider": metadata["Metadata"]["provider"],
+                            "source_content_id": source_content_id,
                         },
                         token_json["access_token"],
                     )
 
 
-def exec_document_onboarding_service(event, token):
+def exec_generate_pdf_summaries(event, token):
     with httpx.Client(base_url=settings.API_URL, follow_redirects=True) as driverClient:
         payload = {**event}
         headers = {
@@ -160,70 +157,3 @@ def exec_create_source_content(
         return response.json()
     else:
         raise Exception(f"Query failed with status code: {response.status_code}")
-
-
-def copy_s3_object(source_bucket, source_key, dest_bucket, dest_key):
-    """
-    Copies an S3 object from one bucket to another.
-
-    :param source_bucket: Name of the source bucket
-    :param source_key: Key of the source object
-    :param dest_bucket: Name of the destination bucket
-    :param dest_key: Key to be used for the destination object
-    :return: True if the operation was successful, False otherwise
-    """
-    s3_client = boto3.client("s3")
-
-    try:
-        # Construct the copy source dictionary
-        copy_source = {"Bucket": source_bucket, "Key": source_key}
-
-        # Perform the copy operation
-        s3_client.copy_object(CopySource=copy_source, Bucket=dest_bucket, Key=dest_key)
-
-        logging.info(
-            f"Successfully copied object from {source_bucket}/{source_key} to {dest_bucket}/{dest_key}"
-        )
-        return True
-
-    except ClientError as e:
-        logging.error(f"Error copying object: {e}")
-        return False
-
-
-def ensure_bucket_exists(bucket_name, region=None):
-    """
-    Check if a bucket exists, and create it if it doesn't.
-
-    :param bucket_name: Name of the bucket to check/create
-    :param region: AWS region to create the bucket in (optional)
-    :return: True if the bucket exists or was created successfully, False otherwise
-    """
-    s3_client = boto3.client("s3")
-
-    try:
-        # Check if the bucket exists
-        s3_client.head_bucket(Bucket=bucket_name)
-        logging.info(f"Bucket {bucket_name} already exists.")
-        return True
-    except ClientError as e:
-        error_code = e.response["Error"]["Code"]
-        if error_code == "404":
-            # Bucket doesn't exist, so create it
-            try:
-                if region is None:
-                    s3_client.create_bucket(Bucket=bucket_name)
-                else:
-                    location = {"LocationConstraint": region}
-                    s3_client.create_bucket(
-                        Bucket=bucket_name, CreateBucketConfiguration=location
-                    )
-                logging.info(f"Bucket {bucket_name} created successfully.")
-                return True
-            except ClientError as create_error:
-                logging.error(f"Couldn't create bucket {bucket_name}: {create_error}")
-                return False
-        else:
-            # Something else went wrong when checking the bucket
-            logging.error(f"Error checking bucket {bucket_name}: {e}")
-            return False

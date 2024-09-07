@@ -545,13 +545,12 @@ class ContentService:
         if search_input.text:
             encoded_text = quote(search_input.text)
             encoded_text = encoded_text.replace("%20", "+")
-
-            statement = statement.where(
-                DerivedContent.relative_path.contains(encoded_text)
-            )
-            count_statement = count_statement.where(
-                DerivedContent.relative_path.contains(encoded_text)
-            )
+            clauses = [
+                DerivedContent.relative_path.contains(encoded_text),
+                # DerivedContent.relative_path.contains(search_input.text)
+            ]
+            statement = statement.where(or_(*clauses))
+            count_statement = count_statement.where(or_(*clauses))
 
         if search_input.status:
             valid_statuses = [

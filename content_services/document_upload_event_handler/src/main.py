@@ -1,7 +1,7 @@
 import json
 import logging
 import os
-from urllib.parse import unquote_plus
+from urllib.parse import quote, unquote_plus
 
 import botocore
 import botocore.session
@@ -93,14 +93,14 @@ def handler(event, context):
                 # I changed relative path from documents/filename to just filename
                 create_src_content_response = exec_create_source_content(
                     source_content_type="supplemental-document",
-                    relative_path=os.path.basename(destination_real_object_key),
+                    relative_path=real_file_name,
                     workspace_id=metadata["Metadata"]["workspace_id"],
                     token=token_json["access_token"],
                 )
                 source_content_id = create_src_content_response["data"][
                     "createSourceContent"
                 ]
-                logging.info(f"Source content created with ID:{ source_content_id}")
+                logging.info(f"Source content created with ID:{source_content_id}")
                 logging.info(
                     f"Triggering pdf summary generation for bucket = {destination_bucket_name}, key = {destination_real_object_key}"
                 )
@@ -144,14 +144,18 @@ def exec_generate_pdf_summaries(event: dict, token: str):
 def fetch_existing_pdf_by_workspace_and_relative_path(
     relative_path: str, target_organization_id: str, token: str
 ):
-    with httpx.Client(base_url=settings.API_URL, follow_redirects=True) as driverClient:
+    encoded_relative_path = quote(relative_path)
+    with httpx.Client(
+        base_url="http://localhost:4000/api/v1", follow_redirects=True
+    ) as driverClient:
+        # with httpx.Client(base_url=settings.API_URL, follow_redirects=True) as driverClient:
         headers = {
             "Accept": "application/json",
             "Content-Type": "application/json",
             "Authorization": f"Bearer {token}",
         }
         response = driverClient.get(
-            f"/internal/{target_organization_id}/content?text={relative_path}&content_type_name=supplemental-document&limit=1&sort_direction=DESC",
+            f"/internal/{target_organization_id}/content?text={encoded_relative_path}&limit=1&sort_direction=DESC",
             headers=headers,
         )
         response.raise_for_status()

@@ -70,6 +70,11 @@ class UploadService:
     def upload_pdf(
         self, user: CurrentUser, request: UploadPDFRequest
     ) -> UploadResponse:
+        # check for dups
+        # mint url to upload pdf direct to org bucket
+        # mint derived content if not a dup in processing status with url attached
+        # UI handles upload to s3 if it fails it delete the derived content record
+        # if it succeeds it updates the derived content record to processing complete
         file_path = request.file_path
         creator_id = user.user_id
         org_id = user.organization_id

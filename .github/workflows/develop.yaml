@@ -1,4 +1,4 @@
-name: Backend Dev and Ops Deployment
+name: Backend Dev Deployment
 on:
   push:
     branches: ["develop"]
@@ -83,32 +83,3 @@ jobs:
           MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
           MODAL_ENV: ${{ vars.MODAL_ENV }}
         run: poetry install --no-root && poetry run modal deploy --env=$MODAL_ENV --tag=${GITHUB_SHA::8} src/main.py
-  ops:
-    # needs: unittest
-    runs-on: ubuntu-latest
-    environment: ops
-    steps:
-      - uses: actions/checkout@v4
-      - name: Use Node.js 20.x
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20.x"
-          cache: "npm"
-      - run: npm ci
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-      - run: poetry install --no-root
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-region: us-east-1
-          role-to-assume: ${{ vars.AWS_CICD_ROLE }}
-      - name: CDK Deploy
-        env:
-          DEPLOYMENT_ENVIRONMENT: ops
-        run: npx cdk deploy --require-approval never
-      # Uses the dev environment Modal currently, probably not worth it to configure new modal environments for this env yet

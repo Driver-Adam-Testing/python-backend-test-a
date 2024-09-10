@@ -549,7 +549,6 @@ class ContentService:
             encoded_text = encoded_text.replace("%20", "+")
             clauses = [
                 DerivedContent.relative_path.contains(encoded_text),
-                # DerivedContent.relative_path.contains(search_input.text)
             ]
             statement = statement.where(or_(*clauses))
             count_statement = count_statement.where(or_(*clauses))

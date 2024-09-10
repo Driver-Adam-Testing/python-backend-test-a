@@ -80,59 +80,9 @@ class UploadService:
 
         return UploadResponse(upload_url=upload_url)
 
-    def upload_pdf(
-        self, user: CurrentUser, request: UploadPDFRequest
-    ) -> UploadResponse:
-        # check for dups
-        # mint url to upload pdf direct to org bucket
-        # mint derived content if not a dup in processing status with url attached
-        # UI handles upload to s3 if it fails it delete the derived content record
-        # if it succeeds it updates the derived content record to processing complete
-        file_path = request.file_path
-        creator_id = user.user_id
-        org_id = user.organization_id
-        logger.info(f"Uploading content for orgId: {org_id}, ownerId: {creator_id}")
-
-        default_workspace = self.workspace_repository.get_default_workspace(
-            user.organization_id
-        )
-        if not default_workspace:
-            raise HTTPException(status_code=400, detail="Default workspace not found")
-
-        workspace_id = str(default_workspace.id)
-        try:
-            relative_path = os.path.basename(file_path)
-            org_id_hash = hashlib.sha256(org_id.encode()).hexdigest()[:63]
-            # Upload the PDF to the S3 bucket documents folder not the codebases folder
-            upload_key = f"documents/{org_id_hash}/{os.path.basename(file_path)}"
-            codebase_metadata = {
-                "organization_id": org_id,
-                "org_bucket": org_id_hash,
-                "org_name": user.organization_name,
-                "workspace_id": workspace_id,
-                "creator_id": creator_id,
-                "file_path": file_path,
-                "content_type": "supplemental-document",
-            }
-            upload_url = generate_put_presigned_url(
-                key=upload_key,
-                content_type="application/pdf",
-                metadata=codebase_metadata,
-            )
-            logger.info(f"Upload URL generated for {relative_path}")
-            return UploadResponse(upload_url=upload_url)
-        except Exception as e:
-            logger.error(f"Error uploading PDF: {e}")
-            raise HTTPException(status_code=500, detail="Error uploading PDF")
-
     def direct_upload_pdf(
         self, user: CurrentUser, request: UploadPDFRequest
     ) -> DirectUploadResponse:
-        # check for dups
-        # mint url to upload pdf direct to org bucket
-        # mint derived content if not a dup in processing status with url attached
-        # UI handles upload to s3 if it fails it delete the derived content record
-        # if it succeeds it updates the derived content record to processing complete
         default_workspace = self.workspace_repository.get_default_workspace(
             user.organization_id
         )
@@ -146,23 +96,18 @@ class UploadService:
             ]
         )
         if existing_doc_count > 0:
+            logger.warn(f"Existing doc found with name: {request.file_path}")
             raise HTTPException(
                 status_code=400, detail="Document with this name already exists"
             )
-        print(f"existing docs found: {existing_doc_count}")
 
         original_file_name = os.path.basename(request.file_path)
 
-        # file_parts = os.path.basename(request.file_path).split(".")
-        # file_parts
-        # file_name = file_parts[0]
-        # file_extension = file_parts[len(file_parts) - 1]
         file_name = re.sub(r"[^a-zA-Z0-9.]", "_", os.path.basename(request.file_path))
         file_name = file_name.replace(" ", "_")
         file_name = f"{uuid4()}_{file_name}"
 
         relative_path = unquote_plus(file_name)  # sanitize and make safe for s3 upload
-        print(relative_path)
 
         # sanitize and make safe for s3 upload
         creator_id = user.user_id

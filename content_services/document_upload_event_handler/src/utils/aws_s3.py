@@ -12,7 +12,7 @@ s3_client = boto3.client(
 )
 
 
-def generate_get_presigned_url(bucket, key, expires=3600):
+def generate_get_presigned_url(bucket: str, key: str, expires: int = 3600) -> str:
     return s3_client.generate_presigned_url(
         ClientMethod="get_object",
         Params={
@@ -23,11 +23,13 @@ def generate_get_presigned_url(bucket, key, expires=3600):
     )
 
 
-def head_object(bucket, key):
+def head_object(bucket: str, key: str) -> dict:
     return s3_client.head_object(Bucket=bucket, Key=key)
 
 
-def copy_s3_object(source_bucket, source_key, dest_bucket, dest_key):
+def copy_s3_object(
+    source_bucket: str, source_key: str, dest_bucket: str, dest_key: str
+) -> bool:
     """
     Copies an S3 object from one bucket to another.
 
@@ -56,7 +58,7 @@ def copy_s3_object(source_bucket, source_key, dest_bucket, dest_key):
         return False
 
 
-def ensure_bucket_exists(bucket_name, region=None):
+def ensure_bucket_exists(bucket_name: str, region: str | None = None) -> bool:
     """
     Check if a bucket exists, and create it if it doesn't.
 

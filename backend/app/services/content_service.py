@@ -814,6 +814,15 @@ class ContentService:
                 status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
             )
 
+        if (
+            content.content_type.type_name
+            != DerivedContentTypeNames.APPLICATION_NOTE.value
+            and content.content_type.type_name != DerivedContentTypeNames.TEMPLATE.value
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid content type"
+            )
+
         content = self.content_repository.update(content, DerivedContent(**new_content))
 
         logger.info(

@@ -1,4 +1,5 @@
 from typing import Any
+from uuid import UUID
 
 from pydantic import BaseModel, field_validator
 
@@ -25,3 +26,8 @@ class UploadPDFRequest(UploadRequestBase):
 
 class UploadResponse(BaseModel):
     upload_url: str
+
+
+class DirectUploadResponse(BaseModel):
+    upload_url: str
+    source_content_id: UUID

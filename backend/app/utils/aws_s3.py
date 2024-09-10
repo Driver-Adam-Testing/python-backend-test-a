@@ -12,12 +12,31 @@ s3_client = boto3.client(
 )
 
 
-def generate_put_presigned_url(key, content_type, metadata={}, expires=3600):
+def generate_put_presigned_url(key, content_type, metadata=None, expires=3600):
+    if metadata is None:
+        metadata = {}
     bucket = (
         settings.DROPZONE_BUCKET_NAME
         if not settings.USE_LEGACY_DROPZONE
         else f"{settings.ENVIRONMENT}-{settings.AWS_S3_CODE_BUCKET_SUFFIX}"
     )
+    return s3_client.generate_presigned_url(
+        ClientMethod="put_object",
+        Params={
+            "Bucket": bucket,
+            "Key": key,
+            "ContentType": content_type,
+            "Metadata": metadata,
+        },
+        ExpiresIn=expires,
+    )
+
+
+def generate_put_presigned_url_with_bucket(
+    bucket: str, key: str, content_type: str, metadata=None, expires=3600
+):
+    if metadata is None:
+        metadata = {}
     return s3_client.generate_presigned_url(
         ClientMethod="put_object",
         Params={

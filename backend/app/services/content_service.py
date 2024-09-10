@@ -445,7 +445,9 @@ class ContentService:
         for result in results:
             try:
                 content_name = (
-                    json.loads(result.content).get("name")
+                    result.content_name
+                    if result.content_name
+                    else json.loads(result.content).get("name")
                     if result.content_type.type_name == "application_note"
                     and result.content
                     and "name" in json.loads(result.content)
@@ -793,3 +795,28 @@ class ContentService:
             f"Template created with ID {new_content.id} for organization {organization_id}"
         )
         return new_content
+
+    def edit_content(
+        self, organization_id: str, content_id: UUID, new_content: dict
+    ) -> DerivedContent:
+        logger.info(f"Editing content {content_id} for organization {organization_id}")
+
+        # checks = [
+        #     lambda session: self.content_repository.is_authorized(
+        #         id=content_id,
+        #         relationship_chain=["workspace"],
+        #         field_name="organization_id",
+        #         field_value=organization_id,
+        #     )
+        # ]
+        #
+        # perform_authorization_checks(self.session, checks)
+
+        content = self.content_repository.get(content_id)
+        content = self.content_repository.update(content, DerivedContent(**new_content))
+
+        logger.info(
+            f"Content {content_id} successfully edited for organization {organization_id}"
+        )
+
+        return content

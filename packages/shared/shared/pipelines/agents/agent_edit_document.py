@@ -4,7 +4,7 @@ from shared.agent.tools.search_tool import SearchTool
 from shared.interfaces.agents.data_scope import DataScope
 from shared.interfaces.agents.pipeline_configuration import (
     AgentConfiguration,
-    PipelineSequenceInput,
+    PipelineInput,
     PipelineStepResponse,
     PipelineStepType,
 )
@@ -30,7 +30,7 @@ class EditDocumentContext(BaseModel):
     text_after_selection: str
 
 
-class AgentEditDocumentExecuteInput(PipelineSequenceInput):
+class AgentEditDocumentExecuteInput(PipelineInput):
     """
     Input model for smart instruction generation.
 
@@ -51,7 +51,7 @@ def run_agent_edit_document(input: AgentEditDocumentExecuteInput):
     prompt_augmentation_agent_configuration = AgentConfiguration(**input.agent_config)
     prompt_augmentation_agent_configuration.iterations = 1
     prompt_augmentation_prompt = run_agent_prompt_augmentation(
-        PipelineSequenceInput(
+        PipelineInput(
             prompt=input.prompt,
             context=input.context.model_dump(),
             agent_config=prompt_augmentation_agent_configuration,

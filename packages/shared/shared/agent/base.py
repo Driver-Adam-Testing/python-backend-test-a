@@ -1,4 +1,6 @@
+import json
 import uuid
+from abc import ABC, abstractmethod
 
 from database.db import get_session
 from database.models_v1 import RuntimeLogAgentInstance, RuntimeLogAgentMessage
@@ -7,7 +9,7 @@ from shared.agent.tools.tool_strict import ToolStrict
 from shared.utils.bcolors import print_dict
 
 
-class AgentBase:
+class AgentBase(ABC):
     def __init__(
         self,
         organization_id: str,
@@ -16,14 +18,14 @@ class AgentBase:
         max_iterations: int = 1,
         tools: list[ToolStrict] | None = None,
         agent_id: uuid.UUID | None = None,
-        log: bool = True,
+        response_format: type | None = None,
+        log: bool = False,
         debug: bool = True,
     ):
         # NOTE: After the migration is deployed, change this to be an input
-        self.log = False
+        self.log = log
         self.organization_id = organization_id
         self.model = model
-        self.log = log
         self.debug = debug
         self.agent_id = agent_id
         self.paths = paths if paths is not None else []
@@ -32,6 +34,7 @@ class AgentBase:
         self.iteration = 0
         self.messages = []
         self.search_results = []
+        self.response_format = response_format
         self._load_or_initialize()
 
     def _load_or_initialize(self):
@@ -83,8 +86,7 @@ class AgentBase:
             session.commit()
             session.refresh(log_message)
 
-    def _increment_iterator(self):
-        self.iteration += 1
+    def _increment_iterator_message(self) -> bool:
         if self.max_iterations > 1:
             self.add_message(
                 {
@@ -92,15 +94,24 @@ class AgentBase:
                     "content": f"There are {self.max_iterations - self.iteration} remaining AI agent iterations remaining to solve the problem.",
                 }
             )
+        self.iteration += 1
+        return self.iteration <= self.max_iterations
+
+    @abstractmethod
+    def _execute_iteration(self) -> str | None:
+        pass
 
     def invoke(self, prompt: str = None):
         self.iteration = 0
         if prompt is not None:
             self.add_message({"role": "user", "content": prompt})
-        while self._increment_iterator():
-            if self.iteration > self.max_iterations:
-                break
-        try:
-            return self.messages[-1].content
-        except Exception:
-            return self.messages[-1]["content"]
+        while self._increment_iterator_message():
+            response = self._execute_iteration()
+            if response is not None:
+                if self.response_format is not None:
+                    return self.response_format(**json.loads(response))
+                else:
+                    return response
+        raise RuntimeError(
+            "Agent failed to produce a valid response within the allowed iterations."
+        )

@@ -2,7 +2,7 @@ from shared.agent.tools.tool_strict import ToolStrict
 from shared.interfaces.agents.data_scope import DataScope
 from shared.interfaces.agents.pipeline_configuration import (
     AgentConfiguration,
-    PipelineSequenceInput,
+    PipelineInput,
     PipelineStepResponse,
 )
 
@@ -22,7 +22,7 @@ class StartAgentTool(ToolStrict):
 
     def execute(self, agent):
         # Create the input for agent execution
-        agent_input = PipelineSequenceInput(
+        agent_input = PipelineInput(
             prompt=self.prompt,
             agent_config=self.agent_config,
             scope=DataScope(paths=agent.paths, organization_id=agent.organization_id),

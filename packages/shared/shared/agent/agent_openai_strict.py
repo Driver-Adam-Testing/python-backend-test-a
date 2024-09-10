@@ -1,5 +1,3 @@
-import json
-
 import openai
 from openai import OpenAI
 
@@ -8,9 +6,6 @@ from shared.agent.base import AgentBase
 
 class OpenAIStrictAgent(AgentBase):
     def __init__(self, *args, **kwargs):
-        response_format = kwargs.pop("response_format", None)
-        self.response_format = response_format
-
         tools = kwargs.get("tools", [])
         for i, tool in enumerate(tools):
             tools[i] = openai.pydantic_function_tool(tool)
@@ -23,7 +18,6 @@ class OpenAIStrictAgent(AgentBase):
         OpenAI expects all tool calls to return in a several tool messages with tool_call_id.
         """
         for tc in tool_calls:
-            print(tc)
             message = {
                 "tool_call_id": tc.id,
                 "role": "tool",
@@ -41,26 +35,17 @@ class OpenAIStrictAgent(AgentBase):
         completion_kwargs = {}
         completion_kwargs["model"] = self.model
         completion_kwargs["messages"] = self.messages
-        if self.tools:
+        if self.tools and self.max_iterations > 1:
             completion_kwargs["tools"] = self.tools
             completion_kwargs["tool_choice"] = "auto"
         if self.response_format:
             completion_kwargs["response_format"] = self.response_format
         return self.client.beta.chat.completions.parse(**completion_kwargs)
 
-    def _increment_iterator(self):
-        super()._increment_iterator()
+    def _execute_iteration(self) -> str | None:
         response = self._create_completion()
         self.add_message(response.choices[0].message)
         if response.choices[0].message.tool_calls:
             self._execute_tool_calls(response.choices[0].message.tool_calls)
-            return True
         else:
-            return False
-
-    def invoke(self, prompt: str = None):
-        response = super().invoke(prompt)
-        print(response)
-        if self.response_format:
-            response = self.response_format(**json.loads(response))
-        return response
+            return response.choices[0].message.content

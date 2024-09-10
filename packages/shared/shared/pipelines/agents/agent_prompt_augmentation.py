@@ -43,7 +43,7 @@ def run_agent_prompt_augmentation(
     agent.add_message(prompts.voice.software_engineer.MESSAGE)
     agent.add_message(prompts.task.prompt_augmentation.MESSAGE)
     response = agent.invoke(str(input.prompt))
-
+    print(response)
     return PipelineStepResponse(
         agent_id=agent.agent_id,
         search_results=agent.search_results,

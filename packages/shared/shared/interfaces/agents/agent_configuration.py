@@ -34,10 +34,14 @@ class AgentConfiguration(BaseModel):
             AttributeError: If the tool does not exist in agent_tools.
         """
         tools = []
-        for tool_name in [t.name for t in self.tool_names]:
+        for tool_name in self.tool_names:
             if hasattr(agent_tools, tool_name):
                 tool_class = getattr(agent_tools, tool_name)
                 tools.append(tool_class)
+            else:
+                raise AttributeError(
+                    f"Tool '{tool_name}' could not be found in agent_tools."
+                )
         return tools
 
     def create_system_prompts(self) -> list[str]:

@@ -56,8 +56,7 @@ class AnthropicStrictAgent(AgentBase):
         response = self.client.messages.create(**completion_kwargs)
         return response
 
-    def _increment_iterator(self):
-        super()._increment_iterator()
+    def _execute_iteration(self):
         response = self._create_completion()
         self.add_message(response.choices[0].message)
 

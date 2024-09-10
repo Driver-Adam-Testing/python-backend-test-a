@@ -31,7 +31,7 @@ class PipelineMode(str, enum.Enum):
     SEQUENTIAL = "sequential"
 
 
-class PipelineSequenceInput(PromptWithContext):
+class PipelineInput(PromptWithContext):
     """
     Input for executing an agent.
 

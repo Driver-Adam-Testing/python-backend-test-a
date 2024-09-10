@@ -1,6 +1,6 @@
 from shared.interfaces.agents.pipeline_configuration import (
+    PipelineInput,
     PipelineResponse,
-    PipelineSequenceInput,
     PipelineStepType,
 )
 from shared.interfaces.agents.prompt import PromptWithContext
@@ -11,7 +11,7 @@ from shared.pipelines.agents.agent_prompt_augmentation import (
 )
 
 
-def execute_sequence(input: PipelineSequenceInput):
+def execute_sequence(input: PipelineInput):
     sequence_response = PipelineResponse(step_responses=[])
     current_prompt = PromptWithContext(prompt=input.prompt, context=input.context)
 

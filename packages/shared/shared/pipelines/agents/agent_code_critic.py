@@ -4,8 +4,8 @@ from shared.agent.models.llm_models import ModelConfig
 from shared.agent.tools.open_file_tool import OpenFileTool
 from shared.agent.tools.search_tool import SearchTool
 from shared.interfaces.agents.pipeline_configuration import (
+    PipelineInput,
     PipelineResponse,
-    PipelineSequenceInput,
     PipelineStepResponse,
 )
 
@@ -22,7 +22,7 @@ class CodeVerification(BaseModel):
     rationale_for_fixing: str
 
 
-class FindCodeSnippetsInput(PipelineSequenceInput):
+class FindCodeSnippetsInput(PipelineInput):
     document_content: str
 
 
@@ -55,7 +55,7 @@ def run_agent_find_code_snippets(input: FindCodeSnippetsInput):
     )
 
 
-def run_agent_code_critic(input: PipelineSequenceInput):
+def run_agent_code_critic(input: PipelineInput):
     agent = OpenAIStrictAgent(
         model=ModelConfig.from_default().model_id,
         paths=input.scope.paths,

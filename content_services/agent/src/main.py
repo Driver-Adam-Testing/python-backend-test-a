@@ -36,11 +36,11 @@ agent_model_config = {
 
 @app.function(timeout=3600, **agent_model_config, keep_warm=1)
 def run(input: dict):
-    from shared.interfaces.agents.pipeline_configuration import PipelineSequenceInput
+    from shared.interfaces.agents.pipeline_configuration import PipelineInput
     from shared.pipelines.agents.execute import execute_sequence, execute_single
 
     if isinstance(input, dict):
-        input = PipelineSequenceInput(**input)
+        input = PipelineInput(**input)
 
     if isinstance(input.agent_config, list):
         return execute_sequence(input)

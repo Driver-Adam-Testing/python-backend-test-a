@@ -5,27 +5,14 @@ from modal import Function
 from modal.functions import FunctionCall
 from shared.interfaces.response import ModalDriverResponse
 from shared.pipelines.agents.execute import (
+    PipelineInput,
     PipelineResponse,
-    PipelineSequenceInput,
     execute_sequence,
 )
 
 from app.api.auth import CurrentUser
 
 router = APIRouter()
-
-
-# @router.post(
-#     "/",
-#     summary="Execute an agent pipeline",
-#     response_description="The response from the agent execution",
-# )
-# def execute_agent(
-#     user: CurrentUser,
-#     input: PipelineSequenceInput,
-# ) -> AgentExecutionResponse:
-#     input.scope.organization_id = user.organization_id
-#     return execute_single(input)
 
 
 @router.post(
@@ -35,7 +22,7 @@ router = APIRouter()
 )
 def execute_agent_sequence(
     user: CurrentUser,
-    input: PipelineSequenceInput,
+    input: PipelineInput,
 ) -> PipelineResponse:
     input.scope.organization_id = user.organization_id
     return execute_sequence(input)
@@ -46,7 +33,7 @@ def execute_agent_sequence(
     summary="Start a modal instance of the execute Agent Sequence",
 )
 def execute_agent_sequence_modal_async(
-    user: CurrentUser, input: PipelineSequenceInput
+    user: CurrentUser, input: PipelineInput
 ) -> ModalDriverResponse:
     input.scope.organization_id = user.organization_id
     modal_function = Function.lookup("agent", "run")
@@ -73,7 +60,7 @@ def get_execution_results(user: CurrentUser, call_id: str) -> PipelineResponse:
     summary="Start a modal instance of the execute Agent Sequence",
 )
 def execute_agent_sequence_modal_sync(
-    user: CurrentUser, input: PipelineSequenceInput
+    user: CurrentUser, input: PipelineInput
 ) -> PipelineResponse:
     input.scope.organization_id = user.organization_id
     modal_function = Function.lookup("agent", "run")

@@ -1,7 +1,7 @@
 import json
 import logging
 import os
-from urllib.parse import quote, unquote_plus
+from urllib.parse import unquote_plus
 
 import botocore
 import botocore.session
@@ -70,12 +70,8 @@ def handler(event, context):
             bucket_exists = ensure_bucket_exists(
                 metadata["Metadata"]["org_bucket"], region="us-east-1"
             )
-            org_id = metadata["Metadata"]["organization_id"]
-            if fetch_existing_pdf_by_workspace_and_relative_path(
-                os.path.basename(real_object_key), org_id, token_json["access_token"]
-            ):
-                logging.error("PDF already exists in workspace. Skipping...")
-                continue
+            source_content_id = metadata["Metadata"]["source_content_id"]
+            logging.info(f"Processing content created with ID:{source_content_id}")
 
             if bucket_exists:
                 logging.info("Copying to organization bucket...")
@@ -89,18 +85,6 @@ def handler(event, context):
                     dest_key=destination_real_object_key,
                 )
 
-                logging.info("Creating source content...")
-                # I changed relative path from documents/filename to just filename
-                create_src_content_response = exec_create_source_content(
-                    source_content_type="supplemental-document",
-                    relative_path=real_file_name,
-                    workspace_id=metadata["Metadata"]["workspace_id"],
-                    token=token_json["access_token"],
-                )
-                source_content_id = create_src_content_response["data"][
-                    "createSourceContent"
-                ]
-                logging.info(f"Source content created with ID:{source_content_id}")
                 logging.info(
                     f"Triggering pdf summary generation for bucket = {destination_bucket_name}, key = {destination_real_object_key}"
                 )
@@ -139,61 +123,3 @@ def exec_generate_pdf_summaries(event: dict, token: str):
         logging.info(event_response)
 
         return "OK"
-
-
-def fetch_existing_pdf_by_workspace_and_relative_path(
-    relative_path: str, target_organization_id: str, token: str
-):
-    encoded_relative_path = quote(relative_path)
-    with httpx.Client(
-        base_url="http://localhost:4000/api/v1", follow_redirects=True
-    ) as driverClient:
-        # with httpx.Client(base_url=settings.API_URL, follow_redirects=True) as driverClient:
-        headers = {
-            "Accept": "application/json",
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {token}",
-        }
-        response = driverClient.get(
-            f"/internal/{target_organization_id}/content?text={encoded_relative_path}&limit=1&sort_direction=DESC",
-            headers=headers,
-        )
-        response.raise_for_status()
-        event_response = response.json()
-        logging.info(event_response)
-
-        return len(event_response["results"]) > 0
-
-
-def exec_create_source_content(
-    relative_path: str, source_content_type: str, workspace_id: str, token: str
-):
-    query = """
-    mutation CreateSourceContent($input: SourceContentInput!) {
-        createSourceContent(input: $input)
-    }
-    """
-
-    variables = {
-        "input": {
-            "relative_path": relative_path,
-            "source_content_type": source_content_type,
-            "workspace_id": workspace_id,
-        }
-    }
-
-    payload = {"query": query, "variables": variables}
-
-    headers = {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {token}",
-    }
-
-    with httpx.Client(base_url=settings.API_URL, follow_redirects=True) as driverClient:
-        response = driverClient.post("/graphql", json=payload, headers=headers)
-
-    if response.status_code == 200:
-        return response.json()
-    else:
-        raise Exception(f"Query failed with status code: {response.status_code}")

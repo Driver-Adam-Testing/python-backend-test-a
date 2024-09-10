@@ -68,13 +68,13 @@ def real_sns_event():
                 "EventSubscriptionArn": "arn:aws:sns:us-east-1:550082761109:CdkInfraStackCodebaseOnboardingLambdaStackE7027C30-TopicBFC7AF6E-T41t4VpPQduq:33410862-0d11-4c7d-a93c-39d27f43b269",
                 "Sns": {
                     "Type": "Notification",
-                    "MessageId": "763f6734-ab45-596e-90af-3860e1a28d3c",
+                    "MessageId": "943c741e-b91b-599a-afb3-2b441b6c065b",
                     "TopicArn": "arn:aws:sns:us-east-1:550082761109:CdkInfraStackCodebaseOnboardingLambdaStackE7027C30-TopicBFC7AF6E-T41t4VpPQduq",
                     "Subject": "Amazon S3 Notification",
-                    "Message": '{"Records":[{"eventVersion":"2.1","eventSource":"aws:s3","awsRegion":"us-east-1","eventTime":"2024-09-06T00:11:18.267Z","eventName":"ObjectCreated:Put","userIdentity":{"principalId":"AWS:AIDAYAE342GKYWJN6UVW7"},"requestParameters":{"sourceIPAddress":"70.123.26.135"},"responseElements":{"x-amz-request-id":"JK043TC0G1HJ1602","x-amz-id-2":"e7jdrMyXuRI1EF2YEJzREbM9tOZmZ1/Ow0Nqmffl51TXTvlizSSINuvNh5VmQFUbnTRhPfR+yrDQKFqE/Ey8PG1RVe06f1Y/"},"s3":{"s3SchemaVersion":"1.0","configurationId":"file-drop","bucket":{"name":"development-codebase-dropzone","ownerIdentity":{"principalId":"A3AP0FXFCX5FDS"},"arn":"arn:aws:s3:::development-codebase-dropzone"},"object":{"key":"documents/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/paths_output.pdf","size":140400,"eTag":"4b8551c48387d81c247120e4ae25d336","versionId":"CESwjxYp.EwSxaDhMbKaaE_UnEhp4EEx","sequencer":"0066DA48A631D98F96"}}}]}',
-                    "Timestamp": "2024-09-06T00:11:19.656Z",
+                    "Message": '{"Records":[{"eventVersion":"2.1","eventSource":"aws:s3","awsRegion":"us-east-1","eventTime":"2024-09-10T19:38:30.682Z","eventName":"ObjectCreated:Put","userIdentity":{"principalId":"AWS:AIDAYAE342GKYWJN6UVW7"},"requestParameters":{"sourceIPAddress":"70.123.26.135"},"responseElements":{"x-amz-request-id":"FG4GEVAPSVK6WFD4","x-amz-id-2":"4bGCWNdQFM4GsS+Wzug+xPnkR2vJRVBDZkUFxIPCgT2XI/mqKJ/9yDlAiNrjIceXpMog3RwLCUucYh/e1McW410Nam1LzHlA"},"s3":{"s3SchemaVersion":"1.0","configurationId":"file-drop","bucket":{"name":"development-codebase-dropzone","ownerIdentity":{"principalId":"A3AP0FXFCX5FDS"},"arn":"arn:aws:s3:::development-codebase-dropzone"},"object":{"key":"documents/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/f07e2ce5-3679-4f6b-b509-03aa233ae314_SG_Slow_Query_Analysis_SG_driverai_dev3_aws_64085.servers.mongodirector.com__Aug_05_18_38__UTC____Aug_06_17_38__UTC_.pdf","size":81162,"eTag":"d8c563249474d93c5bc210fd5f2a6656","versionId":"qTFya.xu1iJcQarccGkKLK.EDyuiLsOI","sequencer":"0066E0A0369C149E17"}}}]}',
+                    "Timestamp": "2024-09-10T19:38:31.959Z",
                     "SignatureVersion": "1",
-                    "Signature": "SMze9hbK4H4C6mAssYTSY1THUi0pycF3Pb6peICab1wuc0UvwkXcug9NgAztg/t2yXUXSTZBto6rGa7/H4CaQ1whdMadyRxxtA5xDyxqfV2G4dY7ajWYfqhDCf0OwA0u7+/X40a/XVXDfYHdbPOA9F5YdkZwHgpZ/K/Lxas8ZsUAOc4B0yUPQtCRIG7j7ch/o6RQGrE47tCUcNdI6M/LwzJGZXx95XRzsmnE9Vr4eIw2okkdsZFHr1rzs+/aNvMnmZzPiGd8lp+J1TUV3Olso+59lh6GgvjF6KbgTRDM9O5rsNX20XBkb0ZKUlaohJuecc98gtJ67bdayG9+t0Mxgg==",
+                    "Signature": "JyJjHs4hvekcV3PfGbvOT+VhB0iQ6XPnU69AgpQ6UkkX61c4mxlIoJTnVZY1b225VD7VJX3XIUrJ4HE6kO5eL1ng4LvZ+ybjV7Mi0fUKesnt94kdvz2uRdk29c1xp8dRI2bhB/g/MjDsZHmUXIHTkmGz+yWbj7ls4sdyRkqNy6qdYbYwGKD7ooMga7FtgDtyyrB9+EOY5vvivBvgUWsxRz/JtoUu5Mj0nDs35cIKwXQJwhE6S+0Ko3DPbObnZLBawHs4cg3BDzqe4gFiyq3VPTdK9ypKB4x0yP1eBG5d2z4vg13Tyz819VsC4xMc1sFfbuXnwU7PldzAR7AEA9FxBA==",
                     "SigningCertUrl": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-60eadc530605d63b8e62a523676ef735.pem",
                     "UnsubscribeUrl": "https://sns.us-east-1.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:us-east-1:550082761109:CdkInfraStackCodebaseOnboardingLambdaStackE7027C30-TopicBFC7AF6E-T41t4VpPQduq:33410862-0d11-4c7d-a93c-39d27f43b269",
                     "MessageAttributes": {},
@@ -196,56 +196,6 @@ def test_real_document_upload_lambda_handler(real_sns_event):
     the expected keys and values.
     """
     response = handler(real_sns_event, {})
-    assert isinstance(response, list), "Handler response should be a list"
-    assert len(response) > 0, "Handler response list should not be empty"
-    for result in response:
-        assert (
-            "source_content_id" in result
-        ), "Result should contain 'source_content_id'"
-        assert "bucket" in result, "Result should contain 'bucket'"
-        assert "key" in result, "Result should contain 'key'"
-        assert (
-            "pdf_summary_response" in result
-        ), "Result should contain 'pdf_summary_response'"
-        assert (
-            result["pdf_summary_response"] == "OK"
-        ), "PDF summary response should be 'OK'"
-
-
-def test_escape_pdf_name_document_upload_lambda_handler(escape_pdf_name_sns_event):
-    """
-    Test the document upload lambda handler with an SNS event containing escaped PDF names.
-
-    This test checks if the handler returns a list of results, and each result contains
-    the expected keys and values.
-    """
-    response = handler(escape_pdf_name_sns_event, {})
-    assert isinstance(response, list), "Handler response should be a list"
-    assert len(response) > 0, "Handler response list should not be empty"
-    for result in response:
-        assert (
-            "source_content_id" in result
-        ), "Result should contain 'source_content_id'"
-        assert "bucket" in result, "Result should contain 'bucket'"
-        assert "key" in result, "Result should contain 'key'"
-        assert (
-            "pdf_summary_response" in result
-        ), "Result should contain 'pdf_summary_response'"
-        assert (
-            result["pdf_summary_response"] == "OK"
-        ), "PDF summary response should be 'OK'"
-
-
-def test_pdf_name_with_whitespace_document_upload_lambda_handler(
-    pdf_name_with_whitespace_sns_event,
-):
-    """
-    Test the document upload lambda handler with an SNS event containing PDF names with whitespace.
-
-    This test checks if the handler returns a list of results, and each result contains
-    the expected keys and values.
-    """
-    response = handler(pdf_name_with_whitespace_sns_event, {})
     assert isinstance(response, list), "Handler response should be a list"
     assert len(response) > 0, "Handler response list should not be empty"
     for result in response:

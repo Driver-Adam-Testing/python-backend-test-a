@@ -125,7 +125,16 @@ def create_and_embed_pdf_summaries(content_id) -> None:
                     )
             except Exception as e:
                 print(e)
-                # sEnd a n email here
+                # Send an email here
+
             session.commit()
+
+    # Re-query the content object and update its status
+    with Session(engine) as session:
+        content = session.exec(
+            select(DerivedContent).where(DerivedContent.id == content_id)
+        ).one()
+        content.status = "generation-complete"
+        session.commit()
 
     return results

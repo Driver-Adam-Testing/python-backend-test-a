@@ -1,5 +1,6 @@
 import hashlib
 import os
+import re
 from urllib.parse import unquote_plus
 from uuid import uuid4
 
@@ -22,7 +23,6 @@ from app.schemas.upload_schema import (
 )
 from app.utils.aws_s3 import (
     generate_put_presigned_url,
-    generate_put_presigned_url_with_bucket,
 )
 
 
@@ -151,20 +151,15 @@ class UploadService:
             )
         print(f"existing docs found: {existing_doc_count}")
 
-        original_file_parts = os.path.basename(request.file_path).split(".")
-        original_file_name = original_file_parts[0]
+        original_file_name = os.path.basename(request.file_path)
 
-        file_parts = os.path.basename(request.file_path).split(".")
-        file_name = file_parts[0]
-        file_extension = file_parts[1]
+        # file_parts = os.path.basename(request.file_path).split(".")
+        # file_parts
+        # file_name = file_parts[0]
+        # file_extension = file_parts[len(file_parts) - 1]
+        file_name = re.sub(r"[^a-zA-Z0-9.]", "_", os.path.basename(request.file_path))
         file_name = file_name.replace(" ", "_")
-        file_name = f"{file_name}_{uuid4()}.{file_extension}"
-        if existing_doc_count > 0:
-            original_file_name = (
-                f"{original_file_name} ({existing_doc_count}).{file_extension}"
-            )
-        else:
-            original_file_name = f"{original_file_name}.{file_extension}"
+        file_name = f"{uuid4()}_{file_name}"
 
         relative_path = unquote_plus(file_name)  # sanitize and make safe for s3 upload
         print(relative_path)
@@ -179,7 +174,8 @@ class UploadService:
         try:
             org_id_hash = hashlib.sha256(org_id.encode()).hexdigest()[:63]
             # Upload the PDF to the S3 bucket documents folder not the codebases folder
-            upload_key = f"documents/{relative_path}"
+            upload_key = f"documents/{org_id_hash}/{relative_path}"
+
             content_type = self.derived_content_repository.get_by_type_name(
                 "supplemental-document"
             )
@@ -203,8 +199,7 @@ class UploadService:
                 "content_type": "supplemental-document",
                 "source_content_id": str(new_document.id),
             }
-            upload_url = generate_put_presigned_url_with_bucket(
-                bucket=org_id_hash,
+            upload_url = generate_put_presigned_url(
                 key=upload_key,
                 content_type="application/pdf",
                 metadata=codebase_metadata,

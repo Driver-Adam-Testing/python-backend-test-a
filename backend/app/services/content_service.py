@@ -801,18 +801,19 @@ class ContentService:
     ) -> DerivedContent:
         logger.info(f"Editing content {content_id} for organization {organization_id}")
 
-        # checks = [
-        #     lambda session: self.content_repository.is_authorized(
-        #         id=content_id,
-        #         relationship_chain=["workspace"],
-        #         field_name="organization_id",
-        #         field_value=organization_id,
-        #     )
-        # ]
-        #
-        # perform_authorization_checks(self.session, checks)
+        content = self.content_repository.get_by_conditions(
+            [
+                Workspace.organization_id == organization_id,
+                DerivedContent.id == content_id,
+            ],
+            [Workspace],
+        )
 
-        content = self.content_repository.get(content_id)
+        if not content:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
+            )
+
         content = self.content_repository.update(content, DerivedContent(**new_content))
 
         logger.info(

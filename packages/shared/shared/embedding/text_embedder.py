@@ -6,7 +6,6 @@ from openai import (
     APITimeoutError,
     AsyncOpenAI,
     InternalServerError,
-    NotFoundError,
     OpenAI,
     RateLimitError,
 )
@@ -50,7 +49,6 @@ def batch_embed_text(
         RateLimitError,
         APIConnectionError,
         InternalServerError,
-        NotFoundError,
     ),
 )
 async def async_batch_embed_text(

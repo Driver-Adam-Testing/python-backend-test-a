@@ -9,7 +9,7 @@ interacts with various AWS services and external APIs to complete the workflow.
 """
 import json
 import logging
-import os
+from pathlib import Path
 from urllib.parse import unquote_plus
 
 import botocore
@@ -85,7 +85,7 @@ def handler(event, context):
             if bucket_exists:
                 logging.info("Copying to organization bucket...")
                 destination_bucket_name = metadata["Metadata"]["org_bucket"]
-                real_file_name = os.path.basename(real_object_key)
+                real_file_name = Path(real_object_key).name
                 destination_real_object_key = f"documents/{real_file_name}"
                 copy_s3_object(
                     source_bucket=bucket_name,

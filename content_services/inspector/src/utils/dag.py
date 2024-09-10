@@ -1,3 +1,4 @@
+import copy
 import graphlib
 from collections.abc import Generator
 from dataclasses import dataclass, field
@@ -92,6 +93,7 @@ class Node(LiteNode):
 class FileTreeDag:
     root: Node = field(init=False)
     root_abs_path: Path
+    node_rel_path_to_content_hash: dict[str, str] = field(default_factory=dict)
 
     def __post_init__(self):
         if not self.root_abs_path.exists():
@@ -100,7 +102,7 @@ class FileTreeDag:
             )
         self.root = Node(kind=NodeKind.ROOT_FOLDER, root_rel_path=Path(""), parent=None)
 
-    def add_file(self, path: Path, change_status=True) -> None:
+    def add_file(self, path: Path, change_status=True, hash: str | None = None) -> None:
         if not path.exists():
             raise FileNotFoundError(f"Path {path} does not exist.")
         if not path.is_file():
@@ -141,6 +143,10 @@ class FileTreeDag:
                 # current.status = (
                 #     NodeStatus.MODIFIED if change_status else NodeStatus.UNMODIFIED
                 # )  # This is so that if we marked for deltion a node with a removal status, and then re-added it, it will be marked as modified
+
+        # If provided a hash for a file (leaf node), store it
+        if hash:
+            self.node_rel_path_to_content_hash[current.root_rel_path.as_posix()] = hash
 
         # When a new node is added, ensure upstream nodes are correctly marked
         if node_added and change_status:
@@ -222,6 +228,53 @@ class FileTreeDag:
             for node in current.traverse_downstream():
                 node.status = NodeStatus.MODIFIED
 
+    # TODO add tests for this!!
+    def delete_file_node(self, path: Path) -> None:
+        """Removes a file node from the DAG based on the given path.
+        If a parent has no other children after deletion, recursively remove empty folders upstream."""
+        relative_path = path.relative_to(self.root_abs_path)
+        parts = relative_path.parts
+
+        current = self.root
+        current_path = Path("")
+        parent = None
+
+        # Traverse to the node to be deleted
+        for part in parts:
+            current_path /= part
+            path_key = current_path.as_posix()
+            if path_key in current.children:
+                parent = current
+                current = current.children[path_key]
+            else:
+                raise KeyError(f"Cannot delete. {path} not found in tree.")
+
+        if current.kind != NodeKind.FILE:
+            raise TypeError(
+                f"Cannot delete {path}. Only file nodes can be deleted with this method."
+            )
+
+        # Remove the node from its parent
+        if parent:
+            parent.remove_child(current_path)
+        else:
+            raise ValueError("Cannot delete the root node.")
+
+        self.node_rel_path_to_content_hash.pop(current.root_rel_path.as_posix(), None)
+        self._remove_empty_parents(parent)
+
+    def _remove_empty_parents(self, node: Node | None) -> None:
+        """Recursively remove parent nodes if they have no children and are folders."""
+        while node and node.kind in {NodeKind.SUB_FOLDER, NodeKind.ROOT_FOLDER}:
+            if node.children:
+                break
+            if node.parent is None:
+                break  # Stop if this is the root node
+            parent = node.parent
+            # Explicitly remove the empty folder node from its parent
+            parent.remove_child(node.root_rel_path)
+            node = parent
+
     def topological_sort(
         self,
         changed_nodes_only: bool = False,
@@ -253,6 +306,52 @@ class FileTreeDag:
             ]
 
         return sorted_nodes
+
+    def compute_diff(self, old: "FileTreeDag"):
+        # This DAG has annotations of the changes required to go from `old` to `self` state
+        diff_dag = copy.deepcopy(old)
+        # TODO this is a hack where we change the path to the root path of self so that the
+        # resulting diff can be used to access the actual files from the new dag by the caller
+        diff_dag.root_abs_path = self.root_abs_path
+
+        def collect_nodes(dag: FileTreeDag) -> dict[str, Node]:
+            nodes = {}
+            for node in dag.root.traverse_downstream():
+                nodes[node.root_rel_path.as_posix()] = node
+            return nodes
+
+        old_nodes = collect_nodes(old)
+        self_nodes = collect_nodes(self)
+
+        # Handle additions and mods
+        for path, self_node in self_nodes.items():
+            if path not in old_nodes:
+                if self_node.kind == NodeKind.FILE:
+                    # Change status implies we'll mark as added
+                    diff_dag.add_file(diff_dag.root_abs_path / path, change_status=True)
+            else:
+                old_node = old_nodes[path]
+                if self_node.kind != old_node.kind:
+                    diff_dag.mark_as_modified(
+                        diff_dag.root_abs_path / path, include_upstream=True
+                    )
+                elif (
+                    self_node.kind == NodeKind.FILE
+                    and self.node_rel_path_to_content_hash[path]
+                    != old.node_rel_path_to_content_hash[path]
+                ):
+                    diff_dag.mark_as_modified(
+                        diff_dag.root_abs_path / path, include_upstream=True
+                    )
+
+        # Handle removals
+        for path, old_node in old_nodes.items():
+            # print(f"-> checking if {path} got removed")
+            if path not in self_nodes and old_node.kind == NodeKind.FILE:
+                # print(f"=> {path} got removed! calling delete node")
+                diff_dag.delete_file_node(diff_dag.root_abs_path / path)
+
+        return diff_dag
 
     # def render_graph(self, path=Path("out.pdf")) -> None:
     #     from graphviz import Digraph

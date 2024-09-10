@@ -1,3 +1,4 @@
+import subprocess
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -100,6 +101,36 @@ class TestNode:
         assert isinstance(lite_node, LiteNode)
         assert lite_node.kind == grandchild_node.kind
         assert lite_node.root_rel_path == grandchild_node.root_rel_path
+
+
+def create_file_tree_dag(
+    root_path: Path, structure: dict[str, None | str]
+) -> FileTreeDag:
+    """
+    Creates a FileTreeDag with the given structure and file hashes.
+    :param root_path: Root path for the DAG.
+    :param structure: A dictionary where keys are relative paths, values are tuples of (NodeKind, hash or None).
+    :return: A FileTreeDag instance.
+    """
+    root_path.mkdir()
+    dag = FileTreeDag(root_abs_path=root_path)
+    for path_str, hash in structure.items():
+        path = root_path / path_str
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.touch()
+        dag.add_file(path, change_status=False, hash=hash)
+    return dag
+
+
+def run_tree_command(directory: Path):
+    result = subprocess.run(
+        ["tree", str(directory)],
+        capture_output=True,
+        text=True,
+        check=True,  # Raise an error if the command fails
+    )
+
+    print(result.stdout)
 
 
 class TestFileTreeDag:
@@ -443,3 +474,178 @@ class TestFileTreeDag:
         assert sorted_nodes[0].root_rel_path == Path("folder1/subfolder1")
         assert sorted_nodes[1].root_rel_path == Path("folder1")
         assert sorted_nodes[2].root_rel_path == Path("")
+
+    @pytest.fixture
+    def setup_diff_dags(self, temp_dir: Path):
+        structure_a = {
+            "file1.txt": "hash1",
+            "folder1/file2.txt": "hash2",
+            "folder3/subdir/file1.txt": "hash_file_1",
+            "folder3/file3.txt": "hash3",
+            "folder1/thing": "has_thing_file",
+        }
+        dag_a = create_file_tree_dag(temp_dir / "dag_a", structure_a)
+
+        structure_b = {
+            "file1.txt": "hash1",
+            "folder1/added_child.txt": "added_child",  # Added new child to dir
+            "folder1/file2.txt": "hash_changed",  # Modified (hash changed only!)
+            "folder2/file3.txt": "hash3",  # Added child and parent dir
+            "folder3/file3.txt": "hash3",
+            "folder1/thing/new_file.txt": "hash_thing_file",  # thing changes from file to folder! File is added to it so it doesn't get removed for being empty
+        }
+        dag_b = create_file_tree_dag(temp_dir / "dag_b", structure_b)
+
+        # print("DAG A")
+        # run_tree_command(temp_dir / "dag_a")
+        # print("DAG B")
+        # run_tree_command(temp_dir / "dag_b")
+        return dag_a, dag_b
+
+    def test_compute_diff_additions(self, setup_diff_dags):
+        dag_a, dag_b = setup_diff_dags
+        diff = dag_b.compute_diff(dag_a)
+
+        added_file_node = [
+            node
+            for node in diff.root.traverse_downstream()
+            if node.root_rel_path == Path("folder2/file3.txt")
+            and node.status == NodeStatus.ADDED
+        ]
+        assert len(added_file_node) == 1
+
+        added_folder_node = [
+            node
+            for node in diff.root.traverse_downstream()
+            if node.root_rel_path == Path("folder2") and node.status == NodeStatus.ADDED
+        ]
+        assert len(added_folder_node) == 1
+
+        added_file_node = [
+            node
+            for node in diff.root.traverse_downstream()
+            if node.root_rel_path == Path("folder1/added_child.txt")
+            and node.status == NodeStatus.ADDED
+        ]
+        assert len(added_file_node) == 1
+
+        modified_folder_node = [
+            node
+            for node in diff.root.traverse_downstream()
+            if node.root_rel_path == Path("folder1")
+            and node.status == NodeStatus.MODIFIED
+        ]
+        assert len(modified_folder_node) == 1
+
+    def test_compute_diff_modifications(self, setup_diff_dags):
+        dag_a, dag_b = setup_diff_dags
+        diff = dag_b.compute_diff(dag_a)
+
+        assert any(
+            node
+            for node in diff.root.traverse_downstream()
+            if node.root_rel_path == Path("folder1/file2.txt")
+            and node.status == NodeStatus.MODIFIED
+        )
+        assert any(
+            node
+            for node in diff.root.traverse_downstream()
+            if node.root_rel_path == Path("folder1")
+            and node.status == NodeStatus.MODIFIED
+        )
+
+        # structure_a = {
+        #     "file1.txt": "hash1",
+        #     "folder1/file2.txt": "hash2",
+        #     "folder3/subdir/file1.txt": "hash_file_1",
+        #     "folder3/file3.txt": "hash3",
+        # }
+        # dag_a = create_file_tree_dag(temp_dir / "dag_a", structure_a)
+        #
+        # structure_b = {
+        #     "file1.txt": "hash1",
+        #     "folder1/added_child.txt": "added_child",  # Added new child to dir
+        #     "folder1/file2.txt": "hash_changed",  # Modified (hash changed only!)
+        #     "folder2/file3.txt": "hash3",  # Added child and parent dir
+        #     "folder3/file3.txt": "hash3",
+        #     #"folder1/thing/thing_file.txt": 'hash_thing_file',  # thing changes from file to folder! File is added
+        # }
+
+    def test_compute_diff_removals(self, setup_diff_dags):
+        dag_a, dag_b = setup_diff_dags
+        diff = dag_b.compute_diff(dag_a)
+
+        # Starting out, the node is there.
+        assert any(
+            node
+            for node in dag_a.root.traverse_downstream()
+            if node.root_rel_path == Path("folder3/subdir/file1.txt")
+        )
+
+        # In dag_b, it's removed.
+        assert not any(
+            node
+            for node in dag_b.root.traverse_downstream()
+            if node.root_rel_path == Path("folder3/subdir/file1.txt")
+        )
+
+        # Since one child remains after removal, we're modified status for folder1
+        assert any(
+            node
+            for node in diff.root.traverse_downstream()
+            if node.root_rel_path == Path("folder1")
+            and node.status == NodeStatus.MODIFIED
+        )
+
+        # folder3/subdir is removed since it's children are removed
+        assert not any(
+            node
+            for node in diff.root.traverse_downstream()
+            if node.root_rel_path == Path("folder3/subdir")
+        )
+
+    def test_compute_diff_unmodified_nodes(self, setup_diff_dags):
+        dag_a, dag_b = setup_diff_dags
+        diff = dag_b.compute_diff(dag_a)
+
+        assert any(
+            node
+            for node in diff.root.traverse_downstream()
+            if node.root_rel_path == Path("file1.txt")
+            and node.status == NodeStatus.UNMODIFIED
+        )
+
+    def test_compute_diff_no_changes(self, tmp_path):
+        structure = {
+            "file1.txt": (NodeKind.FILE, "hash1"),
+            "folder1/file2.txt": (NodeKind.FILE, "hash2"),
+            "folder2": (NodeKind.SUB_FOLDER, None),
+        }
+        dag_a = create_file_tree_dag(tmp_path / "dag_a", structure)
+        dag_b = create_file_tree_dag(tmp_path / "dag_b", structure)
+
+        diff = dag_b.compute_diff(dag_a)
+
+        for node in diff.root.traverse_downstream():
+            assert node.status == NodeStatus.UNMODIFIED
+
+    # TODO fix implementation to support this test!!!
+    def test_compute_diff_node_kind_changes(self, setup_diff_dags):
+        dag_a, dag_b = setup_diff_dags
+        diff = dag_b.compute_diff(dag_a)
+
+        assert any(
+            node
+            for node in diff.root.traverse_downstream()
+            if node.root_rel_path == Path("folder1/thing")
+            and node.status == NodeStatus.ADDED
+            and node.kind == NodeKind.SUB_FOLDER
+        )
+
+        assert any(
+            node
+            for node in diff.root.traverse_downstream()
+            if node.root_rel_path == Path("folder1/thing/new_file.txt")
+            and node.status == NodeStatus.ADDED
+            and node.kind == NodeKind.FILE
+        )

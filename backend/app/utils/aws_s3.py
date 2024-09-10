@@ -12,7 +12,7 @@ s3_client = boto3.client(
 )
 
 
-def generate_put_presigned_url(key, content_type, metadata=None, expires=3600):
+def generate_put_presigned_url(key, content_type, metadata: dict = None, expires=3600):
     if metadata is None:
         metadata = {}
     bucket = (
@@ -33,7 +33,7 @@ def generate_put_presigned_url(key, content_type, metadata=None, expires=3600):
 
 
 def generate_put_presigned_url_with_bucket(
-    bucket: str, key: str, content_type: str, metadata=None, expires=3600
+    bucket: str, key: str, content_type: str, metadata: dict = None, expires=3600
 ):
     if metadata is None:
         metadata = {}

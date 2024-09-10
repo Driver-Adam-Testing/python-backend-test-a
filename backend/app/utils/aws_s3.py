@@ -32,23 +32,6 @@ def generate_put_presigned_url(key, content_type, metadata: dict = None, expires
     )
 
 
-def generate_put_presigned_url_with_bucket(
-    bucket: str, key: str, content_type: str, metadata: dict = None, expires=3600
-):
-    if metadata is None:
-        metadata = {}
-    return s3_client.generate_presigned_url(
-        ClientMethod="put_object",
-        Params={
-            "Bucket": bucket,
-            "Key": key,
-            "ContentType": content_type,
-            "Metadata": metadata,
-        },
-        ExpiresIn=expires,
-    )
-
-
 def generate_get_presigned_url(key, expires=3600):
     bucket = (
         settings.DROPZONE_BUCKET_NAME

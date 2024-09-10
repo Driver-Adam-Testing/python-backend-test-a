@@ -1,12 +1,13 @@
-from fastapi import APIRouter
+import json
+
+from fastapi import APIRouter, HTTPException
 from modal import Function
+from modal.functions import FunctionCall
 from shared.interfaces.response import ModalDriverResponse
 from shared.pipelines.agents.execute import (
-    AgentExecuteInput,
-    AgentExecutionResponse,
-    AgentExecutionSequenceResponse,
+    PipelineResponse,
+    PipelineSequenceInput,
     execute_sequence,
-    execute_single,
 )
 
 from app.api.auth import CurrentUser
@@ -14,17 +15,17 @@ from app.api.auth import CurrentUser
 router = APIRouter()
 
 
-@router.post(
-    "/",
-    summary="Execute an agent pipeline",
-    response_description="The response from the agent execution",
-)
-def execute_agent(
-    user: CurrentUser,
-    input: AgentExecuteInput,
-) -> AgentExecutionResponse:
-    input.scope.organization_id = user.organization_id
-    return execute_single(input)
+# @router.post(
+#     "/",
+#     summary="Execute an agent pipeline",
+#     response_description="The response from the agent execution",
+# )
+# def execute_agent(
+#     user: CurrentUser,
+#     input: PipelineSequenceInput,
+# ) -> AgentExecutionResponse:
+#     input.scope.organization_id = user.organization_id
+#     return execute_single(input)
 
 
 @router.post(
@@ -34,8 +35,8 @@ def execute_agent(
 )
 def execute_agent_sequence(
     user: CurrentUser,
-    input: AgentExecuteInput,
-) -> AgentExecutionSequenceResponse:
+    input: PipelineSequenceInput,
+) -> PipelineResponse:
     input.scope.organization_id = user.organization_id
     return execute_sequence(input)
 
@@ -45,7 +46,7 @@ def execute_agent_sequence(
     summary="Start a modal instance of the execute Agent Sequence",
 )
 def execute_agent_sequence_modal_async(
-    user: CurrentUser, input: AgentExecuteInput
+    user: CurrentUser, input: PipelineSequenceInput
 ) -> ModalDriverResponse:
     input.scope.organization_id = user.organization_id
     modal_function = Function.lookup("agent", "run")
@@ -53,12 +54,27 @@ def execute_agent_sequence_modal_async(
     return ModalDriverResponse(call_id=instance.object_id)
 
 
+@router.post("/results", response_model=PipelineResponse)
+def get_execution_results(user: CurrentUser, call_id: str) -> PipelineResponse:
+    function_call = FunctionCall.from_id(call_id)
+    try:
+        result = function_call.get(timeout=0)
+        response = PipelineResponse(**json.loads(result))
+    except TimeoutError:
+        raise HTTPException(status_code=408, detail="Request Timeout")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    return response
+
+
 @router.post(
-    "/sequence/modal", summary="Start a modal instance of the execute Agent Sequence"
+    "/sequence/modal/sync",
+    summary="Start a modal instance of the execute Agent Sequence",
 )
 def execute_agent_sequence_modal_sync(
-    user: CurrentUser, input: AgentExecuteInput
-) -> AgentExecutionSequenceResponse:
+    user: CurrentUser, input: PipelineSequenceInput
+) -> PipelineResponse:
     input.scope.organization_id = user.organization_id
     modal_function = Function.lookup("agent", "run")
     return modal_function.remote(input)

@@ -11,26 +11,22 @@ def create_agent(
     tools=None,
     response_type=None,
 ):
-    if model is None:
-        model = ModelConfig.get_default_model()
-    else:
-        model = ModelConfig.get_model_config_by_model(model)
+    model_config = (
+        ModelConfig.default() if model is None else ModelConfig.from_name(model)
+    )
 
-    if model is None:
-        raise ValueError("Model is not supported.")
-
-    if model.provider == ModelProvider.OPENAI:
+    if model_config.provider == ModelProvider.OPENAI:
         return OpenAIStrictAgent(
-            model=model.model_id,
+            model=model_config.model_id,
             max_iterations=max_iterations,
             tools=tools,
             organization_id=organization_id,
             paths=paths,
             response_format=response_type,
         )
-    elif model.provider == ModelProvider.ANTHROPIC:
+    elif model_config.provider == ModelProvider.ANTHROPIC:
         return AnthropicStrictAgent(
-            model=model.model_id,
+            model=model_config.model_id,
             max_iterations=max_iterations,
             tools=tools,
             organization_id=organization_id,

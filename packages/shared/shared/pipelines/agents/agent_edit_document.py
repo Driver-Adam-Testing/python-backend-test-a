@@ -1,12 +1,12 @@
 from pydantic import BaseModel
 from shared.agent.tools.open_file_tool import OpenFileTool
 from shared.agent.tools.search_tool import SearchTool
-from shared.interfaces.agents.execute import (
+from shared.interfaces.agents.data_scope import DataScope
+from shared.interfaces.agents.pipeline_configuration import (
     AgentConfiguration,
-    AgentExecuteInput,
-    AgentExecutionResponse,
-    AgentScope,
-    AgentType,
+    PipelineSequenceInput,
+    PipelineStepResponse,
+    PipelineStepType,
 )
 from shared.pipelines.agents.agent_copy_editor import run_agent_copy_editor
 from shared.pipelines.agents.agent_default import run_agent_default
@@ -30,7 +30,7 @@ class EditDocumentContext(BaseModel):
     text_after_selection: str
 
 
-class AgentEditDocumentExecuteInput(AgentExecuteInput):
+class AgentEditDocumentExecuteInput(PipelineSequenceInput):
     """
     Input model for smart instruction generation.
 
@@ -41,7 +41,7 @@ class AgentEditDocumentExecuteInput(AgentExecuteInput):
 
     prompt: str
     context: EditDocumentContext
-    scope: AgentScope
+    scope: DataScope
 
 
 INSTRUCTION_PROMPT = "Rewrite the selected text part of document. Respond with replacement or appended text for the selected text, which will be rendered as markdown, according to the user prompt."
@@ -51,7 +51,7 @@ def run_agent_edit_document(input: AgentEditDocumentExecuteInput):
     prompt_augmentation_agent_configuration = AgentConfiguration(**input.agent_config)
     prompt_augmentation_agent_configuration.iterations = 1
     prompt_augmentation_prompt = run_agent_prompt_augmentation(
-        AgentExecuteInput(
+        PipelineSequenceInput(
             prompt=input.prompt,
             context=input.context.model_dump(),
             agent_config=prompt_augmentation_agent_configuration,
@@ -66,15 +66,17 @@ def run_agent_edit_document(input: AgentEditDocumentExecuteInput):
                 INSTRUCTION_PROMPT,
             ],
             iterations=3,
-            tools=[SearchTool, OpenFileTool],
+            tool_names=[SearchTool, OpenFileTool],
         ),
         scope=input.scope,
     )
     copy_editor_result = run_agent_copy_editor(
         prompt=default_agent_result,
-        agent_config=AgentConfiguration(agent_type=AgentType.COPY_EDITOR, iterations=1),
+        agent_config=AgentConfiguration(
+            agent_type=PipelineStepType.COPY_EDITOR, iterations=1
+        ),
     )
-    return AgentExecutionResponse(
+    return PipelineStepResponse(
         agent_result=copy_editor_result.agent_result,
         search_results=default_agent_result.search_results,
         agent_id=default_agent_result.id,

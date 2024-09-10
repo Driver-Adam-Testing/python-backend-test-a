@@ -60,6 +60,7 @@ class OpenAIStrictAgent(AgentBase):
 
     def invoke(self, prompt: str = None):
         response = super().invoke(prompt)
+        print(response)
         if self.response_format:
-            return self.response_format(**json.loads(response))
+            response = self.response_format(**json.loads(response))
         return response

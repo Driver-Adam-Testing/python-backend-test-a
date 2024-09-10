@@ -3,10 +3,10 @@ from shared.agent.agent_openai_strict import OpenAIStrictAgent
 from shared.agent.models.llm_models import ModelConfig
 from shared.agent.tools.open_file_tool import OpenFileTool
 from shared.agent.tools.search_tool import SearchTool
-from shared.interfaces.agents.execute import (
-    AgentExecuteInput,
-    AgentExecutionResponse,
-    AgentExecutionSequenceResponse,
+from shared.interfaces.agents.pipeline_configuration import (
+    PipelineResponse,
+    PipelineSequenceInput,
+    PipelineStepResponse,
 )
 
 
@@ -22,13 +22,13 @@ class CodeVerification(BaseModel):
     rationale_for_fixing: str
 
 
-class FindCodeSnippetsInput(AgentExecuteInput):
+class FindCodeSnippetsInput(PipelineSequenceInput):
     document_content: str
 
 
 def run_agent_find_code_snippets(input: FindCodeSnippetsInput):
     agent = OpenAIStrictAgent(
-        model=ModelConfig.get_default_model().model_id,
+        model=ModelConfig.from_default().model_id,
         paths=input.scope.paths,
         organization_id=input.scope.organization_id,
         response_format=CodeSnippets,
@@ -50,14 +50,14 @@ def run_agent_find_code_snippets(input: FindCodeSnippetsInput):
     )
 
     snippets = agent.invoke()
-    return AgentExecutionResponse(
+    return PipelineStepResponse(
         agent_id=agent.agent_id, agent_result=snippets, search_results=[]
     )
 
 
-def run_agent_code_critic(input: AgentExecuteInput):
+def run_agent_code_critic(input: PipelineSequenceInput):
     agent = OpenAIStrictAgent(
-        model=ModelConfig.get_default_model().model_id,
+        model=ModelConfig.from_default().model_id,
         paths=input.scope.paths,
         organization_id=input.scope.organization_id,
         response_format=CodeSnippets,
@@ -82,7 +82,7 @@ def run_agent_code_critic(input: AgentExecuteInput):
     verifications = []
     for snippet in snippets.snippets:
         verification_agent = OpenAIStrictAgent(
-            model=ModelConfig.get_default_model().model_id,
+            model=ModelConfig.from_default().model_id,
             paths=input.scope.paths,
             organization_id=input.scope.organization_id,
             max_iterations=4,
@@ -96,4 +96,4 @@ def run_agent_code_critic(input: AgentExecuteInput):
                                              Depending on search results if the code is incorrect, respond with a fixed code snippet. then  either respond with supporting paths that prove the code example was correct, or prove that the fixed code is correct. If a code snippet gets fixed, return the rationale for fixing it. Respond with whether or not the original snippet was altered, and supporting paths that prove that the source code will execute correctly."""
         )
         verifications.append(verification_response)
-    return AgentExecutionSequenceResponse()
+    return PipelineResponse()

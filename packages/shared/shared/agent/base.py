@@ -26,7 +26,7 @@ class AgentBase:
         self.log = log
         self.debug = debug
         self.agent_id = agent_id
-        self.paths = paths if paths is not None else ["/"]
+        self.paths = paths if paths is not None else []
         self.tools = tools if tools is not None else []
         self.max_iterations = max_iterations
         self.iteration = 0

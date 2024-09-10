@@ -2,10 +2,10 @@ from pydantic import BaseModel
 from shared import prompts
 from shared.agent.agent_factory import create_agent
 from shared.agent.tools.search_tool import SearchTool
-from shared.interfaces.agents.execute import (
-    AgentExecuteInput,
-    AgentExecutionResponse,
-    UserPromptWithContext,
+from shared.interfaces.agents.pipeline_configuration import (
+    PipelineStepConfiguration,
+    PipelineStepResponse,
+    PromptWithContext,
 )
 
 
@@ -27,11 +27,13 @@ class PromptAugmentationLLMResponse(BaseModel):
     rationale: str
 
 
-def run_agent_prompt_augmentation(input: AgentExecuteInput) -> AgentExecutionResponse:
+def run_agent_prompt_augmentation(
+    input: PipelineStepConfiguration,
+) -> PipelineStepResponse:
     agent = create_agent(
-        model=input.agent_config.model,
+        model=input.model,
         organization_id=input.scope.organization_id,
-        max_iterations=3,
+        max_iterations=input.iterations,
         tools=[SearchTool],
         paths=input.scope.paths,
         response_type=PromptAugmentationLLMResponse,
@@ -40,21 +42,12 @@ def run_agent_prompt_augmentation(input: AgentExecuteInput) -> AgentExecutionRes
     agent.add_message(prompts.interface.technical_context_interface.MESSAGE)
     agent.add_message(prompts.voice.software_engineer.MESSAGE)
     agent.add_message(prompts.task.prompt_augmentation.MESSAGE)
-    response = agent.invoke(input.create_user_prompt())
+    response = agent.invoke(str(input.prompt))
 
-    if isinstance(input.context, dict):
-        input.context["additional_context"] = response.additional_context
-    elif isinstance(input.context, list):
-        input.context.append(response.additional_context)
-    elif isinstance(input.context, str):
-        input.context += f"\n{response.additional_context}"
-    else:
-        input.context = response.additional_context
-
-    return AgentExecutionResponse(
+    return PipelineStepResponse(
         agent_id=agent.agent_id,
         search_results=agent.search_results,
-        agent_result=UserPromptWithContext(
-            prompt=response.new_prompt, context=input.context
-        ).create_user_prompt(),
+        agent_result=str(
+            PromptWithContext(prompt=response.new_prompt, context=input.prompt.context)
+        ),
     )

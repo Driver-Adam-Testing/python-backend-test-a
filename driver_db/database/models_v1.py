@@ -383,6 +383,9 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
     content: None | str = Field(
         sa_column=Column(sqlalchemy.Text, nullable=True), default=None
     )
+    content_name: None | str = Field(
+        sa_column=Column(sqlalchemy.Text, nullable=True), default=None
+    )
     misc_metadata: dict | None = Field(  # type: ignore
         sa_column=Column("metadata", JSONB, nullable=True), default=None
     )
@@ -437,10 +440,9 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
     tag_links: list["TagContent"] = Relationship(back_populates="content")
     tags: list["Tag"] = Relationship(
         back_populates=None,
-        sa_relationship_kwargs={
-            "secondary": "tags_contents","viewonly": True
-        },
+        sa_relationship_kwargs={"secondary": "tags_contents", "viewonly": True},
     )
+
 
 class Tag(SQLModel, table=True):  # type: ignore
     __tablename__ = "tags"
@@ -496,10 +498,7 @@ class Tag(SQLModel, table=True):  # type: ignore
     )
     contents: list["DerivedContent"] = Relationship(
         back_populates=None,
-        sa_relationship_kwargs={
-            "secondary": "tags_contents",
-            "viewonly": True
-        },
+        sa_relationship_kwargs={"secondary": "tags_contents", "viewonly": True},
     )
     derived_contents: list["DerivedContent"] = Relationship(
         back_populates="tags", link_model=TagContent
@@ -536,4 +535,3 @@ class ChunkAndEmbedding(SQLModel, table=True):  # type: ignore
             nullable=False,
         ),
     )
-

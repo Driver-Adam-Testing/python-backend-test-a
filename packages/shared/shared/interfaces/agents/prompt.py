@@ -7,11 +7,11 @@ class PromptWithContext(BaseModel):
 
     Attributes:
         prompt (str): The user prompt.
-        context (T): Generic type for context information.
+        context (dict | BaseModel): Context information.
     """
 
     prompt: str | None = None
-    context: object | None = None
+    context: dict | BaseModel = None
 
     def __init__(self, prompt: str, **kwargs):
         super().__init__(**kwargs)
@@ -43,35 +43,18 @@ class PromptWithContext(BaseModel):
                     xml += f"<{key}>{value}</{key}>"
             return xml
 
-        def list_to_xml(lst: list) -> str:
-            """
-            Convert a list to an XML string.
-
-            Args:
-                lst (list): The list to convert.
-
-            Returns:
-                str: The XML string representation of the list.
-            """
-            xml = ""
-            for item in lst:
-                xml += f"<list_item>{object_to_xml(item)}</list_item>"
-            return xml
-
         def object_to_xml(obj) -> str:
             """
             Convert an object to an XML string by converting its __dict__ attribute or using model_dump if available.
 
             Args:
-                obj (T): The object to convert.
+                obj (dict | BaseModel): The object to convert.
 
             Returns:
                 str: The XML string representation of the object.
             """
             if isinstance(obj, dict):
                 return dict_to_xml(obj)
-            elif isinstance(obj, list):
-                return list_to_xml(obj)
             elif hasattr(obj, "model_dump"):
                 return dict_to_xml(obj.model_dump())
             elif hasattr(obj, "__dict__"):
@@ -89,6 +72,17 @@ class PromptWithContext(BaseModel):
             user_prompt = self.prompt
 
         return user_prompt
+
+    def add_to_context(self, additional_context: dict) -> None:
+        """
+        Add additional context to the existing context.
+
+        Args:
+            additional_context (dict): The additional context to add.
+        """
+        if not self.context:
+            self.context = {}
+        self.context.update(additional_context)
 
     def __str__(self) -> str:
         return self.create_user_prompt()

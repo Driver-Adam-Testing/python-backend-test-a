@@ -26,24 +26,35 @@ class OpenFileTool(ToolStrict):
                 select(DerivedContent)
                 .where(
                     DerivedContent.relative_path == self.file_path,
-                    DerivedContent.content_type == "codebase-file",
+                    DerivedContent.content_type.has(type_name="codebase-file"),
                 )
                 .options(selectinload(DerivedContent.chunks_and_embeds))
             ).first()
 
             if not derived_content:
-                return f"No derived content found for file path: {self.file_path}"
+                return f"No content found for file path: {self.file_path}"
 
-            chunks_and_embeddings = derived_content.chunks_and_embeds
+            chunks_and_embeddings = sorted(
+                derived_content.chunks_and_embeds, key=lambda chunk: chunk.chunk_number
+            )
 
             if not chunks_and_embeddings:
-                return f"No chunks and embeddings found for file path: {self.file_path}"
+                return f"No content found for file path: {self.file_path}"
 
             formatted_results = []
+            previous_chunk_text = ""
             for chunk in chunks_and_embeddings:
-                formatted_result = f"""<chunk>
-                    <text>{chunk.text}</text>
-                </chunk>"""
-                formatted_results.append(formatted_result.strip())
+                current_chunk_text = chunk.text
+                if previous_chunk_text:
+                    # Remove overlapping text
+                    overlap_length = min(
+                        len(previous_chunk_text), len(current_chunk_text)
+                    )
+                    for i in range(overlap_length, 0, -1):
+                        if previous_chunk_text[-i:] == current_chunk_text[:i]:
+                            current_chunk_text = current_chunk_text[i:]
+                            break
+                formatted_results.append(current_chunk_text)
+                previous_chunk_text = chunk.text
 
             return "\n".join(formatted_results)

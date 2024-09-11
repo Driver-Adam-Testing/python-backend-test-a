@@ -35,11 +35,14 @@ class AgentBase(ABC):
         self.messages = []
         self.search_results = []
         self.response_format = response_format
-        self._load_or_initialize()
-
-    def _load_or_initialize(self):
-        if self.log:
-            if self.agent_id is None:
+        if self.agent_id is not None:
+            with get_session() as session:
+                agent_instance = session.get(RuntimeLogAgentInstance, self.agent_id)
+                if agent_instance:
+                    for message in agent_instance.messages:
+                        self.add_message(message.message)
+        else:
+            if self.log:
                 with get_session() as session:
                     agent_instance = RuntimeLogAgentInstance(
                         workspace_id=None,
@@ -51,12 +54,6 @@ class AgentBase(ABC):
                     session.commit()
                     session.refresh(agent_instance)
                     self.agent_id = agent_instance.id
-            else:
-                with get_session() as session:
-                    agent_instance = session.get(RuntimeLogAgentInstance, self.agent_id)
-                    if agent_instance:
-                        for message in agent_instance.messages:
-                            self.add_message(message.message)
 
     def add_search_results(self, results):
         self.search_results.append(results)

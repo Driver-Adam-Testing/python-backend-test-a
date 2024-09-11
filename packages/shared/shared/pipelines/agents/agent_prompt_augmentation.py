@@ -5,7 +5,6 @@ from shared.agent.tools.search_tool import SearchTool
 from shared.interfaces.agents.pipeline_configuration import (
     PipelineStepConfiguration,
     PipelineStepResponse,
-    PromptWithContext,
 )
 
 
@@ -23,7 +22,6 @@ class PromptAugmentationLLMResponse(BaseModel):
     """
 
     new_prompt: str
-    additional_context: str
     rationale: str
 
 
@@ -38,16 +36,20 @@ def run_agent_prompt_augmentation(
         paths=input.scope.paths,
         response_type=PromptAugmentationLLMResponse,
     )
+
     agent.add_message(prompts.interface.batch_tools.MESSAGE)
+    agent.add_message(prompts.voice.copy_editor_remove_speculation.MESSAGE)
     agent.add_message(prompts.interface.technical_context_interface.MESSAGE)
     agent.add_message(prompts.voice.software_engineer.MESSAGE)
     agent.add_message(prompts.task.prompt_augmentation.MESSAGE)
+
+    # The paths can give extra context to the prompt augmenter.
+    input.prompt.add_to_context({"searchable_paths_and_directories": input.scope.paths})
+
     response = agent.invoke(str(input.prompt))
-    print(response)
+
     return PipelineStepResponse(
         agent_id=agent.agent_id,
         search_results=agent.search_results,
-        agent_result=str(
-            PromptWithContext(prompt=response.new_prompt, context=input.prompt.context)
-        ),
+        agent_result=response.new_prompt,
     )

@@ -2,7 +2,7 @@ import json
 
 from anthropic import Anthropic
 
-from shared.agent.base import AgentBase
+from shared.agent.agent_base import AgentBase
 
 
 class AnthropicStrictAgent(AgentBase):

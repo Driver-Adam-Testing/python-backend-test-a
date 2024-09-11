@@ -21,7 +21,7 @@ class OpsStack(Stack):
             self,
             "ApiBackend",
             BackendParams(
-                environment="development",
+                environment="ops",
                 cors_origins=cors_origins,
                 allowed_ips=["98.142.217.111/32"],
                 use_legacy_dropzone=False,
@@ -31,7 +31,7 @@ class OpsStack(Stack):
             self,
             "CodeOnboardingLambda",
             CodeOnboardingLambdaParams(
-                environment="development",
+                environment="ops",
                 api_url="https://api.ops.driverai.com/api/v1",
                 auth0_url="https://auth.dev.driverai.com",
                 dropzone_bucket=backend.dropzone_bucket,

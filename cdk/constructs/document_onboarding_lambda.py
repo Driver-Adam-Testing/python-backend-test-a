@@ -83,3 +83,14 @@ class DocumentOnboardingLambda(Construct):
             aws_s3_notifications.SnsDestination(sns_topic),
             aws_s3.NotificationKeyFilter(prefix="documents/"),
         )
+        legacy_dropzone_bucket = aws_s3.Bucket.from_bucket_name(
+            scope,
+            "LegacyDropzoneBucket",
+            bucket_name=f"{params.environment}-codebase-dropzone",
+        )
+        legacy_dropzone_bucket.add_event_notification(
+            aws_s3.EventType.OBJECT_CREATED,
+            aws_s3_notifications.SnsDestination(sns_topic),
+            aws_s3.NotificationKeyFilter(prefix="documents/"),
+        )
+        legacy_dropzone_bucket.grant_read(lambda_function)

@@ -27,7 +27,7 @@ class DocumentOnboardingLambdaParams:
         auth0_url,
         use_legacy_dropzone,
         dropzone_bucket,
-        s3_endpoint_url,
+        s3_endpoint_url=None,
     ):
         self.environment = environment
         self.api_url = api_url
@@ -60,7 +60,9 @@ class DocumentOnboardingLambda(Construct):
                 "API_URL": params.api_url,
                 "AUTH0_URL": params.auth0_url,
                 "AWS_S3_CODE_BUCKET_SUFFIX": "codebase-dropzone",
-                "AWS_S3_ENDPOINT_URL": params.s3_endpoint_url,
+                "AWS_S3_ENDPOINT_URL": params.s3_endpoint_url
+                if params.s3_endpoint_url
+                else "",
                 "DROPZONE_BUCKET_NAME": params.dropzone_bucket.bucket_name,
                 "USE_LEGACY_DROPZONE": "True"
                 if params.use_legacy_dropzone
@@ -84,7 +86,7 @@ class DocumentOnboardingLambda(Construct):
             aws_s3_notifications.SnsDestination(sns_topic),
             aws_s3.NotificationKeyFilter(prefix="documents/"),
         )
-        
+
         # TODO: We should find a way to scope down these privileges.
         # Because we need to create arbitrary buckets per org,
         # it's not clear how to do so without breaking existing
@@ -94,7 +96,7 @@ class DocumentOnboardingLambda(Construct):
         )
         legacy_dropzone_bucket = aws_s3.Bucket.from_bucket_name(
             scope,
-            "LegacyDropzoneBucket",
+            "LegacyDropzoneBucketDocOnboarding",
             bucket_name=f"{params.environment}-codebase-dropzone",
         )
         legacy_dropzone_bucket.add_event_notification(

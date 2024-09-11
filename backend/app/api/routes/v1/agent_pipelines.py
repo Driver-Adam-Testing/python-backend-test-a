@@ -26,7 +26,7 @@ def get_execution_results(user: CurrentUser, call_id: str) -> dict:
     function_call = FunctionCall.from_id(call_id)
     try:
         result = function_call.get(timeout=0)
-        return result.model_dump()
+        return result
     except TimeoutError:
         raise HTTPException(status_code=408, detail="Request Timeout")
     except Exception as e:
@@ -40,4 +40,4 @@ def get_execution_results(user: CurrentUser, call_id: str) -> dict:
 def execute_agent_sequence_modal_sync(user: CurrentUser, input: dict) -> dict:
     input["scope"]["organization_id"] = user.organization_id
     modal_function = Function.lookup("agent", "run")
-    return modal_function.remote(input).model_dump()
+    return modal_function.remote(input)

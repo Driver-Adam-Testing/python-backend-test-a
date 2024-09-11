@@ -2,7 +2,7 @@ import logging
 
 import boto3
 from botocore.exceptions import ClientError
-from config import settings
+from src.utils.config import settings
 
 s3_client = boto3.client(
     "s3",
@@ -29,16 +29,16 @@ def head_object(bucket: str, key: str) -> dict:
 def copy_s3_object(
     source_bucket: str, source_key: str, dest_bucket: str, dest_key: str
 ) -> bool:
-    # Construct the copy source dictionary
     copy_source = {"Bucket": source_bucket, "Key": source_key}
-
-    # Perform the copy operation
-    s3_client.copy_object(CopySource=copy_source, Bucket=dest_bucket, Key=dest_key)
-
-    logging.info(
-        f"Successfully copied object from {source_bucket}/{source_key} to {dest_bucket}/{dest_key}"
-    )
-    return True
+    try:
+        s3_client.copy_object(CopySource=copy_source, Bucket=dest_bucket, Key=dest_key)
+        logging.info(
+            f"Successfully copied object from {source_bucket}/{source_key} to {dest_bucket}/{dest_key}"
+        )
+        return True
+    except ClientError as e:
+        logging.error(f"Error copying object: {e}")
+        raise
 
 
 def ensure_bucket_exists(bucket_name: str, region: str | None = None) -> bool:
@@ -64,6 +64,10 @@ def ensure_bucket_exists(bucket_name: str, region: str | None = None) -> bool:
             except ClientError as create_error:
                 logging.error(f"Couldn't create bucket {bucket_name}: {create_error}")
                 raise Exception(f"Couldn't create bucket {bucket_name}: {create_error}")
+        elif error_code == "301":
+            # Handle specific error code 301
+            logging.error(f"Bucket {bucket_name} has been moved permanently.")
+            raise Exception(f"Error checking bucket {bucket_name}: {e}")
         else:
             # Something else went wrong when checking the bucket
             logging.error(f"Error checking bucket {bucket_name}: {e}")

@@ -42,24 +42,24 @@ def test_copy_non_existent_source_object(s3_setup, monkeypatch):
     s3, source_bucket, _, dest_bucket, dest_key = s3_setup
     non_existent_key = "non-existent-key"
     monkeypatch.setattr("src.utils.aws_s3.s3_client", s3)
-    result = copy_s3_object(source_bucket, non_existent_key, dest_bucket, dest_key)
-    assert not result
+    with pytest.raises(ClientError):
+        copy_s3_object(source_bucket, non_existent_key, dest_bucket, dest_key)
 
 
 def test_copy_non_existent_source_bucket(s3_setup, monkeypatch):
     s3, _, source_key, dest_bucket, dest_key = s3_setup
     non_existent_bucket = "non-existent-bucket"
     monkeypatch.setattr("src.utils.aws_s3.s3_client", s3)
-    result = copy_s3_object(non_existent_bucket, source_key, dest_bucket, dest_key)
-    assert not result
+    with pytest.raises(ClientError):
+        copy_s3_object(non_existent_bucket, source_key, dest_bucket, dest_key)
 
 
 def test_copy_non_existent_dest_bucket(s3_setup, monkeypatch):
     s3, source_bucket, source_key, _, dest_key = s3_setup
     non_existent_bucket = "non-existent-bucket"
     monkeypatch.setattr("src.utils.aws_s3.s3_client", s3)
-    result = copy_s3_object(source_bucket, source_key, non_existent_bucket, dest_key)
-    assert not result
+    with pytest.raises(ClientError):
+        copy_s3_object(source_bucket, source_key, non_existent_bucket, dest_key)
 
 
 def test_generate_get_presigned_url(s3_setup, monkeypatch):
@@ -96,6 +96,11 @@ def test_ensure_bucket_exists_already_exists(s3_setup, monkeypatch):
 
 
 def test_ensure_bucket_exists_creation_failure(mocker):
-    mocker.patch("boto3.client", side_effect=Exception("Creation failed"))
-    with pytest.raises(ClientError):
+    mocker.patch(
+        "boto3.client",
+        side_effect=ClientError(
+            {"Error": {"Code": "301", "Message": "Moved Permanently"}}, "HeadBucket"
+        ),
+    )
+    with pytest.raises(Exception, match="Error checking bucket new-bucket"):
         ensure_bucket_exists("new-bucket")

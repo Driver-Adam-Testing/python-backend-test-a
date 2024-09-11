@@ -83,12 +83,20 @@ def handler(event, context):
                 destination_bucket_name = metadata["Metadata"]["org_bucket"]
                 real_file_name = Path(real_object_key).name
                 destination_real_object_key = f"documents/{real_file_name}"
-                copy_s3_object(
+                object_copied = copy_s3_object(
                     source_bucket=bucket_name,
                     source_key=real_object_key,
                     dest_bucket=destination_bucket_name,
                     dest_key=destination_real_object_key,
                 )
+
+                if not object_copied:
+                    logging.error(
+                        f"Failed to copy object from {bucket_name} to {destination_bucket_name}"
+                    )
+                    raise Exception(
+                        f"Failed to copy object from {bucket_name} to {destination_bucket_name}"
+                    )
 
                 logging.info(
                     f"Triggering pdf summary generation for bucket = {destination_bucket_name}, key = {destination_real_object_key}"

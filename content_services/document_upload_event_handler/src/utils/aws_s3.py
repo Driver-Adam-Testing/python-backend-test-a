@@ -2,9 +2,8 @@ import logging
 
 import boto3
 from botocore.exceptions import ClientError
-from src.utils.config import settings
+from config import settings
 
-# Initialize S3 client
 s3_client = boto3.client(
     "s3",
     region_name="us-east-1",
@@ -30,44 +29,19 @@ def head_object(bucket: str, key: str) -> dict:
 def copy_s3_object(
     source_bucket: str, source_key: str, dest_bucket: str, dest_key: str
 ) -> bool:
-    """
-    Copies an S3 object from one bucket to another.
+    # Construct the copy source dictionary
+    copy_source = {"Bucket": source_bucket, "Key": source_key}
 
-    :param source_bucket: Name of the source bucket
-    :param source_key: Key of the source object
-    :param dest_bucket: Name of the destination bucket
-    :param dest_key: Key to be used for the destination object
-    :return: True if the operation was successful, False otherwise
-    """
-    s3_client = boto3.client("s3")
+    # Perform the copy operation
+    s3_client.copy_object(CopySource=copy_source, Bucket=dest_bucket, Key=dest_key)
 
-    try:
-        # Construct the copy source dictionary
-        copy_source = {"Bucket": source_bucket, "Key": source_key}
-
-        # Perform the copy operation
-        s3_client.copy_object(CopySource=copy_source, Bucket=dest_bucket, Key=dest_key)
-
-        logging.info(
-            f"Successfully copied object from {source_bucket}/{source_key} to {dest_bucket}/{dest_key}"
-        )
-        return True
-
-    except ClientError as e:
-        logging.error(f"Error copying object: {e}")
-        return False
+    logging.info(
+        f"Successfully copied object from {source_bucket}/{source_key} to {dest_bucket}/{dest_key}"
+    )
+    return True
 
 
 def ensure_bucket_exists(bucket_name: str, region: str | None = None) -> bool:
-    """
-    Check if a bucket exists, and create it if it doesn't.
-
-    :param bucket_name: Name of the bucket to check/create
-    :param region: AWS region to create the bucket in (optional)
-    :return: True if the bucket exists or was created successfully, False otherwise
-    """
-    s3_client = boto3.client("s3")
-
     try:
         # Check if the bucket exists
         s3_client.head_bucket(Bucket=bucket_name)
@@ -89,8 +63,8 @@ def ensure_bucket_exists(bucket_name: str, region: str | None = None) -> bool:
                 return True
             except ClientError as create_error:
                 logging.error(f"Couldn't create bucket {bucket_name}: {create_error}")
-                return False
+                raise Exception(f"Couldn't create bucket {bucket_name}: {create_error}")
         else:
             # Something else went wrong when checking the bucket
             logging.error(f"Error checking bucket {bucket_name}: {e}")
-            return False
+            raise Exception(f"Error checking bucket {bucket_name}: {e}")

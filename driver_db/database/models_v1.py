@@ -496,13 +496,6 @@ class Tag(SQLModel, table=True):  # type: ignore
         back_populates="tag",
         sa_relationship_kwargs={"foreign_keys": "TagContent.tag_id"},
     )
-    contents: list["DerivedContent"] = Relationship(
-        back_populates=None,
-        sa_relationship_kwargs={"secondary": "tags_contents", "viewonly": True},
-    )
-    derived_contents: list["DerivedContent"] = Relationship(
-        back_populates="tags", link_model=TagContent
-    )
 
 
 class ChunkAndEmbedding(SQLModel, table=True):  # type: ignore

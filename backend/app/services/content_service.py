@@ -1,6 +1,5 @@
 import json
 from datetime import datetime
-from urllib.parse import quote
 from uuid import UUID
 
 from database.derived_content_types import DerivedContentTypeNames
@@ -545,11 +544,9 @@ class ContentService:
                 )
 
         if search_input.text:
-            encoded_text = quote(search_input.text)
-            encoded_text = encoded_text.replace("%20", "+")
             clauses = [
-                DerivedContent.relative_path.contains(encoded_text),
-                DerivedContent.content_name.contains(encoded_text),
+                DerivedContent.relative_path.contains(search_input.text),
+                DerivedContent.content_name.contains(search_input.text),
             ]
             statement = statement.where(or_(*clauses))
             count_statement = count_statement.where(or_(*clauses))

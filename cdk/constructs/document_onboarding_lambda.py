@@ -84,7 +84,7 @@ class DocumentOnboardingLambda(Construct):
             aws_s3_notifications.SnsDestination(sns_topic),
             aws_s3.NotificationKeyFilter(prefix="documents/"),
         )
-
+        
         # TODO: We should find a way to scope down these privileges.
         # Because we need to create arbitrary buckets per org,
         # it's not clear how to do so without breaking existing
@@ -92,3 +92,14 @@ class DocumentOnboardingLambda(Construct):
         lambda_function.role.add_managed_policy(
             aws_iam.ManagedPolicy.from_aws_managed_policy_name("AmazonS3FullAccess")
         )
+        legacy_dropzone_bucket = aws_s3.Bucket.from_bucket_name(
+            scope,
+            "LegacyDropzoneBucket",
+            bucket_name=f"{params.environment}-codebase-dropzone",
+        )
+        legacy_dropzone_bucket.add_event_notification(
+            aws_s3.EventType.OBJECT_CREATED,
+            aws_s3_notifications.SnsDestination(sns_topic),
+            aws_s3.NotificationKeyFilter(prefix="documents/"),
+        )
+        legacy_dropzone_bucket.grant_read(lambda_function)

@@ -444,7 +444,9 @@ class ContentService:
         for result in results:
             try:
                 content_name = (
-                    json.loads(result.content).get("name")
+                    result.content_name
+                    if result.content_name
+                    else json.loads(result.content).get("name")
                     if result.content_type.type_name == "application_note"
                     and result.content
                     and "name" in json.loads(result.content)
@@ -542,12 +544,12 @@ class ContentService:
                 )
 
         if search_input.text:
-            statement = statement.where(
-                DerivedContent.relative_path.contains(search_input.text)
-            )
-            count_statement = count_statement.where(
-                DerivedContent.relative_path.contains(search_input.text)
-            )
+            clauses = [
+                DerivedContent.relative_path.contains(search_input.text),
+                DerivedContent.content_name.contains(search_input.text),
+            ]
+            statement = statement.where(or_(*clauses))
+            count_statement = count_statement.where(or_(*clauses))
 
         if search_input.status:
             valid_statuses = [
@@ -790,3 +792,38 @@ class ContentService:
             f"Template created with ID {new_content.id} for organization {organization_id}"
         )
         return new_content
+
+    def edit_content(
+        self, organization_id: str, content_id: UUID, new_content: dict
+    ) -> DerivedContent:
+        logger.info(f"Editing content {content_id} for organization {organization_id}")
+
+        content = self.content_repository.get_by_conditions(
+            [
+                Workspace.organization_id == organization_id,
+                DerivedContent.id == content_id,
+            ],
+            [Workspace],
+        )
+
+        if not content:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
+            )
+
+        if (
+            content.content_type.type_name
+            != DerivedContentTypeNames.APPLICATION_NOTE.value
+            and content.content_type.type_name != DerivedContentTypeNames.TEMPLATE.value
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid content type"
+            )
+
+        content = self.content_repository.update(content, DerivedContent(**new_content))
+
+        logger.info(
+            f"Content {content_id} successfully edited for organization {organization_id}"
+        )
+
+        return content

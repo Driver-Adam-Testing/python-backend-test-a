@@ -281,3 +281,17 @@ def batch_disassociate_sources(
                 )
             )
     return BatchDeleteDocumentSourceResponse(results=results)
+
+
+@router.put(
+    "/{content_id}/",
+    summary="Update content by ID",
+)
+def update_content(
+    session: CurrentSession,
+    user: CurrentUser,
+    content_id: UUID,
+    update_data: dict,  # TODO add validation
+) -> DerivedContent:
+    content_service = ContentService(session)
+    return content_service.edit_content(user.organization_id, content_id, update_data)

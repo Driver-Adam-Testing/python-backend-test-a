@@ -1,5 +1,6 @@
 from aws_cdk import (
     Duration,
+    aws_iam,
     aws_lambda,
     aws_lambda_event_sources,
     aws_lambda_python_alpha,
@@ -67,6 +68,14 @@ class CodeOnboardingLambda(Construct):
             aws_s3_notifications.SnsDestination(sns_topic),
             aws_s3.NotificationKeyFilter(prefix="codebases/"),
         )
+
+        # TODO: We should find a way to scope down these privileges.
+        # Because we need to create arbitrary buckets per org,
+        # it's not clear how to do so without breaking existing
+        # functionality.
+        lambda_function.role.add_managed_policy(
+            aws_iam.ManagedPolicy.from_aws_managed_policy_name("AmazonS3FullAccess")
+        )
         legacy_dropzone_bucket = aws_s3.Bucket.from_bucket_name(
             scope,
             "LegacyDropzoneBucket",
@@ -78,3 +87,4 @@ class CodeOnboardingLambda(Construct):
             aws_s3.NotificationKeyFilter(prefix="codebases/"),
         )
         legacy_dropzone_bucket.grant_read(lambda_function)
+

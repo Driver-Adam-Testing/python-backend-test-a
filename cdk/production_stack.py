@@ -6,6 +6,10 @@ from cdk.constructs.code_onboarding_lambda import (
     CodeOnboardingLambda,
     CodeOnboardingLambdaParams,
 )
+from cdk.constructs.document_onboarding_lambda import (
+    DocumentOnboardingLambda,
+    DocumentOnboardingLambdaParams,
+)
 from cdk.constructs.inspector import Inspector, InspectorParams
 
 
@@ -30,6 +34,17 @@ class ProductionStack(Stack):
             "CodeOnboardingLambda",
             CodeOnboardingLambdaParams(
                 environment="production",
+                api_url="https://api.us1.driverai.com/api/v1",
+                auth0_url="https://auth.driverai.com",
+                dropzone_bucket=self.backend.dropzone_bucket,
+                use_legacy_dropzone=True,
+            ),
+        )
+        self.document_onboarding_lambda = DocumentOnboardingLambda(
+            self,
+            "DocumentOnboardingLambda",
+            DocumentOnboardingLambdaParams(
+                environment="development",
                 api_url="https://api.us1.driverai.com/api/v1",
                 auth0_url="https://auth.driverai.com",
                 dropzone_bucket=self.backend.dropzone_bucket,

@@ -28,6 +28,6 @@ class UploadResponse(BaseModel):
     upload_url: str
 
 
-class DirectUploadResponse(BaseModel):
+class PDFUploadResponse(BaseModel):
     upload_url: str
     source_content_id: UUID

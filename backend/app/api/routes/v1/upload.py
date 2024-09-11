@@ -4,7 +4,7 @@ from app.api.auth import CurrentUser
 from app.api.session import CurrentSession
 from app.core.logger import logger
 from app.schemas.upload_schema import (
-    DirectUploadResponse,
+    PDFUploadResponse,
     UploadCodebaseRequest,
     UploadPDFRequest,
     UploadResponse,
@@ -31,8 +31,8 @@ def upload_pdf(
     session: CurrentSession,
     user: CurrentUser,
     request: UploadPDFRequest,
-) -> DirectUploadResponse:
+) -> PDFUploadResponse:
     """Upload a codebase."""
     logger.info(f"upload_codebase called with request: {request}")
     upload_service = UploadService(session)
-    return upload_service.direct_upload_pdf(user, request)
+    return upload_service.upload_pdf(user, request)

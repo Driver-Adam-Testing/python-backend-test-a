@@ -16,7 +16,7 @@ from app.repositories.derived_content_type_repository import (
 )
 from app.repositories.workspace_repository import WorkspaceRepository
 from app.schemas.upload_schema import (
-    DirectUploadResponse,
+    PDFUploadResponse,
     UploadCodebaseRequest,
     UploadPDFRequest,
     UploadResponse,
@@ -80,36 +80,35 @@ class UploadService:
 
         return UploadResponse(upload_url=upload_url)
 
-    def direct_upload_pdf(
+    def upload_pdf(
         self, user: CurrentUser, request: UploadPDFRequest
-    ) -> DirectUploadResponse:
+    ) -> PDFUploadResponse:
         default_workspace = self.workspace_repository.get_default_workspace(
             user.organization_id
         )
         if not default_workspace:
             raise HTTPException(status_code=400, detail="Default workspace not found")
 
+        original_file_name = os.path.basename(request.file_path)
+
         existing_doc_count = self.content_repository.count_by(
             [
-                DerivedContent.content_name == os.path.basename(request.file_path),
+                DerivedContent.content_name == original_file_name,
                 DerivedContent.workspace_id == default_workspace.id,
             ]
         )
         if existing_doc_count > 0:
-            logger.warn(f"Existing doc found with name: {request.file_path}")
+            logger.warn(f"Existing doc found with name: {original_file_name}")
             raise HTTPException(
                 status_code=400, detail="Document with this name already exists"
             )
 
-        original_file_name = os.path.basename(request.file_path)
-
-        file_name = re.sub(r"[^a-zA-Z0-9.]", "_", os.path.basename(request.file_path))
+        file_name = re.sub(r"[^a-zA-Z0-9.]", "_", original_file_name)
         file_name = file_name.replace(" ", "_")
         file_name = f"{uuid4()}_{file_name}"
 
         relative_path = unquote_plus(file_name)  # sanitize and make safe for s3 upload
 
-        # sanitize and make safe for s3 upload
         creator_id = user.user_id
         org_id = user.organization_id
 
@@ -151,7 +150,7 @@ class UploadService:
             )
 
             logger.info(f"Upload URL generated for {relative_path}")
-            return DirectUploadResponse(
+            return PDFUploadResponse(
                 upload_url=upload_url, source_content_id=new_document.id
             )
         except Exception as e:

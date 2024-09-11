@@ -42,4 +42,4 @@ def run(input: dict):
     if isinstance(input, dict):
         input = PipelineInput(**input)
 
-    return execute_sequence(input)
+    return execute_sequence(input).model_dump()

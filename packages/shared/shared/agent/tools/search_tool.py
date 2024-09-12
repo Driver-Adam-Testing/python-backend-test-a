@@ -22,7 +22,7 @@ class SearchTool(ToolStrict):
         search_algorithm (SearchAlgorithm): The search algorithm. Defaults to 'hybrid'.
             - hybrid: Combines keyword and semantic search.
             - semantic: Focuses on meaning and context.
-        relative_paths (list[str], optional): Relative paths to further filter results.
+        search_subfolder_paths (list[str], optional): Relative paths to further filter results.
     """
 
     class SearchToolInputContentType(str, Enum):
@@ -39,7 +39,7 @@ class SearchTool(ToolStrict):
     search_query: str
     content_types: list[SearchToolInputContentType]
     search_algorithm: SearchAlgorithm = SearchAlgorithm.hybrid
-    relative_paths: list[str] | None = None
+    search_subfolder_paths: list[str] | None = None
 
     @property
     def derived_content_types(self):
@@ -83,14 +83,14 @@ class SearchTool(ToolStrict):
 
     def execute(self, agent):
         # Ensure relative paths are subfolders or files within agent.paths
-        agent.scope.authorize(self.relative_paths)
+        agent.scope.authorize(self.search_subfolder_paths)
 
         search_input = SearchInput(
             query=self.search_query,
             algorithm=self.search_algorithm.value,
             content_type=self.derived_content_types,
             organization_id=agent.scope.organization_id,
-            paths=self.relative_paths,
+            paths=self.search_subfolder_paths,
         )
         results = search_content_without_session(search_input)
 
@@ -107,7 +107,7 @@ class SearchTool(ToolStrict):
             formatted_result = f"""<result>
                 <content>{content}</content>
                 <content_type>{content_type}</content_type>
-                <relative_path>{relative_path}</relative_path>
+                <path>{relative_path}</path>
             </result>"""
             formatted_results.append(formatted_result.strip())
 

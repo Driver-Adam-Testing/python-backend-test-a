@@ -29,11 +29,10 @@ def run_agent_prompt_augmentation(
     input: PipelineStepConfiguration,
 ) -> PipelineStepResponse:
     agent = create_agent(
+        scope=input.scope,
         model=input.model,
-        organization_id=input.scope.organization_id,
         max_iterations=input.iterations,
         tools=[SearchTool],
-        paths=input.scope.paths,
         response_type=PromptAugmentationLLMResponse,
     )
 

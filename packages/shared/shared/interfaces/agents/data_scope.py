@@ -13,17 +13,20 @@ class DataScope(BaseModel):
     paths: list[str] = []
     organization_id: str | None = [None]
 
-    def authorize(self, paths: list[str] | None) -> bool:
+    def authorize(self, paths: list[str] | str | None) -> bool:
         """
         Verify that a list of paths is within the allowed data scope.
 
         Args:
             paths (list[str]): The list of paths to verify.
         """
+
         if self.organization_id is None:
             raise ValueError("The organization_id field must be set.")
         if paths is None:
             return True
+        if isinstance(paths, str):
+            paths = [paths]
         for path in paths:
             if not any(
                 path == allowed_path or path.startswith(f"{allowed_path}")

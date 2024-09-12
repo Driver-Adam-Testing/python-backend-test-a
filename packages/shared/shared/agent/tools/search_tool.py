@@ -83,21 +83,14 @@ class SearchTool(ToolStrict):
 
     def execute(self, agent):
         # Ensure relative paths are subfolders or files within agent.paths
-        if self.relative_paths:
-            validated_paths = []
-            for rel_path in self.relative_paths:
-                if any(rel_path.startswith(base_path) for base_path in agent.paths):
-                    validated_paths.append(rel_path)
-            paths_to_use = validated_paths if validated_paths else agent.paths
-        else:
-            paths_to_use = agent.paths
+        agent.scope.authorize(self.relative_paths)
 
         search_input = SearchInput(
             query=self.search_query,
             algorithm=self.search_algorithm.value,
             content_type=self.derived_content_types,
-            organization_id=agent.organization_id,
-            paths=paths_to_use,
+            organization_id=agent.scope.organization_id,
+            paths=self.relative_paths,
         )
         results = search_content_without_session(search_input)
 

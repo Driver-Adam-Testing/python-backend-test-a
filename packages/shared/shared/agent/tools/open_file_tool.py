@@ -18,8 +18,7 @@ class OpenFileTool(ToolStrict):
     file_path: str
 
     def execute(self, agent):
-        if not any(self.file_path.startswith(base_path) for base_path in agent.paths):
-            return f"File path {self.file_path} is not within the allowed paths."
+        agent.scope.authorize(self.file_path)
 
         with get_session() as session:
             derived_content = session.exec(
@@ -43,10 +42,11 @@ class OpenFileTool(ToolStrict):
 
             formatted_results = []
             previous_chunk_text = ""
+
+            # TODO: this function takes chunks and reformats them into a full document. There could be better ways to do this.
             for chunk in chunks_and_embeddings:
                 current_chunk_text = chunk.text
                 if previous_chunk_text:
-                    # Remove overlapping text
                     overlap_length = min(
                         len(previous_chunk_text), len(current_chunk_text)
                     )

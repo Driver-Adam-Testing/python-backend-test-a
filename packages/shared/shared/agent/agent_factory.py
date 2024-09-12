@@ -1,11 +1,11 @@
 from shared.agent.agent_anthropic_strict import AnthropicStrictAgent
 from shared.agent.agent_openai_strict import OpenAIStrictAgent
 from shared.agent.models.llm_models import ModelConfig, ModelProvider
+from shared.interfaces.agents.data_scope import DataScope
 
 
 def create_agent(
-    organization_id: str,
-    paths: list[str] | None,
+    scope: DataScope,
     model: str | None = None,
     max_iterations: int = 1,
     tools=None,
@@ -20,8 +20,7 @@ def create_agent(
             model=model_config.model_id,
             max_iterations=max_iterations,
             tools=tools,
-            organization_id=organization_id,
-            paths=paths,
+            scope=scope,
             response_format=response_type,
         )
     elif model_config.provider == ModelProvider.ANTHROPIC:
@@ -29,8 +28,7 @@ def create_agent(
             model=model_config.model_id,
             max_iterations=max_iterations,
             tools=tools,
-            organization_id=organization_id,
-            paths=paths,
+            scope=scope,
         )
     else:
         raise ValueError(f"Provider {model.provider} is not supported.")

@@ -6,31 +6,29 @@ from database.db import get_session
 from database.models_v1 import RuntimeLogAgentInstance, RuntimeLogAgentMessage
 
 from shared.agent.tools.tool_strict import ToolStrict
+from shared.interfaces.agents.data_scope import DataScope
 from shared.utils.bcolors import print_dict
 
 
 class AgentBase(ABC):
     def __init__(
         self,
-        organization_id: str,
         model: str,
-        paths: list[str] | None = None,
-        max_iterations: int = 1,
+        scope: DataScope,
         tools: list[ToolStrict] | None = None,
+        max_iterations: int = 1,
         agent_id: uuid.UUID | None = None,
         response_format: type | None = None,
         log: bool = False,
         debug: bool = True,
     ):
-        # TODO: Add data scope
         # TODO: add ModelConfig (to get model metadata during execution)
         # TODO: Turn on logging
         self.log = log
-        self.organization_id = organization_id
+        self.scope = scope
         self.model = model
         self.debug = debug
         self.agent_id = agent_id
-        self.paths = paths if paths is not None else []
         self.tools = tools if tools is not None else []
         self.max_iterations = max_iterations
         self.iteration = 0

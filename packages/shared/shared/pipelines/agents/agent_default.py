@@ -8,11 +8,10 @@ from shared.interfaces.agents.pipeline_configuration import (
 
 def run_agent_default(input: PipelineStepConfiguration):
     agent = create_agent(
+        scope=input.scope,
         model=input.model,
-        organization_id=input.scope.organization_id,
         max_iterations=input.iterations,
         tools=input.tools,
-        paths=input.scope.paths,
     )
     for system_prompt in input.create_system_prompts():
         agent.add_message(system_prompt)

@@ -12,8 +12,8 @@ import botocore
 import botocore.session
 import httpx
 from aws_secretsmanager_caching import SecretCache, SecretCacheConfig
-from utils.aws_s3 import copy_s3_object, ensure_bucket_exists, head_object
-from utils.config import settings
+from src.utils.aws_s3 import copy_s3_object, ensure_bucket_exists, head_object
+from src.utils.config import settings
 
 
 # # Python lambdas have to be synchronous ¯\_(ツ)_/¯

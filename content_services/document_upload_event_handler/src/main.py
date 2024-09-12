@@ -5,6 +5,7 @@ and triggers the generation of PDF summaries for the uploaded documents.
 """
 import json
 import logging
+import os
 from pathlib import Path
 from urllib.parse import unquote_plus
 
@@ -15,11 +16,22 @@ from aws_secretsmanager_caching import SecretCache, SecretCacheConfig
 from src.utils.aws_s3 import copy_s3_object, ensure_bucket_exists, head_object
 from src.utils.config import settings
 
+log_level = os.environ.get("LOG_LEVEL").upper() or logging.INFO
+if len(logging.getLogger().handlers) > 0:
+    # The Lambda environment pre-configures a handler logging to stderr. If a handler is already configured,
+    # `.basicConfig` does not execute. Thus we set the level directly.
+    logging.getLogger().setLevel(log_level)
+else:
+    logging.basicConfig(level=log_level)
+
+logger = logging.getLogger()
+logger.info(f"Log level set to {log_level}")
+
 
 # # Python lambdas have to be synchronous ¯\_(ツ)_/¯
 # # https://stackoverflow.com/questions/60455830/can-you-have-an-async-handler-in-lambda-python-3-6
 def handler(event, context):
-    logging.info(event)
+    logger.debug(event)
     results = []
 
     for record in event["Records"]:
@@ -52,7 +64,7 @@ def handler(event, context):
         )
 
         with httpx.Client(base_url=settings.AUTH0_URL) as auth0Client:
-            logging.info("Fetching M2M token from Auth0...")
+            logger.info("Fetching M2M token from Auth0...")
             token_response = auth0Client.post(
                 "/oauth/token",
                 headers={"content-type": "application/json"},
@@ -61,25 +73,25 @@ def handler(event, context):
             token_response.raise_for_status()
             token_json = token_response.json()
 
-        logging.info("Processing S3 event(s)...")
+        logger.info("Processing S3 event(s)...")
         # Extract information from the S3 event
         for s3_record in sns_message["Records"]:
             bucket_name = s3_record["s3"]["bucket"]["name"]
             object_key = s3_record["s3"]["object"]["key"]
             real_object_key = unquote_plus(object_key)  # Decode URL-encoded object key
 
-            logging.info("key = " + real_object_key)
-            logging.info("bucket = " + bucket_name)
+            logger.info("key = " + real_object_key)
+            logger.info("bucket = " + bucket_name)
             metadata = head_object(bucket=bucket_name, key=real_object_key)
             # Check if the destination bucket exists, and create it if it doesn't
             bucket_exists = ensure_bucket_exists(
                 metadata["Metadata"]["org_bucket"], region="us-east-1"
             )
             source_content_id = metadata["Metadata"]["source_content_id"]
-            logging.info(f"Processing content created with ID:{source_content_id}")
+            logger.info(f"Processing content created with ID:{source_content_id}")
 
             if bucket_exists:
-                logging.info("Copying to organization bucket...")
+                logger.info("Copying to organization bucket...")
                 destination_bucket_name = metadata["Metadata"]["org_bucket"]
                 real_file_name = Path(real_object_key).name
                 destination_real_object_key = f"documents/{real_file_name}"
@@ -98,7 +110,7 @@ def handler(event, context):
                         f"Failed to copy object from {bucket_name} to {destination_bucket_name}"
                     )
 
-                logging.info(
+                logger.info(
                     f"Triggering pdf summary generation for bucket = {destination_bucket_name}, key = {destination_real_object_key}"
                 )
 
@@ -133,6 +145,6 @@ def exec_generate_pdf_summaries(event: dict, token: str):
         )
         response.raise_for_status()
         event_response = response.json()
-        logging.info(event_response)
+        logger.info(event_response)
 
         return "OK"

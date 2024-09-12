@@ -56,19 +56,24 @@ def search_content(session: Session, input: SearchInput):
             )
 
     if input.relative_path:
+        paths = []
         if isinstance(input.relative_path, str):
-            statement = statement.where(
-                DerivedContent.relative_path.like(f"{input.relative_path}%")
-            )
+            paths = [input.relative_path]
+
         elif isinstance(input.relative_path, list):
-            statement = statement.where(
-                or_(
-                    *[
-                        DerivedContent.relative_path.like(f"{file_path}%")
-                        for file_path in input.relative_path
-                    ]
-                )
+            paths = input.relative_path
+
+        statement = statement.where(
+            or_(
+                *[
+                    or_(
+                        DerivedContent.relative_path == file_path,
+                        DerivedContent.relative_path.like(f"{file_path.rstrip('/')}/%"),
+                    )
+                    for file_path in paths
+                ]
             )
+        )
 
     statement = statement.where(
         ChunkAndEmbedding.text_embedding_3_small.l2_distance(embedded_query) <= 1.25

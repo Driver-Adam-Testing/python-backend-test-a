@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from modal import Function
 from modal.functions import FunctionCall
 
@@ -21,16 +21,35 @@ def execute_agent_sequence_modal_async(user: CurrentUser, input: dict) -> dict:
     return {"call_id": instance.object_id}
 
 
-@router.get("/async/{call_id}")
-def get_execution_results(user: CurrentUser, call_id: str) -> dict:
-    function_call = FunctionCall.from_id(call_id)
-    try:
-        result = function_call.get(timeout=0)
-        return result
-    except TimeoutError:
-        raise HTTPException(status_code=408, detail="Request Timeout")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+@router.post("/async/batch")
+def get_batch_execution_results(user: CurrentUser, call_ids: list[str]) -> dict:
+    results = {}
+    for call_id in call_ids:
+        function_call = FunctionCall.from_id(call_id)
+        # TODO: don't transform the output
+        try:
+            result = function_call.get(timeout=0)
+            results[call_id] = {
+                "call_id": call_id,
+                "status": "completed",
+                "response": result["content"],
+                "error": "",
+            }
+        except TimeoutError:
+            results[call_id] = {
+                "call_id": call_id,
+                "status": "running",
+                "response": None,
+                "error": "Request Timeout",
+            }
+        except Exception as e:
+            results[call_id] = {
+                "call_id": call_id,
+                "status": "expired",
+                "response": None,
+                "error": str(e),
+            }
+    return results
 
 
 @router.post(

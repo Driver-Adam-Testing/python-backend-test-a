@@ -50,7 +50,7 @@ def get_batch_execution_results(user: CurrentUser, input: BatchInput) -> dict:
             results[call_id] = {
                 "call_id": call_id,
                 "status": "completed",
-                "response": result["content"],
+                "response": result,
                 "error": "",
             }
         except TimeoutError:

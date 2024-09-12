@@ -118,7 +118,7 @@ def create_file_tree_dag(
         path = root_path / path_str
         path.parent.mkdir(parents=True, exist_ok=True)
         path.touch()
-        dag.add_file(path, change_status=False, hash=hash)
+        dag.add_file(path, change_status=False, file_hash=hash)
     return dag
 
 

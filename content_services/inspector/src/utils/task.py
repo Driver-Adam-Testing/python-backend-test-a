@@ -134,19 +134,14 @@ class S3TaskResultPersistence(TaskResultPersistence):
 
     def load_all_results(self, run_id: str) -> dict[str, TaskResult]:
         results = {}
-        try:
-            paginator = self.s3_client.get_paginator("list_objects_v2")
-            prefix = f"{run_id}/"
-            for page in paginator.paginate(Bucket=self.bucket_name, Prefix=prefix):
-                for obj in page.get("Contents", []):
-                    task_id = obj["Key"].split("/")[-1].replace(".json", "")
-                    result = self.load_task_result(run_id, task_id)
-                    if result:
-                        results[task_id] = result
-        except NoCredentialsError as e:
-            raise Exception("AWS credentials not found.") from e
-        except Exception as e:
-            print(f"Error listing objects in S3: {e}")
+        paginator = self.s3_client.get_paginator("list_objects_v2")
+        prefix = f"{run_id}/"
+        for page in paginator.paginate(Bucket=self.bucket_name, Prefix=prefix):
+            for obj in page.get("Contents", []):
+                task_id = obj["Key"].split("/")[-1].replace(".json", "")
+                result = self.load_task_result(run_id, task_id)
+                if result:
+                    results[task_id] = result
         return results
 
     def clear_all_results(self, run_id: str) -> None:
@@ -178,6 +173,7 @@ def hash_tuple(t: tuple) -> int:
 @dataclass
 class Task(abc.ABC):
     task_name: str
+    load_persisted_results: bool = False
     dependencies: tuple[type["Task"], ...] = field(default_factory=tuple)
     _base_recoverable_errors: set = field(init=False, repr=False)
 
@@ -288,11 +284,12 @@ class TaskManager:
     def load_persisted_results(self, run_id):
         print("Loading persisted results for resumption...")
         persisted_results = self.persistence.load_all_results(run_id)
-        flattened_tasks = flatten_tasks(self.tasks)
+        flattened_tasks = self.tasks
         print("Total tasks:", len(flattened_tasks))
         for task in flattened_tasks:
             task_hash_str = str(hash(task))
-            if task_hash_str in persisted_results:
+            if task.load_persisted_results and task_hash_str in persisted_results:
+                print(f"Loaded results for task '{task.task_name}' from storage")
                 self.task_results[task] = persisted_results[task_hash_str]
         print(
             f"Loaded results successfully for {len(self.task_results)} tasks from storage"

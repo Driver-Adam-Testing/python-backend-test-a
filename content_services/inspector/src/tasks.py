@@ -40,12 +40,17 @@ class FolderTechDocTask(Task):
         child_docs_tasks: tuple[TechDocsTask],
         codebase_name: str,
         source_content_id: uuid.UUID,
+        load_persisted_results: bool,
     ):
         self.node = node
         self.child_docs_tasks = child_docs_tasks
         self.codebase_name = codebase_name
         self.source_content_id = source_content_id
-        super().__init__(task_name=task_name, dependencies=child_docs_tasks)
+        super().__init__(
+            task_name=task_name,
+            dependencies=child_docs_tasks,
+            load_persisted_results=load_persisted_results,
+        )
 
     async def run_implementation(
         self, dependent_results: dict[TechDocsTask, TaskResult]
@@ -170,12 +175,15 @@ class FileTechDocTask(Task):
         node: LiteNode,
         task_name: str,
         source_content_id: uuid.UUID,
+        load_persisted_results: bool,
     ):
         self.codebase_name = codebase_name
         self.source_code = source_code
         self.node = node
         self.source_content_id = source_content_id
-        super().__init__(task_name=task_name)
+        super().__init__(
+            task_name=task_name, load_persisted_results=load_persisted_results
+        )
 
     async def run_implementation(
         self, dependent_results: dict["Task", TaskResult]
@@ -320,12 +328,17 @@ class SymbolsTask(Task):
         source_code: str,
         tech_docs_task: FileTechDocTask,
         source_content_id: uuid.UUID,
+        load_persisted_results: bool,
     ):
         self.node = node
         self.source_code = source_code
         self.tech_docs_task = tech_docs_task
         self.source_content_id = source_content_id
-        super().__init__(task_name=task_name, dependencies=(tech_docs_task,))
+        super().__init__(
+            task_name=task_name,
+            dependencies=(tech_docs_task,),
+            load_persisted_results=load_persisted_results,
+        )
 
     async def run_implementation(
         self, dependent_results: dict["Task", TaskResult]
@@ -422,12 +435,14 @@ class TopLevelDocsTask(Task):
         codebase_name: str,
         ordered_tech_docs_tasks: tuple[TechDocsTask],
         source_content_id: uuid.UUID,
+        load_persisted_results: bool,
     ):
         self.codebase_name = codebase_name
         self.source_content_id = source_content_id
         super().__init__(
             task_name=f"TopLevelTechDocsTask of {codebase_name}",
             dependencies=ordered_tech_docs_tasks,
+            load_persisted_results=load_persisted_results,
         )
 
     async def run_implementation(
@@ -529,6 +544,7 @@ class EmbeddingTask(Task):
     def __init__(
         self,
         task_name: str,
+        load_persisted_results: bool,
         source_code: str | None = None,
         source_content_id: uuid.UUID | None = None,
         dependent_tasks: list[Task] | None = None,
@@ -544,7 +560,11 @@ class EmbeddingTask(Task):
 
         dependent_tasks = dependent_tasks or []
         deduped_tasks = tuple(set(dependent_tasks))
-        super().__init__(task_name=task_name, dependencies=deduped_tasks)
+        super().__init__(
+            task_name=task_name,
+            dependencies=deduped_tasks,
+            load_persisted_results=load_persisted_results,
+        )
 
     async def run_implementation(
         self, dependent_results: dict["Task", TaskResult]

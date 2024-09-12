@@ -39,6 +39,7 @@ class LiteNode:
 
     kind: NodeKind
     root_rel_path: Path
+    status: NodeStatus = NodeStatus.UNMODIFIED
 
     def __hash__(self):
         return hash(self.root_rel_path) + hash(self.kind)
@@ -49,9 +50,8 @@ class LiteNode:
 
 @dataclass
 class Node(LiteNode):
-    parent: Optional["Node"]
+    parent: Optional["Node"] = None
     children: dict[str, "Node"] | None = field(default_factory=dict)
-    status: NodeStatus = NodeStatus.UNMODIFIED
 
     def add_child(self, child: "Node") -> None:
         self.children[child.root_rel_path.as_posix()] = child
@@ -78,7 +78,9 @@ class Node(LiteNode):
             yield from child.traverse_downstream()
 
     def into_lite_node(self) -> LiteNode:
-        return LiteNode(kind=self.kind, root_rel_path=self.root_rel_path)
+        return LiteNode(
+            kind=self.kind, root_rel_path=self.root_rel_path, status=self.status
+        )
 
     def __str__(self) -> str:
         return f"{self.root_rel_path}({', '.join(self.children.keys())})"
@@ -102,7 +104,9 @@ class FileTreeDag:
             )
         self.root = Node(kind=NodeKind.ROOT_FOLDER, root_rel_path=Path(""), parent=None)
 
-    def add_file(self, path: Path, change_status=True, hash: str | None = None) -> None:
+    def add_file(
+        self, path: Path, change_status=True, file_hash: str | None = None
+    ) -> None:
         if not path.exists():
             raise FileNotFoundError(f"Path {path} does not exist.")
         if not path.is_file():
@@ -145,8 +149,10 @@ class FileTreeDag:
                 # )  # This is so that if we marked for deltion a node with a removal status, and then re-added it, it will be marked as modified
 
         # If provided a hash for a file (leaf node), store it
-        if hash:
-            self.node_rel_path_to_content_hash[current.root_rel_path.as_posix()] = hash
+        if file_hash:
+            self.node_rel_path_to_content_hash[
+                current.root_rel_path.as_posix()
+            ] = file_hash
 
         # When a new node is added, ensure upstream nodes are correctly marked
         if node_added and change_status:
@@ -310,7 +316,7 @@ class FileTreeDag:
     def compute_diff(self, old: "FileTreeDag"):
         # This DAG has annotations of the changes required to go from `old` to `self` state
         diff_dag = copy.deepcopy(old)
-        # TODO this is a hack where we change the path to the root path of self so that the
+        # We change the path to the root path of self so that the
         # resulting diff can be used to access the actual files from the new dag by the caller
         diff_dag.root_abs_path = self.root_abs_path
 
@@ -338,7 +344,9 @@ class FileTreeDag:
                 elif (
                     self_node.kind == NodeKind.FILE
                     and self.node_rel_path_to_content_hash[path]
-                    != old.node_rel_path_to_content_hash[path]
+                    != old.node_rel_path_to_content_hash[
+                        path
+                    ]  # TODO diffing implies hash is *required*. is that correct?
                 ):
                     diff_dag.mark_as_modified(
                         diff_dag.root_abs_path / path, include_upstream=True

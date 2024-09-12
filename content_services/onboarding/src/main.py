@@ -42,6 +42,7 @@ def run_codebase_onboarding(
     creator_id: str,
     workspace_id: str,
     provider: str,
+    override_codebase_name: str | None = None,
 ) -> None:
     from database.db import engine
     from database.models_v1 import Codebase, DerivedContent, Enum_Codebase_Status
@@ -62,12 +63,13 @@ def run_codebase_onboarding(
 
     print(f"Downloaded {archive_name} from S3")
 
-    codebase_name = None
     if provider == "github":
-        codebase_name = archive_name.rsplit(".", 1)[0]
+        override_codebase_name = archive_name.rsplit(".", 1)[0]
 
     # Override so unpack from github doesn't have hash in name.
-    extracted_path = unpack_archive(download_dest, override_codebase_name=codebase_name)
+    extracted_path = unpack_archive(
+        download_dest, override_codebase_name=override_codebase_name
+    )
     codebase_name = str(extracted_path)
     print("Codebase name : ", codebase_name)
     print("Unpacked archive to: ", extracted_path)
@@ -205,13 +207,12 @@ def onboard_and_inspect(
         f"Onboarding for: {archive_name} from {provider} with org_id: {org_id}, creator_id: {creator_id}, workspace_id: {workspace_id} with presigned_url: {presigned_url}"
     )
     try:
-        inspect_db = modal.Function.lookup("inspector-v2", "inspect_db")
-
         codebase_id = run_codebase_onboarding.remote(
             presigned_url, archive_name, org_id, creator_id, workspace_id, provider
         )
         print("onboarding complete for codebase: ", codebase_id)
 
+        inspect_db = modal.Function.lookup("inspector-v2", "inspect_db")
         run_id = uuid4()
         print("Inspecting...")
         print("Inspection ID: ", run_id)
@@ -280,3 +281,45 @@ def main():
     onboard_and_inspect.remote(
         presigned_url, archive_name, org_id, creator_id, workspace_id
     )
+
+
+@app.local_entrypoint()
+def diff_flow():
+    import hashlib
+
+    existing_codebase_id = "e2624ceb-8d4e-4b53-b564-183cedf66dc7"
+    run_id = "9bdf3ce4-a576-4a8c-b62a-2fb768ac8919"
+    archive_name_new_code = "python-decouple-3.6-v2.zip"  # TODO is this actually used in the code?  # noqa: F841  # noqa: F841
+    override_codebase_name = "python-decouple-3.6-v2"  # noqa: F841
+    presigned_url_of_new_code = "https://development-codebase-dropzone.s3.us-east-1.amazonaws.com/codebases/470aeda416cbd987632d5d931bff4d7923b93ea7e89ab5ed8499599adef0943/python-decouple-3.6-v2.zip?response-content-disposition=inline&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEIL%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJIMEYCIQCWE1dkiVuVSzXYGcE%2Fd3SvSq5smH1Ik%2BWpTDiW4h2WOgIhAIB%2FfvKM9g5iEk3Bq%2BLB0JF1rMrRdpEWAk7N4L9%2F%2BOAfKtcDCKr%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEQARoMNTUwMDgyNzYxMTA5IgzIcpeuXj4EakFay58qqwMVgOwjfZhn9bHayNWi5EMQhHt8S1Xdk1q5N5uTvkid9CeD6xVEyEKDHibCGo8713emODMtLme99WC1qHtUdeI7q8dxf4xAVoILrmEw1jaJYmMVEg4YB4amKKEC7duqFP3l1kZIRY18x4f2mG%2BwHTdBjVJL1Vn03VgKMfHRvNZ8wo%2F%2FId2AVzLdoIJHQ5Ef0WYnqAzsx5KLMEv7C89SoSLZHHg11h0mPANBRb1m5Hx3Z0SzPFLJfW8vtH%2BOiFPeAbbf3%2FqzWsnvKlhSpsKrd2tHpdgKRY2%2FA%2Brtexn6WY2Vq4hT%2B3r5hAS1b5m%2F1m16BfUuCVQtPFHCYowGbv3%2BzhFwIYQiNKaCO78UYyitzoc8ixrymgEGOI%2BHLLW2%2Fg%2FbrorDmuFh2KOEbZk1MdLCmg8nV%2BA2WcRlPC8gjfF%2FDkZ0e%2BRtJDCUFB1PeVbwvVnmik%2BgM6GwXs%2BJ8WUNCettzFtBwCtWnKGDci2kHOeP7yu%2BoSK8EBf%2Bf2n4LDINZ5HruFYRt6KTxJR9%2FDDvqQkWP0L%2BYbZwawRDhrBYO8CLjr2AXDrulhe9N%2BWiBs28MNLDjLcGOpMCv3jUPHuoeX0NLaXdigLA6yzwtyJ9T0qma0SmwG4mI795xDcglG9W4U6UHYWJzHzp%2FRqDZJfK2RupXsm0H8kvVffi5N0LQjEA9tam7cFEfO12hNjaXa475GvbZ5yZApIWVDohFX4G8vaPPM2lHhlTKTMwNYFMDHAikW9gW4Vi5ruoblo1PQ795KgzydbwMRjisNaG1%2FsW2fVYhUVOFw9tfs3ejb8AFhJugOaO%2BPGhEJfmgK2AUNr2F5PdJ3qM2rCyt57DR7sxMhBHzzKrVRGpOkVl3WJoEUxcQM%2F0t2DVe17JzcZN9XHzAMscV2HqBg1%2F0MC12nBmyQ44nc%2FrT6h2xDFQj0mwbZrk199H7ymEdsY%2FE2w%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20240912T171826Z&X-Amz-SignedHeaders=host&X-Amz-Expires=43199&X-Amz-Credential=ASIAYAE342GK6NZHRHBE%2F20240912%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Signature=ab54b59b0aab609bdd8976ab5a95f7ee292b8196648111525b789ef33cedf1d4"  # noqa: F841
+    # The above is located in 470aeda416cbd987632d5d931bff4d7923b93ea7e89ab5ed8499599adef0943 of the codebase dropzone.
+
+    org_id = "org_s76pU1v8LAYhTOWB"
+    org_id = hashlib.sha256(org_id.encode()).hexdigest()[:63]  # noqa: F841
+    creator_id = "auth0|667dbba790b963e36720b911"  # noqa: F841
+    workspace_id = UUID("dcc08617-d685-4147-b491-8562515b820c")  # noqa: F841
+
+    # codebase_id = run_codebase_onboarding.remote(
+    #     presigned_url_of_new_code,
+    #     archive_name_new_code,
+    #     org_id,
+    #     creator_id,
+    #     workspace_id,
+    #     "manual",
+    #     override_codebase_name=override_codebase_name,
+    # )
+
+    # For testing, we are going to hard code the new codebase id while we get inspector working
+    codebase_id = "5a73bd0a-5a36-4684-88ae-3ac483d904e8"
+
+    print("Onboarding complete for codebase: ", codebase_id)
+    inspect_db = modal.Function.lookup("inspector-v2", "inspect_db")
+    inspect_db.remote(
+        existing_codebase_id,
+        run_id,
+        True,
+        None,
+        codebase_id,
+    )
+
+    print("Diff flow complete for codebase: ", codebase_id)

@@ -22,7 +22,9 @@ class AgentBase(ABC):
         log: bool = False,
         debug: bool = True,
     ):
-        # NOTE: After the migration is deployed, change this to be an input
+        # TODO: Add data scope
+        # TODO: add ModelConfig (to get model metadata during execution)
+        # TODO: Turn on logging
         self.log = log
         self.organization_id = organization_id
         self.model = model

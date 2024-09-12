@@ -16,9 +16,9 @@ class SearchTool(ToolStrict):
     Attributes:
         search_query (str): The query string.
         content_types (list[SearchToolInputContentType]): Content types to filter the search.
-            - source_code: For searching within source code files.
-            - technical_documentation: For searching within technical documentation.
-            - pdf_content: For searching within PDF documents.
+            - source-code: For searching within source code files.
+            - codebase-technical-documentation: For searching within technical documentation.
+            - pdf-content: For searching within PDF documents.
         search_algorithm (SearchAlgorithm): The search algorithm. Defaults to 'hybrid'.
             - hybrid: Combines keyword and semantic search.
             - semantic: Focuses on meaning and context.
@@ -34,7 +34,7 @@ class SearchTool(ToolStrict):
     class SearchAlgorithm(str, Enum):
         hybrid = "hybrid"
         semantic = "semantic"
-        keyword = "keyword"
+        # keyword = "keyword"
 
     search_query: str
     content_types: list[SearchToolInputContentType]

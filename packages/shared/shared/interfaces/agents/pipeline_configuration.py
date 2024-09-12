@@ -23,7 +23,7 @@ class PipelineStepType(str, enum.Enum):
 
 class PipelineStepConfiguration(AgentConfiguration):
     prompt: PromptWithContext | None = None
-    step_type: PipelineStepType
+    step_type: PipelineStepType = PipelineStepType.DEFAULT
 
 
 class PipelineMode(str, enum.Enum):
@@ -65,3 +65,4 @@ class PipelineStepResponse(BaseModel):
 
 class PipelineResponse(BaseModel):
     step_responses: list[PipelineStepResponse]
+    final_result: str

@@ -47,4 +47,7 @@ def print_dict(dict_to_print: dict):
 
     for key in keys:
         color = get_color_for_key(key)
-        print(f"{color}{key}: {dict_to_print[key]}{text_reset.ENDC}")
+        value = dict_to_print[key]
+        if isinstance(value, str) and len(value) > 1000:
+            value = value[:750] + "   \n...  TRUNCATED  ...\n   " + value[-250:]
+        print(f"{color}{key}: {value}{text_reset.ENDC}")

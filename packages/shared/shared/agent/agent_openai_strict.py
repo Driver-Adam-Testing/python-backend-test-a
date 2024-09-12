@@ -57,8 +57,14 @@ class OpenAIStrictAgent(AgentBase):
             )
         if self.response_format:
             completion_kwargs["response_format"] = self.response_format
-
-        response = self.client.beta.chat.completions.parse(**completion_kwargs)
+        try:
+            response = self.client.beta.chat.completions.parse(**completion_kwargs)
+        except Exception as e:
+            if self.iteration < self.max_iterations:
+                # NOTE: it's ok to list the error and return None if there are more iterations for the LLM to respond.
+                self.add_message(str(e))
+                return None
+            raise e
         self.add_message(response.choices[0].message)
 
         if response.choices[0].message.tool_calls:

@@ -84,6 +84,10 @@ def search_content(session: Session, input: SearchInput):
             statement = statement.limit(input.result_limit)
 
     results = session.exec(statement).all()
+
+    if not results:
+        return SearchResults(results=[])
+
     search_results = []
 
     def process_result(

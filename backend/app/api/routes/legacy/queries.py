@@ -1,13 +1,9 @@
 # mypy: disable_error_code="call-arg"
 import json
+import logging
 from datetime import datetime
 
 import strawberry
-from database.models_v1 import Workspace
-from graphql import GraphQLError
-from sqlmodel import select
-from strawberry.types import Info
-
 from app.api.routes.legacy.api_types import (
     CodebaseResults,  # type: ignore
     GitProvider,
@@ -21,7 +17,6 @@ from app.api.routes.legacy.application_note import (
     application_note_edit,
     get_application_note,
 )
-from app.api.routes.legacy.auth0 import get_organization_by_id
 from app.api.routes.legacy.document_set import DocumentSet, get_document_set
 from app.api.routes.legacy.orm_ops import (
     check_access,
@@ -33,6 +28,12 @@ from app.api.routes.legacy.symbol_set import SymbolSetResponse, symbol_set
 from app.api.routes.legacy.tree import FlatNode, get_codebase_tree
 from app.utils.aws_secrets_manager import format_secret_key, read_secret, write_secret
 from app.utils.gh_ops import fetch_repos, is_token_valid, refresh_access_token
+from database.models_v1 import Workspace
+from graphql import GraphQLError
+from sqlmodel import select
+from strawberry.types import Info
+
+logger = logging.getLogger(__name__)
 
 
 @strawberry.type
@@ -49,15 +50,17 @@ class Query:
             raise GraphQLError(
                 "Organization not found", extensions={"code": "NOT_FOUND"}
             )
-        organization = get_organization_by_id(id)
+
         workspaces = session.exec(
-            select(Workspace).where(Workspace.organization_id == id)
+            select(Workspace).where(
+                Workspace.organization_id == info.context.user.organization_id
+            )
         ).all()
 
         return OrganizationResult(
-            id=organization["id"],
-            name=organization["name"],
-            display_name=organization["display_name"],
+            id=info.context.user.organization_id,
+            name=info.context.user.organization_display_name,
+            display_name=info.context.user.organization_display_name,
             # Hide Default workspace from listing in UI
             # When the workspace table is removed, this filter will go away
             workspaces=[ws for ws in workspaces if ws.display_name != "Default"],
@@ -122,8 +125,10 @@ class Query:
             raise GraphQLError(
                 "id must not be None", extensions={"code": "BAD_REQUEST"}
             )
+        organization_id = info.context.user.organization_id
+        derived_content_id = id_str
         if not check_access(
-            session, info.context.user.organization_id, derived_content_id=id_str
+            session, organization_id, derived_content_id=derived_content_id
         ):
             raise GraphQLError("Access denied", extensions={"code": "NOT_FOUND"})
         return get_application_note(id_str, session, info.context.user.organization_id)
@@ -240,5 +245,4 @@ class Query:
                 for repo in git_repos
             ]
             # Assuming the response from fetch_repos is a list of dictionaries
-
         return repos

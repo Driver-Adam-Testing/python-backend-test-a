@@ -315,11 +315,39 @@ class TagContent(SQLModel, table=True):
     tag_id: None | uuid.UUID = Field(
         default=None, foreign_key="tags.id", primary_key=True
     )
+    include: None | bool = Field(default=None)
     content_id: None | uuid.UUID = Field(
         default=None, foreign_key="derived_contents.id", primary_key=True
     )
-    # tag: Optional["Tag"] = Relationship(back_populates="derived_contents")
-    # derived_content: Optional["DerivedContent"] = Relationship(back_populates="tags")
+    tag: Optional["Tag"] = Relationship(
+        back_populates="content_links",
+        sa_relationship_kwargs={"foreign_keys": "TagContent.tag_id"},
+    )
+    content: Optional["DerivedContent"] = Relationship(
+        back_populates="tag_links",
+        sa_relationship_kwargs={"foreign_keys": "TagContent.content_id"},
+    )
+
+
+class DocumentSource(SQLModel, table=True):
+    __tablename__ = "document_sources"
+    """Link table between documents and their sources."""
+
+    document_id: None | uuid.UUID = Field(
+        default=None, foreign_key="derived_contents.id", primary_key=True
+    )
+    include: None | bool = Field(default=None)
+    source_id: None | uuid.UUID = Field(
+        default=None, foreign_key="derived_contents.id", primary_key=True
+    )
+    document: "DerivedContent" = Relationship(
+        back_populates="source_links",
+        sa_relationship_kwargs={"foreign_keys": "DocumentSource.document_id"},
+    )
+    source: "DerivedContent" = Relationship(
+        back_populates="document_links",
+        sa_relationship_kwargs={"foreign_keys": "DocumentSource.source_id"},
+    )
 
 
 # TODO add indexes back
@@ -354,6 +382,9 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
         sa_column=Column(sqlalchemy.Text, nullable=False, index=True)
     )
     content: None | str = Field(
+        sa_column=Column(sqlalchemy.Text, nullable=True), default=None
+    )
+    content_name: None | str = Field(
         sa_column=Column(sqlalchemy.Text, nullable=True), default=None
     )
     misc_metadata: dict | None = Field(  # type: ignore
@@ -394,11 +425,23 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
         sa_column=Column(Integer, nullable=True, server_default=text("0"))
     )
     workspace: Workspace = Relationship(back_populates="source_contents")
-    tags: list["Tag"] = Relationship(
-        back_populates="derived_contents", link_model=TagContent
+    document_links: list["DocumentSource"] = Relationship(
+        back_populates="source",
+        sa_relationship_kwargs={"foreign_keys": "DocumentSource.source_id"},
+    )
+
+    source_links: list["DocumentSource"] = Relationship(
+        back_populates="document",
+        sa_relationship_kwargs={"foreign_keys": "DocumentSource.document_id"},
     )
     chunks_and_embeds: list["ChunkAndEmbedding"] = Relationship(
         back_populates="content", cascade_delete=True
+    )
+
+    tag_links: list["TagContent"] = Relationship(back_populates="content")
+    tags: list["Tag"] = Relationship(
+        back_populates=None,
+        sa_relationship_kwargs={"secondary": "tags_contents", "viewonly": True},
     )
 
 
@@ -424,6 +467,10 @@ class Tag(SQLModel, table=True):  # type: ignore
         sa_column=sqlalchemy.Column(sqlalchemy.String(7), nullable=False),
     )
     organization_id: str
+    type: str = Field(
+        max_length=255,
+        sa_column=sqlalchemy.Column(sqlalchemy.String(255), nullable=False),
+    )
     created_at: None | datetime = Field(
         sa_column=Column(
             DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -446,8 +493,9 @@ class Tag(SQLModel, table=True):  # type: ignore
         sa_column=sqlalchemy.Column(sqlalchemy.String(128), nullable=False),
         default=None,
     )
-    derived_contents: list["DerivedContent"] = Relationship(
-        back_populates="tags", link_model=TagContent
+    content_links: list["TagContent"] = Relationship(
+        back_populates="tag",
+        sa_relationship_kwargs={"foreign_keys": "TagContent.tag_id"},
     )
 
 

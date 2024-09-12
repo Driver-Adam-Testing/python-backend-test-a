@@ -28,7 +28,9 @@ image = (
         ),
     ],
     secrets=[modal.Secret.from_name("aws-inspector-s3"), modal.Secret.from_name("db")],
-    proxy=modal.Proxy.from_name("pg-proxy"),
+    proxy=modal.Proxy.from_name("pg-proxy")
+    if os.environ["MODAL_ENVIRONMENT"] != "staging"
+    else None,
     timeout=60 * 60,
     region="us-east",
     concurrency_limit=5,
@@ -179,7 +181,9 @@ def run_codebase_onboarding(
         ),
     ],
     secrets=[modal.Secret.from_name("aws-inspector-s3"), modal.Secret.from_name("db")],
-    proxy=modal.Proxy.from_name("pg-proxy"),
+    proxy=modal.Proxy.from_name("pg-proxy")
+    if os.environ["MODAL_ENVIRONMENT"] != "staging"
+    else None,
     timeout=24 * 60 * 60,
     region="us-east",
     concurrency_limit=5,
@@ -213,10 +217,6 @@ def onboard_and_inspect(
         print("Inspection ID: ", run_id)
         inspect_db.remote(codebase_id, run_id)
         print("Inspection complete")
-        print("Making embeddings using the 'old' tables")
-        create_embeddings = modal.Function.lookup("comprehender", "create_embeddings")
-        create_embeddings.remote(str(workspace_id), str(codebase_id))
-        print("Embeddings created")
 
         # Update codebase status to processing-complete
         with Session(engine) as session:

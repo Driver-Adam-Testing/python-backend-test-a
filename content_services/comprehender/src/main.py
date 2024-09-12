@@ -3,6 +3,7 @@ This file exposes the modal (https://www.modal.com) interface for the comprehend
 """
 
 import json
+import os
 import traceback
 from datetime import datetime
 
@@ -33,10 +34,12 @@ comprehender_modal_config = {
         modal.Secret.from_name("open-ai"),
         modal.Secret.from_name("db"),
     ],
-    "proxy": modal.Proxy.from_name("pg-proxy"),
     "concurrency_limit": 5,
     "region": "us-east",
 }
+
+if os.environ["MODAL_ENVIRONMENT"] != "staging":
+    comprehender_modal_config["proxy"] = modal.Proxy.from_name("pg-proxy")
 
 
 @app.function(timeout=3600, **comprehender_modal_config, keep_warm=1)
@@ -111,21 +114,6 @@ def upload_auxiliary_doc(workspace_id: str, codebase_id: str, url: str) -> str:
     return upload_file_from_url_to_open_ai(
         workspace_id=workspace_id, codebase_id=codebase_id, file_url=url
     )
-
-
-@app.function(
-    timeout=3600 * 16,  # 16 hours
-    **comprehender_modal_config,
-)
-def create_embeddings(workspace_id: str, codebase_id: str):
-    embed_content_for_codebase = modal.Function.lookup(
-        "embedding", "embed_content_for_codebase"
-    )
-
-    print(
-        f"Loading tech docs into vector db for workspace `{workspace_id}` and codebase `{codebase_id}`."
-    )
-    embed_content_for_codebase.remote(codebase_id, workspace_id)
 
 
 ### TODO: This is the wrong place in general for db operations.

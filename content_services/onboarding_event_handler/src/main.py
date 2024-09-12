@@ -51,14 +51,18 @@ def handler(event, context):
             token_response.raise_for_status()  # Raises an exception for 4XX/5XX responses
             token_json = token_response.json()
 
+            print("Processing S3 event(s)...")
             # Extract information from the S3 event
             for s3_record in sns_message["Records"]:
                 bucket_name = s3_record["s3"]["bucket"]["name"]
                 object_key = s3_record["s3"]["object"]["key"]
                 real_object_key = unquote_plus(object_key)
-                print(real_object_key)
+                print("key = " + real_object_key)
+                print("bucket = " + bucket_name)
                 metadata = head_object(bucket=bucket_name, key=real_object_key)
-                presigned_url = generate_get_presigned_url(key=real_object_key)
+                presigned_url = generate_get_presigned_url(
+                    bucket=bucket_name, key=real_object_key
+                )
                 print(
                     f"Triggering codebase onboarding for bucket = {bucket_name}, key = {object_key}"
                 )

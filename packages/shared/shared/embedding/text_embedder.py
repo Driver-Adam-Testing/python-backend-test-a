@@ -1,10 +1,20 @@
 import os
+from itertools import batched
 
-from openai import AsyncOpenAI, OpenAI
+from openai import (
+    APIConnectionError,
+    APITimeoutError,
+    AsyncOpenAI,
+    InternalServerError,
+    OpenAI,
+    RateLimitError,
+)
 from shared.chunking.text_splitter import TextChunk
+from shared.utils.decorators import retry_with_exponential_backoff
 
 TEXT_EMBEDDING_MODEL = os.getenv("TEXT_EMBEDDING_MODEL", "text-embedding-3-small")
 SUPPORTED_OPENAI_MODELS = ["text-embedding-3-small"]
+BATCH_SIZE = 2000
 
 
 def _prepare_text_chunks(text_chunks: list[str | TextChunk]) -> list[str]:
@@ -31,6 +41,16 @@ def batch_embed_text(
     ]
 
 
+@retry_with_exponential_backoff(
+    initial_delay=10.0,
+    exponential_base=1.0005,
+    errors=(
+        APITimeoutError,
+        RateLimitError,
+        APIConnectionError,
+        InternalServerError,
+    ),
+)
 async def async_batch_embed_text(
     text_chunks: list[str | TextChunk], model: str = TEXT_EMBEDDING_MODEL
 ) -> list:
@@ -39,5 +59,8 @@ async def async_batch_embed_text(
 
     openai_client = AsyncOpenAI()
     prepared_chunks = _prepare_text_chunks(text_chunks)
-    response = await openai_client.embeddings.create(input=prepared_chunks, model=model)
-    return [t.embedding for t in response.data]
+    embeddings = []
+    for batch in batched(prepared_chunks, BATCH_SIZE):
+        response = await openai_client.embeddings.create(input=batch, model=model)
+        embeddings.extend([t.embedding for t in response.data])
+    return embeddings

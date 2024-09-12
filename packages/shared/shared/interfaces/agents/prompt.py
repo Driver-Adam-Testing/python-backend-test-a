@@ -11,7 +11,7 @@ class PromptWithContext(BaseModel):
     """
 
     prompt: str | None = None
-    context: dict | BaseModel = None
+    context: dict | BaseModel | None = None
 
     def __init__(self, prompt: str, **kwargs):
         super().__init__(**kwargs)

@@ -33,6 +33,7 @@ def get_execution_results(user: CurrentUser, call_id: str) -> dict:
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# TODO: this url is poorly formatted. used to keep the same as instructions for rapid development
 @router.post("/async/batch")
 def get_batch_execution_results(user: CurrentUser, call_ids: list[str]) -> dict:
     results = {}

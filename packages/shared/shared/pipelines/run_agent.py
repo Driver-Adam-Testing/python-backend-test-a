@@ -1,7 +1,7 @@
 import re
 from urllib.parse import unquote, urlparse
 
-from database.models_v1 import ContentType
+from database.derived_content_types import DerivedContentTypeNames
 from pydantic import UUID4, BaseModel
 from shared import prompts
 from shared.agent import Agent
@@ -18,6 +18,7 @@ class RunAgentRequest(BaseModel):
 
 
 def run_agent(request: RunAgentRequest):
+    # TODO: Totally remove Workspace and replace with search scopes and org
     workspace_id = request.workspace_id
     prompt = request.prompt
     codebase_id = request.codebase_id
@@ -66,10 +67,15 @@ def run_agent(request: RunAgentRequest):
                 agent.agent,
                 search_text=f"{prompt} {selected_text if selected_text else ''}",
                 content_types=[
-                    ContentType.CODE_SYMBOL.value,
-                    ContentType.FILE_SUMMARY.value,
-                    "PDF_SUMMARY",
-                    ContentType.SOURCE_CODE.value,
+                    DerivedContentTypeNames.SYMBOL.value,
+                    DerivedContentTypeNames.CODEBASE_FILE.value,
+                    DerivedContentTypeNames.LONG_DESCRIPTION.value,
+                    DerivedContentTypeNames.PDF_SUMMARY.value,
+                    DerivedContentTypeNames.PDF_SUMMARY.value,
+                    DerivedContentTypeNames.PDF_VISUAL_SUMMARY.value,
+                    DerivedContentTypeNames.PDF_TEXT_SUMMARY.value,
+                    DerivedContentTypeNames.PDF_EXTRACTED_TEXT.value,
+                    DerivedContentTypeNames.PDF_EXTRACTED_TABLE.value,
                 ],
                 result_limit=25,
                 relative_path=relative_path,

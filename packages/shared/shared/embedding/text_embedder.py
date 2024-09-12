@@ -1,8 +1,16 @@
 import os
 from itertools import batched
 
-from openai import AsyncOpenAI, OpenAI
+from openai import (
+    APIConnectionError,
+    APITimeoutError,
+    AsyncOpenAI,
+    InternalServerError,
+    OpenAI,
+    RateLimitError,
+)
 from shared.chunking.text_splitter import TextChunk
+from shared.utils.decorators import retry_with_exponential_backoff
 
 TEXT_EMBEDDING_MODEL = os.getenv("TEXT_EMBEDDING_MODEL", "text-embedding-3-small")
 SUPPORTED_OPENAI_MODELS = ["text-embedding-3-small"]
@@ -33,6 +41,16 @@ def batch_embed_text(
     ]
 
 
+@retry_with_exponential_backoff(
+    initial_delay=10.0,
+    exponential_base=1.0005,
+    errors=(
+        APITimeoutError,
+        RateLimitError,
+        APIConnectionError,
+        InternalServerError,
+    ),
+)
 async def async_batch_embed_text(
     text_chunks: list[str | TextChunk], model: str = TEXT_EMBEDDING_MODEL
 ) -> list:

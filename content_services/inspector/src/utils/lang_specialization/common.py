@@ -307,6 +307,8 @@ def fn_dict_from_llm(
 
 PADDING_LINES_TOP = 100
 PADDING_LINES_BOTTOM = 100
+SYMBOL_MAX_CHUNK_SIZE = 64_000
+SYMBOL_CHUNK_OVERLAP = 1_000
 
 
 def symbols_dict_from_llm_multi_prompt(
@@ -319,6 +321,8 @@ def symbols_dict_from_llm_multi_prompt(
     user_prompt: str,
     max_symbols_to_document: int,
 ):
+    from shared.chunking.text_splitter import split_text
+
     symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
     symbols_dict = {}
     for symbol in symbols:
@@ -331,6 +335,16 @@ def symbols_dict_from_llm_multi_prompt(
                         start_line - PADDING_LINES_TOP : end_line + PADDING_LINES_BOTTOM
                     ]
                 )
+                # Catch edge case where a single symbol is too large for context
+                # This documents symbol based on first chunk only
+                # TODO: consider compression loop here? There is some intricacy here to deal with.
+                code_chunks = split_text(
+                    text=symbol_code,
+                    chunk_size=SYMBOL_MAX_CHUNK_SIZE,
+                    chunk_overlap=SYMBOL_CHUNK_OVERLAP,
+                )
+                if len(code_chunks) > 1:
+                    symbol_code = code_chunks[0].text
                 symbols_dict[s] = data_class.from_llm(
                     llm,
                     system_prompt,

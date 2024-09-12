@@ -376,7 +376,7 @@ class ContentService:
                     content_type_id=template_content_type.id,
                     workspace_id=default_workspace.id,
                     relative_path="",
-                    content=json.dumps(blank_content_template),
+                    content=" ",
                     content_name="Untitled Template",
                     misc_metadata={},
                     status=Enum_Derived_Content_Status.generation_complete,

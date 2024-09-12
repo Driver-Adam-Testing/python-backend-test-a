@@ -28,7 +28,9 @@ image = (
         ),
     ],
     secrets=[modal.Secret.from_name("aws-inspector-s3"), modal.Secret.from_name("db")],
-    proxy=modal.Proxy.from_name("pg-proxy"),
+    proxy=modal.Proxy.from_name("pg-proxy")
+    if os.environ["MODAL_ENVIRONMENT"] != "staging"
+    else None,
     timeout=60 * 60,
     region="us-east",
     concurrency_limit=5,
@@ -179,7 +181,9 @@ def run_codebase_onboarding(
         ),
     ],
     secrets=[modal.Secret.from_name("aws-inspector-s3"), modal.Secret.from_name("db")],
-    proxy=modal.Proxy.from_name("pg-proxy"),
+    proxy=modal.Proxy.from_name("pg-proxy")
+    if os.environ["MODAL_ENVIRONMENT"] != "staging"
+    else None,
     timeout=24 * 60 * 60,
     region="us-east",
     concurrency_limit=5,

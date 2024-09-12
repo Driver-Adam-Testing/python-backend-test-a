@@ -14,7 +14,7 @@ from shared.pipelines.agents.agent_prompt_augmentation import (
 )
 
 
-def execute_sequence(input: PipelineInput):
+def execute_sequence(input: PipelineInput) -> PipelineResponse:
     sequence_response = PipelineResponse(step_responses=[], final_result="")
     current_prompt = PromptWithContext(prompt=input.prompt, context=input.context)
     if any(
@@ -34,9 +34,6 @@ def execute_sequence(input: PipelineInput):
         match step.step_type:
             case PipelineStepType.PROMPT_AUGMENTATION:
                 response = run_agent_prompt_augmentation(step)
-                current_prompt = PromptWithContext(
-                    prompt=response.agent_result, context=input.context
-                )
 
             case PipelineStepType.DEFAULT:
                 response = run_agent_default(step)
@@ -47,15 +44,15 @@ def execute_sequence(input: PipelineInput):
             case PipelineStepType.CODE_CRITIC:
                 response = run_agent_code_critic__extract_verify_correct(step)
                 sequence_response.step_responses.append(response)
+                sequence_response.final_result = response.agent_result[-1]
                 current_prompt = PromptWithContext(
                     prompt=response.agent_result[-1], context=input.context
                 )
-                sequence_response.final_result = response.agent_result[-1]
                 continue
         # if step.step_type == PipelineStepType.EDIT_DOCUMENT:
         #     return run_agent_edit_document(input)
         sequence_response.step_responses.append(response)
-        sequence_response.final_result = response
+        sequence_response.final_result = response.agent_result
         current_prompt = PromptWithContext(
             prompt=response.agent_result, context=input.context
         )

@@ -3,7 +3,6 @@ from fastapi import APIRouter
 from app.api.routes.legacy.schema import graphql_router, sandbox_router
 from app.api.routes.v1 import (
     agent_pipelines,
-    ai,
     content,
     git_provider,
     healthcheck,
@@ -31,7 +30,6 @@ api_router.include_router(tags.router, prefix="/tags", tags=["tags"])
 api_router.include_router(
     instructions.router, prefix="/instructions", tags=["instructions"]
 )
-api_router.include_router(ai.router, prefix="/ai", tags=["ai"])
 api_router.include_router(upload.router, prefix="/upload", tags=["upload"])
 api_router.include_router(
     agent_pipelines.router, prefix="/agent_pipelines", tags=["agent_pipelines"]

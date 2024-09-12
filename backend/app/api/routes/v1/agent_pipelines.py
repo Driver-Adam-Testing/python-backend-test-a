@@ -1,37 +1,48 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from modal import Function
 from modal.functions import FunctionCall
 from pydantic import BaseModel
+from shared.interfaces.agents.pipeline_configuration import (
+    PipelineInput,
+    PipelineResponse,
+)
+from shared.interfaces.request import DriverModalBatchRequest
+from shared.interfaces.response import DriverModalResponse
 
 from app.api.auth import CurrentUser
 
 router = APIRouter()
 
 
-# TODO: Change all this to not dicts.
+@router.post(
+    "/",
+    summary="Start a modal instance of the execute Agent Sequence",
+)
+def execute_agent_sequence(user: CurrentUser, input: PipelineInput) -> PipelineResponse:
+    from shared.pipelines.agents.execute import execute_sequence
+
+    input.scope.organization_id = user.organization_id
+    return execute_sequence(input)
 
 
 @router.post(
     "/async",
     summary="Start a modal instance of the execute Agent Sequence",
 )
-def execute_agent_sequence_modal_async(user: CurrentUser, input: dict) -> dict:
-    input["scope"]["organization_id"] = user.organization_id
+def execute_agent_sequence_modal_async(
+    user: CurrentUser, input: PipelineInput
+) -> DriverModalResponse:
+    input.scope.organization_id = user.organization_id
     modal_function = Function.lookup("agent", "run")
     instance = modal_function.spawn(input)
-    return {"call_id": instance.object_id}
+    return DriverModalResponse(call_id=instance.object_id)
 
 
 @router.get("/async/{call_id}")
-def get_execution_results(user: CurrentUser, call_id: str) -> dict:
+def get_execution_results(user: CurrentUser, call_id: str) -> PipelineResponse:
     function_call = FunctionCall.from_id(call_id)
-    try:
-        result = function_call.get(timeout=0)
-        return result
-    except TimeoutError:
-        raise HTTPException(status_code=408, detail="Request Timeout")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    result = function_call.get(timeout=0)
+    return result
 
 
 class BatchInput(BaseModel):
@@ -40,7 +51,9 @@ class BatchInput(BaseModel):
 
 # TODO: this url is poorly formatted. used to keep the same as instructions for rapid development
 @router.post("/async/batch")
-def get_batch_execution_results(user: CurrentUser, input: BatchInput) -> dict:
+def get_batch_execution_results(
+    user: CurrentUser, input: DriverModalBatchRequest
+) -> dict:
     results = {}
     for call_id in input.call_ids:
         function_call = FunctionCall.from_id(call_id)
@@ -50,7 +63,7 @@ def get_batch_execution_results(user: CurrentUser, input: BatchInput) -> dict:
             results[call_id] = {
                 "call_id": call_id,
                 "status": "completed",
-                "response": result["content"],
+                "response": result,
                 "error": "",
             }
         except TimeoutError:
@@ -74,7 +87,10 @@ def get_batch_execution_results(user: CurrentUser, input: BatchInput) -> dict:
     "/sync",
     summary="Start a modal instance of the execute Agent Sequence",
 )
-def execute_agent_sequence_modal_sync(user: CurrentUser, input: dict) -> dict:
-    input["scope"]["organization_id"] = user.organization_id
+def execute_agent_sequence_modal_sync(
+    user: CurrentUser, input: PipelineInput
+) -> PipelineResponse:
+    input.scope.organization_id = user.organization_id
     modal_function = Function.lookup("agent", "run")
-    return modal_function.remote(input)
+    result = modal_function.remote(input)
+    return result

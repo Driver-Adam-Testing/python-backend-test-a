@@ -361,7 +361,7 @@ class ContentService:
                 content_type_id=content_type.id,
                 workspace_id=default_workspace.id,
                 relative_path="",
-                content=" ",
+                content="",
                 content_name=content_name,
                 misc_metadata={},
                 status=Enum_Derived_Content_Status.generation_complete,

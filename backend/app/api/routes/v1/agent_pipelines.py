@@ -58,7 +58,7 @@ def get_batch_execution_results(user: CurrentUser, input: BatchInput) -> dict:
                 "call_id": call_id,
                 "status": "running",
                 "response": None,
-                "error": "Request Timeout",
+                "error": "",
             }
         except Exception as e:
             results[call_id] = {

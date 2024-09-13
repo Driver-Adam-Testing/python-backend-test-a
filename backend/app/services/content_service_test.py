@@ -258,13 +258,6 @@ def test_get_content_root_by_id(content_service, current_user_with_org, content)
     assert root_content.codebase_id == content.codebase_id
 
 
-def test_create_template(content_service, current_user_with_org, workspace, codebase):
-    with pytest.raises(NoResultFound):
-        content_service.create_template(
-            current_user_with_org.organization_id, workspace.id, codebase.id
-        )
-
-
 def test_associate_sources_with_content(
     content_service, current_user_with_org, content, source_content
 ):

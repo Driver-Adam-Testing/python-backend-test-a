@@ -757,59 +757,6 @@ class ContentService:
 
         return parent
 
-    def create_template(
-        self, organization_id: str, workspace_id: UUID, codebase_id: UUID
-    ) -> DerivedContent:
-        logger.info(
-            f"Creating template for organization {organization_id}, workspace {workspace_id}, codebase {codebase_id}"
-        )
-        checks = [
-            lambda session: is_authorized(
-                session, organization_id, workspace_id, codebase_id
-            )
-        ]
-
-        perform_authorization_checks(self.session, checks)
-
-        template_content_type = self.derived_content_type_repository.get_by_type_name(
-            "template"
-        )
-
-        if not template_content_type:
-            logger.error("Template content type not found")
-            raise NoResultFound("Template content type not found")
-
-        codebase_content_type = self.derived_content_type_repository.get_by_type_name(
-            "codebase"
-        )
-
-        parent_content = self.session.exec(
-            select(DerivedContent)
-            .where(DerivedContent.content_type_id == codebase_content_type.id)
-            .where(DerivedContent.workspace_id == workspace_id)
-            .where(DerivedContent.codebase_id == codebase_id)
-        ).first()
-
-        blank_content_template = {"name": "Template", "content": " ", "description": ""}
-        new_content = self.content_repository.create(
-            DerivedContent(
-                content_type_id=template_content_type.id,
-                workspace_id=workspace_id,
-                source_content_id=parent_content.id,
-                codebase_id=codebase_id,
-                relative_path=parent_content.relative_path,
-                content=json.dumps(blank_content_template),
-                misc_metadata={},
-                status=Enum_Derived_Content_Status.generation_complete,
-                created_at=datetime.now(),
-                updated_at=datetime.now(),
-            )
-        )
-        logger.info(
-            f"Template created with ID {new_content.id} for organization {organization_id}"
-        )
-        return new_content
-
     def edit_content(
         self, organization_id: str, content_id: UUID, new_content: dict
     ) -> DerivedContent:

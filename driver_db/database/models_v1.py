@@ -8,10 +8,22 @@ from uuid import UUID
 import sqlalchemy.dialects.postgresql
 import strawberry
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import Column, DateTime, Enum, Integer, UniqueConstraint, func, text
+from sqlalchemy import (
+    Column,
+    Computed,
+    DateTime,
+    Enum,
+    Index,
+    Integer,
+    UniqueConstraint,
+    func,
+    text,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as SaUuid
 from sqlmodel import JSON, Field, Relationship, SQLModel
+
+from .tsvector import TSVector
 
 
 # TODO remove in favor of derived content types once new embeddings created
@@ -526,5 +538,16 @@ class ChunkAndEmbedding(SQLModel, table=True):  # type: ignore
             server_default=func.now(),
             onupdate=func.now(),
             nullable=False,
+        ),
+    )
+
+    __ts_vector__ = Column(
+        "__ts_vector__",
+        TSVector(),
+        Computed("to_tsvector('english', text)", persisted=True),
+    )
+    __table_args__ = (
+        Index(
+            "ix_chunkandembedding___ts_vector__", __ts_vector__, postgresql_using="gin"
         ),
     )

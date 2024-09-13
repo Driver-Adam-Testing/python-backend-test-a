@@ -704,7 +704,8 @@ class ContentService:
     ) -> DerivedContent:
         logger.info(f"Fetching content by ID {content_id}")
 
-        content: DerivedContent = self.content_repository.get(content_id)
+        content: DerivedContent | None = self.content_repository.get(content_id)
+
         if not content:
             logger.error(f"Content {content_id} not found")
             raise HTTPException(

@@ -295,3 +295,17 @@ def update_content(
 ) -> DerivedContent:
     content_service = ContentService(session)
     return content_service.edit_content(user.organization_id, content_id, update_data)
+
+
+@router.delete(
+    "/{content_id}/",
+    status_code=204,
+)
+def delete_content(
+    session: CurrentSession,
+    user: CurrentUser,
+    content_id: UUID,
+) -> None:
+    content_service = ContentService(session)
+    content_service.delete_content(user.organization_id, content_id)
+    return

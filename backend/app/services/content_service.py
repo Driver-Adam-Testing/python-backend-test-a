@@ -14,7 +14,7 @@ from database.models_v1 import (
     Workspace,
 )
 from fastapi import HTTPException, status
-from sqlalchemy.exc import NoResultFound
+from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlmodel import Session, asc, desc, func, or_, select, text
 
 from app.core.logger import logger
@@ -72,6 +72,13 @@ class ContentService:
         self.workspace_repository = WorkspaceRepository(session)
         self.derived_content_type_repository = DerivedContentTypeRepository(session)
         self.document_source_repository = BaseRepository(session, DocumentSource)
+        self.tag_content_repository = BaseRepository(session, TagContent)
+        # Define a mapping of content type names to their respective delete handlers
+        self.delete_handlers = {
+            DerivedContentTypeNames.APPLICATION_NOTE.value: exec_delete_document,
+            DerivedContentTypeNames.TEMPLATE.value: exec_delete_document,
+            # Add more mappings as needed
+        }
 
     def associate_sources_with_content(
         self,
@@ -844,3 +851,99 @@ class ContentService:
         )
 
         return content
+
+    def delete_content(self, organization_id: str, content_id: UUID) -> bool:
+        logger.info(f"Deleting content {content_id} for organization {organization_id}")
+
+        # Check if the content exists and is associated with the organization
+        content = self.content_repository.get_by_conditions(
+            [
+                Workspace.organization_id == organization_id,
+                DerivedContent.id == content_id,
+            ],
+            [Workspace],
+        )
+
+        if not content:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
+            )
+
+        valid_content_types = {
+            DerivedContentTypeNames.APPLICATION_NOTE.value,
+            DerivedContentTypeNames.TEMPLATE.value,
+        }
+
+        if content.content_type not in valid_content_types:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid content type"
+            )
+
+        delete_handler = self.delete_handlers.get(content.content_type.type_name)
+
+        if not delete_handler:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Handler not implemented",
+            )
+
+        try:
+            content_deleted = delete_handler(self, content)
+            logger.info(
+                f"Content {content_id} successfully deleted for organization {organization_id}"
+            )
+            return content_deleted
+        except IntegrityError as e:
+            logger.error(f"Error deleting content {content_id}: {str(e)}")
+            raise HTTPException(status_code=400, detail=str(e))
+
+
+def exec_delete_document(service: ContentService, content: DerivedContent) -> bool:
+    """
+    Delete application notes or templates and all associated data.
+    """
+    try:
+        # Delete all the sources associated with the content
+        for source in content.source_links:
+            service.session.delete(source)
+        # Delete all the tags associated with the content
+        for tag_content in content.tag_contents:
+            service.session.delete(tag_content)
+
+        service.session.delete(content)
+        service.session.commit()
+        return True
+    except IntegrityError as e:
+        logger.error(f"Error deleting content {content.id}: {str(e)}")
+        service.session.rollback()
+        raise
+
+
+def execute_delete_pdf_complete(
+    service: ContentService, content: DerivedContent
+) -> bool:
+    """
+    Delete a PDF record from the database when the PDF generation
+    Delete PDF IR's like summaries, Chunks and Embeds, and clean up the S3 bucket.
+    """
+    try:
+        for chunks_and_embed in content.chunks_and_embeds:
+            service.session.delete(chunks_and_embed)
+
+        # Delete all the tags associated with the content
+        for tag_content in content.tag_contents:
+            service.session.delete(tag_content)
+
+        for derived_content in content.derived_contents:
+            service.session.delete(derived_content)
+
+        service.session.delete(content)
+        service.session.commit()
+
+        # delete the pdf from s3
+
+        return True
+    except IntegrityError as e:
+        logger.error(f"Error deleting content {content.id}: {str(e)}")
+        service.session.rollback()
+        raise

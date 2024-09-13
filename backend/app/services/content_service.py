@@ -361,7 +361,7 @@ class ContentService:
                 content_type_id=content_type.id,
                 workspace_id=default_workspace.id,
                 relative_path="",
-                content=" ",
+                content="",
                 content_name=content_name,
                 misc_metadata={},
                 status=Enum_Derived_Content_Status.generation_complete,
@@ -699,10 +699,13 @@ class ContentService:
         ]
         return ContentSourceResponse(results=source_results)
 
-    def get_content_by_id(self, content_id: UUID, user_org_id: str) -> DerivedContent:
+    def get_content_by_id(
+        self, content_id: UUID, organization_id: str
+    ) -> DerivedContent:
         logger.info(f"Fetching content by ID {content_id}")
 
-        content: DerivedContent = self.content_repository.get(content_id)
+        content: DerivedContent | None = self.content_repository.get(content_id)
+
         if not content:
             logger.error(f"Content {content_id} not found")
             raise HTTPException(
@@ -710,8 +713,11 @@ class ContentService:
             )
 
         checks = [
-            lambda session: is_authorized(
-                session, user_org_id, content.workspace_id, content.codebase_id
+            lambda session: self.content_repository.is_authorized(
+                id=content_id,
+                relationship_chain=["workspace"],
+                field_name="organization_id",
+                field_value=organization_id,
             )
         ]
 

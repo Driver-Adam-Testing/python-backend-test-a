@@ -224,7 +224,9 @@ def hybrid_search(session: Session, input: SearchInput):
     for (c, cm, score), text_score, path_score in zip(
         results, text_scores, path_scores, strict=False
     ):
-        normalized_semantic_score = (2 - score) / 2  # Invert and normalize to 0-1
+        normalized_semantic_score = (
+            2 - score
+        ) / 2  # Invert and normalize to 0-1 TODO: make this distance from 1
         normalized_text_score = min(text_score, 7) / 7
         normalized_path_score = min(path_score, 7) / 7
 

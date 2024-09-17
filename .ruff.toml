@@ -1,16 +1,17 @@
-[tool.ruff]
+# .ruff.toml
 line-length = 88
-select = ["E", "W", "F", "I", "C90"]  # Common rulesets including E (errors), W (warnings), F (flake8), I (imports)
-target-version = "py12"
+target-version = "py312"
 fix = true
 
-[tool.ruff.lint]
+[lint]
+select = ["E", "W", "F", "I", "C90"]  # Common rulesets including E (errors), W (warnings), F (flake8), I (imports)
+
 extend-select = [
     "B",   # flake8-bugbear
     "C4",  # flake8-comprehensions
     "ERA", # flake8-eradicate/eradicate
     "I",   # isort
-    "N",   # pep8-naming
+    #"N",   # pep8-naming
     "PIE", # flake8-pie
     "PGH", # pygrep
     "RUF", # ruff checks
@@ -20,16 +21,26 @@ extend-select = [
     "TID", # flake8-tidy-imports
     "UP",  # pyupgrade
 ]
+
 ignore = [
+    "B008", # Ignore warning about using function calls as default arguments, common in FastAPI
+    "T201", # print() found
+    "ERA", # do not autoremove commented out code
     "B904", # use 'raise ... from err'
     "B905", # use explicit 'strict=' parameter with 'zip()'
-    "N818", #  Exception name should be named with an Error suffix
+    "N818", # Exception name should be named with an Error suffix
+    "E501",
 ]
+
 unfixable = [
     "ERA", # do not autoremove commented out code
 ]
 
-[tool.ruff.lint.isort]
+[lint.isort]
 force-single-line = true
 lines-between-types = 1
 lines-after-imports = 2
+
+[lint.per-file-ignores]
+# Ignore N999 errors specifically for Alembic migration files.
+"driver_db/database/alembic/versions/*.py" = ["N999"]

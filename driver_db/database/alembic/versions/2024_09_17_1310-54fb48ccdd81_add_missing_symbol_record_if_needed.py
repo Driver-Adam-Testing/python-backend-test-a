@@ -31,9 +31,6 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    pass
-    # Do nothing so that we don't accidentally delete a content_type that already
-    # in some environments. (TODO - confirm this approach)
-    # delete_query = "DELETE FROM derived_content_types WHERE type_name='symbol';"
-    # conn = op.get_bind()
-    # conn.execute(sa.text(delete_query))
+    delete_query = "DELETE FROM derived_content_types WHERE type_name='symbol';"
+    conn = op.get_bind()
+    conn.execute(sa.text(delete_query))

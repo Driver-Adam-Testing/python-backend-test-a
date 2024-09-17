@@ -43,12 +43,14 @@ def trigger_onboarding(
     Returns:
         Onboarding: Returns a JSON response with the health status
     """
-
-    logging.info("Triggering codebase onboarding...")
     archive_name = Path(trigger_body.object_key).name
+    logging.info(
+        f"Triggering codebase onboarding for org = {trigger_body.org_id} and archive = {archive_name}, provider = {trigger_body.provider}"
+    )
     onboard_and_inspect = modal.Function.lookup(
         "codebase-onboarding", "onboard_and_inspect"
     )
+
     call = onboard_and_inspect.spawn(
         trigger_body.download_url,
         archive_name,

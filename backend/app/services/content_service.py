@@ -2,6 +2,7 @@ import json
 from datetime import datetime
 from uuid import UUID
 
+from app.utils.content_utils import get_content_name
 from database.derived_content_types import DerivedContentTypeNames
 from database.models_v1 import (
     Codebase,
@@ -454,21 +455,7 @@ class ContentService:
         content_results = []
         for result in results:
             try:
-                content_name = (
-                    result.content_name
-                    if result.content_name
-                    else json.loads(result.content).get("name")
-                    if result.content_type.type_name == "application_note"
-                    and result.content
-                    and "name" in json.loads(result.content)
-                    else "Generating content..."
-                    if result.content_type.type_name == "application_note"
-                    and result.content
-                    and "name" not in json.loads(result.content)
-                    else result.relative_path.removeprefix("documents/")
-                    if result.content_type.type_name == "supplemental-document"
-                    else result.relative_path
-                )
+                content_name = get_content_name(result)
             except json.JSONDecodeError as e:
                 logger.error(
                     f"Error decoding JSON for content ID {result.id}: {str(e)}"
@@ -666,24 +653,14 @@ class ContentService:
                 organization_id=result.workspace.organization_id,
                 content_type_id=result.content_type_id,
                 content_type_name=result.content_type.type_name,
-                content_name=(
-                    json.loads(result.content).get("name")
-                    if result.content_type.type_name == "application_note"
-                    and result.content
-                    and "name" in json.loads(result.content)
-                    else "Generating content..."
-                    if result.content_type.type_name == "application_note"
-                    and result.content
-                    and "name" not in json.loads(result.content)
-                    else result.relative_path.removeprefix("documents/")
-                    if result.content_type.type_name == "supplemental-document"
-                    else result.relative_path
-                ),
+                content_name=get_content_name(result),
                 workspace_id=result.workspace_id,
                 workspace_name=result.workspace.display_name,
                 source_content_id=result.source_content_id,
                 codebase_id=result.codebase_id,
-                codebase_name=result.codebase.codebase_name,
+                codebase_name=result.codebase.codebase_name
+                if result.codebase
+                else None,
                 relative_path=result.relative_path,
                 content=result.content,
                 misc_metadata=result.misc_metadata,

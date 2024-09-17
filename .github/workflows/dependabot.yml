@@ -6,7 +6,6 @@ on:
       - opened
       - synchronize
   workflow_dispatch:
-
 jobs:
   update_lock_files:
     if: ${{ github.actor == 'dependabot[bot]' || github.actor == 'dependabot-preview[bot]' }}

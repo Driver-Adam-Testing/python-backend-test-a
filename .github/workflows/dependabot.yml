@@ -1,5 +1,4 @@
 name: Dependabot Auto Update - updates downstream packages when dependabot updates one
-
 on:
   pull_request:
     types:
@@ -8,7 +7,7 @@ on:
   workflow_dispatch:
 jobs:
   update_lock_files:
-    if: ${{ github.actor == 'dependabot[bot]' || github.actor == 'dependabot-preview[bot]' }}
+    if: ${{ github.actor == 'dependabot[bot]' || github.actor == 'dependabot-preview[bot]' || github.actor == 'andrewemark'}}
     runs-on: ubuntu-latest
 
     steps:

@@ -94,7 +94,7 @@ class AgentBase(ABC):
 
     @abstractmethod
     def _execute_iteration(self) -> str | None:
-        pass
+        raise NotImplementedError()
 
     def invoke(self, prompt: str = None):
         self.iteration = 0

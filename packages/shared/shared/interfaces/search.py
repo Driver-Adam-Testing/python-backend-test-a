@@ -1,6 +1,8 @@
 from shared.interfaces.request import DriverRequest
 from shared.interfaces.response import DriverResponse
 
+# TODO: make result metadata a strict type.
+
 
 class SearchInput(DriverRequest):
     query: str

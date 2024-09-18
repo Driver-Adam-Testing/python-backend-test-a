@@ -57,7 +57,7 @@ def overall_score(semantic_score: float | None = None, bm25_score: float | None 
     return aggregate_score
 
 
-def build_base_statement(input: SearchInput, embedded_query):
+def build_base_statement(input: SearchInput, embedded_query: any) -> any:
     statement = (
         select(
             ChunkAndEmbedding,

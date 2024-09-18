@@ -93,6 +93,7 @@ def build_base_statement(input: SearchInput, embedded_query):
             )
 
     if input.relative_path:
+        # TODO: make this a list[str], disallow str
         paths = []
         if isinstance(input.relative_path, str):
             paths = [input.relative_path]

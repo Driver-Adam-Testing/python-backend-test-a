@@ -1,4 +1,3 @@
-import math
 import re
 
 from database.models_v1 import (
@@ -20,8 +19,42 @@ SEMANTIC_SCORE_IGNORE_THRESHOLD = 1.25
 CHARS_PER_TOKEN_APPROXIMATION = 2.5
 
 
-def tokenize_for_bm25(text: str):
-    return re.findall(r"\b[\w_]+(?:'[\w_]+)?\b", text.lower())
+def get_bm25_scores(query: str, texts: list[str]):
+    def tokenize_for_bm25(text: str):
+        return re.findall(r"\b[\w_]+(?:'[\w_]+)?\b", text.lower())
+
+    tokenized_query = tokenize_for_bm25(query)
+    tokenized_text = [tokenize_for_bm25(text) for text in texts]
+    bm25_text = BM25Okapi(tokenized_text)
+    text_scores = bm25_text.get_scores(tokenized_query)
+
+    return text_scores
+
+
+def overall_score(semantic_score: float | None = None, bm25_score: float | None = None):
+    # Normalize the semantic score to be between 0 and 1, cube it to exaggerate distance from 1.0
+    normalized_semantic_score = (
+        max(0, (1 - abs(1 - semantic_score)) ** 3)
+        if semantic_score is not None
+        else None
+    )
+    # TODO: BM25 is a relative score, so you can't score just one record. Figure out how to normalize this effectively
+    normalized_bm25_score = (
+        max(0, 1 - (1 / (1 + bm25_score))) if bm25_score is not None else None
+    )
+
+    if normalized_semantic_score is None:
+        return normalized_bm25_score
+    if normalized_bm25_score is None:
+        return normalized_semantic_score
+
+    # Calculate the weighted aggregate score between 0 and 1
+    aggregate_score = (
+        normalized_semantic_score * SEMANTIC_WEIGHT
+        + normalized_bm25_score * BM25_WEIGHT
+    ) / (SEMANTIC_WEIGHT + BM25_WEIGHT)
+
+    return aggregate_score
 
 
 def build_base_statement(input: SearchInput, embedded_query):
@@ -82,27 +115,6 @@ def build_base_statement(input: SearchInput, embedded_query):
     return statement
 
 
-def calculate_aggregate_score(semantic_score: float, bm25_score: float = None):
-    # Normalize the semantic score to be between 0 and 1
-    normalized_semantic_score = max(0, 1 - math.sqrt(abs(semantic_score - 1)))
-    semantic_weight = 1
-    bm25_weight = 1
-
-    if bm25_score is not None:
-        # Normalize the BM25 score to be between 0 and 1
-        normalized_bm25_score = min(bm25_score, MAX_BM25_SCORE) / MAX_BM25_SCORE
-        # Calculate the weighted aggregate score between 0 and 1
-        aggregate_score = (
-            normalized_semantic_score * semantic_weight
-            + normalized_bm25_score * bm25_weight
-        ) / (semantic_weight + bm25_weight)
-    else:
-        # If no BM25 score, the aggregate score is just the normalized semantic score
-        aggregate_score = normalized_semantic_score
-
-    return aggregate_score
-
-
 def search_content(session: Session, input: SearchInput):
     if input.algorithm == "keyword":
         return keyword_search(session, input)
@@ -122,13 +134,15 @@ def keyword_search(session: Session, input: SearchInput):
     if input.result_limit:
         statement = statement.limit(input.result_limit)
 
+    db_results = session.exec(statement).all()
+    keyword_scores = get_bm25_scores(
+        input.query, [c.text + " " + cm.relative_path for c, cm, _ in db_results]
+    )
     results = sorted(
         [
             SearchResult(
                 content=c.text,
-                score=BM25Okapi([c.text + " " + cm.relative_path]).get_scores(
-                    input.query
-                )[0],
+                score=overall_score(bm25_score=bm25_score),
                 metadata={
                     "id": c.id,
                     "workspace_id": cm.workspace_id,
@@ -136,12 +150,10 @@ def keyword_search(session: Session, input: SearchInput):
                     "content_type": cm.content_type.type_name,
                     "relative_path": cm.relative_path,
                     "semantic_score": s,
-                    "keyword_score": BM25Okapi(
-                        [c.text + " " + cm.relative_path]
-                    ).get_scores(input.query)[0],
+                    "keyword_score": bm25_score,
                 },
             )
-            for c, cm, s in session.exec(statement).all()
+            for (c, cm, s), bm25_score in zip(db_results, keyword_scores)
         ],
         key=lambda result: result.score,
         reverse=True,
@@ -175,7 +187,6 @@ def semantic_search(session: Session, input: SearchInput):
             break
         token_count = int(len(c.text.split()) / CHARS_PER_TOKEN_APPROXIMATION)
         accumulated_tokens += token_count
-        aggregate_score = calculate_aggregate_score(score)
         metadata = {
             "content_type": cm.content_type.type_name,
             "relative_path": cm.relative_path,
@@ -188,7 +199,7 @@ def semantic_search(session: Session, input: SearchInput):
         search_results.append(
             SearchResult(
                 content=c.text,
-                score=aggregate_score,
+                score=overall_score(score),
                 metadata=metadata,
             )
         )
@@ -203,16 +214,36 @@ def semantic_search(session: Session, input: SearchInput):
 
 def hybrid_search(session: Session, input: SearchInput):
     embedded_query = batch_embed_text([input.query])[0]
-    statement = build_base_statement(input, embedded_query)
-    statement = statement.where(
+    statement_l2 = build_base_statement(input, embedded_query)
+    statement_l2 = statement_l2.where(
         ChunkAndEmbedding.text_embedding_3_small.l2_distance(embedded_query) <= 1.25
-    )
-    statement = statement.order_by(asc("score"))
+    ).order_by(asc("score"))
+
+    statement_tsvector = build_base_statement(input, embedded_query)
+    statement_tsvector = statement_tsvector.where(
+        ChunkAndEmbedding.__ts_vector__.match(input.query)
+    ).order_by(asc("score"))
 
     if input.result_limit:
-        statement = statement.limit(max(input.result_limit * 10, 500))
+        statement_l2 = statement_l2.limit(input.result_limit)
+        statement_tsvector = statement_tsvector.limit(input.result_limit)
 
-    results = session.exec(statement).all()
+    results_l2 = session.exec(statement_l2).all()
+    results_tsvector = session.exec(statement_tsvector).all()
+
+    results = list(
+        {(c.id, cm.id, score) for c, cm, score in results_l2 + results_tsvector}
+    )
+    results = [
+        (
+            next(
+                c
+                for c in results_l2 + results_tsvector
+                if c[0].id == c_id and c[1].id == cm_id
+            )
+        )
+        for c_id, cm_id, score in results
+    ]
 
     if not results:
         return SearchResults(results=[])
@@ -220,21 +251,14 @@ def hybrid_search(session: Session, input: SearchInput):
     search_results = []
     accumulated_tokens = 0
 
-    tokenized_query = tokenize_for_bm25(input.query)
-    tokenized_texts = [
-        tokenize_for_bm25(c.text + " " + cm.relative_path) for c, cm, s in results
-    ]
-
-    bm25_text = BM25Okapi(tokenized_texts)
-    text_scores = bm25_text.get_scores(tokenized_query)
-
+    keyword_scores = get_bm25_scores(
+        input.query, [c.text + " " + cm.relative_path for c, cm, _ in results]
+    )
     for idx, (c, cm, score) in enumerate(results):
         if input.token_limit is not None and accumulated_tokens > input.token_limit:
             break
         token_count = int(len(c.text.split()) / 2.5)
         accumulated_tokens += token_count
-        bm25_score = text_scores[idx]
-        aggregate_score = calculate_aggregate_score(score, bm25_score)
         metadata = {
             "content_type": cm.content_type.type_name,
             "relative_path": cm.relative_path,
@@ -243,12 +267,14 @@ def hybrid_search(session: Session, input: SearchInput):
             "content_id": cm.id,
             "chunk_number": c.chunk_number,
             "semantic_score": score,
-            "bm25_score": text_scores[idx],
+            "bm25_score": keyword_scores[idx],
         }
         search_results.append(
             SearchResult(
                 content=c.text,
-                score=aggregate_score,
+                score=overall_score(
+                    semantic_score=score, bm25_score=keyword_scores[idx]
+                ),
                 metadata=metadata,
             )
         )

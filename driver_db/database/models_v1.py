@@ -541,7 +541,7 @@ class ChunkAndEmbedding(SQLModel, table=True):  # type: ignore
         ),
     )
 
-    __ts_vector__: None | any = Column(
+    __ts_vector__: any = Column(
         "__ts_vector__",
         TSVector(),
         Computed("to_tsvector('english', text)", persisted=True),

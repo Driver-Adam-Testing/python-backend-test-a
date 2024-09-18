@@ -5,11 +5,11 @@ from pydantic import BaseModel
 
 class ToolStrict(BaseModel, ABC):
     @abstractmethod
-    def execute(self, agent, **kwargs):
-        pass
+    def execute(self, agent, **kwargs) -> str:
+        raise NotImplementedError()
 
     @classmethod
-    def anthropic_tool_schema(cls):
+    def anthropic_tool_schema(cls) -> dict:
         """
         Create a schema that conforms to the parameters of the ToolStrict subclass.
         """

@@ -42,7 +42,7 @@ class SearchTool(ToolStrict):
     search_subfolder_paths: list[str] | None = None
 
     @property
-    def derived_content_types(self):
+    def derived_content_types(self) -> list[str]:
         derived_content_types = set()
         for content_type in self.content_types:
             if content_type == self.SearchToolInputContentType.source_code:
@@ -81,7 +81,7 @@ class SearchTool(ToolStrict):
                 )
         return list(derived_content_types)
 
-    def execute(self, agent):
+    def execute(self, agent) -> str:
         # Ensure relative paths are subfolders or files within agent.paths
         agent.scope.authorize(self.search_subfolder_paths)
 

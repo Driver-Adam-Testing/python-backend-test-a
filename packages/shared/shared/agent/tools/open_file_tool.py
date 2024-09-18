@@ -17,7 +17,7 @@ class OpenFileTool(ToolStrict):
 
     file_path: str
 
-    def execute(self, agent):
+    def execute(self, agent) -> str:
         agent.scope.authorize(self.file_path)
 
         with get_session() as session:

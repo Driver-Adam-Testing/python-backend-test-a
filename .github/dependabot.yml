@@ -44,3 +44,9 @@ updates:
       interval: "weekly"
     commit-message:
       prefix: ⬆
+  - package-ecosystem: "pip"
+    directory: "/packages/shared"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: ⬆

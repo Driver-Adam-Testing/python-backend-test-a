@@ -16,7 +16,7 @@ class OpenAIStrictAgent(AgentBase):
         self.client = OpenAI()
         super().__init__(*args, **kwargs)
 
-    def _execute_tool_calls(self, tool_calls):
+    def _execute_tool_calls(self, tool_calls) -> None:
         # TODO: set tools to have an optional token limit for the results. This should be context_window / len(tool_calls) / max_iterations
         """
         OpenAI expects all tool calls to return in several tool messages with tool_call_id.

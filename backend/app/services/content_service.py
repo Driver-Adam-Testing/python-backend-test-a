@@ -454,21 +454,13 @@ class ContentService:
 
         content_results = []
         for result in results:
-            try:
-                content_name = get_content_name(result)
-            except json.JSONDecodeError as e:
-                logger.error(
-                    f"Error decoding JSON for content ID {result.id}: {str(e)}"
-                )
-                content_name = "Invalid JSON content"
-
             content_results.append(
                 ListContentResult(
                     id=result.id,
                     organization_id=result.workspace.organization_id,
                     content_type_id=result.content_type_id,
                     content_type_name=result.content_type.type_name,
-                    content_name=content_name,
+                    content_name=get_content_name(result),
                     workspace_id=result.workspace_id,
                     workspace_name=result.workspace.display_name,
                     source_content_id=result.source_content_id,

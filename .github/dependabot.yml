@@ -1,52 +1,47 @@
 version: 2
 updates:
-  # GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
-    schedule:
+    schedule: &default_schedule
       interval: "weekly"
+      day: "wednesday"
+      time: "09:00"
+      timezone: "America/Los_Angeles"
     commit-message:
       prefix: ⬆
   # Python
   - package-ecosystem: "pip"
     directory: "/"
-    schedule:
-      interval: "weekly"
+    schedule: *default_schedule
     commit-message:
       prefix: ⬆
   - package-ecosystem: "pip"
     directory: "/backend"
-    schedule:
-      interval: "weekly"
+    schedule: *default_schedule
     commit-message:
       prefix: ⬆
   - package-ecosystem: "pip"
     directory: "/content_services/onboarding_event_handler"
-    schedule:
-      interval: "weekly"
+    schedule: *default_schedule
     commit-message:
       prefix: ⬆
   - package-ecosystem: "pip"
     directory: "/content_services/onboarding"
-    schedule:
-      interval: "weekly"
+    schedule: *default_schedule
     commit-message:
       prefix: ⬆
   - package-ecosystem: "pip"
     directory: "/driver_db"
-    schedule:
-      interval: "weekly"
+    schedule: *default_schedule
     commit-message:
       prefix: ⬆
   - package-ecosystem: "pip"
     directory: "/content_services/inspector"
-    schedule:
-      interval: "weekly"
+    schedule: *default_schedule
     commit-message:
       prefix: ⬆
   - package-ecosystem: "pip"
     directory: "/packages/shared"
-    schedule:
-      interval: "weekly"
+    schedule: *default_schedule
     commit-message:
       prefix: ⬆

@@ -63,8 +63,6 @@ class AgentBase(ABC):
             message = {"role": "user", "content": message}
         elif hasattr(message, "to_dict") and callable(message.to_dict):
             message = message.to_dict()
-        elif isinstance(dict, str):
-            pass
         self.messages.append(message)
         if self.debug:
             self._print_agent_message(message)

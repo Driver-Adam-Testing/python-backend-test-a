@@ -1,6 +1,8 @@
 name: Dependabot Auto Update
 # Updates downstream packages when dependabot updates one
-
+permissions:
+  id-token: write # TODO see if this is needed
+  contents: write
 on:
   pull_request:
     types:

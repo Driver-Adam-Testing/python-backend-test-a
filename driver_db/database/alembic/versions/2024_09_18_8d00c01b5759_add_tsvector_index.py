@@ -29,6 +29,13 @@ def upgrade():
         ) STORED;
         """
     )
+    # Add the index for the __ts_vector__ column
+    op.create_index(
+        "ix_chunkandembedding___ts_vector__",
+        "chunkandembedding",
+        ["__ts_vector__"],
+        postgresql_using="gin",
+    )
 
 
 def downgrade():
@@ -39,3 +46,5 @@ def downgrade():
         DROP COLUMN __ts_vector__;
         """
     )
+
+    op.drop_index("ix_chunkandembedding___ts_vector__", table_name="chunkandembedding")

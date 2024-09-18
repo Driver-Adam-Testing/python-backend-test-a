@@ -217,7 +217,7 @@ def batch_associate_sources(
 
 @router.post(
     "/",
-    summary="Create a blank application note.",
+    summary="Create a blank application note or template.",
 )
 def create_blank_document(
     session: CurrentSession,

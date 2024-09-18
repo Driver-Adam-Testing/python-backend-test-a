@@ -1,9 +1,11 @@
+import hashlib
 import json
 from datetime import datetime
 from uuid import UUID
 
 from database.derived_content_types import DerivedContentTypeNames
 from database.models_v1 import (
+    ChunkAndEmbedding,
     Codebase,
     DerivedContent,
     DerivedContentType,
@@ -26,7 +28,6 @@ from app.repositories.workspace_repository import WorkspaceRepository
 from app.schemas.content_schema import (
     BatchContentSourceAssociationResponse,
     ContentSourceAssociationItem,
-    ContentSourceAssociationResponse,
     ContentSourceResponse,
     CreateContentRequest,
     DeleteDocumentSourceResponse,
@@ -37,6 +38,7 @@ from app.schemas.content_schema import (
     ListContentTypesResults,
 )
 from app.utils.authorization_chain import perform_authorization_checks
+from app.utils.aws_s3 import delete_file_from_s3
 
 
 def is_authorized(
@@ -73,12 +75,6 @@ class ContentService:
         self.derived_content_type_repository = DerivedContentTypeRepository(session)
         self.document_source_repository = BaseRepository(session, DocumentSource)
         self.tag_content_repository = BaseRepository(session, TagContent)
-        # Define a mapping of content type names to their respective delete handlers
-        self.delete_handlers = {
-            DerivedContentTypeNames.APPLICATION_NOTE.value: exec_delete_document,
-            DerivedContentTypeNames.TEMPLATE.value: exec_delete_document,
-            # Add more mappings as needed
-        }
 
     def associate_sources_with_content(
         self,
@@ -148,56 +144,6 @@ class ContentService:
         return BatchContentSourceAssociationResponse(
             content_id=content_id,
             sources=content_source_associations,
-            message="Source content associated successfully",
-        )
-
-    def associate_document_source(
-        self,
-        organization_id: str,
-        content_id: UUID,
-        source_id: UUID,
-        include: bool = True,
-    ) -> ContentSourceAssociationResponse:
-        logger.info(
-            f"Associating content {content_id} with {source_id} for organization {organization_id}"
-        )
-
-        checks = [
-            lambda session: self.content_repository.is_authorized(
-                id=content_id,
-                relationship_chain=["workspace"],
-                field_name="organization_id",
-                field_value=organization_id,
-            )
-        ]
-
-        perform_authorization_checks(self.session, checks)
-
-        document = self.content_repository.get(content_id)
-
-        if not document or document.workspace.organization_id != organization_id:
-            logger.error(
-                f"Content {content_id} not found for organization {organization_id}"
-            )
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
-            )
-
-        existing_document_source = self.document_source_repository.get_by_pk(
-            document_id=content_id, source_id=source_id
-        )
-        if existing_document_source:
-            raise HTTPException(
-                status_code=400, detail="Document source already exists"
-            )
-
-        document_source = self.document_source_repository.create(
-            DocumentSource(document_id=content_id, source_id=source_id, include=include)
-        )
-
-        return ContentSourceAssociationResponse(
-            content_id=str(document_source.document_id),
-            source_id=str(document_source.source_id),
             message="Source content associated successfully",
         )
 
@@ -375,72 +321,6 @@ class ContentService:
                 created_at=datetime.now(),
                 updated_at=datetime.now(),
             )
-        )
-        return new_content
-
-    def create_document_from_template(
-        self, organization_id: str, content_id: UUID
-    ) -> DerivedContent:
-        logger.info(
-            f"Creating document from template for organization {organization_id}, content {content_id}"
-        )
-
-        checks = [
-            lambda session: self.content_repository.is_authorized(
-                id=content_id,
-                relationship_chain=["workspace"],
-                field_name="organization_id",
-                field_value=organization_id,
-            )
-        ]
-
-        perform_authorization_checks(self.session, checks)
-        # TODO: add template content type
-        template_content_type = self.derived_content_type_repository.get_by_type_name(
-            "template"
-        )
-        if not template_content_type:
-            logger.error("Template content type not found")
-            raise NoResultFound("Template content type not found")
-
-        content = self.session.exec(
-            select(DerivedContent)
-            .where(DerivedContent.id == content_id)
-            .where(DerivedContent.content_type_id == template_content_type.id)
-        ).first()
-
-        if not content:
-            logger.error(
-                f"Content {content_id} not found for organization {organization_id}"
-            )
-            raise NoResultFound("Content not found")
-
-        content_template = json.loads(content.content)
-        new_content_template = content_template.copy()
-        new_content_name = new_content_template["name"]
-        new_content_template["name"] = f"{new_content_name} (Copy)"
-        new_content_content = json.dumps(new_content_template)
-
-        application_note_content_type = (
-            self.derived_content_type_repository.get_by_type_name("application_note")
-        )
-
-        new_content = self.content_repository.create(
-            DerivedContent(
-                content_type_id=application_note_content_type.id,
-                workspace_id=content.workspace_id,
-                source_content_id=content.source_content_id,
-                codebase_id=content.codebase_id,
-                relative_path=content.relative_path,
-                content=new_content_content,
-                misc_metadata={},
-                status=Enum_Derived_Content_Status.generation_complete,
-                created_at=datetime.now(),
-                updated_at=datetime.now(),
-            )
-        )
-        logger.info(
-            f"Document created from template with ID {new_content.id} for organization {organization_id}"
         )
         return new_content
 
@@ -764,59 +644,6 @@ class ContentService:
 
         return parent
 
-    def create_template(
-        self, organization_id: str, workspace_id: UUID, codebase_id: UUID
-    ) -> DerivedContent:
-        logger.info(
-            f"Creating template for organization {organization_id}, workspace {workspace_id}, codebase {codebase_id}"
-        )
-        checks = [
-            lambda session: is_authorized(
-                session, organization_id, workspace_id, codebase_id
-            )
-        ]
-
-        perform_authorization_checks(self.session, checks)
-
-        template_content_type = self.derived_content_type_repository.get_by_type_name(
-            "template"
-        )
-
-        if not template_content_type:
-            logger.error("Template content type not found")
-            raise NoResultFound("Template content type not found")
-
-        codebase_content_type = self.derived_content_type_repository.get_by_type_name(
-            "codebase"
-        )
-
-        parent_content = self.session.exec(
-            select(DerivedContent)
-            .where(DerivedContent.content_type_id == codebase_content_type.id)
-            .where(DerivedContent.workspace_id == workspace_id)
-            .where(DerivedContent.codebase_id == codebase_id)
-        ).first()
-
-        blank_content_template = {"name": "Template", "content": " ", "description": ""}
-        new_content = self.content_repository.create(
-            DerivedContent(
-                content_type_id=template_content_type.id,
-                workspace_id=workspace_id,
-                source_content_id=parent_content.id,
-                codebase_id=codebase_id,
-                relative_path=parent_content.relative_path,
-                content=json.dumps(blank_content_template),
-                misc_metadata={},
-                status=Enum_Derived_Content_Status.generation_complete,
-                created_at=datetime.now(),
-                updated_at=datetime.now(),
-            )
-        )
-        logger.info(
-            f"Template created with ID {new_content.id} for organization {organization_id}"
-        )
-        return new_content
-
     def edit_content(
         self, organization_id: str, content_id: UUID, new_content: dict
     ) -> DerivedContent:
@@ -872,78 +699,86 @@ class ContentService:
         valid_content_types = {
             DerivedContentTypeNames.APPLICATION_NOTE.value,
             DerivedContentTypeNames.TEMPLATE.value,
+            DerivedContentTypeNames.SUPPLEMENTAL_DOCUMENT.value,
         }
 
-        if content.content_type not in valid_content_types:
+        if content.content_type.type_name not in valid_content_types:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid content type"
             )
 
-        delete_handler = self.delete_handlers.get(content.content_type.type_name)
-
-        if not delete_handler:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Handler not implemented",
-            )
-
         try:
-            content_deleted = delete_handler(self, content)
+            content_deleted = exec_delete_document_and_related_entities(
+                self.session, content
+            )
             logger.info(
                 f"Content {content_id} successfully deleted for organization {organization_id}"
             )
+
+            if (
+                content_deleted
+                and content.content_type.type_name == "supplemental-document"
+            ):
+                # delete remote content
+                delete_from_remote_storage(content, organization_id)
+
             return content_deleted
         except IntegrityError as e:
             logger.error(f"Error deleting content {content_id}: {str(e)}")
             raise HTTPException(status_code=400, detail=str(e))
 
 
-def exec_delete_document(service: ContentService, content: DerivedContent) -> bool:
-    """
-    Delete application notes or templates and all associated data.
-    """
-    try:
-        # Delete all the sources associated with the content
-        for source in content.source_links:
-            service.session.delete(source)
-        # Delete all the tags associated with the content
-        for tag_content in content.tag_contents:
-            service.session.delete(tag_content)
-
-        service.session.delete(content)
-        service.session.commit()
-        return True
-    except IntegrityError as e:
-        logger.error(f"Error deleting content {content.id}: {str(e)}")
-        service.session.rollback()
-        raise
-
-
-def execute_delete_pdf_complete(
-    service: ContentService, content: DerivedContent
+def exec_delete_document_and_related_entities(
+    session: Session, content: DerivedContent
 ) -> bool:
-    """
-    Delete a PDF record from the database when the PDF generation
-    Delete PDF IR's like summaries, Chunks and Embeds, and clean up the S3 bucket.
-    """
     try:
-        for chunks_and_embed in content.chunks_and_embeds:
-            service.session.delete(chunks_and_embed)
+        # Delete related DocumentSource entities
+        document_sources = session.exec(
+            select(DocumentSource).where(
+                or_(
+                    DocumentSource.document_id == content.id,
+                    DocumentSource.source_id == content.id,
+                )
+            )
+        ).all()
+        # Deleting Many-to-Many relationship requires fetching the related entities and deleting them
+        for document_source in document_sources:
+            session.delete(document_source)
 
-        # Delete all the tags associated with the content
-        for tag_content in content.tag_contents:
-            service.session.delete(tag_content)
+        # Delete related TagContent entities
+        tag_contents = session.exec(
+            select(TagContent).where(TagContent.content_id == content.id)
+        ).all()
+        # Deleting Many-to-Many relationship requires fetching the related entities and deleting them
+        for tag_content in tag_contents:
+            session.delete(tag_content)
 
+        # Delete related ChunkAndEmbed entities
+        chunk_and_embeddings = session.exec(
+            select(ChunkAndEmbedding).where(ChunkAndEmbedding.content_id == content.id)
+        ).all()
+        # Deleting Many-to-Many relationship requires fetching the related entities and deleting them
+        for chunk_and_embedding in chunk_and_embeddings:
+            session.delete(chunk_and_embedding)
+
+        # Delete all the derived contents associated with the document
         for derived_content in content.derived_contents:
-            service.session.delete(derived_content)
+            session.delete(derived_content)
 
-        service.session.delete(content)
-        service.session.commit()
-
-        # delete the pdf from s3
-
+        session.delete(content)
+        session.commit()
         return True
     except IntegrityError as e:
         logger.error(f"Error deleting content {content.id}: {str(e)}")
-        service.session.rollback()
+        session.rollback()
         raise
+
+
+def delete_from_remote_storage(content: DerivedContent, organization_id: str) -> None:
+    organization_bucket = hashlib.sha256(organization_id.encode()).hexdigest()[:63]
+    key = (
+        content.relative_path
+        if content.relative_path.startswith("documents/")
+        else f"documents/{content.relative_path}"
+    )
+    delete_file_from_s3(key=key, bucket=organization_bucket)

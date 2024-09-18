@@ -1,7 +1,7 @@
 import enum
 import uuid
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from shared.interfaces.agents.agent_configuration import AgentConfiguration
 from shared.interfaces.agents.data_scope import DataScope
 from shared.interfaces.agents.prompt import PromptWithContext
@@ -40,13 +40,12 @@ class PipelineInput(PromptWithContext):
         scope (AgentScope): The scope of the agent's operation.
     """
 
-    steps: list[PipelineStepConfiguration] | None = None
+    steps: list[PipelineStepConfiguration] = Field(
+        default_factory=lambda: [
+            PipelineStepConfiguration(step_type=PipelineStepType.DEFAULT)
+        ]
+    )
     scope: DataScope = DataScope(paths=[], organization_id=None)
-
-    def __init__(self, **data):
-        super().__init__(**data)
-        if self.steps is None:
-            self.steps = [PipelineStepConfiguration(step_type=PipelineStepType.DEFAULT)]
 
 
 class PipelineStepResponse(BaseModel):

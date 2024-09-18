@@ -24,6 +24,7 @@ class AgentBase(ABC):
     ):
         # TODO: add ModelConfig (to get model metadata during execution)
         # TODO: Turn on logging
+
         self.log = log
         self.scope = scope
         self.model = model

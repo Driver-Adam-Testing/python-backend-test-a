@@ -26,7 +26,6 @@ def search_content_without_session(input: SearchInput):
 
 # TODO deprecate in favor of search once embeddings migrated
 def search_content(session: Session, input: SearchInput):
-    print(input)
     embedded_query = batch_embed_text([input.query])[0]
 
     statement = (

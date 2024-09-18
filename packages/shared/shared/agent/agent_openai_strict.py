@@ -11,6 +11,7 @@ class OpenAIStrictAgent(AgentBase):
     def __init__(self, tools: list[ToolStrict] | None = None, *args, **kwargs):
         if tools is None:
             tools = []
+
         processed_tools = [openai.pydantic_function_tool(tool) for tool in tools]
         kwargs["tools"] = processed_tools
         self.client = OpenAI()

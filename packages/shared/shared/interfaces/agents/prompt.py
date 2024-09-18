@@ -13,10 +13,6 @@ class PromptWithContext(BaseModel):
     prompt: str | None = None
     context: dict | BaseModel | None = None
 
-    def __init__(self, prompt: str, **kwargs):
-        super().__init__(**kwargs)
-        self.prompt = prompt
-
     def create_user_prompt(self) -> str:
         """
         Create a user prompt with context in XML format.

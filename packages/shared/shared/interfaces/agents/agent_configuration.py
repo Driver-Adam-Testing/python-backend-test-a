@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from shared.agent import tools as agent_tools
+from shared.agent.tools import TOOL_REGISTRY
 from shared.interfaces.agents.data_scope import DataScope
 
 
@@ -35,12 +35,12 @@ class AgentConfiguration(BaseModel):
         """
         tools = []
         for tool_name in self.tool_names:
-            if hasattr(agent_tools, tool_name):
-                tool_class = getattr(agent_tools, tool_name)
+            if tool_name in TOOL_REGISTRY:
+                tool_class = TOOL_REGISTRY[tool_name]
                 tools.append(tool_class)
             else:
                 raise AttributeError(
-                    f"Tool '{tool_name}' could not be found in agent_tools."
+                    f"Tool '{tool_name}' could not be found in the tool registry."
                 )
         return tools
 

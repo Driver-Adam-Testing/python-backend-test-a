@@ -4,14 +4,15 @@ import openai
 from openai import OpenAI
 
 from shared.agent.agent_base import AgentBase
+from shared.agent.tools.tool_strict import ToolStrict
 
 
 class OpenAIStrictAgent(AgentBase):
-    def __init__(self, *args, **kwargs):
-        tools = [
-            openai.pydantic_function_tool(tool) for tool in kwargs.get("tools", [])
-        ]
-        kwargs["tools"] = tools
+    def __init__(self, tools: list[ToolStrict] | None = None, *args, **kwargs):
+        if tools is None:
+            tools = []
+        processed_tools = [openai.pydantic_function_tool(tool) for tool in tools]
+        kwargs["tools"] = processed_tools
         self.client = OpenAI()
         super().__init__(*args, **kwargs)
 

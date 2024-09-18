@@ -2,7 +2,7 @@ version: 2
 updates:
   - package-ecosystem: "github-actions"
     directory: "/"
-    schedule: &default_schedule
+    schedule:
       interval: "weekly"
       day: "wednesday"
       time: "09:00"
@@ -12,36 +12,64 @@ updates:
   # Python
   - package-ecosystem: "pip"
     directory: "/"
-    schedule: *default_schedule
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+      time: "09:00"
+      timezone: "America/Los_Angeles"
     commit-message:
       prefix: ⬆
   - package-ecosystem: "pip"
     directory: "/backend"
-    schedule: *default_schedule
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+      time: "09:00"
+      timezone: "America/Los_Angeles"
     commit-message:
       prefix: ⬆
   - package-ecosystem: "pip"
     directory: "/content_services/onboarding_event_handler"
-    schedule: *default_schedule
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+      time: "09:00"
+      timezone: "America/Los_Angeles"
     commit-message:
       prefix: ⬆
   - package-ecosystem: "pip"
     directory: "/content_services/onboarding"
-    schedule: *default_schedule
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+      time: "09:00"
+      timezone: "America/Los_Angeles"
     commit-message:
       prefix: ⬆
   - package-ecosystem: "pip"
     directory: "/driver_db"
-    schedule: *default_schedule
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+      time: "09:00"
+      timezone: "America/Los_Angeles"
     commit-message:
       prefix: ⬆
   - package-ecosystem: "pip"
     directory: "/content_services/inspector"
-    schedule: *default_schedule
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+      time: "09:00"
+      timezone: "America/Los_Angeles"
     commit-message:
       prefix: ⬆
   - package-ecosystem: "pip"
     directory: "/packages/shared"
-    schedule: *default_schedule
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+      time: "09:00"
+      timezone: "America/Los_Angeles"
     commit-message:
       prefix: ⬆

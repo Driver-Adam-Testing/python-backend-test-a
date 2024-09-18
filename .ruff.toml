@@ -30,6 +30,7 @@ ignore = [
     "B905", # use explicit 'strict=' parameter with 'zip()'
     "N818", # Exception name should be named with an Error suffix
     "E501",
+    "PGH003", # Allow generic type ignores
 ]
 
 unfixable = [

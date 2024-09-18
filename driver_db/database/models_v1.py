@@ -1,7 +1,7 @@
 import enum
 import functools
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Optional
 from uuid import UUID
 
@@ -23,7 +23,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as SaUuid
 from sqlmodel import JSON, Field, Relationship, SQLModel
 
-from .tsvector import TSVector
+from .custom_types import TSVector
 
 
 # TODO remove in favor of derived content types once new embeddings created
@@ -69,7 +69,7 @@ class Chunk(SQLModel, table=True):  # type: ignore
         default=None,
         sa_column=Column(
             DateTime(timezone=True),
-            default=functools.partial(datetime.now, tz=timezone.utc),
+            default=functools.partial(datetime.now, tz=UTC),
             nullable=True,
         ),
     )
@@ -77,7 +77,7 @@ class Chunk(SQLModel, table=True):  # type: ignore
         default=None,
         sa_column=Column(
             DateTime(timezone=True),
-            onupdate=functools.partial(datetime.now, tz=timezone.utc),
+            onupdate=functools.partial(datetime.now, tz=UTC),
             nullable=True,
         ),
     )

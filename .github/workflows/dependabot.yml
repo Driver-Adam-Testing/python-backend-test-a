@@ -10,7 +10,7 @@ on:
 
 jobs:
   update_lock_files:
-    if: ${{ github.actor == 'dependabot[bot]' || github.actor == 'dependabot-preview[bot]' || github.actor == 'andrewemark' }}
+    if: ${{ github.actor == 'dependabot[bot]' || github.actor == 'dependabot-preview[bot]' }}
     runs-on: ubuntu-latest
 
     steps:

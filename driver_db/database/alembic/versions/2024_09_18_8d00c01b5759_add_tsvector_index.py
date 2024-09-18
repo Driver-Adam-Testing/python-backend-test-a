@@ -1,15 +1,16 @@
 """Add ts_vector to the chunk and embedding table
 
 Revision ID: 8d00c01b5759
-Revises: FILL_THIS_IN
+Revises: 54fb48ccdd81
 Create Date: 2024-09-17
 
 """
+
 from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "8d00c01b5759"
-down_revision = ""
+down_revision = "54fb48ccdd81"
 branch_labels = None
 depends_on = None
 
@@ -23,11 +24,7 @@ def upgrade():
         GENERATED ALWAYS AS (
             to_tsvector(
                 'english',
-                chunkandembedding.text || ' ' || (
-                    SELECT relative_path
-                    FROM derived_contents
-                    WHERE derived_contents.id = chunkandembedding.content_id
-                )
+                chunkandembedding.text
             )
         ) STORED;
         """

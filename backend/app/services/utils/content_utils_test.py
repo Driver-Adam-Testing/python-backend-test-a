@@ -1,25 +1,28 @@
 import unittest
 from unittest.mock import Mock
-from backend.app.utils.content_utils import get_name_from_content_json, get_content_name
+from app.services.utils.content_utils import (
+    _get_name_from_content_json,
+    get_content_name,
+)
 from database.models_v1 import DerivedContent
 
 
 class TestContentUtils(unittest.TestCase):
     def test_get_name_from_content_json_valid(self):
         content = '{"name": "Test Name"}'
-        self.assertEqual(get_name_from_content_json(content), "Test Name")
+        self.assertEqual(_get_name_from_content_json(content), "Test Name")
 
     def test_get_name_from_content_json_invalid_json(self):
         content = '{"name": "Test Name"'
-        self.assertIsNone(get_name_from_content_json(content))
+        self.assertIsNone(_get_name_from_content_json(content))
 
     def test_get_name_from_content_json_no_name(self):
         content = '{"title": "Test Title"}'
-        self.assertIsNone(get_name_from_content_json(content))
+        self.assertIsNone(_get_name_from_content_json(content))
 
     def test_get_name_from_content_json_none(self):
         content = None
-        self.assertIsNone(get_name_from_content_json(content))
+        self.assertIsNone(_get_name_from_content_json(content))
 
     def test_get_content_name_with_content_name(self):
         content = Mock(spec=DerivedContent)

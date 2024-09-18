@@ -2,7 +2,7 @@ import json
 from datetime import datetime
 from uuid import UUID
 
-from app.utils.content_utils import get_content_name
+from app.services.utils.content_utils import get_content_name
 from database.derived_content_types import DerivedContentTypeNames
 from database.models_v1 import (
     Codebase,

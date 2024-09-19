@@ -7,7 +7,6 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.12"
-openai = "^1.37.0"
 markdown = "^3.6"
 database = {path = "../../driver_db", develop = true}
 tiktoken = "^0.7.0"
@@ -18,6 +17,7 @@ pymupdf = "^1.24.9"
 tabula-py = "^2.9.3"
 psycopg = "^3.2.1"
 rank-bm25 = "^0.2.2"
+openai = "^1.42.0"
 
 
 [tool.poetry.group.dev.dependencies]

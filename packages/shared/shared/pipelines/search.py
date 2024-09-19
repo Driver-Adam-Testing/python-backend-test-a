@@ -1,5 +1,6 @@
 import re
 
+from database.db import get_session
 from database.models_v1 import (
     ChunkAndEmbedding,
     DerivedContent,
@@ -69,18 +70,9 @@ def build_base_statement(input: SearchInput, embedded_query: any) -> any:
         .join(Workspace)
         .join(DerivedContentType)
         .where(DerivedContent.id == ChunkAndEmbedding.content_id)
-        .where(DerivedContent.workspace_id == Workspace.id)
         .where(DerivedContentType.id == DerivedContent.content_type_id)
     )
-
-    if input.workspace_id:
-        statement = statement.where(DerivedContent.workspace_id == input.workspace_id)
-
-    if input.codebase_id:
-        statement = statement.where(DerivedContent.codebase_id == input.codebase_id)
-
-    if input.organization_id:
-        statement = statement.where(Workspace.organization_id == input.organization_id)
+    statement = statement.where(Workspace.organization_id == input.organization_id)
 
     if input.content_type:
         if isinstance(input.content_type, str):
@@ -92,15 +84,9 @@ def build_base_statement(input: SearchInput, embedded_query: any) -> any:
                 DerivedContentType.type_name.in_(input.content_type)
             )
 
-    if input.relative_path:
-        # TODO: make this a list[str], disallow str
-        paths = []
-        if isinstance(input.relative_path, str):
-            paths = [input.relative_path]
-
-        elif isinstance(input.relative_path, list):
-            paths = input.relative_path
-
+    if input.paths:
+        if isinstance(input.paths, str):
+            input.paths = [input.paths]
         statement = statement.where(
             or_(
                 *[
@@ -108,12 +94,18 @@ def build_base_statement(input: SearchInput, embedded_query: any) -> any:
                         DerivedContent.relative_path == file_path,
                         DerivedContent.relative_path.like(f"{file_path.rstrip('/')}/%"),
                     )
-                    for file_path in paths
+                    for file_path in input.paths
                 ]
             )
         )
+
     statement = statement.order_by(asc("score"))
     return statement
+
+
+def search_content_without_session(input: SearchInput):
+    with get_session() as session:
+        return search_content(session, input)
 
 
 def search_content(session: Session, input: SearchInput):

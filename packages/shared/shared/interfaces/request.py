@@ -5,9 +5,9 @@ class DriverRequest(BaseModel):
     pass
 
 
-class DriverResponse(BaseModel):
-    pass
-
-
-class ModalDriverResponse(DriverResponse):
+class DriverModalRequest(DriverRequest):
     call_id: str
+
+
+class DriverModalBatchRequest(DriverRequest):
+    call_ids: list[str]

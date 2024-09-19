@@ -1,9 +1,10 @@
 import argparse
-import toml
-from pathlib import Path
 import subprocess
-from graphlib import TopologicalSorter, CycleError
 import sys
+from graphlib import CycleError, TopologicalSorter
+from pathlib import Path
+
+import toml
 
 
 def locate_pyproject_files(root_dir: str) -> list[Path]:
@@ -15,7 +16,15 @@ def extract_project_info(pyproject_path: Path) -> tuple[str, list[str]]:
     project_name = (
         data.get("tool", {}).get("poetry", {}).get("name", pyproject_path.parent.name)
     )
-    dependencies = data.get("tool", {}).get("poetry", {}).get("dependencies", {})
+    try:
+        project_name = data["tool"]["poetry"]["name"]
+    except KeyError as e:
+        raise KeyError("Project name not found in pyproject.toml") from e
+    try:
+        dependencies = data["tool"]["poetry"]["dependencies"]
+    except KeyError as e:
+        raise KeyError("Dependencies not found in pyproject.toml") from e
+
     dependencies = [dep for dep in dependencies if dep.lower() != "python"]
     return project_name, dependencies
 
@@ -24,23 +33,25 @@ def create_dependency_graph(
     pyproject_files: list[Path],
 ) -> tuple[dict[str, list[str]], dict[str, Path]]:
     dependency_graph = {}
-    project_directories = {}
+    project_name_to_project_dir = {}
 
     for pyproject_path in pyproject_files:
         project_name, dependencies = extract_project_info(pyproject_path)
-        project_directories[project_name] = pyproject_path.parent
+        project_name_to_project_dir[project_name] = pyproject_path.parent
         dependency_graph[project_name] = dependencies
 
-    for project in dependency_graph:
-        dependency_graph[project] = [
-            dep for dep in dependency_graph[project] if dep in dependency_graph
-        ]
+    project_name_to_project_deps = {
+        project: [dep for dep in deps if dep in dependency_graph]
+        for project, deps in dependency_graph.items()
+    }
 
-    return dependency_graph, project_directories
+    return project_name_to_project_deps, project_name_to_project_dir
 
 
-def determine_execution_order(dependency_graph: dict[str, list[str]]) -> list[str]:
-    sorter = TopologicalSorter(dependency_graph)
+def determine_execution_order(
+    project_name_to_project_deps: dict[str, list[str]],
+) -> list[str]:
+    sorter = TopologicalSorter(project_name_to_project_deps)
     try:
         return list(sorter.static_order())
     except CycleError as error:
@@ -49,20 +60,21 @@ def determine_execution_order(dependency_graph: dict[str, list[str]]) -> list[st
 
 
 def execute_poetry_lock(
-    project_dirs: list[Path], dependency_graph: dict[str, list[str]], dry_run: bool
+    ordered_project_names_and_dirs: list[tuple[str, Path]],
+    project_name_to_project_deps: dict[str, list[str]],
+    dry_run: bool,
 ) -> None:
     """Execute 'poetry lock --no-update' in each project directory, showing reasons for each action."""
-    for project_dir in project_dirs:
-        project_name = project_dir.name
-        reasons = dependency_graph.get(project_name, [])
+    for project_name, project_dir in ordered_project_names_and_dirs:
+        deps = project_name_to_project_deps.get(project_name, [])
         reasons_text = (
-            f"depends on local projects: {', '.join(reasons)}"
-            if reasons
+            f"depends on local projects: {', '.join(deps)}"
+            if deps
             else "has no dependencies on other local projects"
         )
         action_text = "Would run" if dry_run else "Running"
         print(
-            f"{action_text} 'poetry lock --no-update' in `{project_dir}` because it {reasons_text}"
+            f"{action_text} `poetry lock --no-update` for `{project_name}` in `{project_dir}` because it {reasons_text}"
         )
 
         if not dry_run:
@@ -120,15 +132,22 @@ def main():
     args = parser.parse_args()
 
     pyproject_files = locate_pyproject_files(args.root_dir)
-    dependency_graph, project_directories = create_dependency_graph(pyproject_files)
-    execution_order = determine_execution_order(dependency_graph)
+    project_name_to_project_deps, project_name_to_project_dir = create_dependency_graph(
+        pyproject_files
+    )
+    project_names_in_execution_order = determine_execution_order(
+        project_name_to_project_deps
+    )
 
-    project_dirs = [
-        project_directories[project]
-        for project in execution_order
-        if project in project_directories
+    ordered_project_names_and_dirs = [
+        (project_name, project_name_to_project_dir[project_name])
+        for project_name in project_names_in_execution_order
     ]
-    execute_poetry_lock(project_dirs, dependency_graph, dry_run=args.dry_run)
+    execute_poetry_lock(
+        ordered_project_names_and_dirs,
+        project_name_to_project_deps,
+        dry_run=args.dry_run,
+    )
 
 
 if __name__ == "__main__":

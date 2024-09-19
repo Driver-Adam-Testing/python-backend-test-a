@@ -739,7 +739,7 @@ def exec_delete_document_and_related_entities(
                     # fetch all document sources associated with the content. e.g. content is an app note
                     DocumentSource.document_id == content.id,
                     # fetch all document sources that are sources for the content.
-                    # e.g. content if a pdf and is a source for a note.
+                    # e.g. content is a pdf and is a source for a note.
                     DocumentSource.source_id == content.id,
                 )
             )

@@ -323,7 +323,10 @@ class ContentService:
                 organization_id, request.workspace_id, request.codebase_id
             )
 
-        if request.content_type != DerivedContentTypeNames.APPLICATION_NOTE.value:
+        if (
+            request.content_type != DerivedContentTypeNames.APPLICATION_NOTE.value
+            and request.content_type != DerivedContentTypeNames.TEMPLATE.value
+        ):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid content type"
             )
@@ -337,21 +340,29 @@ class ContentService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Default workspace not found",
             )
-        application_note_content_type = (
-            self.derived_content_type_repository.get_by_type_name("application_note")
+
+        content_type = self.derived_content_type_repository.get_by_type_name(
+            request.content_type
         )
-        blank_content_template = {
-            "name": "Untitled",
-            "content": " ",
-            "description": "",
-        }
+
+        if not content_type:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Content type not found"
+            )
+
+        content_name = (
+            "Untitled"
+            if request.content_type == DerivedContentTypeNames.APPLICATION_NOTE.value
+            else "Untitled Template"
+        )
 
         new_content = self.content_repository.create(
             DerivedContent(
-                content_type_id=application_note_content_type.id,
+                content_type_id=content_type.id,
                 workspace_id=default_workspace.id,
                 relative_path="",
-                content=json.dumps(blank_content_template),
+                content="",
+                content_name=content_name,
                 misc_metadata={},
                 status=Enum_Derived_Content_Status.generation_complete,
                 created_at=datetime.now(),
@@ -688,10 +699,13 @@ class ContentService:
         ]
         return ContentSourceResponse(results=source_results)
 
-    def get_content_by_id(self, content_id: UUID, user_org_id: str) -> DerivedContent:
+    def get_content_by_id(
+        self, content_id: UUID, organization_id: str
+    ) -> DerivedContent:
         logger.info(f"Fetching content by ID {content_id}")
 
-        content: DerivedContent = self.content_repository.get(content_id)
+        content: DerivedContent | None = self.content_repository.get(content_id)
+
         if not content:
             logger.error(f"Content {content_id} not found")
             raise HTTPException(
@@ -699,8 +713,11 @@ class ContentService:
             )
 
         checks = [
-            lambda session: is_authorized(
-                session, user_org_id, content.workspace_id, content.codebase_id
+            lambda session: self.content_repository.is_authorized(
+                id=content_id,
+                relationship_chain=["workspace"],
+                field_name="organization_id",
+                field_value=organization_id,
             )
         ]
 
@@ -739,59 +756,6 @@ class ContentService:
         ).first()
 
         return parent
-
-    def create_template(
-        self, organization_id: str, workspace_id: UUID, codebase_id: UUID
-    ) -> DerivedContent:
-        logger.info(
-            f"Creating template for organization {organization_id}, workspace {workspace_id}, codebase {codebase_id}"
-        )
-        checks = [
-            lambda session: is_authorized(
-                session, organization_id, workspace_id, codebase_id
-            )
-        ]
-
-        perform_authorization_checks(self.session, checks)
-
-        template_content_type = self.derived_content_type_repository.get_by_type_name(
-            "template"
-        )
-
-        if not template_content_type:
-            logger.error("Template content type not found")
-            raise NoResultFound("Template content type not found")
-
-        codebase_content_type = self.derived_content_type_repository.get_by_type_name(
-            "codebase"
-        )
-
-        parent_content = self.session.exec(
-            select(DerivedContent)
-            .where(DerivedContent.content_type_id == codebase_content_type.id)
-            .where(DerivedContent.workspace_id == workspace_id)
-            .where(DerivedContent.codebase_id == codebase_id)
-        ).first()
-
-        blank_content_template = {"name": "Template", "content": " ", "description": ""}
-        new_content = self.content_repository.create(
-            DerivedContent(
-                content_type_id=template_content_type.id,
-                workspace_id=workspace_id,
-                source_content_id=parent_content.id,
-                codebase_id=codebase_id,
-                relative_path=parent_content.relative_path,
-                content=json.dumps(blank_content_template),
-                misc_metadata={},
-                status=Enum_Derived_Content_Status.generation_complete,
-                created_at=datetime.now(),
-                updated_at=datetime.now(),
-            )
-        )
-        logger.info(
-            f"Template created with ID {new_content.id} for organization {organization_id}"
-        )
-        return new_content
 
     def edit_content(
         self, organization_id: str, content_id: UUID, new_content: dict

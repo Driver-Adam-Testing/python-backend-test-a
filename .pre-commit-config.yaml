@@ -20,6 +20,14 @@ repos:
         args: ["--fix", "--config", ".ruff.toml"]
       # Run the formatter.
       - id: ruff-format
+  - repo: local
+    hooks:
+      - id: propagate-deps-updates
+        name: Check pyproject.toml and lock files and propagate updates to parent projects
+        entry: bash deps-pre-commit.sh
+        language: system
+        files: ^.*(pyproject\.toml)$
+
   # - repo: https://github.com/pre-commit/mirrors-mypy
   #   rev: v0.971  # Use the latest mypy version
   #   hooks:

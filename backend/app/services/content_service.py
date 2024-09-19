@@ -778,6 +778,8 @@ def exec_delete_document_and_related_entities(
 
 
 def delete_from_remote_storage(content: DerivedContent, organization_id: str) -> None:
+    # TODO: make this a reusable function
+    # hash of organization_id to get the bucket name
     organization_bucket = hashlib.sha256(organization_id.encode()).hexdigest()[:63]
     key = (
         content.relative_path

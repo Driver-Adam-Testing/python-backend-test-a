@@ -10,6 +10,7 @@ class DataScope(BaseModel):
         organization_id (str | None): The organization ID.
     """
 
+    # TODO: this is where to add versions perhaps?
     paths: list[str] = []
     organization_id: str | None = [None]
 
@@ -34,3 +35,11 @@ class DataScope(BaseModel):
             ):
                 raise ValueError(f"Path '{path}' is not within the allowed data scope.")
         return True
+
+    def into_datascope(self, paths: list[str] | str | None) -> "DataScope":
+        if paths is None:
+            return self
+        if isinstance(paths, str):
+            paths = [paths]
+        self.authorize(paths)
+        return DataScope(paths=paths, organization_id=self.organization_id)

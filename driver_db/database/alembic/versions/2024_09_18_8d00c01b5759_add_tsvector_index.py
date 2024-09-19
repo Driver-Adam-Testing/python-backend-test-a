@@ -42,9 +42,27 @@ def downgrade():
     # Remove the __ts_vector__ column if downgrading
     op.execute(
         """
-        ALTER TABLE chunkandembedding
-        DROP COLUMN __ts_vector__;
+        DO $$
+        BEGIN
+            IF EXISTS (SELECT 1 FROM information_schema.columns
+                       WHERE table_name='chunkandembedding'
+                       AND column_name='__ts_vector__') THEN
+                ALTER TABLE chunkandembedding
+                DROP COLUMN __ts_vector__;
+            END IF;
+        END $$;
         """
     )
 
-    op.drop_index("ix_chunkandembedding___ts_vector__", table_name="chunkandembedding")
+    op.execute(
+        """
+        DO $$
+        BEGIN
+            IF EXISTS (SELECT 1 FROM pg_indexes
+                       WHERE tablename='chunkandembedding'
+                       AND indexname='ix_chunkandembedding___ts_vector__') THEN
+                DROP INDEX ix_chunkandembedding___ts_vector__;
+            END IF;
+        END $$;
+        """
+    )

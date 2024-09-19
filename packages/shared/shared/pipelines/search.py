@@ -1,5 +1,6 @@
 import re
 
+from database.db import get_session
 from database.models_v1 import (
     ChunkAndEmbedding,
     DerivedContent,
@@ -100,6 +101,11 @@ def build_base_statement(input: SearchInput, embedded_query: any) -> any:
 
     statement = statement.order_by(asc("score"))
     return statement
+
+
+def search_content_without_session(input: SearchInput):
+    with get_session() as session:
+        return search_content(session, input)
 
 
 def search_content(session: Session, input: SearchInput):

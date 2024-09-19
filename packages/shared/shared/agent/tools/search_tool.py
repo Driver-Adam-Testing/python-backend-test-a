@@ -23,6 +23,7 @@ class SearchTool(ToolStrict):
             - hybrid: Combines keyword and semantic search.
             - semantic: Focuses on meaning and context.
         search_subfolder_paths (list[str], optional): Relative paths to further filter results.
+            - Only to be used once there exists context of the searchable data scope.
     """
 
     class SearchToolInputContentType(str, Enum):
@@ -34,7 +35,7 @@ class SearchTool(ToolStrict):
     class SearchAlgorithm(str, Enum):
         hybrid = "hybrid"
         semantic = "semantic"
-        # keyword = "keyword"
+        keyword = "keyword"
 
     search_query: str
     content_types: list[SearchToolInputContentType]
@@ -85,12 +86,13 @@ class SearchTool(ToolStrict):
         # Ensure relative paths are subfolders or files within agent.paths
         agent.scope.authorize(self.search_subfolder_paths)
 
+        scope = agent.scope.into_datascope(self.search_subfolder_paths)
         search_input = SearchInput(
             query=self.search_query,
             algorithm=self.search_algorithm.value,
             content_type=self.derived_content_types,
-            organization_id=agent.scope.organization_id,
-            paths=self.search_subfolder_paths,
+            organization_id=scope.organization_id,
+            paths=scope.paths,
         )
         results = search_content_without_session(search_input)
 

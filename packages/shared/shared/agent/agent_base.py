@@ -19,7 +19,7 @@ class AgentBase(ABC):
         max_iterations: int = 1,
         agent_id: uuid.UUID | None = None,
         response_format: type | None = None,
-        log: bool = False,
+        log: bool = True,
         debug: bool = True,
     ):
         # TODO: add ModelConfig (to get model metadata during execution)
@@ -49,7 +49,7 @@ class AgentBase(ABC):
                         workspace_id=None,
                         codebase_id=None,
                         model=self.model,
-                        organization_id=self.organization_id,
+                        organization_id=self.scope.organization_id,
                     )
                     session.add(agent_instance)
                     session.commit()
@@ -97,7 +97,7 @@ class AgentBase(ABC):
     def _execute_iteration(self) -> str | None:
         raise NotImplementedError()
 
-    def invoke(self, prompt: str = None):
+    def invoke(self, prompt: str | None = None):
         self.iteration = 0
         if prompt is not None:
             self.add_message({"role": "user", "content": prompt})

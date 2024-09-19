@@ -122,7 +122,7 @@ class RuntimeLogAgentInstance(SQLModel, table=True):  # type: ignore
     content_retrievals: list["RuntimeLogContentRetrieval"] = Relationship(
         back_populates="agent_instance"
     )
-    organization_id: str
+    organization_id: str | None
 
 
 class RuntimeLogAgentMessage(SQLModel, table=True):  # type: ignore

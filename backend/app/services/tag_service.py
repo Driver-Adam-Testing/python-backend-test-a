@@ -405,7 +405,7 @@ class TagService:
             logger.error(f"Tag {tag_id} not found for user {user.user_id}")
             raise HTTPException(status_code=404, detail="Tag not found")
 
-        if tag.contents:
+        if tag.content_links:
             logger.error(
                 f"Tag {tag_id} has associated content. Disassociate content before deleting"
             )

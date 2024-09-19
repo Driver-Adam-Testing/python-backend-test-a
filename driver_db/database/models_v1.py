@@ -1,17 +1,29 @@
 import enum
 import functools
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Optional
 from uuid import UUID
 
 import sqlalchemy.dialects.postgresql
 import strawberry
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import Column, DateTime, Enum, Integer, UniqueConstraint, func, text
+from sqlalchemy import (
+    Column,
+    Computed,
+    DateTime,
+    Enum,
+    Index,
+    Integer,
+    UniqueConstraint,
+    func,
+    text,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as SaUuid
 from sqlmodel import JSON, Field, Relationship, SQLModel
+
+from .custom_types import TSVector
 
 
 # TODO remove in favor of derived content types once new embeddings created
@@ -57,7 +69,7 @@ class Chunk(SQLModel, table=True):  # type: ignore
         default=None,
         sa_column=Column(
             DateTime(timezone=True),
-            default=functools.partial(datetime.now, tz=timezone.utc),
+            default=functools.partial(datetime.now, tz=UTC),
             nullable=True,
         ),
     )
@@ -65,7 +77,7 @@ class Chunk(SQLModel, table=True):  # type: ignore
         default=None,
         sa_column=Column(
             DateTime(timezone=True),
-            onupdate=functools.partial(datetime.now, tz=timezone.utc),
+            onupdate=functools.partial(datetime.now, tz=UTC),
             nullable=True,
         ),
     )
@@ -100,7 +112,7 @@ class RuntimeLogAgentInstance(SQLModel, table=True):  # type: ignore
         ),
     )
     id: UUID | None = Field(default_factory=uuid.uuid4, primary_key=True)
-    workspace_id: str
+    workspace_id: str | None
     codebase_id: str | None
     model: str
     messages: list["RuntimeLogAgentMessage"] = Relationship(
@@ -110,6 +122,7 @@ class RuntimeLogAgentInstance(SQLModel, table=True):  # type: ignore
     content_retrievals: list["RuntimeLogContentRetrieval"] = Relationship(
         back_populates="agent_instance"
     )
+    organization_id: str | None
 
 
 class RuntimeLogAgentMessage(SQLModel, table=True):  # type: ignore
@@ -383,6 +396,9 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
     content: None | str = Field(
         sa_column=Column(sqlalchemy.Text, nullable=True), default=None
     )
+    content_name: None | str = Field(
+        sa_column=Column(sqlalchemy.Text, nullable=True), default=None
+    )
     misc_metadata: dict | None = Field(  # type: ignore
         sa_column=Column("metadata", JSONB, nullable=True), default=None
     )
@@ -437,10 +453,9 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
     tag_links: list["TagContent"] = Relationship(back_populates="content")
     tags: list["Tag"] = Relationship(
         back_populates=None,
-        sa_relationship_kwargs={
-            "secondary": "tags_contents","viewonly": True
-        },
+        sa_relationship_kwargs={"secondary": "tags_contents", "viewonly": True},
     )
+
 
 class Tag(SQLModel, table=True):  # type: ignore
     __tablename__ = "tags"
@@ -494,16 +509,6 @@ class Tag(SQLModel, table=True):  # type: ignore
         back_populates="tag",
         sa_relationship_kwargs={"foreign_keys": "TagContent.tag_id"},
     )
-    contents: list["DerivedContent"] = Relationship(
-        back_populates=None,
-        sa_relationship_kwargs={
-            "secondary": "tags_contents",
-            "viewonly": True
-        },
-    )
-    derived_contents: list["DerivedContent"] = Relationship(
-        back_populates="tags", link_model=TagContent
-    )
 
 
 class ChunkAndEmbedding(SQLModel, table=True):  # type: ignore
@@ -537,3 +542,13 @@ class ChunkAndEmbedding(SQLModel, table=True):  # type: ignore
         ),
     )
 
+    __ts_vector__: any = Column(
+        "__ts_vector__",
+        TSVector(),
+        Computed("to_tsvector('english', text)", persisted=True),
+    )
+    __table_args__ = (
+        Index(
+            "ix_chunkandembedding___ts_vector__", __ts_vector__, postgresql_using="gin"
+        ),
+    )

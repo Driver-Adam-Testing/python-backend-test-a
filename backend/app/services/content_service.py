@@ -2,6 +2,7 @@ import json
 from datetime import datetime
 from uuid import UUID
 
+from app.services.utils.content_utils import get_content_name
 from database.derived_content_types import DerivedContentTypeNames
 from database.models_v1 import (
     Codebase,
@@ -323,7 +324,10 @@ class ContentService:
                 organization_id, request.workspace_id, request.codebase_id
             )
 
-        if request.content_type != DerivedContentTypeNames.APPLICATION_NOTE.value:
+        if (
+            request.content_type != DerivedContentTypeNames.APPLICATION_NOTE.value
+            and request.content_type != DerivedContentTypeNames.TEMPLATE.value
+        ):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid content type"
             )
@@ -337,21 +341,29 @@ class ContentService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Default workspace not found",
             )
-        application_note_content_type = (
-            self.derived_content_type_repository.get_by_type_name("application_note")
+
+        content_type = self.derived_content_type_repository.get_by_type_name(
+            request.content_type
         )
-        blank_content_template = {
-            "name": "Untitled",
-            "content": " ",
-            "description": "",
-        }
+
+        if not content_type:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Content type not found"
+            )
+
+        content_name = (
+            "Untitled"
+            if request.content_type == DerivedContentTypeNames.APPLICATION_NOTE.value
+            else "Untitled Template"
+        )
 
         new_content = self.content_repository.create(
             DerivedContent(
-                content_type_id=application_note_content_type.id,
+                content_type_id=content_type.id,
                 workspace_id=default_workspace.id,
                 relative_path="",
-                content=json.dumps(blank_content_template),
+                content="",
+                content_name=content_name,
                 misc_metadata={},
                 status=Enum_Derived_Content_Status.generation_complete,
                 created_at=datetime.now(),
@@ -442,33 +454,13 @@ class ContentService:
 
         content_results = []
         for result in results:
-            try:
-                content_name = (
-                    json.loads(result.content).get("name")
-                    if result.content_type.type_name == "application_note"
-                    and result.content
-                    and "name" in json.loads(result.content)
-                    else "Generating content..."
-                    if result.content_type.type_name == "application_note"
-                    and result.content
-                    and "name" not in json.loads(result.content)
-                    else result.relative_path.removeprefix("documents/")
-                    if result.content_type.type_name == "supplemental-document"
-                    else result.relative_path
-                )
-            except json.JSONDecodeError as e:
-                logger.error(
-                    f"Error decoding JSON for content ID {result.id}: {str(e)}"
-                )
-                content_name = "Invalid JSON content"
-
             content_results.append(
                 ListContentResult(
                     id=result.id,
                     organization_id=result.workspace.organization_id,
                     content_type_id=result.content_type_id,
                     content_type_name=result.content_type.type_name,
-                    content_name=content_name,
+                    content_name=get_content_name(result),
                     workspace_id=result.workspace_id,
                     workspace_name=result.workspace.display_name,
                     source_content_id=result.source_content_id,
@@ -542,12 +534,12 @@ class ContentService:
                 )
 
         if search_input.text:
-            statement = statement.where(
-                DerivedContent.relative_path.contains(search_input.text)
-            )
-            count_statement = count_statement.where(
-                DerivedContent.relative_path.contains(search_input.text)
-            )
+            clauses = [
+                DerivedContent.relative_path.contains(search_input.text),
+                DerivedContent.content_name.contains(search_input.text),
+            ]
+            statement = statement.where(or_(*clauses))
+            count_statement = count_statement.where(or_(*clauses))
 
         if search_input.status:
             valid_statuses = [
@@ -653,24 +645,14 @@ class ContentService:
                 organization_id=result.workspace.organization_id,
                 content_type_id=result.content_type_id,
                 content_type_name=result.content_type.type_name,
-                content_name=(
-                    json.loads(result.content).get("name")
-                    if result.content_type.type_name == "application_note"
-                    and result.content
-                    and "name" in json.loads(result.content)
-                    else "Generating content..."
-                    if result.content_type.type_name == "application_note"
-                    and result.content
-                    and "name" not in json.loads(result.content)
-                    else result.relative_path.removeprefix("documents/")
-                    if result.content_type.type_name == "supplemental-document"
-                    else result.relative_path
-                ),
+                content_name=get_content_name(result),
                 workspace_id=result.workspace_id,
                 workspace_name=result.workspace.display_name,
                 source_content_id=result.source_content_id,
                 codebase_id=result.codebase_id,
-                codebase_name=result.codebase.codebase_name,
+                codebase_name=result.codebase.codebase_name
+                if result.codebase
+                else None,
                 relative_path=result.relative_path,
                 content=result.content,
                 misc_metadata=result.misc_metadata,
@@ -686,10 +668,13 @@ class ContentService:
         ]
         return ContentSourceResponse(results=source_results)
 
-    def get_content_by_id(self, content_id: UUID, user_org_id: str) -> DerivedContent:
+    def get_content_by_id(
+        self, content_id: UUID, organization_id: str
+    ) -> DerivedContent:
         logger.info(f"Fetching content by ID {content_id}")
 
-        content: DerivedContent = self.content_repository.get(content_id)
+        content: DerivedContent | None = self.content_repository.get(content_id)
+
         if not content:
             logger.error(f"Content {content_id} not found")
             raise HTTPException(
@@ -697,8 +682,11 @@ class ContentService:
             )
 
         checks = [
-            lambda session: is_authorized(
-                session, user_org_id, content.workspace_id, content.codebase_id
+            lambda session: self.content_repository.is_authorized(
+                id=content_id,
+                relationship_chain=["workspace"],
+                field_name="organization_id",
+                field_value=organization_id,
             )
         ]
 
@@ -738,55 +726,37 @@ class ContentService:
 
         return parent
 
-    def create_template(
-        self, organization_id: str, workspace_id: UUID, codebase_id: UUID
+    def edit_content(
+        self, organization_id: str, content_id: UUID, new_content: dict
     ) -> DerivedContent:
-        logger.info(
-            f"Creating template for organization {organization_id}, workspace {workspace_id}, codebase {codebase_id}"
+        logger.info(f"Editing content {content_id} for organization {organization_id}")
+
+        content = self.content_repository.get_by_conditions(
+            [
+                Workspace.organization_id == organization_id,
+                DerivedContent.id == content_id,
+            ],
+            [Workspace],
         )
-        checks = [
-            lambda session: is_authorized(
-                session, organization_id, workspace_id, codebase_id
+
+        if not content:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
             )
-        ]
 
-        perform_authorization_checks(self.session, checks)
-
-        template_content_type = self.derived_content_type_repository.get_by_type_name(
-            "template"
-        )
-
-        if not template_content_type:
-            logger.error("Template content type not found")
-            raise NoResultFound("Template content type not found")
-
-        codebase_content_type = self.derived_content_type_repository.get_by_type_name(
-            "codebase"
-        )
-
-        parent_content = self.session.exec(
-            select(DerivedContent)
-            .where(DerivedContent.content_type_id == codebase_content_type.id)
-            .where(DerivedContent.workspace_id == workspace_id)
-            .where(DerivedContent.codebase_id == codebase_id)
-        ).first()
-
-        blank_content_template = {"name": "Template", "content": " ", "description": ""}
-        new_content = self.content_repository.create(
-            DerivedContent(
-                content_type_id=template_content_type.id,
-                workspace_id=workspace_id,
-                source_content_id=parent_content.id,
-                codebase_id=codebase_id,
-                relative_path=parent_content.relative_path,
-                content=json.dumps(blank_content_template),
-                misc_metadata={},
-                status=Enum_Derived_Content_Status.generation_complete,
-                created_at=datetime.now(),
-                updated_at=datetime.now(),
+        if (
+            content.content_type.type_name
+            != DerivedContentTypeNames.APPLICATION_NOTE.value
+            and content.content_type.type_name != DerivedContentTypeNames.TEMPLATE.value
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid content type"
             )
-        )
+
+        content = self.content_repository.update(content, DerivedContent(**new_content))
+
         logger.info(
-            f"Template created with ID {new_content.id} for organization {organization_id}"
+            f"Content {content_id} successfully edited for organization {organization_id}"
         )
-        return new_content
+
+        return content

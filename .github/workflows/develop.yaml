@@ -36,7 +36,8 @@ jobs:
           python-version: "3.12"
       - name: Install Poetry
         uses: snok/install-poetry@v1
-      - run: poetry install --no-root
+      - name: Install dependencies without virtualenv
+        run: poetry install --no-root
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -45,7 +46,7 @@ jobs:
       - name: CDK Deploy
         env:
           DEPLOYMENT_ENVIRONMENT: development
-        run: npx cdk deploy --require-approval never
+        run: poetry run npx cdk deploy --require-approval never
       - name: Deploy Codebase Onboarding
         working-directory: content_services/onboarding
         env:

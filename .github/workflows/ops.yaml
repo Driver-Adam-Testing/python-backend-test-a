@@ -31,7 +31,8 @@ jobs:
           python-version: "3.12"
       - name: Install Poetry
         uses: snok/install-poetry@v1
-      - run: poetry install --no-root
+      - name: Install dependencies without virtualenv
+        run: poetry install --no-root
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -40,5 +41,5 @@ jobs:
       - name: CDK Deploy
         env:
           DEPLOYMENT_ENVIRONMENT: ops
-        run: npx cdk deploy --require-approval never
+        run: poetry run npx cdk deploy --require-approval never
       # Uses the dev environment Modal currently, probably not worth it to configure new modal environments for this env yet

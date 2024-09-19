@@ -736,7 +736,10 @@ def exec_delete_document_and_related_entities(
         document_sources = session.exec(
             select(DocumentSource).where(
                 or_(
+                    # fetch all document sources associated with the content. e.g. content is an app note
                     DocumentSource.document_id == content.id,
+                    # fetch all document sources that are sources for the content.
+                    # e.g. content if a pdf and is a source for a note.
                     DocumentSource.source_id == content.id,
                 )
             )
@@ -749,7 +752,7 @@ def exec_delete_document_and_related_entities(
         tag_contents = session.exec(
             select(TagContent).where(TagContent.content_id == content.id)
         ).all()
-        # Deleting Many-to-Many relationship requires fetching the related entities and deleting them
+
         for tag_content in tag_contents:
             session.delete(tag_content)
 
@@ -757,7 +760,7 @@ def exec_delete_document_and_related_entities(
         chunk_and_embeddings = session.exec(
             select(ChunkAndEmbedding).where(ChunkAndEmbedding.content_id == content.id)
         ).all()
-        # Deleting Many-to-Many relationship requires fetching the related entities and deleting them
+
         for chunk_and_embedding in chunk_and_embeddings:
             session.delete(chunk_and_embedding)
 

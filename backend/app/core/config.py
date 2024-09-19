@@ -72,7 +72,6 @@ class Settings(BaseSettings):
     ] = []
 
     PROJECT_NAME: str
-    SENTRY_DSN: HttpUrl | None = None
     BUCKET_NAME: str | None = None
 
     def _check_default_secret(self, var_name: str, value: str | None) -> None:

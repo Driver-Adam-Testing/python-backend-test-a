@@ -23,7 +23,6 @@ httpx = "^0.25.1"
 # Pin bcrypt until passlib supports the latest
 bcrypt = "4.0.1"
 pydantic-settings = "^2.2.1"
-sentry-sdk = {extras = ["fastapi"], version = "^2.8.0"}
 database = {path = "../driver_db", develop = true}
 shared = {path = "../packages/shared", develop = true}
 strawberry-graphql = {extras = ["fastapi"], version = "^0.230.0"}

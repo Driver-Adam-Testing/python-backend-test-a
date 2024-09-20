@@ -175,3 +175,8 @@ class DeleteTagItemResponse(BaseModel):
 
 class BatchDeleteTagsResponse(BaseModel):
     results: list[DeleteTagItemResponse]
+
+
+class DownloadContentResponse(BaseModel):
+    download_url: str
+    content_name: str

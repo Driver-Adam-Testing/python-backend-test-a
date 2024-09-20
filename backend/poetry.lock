@@ -3944,8 +3944,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-<<<<<<< dependabot/pip/backend/sentry-sdk-2.8.0
-content-hash = "e5d1b3f0c2e7e04e3c447bb62959331fec6d6b44e983c5cb1ac0ffc76e254a2f"
-=======
 content-hash = "cdc3014586dd5e1530b69b5c2ae135c2be429487dda16257a250970c096ec6ac"
->>>>>>> develop

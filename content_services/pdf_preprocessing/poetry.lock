@@ -1299,13 +1299,13 @@ files = [
 
 [[package]]
 name = "openai"
-version = "1.40.6"
+version = "1.47.0"
 description = "The official Python library for the openai API"
 optional = false
 python-versions = ">=3.7.1"
 files = [
-    {file = "openai-1.40.6-py3-none-any.whl", hash = "sha256:b36372124a779381a420a34dd96f762baa748b6bdfaf83a6b9f2745f72ccc1c5"},
-    {file = "openai-1.40.6.tar.gz", hash = "sha256:2239232bcb7f4bd4ce8e02544b5769618582411cf399816d96686d1b6c1e5c8d"},
+    {file = "openai-1.47.0-py3-none-any.whl", hash = "sha256:9ccc8737dfa791f7bd903db4758c176b8544a8cd89d3a3d2add3cea02a34c3a0"},
+    {file = "openai-1.47.0.tar.gz", hash = "sha256:6e14d6f77c8cf546646afcd87a2ef752505b3710d2564a2e433e17307dfa86a0"},
 ]
 
 [package.dependencies]
@@ -2086,7 +2086,7 @@ boto3 = "^1.34.149"
 database = {path = "../../driver_db", develop = true}
 markdown = "^3.6"
 modal = "^0.64.61"
-openai = "^1.37.0"
+openai = "^1.42.0"
 psycopg = "^3.2.1"
 pymupdf = "^1.24.9"
 rank-bm25 = "^0.2.2"

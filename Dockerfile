@@ -21,7 +21,8 @@ COPY packages /packages
 COPY ./backend/app /app
 
 # Copy pyproject.toml and poetry.lock first for better caching
-COPY backend/pyproject.toml /app/
+COPY backend/pyproject.toml backend/poetry.lock /app/
+
 
 ENV PYTHONPATH=/app
 

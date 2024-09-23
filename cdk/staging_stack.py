@@ -26,7 +26,7 @@ class StagingStack(Stack):
                 environment="staging",
                 cors_origins=cors_origins,
                 allowed_ips=[],  # All IPs currently allowed
-                use_legacy_dropzone=False,
+                use_legacy_dropzone=True,
             ),
         )
 
@@ -38,7 +38,7 @@ class StagingStack(Stack):
                 api_url="https://api.staging.driverai.com/api/v1",
                 auth0_url="https://auth.staging.driverai.com",
                 dropzone_bucket=self.backend.dropzone_bucket,
-                use_legacy_dropzone=False,
+                use_legacy_dropzone=True,
             ),
         )
         self.document_onboarding_lambda = DocumentOnboardingLambda(
@@ -49,7 +49,7 @@ class StagingStack(Stack):
                 api_url="https://api.staging.driverai.com/api/v1",
                 auth0_url="https://auth.staging.driverai.com",
                 dropzone_bucket=self.backend.dropzone_bucket,
-                use_legacy_dropzone=False,
+                use_legacy_dropzone=True,
             ),
         )
         self.inspector = Inspector(

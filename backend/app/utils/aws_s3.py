@@ -46,3 +46,12 @@ def generate_get_presigned_url(key, expires=3600):
         },
         ExpiresIn=expires,
     )
+
+
+def delete_file_from_s3(key: str, bucket: str) -> None:
+    """
+    Delete a file from S3.
+    NOTE: this should be in shared but shared package does not have access to settings need to instantiate boto3 client
+    """
+    response = s3_client.delete_object(Bucket=bucket, Key=key)
+    print(response)

@@ -89,7 +89,7 @@ def execute_poetry_lock(
                 sys.exit(1)
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="""
         This script automates the process of running 'poetry lock --no-update' in multiple interdependent Python projects

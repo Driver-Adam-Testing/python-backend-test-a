@@ -683,7 +683,6 @@ class ContentService:
                 detail="Content not found or not downloadable",
             )
 
-        # TODO: This is the new way. How do we fetch the old way? head_object then fall back to different path?
         download_key = f"documents/{content.relative_path}"
         if aws_s3.head_org_object(organization_id, download_key):
             return DownloadContentResponse(
@@ -695,6 +694,7 @@ class ContentService:
         logger.info(
             "Falling back to legacy way of fetching download URL w/ codebase ID"
         )
+        # TODO: Verify that this fallback to find old documents is functional
         download_key = f"{content.codebase_id}/documents/{content.relative_path}"
         if aws_s3.head_org_object(organization_id, download_key):
             return DownloadContentResponse(

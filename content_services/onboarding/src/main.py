@@ -99,7 +99,7 @@ def run_codebase_onboarding(
                     uploaded_dest_path = upload_file_to_s3(
                         upload_bucket, s3_dest_root, local_path
                     )
-                print(f"Uploaded {local_path} to {uploaded_dest_path}")
+                    print(f"Uploaded {local_path} to {uploaded_dest_path}")
 
         with Session(engine) as session, session.begin():
             base_url = create_base_storage_url(org_id)

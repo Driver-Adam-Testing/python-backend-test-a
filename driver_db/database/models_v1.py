@@ -327,7 +327,7 @@ class TagContent(SQLModel, table=True):
     tag_id: None | uuid.UUID = Field(
         default=None, foreign_key="tags.id", primary_key=True
     )
-    include: None | bool = Field(default=None)
+    include: bool
     content_id: None | uuid.UUID = Field(
         default=None, foreign_key="derived_contents.id", primary_key=True
     )
@@ -348,7 +348,7 @@ class DocumentSource(SQLModel, table=True):
     document_id: None | uuid.UUID = Field(
         default=None, foreign_key="derived_contents.id", primary_key=True
     )
-    include: None | bool = Field(default=None)
+    include: bool
     source_id: None | uuid.UUID = Field(
         default=None, foreign_key="derived_contents.id", primary_key=True
     )

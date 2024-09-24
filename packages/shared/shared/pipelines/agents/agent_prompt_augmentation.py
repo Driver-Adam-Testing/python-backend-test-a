@@ -43,7 +43,12 @@ def run_agent_prompt_augmentation(
     agent.add_message(prompts.task.prompt_augmentation.MESSAGE)
 
     # The paths can give extra context to the prompt augmenter.
-    input.prompt.add_to_context({"searchable_paths_and_directories": input.scope.paths})
+    input.prompt.add_to_context(
+        {
+            "searchable_paths_and_root_directories": "these paths must be the prefix or path of any searches: "
+            + input.scope.paths
+        }
+    )
 
     response = agent.invoke(str(input.prompt))
 

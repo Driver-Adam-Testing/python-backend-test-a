@@ -46,7 +46,7 @@ def run_agent_prompt_augmentation(
     input.prompt.add_to_context(
         {
             "searchable_paths_and_root_directories": "these paths must be the prefix or path of any searches: "
-            + input.scope.paths
+            + str(input.scope.paths)
         }
     )
 

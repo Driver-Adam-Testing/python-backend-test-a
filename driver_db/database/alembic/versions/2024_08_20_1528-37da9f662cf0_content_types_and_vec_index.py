@@ -1,7 +1,7 @@
 """content types and vec index
 
 Revision ID: 37da9f662cf0
-Revises: 2f79ea9294a7
+Revises: df374eaa585a
 Create Date: 2024-08-20 15:28:49.101478
 
 """
@@ -12,6 +12,7 @@ from alembic import op
 # revision identifiers, used by Alembic.
 revision = "37da9f662cf0"
 down_revision = "2f79ea9294a7"
+
 branch_labels = None
 depends_on = None
 

@@ -11,6 +11,7 @@ from pydantic import BaseModel
 from app.api.auth import CurrentUser
 from app.api.session import CurrentSession
 from app.core.config import settings
+from app.repositories.workspace_repository import WorkspaceRepository
 from app.utils.aws_secrets_manager import format_secret_key, read_secret, write_secret
 from app.utils.gh_ops import download_and_upload_repo, exchange_code_for_token
 
@@ -58,7 +59,6 @@ async def git_provider_callback(
 
 
 class GitRepository(BaseModel):
-    workspace_id: str
     provider_name: str
     repo_name: str
     org: str
@@ -79,6 +79,14 @@ async def clone_repo(
     )
     value = read_secret(secret_key)
     token = None
+    workspace_repo = WorkspaceRepository(session)
+    default_workspace = workspace_repo.get_default_workspace(
+        current_user.organization_id
+    )
+    if not default_workspace:
+        raise HTTPException(status_code=400, detail="Default workspace not found")
+
+    workspace_id = str(default_workspace.id)
     upload_complete = False
     if value is not None:
         s = value["SecretString"]
@@ -88,7 +96,7 @@ async def clone_repo(
             repo.org,
             current_user.user_id,
             current_user.organization_id,
-            repo.workspace_id,
+            workspace_id,
             repo.repo_name,
             token,
             provider,

@@ -1,6 +1,7 @@
 import logging
 import sys
 
+# TODO this should be deprecated in favor of the logger that as of today lives in main.py.
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 c_handler = logging.StreamHandler(sys.stdout)

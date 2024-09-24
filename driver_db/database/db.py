@@ -1,5 +1,6 @@
 import ssl
 import uuid
+from contextlib import contextmanager
 from urllib.parse import parse_qs, urlparse
 
 from database.config import settings
@@ -7,6 +8,16 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from sqlmodel import Session, create_engine
 
 engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI), pool_size=10)
+
+
+@contextmanager
+def get_session():
+    session = Session(engine)
+    try:
+        yield session
+    finally:
+        session.close()
+
 
 if settings.ASYNC_DATABASE_URL:
 

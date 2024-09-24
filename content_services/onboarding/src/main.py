@@ -44,7 +44,12 @@ def run_codebase_onboarding(
     provider: str,
 ) -> None:
     from database.db import engine
-    from database.models_v1 import Codebase, DerivedContent, Enum_Codebase_Status
+    from database.models_v1 import (
+        Codebase,
+        DerivedContent,
+        Enum_Codebase_Status,
+        Enum_Derived_Content_Status,
+    )
     from sqlmodel import Session
     from utils import (
         create_base_storage_url,
@@ -125,6 +130,7 @@ def run_codebase_onboarding(
                 content_type_id=cb_sc_uuid,
                 workspace_id=workspace_id,
                 misc_metadata={},
+                status=Enum_Derived_Content_Status.generating,
             )
             session.add(cb_sc)
 
@@ -169,6 +175,7 @@ def run_codebase_onboarding(
     image=image,
     mounts=[
         modal.Mount.from_local_python_packages("database"),
+        modal.Mount.from_local_python_packages("utils"),
         modal.Mount.from_local_dir(
             local_path="../../driver_db/certs/",
             remote_path="/root/data/",
@@ -279,11 +286,11 @@ def send_exception_email(exception_details: str) -> None:
 
 @app.local_entrypoint()
 def main() -> None:
-    presigned_url = "https://development-codebase-dropzone.s3.us-east-1.amazonaws.com/codebases/470aeda416cbd987632d5d931bff4d7923b93ea7e89ab5ed8499599adef0943/bat-test-2.zip?response-content-disposition=inline&X-Amz-Security-Token=IQoJb3JpZ2luX2VjELD%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIArdoBeV5ZRmec2vqLvPLEBxoHzPVYJCEBBs2WM8VC58AiEA4Jowe71KItsIApqEeTB7qbohN0oSBXVIAAWhWqyWx2Eq1wMIqf%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARABGgw1NTAwODI3NjExMDkiDOGfksQjgFR3nQUEzCqrA0oBzNfvpczG9CXbA%2FpNuuE79vA9hDjPusl1YKr61tjRSa%2BAo%2FOyKRe53lW%2BKpEDMnp4PdLL3Rq3mBWRru5ekk2Wpo98ps7756XorL0a2%2Fk%2BLFLu1Q74isvoEP%2BfLHCk06WNVGbgae2mKHIDKHPQtiAj3KD618rvms9wlxYcY1Frp689Bp4Ae7ptbjRAxtY6F1uRGD4TEgMqwxudJI9yLMJbr3LVIspPyAzXIb%2FXPTPI6ebvtIlrgfs13wdZjNL7IwY6ddv0pGxAeb2hkxNZHvKTFfMSqSVW%2FYdFJK4C7sSSF2trlPAfV4o2g%2FsL1LrTepuz4dsugc%2BcZJNRDmWnPu36r%2BhZoSv6Salc6hkvu4Sq4cZ225EnvPTa3gAEhot88uLEW7zrhL5TOU%2Bra8CzrJugNvC5qgWB1nsd0ckg1dHAKaW%2BVkGRGdg%2B1BlhKGvYfUJvkBh0NEYPSvEgcn%2BfDdqeoje32chOcVM%2B1Q24dMgK4IKpeQTVeLPus7KURpwnmRHnb5R2s%2FkhIBybUv5DxIGjs4HiuFCXi06fDozFlQ8wj7nrgj2KExqOA2wwjPjttQY6lAJ49ExUgmbZMqqlKhG126q4AiRE7CreY%2FPS53VtTvg2QlVkwwYQ3KbPcBXNLB02hJdlp6Jv0WGaVGa6YiAh5qJWgEOhSVa6GJiCMiDbuCy%2B0VVUCMs09MbVjT6yW1%2FDxoRXFjlUCOP1O7ZR7SKormDFqP5FMiHF8tdRWVv4vJEIeVn6aWYY%2FV%2B%2FmEgOk%2Bbl3aXTVgWQvm7IvzGJ6xIhx3mizYYFZks704BdT%2BtG3eACRmAK995gR4XfZZa%2F2Nu3JFm%2BN3R0XG64S3OOt1PLttk4BSLR4nXMB%2FUX0hE18K4r%2FgxhBiol5yqhuusUx1xj9Xtb8qJ38XRNc9twt3VlXgMNuH9QkX87pu%2FkiibjvAYml72HANk%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20240813T193033Z&X-Amz-SignedHeaders=host&X-Amz-Expires=43200&X-Amz-Credential=ASIAYAE342GK7DGKERXL%2F20240813%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Signature=c785d8fa4f2bd3459eac7997286174c6ac762891ad71bb7cb5739a4ad204b417"
-    archive_name = "bat-test-2.zip"
-    org_id = "470aeda416cbd987632d5d931bff4d7923b93ea7e89ab5ed8499599adef0943"
+    presigned_url = "https://development-codebase-dropzone.s3.us-east-1.amazonaws.com/codebases/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/test_onboard_2.zip?response-content-disposition=inline&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEKj%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIQCy%2BcuUgadGxgIyNRu7yB3mMTqPdUT%2BaWwLT5yvOsspKwIgLUcgyqrOIWoGA34Mzsr2XGcabwXBKA5v0NeJgZB2woUq2wMI4P%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARABGgw1NTAwODI3NjExMDkiDF2UQrIhMNo1BppfgCqvA0opT8xViWIq%2BdWJtQAcR66PPwnwoAvTaXiUm%2FcovDpqWNKuAwsk8FvykEA4ozcZpiD%2FEb2oquXrxnHP7oWle0aR0er0rJKvjYXZbECa1onsE5lJr1nig%2F8WE6A4Xdo93pg2lMiqDxSnVCPPBDk0xQU614%2BluKA8%2FvekzRg4rAUEs7guWueOjuEGqIEdX%2Fz5Mk3GZeBuB6Hq22ptSnAixb%2FWKmQIOvKYP%2F2Ira8AcltgBsVlt%2FvAahcex0FdnoIhUPwqVtPC6Jtt7Kt%2BmFK0FTmFaHFEHGwC7w37yhqDZMYzywOeb6RnDdCdq3lix5b2YmiP%2BEOE66K44qrbsyleQdEYP%2Fc0uIKd639gX0R3XynUj%2BFU%2FA951SXDWfCvGdW%2BBmPeEXb7qOnI%2Fl6eGfQSXe90VZW8XowbXgWK3%2FDGOQqwkQYcp7jq%2F7NQInZUOleNO%2Fn%2B3E2pb2BklNKvcf1nvmW6VsaTNKKYEBOPjoGTuMkFVzRj7DdSn1frXgo4fbShFHJgQEHdreJ1zcSKJNYvlrTgKY16z0iFxNMcHx%2BCukthkI5uY0BndJNoFT1nCT5wMLWOzbcGOpQCRcUhWXAOvl6cxtxbJHWG6VnUwx8wVF5IWdYX6A9YoFNhttNcK0erS%2BnsQFHpDr65HIpu%2BKaypxGBE9HsOCdYQYBpcjRiycoK4f23XoxjlUV%2BQ4uEZ%2FOqM56%2Bqlfr3BosAORFAzB2qSVOrDAe%2FBLdbS1J0c4LY3KZ8uQ%2FIGDawWY%2FePGpp8NC9%2BGMeg1LLzpkL7hTFpSQb7yN2faRV%2B1lVJimd65i0eG7PmOmVupRrXGoq6PvY%2FIdGZzVKAqeIYdUdeoJWEQu75%2Foyqsio7PS0ub%2FSAAWyRy0%2FlFwxm%2ByjrYbkliuZS4yLymwzCYjY9GQqBpSgoBee%2F81bIKtY4zptrA%2BIef7%2B0YF7Z7KLv3nFVYpdwKF&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20240924T233058Z&X-Amz-SignedHeaders=host&X-Amz-Expires=7200&X-Amz-Credential=ASIAYAE342GKZNXMYFBI%2F20240924%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Signature=184c9b03fca2d00606c508232b9e6389825ebf7e8c9e7252d5255fd6c49592d5"
+    archive_name = "test_onboard_2.zip"
+    org_id = "6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641"
     creator_id = "auth0|6650e02b9812cd674f78cf75"
-    workspace_id = UUID("7fe232eb-37ae-4820-8439-0a10dabde8b2")
+    workspace_id = UUID("32de9990-b63d-4e8e-9567-58e2a78292ec")
 
     # if modal.is_local():
     #     from dotenv import load_dotenv

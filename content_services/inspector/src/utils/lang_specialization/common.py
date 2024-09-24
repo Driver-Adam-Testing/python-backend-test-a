@@ -248,6 +248,76 @@ class FnDict(BaseModel):
         return self.render_markdown()
 
 
+class ClassBaseData(BaseModel):
+    type: str
+    members: list[NamedContent]
+    description: str
+
+    @classmethod
+    def from_llm(
+        cls,
+        llm: ChatOpenAI,
+        system_prompt: str,
+        user_prompt: str,
+        class_dict: str,
+        code: str,
+    ) -> Self:
+        user_prompt_complete = (
+            f"{user_prompt}Class to document: {class_dict["name"]}\n\nCode:\n\n{code}"
+        )
+        content_raw = llm.generate_response(
+            system_prompt=system_prompt,
+            user_prompt=user_prompt_complete,
+            output_cfg=OutputConfig(kind=OutputConfigKind.JSON_STRICT, payload=cls),
+        )
+
+        return cls.parse_raw(content_raw)
+
+
+class ClassData(BaseModel):
+    base_data: ClassBaseData
+    member_functions: dict[str, FnData]
+    nested_classes: list[str]
+
+
+class ClassDict(BaseModel):
+    data: dict[str, ClassData]
+
+    def render_markdown(self) -> str:
+        output = ""
+        for k, v in self.data.items():
+            output += f"\n---\n---\n### {k}\n"
+            output += f"- **Type**: `{v.base_data.type}`\n"
+            output += f"\n- **Description**: {v.base_data.description}\n\n"
+            output += "\n**Member Functions**:\n"
+            if len(v.member_functions) > 0:
+                for n, m in v.member_functions.items():
+                    output += f"\n---\n#### {n}\n"
+                    output += f"{m.single_sentence}\n"
+                    output += "\n- **Inputs**:\n"
+                    if len(m.inputs) > 0:
+                        for i in m.inputs:
+                            output += f"    - `{i.name}`: {i.content}\n"
+                    else:
+                        output += "    - None\n"
+                    output += "\n- **Output**:\n"
+                    output += f"    - {m.output}\n"
+                    output += "\n- **Logic and Control Flow**:\n"
+                    for item in m.control_flow:
+                        output += f"    - {item}\n"
+                    output += "\n"
+            else:
+                output += "    - None\n"
+            if len(v.nested_classes) > 0:
+                output += "\n**Nested Classes**:\n"
+                for n in v.nested_classes:
+                    output += f"    - {n}\n"
+        return output
+
+    def __str__(self) -> str:
+        return self.render_markdown()
+
+
 MAX_VARIABLES_TO_DOCUMENT = 100
 MAX_DATA_STRUCTURES_TO_DOCUMENT = 100
 MAX_FUNCTIONS_TO_DOCUMENT = 100
@@ -303,6 +373,15 @@ def fn_dict_from_llm(
         for fn in fn_list[:MAX_FUNCTIONS_TO_DOCUMENT]
     }
     return FnDict(data=fn_dict)
+
+
+# def class_dict_from_llm(
+#     system_prompt: str,
+#     user_prompt: str,
+#     llm: ChatOpenAI,
+#     class_list: list[dict],
+#     code: str,
+# ):
 
 
 PADDING_LINES_TOP = 100

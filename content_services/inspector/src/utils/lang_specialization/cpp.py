@@ -2,6 +2,13 @@ from functools import partial
 from pathlib import Path
 
 from utils.codemap_ctags import extract_symbols_w_ctags
+from utils.lang_specialization.common import (
+    ClassBaseData,
+    ClassData,
+    ClassDict,
+    FnData,
+)
+from utils.models import ChatOpenAI
 
 from .common import (
     data_structure_dict_from_llm,
@@ -12,7 +19,8 @@ from .common import (
     variables_dict_from_llm_multi_prompt,
 )
 
-CPP_DATA_STRUCTURES = {"enum", "union", "struct", "class", "typedef"}
+CPP_CLASS_AND_STRUCT = {"class", "struct"}
+CPP_DATA_STRUCTURES = {"enum", "union", "typedef"}
 CPP_FUNCTIONS = {"function", "prototype"}
 CPP_MACROS = {"macro"}
 CPP_VARIABLES = {"variable", "externvar"}
@@ -59,6 +67,32 @@ You will be given the content of a source code file. In a single paragraph of 3 
 In writing your description, write about about the conceptual use cases, applications, logic, and component interactions instead of focusing on particular functions, variables, etc.
 """
 
+CLASSES_FOUND_SYSTEM_PROMPT_JSON = """
+You are an expert C++ programmer and a software engineering documentation expert. You write detailed documentation to explain code written in C++.
+
+You focus on writing technical documentation for structs and classes in C++. You are skilled at explaining technical details as well as recognizing and articulating the key conceptual components and purpose of software.
+
+You will be given the name of a struct or class to document and the source code where the struct or class is defined.
+
+Your job is to describe the struct or class. **Always respond using exactly the following JSON schema**:
+{
+    "type": <type, either class or struct>,
+    "members": [
+        {"name": <member_name1>, "content": <Terse 1 sentence description of the first member or field>},
+        {"name": <member_name2>, "content": <Terse 1 sentence description of the second member or field>},
+        ...
+    ],
+    "description": <one paragraph description of the struct or class>,
+}
+
+Return JSON according to the schema above. Do not use the format ```json ... ```, just return the JSON data.
+"""
+
+CLASSES_FOUND_USER_PROMPT = """
+Summarize the struct or class in the code provided below.
+
+- When describing an important data structure, provide detail that matches the complexity of the data structure. Large and complex data structures should get longer explanations, while small ones a single sentence.
+"""
 
 DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON = """
 You are an expert C++ programmer and a software engineering documentation expert. You write detailed documentation to explain code written in C++.
@@ -154,6 +188,45 @@ Summarize the variable in the code provided below.
 VARIABLES_NONE_CONTENT = "\n---\nNo global variables defined in this file."
 
 
+def cpp_class_checker(
+    code: str, root_rel_path: Path, structured_output: bool = True
+) -> dict | str | None:
+    symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
+    class_dicts = []
+    for s in symbols:
+        if s["kind"] in CPP_CLASS_AND_STRUCT and not s["name"].startswith("__anon"):
+            class_dict = {}
+            class_dict["name"] = s["name"]
+            start_line = s["line"]
+            end_line = s["end"]
+            member_functions = []
+            nested_classes = []
+
+            for sub_s in symbols:
+                if (
+                    (sub_s["line"] > start_line and sub_s["line"] < end_line)
+                    and (sub_s is not s)
+                    and (sub_s["scope"].split("::")[-1] == s["name"])
+                ):
+                    if sub_s["kind"] in CPP_FUNCTIONS:
+                        member_functions.append(sub_s)
+                    elif sub_s["kind"] in CPP_CLASS_AND_STRUCT:
+                        nested_classes.append(sub_s)
+            class_dict["member_functions"] = member_functions
+            class_dict["nested_classes"] = nested_classes
+            class_dicts.append(class_dict)
+    if len(class_dicts) > 0:
+        if structured_output:
+            output = class_dicts
+        else:
+            output = "\nClasses to document in the code:\n\n"
+            for ds in class_dicts:
+                output += f"- {ds["name"]}\n"
+    else:
+        output = None
+    return output
+
+
 def cpp_data_structure_checker(
     code: str, root_rel_path: Path, structured_output: bool = True
 ) -> list[str] | str | None:
@@ -226,6 +299,45 @@ def cpp_namespace_checker(
     else:
         output = None
     return output
+
+
+def class_dict_from_llm_cpp(
+    llm: ChatOpenAI, class_list: list[dict], code: str
+) -> ClassDict:
+    class_dict = {}
+    for cl in class_list:
+        class_base = ClassBaseData.from_llm(
+            system_prompt=CLASSES_FOUND_SYSTEM_PROMPT_JSON,
+            user_prompt=CLASSES_FOUND_USER_PROMPT,
+            llm=llm,
+            class_dict=cl,
+            code=code,
+        )
+        member_functions = {}
+        nested_classes = []
+        for member_fn in cl["member_functions"]:
+            fn_data = FnData.from_llm(
+                system_prompt=FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
+                user_prompt=FUNCTIONS_FOUND_USER_PROMPT,
+                llm=llm,
+                fn_name=member_fn["name"],
+                code=code,
+            )
+            function_name = (
+                member_fn["scope"].split("::")[-1] + "::" + member_fn["name"]
+            )
+            member_functions[function_name] = fn_data
+
+        for nested_class in cl["nested_classes"]:
+            nested_classes.append(nested_class["name"])
+
+        class_data = ClassData(
+            base_data=class_base,
+            member_functions=member_functions,
+            nested_classes=nested_classes,
+        )
+        class_dict[cl["name"]] = class_data
+    return ClassDict(data=class_dict)
 
 
 variables_dict_from_llm_cpp = partial(

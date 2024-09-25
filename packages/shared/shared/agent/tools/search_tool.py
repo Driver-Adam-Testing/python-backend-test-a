@@ -2,6 +2,7 @@ from enum import Enum
 
 from database.derived_content_types import DerivedContentTypeNames
 
+from shared.agent.agent_base import AgentBase
 from shared.agent.tools.tool_strict import ToolStrict
 from shared.pipelines.search import (
     SearchInput,
@@ -22,6 +23,7 @@ class SearchTool(ToolStrict):
         search_algorithm (SearchAlgorithm): The search algorithm. Defaults to 'hybrid'.
             - hybrid: Combines keyword and semantic search.
             - semantic: Focuses on meaning and context.
+            - keyword: searches for the query in the content of a file. Use only a single keyword.
         search_subfolder_paths (list[str], optional): Relative paths to further filter results.
             - Only to be used once there exists context of the searchable data scope.
     """
@@ -82,7 +84,7 @@ class SearchTool(ToolStrict):
                 )
         return list(derived_content_types)
 
-    def execute(self, agent) -> str:
+    def execute(self, agent: AgentBase) -> str:
         # Ensure relative paths are subfolders or files within agent.paths
         agent.scope.authorize(self.search_subfolder_paths)
 

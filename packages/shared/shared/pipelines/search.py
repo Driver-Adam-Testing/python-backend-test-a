@@ -86,6 +86,7 @@ def build_base_statement(input: SearchInput, embedded_query: any) -> any:
                 DerivedContentType.type_name.in_(input.content_type)
             )
     if input.paths == []:
+        # If you sent a list that is empty, you want to filter, but have given no folders or files to look in. Return no results.
         statement = statement.where(False)
     if input.paths:
         if isinstance(input.paths, str):

@@ -48,7 +48,7 @@ SOURCE_CODE_LARGE_TEMPLATE_CPP = [
     ),
     (
         S.FN_COND_JSON,
-        "\n---\n## Functions",
+        "\n---\n## Free Functions",
         cpp_function_checker,
         fn_dict_from_llm_cpp,
         FUNCTIONS_NONE_CONTENT,

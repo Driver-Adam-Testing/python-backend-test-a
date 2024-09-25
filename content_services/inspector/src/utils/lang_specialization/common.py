@@ -228,24 +228,31 @@ class FnDict(BaseModel):
     def render_markdown(self) -> str:
         output = ""
         for k, v in self.data.items():
-            output += f"\n---\n### {k}\n"
-            output += f"{v.single_sentence}\n"
-            output += "\n- **Inputs**:\n"
-            if len(v.inputs) > 0:
-                for i in v.inputs:
-                    output += f"    - `{i.name}`: {i.content}\n"
-            else:
-                output += "    - None\n"
-            output += "\n- **Output**:\n"
-            output += f"    - {v.output}\n"
-            output += "\n- **Logic and Control Flow**:\n"
-            for item in v.control_flow:
-                output += f"    - {item}\n"
-            output += "\n"
+            output += render_function(k, v, 3)
         return output
 
     def __str__(self) -> str:
         return self.render_markdown()
+
+
+def render_function(fn_name: str, fn_data: FnData, markdown_header_level: int) -> str:
+    header = "#" * markdown_header_level
+    output = ""
+    output += f"\n---\n{header} {fn_name}\n"
+    output += f"{fn_data.single_sentence}\n"
+    output += "\n- **Inputs**:\n"
+    if len(fn_data.inputs) > 0:
+        for i in fn_data.inputs:
+            output += f"    - `{i.name}`: {i.content}\n"
+    else:
+        output += "    - None\n"
+    output += "\n- **Output**:\n"
+    output += f"    - {fn_data.output}\n"
+    output += "\n- **Logic and Control Flow**:\n"
+    for item in fn_data.control_flow:
+        output += f"    - {item}\n"
+    output += "\n"
+    return output
 
 
 class ClassBaseData(BaseModel):
@@ -289,23 +296,22 @@ class ClassDict(BaseModel):
             output += f"\n---\n---\n### {k}\n"
             output += f"- **Type**: `{v.base_data.type}`\n"
             output += f"\n- **Description**: {v.base_data.description}\n\n"
+            output += "\n- **Members**:\n"
+            non_dupe_members = 0
+            if len(v.base_data.members) > 0:
+                for m in v.base_data.members:
+                    if (
+                        m.name not in v.member_functions
+                        and m.name not in v.nested_classes
+                    ):
+                        output += f"    - `{m.name}`: {m.content}\n"
+                        non_dupe_members += 1
+            if non_dupe_members == 0:
+                output += "    - None\n"
             output += "\n**Member Functions**:\n"
             if len(v.member_functions) > 0:
                 for n, m in v.member_functions.items():
-                    output += f"\n---\n#### {n}\n"
-                    output += f"{m.single_sentence}\n"
-                    output += "\n- **Inputs**:\n"
-                    if len(m.inputs) > 0:
-                        for i in m.inputs:
-                            output += f"    - `{i.name}`: {i.content}\n"
-                    else:
-                        output += "    - None\n"
-                    output += "\n- **Output**:\n"
-                    output += f"    - {m.output}\n"
-                    output += "\n- **Logic and Control Flow**:\n"
-                    for item in m.control_flow:
-                        output += f"    - {item}\n"
-                    output += "\n"
+                    output += render_function(n, m, 4)
             else:
                 output += "    - None\n"
             if len(v.nested_classes) > 0:
@@ -373,15 +379,6 @@ def fn_dict_from_llm(
         for fn in fn_list[:MAX_FUNCTIONS_TO_DOCUMENT]
     }
     return FnDict(data=fn_dict)
-
-
-# def class_dict_from_llm(
-#     system_prompt: str,
-#     user_prompt: str,
-#     llm: ChatOpenAI,
-#     class_list: list[dict],
-#     code: str,
-# ):
 
 
 PADDING_LINES_TOP = 100

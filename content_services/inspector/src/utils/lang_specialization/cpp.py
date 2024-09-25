@@ -254,7 +254,16 @@ def cpp_function_checker(
     fn_list = []
     for s in symbols:
         if s["kind"] in CPP_FUNCTIONS and not s["name"].startswith("__anon"):
-            fn_list.append(s["name"])
+            # Extra step to dedupe here since we document some functions in classes now
+            contained_in_class = False
+            for sub_s in symbols:
+                if sub_s["kind"] in CPP_CLASS_AND_STRUCT and (
+                    s["line"] > sub_s["line"] and s["line"] < sub_s["end"]
+                ):
+                    contained_in_class = True
+                    break
+            if not contained_in_class:
+                fn_list.append(s["name"])
     if len(fn_list) > 0:
         if structured_output:
             output = fn_list

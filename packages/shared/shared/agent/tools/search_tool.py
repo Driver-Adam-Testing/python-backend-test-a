@@ -27,6 +27,7 @@ class SearchTool(ToolStrict):
             - semantic: Focuses on meaning and context. Use english sentences.
             - keyword: searches in the content of files. Use only a single keyword.
         search_subfolder_paths (list[str], optional): source paths and dirs to search.
+            - Use null to search broadly.
     """
 
     class SearchToolInputContentType(str, Enum):

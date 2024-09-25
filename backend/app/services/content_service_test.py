@@ -224,16 +224,6 @@ def chunk_and_embed(content_service, delete_content):
 
 
 @pytest.fixture(scope="function")
-def aws_s3(monkeypatch):
-    monkeypatch.setattr("app.utils.aws_s3", "head_org_object", True)
-    monkeypatch.setattr(
-        "app.utils.aws_s3",
-        "generate_org_get_presigned_url",
-        "PRESIGNED_DOWNLOAD_URL_MOCK",
-    )
-
-
-@pytest.fixture(scope="function")
 def related_entities(
     content_service,
     tag_service,

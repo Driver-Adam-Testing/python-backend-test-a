@@ -3,11 +3,9 @@ import json
 from datetime import datetime
 from uuid import UUID
 
-from app.services.utils.content_utils import get_content_name
 from database.derived_content_types import DerivedContentTypeNames
 from database.models_v1 import (
     ChunkAndEmbedding,
-    Codebase,
     DerivedContent,
     DerivedContentType,
     DocumentSource,
@@ -18,6 +16,7 @@ from database.models_v1 import (
 )
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError, NoResultFound
+from sqlalchemy.sql.selectable import Select
 from sqlmodel import Session, asc, desc, func, or_, select, text
 
 from app.core.logger import logger
@@ -38,38 +37,12 @@ from app.schemas.content_schema import (
     ListContentTypesInput,
     ListContentTypesResults,
 )
-from app.utils.authorization_chain import perform_authorization_checks
+from app.services.utils.content_utils import get_content_name
 from app.utils.aws_s3 import delete_file_from_s3
 
 
-def is_authorized(
-    session: Session, user_org_id: str, workspace_id: UUID, codebase_id: UUID
-) -> bool:
-    # Check if the workspace belongs to the organization
-    workspace = session.exec(
-        select(Workspace).where(
-            Workspace.id == workspace_id, Workspace.organization_id == user_org_id
-        )
-    ).first()
-
-    if not workspace:
-        return False
-
-    # Check if the codebase belongs to the workspace
-    codebase = session.exec(
-        select(Codebase).where(
-            Codebase.id == codebase_id, Codebase.workspace_id == workspace_id
-        )
-    ).first()
-
-    if not codebase:
-        return False
-
-    return True
-
-
 class ContentService:
-    def __init__(self, session: Session):
+    def __init__(self: "ContentService", session: Session) -> None:
         self.session = session
         self.content_repository = BaseRepository(session, DerivedContent)
         self.workspace_repository = WorkspaceRepository(session)
@@ -78,7 +51,7 @@ class ContentService:
         self.tag_content_repository = BaseRepository(session, TagContent)
 
     def associate_sources_with_content(
-        self,
+        self: "ContentService",
         organization_id: str,
         content_id: UUID,
         content_source_associations: list[ContentSourceAssociationItem],
@@ -86,17 +59,6 @@ class ContentService:
         logger.info(
             f"Associating {len(content_source_associations)} sources with content {content_id} for organization {organization_id}"
         )
-
-        checks = [
-            lambda session: self.content_repository.is_authorized(
-                id=content_id,
-                relationship_chain=["workspace"],
-                field_name="organization_id",
-                field_value=organization_id,
-            )
-        ]
-
-        perform_authorization_checks(self.session, checks)
 
         document = self.content_repository.get(content_id)
 
@@ -149,22 +111,14 @@ class ContentService:
         )
 
     def disassociate_document_source(
-        self, organization_id: str, content_id: UUID, source_content_id: UUID
+        self: "ContentService",
+        organization_id: str,
+        content_id: UUID,
+        source_content_id: UUID,
     ) -> DeleteDocumentSourceResponse:
         logger.info(
             f"Disassociating source {source_content_id} from content {content_id} for organization {organization_id}"
         )
-
-        checks = [
-            lambda session: self.content_repository.is_authorized(
-                id=content_id,
-                relationship_chain=["workspace"],
-                field_name="organization_id",
-                field_value=organization_id,
-            )
-        ]
-
-        perform_authorization_checks(self.session, checks)
 
         content = self.content_repository.get(content_id)
         if not content:
@@ -195,7 +149,7 @@ class ContentService:
         )
 
     def create_blank_document(
-        self,
+        self: "ContentService",
         organization_id: str,
         workspace_id: UUID,
         codebase_id: UUID,
@@ -204,16 +158,6 @@ class ContentService:
         logger.info(
             f"Creating blank document for organization {organization_id}, workspace {workspace_id}, codebase {codebase_id}"
         )
-
-        checks = [
-            lambda session: self.workspace_repository.is_authorized(
-                id=workspace_id,
-                field_name="organization_id",
-                field_value=organization_id,
-            )
-        ]
-
-        perform_authorization_checks(self.session, checks)
 
         workspace_exists = self.workspace_repository.exists(
             workspace_id, organization_id
@@ -266,7 +210,7 @@ class ContentService:
         return new_content
 
     def create_content(
-        self, organization_id: str, request: CreateContentRequest
+        self: "ContentService", organization_id: str, request: CreateContentRequest
     ) -> DerivedContent:
         logger.info(
             f"Creating content for organization {organization_id} with input {request}"
@@ -326,7 +270,7 @@ class ContentService:
         return new_content
 
     def get_list_content(
-        self, organization_id: str, search_input: ListContentInput
+        self: "ContentService", organization_id: str, search_input: ListContentInput
     ) -> ListContentResults:
         logger.info(
             f"Getting list of content for organization {organization_id} with input {search_input}"
@@ -335,7 +279,7 @@ class ContentService:
             results, total_count = self._get_list_content(organization_id, search_input)
         except ValueError as e:
             logger.error(
-                f"Error getting list of content for organization {organization_id}: {str(e)}"
+                f"Error getting list of content for organization {organization_id}: {e!s}"
             )
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
@@ -378,9 +322,26 @@ class ContentService:
         )
 
     def _get_list_content(
-        self, organization_id: str, search_input: ListContentInput
+        self: "ContentService", organization_id: str, search_input: ListContentInput
     ) -> tuple[list[DerivedContent], int]:
-        statement = (
+        statement = self._build_base_query(organization_id)
+        count_statement = self._build_base_count_query(organization_id)
+
+        statement, count_statement = self._apply_sorting(
+            statement, count_statement, search_input
+        )
+        statement, count_statement = self._apply_filters(
+            statement, count_statement, search_input
+        )
+
+        total_count = self.session.exec(count_statement).one()
+        results = self.session.exec(
+            statement.offset(search_input.offset).limit(search_input.limit)
+        ).all()
+        return results, total_count
+
+    def _build_base_query(self: "ContentService", organization_id: str) -> Select:
+        return (
             select(DerivedContent)
             .distinct()
             .join(DerivedContentType)
@@ -394,7 +355,9 @@ class ContentService:
             )
             .where(organization_id == Workspace.organization_id)
         )
-        count_statement = (
+
+    def _build_base_count_query(self: "ContentService", organization_id: str) -> Select:
+        return (
             select(func.count(DerivedContent.id))
             .join(DerivedContentType)
             .join(Workspace)
@@ -402,6 +365,13 @@ class ContentService:
             .join(Tag, isouter=True)
             .where(organization_id == Workspace.organization_id)
         )
+
+    def _apply_sorting(
+        self: "ContentService",
+        statement: Select,
+        count_statement: Select,
+        search_input: ListContentInput,
+    ) -> tuple[Select, Select]:
         if search_input.sort_by:
             if not hasattr(self.content_repository.model, search_input.sort_by):
                 raise ValueError(
@@ -419,7 +389,14 @@ class ContentService:
                 raise ValueError(
                     "Invalid sort direction provided. Options are ASC or DESC"
                 )
+        return statement, count_statement
 
+    def _apply_filters(
+        self: "ContentService",
+        statement: Select,
+        count_statement: Select,
+        search_input: ListContentInput,
+    ) -> tuple[Select, Select]:
         if search_input.text:
             clauses = [
                 DerivedContent.relative_path.contains(search_input.text),
@@ -463,27 +440,19 @@ class ContentService:
             )
 
         if search_input.tags:
-            tag_clauses = []
-            for tag in search_input.tags:
-                tag_clauses.append(Tag.name.contains(tag))
+            tag_clauses = [Tag.name.contains(tag) for tag in search_input.tags]
             statement = statement.where(or_(*tag_clauses))
             count_statement = count_statement.where(or_(*tag_clauses))
 
         if search_input.tag_ids:
-            tag_id_clauses = []
-            for tag_id in search_input.tag_ids:
-                tag_id_clauses.append(Tag.id == tag_id)
+            tag_id_clauses = [Tag.id == tag_id for tag_id in search_input.tag_ids]
             statement = statement.where(or_(*tag_id_clauses))
             count_statement = count_statement.where(or_(*tag_id_clauses))
 
-        total_count = self.session.exec(count_statement).one()
-        results = self.session.exec(
-            statement.offset(search_input.offset).limit(search_input.limit)
-        ).all()
-        return results, total_count
+        return statement, count_statement
 
     def get_list_content_types(
-        self, lct_inputs: ListContentTypesInput
+        self: "ContentService", lct_inputs: ListContentTypesInput
     ) -> ListContentTypesResults:
         logger.info(f"Getting list of content types with input {lct_inputs}")
         try:
@@ -494,30 +463,19 @@ class ContentService:
                 lct_inputs.sort_direction,
             )
         except ValueError as e:
-            logger.error(f"Error getting list of content types: {str(e)}")
+            logger.error(f"Error getting list of content types: {e!s}")
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
         logger.info("List of content types retrieved successfully")
         return ListContentTypesResults(results=results)
 
     def get_content_sources(
-        self, content_id: UUID, organization_id: str
+        self: "ContentService", content_id: UUID, organization_id: str
     ) -> ContentSourceResponse:
         logger.info(f"Fetching content sources for content {content_id}")
 
-        checks = [
-            lambda session: self.content_repository.is_authorized(
-                id=content_id,
-                relationship_chain=["workspace"],
-                field_name="organization_id",
-                field_value=organization_id,
-            )
-        ]
-
-        perform_authorization_checks(self.session, checks)
-
         content = self.content_repository.get(content_id)
-        if not content:
+        if not content or content.workspace.organization_id != organization_id:
             logger.error(f"Content {content_id} not found")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
@@ -556,33 +514,24 @@ class ContentService:
         return ContentSourceResponse(results=source_results)
 
     def get_content_by_id(
-        self, content_id: UUID, organization_id: str
+        self: "ContentService", content_id: UUID, organization_id: str
     ) -> DerivedContent:
         logger.info(f"Fetching content by ID {content_id}")
 
         content: DerivedContent | None = self.content_repository.get(content_id)
 
-        if not content:
-            logger.error(f"Content {content_id} not found")
+        if not content or content.workspace.organization_id != organization_id:
+            logger.error(
+                f"Content {content_id} not found for organization {organization_id}"
+            )
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
             )
 
-        checks = [
-            lambda session: self.content_repository.is_authorized(
-                id=content_id,
-                relationship_chain=["workspace"],
-                field_name="organization_id",
-                field_value=organization_id,
-            )
-        ]
-
-        perform_authorization_checks(self.session, checks)
-
         return content
 
     def get_content_root_by_id(
-        self, content_id: UUID, user_org_id: str
+        self: "ContentService", content_id: UUID, user_org_id: str
     ) -> DerivedContent:
         """
         Get the root codebase content record for a given content ID. this is need by the frontend to appropriately
@@ -590,19 +539,11 @@ class ContentService:
         """
         logger.info(f"Fetching content by ID {content_id}")
         content = self.content_repository.get(content_id)
-        if not content:
+        if not content or content.workspace.organization_id != user_org_id:
             logger.error(f"Content {content_id} not found")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
             )
-
-        checks = [
-            lambda session: is_authorized(
-                session, user_org_id, content.workspace_id, content.codebase_id
-            )
-        ]
-
-        perform_authorization_checks(self.session, checks)
 
         parent = self.session.exec(
             select(DerivedContent)
@@ -614,7 +555,10 @@ class ContentService:
         return parent
 
     def edit_content(
-        self, organization_id: str, content_id: UUID, new_content: dict
+        self: "ContentService",
+        organization_id: str,
+        content_id: UUID,
+        new_content: dict,
     ) -> DerivedContent:
         logger.info(f"Editing content {content_id} for organization {organization_id}")
 
@@ -648,7 +592,9 @@ class ContentService:
 
         return content
 
-    def delete_content(self, organization_id: str, content_id: UUID) -> bool:
+    def delete_content(
+        self: "ContentService", organization_id: str, content_id: UUID
+    ) -> bool:
         logger.info(f"Deleting content {content_id} for organization {organization_id}")
 
         # Check if the content exists and is associated with the organization
@@ -693,7 +639,7 @@ class ContentService:
 
             return content_deleted
         except IntegrityError as e:
-            logger.error(f"Error deleting content {content_id}: {str(e)}")
+            logger.error(f"Error deleting content {content_id}: {e!s}")
             raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -741,7 +687,7 @@ def exec_delete_document_and_related_entities(
         session.commit()
         return True
     except IntegrityError as e:
-        logger.error(f"Error deleting content {content.id}: {str(e)}")
+        logger.error(f"Error deleting content {content.id}: {e!s}")
         session.rollback()
         raise
 

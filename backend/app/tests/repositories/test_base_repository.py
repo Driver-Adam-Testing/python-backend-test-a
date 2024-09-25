@@ -68,9 +68,7 @@ def test_update(base_repository, session):
     mock_instance = MockModel(
         id=UUID("12345678-1234-5678-1234-567812345678"), name="Test"
     )
-    update_data = MockModel(
-        id=UUID("12345678-1234-5678-1234-567812345678"), name="Updated Test"
-    )
+    update_data = {"name": "Updated Test"}
     session.commit.return_value = None
     session.refresh.return_value = None
 

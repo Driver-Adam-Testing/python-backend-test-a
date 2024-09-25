@@ -213,15 +213,11 @@ def test_create_tag(db, current_user_with_org):
     assert new_tag.created_by == current_user_with_org.user_id
 
 
-# There doesn't seem to be a unique constraint on name+org_id, so
-# the IntegrityError's aren't ever being triggered in this implementation.
-# def test_create_existing_tag(tag_service, current_user_with_org):
-#     with pytest.raises(HTTPException):
-#         new_tag_input = NewTagInput(name="TEST_TAG", hex_color="#FFFFFF", type="tag")
-#         tag_service.create_tag(
-#             current_user_with_org,
-#             NewTagInput(**new_tag_input.model_dump(exclude_unset=True)),
-#         )
+def test_create_existing_tag(tag_service, tag, current_user_with_org):
+    with pytest.raises(HTTPException):
+        tag_service.create_tag(
+            current_user_with_org, NewTagInput(**tag.model_dump(exclude_unset=True))
+        )
 
 
 def test_invalid_tag_update(tag_service, tag, current_user_with_org):

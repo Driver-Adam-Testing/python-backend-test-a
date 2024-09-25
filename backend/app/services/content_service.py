@@ -68,7 +68,7 @@ def is_authorized(
 
 
 class ContentService:
-    def __init__(self, session: Session):
+    def __init__(self, session: Session) -> None:
         self.session = session
         self.content_repository = BaseRepository(session, DerivedContent)
         self.workspace_repository = WorkspaceRepository(session)
@@ -654,17 +654,6 @@ class ContentService:
         Get a presigned URL for downloading this content from S3
         """
         logger.info(f"Fetching content by ID {content_id}")
-
-        checks = [
-            lambda session: self.content_repository.is_authorized(
-                id=content_id,
-                relationship_chain=["workspace"],
-                field_name="organization_id",
-                field_value=organization_id,
-            )
-        ]
-
-        perform_authorization_checks(self.session, checks)
 
         content: DerivedContent | None = self.content_repository.get_by_conditions(
             [

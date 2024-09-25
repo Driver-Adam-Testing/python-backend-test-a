@@ -6,8 +6,10 @@ from utils.lang_specialization.cpp import (
     VARIABLES_NONE_CONTENT,
     class_dict_from_llm_cpp,
     cpp_class_checker,
+    cpp_data_structure_checker,
     cpp_function_checker,
     cpp_variables_checker,
+    data_structure_dict_from_llm_cpp,
     fn_dict_from_llm_cpp,
     variables_dict_from_llm_cpp,
 )
@@ -52,5 +54,12 @@ SOURCE_CODE_LARGE_TEMPLATE_CPP = [
         cpp_function_checker,
         fn_dict_from_llm_cpp,
         FUNCTIONS_NONE_CONTENT,
+    ),
+    (
+        S.FN_COND_JSON,
+        "\n---\n## Data Structures",
+        cpp_data_structure_checker,
+        data_structure_dict_from_llm_cpp,
+        DATA_STRUCTURES_NONE_CONTENT,
     ),
 ]

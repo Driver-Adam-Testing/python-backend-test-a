@@ -223,12 +223,16 @@ class FnData(BaseModel):
 
 
 class FnDict(BaseModel):
-    data: dict[str, FnData]
+    data: dict[str, FnData | list[FnData]]
 
     def render_markdown(self) -> str:
         output = ""
         for k, v in self.data.items():
-            output += render_function(k, v, 3)
+            if isinstance(v, list):
+                for fn in v:
+                    output += render_function(k, fn, 3)
+            else:
+                output += render_function(k, v, 3)
         return output
 
     def __str__(self) -> str:
@@ -366,18 +370,39 @@ def data_structure_dict_from_llm(
 
 
 def fn_dict_from_llm(
-    system_prompt: str, user_prompt: str, llm: ChatOpenAI, fn_list: list[str], code: str
+    system_prompt: str,
+    user_prompt: str,
+    llm: ChatOpenAI,
+    fn_list: list[str | dict],
+    code: str,
 ) -> FnDict:
-    fn_dict = {
-        fn: FnData.from_llm(
-            llm=llm,
-            system_prompt=system_prompt,
-            user_prompt=user_prompt,
-            fn_name=fn,
-            code=code,
-        )
-        for fn in fn_list[:MAX_FUNCTIONS_TO_DOCUMENT]
-    }
+    fn_dict = {}
+    for fn in fn_list[:MAX_FUNCTIONS_TO_DOCUMENT]:
+        if isinstance(fn, str):
+            fn_dict[fn] = FnData.from_llm(
+                llm=llm,
+                system_prompt=system_prompt,
+                user_prompt=user_prompt,
+                fn_name=fn,
+                code=code,
+            )
+        elif isinstance(fn, dict):
+            fn_name = fn["name"]
+            fn_start_line = fn["line"]
+            fn_end_line = fn["end"]
+            code_lines = code.splitlines()
+            fn_code = "\n".join(code_lines[fn_start_line - 1 : fn_end_line + 1])
+            if fn_name not in fn_dict:
+                fn_dict[fn_name] = []
+            fn_dict[fn_name].append(
+                FnData.from_llm(
+                    llm=llm,
+                    system_prompt=system_prompt,
+                    user_prompt=user_prompt,
+                    fn_name=fn_name,
+                    code=fn_code,
+                )
+            )
     return FnDict(data=fn_dict)
 
 

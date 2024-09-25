@@ -197,17 +197,16 @@ def cpp_class_checker(
         if s["kind"] in CPP_CLASS_AND_STRUCT and not s["name"].startswith("__anon"):
             class_dict = {}
             class_dict["name"] = s["name"]
-            start_line = s["line"]
-            end_line = s["end"]
             member_functions = []
             nested_classes = []
 
             for sub_s in symbols:
                 if (
-                    (sub_s["line"] > start_line and sub_s["line"] < end_line)
-                    and (sub_s is not s)
+                    (sub_s.get("scopeKind") in CPP_CLASS_AND_STRUCT)
                     and (sub_s["scope"].split("::")[-1] == s["name"])
+                    and (sub_s is not s)
                 ):
+                    # TODO: understand if member functions can be overloaded?
                     if sub_s["kind"] in CPP_FUNCTIONS:
                         member_functions.append(sub_s)
                     elif sub_s["kind"] in CPP_CLASS_AND_STRUCT:
@@ -249,21 +248,42 @@ def cpp_data_structure_checker(
 
 def cpp_function_checker(
     code: str, root_rel_path: Path, structured_output: bool = True
-) -> list[str] | str | None:
+) -> list[str | dict] | str | None:
     symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
+
+    fn_names = [
+        s["name"]
+        for s in symbols
+        if s["kind"] in CPP_FUNCTIONS and not s["name"].startswith("__anon")
+    ]
     fn_list = []
     for s in symbols:
         if s["kind"] in CPP_FUNCTIONS and not s["name"].startswith("__anon"):
             # Extra step to dedupe here since we document some functions in classes now
             contained_in_class = False
             for sub_s in symbols:
-                if sub_s["kind"] in CPP_CLASS_AND_STRUCT and (
-                    s["line"] > sub_s["line"] and s["line"] < sub_s["end"]
+                if (
+                    (sub_s["kind"] in CPP_CLASS_AND_STRUCT)
+                    and (s["scope"].split("::")[-1] == sub_s["name"])
+                    and (s.get("scopeKind") in CPP_CLASS_AND_STRUCT)
                 ):
                     contained_in_class = True
                     break
-            if not contained_in_class:
-                fn_list.append(s["name"])
+
+            if not contained_in_class and fn_names.count(s["name"]) == 1:
+                # Some classes are defined in a different file than the functions of that class
+                # so we append the class name to the function name to make that clearer in docs
+                fn_name = (
+                    s["name"]
+                    if s.get("scopeKind") not in CPP_CLASS_AND_STRUCT
+                    else s["scope"].split("::")[-1] + "::" + s["name"]
+                )
+                fn_list.append(fn_name)
+            elif not contained_in_class and fn_names.count(s["name"]) > 1:
+                # if the function is overloaded we append the the symbol dict
+                # such that when we generate we can isolate the function lines
+                fn_list.append(s)
+
     if len(fn_list) > 0:
         if structured_output:
             output = fn_list

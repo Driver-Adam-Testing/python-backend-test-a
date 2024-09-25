@@ -37,7 +37,7 @@ class DataScope(BaseModel):
         return True
 
     def into_datascope(self, paths: list[str] | str | None) -> "DataScope":
-        if paths is None:
+        if paths is None or paths == []:
             return self
         if isinstance(paths, str):
             paths = [paths]

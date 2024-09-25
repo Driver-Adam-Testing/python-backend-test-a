@@ -12,23 +12,25 @@ from shared.pipelines.search import (
 
 class SearchTool(ToolStrict):
     """
-    SearchTool is a strict tool class for search operations within a content repository of code and technical documentation.
+    SearchTool searches within a content repository of code and technical documentation.
+    If no results: try again with null, all-types, and hybrid
 
     Attributes:
         search_query (str): The query string.
         content_types (list[SearchToolInputContentType]): Content types to filter the search.
-            - source-code: For searching within source code files.
-            - codebase-technical-documentation: For searching within technical documentation.
+            - all-types: Great to use for the first search.
+            - source-code: Search source code files.
+            - codebase-technical-documentation: Search technical documentation.
             - pdf-content: For searching within PDF documents.
         search_algorithm (SearchAlgorithm): The search algorithm. Defaults to 'hybrid'.
             - hybrid: Combines keyword and semantic search.
-            - semantic: Focuses on meaning and context.
-            - keyword: searches for the query in the content of a file. Use only a single keyword.
-        search_subfolder_paths (list[str], optional): Relative paths to further filter results.
-            - Only to be used once there exists context of the searchable data scope.
+            - semantic: Focuses on meaning and context. Use english sentences.
+            - keyword: searches in the content of files. Use only a single keyword.
+        search_subfolder_paths (list[str], optional): source paths and dirs to search.
     """
 
     class SearchToolInputContentType(str, Enum):
+        all_types = "all-types"
         source_code = "source-code"
         technical_documentation = "codebase-technical-documentation"
         pdf_content = "pdf-content"
@@ -74,6 +76,22 @@ class SearchTool(ToolStrict):
                         DerivedContentTypeNames.PDF_IMAGE_SUMMARY.value,
                         DerivedContentTypeNames.PDF_EXTRACTED_TEXT.value,
                         DerivedContentTypeNames.PDF_EXTRACTED_TABLE.value,
+                    ]
+                )
+            elif content_type == self.SearchToolInputContentType.all_types:
+                derived_content_types.update(
+                    [
+                        DerivedContentTypeNames.PDF_SUMMARY.value,
+                        DerivedContentTypeNames.SUPPLEMENTAL_DOCUMENT.value,
+                        DerivedContentTypeNames.PDF_VISUAL_SUMMARY.value,
+                        DerivedContentTypeNames.PDF_TEXT_SUMMARY.value,
+                        DerivedContentTypeNames.PDF_IMAGE_SUMMARY.value,
+                        DerivedContentTypeNames.PDF_EXTRACTED_TEXT.value,
+                        DerivedContentTypeNames.PDF_EXTRACTED_TABLE.value,
+                        DerivedContentTypeNames.LONG_DESCRIPTION.value,
+                        DerivedContentTypeNames.CHUNK_DESCRIPTIONS.value,
+                        DerivedContentTypeNames.SYMBOL.value,
+                        DerivedContentTypeNames.CODEBASE_FILE.value,
                     ]
                 )
             elif content_type == self.SearchToolInputContentType.user_generated_files:

@@ -132,10 +132,10 @@ class VariableDict(BaseModel):
     def render_markdown(self) -> str:
         output = ""
         for k, v in self.data.items():
-            output += f"\n---\n### {k}\n"
-            output += f"- **Type**: `{v.type}`\n"
-            output += f"- **Description**: {v.description}\n"
-            output += f"- **Use**: {v.use}\n\n"
+            output += f"\n---\n## {k}\n"
+            output += f"### Type\n`{v.type}`\n"
+            output += f"### Description\n{v.description}\n"
+            output += f"### Use\n{v.use}\n\n"
 
         return output
 
@@ -180,15 +180,15 @@ class DataStructureDict(BaseModel):
     def render_markdown(self) -> str:
         output = ""
         for k, v in self.data.items():
-            output += f"\n---\n### {k}\n"
-            output += f"- **Type**: `{v.type}`\n"
-            output += "\n- **Members**:\n"
+            output += f"\n---\n## {k}\n"
+            output += f"### Type\n`{v.type}`\n"
+            output += "### Members\n"
             if len(v.members) > 0:
                 for m in v.members:
-                    output += f"    - `{m.name}`: {m.content}\n"
+                    output += f"- `{m.name}`: {m.content}\n"
             else:
-                output += "    - None\n"
-            output += f"\n- **Description**: {v.description}\n\n"
+                output += "- None\n"
+            output += f"\n### Description\n{v.description}\n\n"
         return output
 
     def __str__(self) -> str:
@@ -228,19 +228,19 @@ class FnDict(BaseModel):
     def render_markdown(self) -> str:
         output = ""
         for k, v in self.data.items():
-            output += f"\n---\n### {k}\n"
+            output += f"\n---\n## {k}\n"
             output += f"{v.single_sentence}\n"
-            output += "\n- **Inputs**:\n"
+            output += "\n### Inputs\n"
             if len(v.inputs) > 0:
                 for i in v.inputs:
-                    output += f"    - `{i.name}`: {i.content}\n"
+                    output += f"- `{i.name}`: {i.content}\n"
             else:
-                output += "    - None\n"
-            output += "\n- **Output**:\n"
-            output += f"    - {v.output}\n"
-            output += "\n- **Logic and Control Flow**:\n"
+                output += "- None\n"
+            output += "\n### Output\n"
+            output += f"- {v.output}\n"
+            output += "\n### Logic and Control Flow\n"
             for item in v.control_flow:
-                output += f"    - {item}\n"
+                output += f"- {item}\n"
             output += "\n"
         return output
 
@@ -320,7 +320,7 @@ def symbols_dict_from_llm_multi_prompt(
     system_prompt: str,
     user_prompt: str,
     max_symbols_to_document: int,
-):
+) -> dict[str, VariableData | DataStructureData | FnData]:
     from shared.chunking.text_splitter import split_text
 
     symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
@@ -365,7 +365,7 @@ def variables_dict_from_llm_multi_prompt(
     variables_list: list[str],
     code: str,
     root_rel_path: Path,
-):
+) -> VariableDict:
     symbols_dict = symbols_dict_from_llm_multi_prompt(
         llm,
         variables_list,
@@ -386,7 +386,7 @@ def data_structure_dict_from_llm_multi_prompt(
     data_structures_list: list[str],
     code: str,
     root_rel_path: Path,
-):
+) -> DataStructureDict:
     symbols_dict = symbols_dict_from_llm_multi_prompt(
         llm,
         data_structures_list,
@@ -407,7 +407,7 @@ def fn_dict_from_llm_multi_prompt(
     functions_list: list[str],
     code: str,
     root_rel_path: Path,
-):
+) -> FnDict:
     symbols_dict = symbols_dict_from_llm_multi_prompt(
         llm,
         functions_list,

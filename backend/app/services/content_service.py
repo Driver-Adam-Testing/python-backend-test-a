@@ -325,12 +325,12 @@ class ContentService:
         self: "ContentService", organization_id: str, search_input: ListContentInput
     ) -> tuple[list[DerivedContent], int]:
         statement = self._build_base_query(organization_id)
-        count_statement = self._build_base_count_query(organization_id)
+        count_statement = self._build_base_count_query(organization_id, search_input)
 
-        statement, count_statement = self._apply_sorting(
+        statement, count_statement = self._apply_filters(
             statement, count_statement, search_input
         )
-        statement, count_statement = self._apply_filters(
+        statement, count_statement = self._apply_sorting(
             statement, count_statement, search_input
         )
 
@@ -338,6 +338,7 @@ class ContentService:
         results = self.session.exec(
             statement.offset(search_input.offset).limit(search_input.limit)
         ).all()
+
         return results, total_count
 
     def _build_base_query(self: "ContentService", organization_id: str) -> Select:
@@ -356,15 +357,34 @@ class ContentService:
             .where(organization_id == Workspace.organization_id)
         )
 
-    def _build_base_count_query(self: "ContentService", organization_id: str) -> Select:
-        return (
-            select(func.count(DerivedContent.id))
-            .join(DerivedContentType)
-            .join(Workspace)
-            .join(TagContent, isouter=True)
-            .join(Tag, isouter=True)
-            .where(organization_id == Workspace.organization_id)
-        )
+    def _build_base_count_query(
+        self: "ContentService", organization_id: str, search_input: ListContentInput
+    ) -> Select:
+        if search_input.tag_ids:
+            """
+            When tag_ids are provided, a join with Tag and TagContent is required
+            to accurately count the content associated with the specified tag_ids.
+            """
+            return (
+                select(func.count(DerivedContent.id))
+                .join(DerivedContentType)
+                .join(Workspace)
+                .join(TagContent, isouter=True)
+                .join(Tag, isouter=True)
+                .where(organization_id == Workspace.organization_id)
+            )
+        else:
+            """
+             If no tag_ids are provided, skip the join with TagContent and Tag.
+             Performing the join without tag_ids affects the count due to the nature of the LEFT OUTER JOIN.
+            Consult Eric and Jesse for further details on the underlying issue.
+            """
+            return (
+                select(func.count(DerivedContent.id))
+                .join(DerivedContentType)
+                .join(Workspace)
+                .where(organization_id == Workspace.organization_id)
+            )
 
     def _apply_sorting(
         self: "ContentService",
@@ -446,8 +466,12 @@ class ContentService:
 
         if search_input.tag_ids:
             tag_id_clauses = [Tag.id == tag_id for tag_id in search_input.tag_ids]
+            tag_contents_clauses = [
+                TagContent.tag_id == tag_id for tag_id in search_input.tag_ids
+            ]
             statement = statement.where(or_(*tag_id_clauses))
-            count_statement = count_statement.where(or_(*tag_id_clauses))
+            # tag_contents_clauses is used in the count statement to accurately count the content associated with the specified tag_ids
+            count_statement = count_statement.where(or_(*tag_contents_clauses))
 
         return statement, count_statement
 

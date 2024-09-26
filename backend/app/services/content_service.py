@@ -40,9 +40,12 @@ from app.schemas.content_schema import (
     ListContentTypesResults,
 )
 from app.services.utils.content_utils import get_content_name
-from app.utils import aws_s3
 from app.utils.authorization_chain import perform_authorization_checks
-from app.utils.aws_s3 import delete_file_from_s3
+from app.utils.aws_s3 import (
+    delete_file_from_s3,
+    generate_org_get_presigned_url,
+    head_org_object,
+)
 
 
 def is_authorized(
@@ -680,9 +683,9 @@ class ContentService:
         )
         logger.info(f"Trying download_key={download_key}")
         try:
-            if aws_s3.head_org_object(organization_id, download_key):
+            if head_org_object(organization_id, download_key):
                 return DownloadContentResponse(
-                    download_url=aws_s3.generate_org_get_presigned_url(
+                    download_url=generate_org_get_presigned_url(
                         organization_id, download_key
                     ),
                     content_name=content.content_name or "",

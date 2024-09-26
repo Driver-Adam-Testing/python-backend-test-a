@@ -3,6 +3,7 @@ import json
 from datetime import datetime
 from uuid import UUID
 
+from botocore.exceptions import ClientError
 from database.derived_content_types import DerivedContentTypeNames
 from database.models_v1 import (
     ChunkAndEmbedding,
@@ -672,31 +673,26 @@ class ContentService:
                 detail="Content not found or not downloadable",
             )
 
-        download_key = f"documents/{content.relative_path}"
-        if aws_s3.head_org_object(organization_id, download_key):
-            return DownloadContentResponse(
-                download_url=aws_s3.generate_org_get_presigned_url(
-                    organization_id, download_key
-                ),
-                content_name=content.content_name,
-            )
-        logger.info(
-            "Falling back to legacy way of fetching download URL w/ codebase ID"
+        download_key = (
+            f"documents/{content.relative_path}"
+            if content.codebase_id is None
+            else f"{content.codebase_id}/{content.relative_path}"
         )
-        # TODO: Verify that this fallback to find old documents is functional
-        download_key = f"{content.codebase_id}/documents/{content.relative_path}"
-        if aws_s3.head_org_object(organization_id, download_key):
-            return DownloadContentResponse(
-                download_url=aws_s3.generate_org_get_presigned_url(
-                    organization_id, download_key
-                ),
-                content_name=content.content_name,
+        logger.info(f"Trying download_key={download_key}")
+        try:
+            if aws_s3.head_org_object(organization_id, download_key):
+                return DownloadContentResponse(
+                    download_url=aws_s3.generate_org_get_presigned_url(
+                        organization_id, download_key
+                    ),
+                    content_name=content.content_name or "",
+                )
+        except ClientError:
+            logger.error("Content not found or not downloadable")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Content not found or not downloadable",
             )
-        logger.error("Content not found or not downloadable")
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Content not found or not downloadable",
-        )
 
     def delete_content(self, organization_id: str, content_id: UUID) -> bool:
         logger.info(f"Deleting content {content_id} for organization {organization_id}")

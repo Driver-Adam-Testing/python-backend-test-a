@@ -1,6 +1,5 @@
 from datetime import datetime
-from unittest.mock import patch
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 import pytest
 from database.derived_content_types import DerivedContentTypeNames
@@ -458,79 +457,3 @@ def test_delete_content(
         HTTPException
     ):  # Replace with the actual exception your service raises
         content_service.get_content_by_id(content_id, organization_id)
-
-
-@patch("app.repositories.derived_content_type_repository")
-@patch("app.repositories.workspace_repository")
-@patch("app.utils.aws_s3.head_org_object")
-@patch("app.utils.aws_s3.generate_org_get_presigned_url")
-@patch("app.utils.authorization_chain.perform_authorization_checks")
-def test_get_content_download_url_new_location(
-    preauth_mock,
-    presigned_url_mock,
-    head_mock,
-    workspace_repo_mock,
-    derived_content_type_repo_mock,
-    content_service: ContentService,
-    current_user_with_org,
-):
-    head_call_count = 0
-
-    def head_object_mock():
-        head_call_count = head_call_count + 1  # noqa: F823, F841
-        return True
-
-    preauth_mock.return_value = True
-    head_mock.side_effect = head_object_mock
-    presigned_url_mock.return_value = "PRESIGNED_DOWNLOAD_URL_MOCK"
-    # Since the ContentService constructor only takes the DB session
-    # and builds the needed repositories from that, I don't see
-    # a way to inject these mocks for the different repositories
-
-    organization_id = current_user_with_org.organization_id
-    download_url = content_service.get_content_download_url(
-        UUID("12345678-1234-5678-1234-567812345678"),
-        organization_id,
-    )
-    assert download_url == "PRESIGNED_DOWNLOAD_URL_MOCK"
-    assert head_call_count == 1
-
-
-# TODO
-# @patch("app.repositories.derived_content_type_repository")
-# @patch("app.repositories.workspace_repository")
-# @patch("app.utils.aws_s3.head_org_object")
-# @patch("app.utils.aws_s3.generate_org_get_presigned_url")
-# @patch("app.utils.authorization_chain.perform_authorization_checks")
-# def test_get_content_download_url_new_location(
-#     preauth_mock,
-#     presigned_url_mock,
-#     head_mock,
-#     workspace_repo_mock,
-#     derived_content_type_repo_mock,
-#     content_service: ContentService,
-#     current_user_with_org,
-# ):
-#     head_call_count = 0
-
-#     def head_object_mock():
-#         head_call_count = head_call_count + 1
-#         return True
-
-#     preauth_mock.return_value = True
-#     head_mock.side_effect = head_object_mock
-#     presigned_url_mock.return_value = "PRESIGNED_DOWNLOAD_URL_MOCK"
-# Since the ContentService constructor only takes the DB session
-# and constructs the needed repositories from that, I don't see
-# a way to inject these mocks for the different repositories
-#     organization_id = current_user_with_org.organization_id
-#     download_url = content_service.get_content_download_url(
-#         organization_id, UUID("12345678-1234-5678-1234-567812345678")
-#     )
-#     # Expect authorization checks to be called w/ org id
-#     # Expect content to be found, another test for non-existent content id
-#     # Expect download key w/o codebase id to work
-#     # - head_org_object mocked to succeed
-#     # - generate_org_get_presigned_url mocked to succeed
-#     assert download_url == "PRESIGNED_DOWNLOAD_URL_MOCK"
-#     assert head_call_count == 2

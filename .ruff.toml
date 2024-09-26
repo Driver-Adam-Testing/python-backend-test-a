@@ -30,6 +30,7 @@ ignore = [
     "E501",
     "PGH003", # Allow generic type ignores
     "ANN101", # Ignore missing type annotation for self
+    "ANN102", # Ignore missing type annotation for cls
 ]
 
 unfixable = [

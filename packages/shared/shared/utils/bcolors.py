@@ -29,7 +29,7 @@ class text_reset:
     ENDC = "\033[0m"
 
 
-def print_dict(dict_to_print: dict):
+def print_dict(dict_to_print: dict) -> None:
     colors = [
         print_text_color.RED,
         print_text_color.GREEN,
@@ -41,13 +41,14 @@ def print_dict(dict_to_print: dict):
     keys = list(dict_to_print.keys())
     import hashlib
 
-    def get_color_for_key(key):
+    def get_color_for_key(key: any) -> str:
         checksum = int(hashlib.md5(key.encode()).hexdigest(), 16)
         return colors[checksum % len(colors)]
 
     for key in keys:
         color = get_color_for_key(key)
         value = dict_to_print[key]
-        if isinstance(value, str) and len(value) > 1000:
-            value = value[:750] + "   \n...  TRUNCATED  ...\n   " + value[-250:]
+        # Shane loves the long modal logs!
+        # if isinstance(value, str) and len(value) > 1000:
+        #     value = value[:750] + "   \n...  TRUNCATED  ...\n   " + value[-250:]
         print(f"{color}{key}: {value}{text_reset.ENDC}")

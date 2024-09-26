@@ -4,14 +4,12 @@ target-version = "py312"
 fix = true
 
 [lint]
-select = ["E", "W", "F", "I", "C90"]  # Common rulesets including E (errors), W (warnings), F (flake8), I (imports)
+select = ["E", "W", "F", "I", "C90", "ANN"]  # Common rulesets including E (errors), W (warnings), F (flake8), I (imports)
 
 extend-select = [
     "B",   # flake8-bugbear
     "C4",  # flake8-comprehensions
     "ERA", # flake8-eradicate/eradicate
-    #"I",   # isort
-    #"N",   # pep8-naming
     "PIE", # flake8-pie
     "PGH", # pygrep
     "RUF", # ruff checks
@@ -31,6 +29,7 @@ ignore = [
     "N818", # Exception name should be named with an Error suffix
     "E501",
     "PGH003", # Allow generic type ignores
+    "ANN101", # Ignore missing type annotation for self
 ]
 
 unfixable = [

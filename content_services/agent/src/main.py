@@ -2,6 +2,8 @@
 This file exposes the modal (https://www.modal.com) interface for the comprehender package.
 """
 
+import os
+
 import modal
 
 app = modal.App("agent")
@@ -28,18 +30,20 @@ agent_model_config = {
         modal.Secret.from_name("open-ai"),
         modal.Secret.from_name("db"),
     ],
-    "proxy": modal.Proxy.from_name("pg-proxy"),
     "concurrency_limit": 5,
     "region": "us-east",
 }
 
+if os.environ["MODAL_ENVIRONMENT"] != "staging":
+    agent_model_config["proxy"] = modal.Proxy.from_name("pg-proxy")
+
 
 @app.function(timeout=3600, **agent_model_config, keep_warm=1)
-def run(input: dict):
+def run(input: dict) -> any:
     from shared.interfaces.agents.pipeline_configuration import PipelineInput
     from shared.pipelines.agents.execute import execute_sequence
 
     if isinstance(input, dict):
         input = PipelineInput(**input)
-
+        print(input.model_dump())
     return execute_sequence(input).model_dump()

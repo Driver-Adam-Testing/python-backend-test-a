@@ -3,7 +3,7 @@ import json
 from datetime import datetime
 from uuid import UUID
 
-from app.services.utils.content_utils import get_content_name
+from botocore.exceptions import ClientError
 from database.derived_content_types import DerivedContentTypeNames
 from database.models_v1 import (
     ChunkAndEmbedding,
@@ -32,14 +32,20 @@ from app.schemas.content_schema import (
     ContentSourceResponse,
     CreateContentRequest,
     DeleteDocumentSourceResponse,
+    DownloadContentResponse,
     ListContentInput,
     ListContentResult,
     ListContentResults,
     ListContentTypesInput,
     ListContentTypesResults,
 )
+from app.services.utils.content_utils import get_content_name
 from app.utils.authorization_chain import perform_authorization_checks
-from app.utils.aws_s3 import delete_file_from_s3
+from app.utils.aws_s3 import (
+    delete_file_from_s3,
+    generate_org_get_presigned_url,
+    head_org_object,
+)
 
 
 def is_authorized(
@@ -62,14 +68,11 @@ def is_authorized(
         )
     ).first()
 
-    if not codebase:
-        return False
-
-    return True
+    return codebase
 
 
 class ContentService:
-    def __init__(self, session: Session):
+    def __init__(self, session: Session) -> None:
         self.session = session
         self.content_repository = BaseRepository(session, DerivedContent)
         self.workspace_repository = WorkspaceRepository(session)
@@ -335,7 +338,7 @@ class ContentService:
             results, total_count = self._get_list_content(organization_id, search_input)
         except ValueError as e:
             logger.error(
-                f"Error getting list of content for organization {organization_id}: {str(e)}"
+                f"Error getting list of content for organization {organization_id}: {e!s}"
             )
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
@@ -494,7 +497,7 @@ class ContentService:
                 lct_inputs.sort_direction,
             )
         except ValueError as e:
-            logger.error(f"Error getting list of content types: {str(e)}")
+            logger.error(f"Error getting list of content types: {e!s}")
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
         logger.info("List of content types retrieved successfully")
@@ -648,6 +651,52 @@ class ContentService:
 
         return content
 
+    def get_content_download_url(
+        self, content_id: UUID, organization_id: str
+    ) -> DownloadContentResponse:
+        """
+        Get a presigned URL for downloading this content from S3
+        """
+        logger.info(f"Fetching content by ID {content_id}")
+
+        content: DerivedContent | None = self.content_repository.get_by_conditions(
+            [
+                Workspace.organization_id == organization_id,
+                DerivedContent.id == content_id,
+                DerivedContentType.type_name
+                == DerivedContentTypeNames.SUPPLEMENTAL_DOCUMENT.value,
+            ],
+            [Workspace, DerivedContentType],
+        )
+
+        if not content:
+            logger.error(f"Content {content_id} not found or not downloadable")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Content not found or not downloadable",
+            )
+
+        download_key = (
+            f"documents/{content.relative_path}"
+            if content.codebase_id is None
+            else f"{content.codebase_id}/{content.relative_path}"
+        )
+        logger.info(f"Trying download_key={download_key}")
+        try:
+            if head_org_object(organization_id, download_key):
+                return DownloadContentResponse(
+                    download_url=generate_org_get_presigned_url(
+                        organization_id, download_key
+                    ),
+                    content_name=content.content_name or "",
+                )
+        except ClientError:
+            logger.error("Content not found or not downloadable")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Content not found or not downloadable",
+            )
+
     def delete_content(self, organization_id: str, content_id: UUID) -> bool:
         logger.info(f"Deleting content {content_id} for organization {organization_id}")
 
@@ -693,7 +742,7 @@ class ContentService:
 
             return content_deleted
         except IntegrityError as e:
-            logger.error(f"Error deleting content {content_id}: {str(e)}")
+            logger.error(f"Error deleting content {content_id}: {e!s}")
             raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -741,7 +790,7 @@ def exec_delete_document_and_related_entities(
         session.commit()
         return True
     except IntegrityError as e:
-        logger.error(f"Error deleting content {content.id}: {str(e)}")
+        logger.error(f"Error deleting content {content.id}: {e!s}")
         session.rollback()
         raise
 

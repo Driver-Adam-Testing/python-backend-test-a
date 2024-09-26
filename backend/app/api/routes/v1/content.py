@@ -15,6 +15,7 @@ from app.schemas.content_schema import (
     CreateContentRequest,
     DeleteContentSourcesRequest,
     DeleteDocumentSourceResponse,
+    DownloadContentResponse,
     ListContentInput,
     ListContentResults,
     ListContentTypesInput,
@@ -136,6 +137,30 @@ def get_content_by_id(
     """
     content_service = ContentService(session)
     return content_service.get_content_by_id(content_id, user.organization_id)
+
+
+@router.get(
+    "/{content_id}/download",
+    summary="Get download URL from S3 by ID",
+)
+def get_download_content_by_id(
+    session: CurrentSession,
+    user: CurrentUser,
+    content_id: UUID,
+) -> DownloadContentResponse:
+    """
+    Get download URL from S3 by ID
+
+    Parameters:
+    - session: Current session object
+    - user: Current user object
+    - content_id: UUID of the content
+
+    Returns:
+    - DerivedContent: Content details
+    """
+    content_service = ContentService(session)
+    return content_service.get_content_download_url(content_id, user.organization_id)
 
 
 @router.get(

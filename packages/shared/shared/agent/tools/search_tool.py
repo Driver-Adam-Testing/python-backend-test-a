@@ -126,7 +126,7 @@ class SearchTool(ToolStrict):
             metadata = result.metadata
             content_type = metadata.get("content_type", "")
             relative_path = metadata.get("relative_path", "")
-
+            # TODO: add formatting to the interface. This would allow us to share then
             formatted_result = f"""<result>
                 <content>{content}</content>
                 <content_type>{content_type}</content_type>

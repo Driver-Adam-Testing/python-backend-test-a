@@ -406,6 +406,55 @@ def fn_dict_from_llm(
     return FnDict(data=fn_dict)
 
 
+def class_dict_from_llm(
+    system_prompt_class: str,
+    user_prompt_class: str,
+    system_prompt_fn: str,
+    user_prompt_fn: str,
+    class_fn_delimiter: str,
+    llm: ChatOpenAI,
+    class_list: list[dict],
+    code: str,
+) -> ClassDict:
+    class_dict = {}
+    for cl in class_list:
+        class_base = ClassBaseData.from_llm(
+            system_prompt=system_prompt_class,
+            user_prompt=user_prompt_class,
+            llm=llm,
+            class_dict=cl,
+            code=code,
+        )
+        member_functions = {}
+        nested_classes = []
+        for member_fn in cl["member_functions"]:
+            # TODO: handle overloaded function names here.
+            fn_data = FnData.from_llm(
+                system_prompt=system_prompt_fn,
+                user_prompt=user_prompt_fn,
+                llm=llm,
+                fn_name=member_fn["name"],
+                code=code,
+            )
+            function_name = (
+                member_fn["scope"].split(class_fn_delimiter)[-1]
+                + class_fn_delimiter
+                + member_fn["name"]
+            )
+            member_functions[function_name] = fn_data
+
+        for nested_class in cl["nested_classes"]:
+            nested_classes.append(nested_class["name"])
+
+        class_data = ClassData(
+            base_data=class_base,
+            member_functions=member_functions,
+            nested_classes=nested_classes,
+        )
+        class_dict[cl["name"]] = class_data
+    return ClassDict(data=class_dict)
+
+
 PADDING_LINES_TOP = 100
 PADDING_LINES_BOTTOM = 100
 SYMBOL_MAX_CHUNK_SIZE = 64_000

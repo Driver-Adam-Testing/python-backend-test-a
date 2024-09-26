@@ -2,15 +2,9 @@ from functools import partial
 from pathlib import Path
 
 from utils.codemap_ctags import extract_symbols_w_ctags
-from utils.lang_specialization.common import (
-    ClassBaseData,
-    ClassData,
-    ClassDict,
-    FnData,
-)
-from utils.models import ChatOpenAI
 
 from .common import (
+    class_dict_from_llm,
     data_structure_dict_from_llm,
     data_structure_dict_from_llm_multi_prompt,
     fn_dict_from_llm,
@@ -330,45 +324,6 @@ def cpp_namespace_checker(
     return output
 
 
-def class_dict_from_llm_cpp(
-    llm: ChatOpenAI, class_list: list[dict], code: str
-) -> ClassDict:
-    class_dict = {}
-    for cl in class_list:
-        class_base = ClassBaseData.from_llm(
-            system_prompt=CLASSES_FOUND_SYSTEM_PROMPT_JSON,
-            user_prompt=CLASSES_FOUND_USER_PROMPT,
-            llm=llm,
-            class_dict=cl,
-            code=code,
-        )
-        member_functions = {}
-        nested_classes = []
-        for member_fn in cl["member_functions"]:
-            fn_data = FnData.from_llm(
-                system_prompt=FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
-                user_prompt=FUNCTIONS_FOUND_USER_PROMPT,
-                llm=llm,
-                fn_name=member_fn["name"],
-                code=code,
-            )
-            function_name = (
-                member_fn["scope"].split("::")[-1] + "::" + member_fn["name"]
-            )
-            member_functions[function_name] = fn_data
-
-        for nested_class in cl["nested_classes"]:
-            nested_classes.append(nested_class["name"])
-
-        class_data = ClassData(
-            base_data=class_base,
-            member_functions=member_functions,
-            nested_classes=nested_classes,
-        )
-        class_dict[cl["name"]] = class_data
-    return ClassDict(data=class_dict)
-
-
 variables_dict_from_llm_cpp = partial(
     variables_dict_from_llm,
     VARIABLES_FOUND_SYSTEM_PROMPT_JSON,
@@ -385,6 +340,15 @@ fn_dict_from_llm_cpp = partial(
     fn_dict_from_llm,
     FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
     FUNCTIONS_FOUND_USER_PROMPT,
+)
+
+class_dict_from_llm_cpp = partial(
+    class_dict_from_llm,
+    CLASSES_FOUND_SYSTEM_PROMPT_JSON,
+    CLASSES_FOUND_USER_PROMPT,
+    FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
+    FUNCTIONS_FOUND_USER_PROMPT,
+    "::",
 )
 
 variables_dict_from_llm_cpp_multi_prompt = partial(

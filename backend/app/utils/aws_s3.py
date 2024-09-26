@@ -30,7 +30,7 @@ def generate_put_presigned_url(
             "Bucket": bucket,
             "Key": key,
             "ContentType": content_type,
-            # "Metadata": metadata,
+            "Metadata": metadata,
         },
         ExpiresIn=expires,
     )

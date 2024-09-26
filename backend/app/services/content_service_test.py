@@ -615,7 +615,9 @@ def test_disassociate_document_source_from_other_org(
         assert response.source_id == source_content_id
     finally:
         # Cleanup
-        with contextlib.suppress(HTTPException):
+        with contextlib.suppress(
+            HTTPException
+        ):  # this is to prevent the test from failing if the cleanup already happened
             content_service.disassociate_document_source(
                 current_user_with_org.organization_id, content_id, source_content_id
             )

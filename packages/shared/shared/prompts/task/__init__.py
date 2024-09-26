@@ -6,4 +6,5 @@ from . import (
     selected_text,
     code_critic_verifier,
     prompt_augmentation,
+    smart_instruction_run,
 )

@@ -3,6 +3,7 @@ import json
 from datetime import datetime
 from uuid import UUID
 
+from botocore.exceptions import ClientError
 from database.derived_content_types import DerivedContentTypeNames
 from database.models_v1 import (
     ChunkAndEmbedding,
@@ -31,6 +32,7 @@ from app.schemas.content_schema import (
     ContentSourceResponse,
     CreateContentRequest,
     DeleteDocumentSourceResponse,
+    DownloadContentResponse,
     ListContentInput,
     ListContentResult,
     ListContentResults,
@@ -38,7 +40,11 @@ from app.schemas.content_schema import (
     ListContentTypesResults,
 )
 from app.services.utils.content_utils import get_content_name
-from app.utils.aws_s3 import delete_file_from_s3
+from app.utils.aws_s3 import (
+    delete_file_from_s3,
+    generate_org_get_presigned_url,
+    head_org_object,
+)
 
 
 class ContentService:
@@ -616,9 +622,53 @@ class ContentService:
 
         return content
 
-    def delete_content(
-        self: "ContentService", organization_id: str, content_id: UUID
-    ) -> bool:
+    def get_content_download_url(
+        self, content_id: UUID, organization_id: str
+    ) -> DownloadContentResponse:
+        """
+        Get a presigned URL for downloading this content from S3
+        """
+        logger.info(f"Fetching content by ID {content_id}")
+
+        content: DerivedContent | None = self.content_repository.get_by_conditions(
+            [
+                Workspace.organization_id == organization_id,
+                DerivedContent.id == content_id,
+                DerivedContentType.type_name
+                == DerivedContentTypeNames.SUPPLEMENTAL_DOCUMENT.value,
+            ],
+            [Workspace, DerivedContentType],
+        )
+
+        if not content:
+            logger.error(f"Content {content_id} not found or not downloadable")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Content not found or not downloadable",
+            )
+
+        download_key = (
+            f"documents/{content.relative_path}"
+            if content.codebase_id is None
+            else f"{content.codebase_id}/{content.relative_path}"
+        )
+        logger.info(f"Trying download_key={download_key}")
+        try:
+            if head_org_object(organization_id, download_key):
+                return DownloadContentResponse(
+                    download_url=generate_org_get_presigned_url(
+                        organization_id, download_key
+                    ),
+                    content_name=content.content_name or "",
+                )
+        except ClientError:
+            logger.error("Content not found or not downloadable")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Content not found or not downloadable",
+            )
+
+    def delete_content(self, organization_id: str, content_id: UUID) -> bool:
         logger.info(f"Deleting content {content_id} for organization {organization_id}")
 
         # Check if the content exists and is associated with the organization

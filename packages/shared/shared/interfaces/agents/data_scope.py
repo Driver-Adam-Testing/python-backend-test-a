@@ -30,14 +30,16 @@ class DataScope(BaseModel):
             paths = [paths]
         for path in paths:
             if not any(
-                path == allowed_path or path.startswith(f"{allowed_path}")
+                path == allowed_path
+                or path.startswith(f"{allowed_path}")
+                or path == allowed_path.rstrip("/")
                 for allowed_path in self.paths
             ):
                 raise ValueError(f"Path '{path}' is not within the allowed data scope.")
         return True
 
     def into_datascope(self, paths: list[str] | str | None) -> "DataScope":
-        if paths is None:
+        if paths is None or paths == []:
             return self
         if isinstance(paths, str):
             paths = [paths]

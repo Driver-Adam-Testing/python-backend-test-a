@@ -19,7 +19,7 @@ def truncate_content_name(content_name: str) -> str:
 def populate_content_name() -> None:
     with Session(engine) as session:
         try:
-            # Query to get all derived_content of type application_note
+            print("Populating content_name field for application notes...")
             stmt = (
                 select(DerivedContent)
                 .join(DerivedContentType)
@@ -36,15 +36,38 @@ def populate_content_name() -> None:
                     content = row[0]
                     # Parse the JSON content
                     content_data = json.loads(content.content)
-                    # Assuming content_name is a field in the JSON content
-                    content_name = content_data.get("name")
-                    if content_name:
-                        # Truncate the content_name if necessary
-                        truncated_content_name = truncate_content_name(content_name)
-                        # Update the content_name field
-                        content.content_name = truncated_content_name
+                    # An error occurred: 'str' object has no attribute 'get'
+                    if isinstance(
+                        content_data, dict
+                    ):  # An error occurred: 'str' object has no attribute 'get'
+                        # Assuming content_name is a field in the JSON content
+                        content_name = content_data.get("name")
+                        if content_name:
+                            # Truncate the content_name if necessary
+                            truncated_content_name = truncate_content_name(content_name)
+                            # Update the content_name field
+                            content.content_name = truncated_content_name
                 except json.JSONDecodeError:
                     print(f"Failed to decode JSON for content ID: {content.id}")
+
+            pdfStatement = (
+                select(DerivedContent)
+                .join(DerivedContentType)
+                .where(
+                    DerivedContentType.type_name
+                    == DerivedContentTypeNames.SUPPLEMENTAL_DOCUMENT.value
+                )
+            )
+
+            print("Populating content_name field for PDFs...")
+            pdfs = session.execute(pdfStatement).all()
+
+            for pdf in pdfs:
+                content = pdf[0]
+                if content.content_name is None:
+                    content.content_name = content.relative_path.replace(
+                        "documents/", ""
+                    )
 
             # Commit the changes
             session.commit()

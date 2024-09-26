@@ -3,6 +3,7 @@ from database.models_v1 import DerivedContent
 from sqlalchemy.orm import selectinload
 from sqlmodel import select
 
+from shared.agent.agent_base import AgentBase
 from shared.agent.tools.tool_strict import ToolStrict
 
 
@@ -12,12 +13,12 @@ class OpenFileTool(ToolStrict):
     and display all the Content for that file.
 
     Attributes:
-        file_path (str): The path to the file to be opened.
+        file_path (str): The path to the file to be opened. PDFs cannot be opened.
     """
 
     file_path: str
 
-    def execute(self, agent) -> str:
+    def execute(self, agent: AgentBase) -> str:
         agent.scope.authorize(self.file_path)
 
         with get_session() as session:

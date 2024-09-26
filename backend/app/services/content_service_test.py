@@ -1,3 +1,11 @@
+"""
+DO NOT USE try-except in tests because it masks bugs.
+try:
+except HTTPException as e:
+Author: eric.miller@driverai.com
+"""
+
+import contextlib
 from collections.abc import Generator
 from datetime import datetime
 from uuid import uuid4
@@ -595,17 +603,22 @@ def test_disassociate_document_source_from_other_org(
     )
 
     try:
-        content_service.disassociate_document_source(
-            "some_other_org", content_id, source_content_id
-        )
-    except HTTPException as e:
-        assert e.status_code == 404
+        with pytest.raises(HTTPException):
+            content_service.disassociate_document_source(
+                "some_other_org", content_id, source_content_id
+            )
         response = content_service.disassociate_document_source(
             current_user_with_org.organization_id, content_id, source_content_id
         )
         assert response is not None
         assert response.document_id == content_id
         assert response.source_id == source_content_id
+    finally:
+        # Cleanup
+        with contextlib.suppress(HTTPException):
+            content_service.disassociate_document_source(
+                current_user_with_org.organization_id, content_id, source_content_id
+            )
 
 
 def test_edit_content(
@@ -689,11 +702,10 @@ def test_delete_content_from_other_org(
     content_id = delete_content.id
 
     try:
-        content_service.delete_content("some_other_org", content_id)
-    except HTTPException as e:
-        assert e.status_code == 404
-
-    content_service.delete_content(organization_id, content_id)
+        with pytest.raises(HTTPException):
+            content_service.delete_content("some_other_org", content_id)
+    finally:
+        content_service.delete_content(organization_id, content_id)
 
     # Ensure the content no longer exists after deletion
     with pytest.raises(

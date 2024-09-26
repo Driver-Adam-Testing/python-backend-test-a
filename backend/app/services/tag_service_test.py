@@ -1,3 +1,10 @@
+"""
+DO NOT USE try-except in tests because it masks bugs.
+try:
+except HTTPException as e:
+Author: eric.miller@driverai.com
+"""
+
 from collections.abc import Generator
 from datetime import datetime
 

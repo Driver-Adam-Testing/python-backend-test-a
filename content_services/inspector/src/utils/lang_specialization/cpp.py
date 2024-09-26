@@ -186,35 +186,34 @@ def cpp_class_checker(
     code: str, root_rel_path: Path, structured_output: bool = True
 ) -> dict | str | None:
     symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-    class_dicts = []
+    classes_dict = {}
     for s in symbols:
         if s["kind"] in CPP_CLASS_AND_STRUCT and not s["name"].startswith("__anon"):
-            class_dict = {}
-            class_dict["name"] = s["name"]
-            member_functions = []
+            name = s["name"]
+            methods = []
             nested_classes = []
-
             for sub_s in symbols:
                 if (
                     (sub_s.get("scopeKind") in CPP_CLASS_AND_STRUCT)
                     and (sub_s["scope"].split("::")[-1] == s["name"])
                     and (sub_s is not s)
                 ):
-                    # TODO: understand if member functions can be overloaded?
+                    # TODO: understand if methods can be overloaded?
                     if sub_s["kind"] in CPP_FUNCTIONS:
-                        member_functions.append(sub_s)
+                        methods.append(sub_s)
                     elif sub_s["kind"] in CPP_CLASS_AND_STRUCT:
                         nested_classes.append(sub_s)
-            class_dict["member_functions"] = member_functions
-            class_dict["nested_classes"] = nested_classes
-            class_dicts.append(class_dict)
-    if len(class_dicts) > 0:
+            classes_dict[name] = {
+                "methods": methods,
+                "nested_classes": nested_classes,
+            }
+    if len(classes_dict) > 0:
         if structured_output:
-            output = class_dicts
+            output = classes_dict
         else:
             output = "\nClasses to document in the code:\n\n"
-            for ds in class_dicts:
-                output += f"- {ds["name"]}\n"
+            for n in classes_dict:
+                output += f"- {n}\n"
     else:
         output = None
     return output

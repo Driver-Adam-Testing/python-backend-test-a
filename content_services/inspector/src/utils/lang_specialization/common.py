@@ -1,6 +1,6 @@
 from enum import IntEnum
 from pathlib import Path
-from typing import Self
+from typing import Any, Self
 
 import openai
 from pydantic import BaseModel
@@ -273,11 +273,11 @@ class ClassBaseData(BaseModel):
         llm: ChatOpenAI,
         system_prompt: str,
         user_prompt: str,
-        class_dict: str,
+        name: str,
         code: str,
     ) -> Self:
         user_prompt_complete = (
-            f"{user_prompt}Class to document: {class_dict["name"]}\n\nCode:\n\n{code}"
+            f"{user_prompt}Class to document: {name}\n\nCode:\n\n{code}"
         )
         content_raw = llm.generate_response(
             system_prompt=system_prompt,
@@ -290,7 +290,7 @@ class ClassBaseData(BaseModel):
 
 class ClassData(BaseModel):
     base_data: ClassBaseData
-    member_functions: dict[str, FnData]
+    methods: dict[str, FnData]
     nested_classes: list[str]
 
 
@@ -307,17 +307,14 @@ class ClassDict(BaseModel):
             non_dupe_members = 0
             if len(v.base_data.members) > 0:
                 for m in v.base_data.members:
-                    if (
-                        m.name not in v.member_functions
-                        and m.name not in v.nested_classes
-                    ):
+                    if m.name not in v.methods and m.name not in v.nested_classes:
                         output += f"    - `{m.name}`: {m.content}\n"
                         non_dupe_members += 1
             if non_dupe_members == 0:
                 output += "    - None\n"
             output += "\n**Member Functions**:\n"
-            if len(v.member_functions) > 0:
-                for n, m in v.member_functions.items():
+            if len(v.methods) > 0:
+                for n, m in v.methods.items():
                     output += render_function(n, m, 4)
             else:
                 output += "    - None\n"
@@ -417,21 +414,21 @@ def class_dict_from_llm(
     user_prompt_fn: str,
     class_fn_delimiter: str,
     llm: ChatOpenAI,
-    class_list: list[dict],
+    class_dict_raw: dict[str, dict[str, Any]],
     code: str,
 ) -> ClassDict:
-    class_dict = {}
-    for cl in class_list:
+    class_dict_documented = {}
+    for name, cls_data in class_dict_raw.items():
         class_base = ClassBaseData.from_llm(
             system_prompt=system_prompt_class,
             user_prompt=user_prompt_class,
             llm=llm,
-            class_dict=cl,
+            name=name,
             code=code,
         )
-        member_functions = {}
+        methods = {}
         nested_classes = []
-        for member_fn in cl["member_functions"]:
+        for member_fn in cls_data["methods"]:
             # TODO: handle overloaded function names here.
             fn_data = FnData.from_llm(
                 system_prompt=system_prompt_fn,
@@ -445,18 +442,18 @@ def class_dict_from_llm(
                 + class_fn_delimiter
                 + member_fn["name"]
             )
-            member_functions[function_name] = fn_data
+            methods[function_name] = fn_data
 
-        for nested_class in cl["nested_classes"]:
+        for nested_class in cls_data["nested_classes"]:
             nested_classes.append(nested_class["name"])
 
         class_data = ClassData(
             base_data=class_base,
-            member_functions=member_functions,
+            methods=methods,
             nested_classes=nested_classes,
         )
-        class_dict[cl["name"]] = class_data
-    return ClassDict(data=class_dict)
+        class_dict_documented[name] = class_data
+    return ClassDict(data=class_dict_documented)
 
 
 PADDING_LINES_TOP = 100

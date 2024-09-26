@@ -13,8 +13,7 @@ from .common import (
     variables_dict_from_llm_multi_prompt,
 )
 
-CPP_CLASS_AND_STRUCT = {"class", "struct"}
-CPP_DATA_STRUCTURES = {"enum", "union", "typedef"}
+CPP_DATA_STRUCTURES = {"class", "struct", "enum", "union", "typedef"}
 CPP_FUNCTIONS = {"function", "prototype"}
 CPP_MACROS = {"macro"}
 CPP_VARIABLES = {"variable", "externvar"}
@@ -59,33 +58,6 @@ TECHNICAL_CONCEPTS = """
 You will be given the content of a source code file. In a single paragraph of 3 to 5 sentences, describe the important technical features and their interactions in the file.
 
 In writing your description, write about about the conceptual use cases, applications, logic, and component interactions instead of focusing on particular functions, variables, etc.
-"""
-
-CLASSES_FOUND_SYSTEM_PROMPT_JSON = """
-You are an expert C++ programmer and a software engineering documentation expert. You write detailed documentation to explain code written in C++.
-
-You focus on writing technical documentation for structs and classes in C++. You are skilled at explaining technical details as well as recognizing and articulating the key conceptual components and purpose of software.
-
-You will be given the name of a struct or class to document and the source code where the struct or class is defined.
-
-Your job is to describe the struct or class. **Always respond using exactly the following JSON schema**:
-{
-    "type": <type, either class or struct>,
-    "members": [
-        {"name": <member_name1>, "content": <Terse 1 sentence description of the first member or field>},
-        {"name": <member_name2>, "content": <Terse 1 sentence description of the second member or field>},
-        ...
-    ],
-    "description": <one paragraph description of the struct or class>,
-}
-
-Return JSON according to the schema above. Do not use the format ```json ... ```, just return the JSON data.
-"""
-
-CLASSES_FOUND_USER_PROMPT = """
-Summarize the struct or class in the code provided below.
-
-- When describing an important data structure, provide detail that matches the complexity of the data structure. Large and complex data structures should get longer explanations, while small ones a single sentence.
 """
 
 DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON = """
@@ -184,24 +156,25 @@ VARIABLES_NONE_CONTENT = "\n---\nNo global variables defined in this file."
 
 def cpp_class_checker(
     code: str, root_rel_path: Path, structured_output: bool = True
-) -> dict | str | None:
+) -> list[dict] | str | None:
     symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
     classes_dict = {}
     for s in symbols:
-        if s["kind"] in CPP_CLASS_AND_STRUCT and not s["name"].startswith("__anon"):
+        if s["kind"] in CPP_DATA_STRUCTURES and not s["name"].startswith("__anon"):
             name = s["name"]
             methods = []
             nested_classes = []
             for sub_s in symbols:
                 if (
-                    (sub_s.get("scopeKind") in CPP_CLASS_AND_STRUCT)
+                    (sub_s.get("scope"))
+                    and (sub_s.get("scopeKind") in CPP_DATA_STRUCTURES)
                     and (sub_s["scope"].split("::")[-1] == s["name"])
                     and (sub_s is not s)
                 ):
                     # TODO: understand if methods can be overloaded?
                     if sub_s["kind"] in CPP_FUNCTIONS:
                         methods.append(sub_s)
-                    elif sub_s["kind"] in CPP_CLASS_AND_STRUCT:
+                    elif sub_s["kind"] in CPP_DATA_STRUCTURES:
                         nested_classes.append(sub_s)
             classes_dict[name] = {
                 "methods": methods,
@@ -256,9 +229,10 @@ def cpp_function_checker(
             contained_in_class = False
             for sub_s in symbols:
                 if (
-                    (sub_s["kind"] in CPP_CLASS_AND_STRUCT)
+                    (s.get("scope"))
+                    and (sub_s["kind"] in CPP_DATA_STRUCTURES)
                     and (s["scope"].split("::")[-1] == sub_s["name"])
-                    and (s.get("scopeKind") in CPP_CLASS_AND_STRUCT)
+                    and (s.get("scopeKind") in CPP_DATA_STRUCTURES)
                 ):
                     contained_in_class = True
                     break
@@ -268,7 +242,7 @@ def cpp_function_checker(
                 # so we append the class name to the function name to make that clearer in docs
                 fn_name = (
                     s["name"]
-                    if s.get("scopeKind") not in CPP_CLASS_AND_STRUCT
+                    if s.get("scopeKind") not in CPP_DATA_STRUCTURES
                     else s["scope"].split("::")[-1] + "::" + s["name"]
                 )
                 fn_list.append(fn_name)
@@ -343,8 +317,8 @@ fn_dict_from_llm_cpp = partial(
 
 class_dict_from_llm_cpp = partial(
     class_dict_from_llm,
-    CLASSES_FOUND_SYSTEM_PROMPT_JSON,
-    CLASSES_FOUND_USER_PROMPT,
+    DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
+    DATA_STRUCTURES_FOUND_USER_PROMPT,
     FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
     FUNCTIONS_FOUND_USER_PROMPT,
     "::",

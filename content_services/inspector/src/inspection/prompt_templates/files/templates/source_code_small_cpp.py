@@ -3,10 +3,8 @@ from utils.lang_specialization.cpp import (
     SOURCE_CODE_SMALL_SYSTEM_PROMPT_GENERAL_CPP,
     class_dict_from_llm_cpp,
     cpp_class_checker,
-    cpp_data_structure_checker,
     cpp_function_checker,
     cpp_variables_checker,
-    data_structure_dict_from_llm_cpp,
     fn_dict_from_llm_cpp,
     variables_dict_from_llm_cpp,
 )
@@ -36,7 +34,7 @@ SOURCE_CODE_SMALL_TEMPLATE_CPP = [
     ),
     (
         S.FN_COND_JSON,
-        "# Classes and Structs",
+        "# Data Structures",
         cpp_class_checker,
         class_dict_from_llm_cpp,
         None,
@@ -46,13 +44,6 @@ SOURCE_CODE_SMALL_TEMPLATE_CPP = [
         "# Free Functions",
         cpp_function_checker,
         fn_dict_from_llm_cpp,
-        None,
-    ),
-    (
-        S.FN_COND_JSON,
-        "# Data Structures",
-        cpp_data_structure_checker,
-        data_structure_dict_from_llm_cpp,
         None,
     ),
 ]

@@ -47,7 +47,6 @@ from app.utils.aws_s3 import (
 )
 
 # TODO adapt self.content_repository.get to also accept org_id as an argument to avoid the need to check the org_id in the service methods
-# TODO use logger.exception() instead of logger.error() to log exceptions
 
 
 class ContentService:
@@ -286,9 +285,9 @@ class ContentService:
         )
         try:
             results, total_count = self._get_list_content(organization_id, search_input)
-        except ValueError as e:
-            logger.error(
-                f"Error getting list of content for organization {organization_id}: {e!s}"
+        except ValueError:
+            logger.exception(
+                f"Error getting list of content for organization {organization_id}"
             )
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Bad Request"
@@ -497,8 +496,8 @@ class ContentService:
                 lct_inputs.sort_by,
                 lct_inputs.sort_direction,
             )
-        except ValueError as e:
-            logger.error(f"Error getting list of content types: {e!s}")
+        except ValueError:
+            logger.exception("Error getting list of content types")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Bad Request"
             )
@@ -669,7 +668,7 @@ class ContentService:
                     content_name=content.content_name or "",
                 )
         except ClientError:
-            logger.error("Content not found or not downloadable")
+            logger.exception("Content not found or not downloadable")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Content not found or not downloadable",
@@ -719,8 +718,8 @@ class ContentService:
                 delete_from_remote_storage(content, organization_id)
 
             return content_deleted
-        except IntegrityError as e:
-            logger.error(f"Error deleting content {content_id}: {e!s}")
+        except IntegrityError:
+            logger.exception(f"Error deleting content {content_id}")
             raise HTTPException(status_code=400, detail="Error deleting content")
 
 
@@ -767,8 +766,8 @@ def exec_delete_document_and_related_entities(
         session.delete(content)
         session.commit()
         return True
-    except IntegrityError as e:
-        logger.error(f"Error deleting content {content.id}: {e!s}")
+    except IntegrityError:
+        logger.exception(f"Error deleting content {content.id}")
         session.rollback()
         raise
 

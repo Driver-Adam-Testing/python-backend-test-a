@@ -60,3 +60,7 @@ class CodebaseFolderSummaryTool(ToolStrict):
 
             agent.add_search_results(SearchResults(results=search_results))
             return "\n".join(formatted_results)
+
+    @classmethod
+    def system_prompt(cls) -> str:
+        return """If there are any top or second level codebase folders in the searchable paths, use CodebaseFolderSummaryTool on the first iteration."""

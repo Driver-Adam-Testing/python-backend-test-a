@@ -7,6 +7,11 @@ from database.models_v1 import RuntimeLogAgentInstance, RuntimeLogAgentMessage
 
 from shared.agent.tools.tool_strict import ToolStrict
 from shared.interfaces.agents.data_scope import DataScope
+from shared.prompts.interface.iterations import (
+    PROMPT_FINAL_ITERATION,
+    PROMPT_FIRST_ITERATION,
+    PROMPT_MIDDLE_ITERATION,
+)
 from shared.utils.bcolors import print_dict
 
 
@@ -85,27 +90,26 @@ class AgentBase(ABC):
     def _increment_iterator_message(self) -> bool:
         self.iteration += 1
         if self.max_iterations > 1:
-            if self.iteration == 0:
+            if self.iteration == 1:
                 self.add_message(
                     {
                         "role": "user",
-                        "content": "Execute Tools. This is the first iteration, and tools must be executed to retrieve initial context.",
+                        "content": PROMPT_FIRST_ITERATION.format(
+                            remaining_iterations=self.max_iterations - self.iteration
+                        ),
                     }
                 )
-            elif self.iteration < self.max_iterations - 1:
+            elif self.iteration < self.max_iterations:
                 self.add_message(
                     {
                         "role": "user",
-                        "content": f"Execute Tools or Return Response. You have {self.max_iterations - self.iteration} more opportunities to execute tools before returning a response.",
+                        "content": PROMPT_MIDDLE_ITERATION.format(
+                            remaining_iterations=self.max_iterations - self.iteration
+                        ),
                     }
                 )
             else:
-                self.add_message(
-                    {
-                        "role": "user",
-                        "content": "Return Response. This is the final iteration, and a response must be returned.",
-                    }
-                )
+                self.add_message({"role": "user", "content": PROMPT_FINAL_ITERATION})
         return self.iteration <= self.max_iterations
 
     @abstractmethod

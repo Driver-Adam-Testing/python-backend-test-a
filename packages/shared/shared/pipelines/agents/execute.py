@@ -14,9 +14,8 @@ from shared.pipelines.agents.agent_prompt_augmentation import (
 )
 
 
-def execute_sequence(input: PipelineInput) -> PipelineResponse:
-    sequence_response = PipelineResponse(step_responses=[], final_result="")
-    current_prompt = PromptWithContext(prompt=input.prompt, context=input.context)
+def validate_pipeline(input: PipelineInput) -> None:
+    # Prompt augmentation must be the first step or not present.
     if any(
         step.step_type == PipelineStepType.PROMPT_AUGMENTATION
         for step in input.steps[1:]
@@ -25,36 +24,58 @@ def execute_sequence(input: PipelineInput) -> PipelineResponse:
             "Prompt augmentation steps are only allowed as the first step in the sequence."
         )
 
-    for _, step in enumerate(input.steps):
-        if step.scope.organization_id is None:
-            step.scope = input.scope
-        if step.prompt is None:
-            step.prompt = current_prompt
+    # No using agents without an organization_id
+    if not input.scope.organization_id:
+        raise PermissionError("Authorization Error: Organization Id cannot be None")
+
+
+def execute_sequence(input: PipelineInput) -> PipelineResponse:
+    validate_pipeline(input)
+    sequence_response = PipelineResponse(step_responses=[], final_result="")
+    sequence_prompt = PromptWithContext(prompt=input.prompt, context=input.context)
+    working_response = None
+    sequence_prompt.add_to_context(
+        {
+            "searchable_paths_and_root_directories": "these paths must be the path or path-prefix of any searches: "
+            + str(input.scope.paths)
+        }
+    )
+
+    for step in input.steps:
+        step.prompt = sequence_prompt
+        step.scope = input.scope
 
         match step.step_type:
             case PipelineStepType.PROMPT_AUGMENTATION:
                 response = run_agent_prompt_augmentation(step)
-
-            case PipelineStepType.DEFAULT:
-                response = run_agent_default(step)
-
-            case PipelineStepType.COPY_EDITOR:
-                response = run_agent_copy_editor(step)
+                sequence_prompt.add_to_context({"original_user_prompt": input.prompt})
+                sequence_response.step_responses.append(response)
+                sequence_prompt.prompt = response.agent_result
+                continue
 
             case PipelineStepType.CODE_CRITIC:
+                # Code critic expects the document as the prompt
+                if working_response:
+                    step.prompt.prompt = working_response
                 response = run_agent_code_critic__extract_verify_correct(step)
                 sequence_response.step_responses.append(response)
-                sequence_response.final_result = response.agent_result[-1]
-                current_prompt = PromptWithContext(
-                    prompt=response.agent_result[-1], context=input.context
-                )
+                working_response = response.agent_result[-1]
                 continue
-        # if step.step_type == PipelineStepType.EDIT_DOCUMENT:
-        #     return run_agent_edit_document(input)
-        sequence_response.step_responses.append(response)
-        sequence_response.final_result = response.agent_result
-        current_prompt = PromptWithContext(
-            prompt=response.agent_result, context=input.context
-        )
 
+            case PipelineStepType.COPY_EDITOR:
+                # Copy Editor expects the document as the prompt
+                if working_response:
+                    step.prompt.prompt = working_response
+                response = run_agent_copy_editor(step)
+
+            case PipelineStepType.DEFAULT:
+                # Default Agent makes no assumptions, it could be in the middle of a sequence or not. Assume the prompt, plus the working document of the sequence
+                if working_response:
+                    step.prompt.prompt = f"Enhance the working document:\n<document>\n{working_response}\n</document>\nAccording to the instructions\n{sequence_prompt.prompt}"
+                response = run_agent_default(step)
+
+        working_response = response.agent_result
+        sequence_response.step_responses.append(response)
+
+    sequence_response.final_result = sequence_response.step_responses[-1].agent_result
     return sequence_response

@@ -18,6 +18,10 @@ class OpenAIStrictAgent(AgentBase):
         self.client = OpenAI()
         super().__init__(*args, **kwargs)
 
+        for tool in tools:
+            if hasattr(tool, "system_prompt") and callable(tool.system_prompt):
+                self.add_message({"role": "system", "content": tool.system_prompt()})
+
     def _execute_tool_calls(self, tool_calls: any) -> None:
         """
         OpenAI expects all tool calls to return in several tool messages with tool_call_id.

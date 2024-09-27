@@ -59,3 +59,7 @@ class OpenFileTool(ToolStrict):
                 previous_chunk_text = chunk.text
 
             return "\n".join(formatted_results)
+
+    @classmethod
+    def system_prompt(cls) -> str:
+        return """Only use the OpenFileTool to open files with the full path of a source code extension."""

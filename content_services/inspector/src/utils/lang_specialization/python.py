@@ -323,6 +323,9 @@ class_dict_from_llm_py_multi_prompt = partial(
     classes_dict_from_llm_multi_prompt,
     CLASSES_FOUND_SYSTEM_PROMPT_JSON,
     CLASSES_FOUND_USER_PROMPT,
+    FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
+    FUNCTIONS_FOUND_USER_PROMPT,
+    ".",
 )
 
 fn_dict_from_llm_py_multi_prompt = partial(

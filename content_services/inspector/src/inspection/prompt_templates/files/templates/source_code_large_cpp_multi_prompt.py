@@ -1,9 +1,9 @@
 from utils.lang_specialization.cpp import (
     SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_CPP,
-    cpp_data_structure_checker,
+    classes_dict_from_llm_cpp_multi_prompt,
+    cpp_class_checker,
     cpp_function_checker,
     cpp_variables_checker,
-    data_structure_dict_from_llm_cpp_multi_prompt,
     fn_dict_from_llm_cpp_multi_prompt,
     variables_dict_from_llm_cpp_multi_prompt,
 )
@@ -40,8 +40,8 @@ SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CPP = [
     (
         S.FN_COND_JSON,
         "# Data Structures",
-        cpp_data_structure_checker,
-        data_structure_dict_from_llm_cpp_multi_prompt,
+        cpp_class_checker,
+        classes_dict_from_llm_cpp_multi_prompt,
         None,
     ),
     (

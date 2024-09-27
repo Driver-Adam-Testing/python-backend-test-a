@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 
 from database.db import get_session
 from database.models_v1 import RuntimeLogAgentInstance, RuntimeLogAgentMessage
+from pydantic import BaseModel
 
 from shared.agent.tools.tool_strict import ToolStrict
 from shared.interfaces.agents.data_scope import DataScope
@@ -72,20 +73,9 @@ class AgentBase(ABC):
         self.messages.append(message)
         if self.debug:
             self._print_agent_message(message)
-        if self.log:
-            self._log_agent_message(message)
 
     def _print_agent_message(self, message: any) -> None:
         print_dict(message)
-
-    def _log_agent_message(self, message: any) -> None:
-        log_message = RuntimeLogAgentMessage(
-            agent_instance_id=self.agent_id, message=message
-        )
-        with get_session() as session:
-            session.add(log_message)
-            session.commit()
-            session.refresh(log_message)
 
     def _increment_iterator_message(self) -> bool:
         self.iteration += 1
@@ -116,7 +106,7 @@ class AgentBase(ABC):
     def _execute_iteration(self) -> str | None:
         raise NotImplementedError()
 
-    def invoke(self, prompt: str | None = None) -> str:
+    def invoke(self, prompt: str | None = None) -> str | BaseModel:
         self.iteration = 0
         if prompt is not None:
             self.add_message({"role": "user", "content": prompt})
@@ -124,9 +114,19 @@ class AgentBase(ABC):
             response = self._execute_iteration()
             if response is not None:
                 if self.response_format is not None:
-                    return self.response_format(**json.loads(response))
+                    final_response = self.response_format(**json.loads(response))
                 else:
-                    return response
+                    final_response = response
+                if self.log:
+                    # TODO: find the last logged message, this is a hack to make the system faster by not logging on add_message
+                    with get_session() as session:
+                        for message in self.messages:
+                            log_message = RuntimeLogAgentMessage(
+                                agent_instance_id=self.agent_id, message=message
+                            )
+                            session.add(log_message)
+                        session.commit()
+                return final_response
         raise RuntimeError(
             "Agent failed to produce a valid response within the allowed iterations."
         )

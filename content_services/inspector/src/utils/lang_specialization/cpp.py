@@ -76,6 +76,7 @@ Your job is to describe the data structure. **Always respond using exactly the f
         ...
     ],
     "description": <one paragraph description of the data structure>,
+    "inherits_from": [<list of parent classes or structs>],
 }
 
 Return JSON according to the schema above. Do not use the format ```json ... ```, just return the JSON data.

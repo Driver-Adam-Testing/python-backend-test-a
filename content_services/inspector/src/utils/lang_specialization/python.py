@@ -76,6 +76,7 @@ Your job is to describe the class. **Always respond using exactly the following 
         ...
     ],
     "description": <one paragraph description of the class>,
+    "inherits_from": [<list of parent classes or structs>],
 }
 
 Return JSON according to the schema above. Do not use the format ```json ... ```, just return the JSON data.

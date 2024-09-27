@@ -239,18 +239,19 @@ def cpp_function_checker(
                     contained_in_class = True
                     break
 
+            fn_name = (
+                s["name"]
+                if s.get("scopeKind") not in CPP_DATA_STRUCTURES
+                else s["scope"].split("::")[-1] + "::" + s["name"]
+            )
             if not contained_in_class and fn_names.count(s["name"]) == 1:
                 # Some classes are defined in a different file than the functions of that class
                 # so we append the class name to the function name to make that clearer in docs
-                fn_name = (
-                    s["name"]
-                    if s.get("scopeKind") not in CPP_DATA_STRUCTURES
-                    else s["scope"].split("::")[-1] + "::" + s["name"]
-                )
                 fn_list.append(fn_name)
             elif not contained_in_class and fn_names.count(s["name"]) > 1:
                 # if the function is overloaded we append the the symbol dict
                 # such that when we generate we can isolate the function lines
+                s["name"] = fn_name
                 fn_list.append(s)
 
     if len(fn_list) > 0:

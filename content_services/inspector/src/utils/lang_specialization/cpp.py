@@ -5,6 +5,7 @@ from utils.codemap_ctags import extract_symbols_w_ctags
 
 from .common import (
     class_dict_from_llm,
+    classes_dict_from_llm_multi_prompt,
     data_structure_dict_from_llm,
     data_structure_dict_from_llm_multi_prompt,
     fn_dict_from_llm,
@@ -238,18 +239,19 @@ def cpp_function_checker(
                     contained_in_class = True
                     break
 
+            fn_name = (
+                s["name"]
+                if s.get("scopeKind") not in CPP_DATA_STRUCTURES
+                else s["scope"].split("::")[-1] + "::" + s["name"]
+            )
             if not contained_in_class and fn_names.count(s["name"]) == 1:
                 # Some classes are defined in a different file than the functions of that class
                 # so we append the class name to the function name to make that clearer in docs
-                fn_name = (
-                    s["name"]
-                    if s.get("scopeKind") not in CPP_DATA_STRUCTURES
-                    else s["scope"].split("::")[-1] + "::" + s["name"]
-                )
                 fn_list.append(fn_name)
             elif not contained_in_class and fn_names.count(s["name"]) > 1:
                 # if the function is overloaded we append the the symbol dict
                 # such that when we generate we can isolate the function lines
+                s["name"] = fn_name
                 fn_list.append(s)
 
     if len(fn_list) > 0:
@@ -341,4 +343,13 @@ fn_dict_from_llm_cpp_multi_prompt = partial(
     fn_dict_from_llm_multi_prompt,
     FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
     FUNCTIONS_FOUND_USER_PROMPT,
+)
+
+classes_dict_from_llm_cpp_multi_prompt = partial(
+    classes_dict_from_llm_multi_prompt,
+    DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
+    DATA_STRUCTURES_FOUND_USER_PROMPT,
+    FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
+    FUNCTIONS_FOUND_USER_PROMPT,
+    "::",
 )

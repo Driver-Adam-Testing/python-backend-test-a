@@ -1,4 +1,3 @@
-from utils.lang_specialization.common import classes_dict_from_llm_multi_prompt
 from utils.lang_specialization.default_multi_context import (
     SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT_MULTI_CONTEXT,
     SOURCE_CODE_PURPOSE_FROM_CHUNKS,
@@ -6,6 +5,7 @@ from utils.lang_specialization.default_multi_context import (
 )
 from utils.lang_specialization.python import (
     SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_PY,
+    class_dict_from_llm_py_multi_prompt,
     fn_dict_from_llm_py_multi_prompt,
     py_class_checker,
     py_function_checker,
@@ -41,7 +41,7 @@ SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_PY = [
         S.FN_COND_JSON,
         "# Classes",
         py_class_checker,
-        classes_dict_from_llm_multi_prompt,
+        class_dict_from_llm_py_multi_prompt,
         None,
     ),
     (

@@ -4,6 +4,8 @@ from pathlib import Path
 from utils.codemap_ctags import extract_symbols_w_ctags
 
 from .common import (
+    class_dict_from_llm,
+    classes_dict_from_llm_multi_prompt,
     data_structure_dict_from_llm,
     data_structure_dict_from_llm_multi_prompt,
     fn_dict_from_llm,
@@ -66,6 +68,7 @@ Your job is to describe the data structure. **Always respond using exactly the f
         ...
     ],
     "description": <one paragraph description of the data structure>,
+    "inherits_from": [<list of parent classes or structs>],
 }
 
 Return JSON according to the schema above. Do not use the format ```json ... ```, just return the JSON data.
@@ -142,6 +145,46 @@ Summarize the variable in the code provided below.
 """
 
 VARIABLES_NONE_CONTENT = "\n---\nNo global variables defined in this file."
+
+
+def header_class_checker(
+    code: str, root_rel_path: Path, structured_output: bool = True
+) -> list[dict] | str | None:
+    symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
+    classes_dict = {}
+    for s in symbols:
+        if s["kind"] in C_OR_CPP_HEADER_DATA_STRUCTURES and not s["name"].startswith(
+            "__anon"
+        ):
+            name = s["name"]
+            methods = []
+            nested_classes = []
+            for sub_s in symbols:
+                if (
+                    (sub_s.get("scope"))
+                    and (sub_s.get("scopeKind") in C_OR_CPP_HEADER_DATA_STRUCTURES)
+                    and (sub_s["scope"].split("::")[-1] == name)
+                    and (sub_s is not s)
+                ):
+                    # TODO: understand if methods can be overloaded?
+                    if sub_s["kind"] in C_OR_CPP_HEADER_FUNCTIONS:
+                        methods.append(sub_s)
+                    elif sub_s["kind"] in C_OR_CPP_HEADER_DATA_STRUCTURES:
+                        nested_classes.append(sub_s)
+            classes_dict[name] = {
+                "methods": methods,
+                "nested_classes": nested_classes,
+            }
+    if len(classes_dict) > 0:
+        if structured_output:
+            output = classes_dict
+        else:
+            output = "\nClasses to document in the code:\n\n"
+            for n in classes_dict:
+                output += f"- {n}\n"
+    else:
+        output = None
+    return output
 
 
 def header_data_structure_checker(
@@ -223,6 +266,15 @@ fn_dict_from_llm_header = partial(
     FUNCTIONS_FOUND_USER_PROMPT,
 )
 
+class_dict_from_llm_header = partial(
+    class_dict_from_llm,
+    DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
+    DATA_STRUCTURES_FOUND_USER_PROMPT,
+    FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
+    FUNCTIONS_FOUND_USER_PROMPT,
+    "::",
+)
+
 variables_dict_from_llm_header_multi_prompt = partial(
     variables_dict_from_llm_multi_prompt,
     VARIABLES_FOUND_SYSTEM_PROMPT_JSON,
@@ -239,4 +291,13 @@ fn_dict_from_llm_header_multi_prompt = partial(
     fn_dict_from_llm_multi_prompt,
     FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
     FUNCTIONS_FOUND_USER_PROMPT,
+)
+
+classes_dict_from_llm_header_multi_prompt = partial(
+    classes_dict_from_llm_multi_prompt,
+    DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
+    DATA_STRUCTURES_FOUND_USER_PROMPT,
+    FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
+    FUNCTIONS_FOUND_USER_PROMPT,
+    "::",
 )

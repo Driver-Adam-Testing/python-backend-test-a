@@ -20,14 +20,14 @@ SOURCE_CODE_LARGE_TEMPLATE_VERILOG = [
     (S.RAW, "# Symbol Documentation"),
     (
         S.FN_COND_JSON,
-        "\n---\n## Modules",
+        "# Modules",
         verilog_module_checker,
         module_dict_from_llm_verilog,
         MODULES_NONE_CONTENT,
     ),
     (
         S.FN_COND_JSON,
-        "\n---\n## Functions and Tasks",
+        "# Functions and Tasks",
         verilog_fntask_checker,
         fntask_dict_from_llm_verilog,
         FUNCTIONS_AND_TASKS_NONE_CONTENT,

@@ -521,7 +521,9 @@ def symbols_dict_from_llm_multi_prompt(
         for s in symbols_list:
             if symbol["name"] == s:
                 start_line = symbol["line"]
-                end_line = symbol.get("end", symbol["line"])
+                end_line = symbol.get(
+                    "end", symbol["line"] + BLIND_ADVANCE_IF_NO_END_LINE
+                )
                 symbol_code = "\n".join(
                     code.splitlines()[
                         start_line - PADDING_LINES_TOP : end_line + PADDING_LINES_BOTTOM
@@ -593,24 +595,94 @@ def data_structure_dict_from_llm_multi_prompt(
 
 
 def classes_dict_from_llm_multi_prompt(
-    system_prompt: str,
-    user_prompt: str,
+    system_prompt_class: str,
+    user_prompt_class: str,
+    system_prompt_function: str,
+    user_prompt_function: str,
+    class_fn_delimiter: str,
     llm: ChatOpenAI,
-    classes_list: list[str],
+    class_dict_raw: dict[str, dict[str, Any]],
     code: str,
     root_rel_path: Path,
 ) -> ClassDict:
-    symbols_dict = symbols_dict_from_llm_multi_prompt(
-        llm,
-        classes_list,
-        code,
-        root_rel_path,
-        ClassData,
-        system_prompt,
-        user_prompt,
-        MAX_CLASSES_TO_DOCUMENT,
-    )
-    return ClassDict(data=symbols_dict)
+    from shared.chunking.text_splitter import split_text
+
+    symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
+    class_data_dict = {}
+    for symbol in symbols:
+        for cls_name, cls_data in class_dict_raw.items():
+            if symbol["name"] == cls_name:
+                start_line = symbol["line"]
+                end_line = symbol.get(
+                    "end", symbol["line"] + BLIND_ADVANCE_IF_NO_END_LINE
+                )
+                class_code = "\n".join(code.splitlines()[start_line - 1 : end_line + 1])
+                code_chunks = split_text(
+                    text=class_code,
+                    chunk_size=SYMBOL_MAX_CHUNK_SIZE,
+                    chunk_overlap=SYMBOL_CHUNK_OVERLAP,
+                )
+                if len(code_chunks) == 1:
+                    class_data_dict[cls_name] = class_dict_from_llm(
+                        system_prompt_class=system_prompt_class,
+                        user_prompt_class=user_prompt_class,
+                        system_prompt_fn=system_prompt_function,
+                        user_prompt_fn=user_prompt_function,
+                        class_fn_delimiter=class_fn_delimiter,
+                        llm=llm,
+                        class_dict_raw={cls_name: cls_data},
+                        code=class_code,
+                    ).data[cls_name]
+                elif len(code_chunks) > 1:
+                    # Catch edge case where a single class is too large for context
+                    # This documents the class based on first chunk only
+                    # then each method is chunked individally
+                    # TODO: consider compression loop here
+                    class_code = code_chunks[0].text
+                    class_base_data = ClassBaseData.from_llm(
+                        llm=llm,
+                        system_prompt=system_prompt_class,
+                        user_prompt=user_prompt_class,
+                        name=cls_name,
+                        code=code_chunks[0].text,
+                    )
+                    methods = {}
+                    nested_classes = []
+                    for m in cls_data["methods"]:
+                        m_name = m["name"]
+                        scoped_name = cls_name + class_fn_delimiter + m_name
+                        m_start_line = m["line"]
+                        m_end_line = m.get(
+                            "end", m_start_line + BLIND_ADVANCE_IF_NO_END_LINE
+                        )
+                        m_code = "\n".join(
+                            code.splitlines()[m_start_line - 1 : m_end_line + 1]
+                        )
+                        # Use list to handle method overloading, if present.
+                        if scoped_name not in methods:
+                            methods[scoped_name] = []
+                        methods[scoped_name].append(
+                            FnData.from_llm(
+                                system_prompt=system_prompt_function,
+                                user_prompt=user_prompt_function,
+                                llm=llm,
+                                fn_name=m_name,
+                                code=m_code,
+                            )
+                        )
+                    for nested_class in cls_data["nested_classes"]:
+                        nested_classes.append(nested_class["name"])
+
+                    class_data = ClassData(
+                        base_data=class_base_data,
+                        methods=methods,
+                        nested_classes=nested_classes,
+                    )
+                    class_data_dict[cls_name] = class_data
+                break
+        if len(class_data_dict) >= MAX_CLASSES_TO_DOCUMENT:
+            break
+    return ClassDict(data=class_data_dict)
 
 
 def fn_dict_from_llm_multi_prompt(

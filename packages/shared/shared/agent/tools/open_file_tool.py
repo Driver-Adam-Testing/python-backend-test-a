@@ -62,4 +62,4 @@ class OpenFileTool(ToolStrict):
 
     @classmethod
     def system_prompt(cls) -> str:
-        return """Only use the OpenFileTool to open files with the full path of a source code extension."""
+        return """Use the OpenFileTool to read a source code file in it's entirety. File paths must have a known source code extension."""

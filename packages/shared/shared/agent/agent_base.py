@@ -7,6 +7,11 @@ from database.models_v1 import RuntimeLogAgentInstance, RuntimeLogAgentMessage
 
 from shared.agent.tools.tool_strict import ToolStrict
 from shared.interfaces.agents.data_scope import DataScope
+from shared.prompts.interface.iterations import (
+    PROMPT_FINAL_ITERATION,
+    PROMPT_FIRST_ITERATION,
+    PROMPT_MIDDLE_ITERATION,
+)
 from shared.utils.bcolors import print_dict
 
 
@@ -21,7 +26,7 @@ class AgentBase(ABC):
         response_format: type | None = None,
         log: bool = True,
         debug: bool = True,
-    ):
+    ) -> None:
         # TODO: add ModelConfig (to get model metadata during execution)
         # TODO: Turn on logging
 
@@ -56,10 +61,10 @@ class AgentBase(ABC):
                     session.refresh(agent_instance)
                     self.agent_id = agent_instance.id
 
-    def add_search_results(self, results):
+    def add_search_results(self, results: any) -> None:
         self.search_results.append(results)
 
-    def add_message(self, message: any):
+    def add_message(self, message: any) -> None:
         if isinstance(message, str):
             message = {"role": "user", "content": message}
         elif hasattr(message, "to_dict") and callable(message.to_dict):
@@ -70,10 +75,10 @@ class AgentBase(ABC):
         if self.log:
             self._log_agent_message(message)
 
-    def _print_agent_message(self, message: any):
+    def _print_agent_message(self, message: any) -> None:
         print_dict(message)
 
-    def _log_agent_message(self, message: any):
+    def _log_agent_message(self, message: any) -> None:
         log_message = RuntimeLogAgentMessage(
             agent_instance_id=self.agent_id, message=message
         )
@@ -83,21 +88,35 @@ class AgentBase(ABC):
             session.refresh(log_message)
 
     def _increment_iterator_message(self) -> bool:
-        if self.max_iterations > 1:
-            self.add_message(
-                {
-                    "role": "user",
-                    "content": f"There are {self.max_iterations - self.iteration} remaining AI agent iterations remaining to solve the problem.",
-                }
-            )
         self.iteration += 1
+        if self.max_iterations > 1:
+            if self.iteration == 1:
+                self.add_message(
+                    {
+                        "role": "user",
+                        "content": PROMPT_FIRST_ITERATION.format(
+                            remaining_iterations=self.max_iterations - self.iteration
+                        ),
+                    }
+                )
+            elif self.iteration < self.max_iterations:
+                self.add_message(
+                    {
+                        "role": "user",
+                        "content": PROMPT_MIDDLE_ITERATION.format(
+                            remaining_iterations=self.max_iterations - self.iteration
+                        ),
+                    }
+                )
+            else:
+                self.add_message({"role": "user", "content": PROMPT_FINAL_ITERATION})
         return self.iteration <= self.max_iterations
 
     @abstractmethod
     def _execute_iteration(self) -> str | None:
         raise NotImplementedError()
 
-    def invoke(self, prompt: str | None = None):
+    def invoke(self, prompt: str | None = None) -> str:
         self.iteration = 0
         if prompt is not None:
             self.add_message({"role": "user", "content": prompt})

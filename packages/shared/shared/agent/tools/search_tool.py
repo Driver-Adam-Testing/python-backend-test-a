@@ -65,6 +65,9 @@ class SearchTool(ToolStrict):
                         DerivedContentTypeNames.LONG_DESCRIPTION.value,
                         DerivedContentTypeNames.CHUNK_DESCRIPTIONS.value,
                         DerivedContentTypeNames.SYMBOL.value,
+                        DerivedContentTypeNames.PDF_VISUAL_SUMMARY.value,
+                        DerivedContentTypeNames.PDF_TEXT_SUMMARY.value,
+                        DerivedContentTypeNames.PDF_IMAGE_SUMMARY.value,
                     ]
                 )
             elif content_type == self.SearchToolInputContentType.pdf_content:
@@ -126,7 +129,7 @@ class SearchTool(ToolStrict):
             metadata = result.metadata
             content_type = metadata.get("content_type", "")
             relative_path = metadata.get("relative_path", "")
-
+            # TODO: add formatting to the interface. This would allow us to share then
             formatted_result = f"""<result>
                 <content>{content}</content>
                 <content_type>{content_type}</content_type>
@@ -135,3 +138,7 @@ class SearchTool(ToolStrict):
             formatted_results.append(formatted_result.strip())
 
         return "\n".join(formatted_results)
+
+    @classmethod
+    def system_prompt(cls) -> str:
+        return """If you don't have enough information about the project to create a response, use SearchTool. Never return a response without Search Results."""

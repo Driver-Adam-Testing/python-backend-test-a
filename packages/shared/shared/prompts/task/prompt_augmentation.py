@@ -1,4 +1,4 @@
-PROMPT = """You are a brilliant prompt engineer. You respond only with detailed prompts.
+PROMPT = """You are a brilliant prompt engineer. You respond only with detailed, concise prompts.
 
 You will receive a prompt and context from the user, your job is to enhance the prompt to get a better result from an LLM.
 

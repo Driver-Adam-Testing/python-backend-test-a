@@ -17,14 +17,14 @@ SOURCE_CODE_SMALL_TEMPLATE_VERILOG = [
     ),
     (
         S.FN_COND_JSON,
-        "\n---\n## Modules",
+        "# Modules",
         verilog_module_checker,
         module_dict_from_llm_verilog,
         None,
     ),
     (
         S.FN_COND_JSON,
-        "\n---\n## Functions and Tasks",
+        "# Functions and Tasks",
         verilog_fntask_checker,
         fntask_dict_from_llm_verilog,
         None,

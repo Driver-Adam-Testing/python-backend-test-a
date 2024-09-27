@@ -51,8 +51,11 @@ class PipelineStepConfiguration(AgentConfiguration):
         if new_step.step_type == PipelineStepType.EDIT_DOCUMENT:
             new_step.tool_names = ["SearchTool", "OpenFileTool"]
             new_step.system_prompts = [
-                "voice.software_engineer" "interface.technical_context_interface",
+                "voice.software_engineer",
+                "voice.copy_editor",
+                "interface.technical_context_interface",
                 "task.selected_text",
+                "task.edit_document",
             ]
             new_step.iterations = 2
 

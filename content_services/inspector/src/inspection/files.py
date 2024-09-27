@@ -13,11 +13,17 @@ from utils.lang_specialization.common import Lang
 from utils.models import ChatOpenAI
 from utils.templates import Template
 
-from inspection.prompt_templates.files.templates.metadata_default import (
-    METADATA_TEMPLATE,
+from inspection.prompt_templates.files.templates.metadata_large_default import (
+    METADATA_LARGE_TEMPLATE,
+)
+from inspection.prompt_templates.files.templates.metadata_medium_default import (
+    METADATA_MEDIUM_TEMPLATE,
 )
 from inspection.prompt_templates.files.templates.metadata_multi_context_default import (
     METADATA_MULTI_CONTEXT_TEMPLATE,
+)
+from inspection.prompt_templates.files.templates.metadata_small_default import (
+    METADATA_SMALL_TEMPLATE,
 )
 from inspection.prompt_templates.files.templates.source_code_large_c import (
     SOURCE_CODE_LARGE_TEMPLATE_C,
@@ -74,14 +80,48 @@ from inspection.prompt_templates.files.templates.source_code_small_verilog impor
 PARENT_PATH = Path(__file__).parent
 
 
-class FileEnum(IntEnum):
+SMALL_METADATA_FILE_CUTOFF_BYTES = 500
+MEDIUM_METADATA_FILE_CUTOFF_BYTES = 2500
+
+
+class _FileEnumLLM(IntEnum):
     SOURCE_CODE_LARGE = 0
     SOURCE_CODE_SMALL = 1
     METADATA = 2
 
 
+class _FileKindLLM(BaseModel):
+    kind: _FileEnumLLM
+
+
+class FileEnum(IntEnum):
+    SOURCE_CODE_LARGE = 0
+    SOURCE_CODE_SMALL = 1
+    METADATA_LARGE = 2
+    METADATA_MEDIUM = 3
+    METADATA_SMALL = 4
+
+
 class FileKind(BaseModel):
     kind: FileEnum
+
+    @classmethod
+    def _from_file_kind_llm(cls, code: str, fk_llm: _FileKindLLM) -> Self:
+        match fk_llm.kind:
+            case _FileEnumLLM.METADATA:
+                num_bytes = len(code.encode("utf-8"))
+                if num_bytes <= SMALL_METADATA_FILE_CUTOFF_BYTES:
+                    return cls(kind=FileEnum.METADATA_SMALL)
+                elif num_bytes <= MEDIUM_METADATA_FILE_CUTOFF_BYTES:
+                    return cls(kind=FileEnum.METADATA_MEDIUM)
+                else:
+                    return cls(kind=FileEnum.METADATA_LARGE)
+            case _FileEnumLLM.SOURCE_CODE_LARGE:
+                return cls(kind=FileEnum.SOURCE_CODE_LARGE)
+            case _FileEnumLLM.SOURCE_CODE_SMALL:
+                return cls(kind=FileEnum.SOURCE_CODE_SMALL)
+            case _:
+                raise ValueError("Unreachable")
 
     @classmethod
     def from_llm(
@@ -98,7 +138,8 @@ class FileKind(BaseModel):
         human_prompt += f"File name: {file_name}\n\nFile contents:\n\n{code}"
         file_kind_raw = llm.generate_response(system_prompt, human_prompt)
         try:
-            file_kind = cls(kind=int(file_kind_raw))
+            file_kind_from_llm = _FileKindLLM(kind=int(file_kind_raw))
+            file_kind = cls._from_file_kind_llm(code=code, fk_llm=file_kind_from_llm)
         except ValueError as e:
             logging.warn(
                 f"Failed to parse integer from LLM response to determine file kind for file {file_name}: {e}"
@@ -129,18 +170,36 @@ SOURCE_CODE_SMALL_BY_LANG = {
     Lang.PYTHON: SOURCE_CODE_SMALL_TEMPLATE_PY,
     Lang.VERILOG: SOURCE_CODE_SMALL_TEMPLATE_VERILOG,
 }
-METADATA_BY_LANG = {
-    Lang.DEFAULT: METADATA_TEMPLATE,
-    Lang.C: METADATA_TEMPLATE,
-    Lang.CPP: METADATA_TEMPLATE,
-    Lang.HEADER: METADATA_TEMPLATE,
-    Lang.PYTHON: METADATA_TEMPLATE,
-    Lang.VERILOG: METADATA_TEMPLATE,
+METADATA_SMALL_BY_LANG = {
+    Lang.DEFAULT: METADATA_SMALL_TEMPLATE,
+    Lang.C: METADATA_SMALL_TEMPLATE,
+    Lang.CPP: METADATA_SMALL_TEMPLATE,
+    Lang.HEADER: METADATA_SMALL_TEMPLATE,
+    Lang.PYTHON: METADATA_SMALL_TEMPLATE,
+    Lang.VERILOG: METADATA_SMALL_TEMPLATE,
+}
+METADATA_MEDIUM_BY_LANG = {
+    Lang.DEFAULT: METADATA_MEDIUM_TEMPLATE,
+    Lang.C: METADATA_MEDIUM_TEMPLATE,
+    Lang.CPP: METADATA_MEDIUM_TEMPLATE,
+    Lang.HEADER: METADATA_MEDIUM_TEMPLATE,
+    Lang.PYTHON: METADATA_MEDIUM_TEMPLATE,
+    Lang.VERILOG: METADATA_MEDIUM_TEMPLATE,
+}
+METADATA_LARGE_BY_LANG = {
+    Lang.DEFAULT: METADATA_LARGE_TEMPLATE,
+    Lang.C: METADATA_LARGE_TEMPLATE,
+    Lang.CPP: METADATA_LARGE_TEMPLATE,
+    Lang.HEADER: METADATA_LARGE_TEMPLATE,
+    Lang.PYTHON: METADATA_LARGE_TEMPLATE,
+    Lang.VERILOG: METADATA_LARGE_TEMPLATE,
 }
 TEMPLATE_DATA = {
     FileEnum.SOURCE_CODE_LARGE: SOURCE_CODE_LARGE_BY_LANG,
     FileEnum.SOURCE_CODE_SMALL: SOURCE_CODE_SMALL_BY_LANG,
-    FileEnum.METADATA: METADATA_BY_LANG,
+    FileEnum.METADATA_LARGE: METADATA_LARGE_BY_LANG,
+    FileEnum.METADATA_MEDIUM: METADATA_MEDIUM_BY_LANG,
+    FileEnum.METADATA_SMALL: METADATA_SMALL_BY_LANG,
 }
 
 
@@ -150,7 +209,9 @@ def file_long_from_code(
     system_prompt = get_prompt_template(
         PARENT_PATH / "prompt_templates/files/long_from_code.txt"
     )
-    human_prompt = f"`{file_name}` in codebase `{codebase_name}` with path `{str(path)}`:\n\n{code}"
+    human_prompt = (
+        f"`{file_name}` in codebase `{codebase_name}` with path `{path!s}`:\n\n{code}"
+    )
     return llm.generate_response(system_prompt, human_prompt)
 
 
@@ -261,7 +322,8 @@ def _return_with_simple_message(message: str) -> dict[str, Any]:
     }
 
 
-def comprehend_file_top_down(
+# TODO: address C901
+def comprehend_file_top_down(  # noqa: C901
     llm: ChatOpenAI,
     node: LiteNode,
     source_code: str,

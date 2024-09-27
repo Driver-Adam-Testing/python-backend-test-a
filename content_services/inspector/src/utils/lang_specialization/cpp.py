@@ -195,7 +195,7 @@ def cpp_class_checker(
             for sub_s in symbols:
                 if (
                     (sub_s.get("scopeKind") in CPP_CLASS_AND_STRUCT)
-                    and (sub_s["scope"].split("::")[-1] == s["name"])
+                    and (sub_s["scope"].split("::")[-1] == name)
                     and (sub_s is not s)
                 ):
                     # TODO: understand if methods can be overloaded?

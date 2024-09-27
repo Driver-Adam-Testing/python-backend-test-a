@@ -1,19 +1,21 @@
 from functools import partial
 from pathlib import Path
+from typing import Any
 
 from utils.codemap_ctags import extract_symbols_w_ctags
 
 from .common import (
-    data_structure_dict_from_llm,
-    data_structure_dict_from_llm_multi_prompt,
+    class_dict_from_llm,
+    classes_dict_from_llm_multi_prompt,
     fn_dict_from_llm,
     fn_dict_from_llm_multi_prompt,
     variables_dict_from_llm,
     variables_dict_from_llm_multi_prompt,
 )
 
-PY_DATA_STRUCTURES = {"class"}
-PY_FUNCTIONS = {"function", "member"}
+PY_CLASS = {"class"}
+PY_FUNCTIONS = {"function"}
+PY_METHODS = {"member"}
 PY_VARIABLES = {"variable"}
 
 
@@ -58,6 +60,67 @@ You will be given the content of a source code file. In a single paragraph of 3 
 In writing your description, write about about the conceptual use cases, applications, logic, and component interactions instead of focusing on particular classes, functions, variables, etc.
 """
 
+CLASSES_FOUND_SYSTEM_PROMPT_JSON = """
+You are an expert Python programmer and a software engineering documentation expert. You write detailed documentation to explain code written in Python.
+
+You focus on writing technical documentation for classes in Python. You are skilled at explaining technical details as well as recognizing and articulating the key conceptual components and purpose of software.
+
+You will be given the name of a class to document and the source code where the class is defined.
+
+Your job is to describe the class. **Always respond using exactly the following JSON schema**:
+{
+    "type": class,
+    "members": [
+        {"name": <member_name1>, "content": <Terse 1 sentence description of the first instance or class variable>},
+        {"name": <member_name2>, "content": <Terse 1 sentence description of the second instance or class variable>},
+        ...
+    ],
+    "description": <one paragraph description of the class>,
+}
+
+Return JSON according to the schema above. Do not use the format ```json ... ```, just return the JSON data.
+"""
+
+CLASSES_FOUND_USER_PROMPT = """
+Summarize the class in the code provided below.
+
+- When describing a class, provide detail that matches the complexity of the class. Large and complex classes with many members should get longer explanations, while small ones a single sentence.
+"""
+
+METHODS_FOUND_SYSTEM_PROMPT_JSON = """
+You are an expert Python programmer and a software engineering documentation expert. You write detailed documentation to explain code written in Python.
+
+You focus on writing technical documentation for class methods. You are skilled at explaining technical details as well as recognizing and articulating the key conceptual components and purpose of software.
+
+You will be given the name of a class method to document and the source code where the function is defined.
+
+Identify the associated class in your description and always include any `self` or `cls` arguments that exist in a given method as an input.
+
+Your job is to describe the function. **Always respond using exactly the following JSON schema**:
+{
+    "single_sentence": <terse single sentence description of the function>,
+    "inputs": [
+        {"name": <input_arg1>, "content": <description of input argument 1>},
+        {"name": <input_arg2>, "content": <description of input argument 2>},
+        ...
+    ],
+    "control_flow": [
+        <bullet point 1 for description of control flow>,
+        <bullet point 2 for description of control flow>,
+        ...
+    ],
+    "output": <description of output>
+}
+
+Return JSON according to the schema above. Do not use the format ```json ... ```, just return the JSON data.
+"""
+
+METHODS_FOUND_USER_PROMPT = """
+Summarize the class method in the code provided below. Describe the inputs, control flow and logic, and output.
+
+- When describing a class method, provide detail that matches the complexity of the function body. Large and complex functions should get longer explanations, while small ones much less.
+"""
+
 DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON = """
 You are an expert Python programmer and a software engineering documentation expert. You write detailed documentation to explain code written in Python.
 
@@ -88,15 +151,12 @@ Summarize the data structure in the code provided below.
 
 DATA_STRUCTURES_NONE_CONTENT = "\n---\nNo custom data structures defined in this file."
 
-
 FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON = """
 You are an expert Python programmer and a software engineering documentation expert. You write detailed documentation to explain code written in Python.
 
-You focus on writing technical documentation for functions and class methods. You are skilled at explaining technical details as well as recognizing and articulating the key conceptual components and purpose of software.
+You focus on writing technical documentation for functions. You are skilled at explaining technical details as well as recognizing and articulating the key conceptual components and purpose of software.
 
-You will be given the name of a function or class method to document and the source code where the function is defined.
-
-When documenting a class method, identify the associated class in your description and always include any `self` or `cls` arguments that exist in a given method.
+You will be given the name of a function to document and the source code where the function is defined.
 
 Your job is to describe the function. **Always respond using exactly the following JSON schema**:
 {
@@ -118,9 +178,9 @@ Return JSON according to the schema above. Do not use the format ```json ... ```
 """
 
 FUNCTIONS_FOUND_USER_PROMPT = """
-Summarize the function or class method in the code provided below. Describe the inputs, control flow and logic, and output.
+Summarize the function in the code provided below. Describe the inputs, control flow and logic, and output.
 
-- When describing a function or class method, provide detail that matches the complexity of the function body. Large and complex functions should get longer explanations, while small ones much less.
+- When describing a function, provide detail that matches the complexity of the function body. Large and complex functions should get longer explanations, while small ones much less.
 """
 
 FUNCTIONS_NONE_CONTENT = "\n---\nNo functions or class methods defined in this file."
@@ -152,23 +212,65 @@ Summarize the variable in the code provided below.
 VARIABLES_NONE_CONTENT = "\n---\nNo global variables defined in this file."
 
 
-def py_data_structure_checker(
+# def py_data_structure_checker(
+#     code: str, root_rel_path: Path, structured_output: bool = True
+# ) -> list[str] | str | None:
+#     symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
+#     ds_list = []
+#     for s in symbols:
+#         if s["kind"] in PY_DATA_STRUCTURES and not s["name"].startswith("__anon"):
+#             ds_list.append(s["name"])
+#     if len(ds_list) > 0:
+#         if structured_output:
+#             output = ds_list
+#         else:
+#             output = "\nData Structures to document in the code:\n\n"
+#             for ds in ds_list:
+#                 output += f"- {ds}\n"
+#     else:
+#         output = None
+#     return output
+
+
+def py_class_checker(
     code: str, root_rel_path: Path, structured_output: bool = True
-) -> list[str] | str | None:
+) -> dict[str, dict[str, Any]] | str | None:
     symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-    ds_list = []
+    classes_dict = {}
     for s in symbols:
-        if s["kind"] in PY_DATA_STRUCTURES and not s["name"].startswith("__anon"):
-            ds_list.append(s["name"])
-    if len(ds_list) > 0:
+        if s["kind"] in PY_CLASS and not s["name"].startswith("__anon"):
+            name = s["name"]
+            methods = []
+            nested_classes = []
+            for sub_s in symbols:
+                if (
+                    (sub_s.get("scopeKind") in PY_CLASS)
+                    and (sub_s.get("scope") == name)
+                    and (sub_s is not s)
+                ):
+                    # TODO: Pretty sure we're safe here as Python does not have method overloading.
+                    if sub_s["kind"] in PY_METHODS:
+                        methods.append(sub_s)
+                    elif sub_s["kind"] in PY_CLASS:
+                        nested_classes.append(sub_s)
+                    else:
+                        print(
+                            f"Unhandled child ({sub_s['name']}) of parent ({s['name']} in {root_rel_path}"
+                        )
+            classes_dict[name] = {
+                "methods": methods,
+                "nested_classes": nested_classes,
+            }
+    if len(classes_dict) > 0:
         if structured_output:
-            output = ds_list
+            output = classes_dict
         else:
-            output = "\nData Structures to document in the code:\n\n"
-            for ds in ds_list:
-                output += f"- {ds}\n"
+            output = "\nClasses to document in the code:\n\n"
+            for n in classes_dict:
+                output += f"- {n}\n"
     else:
         output = None
+
     return output
 
 
@@ -215,10 +317,19 @@ variables_dict_from_llm_py = partial(
     VARIABLES_FOUND_USER_PROMPT,
 )
 
-data_structure_dict_from_llm_py = partial(
-    data_structure_dict_from_llm,
-    DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
-    DATA_STRUCTURES_FOUND_USER_PROMPT,
+# data_structure_dict_from_llm_py = partial(
+#     data_structure_dict_from_llm,
+#     DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
+#     DATA_STRUCTURES_FOUND_USER_PROMPT,
+# )
+
+class_dict_from_llm_py = partial(
+    class_dict_from_llm,
+    CLASSES_FOUND_SYSTEM_PROMPT_JSON,
+    CLASSES_FOUND_USER_PROMPT,
+    METHODS_FOUND_SYSTEM_PROMPT_JSON,
+    METHODS_FOUND_USER_PROMPT,
+    ".",
 )
 
 fn_dict_from_llm_py = partial(
@@ -233,10 +344,15 @@ variables_dict_from_llm_py_multi_prompt = partial(
     VARIABLES_FOUND_USER_PROMPT,
 )
 
-data_structure_dict_from_llm_py_multi_prompt = partial(
-    data_structure_dict_from_llm_multi_prompt,
-    DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
-    DATA_STRUCTURES_FOUND_USER_PROMPT,
+# data_structure_dict_from_llm_py_multi_prompt = partial(
+#     data_structure_dict_from_llm_multi_prompt,
+#     DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
+#     DATA_STRUCTURES_FOUND_USER_PROMPT,
+# )
+class_dict_from_llm_py_multi_prompt = partial(
+    classes_dict_from_llm_multi_prompt,
+    CLASSES_FOUND_SYSTEM_PROMPT_JSON,
+    CLASSES_FOUND_USER_PROMPT,
 )
 
 fn_dict_from_llm_py_multi_prompt = partial(

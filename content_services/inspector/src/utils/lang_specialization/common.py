@@ -136,9 +136,9 @@ class VariableDict(BaseModel):
         output = ""
         for k, v in self.data.items():
             output += f"\n---\n## {k}\n"
-            output += f"### Type\n`{v.type}`\n"
-            output += f"### Description\n{v.description}\n"
-            output += f"### Use\n{v.use}\n\n"
+            output += f"- **Type**: `{v.type}`\n"
+            output += f"- **Description**\n{v.description}\n"
+            output += f"- **Use**\n{v.use}\n\n"
 
         return output
 
@@ -312,7 +312,7 @@ class ClassDict(BaseModel):
                         non_dupe_members += 1
             if non_dupe_members == 0:
                 output += "    - None\n"
-            output += "\n**Member Functions**:\n"
+            output += "\n**Methods**\n"
             if len(v.methods) > 0:
                 for n, m in v.methods.items():
                     output += render_function(n, m, 4)
@@ -331,6 +331,7 @@ class ClassDict(BaseModel):
 
 MAX_VARIABLES_TO_DOCUMENT = 100
 MAX_DATA_STRUCTURES_TO_DOCUMENT = 100
+MAX_CLASSES_TO_DOCUMENT = 100
 MAX_FUNCTIONS_TO_DOCUMENT = 100
 
 
@@ -549,6 +550,27 @@ def data_structure_dict_from_llm_multi_prompt(
         MAX_DATA_STRUCTURES_TO_DOCUMENT,
     )
     return DataStructureDict(data=symbols_dict)
+
+
+def classes_dict_from_llm_multi_prompt(
+    system_prompt: str,
+    user_prompt: str,
+    llm: ChatOpenAI,
+    classes_list: list[str],
+    code: str,
+    root_rel_path: Path,
+) -> ClassDict:
+    symbols_dict = symbols_dict_from_llm_multi_prompt(
+        llm,
+        classes_list,
+        code,
+        root_rel_path,
+        ClassData,
+        system_prompt,
+        user_prompt,
+        MAX_CLASSES_TO_DOCUMENT,
+    )
+    return ClassDict(data=symbols_dict)
 
 
 def fn_dict_from_llm_multi_prompt(

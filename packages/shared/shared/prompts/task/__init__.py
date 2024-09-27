@@ -7,4 +7,5 @@ from . import (
     code_critic_verifier,
     prompt_augmentation,
     smart_instruction_run,
+    edit_document,
 )

@@ -146,6 +146,7 @@ def keyword_search(session: Session, input: SearchInput) -> SearchResults:
                     "codebase_id": cm.codebase_id,
                     "content_type": cm.content_type.type_name,
                     "relative_path": cm.relative_path,
+                    "source_content_id": cm.source_content_id,
                     "semantic_score": s,
                     "keyword_score": bm25_score,
                 },
@@ -190,6 +191,7 @@ def semantic_search(session: Session, input: SearchInput) -> SearchResults:
             "workspace_id": cm.workspace_id,
             "codebase_id": cm.codebase_id,
             "content_id": cm.id,
+            "source_content_id": cm.source_content_id,
             "chunk_number": c.chunk_number,
             "semantic_score": score,
         }
@@ -262,6 +264,7 @@ def hybrid_search(session: Session, input: SearchInput) -> SearchResults:
             "workspace_id": cm.workspace_id,
             "codebase_id": cm.codebase_id,
             "content_id": cm.id,
+            "source_content_id": cm.source_content_id,
             "chunk_number": c.chunk_number,
             "semantic_score": score,
             "bm25_score": keyword_scores[idx],

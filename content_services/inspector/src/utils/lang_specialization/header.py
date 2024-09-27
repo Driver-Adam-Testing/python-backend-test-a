@@ -213,12 +213,43 @@ def header_function_checker(
     code: str, root_rel_path: Path, structured_output: bool = True
 ) -> list[str] | str | None:
     symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
+
+    fn_names = [
+        s["name"]
+        for s in symbols
+        if s["kind"] in C_OR_CPP_HEADER_FUNCTIONS and not s["name"].startswith("__anon")
+    ]
     fn_list = []
     for s in symbols:
         if s["kind"] in C_OR_CPP_HEADER_FUNCTIONS and not s["name"].startswith(
             "__anon"
         ):
-            fn_list.append(s["name"])
+            contained_in_class = False
+            for sub_s in symbols:
+                if (
+                    (s.get("scope"))
+                    and (sub_s["kind"] in C_OR_CPP_HEADER_DATA_STRUCTURES)
+                    and (s["scope"].split("::")[-1] == sub_s["name"])
+                    and (s.get("scopeKind") in C_OR_CPP_HEADER_DATA_STRUCTURES)
+                ):
+                    contained_in_class = True
+                    break
+
+            fn_name = (
+                s["name"]
+                if s.get("scopeKind") not in C_OR_CPP_HEADER_DATA_STRUCTURES
+                else s["scope"].split("::")[-1] + "::" + s["name"]
+            )
+            if not contained_in_class and fn_names.count(s["name"]) == 1:
+                # Some classes are defined in a different file than the functions of that class
+                # so we append the class name to the function name to make that clearer in docs
+                fn_list.append(fn_name)
+            elif not contained_in_class and fn_names.count(s["name"]) > 1:
+                # if the function is overloaded we append the the symbol dict
+                # such that when we generate we can isolate the function lines
+                s["name"] = fn_name
+                fn_list.append(s)
+
     if len(fn_list) > 0:
         if structured_output:
             output = fn_list

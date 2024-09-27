@@ -41,7 +41,7 @@ SOURCE_CODE_SMALL_TEMPLATE_CPP = [
     ),
     (
         S.FN_COND_JSON,
-        "# Free Functions",
+        "# Functions",
         cpp_function_checker,
         fn_dict_from_llm_cpp,
         None,

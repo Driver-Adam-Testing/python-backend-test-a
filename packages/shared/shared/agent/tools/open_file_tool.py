@@ -5,6 +5,7 @@ from sqlmodel import select
 
 from shared.agent.agent_base import AgentBase
 from shared.agent.tools.tool_strict import ToolStrict
+from shared.interfaces.search import SearchResult, SearchResults
 
 
 class OpenFileTool(ToolStrict):
@@ -58,7 +59,19 @@ class OpenFileTool(ToolStrict):
                 formatted_results.append(current_chunk_text)
                 previous_chunk_text = chunk.text
 
-            return "\n".join(formatted_results)
+            full_text = "\n".join(formatted_results)
+            search_result = SearchResult(
+                content=full_text,
+                score=1.0,
+                metadata={
+                    "content_type": "codebase-file",
+                    "path": self.file_path,
+                    "tool": "OpenFileTool",
+                },
+            )
+            agent.add_search_results(SearchResults(results=[search_result]))
+
+            return full_text
 
     @classmethod
     def system_prompt(cls) -> str:

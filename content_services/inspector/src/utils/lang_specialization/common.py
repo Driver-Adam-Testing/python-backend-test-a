@@ -291,7 +291,7 @@ class ClassBaseData(BaseModel):
 
 class ClassData(BaseModel):
     base_data: ClassBaseData
-    methods: dict[str, FnData]
+    methods: dict[str, FnData | list[FnData]]
     nested_classes: list[str]
 
 
@@ -299,13 +299,13 @@ def render_class_base_data(class_name: str, class_data: ClassBaseData) -> str:
     output = ""
     output += f"\n---\n---\n### {class_name}\n"
     output += f"- **Type**: `{class_data.type}`\n"
-    output += f"\n- **Description**: {class_data.description}\n\n"
     output += "\n- **Inherits From**:\n"
     if len(class_data.inherits_from) > 0:
         for i in class_data.inherits_from:
             output += f"    - `{i}`\n"
     else:
         output += "    - None\n"
+    output += f"\n- **Description**: {class_data.description}\n\n"
     output += "\n- **Members**:\n"
     non_dupe_members = 0
     for m in class_data.members:
@@ -326,7 +326,12 @@ class ClassDict(BaseModel):
             output += "\n**Methods**\n"
             if len(v.methods) > 0:
                 for n, m in v.methods.items():
-                    output += render_function(n, m, 4)
+                    # Case of potentially overloaded method.
+                    if isinstance(m, list):
+                        for sub_m in m:
+                            output += render_function(n, sub_m, 4)
+                    else:
+                        output += render_function(n, m, 4)
             else:
                 output += "    - None\n"
             if len(v.nested_classes) > 0:
@@ -419,6 +424,9 @@ def fn_dict_from_llm(
     return FnDict(data=fn_dict)
 
 
+BLIND_ADVANCE_IF_NO_END_LINE = 200
+
+
 def class_dict_from_llm(
     system_prompt_class: str,
     user_prompt_class: str,
@@ -430,31 +438,52 @@ def class_dict_from_llm(
     code: str,
 ) -> ClassDict:
     class_dict_documented = {}
-    for name, cls_data in class_dict_raw.items():
+    global_method_counts = {}
+    for _, cls_data in class_dict_raw.items():
+        for m in cls_data["methods"]:
+            name = m["name"]
+            global_method_counts[name] = global_method_counts.get(name, 0) + 1
+    for cls_name, cls_data in class_dict_raw.items():
         class_base = ClassBaseData.from_llm(
             system_prompt=system_prompt_class,
             user_prompt=user_prompt_class,
             llm=llm,
-            name=name,
+            name=cls_name,
             code=code,
         )
         methods = {}
         nested_classes = []
-        for member_fn in cls_data["methods"]:
-            # TODO: handle overloaded function names here.
-            fn_data = FnData.from_llm(
-                system_prompt=system_prompt_fn,
-                user_prompt=user_prompt_fn,
-                llm=llm,
-                fn_name=member_fn["name"],
-                code=code,
-            )
-            function_name = (
-                member_fn["scope"].split(class_fn_delimiter)[-1]
-                + class_fn_delimiter
-                + member_fn["name"]
-            )
-            methods[function_name] = fn_data
+        for m in cls_data["methods"]:
+            m_name = m["name"]
+            scoped_name = cls_name + class_fn_delimiter + m_name
+            # More than one method with the same name in the file: cut scope for LLM.
+            if global_method_counts[m_name] > 1:
+                m_start_line = m["line"]
+                # TODO: Better solution if end line is not present.
+                m_end_line = m.get("end", m_start_line + BLIND_ADVANCE_IF_NO_END_LINE)
+                code_lines = code.splitlines()
+                m_code = "\n".join(code_lines[m_start_line - 1 : m_end_line + 1])
+                # Use list to handle method overloading, if present.
+                if scoped_name not in methods:
+                    methods[scoped_name] = []
+                methods[scoped_name].append(
+                    FnData.from_llm(
+                        system_prompt=system_prompt_fn,
+                        user_prompt=user_prompt_fn,
+                        llm=llm,
+                        fn_name=m_name,
+                        code=m_code,
+                    )
+                )
+            else:
+                m_data = FnData.from_llm(
+                    system_prompt=system_prompt_fn,
+                    user_prompt=user_prompt_fn,
+                    llm=llm,
+                    fn_name=m_name,
+                    code=code,
+                )
+                methods[scoped_name] = m_data
 
         for nested_class in cls_data["nested_classes"]:
             nested_classes.append(nested_class["name"])
@@ -464,7 +493,7 @@ def class_dict_from_llm(
             methods=methods,
             nested_classes=nested_classes,
         )
-        class_dict_documented[name] = class_data
+        class_dict_documented[cls_name] = class_data
     return ClassDict(data=class_dict_documented)
 
 

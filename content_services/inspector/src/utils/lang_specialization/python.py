@@ -213,26 +213,6 @@ Summarize the variable in the code provided below.
 VARIABLES_NONE_CONTENT = "\n---\nNo global variables defined in this file."
 
 
-# def py_data_structure_checker(
-#     code: str, root_rel_path: Path, structured_output: bool = True
-# ) -> list[str] | str | None:
-#     symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-#     ds_list = []
-#     for s in symbols:
-#         if s["kind"] in PY_DATA_STRUCTURES and not s["name"].startswith("__anon"):
-#             ds_list.append(s["name"])
-#     if len(ds_list) > 0:
-#         if structured_output:
-#             output = ds_list
-#         else:
-#             output = "\nData Structures to document in the code:\n\n"
-#             for ds in ds_list:
-#                 output += f"- {ds}\n"
-#     else:
-#         output = None
-#     return output
-
-
 def py_class_checker(
     code: str, root_rel_path: Path, structured_output: bool = True
 ) -> dict[str, dict[str, Any]] | str | None:
@@ -318,12 +298,6 @@ variables_dict_from_llm_py = partial(
     VARIABLES_FOUND_USER_PROMPT,
 )
 
-# data_structure_dict_from_llm_py = partial(
-#     data_structure_dict_from_llm,
-#     DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
-#     DATA_STRUCTURES_FOUND_USER_PROMPT,
-# )
-
 class_dict_from_llm_py = partial(
     class_dict_from_llm,
     CLASSES_FOUND_SYSTEM_PROMPT_JSON,
@@ -345,11 +319,6 @@ variables_dict_from_llm_py_multi_prompt = partial(
     VARIABLES_FOUND_USER_PROMPT,
 )
 
-# data_structure_dict_from_llm_py_multi_prompt = partial(
-#     data_structure_dict_from_llm_multi_prompt,
-#     DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
-#     DATA_STRUCTURES_FOUND_USER_PROMPT,
-# )
 class_dict_from_llm_py_multi_prompt = partial(
     classes_dict_from_llm_multi_prompt,
     CLASSES_FOUND_SYSTEM_PROMPT_JSON,

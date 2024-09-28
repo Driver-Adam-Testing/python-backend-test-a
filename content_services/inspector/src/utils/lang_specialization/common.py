@@ -266,7 +266,7 @@ def render_function(fn_name: str, fn_data: FnData, markdown_header_level: int) -
 
 
 class ClassBaseData(BaseModel):
-    type: str
+    type: str | None
     members: list[NamedContent]
     description: str
     inherits_from: list[str]
@@ -300,6 +300,10 @@ class ClassData(BaseModel):
 
 def render_class_base_data(class_name: str, class_data: ClassData) -> str:
     output = ""
+    if class_data.base_data.type is None:
+        output += f"\n---\n---\n### {class_name}\n"
+        output += "- Data structure implemented elsewhere\n\n"
+        return output
     output += f"\n---\n---\n### {class_name}\n"
     output += f"- **Type**: `{class_data.base_data.type}`\n"
     if len(class_data.base_data.inherits_from) > 0:
@@ -307,9 +311,9 @@ def render_class_base_data(class_name: str, class_data: ClassData) -> str:
         for i in class_data.base_data.inherits_from:
             output += f"    - `{i}`\n"
     output += f"\n- **Description**: {class_data.base_data.description}\n\n"
-    output += "\n- **Members**:\n"
-    non_dupe_members = 0
     if len(class_data.base_data.members) > 0:
+        non_dupe_members = 0
+        output += "\n- **Members**:\n"
         for m in class_data.base_data.members:
             if (
                 class_name not in class_data.methods
@@ -317,8 +321,8 @@ def render_class_base_data(class_name: str, class_data: ClassData) -> str:
             ):
                 output += f"    - `{m.name}`: {m.content}\n"
                 non_dupe_members += 1
-    if non_dupe_members == 0:
-        output += "    - None\n"
+        if non_dupe_members == 0:
+            output += "    - None\n"
     return output
 
 
@@ -448,13 +452,21 @@ def class_dict_from_llm(
             name = m["name"]
             global_method_counts[name] = global_method_counts.get(name, 0) + 1
     for cls_name, cls_data in class_dict_raw.items():
-        class_base = ClassBaseData.from_llm(
-            system_prompt=system_prompt_class,
-            user_prompt=user_prompt_class,
-            llm=llm,
-            name=cls_name,
-            code=code,
-        )
+        if cls_data.get("undefined"):
+            class_base = ClassBaseData(
+                type=None,
+                members=[],
+                description="",
+                inherits_from=[],
+            )
+        else:
+            class_base = ClassBaseData.from_llm(
+                system_prompt=system_prompt_class,
+                user_prompt=user_prompt_class,
+                llm=llm,
+                name=cls_name,
+                code=code,
+            )
         methods = {}
         nested_classes = []
         for m in cls_data["methods"]:

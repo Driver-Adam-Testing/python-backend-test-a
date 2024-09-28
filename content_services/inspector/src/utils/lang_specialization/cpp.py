@@ -160,28 +160,35 @@ def cpp_class_checker(
     code: str, root_rel_path: Path, structured_output: bool = True
 ) -> list[dict] | str | None:
     symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-    classes_dict = {}
+    classes_dict = {
+        s["name"]: {"methods": [], "nested_classes": []}
+        for s in symbols
+        if s["kind"] in CPP_DATA_STRUCTURES and not s["name"].startswith("__anon")
+    }
     for s in symbols:
-        if s["kind"] in CPP_DATA_STRUCTURES and not s["name"].startswith("__anon"):
-            name = s["name"]
-            methods = []
-            nested_classes = []
-            for sub_s in symbols:
-                if (
-                    (sub_s.get("scope"))
-                    and (sub_s.get("scopeKind") in CPP_DATA_STRUCTURES)
-                    and (sub_s["scope"].split("::")[-1] == name)
-                    and (sub_s is not s)
-                ):
-                    # TODO: understand if methods can be overloaded?
-                    if sub_s["kind"] in CPP_FUNCTIONS:
-                        methods.append(sub_s)
-                    elif sub_s["kind"] in CPP_DATA_STRUCTURES:
-                        nested_classes.append(sub_s)
-            classes_dict[name] = {
-                "methods": methods,
-                "nested_classes": nested_classes,
-            }
+        if (
+            (s.get("scope"))
+            and not s["name"].startswith("__anon")
+            and (s["kind"] in CPP_FUNCTIONS)
+            and s["scopeKind"] in CPP_DATA_STRUCTURES
+        ):
+            if s["scope"].split("::")[-1] not in classes_dict:
+                classes_dict[s["scope"].split("::")[-1]] = {
+                    "methods": [],
+                    "nested_classes": [],
+                    "undefined": True,
+                }
+            classes_dict[s["scope"].split("::")[-1]]["methods"].append(s)
+        elif (
+            (s.get("scope"))
+            and not s["name"].startswith("__anon")
+            and (s["kind"] in CPP_DATA_STRUCTURES)
+            and (s["scopeKind"] in CPP_DATA_STRUCTURES)
+        ):
+            if s["scope"].split("::")[-1] in classes_dict:
+                classes_dict[s["scope"].split("::")[-1]]["nested_classes"].append(s)
+
+    output = None
     if len(classes_dict) > 0:
         if structured_output:
             output = classes_dict
@@ -189,8 +196,6 @@ def cpp_class_checker(
             output = "\nClasses to document in the code:\n\n"
             for n in classes_dict:
                 output += f"- {n}\n"
-    else:
-        output = None
     return output
 
 
@@ -229,15 +234,8 @@ def cpp_function_checker(
         if s["kind"] in CPP_FUNCTIONS and not s["name"].startswith("__anon"):
             # Extra step to dedupe here since we document some functions in classes now
             contained_in_class = False
-            for sub_s in symbols:
-                if (
-                    (s.get("scope"))
-                    and (sub_s["kind"] in CPP_DATA_STRUCTURES)
-                    and (s["scope"].split("::")[-1] == sub_s["name"])
-                    and (s.get("scopeKind") in CPP_DATA_STRUCTURES)
-                ):
-                    contained_in_class = True
-                    break
+            if (s.get("scope")) and (s.get("scopeKind") in CPP_DATA_STRUCTURES):
+                contained_in_class = True
 
             fn_name = (
                 s["name"]

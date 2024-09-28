@@ -377,38 +377,42 @@ def comprehend_file_top_down(  # noqa: C901
             llm=llm, file_name=node.root_rel_path.name, code=chunk_texts[0]
         )
 
-        if file_kind.kind == FileEnum.METADATA:
-            template = METADATA_MULTI_CONTEXT_TEMPLATE
-            long_template = Template(template=template)
-            file_description_long = long_template.run_with_code(
-                llm=llm,
-                root_rel_path=node.root_rel_path,
-                code=source_code,
-                code_chunks=chunk_texts,
-            )
-        else:
-            language = Lang.from_ext_and_source(
-                ext=node.root_rel_path.suffix, source=chunk_texts[0]
-            )
-            match language:
-                case Lang.C:
-                    template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_C
-                case Lang.CPP:
-                    template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CPP
-                case Lang.HEADER:
-                    template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_HEADER
-                case Lang.PYTHON:
-                    template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_PY
-                case _:
-                    template = SOURCE_CODE_MULTI_CONTEXT_TEMPLATE_DEFAULT
-            long_template = Template(template=template)
-
-            file_description_long = long_template.run_with_code(
-                llm=llm,
-                root_rel_path=node.root_rel_path,
-                code=source_code,
-                code_chunks=chunk_texts,
-            )
+        match file_kind.kind:
+            case (
+                FileEnum.METADATA_SMALL
+                | FileEnum.METADATA_MEDIUM
+                | FileEnum.METADATA_LARGE
+            ):
+                template = METADATA_MULTI_CONTEXT_TEMPLATE
+                long_template = Template(template=template)
+                file_description_long = long_template.run_with_code(
+                    llm=llm,
+                    root_rel_path=node.root_rel_path,
+                    code=source_code,
+                    code_chunks=chunk_texts,
+                )
+            case _:
+                language = Lang.from_ext_and_source(
+                    ext=node.root_rel_path.suffix, source=chunk_texts[0]
+                )
+                match language:
+                    case Lang.C:
+                        template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_C
+                    case Lang.CPP:
+                        template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CPP
+                    case Lang.HEADER:
+                        template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_HEADER
+                    case Lang.PYTHON:
+                        template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_PY
+                    case _:
+                        template = SOURCE_CODE_MULTI_CONTEXT_TEMPLATE_DEFAULT
+                long_template = Template(template=template)
+                file_description_long = long_template.run_with_code(
+                    llm=llm,
+                    root_rel_path=node.root_rel_path,
+                    code=source_code,
+                    code_chunks=chunk_texts,
+                )
         # Now ready to generate final documentation content.
         chunk_detailed_descriptions = [file_description_long]
         file_description_single_sentence = file_single_sentence_from_chunk_descriptions(

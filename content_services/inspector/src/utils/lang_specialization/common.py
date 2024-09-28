@@ -295,24 +295,27 @@ class ClassData(BaseModel):
     nested_classes: list[str]
 
 
-def render_class_base_data(class_name: str, class_data: ClassBaseData) -> str:
+def render_class_base_data(class_name: str, class_data: ClassData) -> str:
     output = ""
     output += f"\n---\n---\n### {class_name}\n"
-    output += f"- **Type**: `{class_data.type}`\n"
-    output += "\n- **Inherits From**:\n"
-    if len(class_data.inherits_from) > 0:
-        for i in class_data.inherits_from:
+    output += f"- **Type**: `{class_data.base_data.type}`\n"
+    if len(class_data.base_data.inherits_from) > 0:
+        output += "\n- **Inherits From**:\n"
+        for i in class_data.base_data.inherits_from:
             output += f"    - `{i}`\n"
-    else:
-        output += "    - None\n"
-    output += f"\n- **Description**: {class_data.description}\n\n"
+    output += f"\n- **Description**: {class_data.base_data.description}\n\n"
     output += "\n- **Members**:\n"
-    non_dupe_members = 0
-    for m in class_data.members:
-        output += f"    - `{m.name}`: {m.content}\n"
-        non_dupe_members += 1
-    if non_dupe_members == 0:
-        output += "    - None\n"
+    if len(class_data.base_data.members) > 0:
+        non_dupe_members = 0
+        for m in class_data.base_data.members:
+            if (
+                class_name not in class_data.methods
+                and class_name not in class_data.nested_classes
+            ):
+                output += f"    - `{m.name}`: {m.content}\n"
+                non_dupe_members += 1
+        if non_dupe_members == 0:
+            output += "    - None\n"
     return output
 
 
@@ -322,9 +325,9 @@ class ClassDict(BaseModel):
     def render_markdown(self) -> str:
         output = ""
         for k, v in self.data.items():
-            output += render_class_base_data(k, v.base_data)
-            output += "\n**Methods**\n"
+            output += render_class_base_data(k, v)
             if len(v.methods) > 0:
+                output += "\n**Methods**\n"
                 for n, m in v.methods.items():
                     # Case of potentially overloaded method.
                     if isinstance(m, list):

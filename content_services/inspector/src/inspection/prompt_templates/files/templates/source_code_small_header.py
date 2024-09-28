@@ -2,7 +2,7 @@ from utils.lang_specialization.default import default_imports_checker
 from utils.lang_specialization.header import (
     SOURCE_CODE_SMALL_PURPOSE_USER_PROMPT,
     SOURCE_CODE_SMALL_SYSTEM_PROMPT_GENERAL_C_OR_CPP_HEADER,
-    class_dict_from_llm,
+    class_dict_from_llm_header,
     fn_dict_from_llm_header,
     header_class_checker,
     header_function_checker,
@@ -36,7 +36,7 @@ SOURCE_CODE_SMALL_TEMPLATE_HEADER = [
         S.FN_COND_JSON,
         "# Data Structures",
         header_class_checker,
-        class_dict_from_llm,
+        class_dict_from_llm_header,
         None,
     ),
     (

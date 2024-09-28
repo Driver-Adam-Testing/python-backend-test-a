@@ -305,8 +305,8 @@ def render_class_base_data(class_name: str, class_data: ClassData) -> str:
             output += f"    - `{i}`\n"
     output += f"\n- **Description**: {class_data.base_data.description}\n\n"
     output += "\n- **Members**:\n"
+    non_dupe_members = 0
     if len(class_data.base_data.members) > 0:
-        non_dupe_members = 0
         for m in class_data.base_data.members:
             if (
                 class_name not in class_data.methods
@@ -314,8 +314,8 @@ def render_class_base_data(class_name: str, class_data: ClassData) -> str:
             ):
                 output += f"    - `{m.name}`: {m.content}\n"
                 non_dupe_members += 1
-        if non_dupe_members == 0:
-            output += "    - None\n"
+    if non_dupe_members == 0:
+        output += "    - None\n"
     return output
 
 
@@ -335,8 +335,6 @@ class ClassDict(BaseModel):
                             output += render_function(n, sub_m, 4)
                     else:
                         output += render_function(n, m, 4)
-            else:
-                output += "    - None\n"
             if len(v.nested_classes) > 0:
                 output += "\n**Nested Classes**:\n"
                 for n in v.nested_classes:

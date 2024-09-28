@@ -52,6 +52,9 @@ from inspection.prompt_templates.files.templates.source_code_large_py import (
 from inspection.prompt_templates.files.templates.source_code_large_py_multi_prompt import (
     SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_PY,
 )
+from inspection.prompt_templates.files.templates.source_code_large_rust import (
+    SOURCE_CODE_LARGE_TEMPLATE_RUST,
+)
 from inspection.prompt_templates.files.templates.source_code_large_verilog import (
     SOURCE_CODE_LARGE_TEMPLATE_VERILOG,
 )
@@ -72,6 +75,9 @@ from inspection.prompt_templates.files.templates.source_code_small_header import
 )
 from inspection.prompt_templates.files.templates.source_code_small_py import (
     SOURCE_CODE_SMALL_TEMPLATE_PY,
+)
+from inspection.prompt_templates.files.templates.source_code_small_rust import (
+    SOURCE_CODE_SMALL_TEMPLATE_RUST,
 )
 from inspection.prompt_templates.files.templates.source_code_small_verilog import (
     SOURCE_CODE_SMALL_TEMPLATE_VERILOG,
@@ -161,6 +167,7 @@ SOURCE_CODE_LARGE_BY_LANG = {
     Lang.HEADER: SOURCE_CODE_LARGE_TEMPLATE_HEADER,
     Lang.PYTHON: SOURCE_CODE_LARGE_TEMPLATE_PY,
     Lang.VERILOG: SOURCE_CODE_LARGE_TEMPLATE_VERILOG,
+    Lang.RUST: SOURCE_CODE_LARGE_TEMPLATE_RUST,
 }
 SOURCE_CODE_SMALL_BY_LANG = {
     Lang.DEFAULT: SOURCE_CODE_SMALL_TEMPLATE_DEFAULT,
@@ -169,6 +176,7 @@ SOURCE_CODE_SMALL_BY_LANG = {
     Lang.HEADER: SOURCE_CODE_SMALL_TEMPLATE_HEADER,
     Lang.PYTHON: SOURCE_CODE_SMALL_TEMPLATE_PY,
     Lang.VERILOG: SOURCE_CODE_SMALL_TEMPLATE_VERILOG,
+    Lang.RUST: SOURCE_CODE_SMALL_TEMPLATE_RUST,
 }
 METADATA_SMALL_BY_LANG = {
     Lang.DEFAULT: METADATA_SMALL_TEMPLATE,
@@ -177,6 +185,7 @@ METADATA_SMALL_BY_LANG = {
     Lang.HEADER: METADATA_SMALL_TEMPLATE,
     Lang.PYTHON: METADATA_SMALL_TEMPLATE,
     Lang.VERILOG: METADATA_SMALL_TEMPLATE,
+    Lang.RUST: METADATA_SMALL_TEMPLATE,
 }
 METADATA_MEDIUM_BY_LANG = {
     Lang.DEFAULT: METADATA_MEDIUM_TEMPLATE,
@@ -185,6 +194,7 @@ METADATA_MEDIUM_BY_LANG = {
     Lang.HEADER: METADATA_MEDIUM_TEMPLATE,
     Lang.PYTHON: METADATA_MEDIUM_TEMPLATE,
     Lang.VERILOG: METADATA_MEDIUM_TEMPLATE,
+    Lang.RUST: METADATA_MEDIUM_TEMPLATE,
 }
 METADATA_LARGE_BY_LANG = {
     Lang.DEFAULT: METADATA_LARGE_TEMPLATE,
@@ -193,6 +203,7 @@ METADATA_LARGE_BY_LANG = {
     Lang.HEADER: METADATA_LARGE_TEMPLATE,
     Lang.PYTHON: METADATA_LARGE_TEMPLATE,
     Lang.VERILOG: METADATA_LARGE_TEMPLATE,
+    Lang.RUST: METADATA_LARGE_TEMPLATE,
 }
 TEMPLATE_DATA = {
     FileEnum.SOURCE_CODE_LARGE: SOURCE_CODE_LARGE_BY_LANG,

@@ -14,7 +14,8 @@ class Lang(IntEnum):
     HEADER = 2
     PYTHON = 3
     VERILOG = 4
-    DEFAULT = 5
+    RUST = 5
+    DEFAULT = 6
 
     @classmethod
     def from_ext_and_source(cls, ext: str, source: str) -> Self:
@@ -29,6 +30,8 @@ class Lang(IntEnum):
                 return cls.PYTHON
             case ".v" | ".sv":  # TODO: seprately specialize SystemVerilog
                 return cls.VERILOG
+            case ".rs":
+                return cls.RUST
             case _:
                 return cls.DEFAULT
 

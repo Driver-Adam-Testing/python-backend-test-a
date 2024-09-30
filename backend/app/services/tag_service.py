@@ -386,7 +386,7 @@ class TagService:
         try:
             delete_tag_and_related_entities(self.session, tag)
             logger.info(f"Tag {tag_id} deleted by user {user.user_id}")
-        except IntegrityError as e:
+        except Exception as e:
             self.session.rollback()
             logger.exception(
                 f"Error deleting tag {tag_id} for user {user.user_id}: {e}"

@@ -435,6 +435,20 @@ class ContentService:
             statement = statement.where(or_(*clauses))
             count_statement = count_statement.where(or_(*clauses))
 
+        if search_input.source_content_id:
+            clauses = [
+                DerivedContent.source_content_id.in_(search_input.source_content_id),
+            ]
+            statement = statement.where(or_(*clauses))
+            count_statement = count_statement.where(or_(*clauses))
+
+        if search_input.order:
+            clauses = [
+                DerivedContent.order == search_input.order,
+            ]
+            statement = statement.where(or_(*clauses))
+            count_statement = count_statement.where(or_(*clauses))
+
         if search_input.status:
             valid_statuses = [
                 content_status.value for content_status in Enum_Derived_Content_Status

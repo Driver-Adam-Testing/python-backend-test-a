@@ -429,8 +429,8 @@ class ContentService:
     ) -> tuple[Select, Select]:
         if search_input.text:
             clauses = [
-                DerivedContent.relative_path.contains(search_input.text),
-                DerivedContent.content_name.contains(search_input.text),
+                DerivedContent.relative_path.icontains(search_input.text),
+                DerivedContent.content_name.icontains(search_input.text),
             ]
             statement = statement.where(or_(*clauses))
             count_statement = count_statement.where(or_(*clauses))

@@ -19,7 +19,7 @@ RUST_DATA_STRUCTURE = {"enum", "struct"}
 RUST_FUNCTIONS = {"function"}
 RUST_METHODS = {"method"}
 RUST_VARIABLES = {"constant", "variable"}
-RUST_MACTROS = {"macro"}
+RUST_MACROS = {"macro"}
 RUST_TRAITS = {"interface"}
 RUST_IMPLEMENTATIONS = {"implementation"}
 
@@ -121,6 +121,34 @@ Summarize the data structure method in the code provided below. Describe the inp
 - When describing a data structure method, provide detail that matches the complexity of the method body. Large and complex methods should get longer explanations, while small ones much less.
 """
 
+MACROS_FOUND_SYSTEM_PROMPT_JSON = """
+You are an expert Rust programmer and a software engineering documentation expert. You write detailed documentation to explain code written in Rust.
+
+You focus on writing technical documentation for macros in Rust. You are skilled at explaining technical details as well as recognizing and articulating the key conceptual components and purpose of software.
+
+You will be given the name of a macro to document and the source code where the macro is defined.
+
+Your job is to describe the macro. **Always respond using exactly the following JSON schema**:
+{
+    "type": <type of the macro, either declarative or procedural>,
+    "description": <1 to 3 sentence description of the variable>,
+    "logic": [
+        <bullet point 1 describing logic implemented by the macro>,
+        <Bullet point 2 describint logic implemenbed by the macro>,
+        ...
+    ],
+    "use": <Terse 1 sentence description of how this macro is used>,
+}
+
+Return JSON according to the schema above. Do not use the format ```json ... ```, just return the JSON data.
+"""
+
+MACROS_FOUND_USER_PROMPT = """
+Summarize the data structure in the code provided below.
+
+- When describing a data structure, provide detail that matches the complexity of the data structure. Large and complex data structures with many members should get longer explanations, while small ones a single sentence.
+"""
+
 FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON = """
 You are an expert Rust programmer and a software engineering documentation expert. You write detailed documentation to explain code written in Rust.
 
@@ -204,6 +232,53 @@ Summarize the trait in the code provided below.
 
 - When describing a trait, provide detail that matches the complexity of the trait. Large and complex data structures with many methods, generics, and trait bounds should get longer explanations, while small ones a single sentence.
 """
+
+
+class MacroData(BaseModel):
+    type: str
+    description: str
+    logic: list[str]
+    use: str
+
+    @classmethod
+    def from_llm(
+        cls,
+        llm: ChatOpenAI,
+        system_prompt: str,
+        user_prompt: str,
+        macro_name: str,
+        code: str,
+    ) -> Self:
+        user_prompt_complete = (
+            f"{user_prompt}Macro to document: {macro_name}\n\nCode:\n\n{code}"
+        )
+        content_raw = llm.generate_response(
+            system_prompt=system_prompt,
+            user_prompt=user_prompt_complete,
+            output_cfg=OutputConfig(kind=OutputConfigKind.JSON_STRICT, payload=cls),
+        )
+
+        return cls.parse_raw(content_raw)
+
+
+class MacroDict(BaseModel):
+    data: dict[str, MacroData]
+
+    def render_markdown(self) -> str:
+        output = ""
+        for k, v in self.data.items():
+            output += f"\n---\n## {k}\n"
+            output += f"- **Type**: `{v.type}`\n"
+            output += f"- **Description**: {v.description}\n"
+            output += "- **Logic**:\n"
+            for item in v.logic:
+                output += f"    - {item}\n"
+            output += f"- **Use**: {v.use}\n\n"
+
+        return output
+
+    def __str__(self) -> str:
+        return self.render_markdown()
 
 
 class TraitData(BaseModel):
@@ -344,6 +419,26 @@ class DataStructureDict(BaseModel):
 
     def __str__(self) -> str:
         return self.render_markdown()
+
+
+def macros_dict_from_llm(
+    system_prompt: str,
+    user_prompt: str,
+    llm: ChatOpenAI,
+    macros_list: list[str],
+    code: str,
+) -> MacroDict:
+    macros_dict = {
+        m: MacroData.from_llm(
+            llm=llm,
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            macro_name=m,
+            code=code,
+        )
+        for m in macros_list[:MAX_VARIABLES_TO_DOCUMENT]
+    }
+    return MacroDict(data=macros_dict)
 
 
 BLIND_ADVANCE_IF_NO_END_LINE = 200
@@ -518,6 +613,23 @@ def rust_variables_checker(
     return output
 
 
+def rust_macros_checker(
+    code: str, root_rel_path: Path, structured_output: bool = True
+) -> list[str] | str | None:
+    symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
+    m_list = [s["name"] for s in symbols if s["kind"] in RUST_MACROS]
+    if len(m_list) > 0:
+        if structured_output:
+            output = m_list
+        else:
+            output = "\nMacros to document in the code:\n\n"
+            for v in m_list:
+                output += f"- {v}\n"
+    else:
+        output = None
+    return output
+
+
 def rust_traits_checker(
     code: str, root_rel_path: Path, stuctured_output: bool = True
 ) -> list[str] | str | None:
@@ -539,6 +651,12 @@ variables_dict_from_llm_rust = partial(
     variables_dict_from_llm,
     VARIABLES_FOUND_SYSTEM_PROMPT_JSON,
     VARIABLES_FOUND_USER_PROMPT,
+)
+
+macros_dict_from_llm_rust = partial(
+    macros_dict_from_llm,
+    MACROS_FOUND_SYSTEM_PROMPT_JSON,
+    MACROS_FOUND_USER_PROMPT,
 )
 
 data_structure_dict_from_llm_rust = partial(

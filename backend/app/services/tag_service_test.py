@@ -404,8 +404,9 @@ def test_delete_tag(
     current_user_with_org: CurrentUser,
     delete_tag: Tag,
 ) -> None:
-    deleted = tag_service.delete_tag(current_user_with_org, delete_tag.id)
-    assert deleted
+    tag_service.delete_tag(
+        current_user_with_org, delete_tag.id
+    )  # if no exception is raised, the test passes
 
 
 def test_delete_tag_from_other_org(

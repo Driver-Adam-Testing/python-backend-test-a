@@ -374,7 +374,7 @@ class TagService:
             count=content.count,
         )
 
-    def delete_tag(self: "TagService", user: CurrentUser, tag_id: UUID) -> bool:
+    def delete_tag(self: "TagService", user: CurrentUser, tag_id: UUID) -> None:
         organization_id = user.organization_id
 
         tag: Tag | None = self.tag_repository.get(tag_id)
@@ -384,33 +384,23 @@ class TagService:
             raise HTTPException(status_code=404, detail="Tag not found")
 
         try:
-            tag_deleted = exec_tag_and_related_entities(self.session, tag)
-            if tag_deleted:
-                logger.info(f"Tag {tag_id} deleted by user {user.user_id}")
-                return True
-            else:
-                logger.error(f"Error deleting tag {tag_id} by user {user.user_id}")
-                return False
-        except Exception as e:
+            delete_tag_and_related_entities(self.session, tag)
+            logger.info(f"Tag {tag_id} deleted by user {user.user_id}")
+        except IntegrityError as e:
             self.session.rollback()
-            logger.error(f"Error deleting tag {tag_id} for user {user.user_id}: {e}")
+            logger.exception(
+                f"Error deleting tag {tag_id} for user {user.user_id}: {e}"
+            )
             raise HTTPException(status_code=500, detail="Internal server error")
 
 
-def exec_tag_and_related_entities(session: Session, tag: Tag) -> bool:
-    try:
-        # Delete related TagContent entities
-        tag_contents = session.exec(
-            select(TagContent).where(TagContent.tag_id == tag.id)
-        ).all()
+def delete_tag_and_related_entities(session: Session, tag: Tag) -> None:
+    tag_contents = session.exec(
+        select(TagContent).where(TagContent.tag_id == tag.id)
+    ).all()
 
-        for tag_content in tag_contents:
-            session.delete(tag_content)
+    for tag_content in tag_contents:
+        session.delete(tag_content)
 
-        session.delete(tag)
-        session.commit()
-        return True
-    except IntegrityError:
-        logger.exception(f"Error deleting tag {tag.id}")
-        session.rollback()
-        raise
+    session.delete(tag)
+    session.commit()

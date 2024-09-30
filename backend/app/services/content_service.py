@@ -7,6 +7,7 @@ from botocore.exceptions import ClientError
 from database.derived_content_types import DerivedContentTypeNames
 from database.models_v1 import (
     ChunkAndEmbedding,
+    Codebase,
     DerivedContent,
     DerivedContentType,
     DocumentSource,
@@ -768,6 +769,108 @@ def exec_delete_document_and_related_entities(
         return True
     except IntegrityError:
         logger.exception(f"Error deleting content {content.id}")
+        session.rollback()
+        raise
+
+
+def exec_delete_codebase_and_related_entities(
+    session: Session, service: ContentService, codebase_id: UUID
+) -> bool:
+    try:
+        already_deleted = []
+
+        # fetch the codebase record
+        codebase_record = session.exec(
+            select(Codebase).where(Codebase.id == codebase_id)
+        ).first()
+
+        if not codebase_record:  # if the codebase_id record does not exist check the derived content codebase_id
+            codebase_record = service.content_repository.get(codebase_id)
+            if not codebase_record:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND, detail="Codebase not found"
+                )
+        codebase_id = codebase_record.codebase_id
+        # get all derived content associated with the codebase
+        derived_contents = session.exec(
+            select(DerivedContent).where(DerivedContent.codebase_id == codebase_id)
+        ).all()
+
+        # filter out the pdfs
+        pdfs_to_delete = []
+        for derived_content in derived_contents:
+            if derived_content.content_type.type_name == "supplemental-document":
+                pdfs_to_delete.append(derived_content)
+
+        for pdf in pdfs_to_delete:
+            # TODO: dont delete set codebase_id to null
+            if exec_delete_document_and_related_entities(session, pdf):
+                already_deleted.append(pdf.id)
+
+        # filter out the app notes
+        app_notes_to_delete = []
+        for derived_content in derived_contents:
+            if derived_content.content_type.type_name == "application-note":
+                app_notes_to_delete.append(derived_content)
+
+        for app_note in app_notes_to_delete:
+            # TODO: delete sources set codebase_id to null and retain note
+            if exec_delete_document_and_related_entities(session, app_note):
+                already_deleted.append(app_note.id)
+
+        # filter out the templates
+        # templates_to_delete = []
+        # for derived_content in derived_contents:
+        #     if derived_content.content_type.type_name == "template":
+        #         templates_to_delete.append(derived_content)
+        #
+        # for template in templates_to_delete:
+        #     if exec_delete_document_and_related_entities(session, template):
+        #         already_deleted.append(template.id)
+
+        derived_contents = [
+            derived_content
+            for derived_content in derived_contents
+            if derived_content.id not in already_deleted
+        ]
+
+        # select derived_contents where source_content_id is not null  and codebase_id = this is then do delete
+        # delete the derived_contents where source_content_id is null and codebase_id = codebase_id
+        # delete the codebase record
+
+        # filter out the tech docs
+        tech_docs_types = {
+            DerivedContentTypeNames.SHORT_PARAGRAPH_DESCRIPTION,
+            DerivedContentTypeNames.TERSE_SENTENCE_DESCRIPTION,
+            DerivedContentTypeNames.LONG_DESCRIPTION,
+            DerivedContentTypeNames.QUICK_START_ENTRY,
+            DerivedContentTypeNames.QUICK_START_GETTING_STARTED,
+            DerivedContentTypeNames.QUICK_START_DEPENDENCIES,
+            DerivedContentTypeNames.QUICK_START_USE,
+            DerivedContentTypeNames.ARCHITECTURE_DIAGRAM,
+            DerivedContentTypeNames.CHUNK_DESCRIPTIONS,
+            DerivedContentTypeNames.SHORT_SENTENCE_DESCRIPTION,
+            DerivedContentTypeNames.SYMBOL,
+        }
+        # delete all derived content associated with the codebase
+        tech_docs = [
+            derived_content
+            for derived_content in derived_contents
+            if derived_content.content_type.type_name in tech_docs_types
+        ]
+        for tech_doc in tech_docs:
+            if exec_delete_document_and_related_entities(session, tech_doc):
+                already_deleted.append(tech_doc.id)
+
+        # source_content = [
+        #     derived_content
+        #     for derived_content in derived_contents
+        #     if derived_content.id not in already_deleted
+        # ]
+
+        return True
+    except IntegrityError:
+        logger.exception(f"Error deleting codebase_id {codebase_id}")
         session.rollback()
         raise
 

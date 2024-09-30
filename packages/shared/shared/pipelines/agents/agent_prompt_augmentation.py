@@ -23,6 +23,14 @@ class PromptAugmentationLLMResponse(BaseModel):
 def run_agent_prompt_augmentation(
     input: PipelineStepConfiguration,
 ) -> PipelineStepResponse:
+    prompt_text = input.prompt.prompt
+
+    # Don't transform the prompt if longer than 100 words. It means there's enough detail.
+    if len(prompt_text.split()) > 100:
+        return PipelineStepResponse(
+            agent_id=None, search_results=[], agent_result=input.prompt.prompt
+        )
+
     agent = create_agent(
         scope=input.scope,
         model=input.model,

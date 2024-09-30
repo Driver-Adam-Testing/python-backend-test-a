@@ -31,6 +31,7 @@ Remove language from the text that uses words that describes and congratulates t
 
 Remove all speculation.
 If a text is speculative in it's entirety, remove it and admit you didn't have enough context to create non-speculative content.
+Convert all text diagrams to mermaidjs format.
 """
 
 MESSAGE = {"role": "system", "content": PROMPT}

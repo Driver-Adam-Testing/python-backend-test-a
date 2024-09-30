@@ -298,13 +298,11 @@ class ClassData(BaseModel):
     nested_classes: list[str]
 
 
-def render_class_base_data(class_name: str, class_data: ClassData) -> str:
+def render_class_base_data(class_data: ClassData) -> str:
     output = ""
     if class_data.base_data.type is None:
-        output += f"\n---\n---\n### {class_name}\n"
         output += "- Data structure implemented elsewhere\n\n"
         return output
-    output += f"\n---\n---\n### {class_name}\n"
     output += f"- **Type**: `{class_data.base_data.type}`\n"
     if len(class_data.base_data.inherits_from) > 0:
         output += "\n- **Inherits From**:\n"
@@ -316,8 +314,8 @@ def render_class_base_data(class_name: str, class_data: ClassData) -> str:
         output += "\n- **Members**:\n"
         for m in class_data.base_data.members:
             if (
-                class_name not in class_data.methods
-                and class_name not in class_data.nested_classes
+                m.name not in class_data.methods
+                and m.name not in class_data.nested_classes
             ):
                 output += f"    - `{m.name}`: {m.content}\n"
                 non_dupe_members += 1
@@ -330,9 +328,10 @@ class ClassDict(BaseModel):
     data: dict[str, ClassData]
 
     def render_markdown(self) -> str:
-        output = ""
+        output = "\n---"
         for k, v in self.data.items():
-            output += render_class_base_data(k, v)
+            output += f"\n### {k}\n"
+            output += render_class_base_data(v)
             if len(v.methods) > 0:
                 output += "\n**Methods**\n"
                 for n, m in v.methods.items():
@@ -346,6 +345,7 @@ class ClassDict(BaseModel):
                 output += "\n**Nested Classes**:\n"
                 for n in v.nested_classes:
                     output += f"    - {n}\n"
+            output += "\n---\n---"
 
         return output
 

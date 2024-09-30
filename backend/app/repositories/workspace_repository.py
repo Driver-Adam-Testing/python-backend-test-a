@@ -8,7 +8,7 @@ class WorkspaceRepository(BaseRepository[Workspace]):
     def __init__(self, session: Session) -> None:
         super().__init__(session, Workspace)
 
-    def get_default_workspace(self, organization_id: str) -> Workspace | None:
+    def get_default_workspace(self, organization_id: str) -> Workspace:
         logger.info(
             f"Fetching default workspace for organization_id: {organization_id}"
         )

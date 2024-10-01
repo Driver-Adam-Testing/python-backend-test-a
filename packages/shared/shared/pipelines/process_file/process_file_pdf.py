@@ -216,13 +216,25 @@ def run_process_pdf(file_content: io.BytesIO) -> list[ProcessedPdfFileContent]:
     whole_file_summary = summarize_pdf_with_retry(
         file_content, SUMMARIZE_PDF_PROMPT, assistant.id
     )
-    processed_contents.append(
-        ProcessedPdfFileContent(
-            content=whole_file_summary,
-            content_type=ProcessedPdfFileContentType.VISUAL_SUMMARY,
-            open_ai_file_id=upload_file_to_open_ai(file_content),
+
+    if whole_file_summary is None:
+        pages = split_pdf_into_pages(file_content=file_content)
+        pdf_page_images = extract_images_from_pdf(file_content)[:7]
+        image_summary = summarize_images(pdf_page_images, prompt=DESCRIBE_IMAGE_PROMPT)
+        processed_contents.append(
+            ProcessedPdfFileContent(
+                content=image_summary,
+                content_type=ProcessedPdfFileContentType.EXTRACTED_IMAGE_SUMMARY,
+            )
         )
-    )
+    else:
+        processed_contents.append(
+            ProcessedPdfFileContent(
+                content=whole_file_summary,
+                content_type=ProcessedPdfFileContentType.VISUAL_SUMMARY,
+                open_ai_file_id=upload_file_to_open_ai(file_content),
+            )
+        )
 
     pages = split_pdf_into_pages(file_content=file_content)
     print(f"PDF whole summary: {whole_file_summary}")
@@ -315,7 +327,7 @@ def extract_text_from_pdf(file_content: io.BytesIO) -> str:
     return all_text
 
 
-def extract_images_from_pdf(file_content: io.BytesIO) -> list[any]:
+def extract_images_from_pdf(file_content: io.BytesIO) -> list[BytesIO]:
     pdf_document = fitz.open(stream=file_content, filetype="pdf")
 
     images = []

@@ -1,8 +1,9 @@
 from openai import OpenAI
 
+client = OpenAI()
+
 
 def query_file(file_id: str, query: str, assistant_id: str | None = None) -> str:
-    client = OpenAI()
     if assistant_id is None:
         assistant = client.beta.assistants.create(
             name="Document Summarizer Assistant",

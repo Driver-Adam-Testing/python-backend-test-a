@@ -5,12 +5,14 @@ import os
 import time
 from io import BytesIO
 
-import anthropic
 import fitz
 from openai import OpenAI
 from PIL import Image
+from pydantic import BaseModel
 
+from shared.agent.agent_openai_strict import OpenAIStrictAgent
 from shared.agent.models.openai.file_search import query_file
+from shared.interfaces.agents.data_scope import DataScope
 from shared.interfaces.file_content.pdf_file_content import (
     ProcessedPdfFileContent,
     ProcessedPdfFileContentType,
@@ -18,7 +20,6 @@ from shared.interfaces.file_content.pdf_file_content import (
 from shared.utils.openai_file import upload_file_to_open_ai
 
 client = OpenAI()
-print()
 
 SUMMARIZE_PDF_PROMPT = """Analyze the provided PDF file and summarize its contents. The file may contain technical documentation, but it could also include other types of content. Your task is to perform an analysis and provide a summary.
 
@@ -35,8 +36,8 @@ Sections & Headers: Enumerate and describe  sections, sub-sections, headers, and
 Images, Diagrams, and Schematics: Describe all visual content in the document, including diagrams, charts, graphs, tables, and schematics. Explain the purpose and content of these visuals in detail.
 Tables: If tables are present, summarize the data or information presented in each table.
 
-If the document cannot be accessed, if you cannot search it, or if no meaningful information is available, return only the text: ERROR
-If you do not have enough information to summarize the file, return the text ERROR"""
+If you cannot access any file information, return 'I cannot access the file'.
+"""
 
 
 DESCRIBE_IMAGE_PROMPT = """
@@ -59,8 +60,30 @@ assistant = client.beta.assistants.create(
     name="PDF Summarizer",
     instructions="You are an expert microprocessors and hardware engineer, as well as a technical writer.",
     model="gpt-4o-mini-2024-07-18",
-    tools=[{"type": "file_search"}, {"type": "code_interpreter"}],
+    tools=[{"type": "file_search"}],
 )
+
+
+class SummaryValidation(BaseModel):
+    """
+    is_valid_summary_of_file is true if the text is a summary of a file.
+    is_valid_summary_of_file is false if the text alerts the user that information is missing or could not be accessed.
+    """
+
+    is_valid_summary_of_a_file: bool
+
+
+def validate_summary(summary: str) -> bool:
+    agent = OpenAIStrictAgent(
+        model="gpt-4o-mini-2024-07-18",
+        response_format=SummaryValidation,
+        scope=DataScope(organization_id="no-org", paths=[]),
+        log=False,
+    )
+    response: SummaryValidation = agent.invoke(
+        f"Return a ValidateSummary object based on the text: {summary}"
+    )
+    return response.is_valid_summary_of_a_file
 
 
 def summarize_pdf_with_retry(
@@ -73,25 +96,18 @@ def summarize_pdf_with_retry(
             whole_file_summary = query_file(
                 file_id=file_id, query=summarization_query, assistant_id=assistant_id
             )
-            print(whole_file_summary)
-            print(file_id)
-            print(assistant_id)
-            if whole_file_summary != "ERROR":
+
+            if validate_summary(whole_file_summary):
                 return whole_file_summary
+            else:
+                raise Exception("Could not validate summary")
+
         except Exception as e:
-            print(e)
             if attempt < attempts - 1:
                 print(f"Attempt {attempt + 1} failed: {e}. Retrying in 30 seconds...")
-                time.sleep(10)
+                time.sleep(30)
             else:
                 print(f"All {attempts} attempts failed: {e}")
-                print("Attempting image upload")
-                try:
-                    return summarize_images(
-                        pdf_page_to_image(file_content=file_content)
-                    )
-                except Exception as e:
-                    raise e
 
 
 def summarize_images(images: list[io.BytesIO], prompt: str | None) -> str:
@@ -113,30 +129,29 @@ def summarize_images(images: list[io.BytesIO], prompt: str | None) -> str:
 
         encoded_images.append(
             {
-                "type": "image",
-                "source": {
-                    "type": "base64",
-                    "media_type": image_media_type,
-                    "data": image_data,
-                },
+                "type": "image_url",
+                "image_url": {"url": f"data:{image_media_type};base64,{image_data}"},
             }
         )
 
     encoded_images.append(
-        {"type": "text", "text": prompt if prompt is not None else SUMMARIZE_PDF_PROMPT}
+        {
+            "type": "text",
+            "text": prompt if prompt is not None else DESCRIBE_IMAGE_PROMPT,
+        }
     )
 
-    message = anthropic.Anthropic().messages.create(
-        model="claude-3-5-sonnet-20240620",
-        max_tokens=2048,
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
         messages=[
             {
                 "role": "user",
                 "content": encoded_images,
             }
         ],
+        max_tokens=1024,
     )
-    return str(message.content[0].text)
+    return response.choices[0].message.content
 
 
 def process_visual_summary(
@@ -216,23 +231,27 @@ def run_process_pdf(file_content: io.BytesIO) -> list[ProcessedPdfFileContent]:
 
         with concurrent.futures.ThreadPoolExecutor() as executor:
             futures = []
-            futures.append(
-                executor.submit(
-                    process_visual_summary,
-                    page_content,
-                    index,
-                    assistant.id,
-                    SUMMARIZE_PDF_PROMPT
-                    + " \n\n<context> This file is one page of a larger file. only reference the file that you can search for.</context>  If there is an electrical schematic, describe all connections and features of the diagram.  If there is a chart, describe the type of chart and the values it depicts.",
+            # futures.append(
+            #     executor.submit(
+            #         process_visual_summary,
+            #         page_content,
+            #         index,
+            #         assistant.id,
+            #         SUMMARIZE_PDF_PROMPT
+            #         + " \n\n<context> This file is one page of a larger file. only reference the file that you can search for.</context>  If there is an electrical schematic, describe all connections and features of the diagram.  If there is a chart, describe the type of chart and the values it depicts.",
+            #     )
+            # )
+            try:
+                pdf_page_image = pdf_page_to_image(page_content)[0]
+                futures.append(executor.submit(process_image, pdf_page_image, index))
+            except Exception as e:
+                print(
+                    f"WARNING: An error occurred while converting PDF page to image on page {index + 1}: {e}"
                 )
-            )
             futures.append(executor.submit(process_extracted_text, page_content, index))
             futures.append(
                 executor.submit(process_extracted_tables, page_content, index)
             )
-
-            for image in extract_images_from_pdf(page_content):
-                futures.append(executor.submit(process_image, image, index))
 
             for future in concurrent.futures.as_completed(futures):
                 result = future.result()
@@ -253,9 +272,9 @@ def pdf_page_to_image(file_content: io.BytesIO) -> list[BytesIO]:
         pix = page.get_pixmap()
         img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
 
-        max_size = 1500
+        max_size = 2048
         if max(img.size) > max_size:
-            img.thumbnail((max_size, max_size), Image.ANTIALIAS)
+            img.thumbnail((max_size, max_size), Image.LANCZOS)
 
         img_bytes_io = io.BytesIO()
         img.save(img_bytes_io, format="JPEG")

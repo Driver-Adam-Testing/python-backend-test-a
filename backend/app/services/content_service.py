@@ -675,7 +675,7 @@ class ContentService:
                 detail="Content not found or not downloadable",
             )
 
-    def delete_content(self, organization_id: str, content_id: UUID) -> bool:
+    def delete_content(self, organization_id: str, content_id: UUID) -> None:
         logger.info(f"Deleting content {content_id} for organization {organization_id}")
 
         # Check if the content exists and is associated with the organization
@@ -696,6 +696,7 @@ class ContentService:
             DerivedContentTypeNames.APPLICATION_NOTE.value,
             DerivedContentTypeNames.TEMPLATE.value,
             DerivedContentTypeNames.SUPPLEMENTAL_DOCUMENT.value,
+            DerivedContentTypeNames.CODEBASE.value,
         }
 
         if content.content_type.type_name not in valid_content_types:
@@ -704,29 +705,32 @@ class ContentService:
             )
 
         try:
-            content_deleted = exec_delete_document_and_related_entities(
-                self.session, content
-            )
+            if content.content_type.type_name == DerivedContentTypeNames.CODEBASE.value:
+                records_to_delete_in_s3 = delete_codebase_and_related_entities(
+                    self.session, self, content_id
+                )
+                # delete remote content
+                for record in records_to_delete_in_s3:
+                    delete_from_remote_storage(record, organization_id)
+            else:
+                delete_document_and_related_entities(self.session, content)
+
+                if content.content_type.type_name == "supplemental-document":
+                    # delete remote content
+                    delete_from_remote_storage(content, organization_id)
+
             logger.info(
                 f"Content {content_id} successfully deleted for organization {organization_id}"
             )
 
-            if (
-                content_deleted
-                and content.content_type.type_name == "supplemental-document"
-            ):
-                # delete remote content
-                delete_from_remote_storage(content, organization_id)
-
-            return content_deleted
         except IntegrityError:
             logger.exception(f"Error deleting content {content_id}")
             raise HTTPException(status_code=400, detail="Error deleting content")
 
 
-def exec_delete_document_and_related_entities(
+def delete_document_and_related_entities(
     session: Session, content: DerivedContent
-) -> bool:
+) -> None:
     try:
         # Delete related DocumentSource entities
         document_sources = session.exec(
@@ -766,122 +770,128 @@ def exec_delete_document_and_related_entities(
 
         session.delete(content)
         session.commit()
-        return True
     except IntegrityError:
         logger.exception(f"Error deleting content {content.id}")
         session.rollback()
         raise
 
 
-def exec_delete_codebase_and_related_entities(
-    session: Session, service: ContentService, codebase_id: UUID
-) -> bool:
+def delete_document_sources_uncommited(session: Session, content_id: UUID) -> None:
+    # Delete related DocumentSource entities
+    document_sources = session.exec(
+        select(DocumentSource).where(
+            or_(
+                # fetch all document sources associated with the content. e.g. content is an app note
+                DocumentSource.document_id == content_id,
+                # fetch all document sources that are sources for the content.
+                # e.g. content is a pdf and is a source for a note.
+                DocumentSource.source_id == content_id,
+            )
+        )
+    ).all()
+    # Deleting Many-to-Many relationship requires fetching the related entities and deleting them
+    for document_source in document_sources:
+        session.delete(document_source)
+
+
+def delete_codebase_and_related_entities(
+    session: Session, service: ContentService, content_id: UUID
+) -> list[DerivedContent]:
+    records_to_delete_in_s3 = []
+    codebase_record = service.content_repository.get(content_id)
+    if not codebase_record:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Codebase not found"
+        )
+
+    codebase_id = codebase_record.codebase_id
+
     try:
-        already_deleted = []
-
-        # fetch the codebase record
-        codebase_record = session.exec(
-            select(Codebase).where(Codebase.id == codebase_id)
-        ).first()
-
-        if not codebase_record:  # if the codebase_id record does not exist check the derived content codebase_id
-            codebase_record = service.content_repository.get(codebase_id)
-            if not codebase_record:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND, detail="Codebase not found"
-                )
-        codebase_id = codebase_record.codebase_id
         # get all derived content associated with the codebase
         derived_contents = session.exec(
             select(DerivedContent).where(DerivedContent.codebase_id == codebase_id)
         ).all()
 
-        # filter out the pdfs
-        pdfs_to_delete = []
-        for derived_content in derived_contents:
-            if derived_content.content_type.type_name == "supplemental-document":
-                pdfs_to_delete.append(derived_content)
-
-        for pdf in pdfs_to_delete:
-            # TODO: dont delete set codebase_id to null
-            if exec_delete_document_and_related_entities(session, pdf):
-                already_deleted.append(pdf.id)
-
-        # filter out the app notes
-        app_notes_to_delete = []
-        for derived_content in derived_contents:
-            if derived_content.content_type.type_name == "application-note":
-                app_notes_to_delete.append(derived_content)
-
-        for app_note in app_notes_to_delete:
-            # TODO: delete sources set codebase_id to null and retain note
-            if exec_delete_document_and_related_entities(session, app_note):
-                already_deleted.append(app_note.id)
-
-        # filter out the templates
-        # templates_to_delete = []
-        # for derived_content in derived_contents:
-        #     if derived_content.content_type.type_name == "template":
-        #         templates_to_delete.append(derived_content)
-        #
-        # for template in templates_to_delete:
-        #     if exec_delete_document_and_related_entities(session, template):
-        #         already_deleted.append(template.id)
-
-        derived_contents = [
+        # filter out the pdfs and application notes
+        app_notes_and_pdfs = [
             derived_content
             for derived_content in derived_contents
-            if derived_content.id not in already_deleted
+            if derived_content.content_type.type_name
+            in [
+                DerivedContentTypeNames.APPLICATION_NOTE.value,
+                DerivedContentTypeNames.SUPPLEMENTAL_DOCUMENT.value,
+            ]
         ]
 
-        # select derived_contents where source_content_id is not null  and codebase_id = this is then do delete
-        # delete the derived_contents where source_content_id is null and codebase_id = codebase_id
-        # delete the codebase record
+        for record in app_notes_and_pdfs:
+            # TODO: dont delete set codebase_id to null
+            record.codebase_id = None
+            record.source_content_id = None
+            # delete all the document sources associated with the content
+            delete_document_sources_uncommited(session, record.id)
 
-        # filter out the tech docs
-        tech_docs_types = {
-            DerivedContentTypeNames.SHORT_PARAGRAPH_DESCRIPTION,
-            DerivedContentTypeNames.TERSE_SENTENCE_DESCRIPTION,
-            DerivedContentTypeNames.LONG_DESCRIPTION,
-            DerivedContentTypeNames.QUICK_START_ENTRY,
-            DerivedContentTypeNames.QUICK_START_GETTING_STARTED,
-            DerivedContentTypeNames.QUICK_START_DEPENDENCIES,
-            DerivedContentTypeNames.QUICK_START_USE,
-            DerivedContentTypeNames.ARCHITECTURE_DIAGRAM,
-            DerivedContentTypeNames.CHUNK_DESCRIPTIONS,
-            DerivedContentTypeNames.SHORT_SENTENCE_DESCRIPTION,
-            DerivedContentTypeNames.SYMBOL,
-        }
-        # delete all derived content associated with the codebase
+        # select derived_contents where source_content_id is not null  and codebase_id = this is then do delete
         tech_docs = [
             derived_content
             for derived_content in derived_contents
-            if derived_content.content_type.type_name in tech_docs_types
+            if derived_content.source_content_id is not None
+            and derived_content.codebase_id == codebase_id
         ]
+
         for tech_doc in tech_docs:
-            if exec_delete_document_and_related_entities(session, tech_doc):
-                already_deleted.append(tech_doc.id)
+            # embeddings should be deleted with this gets deleted. if not we need to add the logic to delete them also
+            session.delete(tech_doc)
 
-        # source_content = [
-        #     derived_content
-        #     for derived_content in derived_contents
-        #     if derived_content.id not in already_deleted
-        # ]
+        # delete the derived_contents where source_content_id is null and codebase_id = codebase_id
+        source_content = [
+            derived_content
+            for derived_content in derived_contents
+            if derived_content.source_content_id is None
+            and derived_content.codebase_id == codebase_id
+        ]
 
-        return True
-    except IntegrityError:
-        logger.exception(f"Error deleting codebase_id {codebase_id}")
+        for source in source_content:
+            session.delete(source)
+            if (
+                source.content_type.type_name
+                == DerivedContentTypeNames.CODEBASE_FILE.value
+            ):
+                records_to_delete_in_s3.append(source)
+
+        # delete the codebase record
+        codebase = session.exec(
+            select(Codebase).where(Codebase.id == codebase_id)
+        ).first()
+
+        session.delete(codebase)
+        session.commit()
+        return records_to_delete_in_s3
+    except Exception as e:
+        logger.exception(
+            f"Error deleting codebase_id {content_id} and related entities {e}"
+        )
         session.rollback()
         raise
 
 
+def organization_bucket_from_organization_id(organization_id: str) -> str:
+    """
+    Generate the organization bucket name from the organization ID
+    """
+    return hashlib.sha256(organization_id.encode()).hexdigest()[:63]
+
+
 def delete_from_remote_storage(content: DerivedContent, organization_id: str) -> None:
-    # TODO: make this a reusable function
-    # hash of organization_id to get the bucket name
-    organization_bucket = hashlib.sha256(organization_id.encode()).hexdigest()[:63]
-    key = (
-        content.relative_path
-        if content.relative_path.startswith("documents/")
-        else f"documents/{content.relative_path}"
+    organization_bucket = organization_bucket_from_organization_id(organization_id)
+    if content.content_type.type_name == DerivedContentTypeNames.CODEBASE_FILE.value:
+        key = f"{content.codebase_id}/source/{content.relative_path}"
+    else:
+        key = (
+            content.relative_path
+            if content.relative_path.startswith("documents/")
+            else f"documents/{content.relative_path}"
+        )
+    logger.info(
+        f"Deleting content {key} from s3 storage in bucket {organization_bucket}"
     )
     delete_file_from_s3(key=key, bucket=organization_bucket)

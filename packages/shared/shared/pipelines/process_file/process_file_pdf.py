@@ -88,7 +88,7 @@ def validate_summary(summary: str) -> bool:
 
 def summarize_pdf_with_retry(
     file_content: io.BytesIO, summarization_query: str, assistant_id: str
-) -> str:
+) -> str | None:
     attempts = 3
     file_id = upload_file_to_open_ai(file_content)
     for attempt in range(attempts):

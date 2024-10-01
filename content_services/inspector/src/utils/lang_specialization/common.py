@@ -15,7 +15,8 @@ class Lang(IntEnum):
     PYTHON = 3
     VERILOG = 4
     RUST = 5
-    DEFAULT = 6
+    ASSEMBLY = 6
+    DEFAULT = 7
 
     @classmethod
     def from_ext_and_source(cls, ext: str, source: str) -> Self:
@@ -32,6 +33,8 @@ class Lang(IntEnum):
                 return cls.VERILOG
             case ".rs":
                 return cls.RUST
+            case ".s" | ".S" | ".asm" | ".nasm" | ".inc":
+                return cls.ASSEMBLY
             case _:
                 return cls.DEFAULT
 

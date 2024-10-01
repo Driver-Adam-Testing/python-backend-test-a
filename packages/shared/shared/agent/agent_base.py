@@ -6,7 +6,6 @@ from database.db import get_session
 from database.models_v1 import RuntimeLogAgentInstance, RuntimeLogAgentMessage
 from pydantic import BaseModel
 
-from shared.agent.tools.tool_strict import ToolStrict
 from shared.interfaces.agents.data_scope import DataScope
 from shared.prompts.interface.iterations import (
     PROMPT_FINAL_ITERATION,
@@ -16,12 +15,13 @@ from shared.prompts.interface.iterations import (
 from shared.utils.bcolors import print_dict
 
 
+# ToolStrict Import for typing caused a circular import when calling modal. apparently tools.__init__.py gets called? why isn't this failing elsewhere.
 class AgentBase(ABC):
     def __init__(
         self,
         model: str,
         scope: DataScope,
-        tools: list[ToolStrict] | None = None,
+        tools: list[any] | None = None,
         max_iterations: int = 1,
         agent_id: uuid.UUID | None = None,
         response_format: type | None = None,

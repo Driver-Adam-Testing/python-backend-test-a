@@ -852,6 +852,14 @@ def delete_codebase_and_related_entities(
             # embeddings should be deleted with this gets deleted. if not we need to add the logic to delete them also
             session.delete(tech_doc)
 
+        # Delete related TagContent entities for the codebase
+        tag_contents = session.exec(
+            select(TagContent).where(TagContent.content_id == content_id)
+        ).all()
+
+        for tag_content in tag_contents:
+            session.delete(tag_content)
+
         # delete the derived_contents where source_content_id is null and codebase_id = codebase_id
         source_content = [
             derived_content

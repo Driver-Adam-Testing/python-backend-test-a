@@ -35,7 +35,8 @@ Sections & Headers: Enumerate and describe  sections, sub-sections, headers, and
 Images, Diagrams, and Schematics: Describe all visual content in the document, including diagrams, charts, graphs, tables, and schematics. Explain the purpose and content of these visuals in detail.
 Tables: If tables are present, summarize the data or information presented in each table.
 
-If the document cannot be accessed, if you cannot search it, or if no meaningful information is available, return only the text: ERROR"""
+If the document cannot be accessed, if you cannot search it, or if no meaningful information is available, return only the text: ERROR
+If you do not have enough information to summarize the file, return the text ERROR"""
 
 
 DESCRIBE_IMAGE_PROMPT = """

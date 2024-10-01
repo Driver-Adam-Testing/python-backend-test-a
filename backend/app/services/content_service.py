@@ -657,7 +657,7 @@ class ContentService:
         download_key = (
             f"documents/{content.relative_path}"
             if content.codebase_id is None
-            else f"{content.codebase_id}/{content.relative_path}"
+            else f"{content.codebase_id}/source/{content.relative_path}"  # old path must include /source/
         )
         logger.info(f"Trying download_key={download_key}")
         try:
@@ -823,22 +823,22 @@ def delete_codebase_and_related_entities(
         ).all()
 
         # filter out the pdfs and application notes
-        app_notes_and_pdfs = [
-            derived_content
-            for derived_content in derived_contents
-            if derived_content.content_type.type_name
-            in [
-                DerivedContentTypeNames.APPLICATION_NOTE.value,
-                DerivedContentTypeNames.SUPPLEMENTAL_DOCUMENT.value,
-            ]
-        ]
+        # app_notes_and_pdfs = [
+        #     derived_content
+        #     for derived_content in derived_contents
+        #     if derived_content.content_type.type_name
+        #     in [
+        #         DerivedContentTypeNames.APPLICATION_NOTE.value,
+        #         DerivedContentTypeNames.SUPPLEMENTAL_DOCUMENT.value,
+        #     ]
+        # ]
 
-        for record in app_notes_and_pdfs:
-            # TODO: dont delete set codebase_id to null
-            record.codebase_id = None
-            record.source_content_id = None
-            # delete all the document sources associated with the content
-            delete_document_sources_uncommited(session, record.id)
+        # for record in app_notes_and_pdfs:
+        #     TODO: dont delete set codebase_id to null
+        # record.codebase_id = None
+        # record.source_content_id = None
+        # delete all the document sources associated with the content
+        # delete_document_sources_uncommited(session, record.id)
 
         # select derived_contents where source_content_id is not null  and codebase_id = this is then do delete
         tech_docs = [

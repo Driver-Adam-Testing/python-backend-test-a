@@ -822,23 +822,27 @@ def delete_codebase_and_related_entities(
             select(DerivedContent).where(DerivedContent.codebase_id == codebase_id)
         ).all()
 
-        # filter out the pdfs and application notes
-        # app_notes_and_pdfs = [
-        #     derived_content
-        #     for derived_content in derived_contents
-        #     if derived_content.content_type.type_name
-        #     in [
-        #         DerivedContentTypeNames.APPLICATION_NOTE.value,
-        #         DerivedContentTypeNames.SUPPLEMENTAL_DOCUMENT.value,
-        #     ]
-        # ]
+        """
+        This block is commented out because migrating pdf and app notes are source will remove the need to delete but that still a WIP
 
-        # for record in app_notes_and_pdfs:
-        #     TODO: dont delete set codebase_id to null
-        # record.codebase_id = None
-        # record.source_content_id = None
+        # filter out the pdfs and application notes
+        app_notes_and_pdfs = [
+            derived_content
+            for derived_content in derived_contents
+            if derived_content.content_type.type_name
+            in [
+                DerivedContentTypeNames.APPLICATION_NOTE.value,
+                DerivedContentTypeNames.SUPPLEMENTAL_DOCUMENT.value,
+            ]
+        ]
+
+        for record in app_notes_and_pdfs:
+            # TODO: dont delete set codebase_id to null
+        record.codebase_id = None
+        record.source_content_id = None
         # delete all the document sources associated with the content
-        # delete_document_sources_uncommited(session, record.id)
+        delete_document_sources_uncommited(session, record.id)
+        """
 
         # select derived_contents where source_content_id is not null  and codebase_id = this is then do delete
         tech_docs = [

@@ -173,6 +173,7 @@ class DataStructureData(BaseModel):
                 output_cfg=OutputConfig(kind=OutputConfigKind.JSON_STRICT, payload=cls),
             )
         except openai.LengthFinishReasonError as _:
+            print("LengthFinishReasonError caught")
             return cls(
                 type="", members=[], description="Data structure too large to process"
             )
@@ -219,11 +220,20 @@ class FnData(BaseModel):
         user_prompt_complete = (
             f"{user_prompt}Function to document: {fn_name}\n\nCode:\n\n{code}"
         )
-        content_raw = llm.generate_response(
-            system_prompt=system_prompt,
-            user_prompt=user_prompt_complete,
-            output_cfg=OutputConfig(kind=OutputConfigKind.JSON_STRICT, payload=cls),
-        )
+        try:
+            content_raw = llm.generate_response(
+                system_prompt=system_prompt,
+                user_prompt=user_prompt_complete,
+                output_cfg=OutputConfig(kind=OutputConfigKind.JSON_STRICT, payload=cls),
+            )
+        except openai.LengthFinishReasonError as _:
+            print("LengthFinishReasonError caught")
+            return cls(
+                single_sentence="Function too large to process",
+                inputs=[],
+                control_flow=[],
+                output="",
+            )
 
         return cls.parse_raw(content_raw)
 
@@ -283,11 +293,20 @@ class ClassBaseData(BaseModel):
         user_prompt_complete = (
             f"{user_prompt}Class to document: {name}\n\nCode:\n\n{code}"
         )
-        content_raw = llm.generate_response(
-            system_prompt=system_prompt,
-            user_prompt=user_prompt_complete,
-            output_cfg=OutputConfig(kind=OutputConfigKind.JSON_STRICT, payload=cls),
-        )
+        try:
+            content_raw = llm.generate_response(
+                system_prompt=system_prompt,
+                user_prompt=user_prompt_complete,
+                output_cfg=OutputConfig(kind=OutputConfigKind.JSON_STRICT, payload=cls),
+            )
+        except openai.LengthFinishReasonError as _:
+            print("LengthFinishReasonError caught")
+            return cls(
+                type="",
+                members=[],
+                description="Object too large to process",
+                inherits_from=[],
+            )
 
         return cls.parse_raw(content_raw)
 

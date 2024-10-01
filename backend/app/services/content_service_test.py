@@ -19,6 +19,7 @@ from database.models_v1 import (
     Enum_Derived_Content_Status,
     Workspace,
 )
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.api.auth import CurrentUser
@@ -922,3 +923,18 @@ def test_delete_codebase(
     organization_id = current_user_with_org.organization_id
     content_id = complete_codebase_with_related_entities.id
     content_service.delete_content(organization_id, content_id)
+
+
+def test_delete_codebase_from_other_org(
+    content_service: ContentService,
+    current_user_with_org: CurrentUser,
+    complete_codebase_with_related_entities: DerivedContent,
+) -> None:
+    organization_id = current_user_with_org.organization_id
+    content_id = complete_codebase_with_related_entities.id
+    try:
+        with pytest.raises(HTTPException):
+            content_service.delete_content("some_other_org", content_id)
+
+    finally:
+        content_service.delete_content(organization_id, content_id)

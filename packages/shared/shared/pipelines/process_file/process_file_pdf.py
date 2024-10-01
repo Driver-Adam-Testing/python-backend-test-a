@@ -232,7 +232,6 @@ def run_process_pdf(file_content: io.BytesIO) -> list[ProcessedPdfFileContent]:
             ProcessedPdfFileContent(
                 content=whole_file_summary,
                 content_type=ProcessedPdfFileContentType.VISUAL_SUMMARY,
-                open_ai_file_id=upload_file_to_open_ai(file_content),
             )
         )
 

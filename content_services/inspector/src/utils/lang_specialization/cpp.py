@@ -4,6 +4,8 @@ from pathlib import Path
 from utils.codemap_ctags import extract_symbols_w_ctags
 
 from .common import (
+    class_dict_from_llm,
+    classes_dict_from_llm_multi_prompt,
     data_structure_dict_from_llm,
     data_structure_dict_from_llm_multi_prompt,
     fn_dict_from_llm,
@@ -12,7 +14,7 @@ from .common import (
     variables_dict_from_llm_multi_prompt,
 )
 
-CPP_DATA_STRUCTURES = {"enum", "union", "struct", "class", "typedef"}
+CPP_DATA_STRUCTURES = {"class", "struct", "enum", "union", "typedef"}
 CPP_FUNCTIONS = {"function", "prototype"}
 CPP_MACROS = {"macro"}
 CPP_VARIABLES = {"variable", "externvar"}
@@ -59,7 +61,6 @@ You will be given the content of a source code file. In a single paragraph of 3 
 In writing your description, write about about the conceptual use cases, applications, logic, and component interactions instead of focusing on particular functions, variables, etc.
 """
 
-
 DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON = """
 You are an expert C++ programmer and a software engineering documentation expert. You write detailed documentation to explain code written in C++.
 
@@ -76,6 +77,7 @@ Your job is to describe the data structure. **Always respond using exactly the f
         ...
     ],
     "description": <one paragraph description of the data structure>,
+    "inherits_from": [<list of parent classes or structs>],
 }
 
 Return JSON according to the schema above. Do not use the format ```json ... ```, just return the JSON data.
@@ -154,6 +156,49 @@ Summarize the variable in the code provided below.
 VARIABLES_NONE_CONTENT = "\n---\nNo global variables defined in this file."
 
 
+def cpp_class_checker(
+    code: str, root_rel_path: Path, structured_output: bool = True
+) -> list[dict] | str | None:
+    symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
+    classes_dict = {
+        s["name"]: {"methods": [], "nested_classes": []}
+        for s in symbols
+        if s["kind"] in CPP_DATA_STRUCTURES and not s["name"].startswith("__anon")
+    }
+    for s in symbols:
+        if (
+            (s.get("scope"))
+            and not s["name"].startswith("__anon")
+            and (s["kind"] in CPP_FUNCTIONS)
+            and s["scopeKind"] in CPP_DATA_STRUCTURES
+        ):
+            if s["scope"].split("::")[-1] not in classes_dict:
+                classes_dict[s["scope"].split("::")[-1]] = {
+                    "methods": [],
+                    "nested_classes": [],
+                    "undefined": True,
+                }
+            classes_dict[s["scope"].split("::")[-1]]["methods"].append(s)
+        elif (
+            (s.get("scope"))
+            and not s["name"].startswith("__anon")
+            and (s["kind"] in CPP_DATA_STRUCTURES)
+            and (s["scopeKind"] in CPP_DATA_STRUCTURES)
+        ):
+            if s["scope"].split("::")[-1] in classes_dict:
+                classes_dict[s["scope"].split("::")[-1]]["nested_classes"].append(s)
+
+    output = None
+    if len(classes_dict) > 0:
+        if structured_output:
+            output = classes_dict
+        else:
+            output = "\nClasses to document in the code:\n\n"
+            for n in classes_dict:
+                output += f"- {n}\n"
+    return output
+
+
 def cpp_data_structure_checker(
     code: str, root_rel_path: Path, structured_output: bool = True
 ) -> list[str] | str | None:
@@ -176,12 +221,37 @@ def cpp_data_structure_checker(
 
 def cpp_function_checker(
     code: str, root_rel_path: Path, structured_output: bool = True
-) -> list[str] | str | None:
+) -> list[str | dict] | str | None:
     symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
+
+    fn_names = [
+        s["name"]
+        for s in symbols
+        if s["kind"] in CPP_FUNCTIONS and not s["name"].startswith("__anon")
+    ]
     fn_list = []
     for s in symbols:
         if s["kind"] in CPP_FUNCTIONS and not s["name"].startswith("__anon"):
-            fn_list.append(s["name"])
+            # Extra step to dedupe here since we document some functions in classes now
+            contained_in_class = False
+            if (s.get("scope")) and (s.get("scopeKind") in CPP_DATA_STRUCTURES):
+                contained_in_class = True
+
+            fn_name = (
+                s["name"]
+                if s.get("scopeKind") not in CPP_DATA_STRUCTURES
+                else s["scope"].split("::")[-1] + "::" + s["name"]
+            )
+            if not contained_in_class and fn_names.count(s["name"]) == 1:
+                # Some classes are defined in a different file than the functions of that class
+                # so we append the class name to the function name to make that clearer in docs
+                fn_list.append(fn_name)
+            elif not contained_in_class and fn_names.count(s["name"]) > 1:
+                # if the function is overloaded we append the the symbol dict
+                # such that when we generate we can isolate the function lines
+                s["name"] = fn_name
+                fn_list.append(s)
+
     if len(fn_list) > 0:
         if structured_output:
             output = fn_list
@@ -246,6 +316,15 @@ fn_dict_from_llm_cpp = partial(
     FUNCTIONS_FOUND_USER_PROMPT,
 )
 
+class_dict_from_llm_cpp = partial(
+    class_dict_from_llm,
+    DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
+    DATA_STRUCTURES_FOUND_USER_PROMPT,
+    FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
+    FUNCTIONS_FOUND_USER_PROMPT,
+    "::",
+)
+
 variables_dict_from_llm_cpp_multi_prompt = partial(
     variables_dict_from_llm_multi_prompt,
     VARIABLES_FOUND_SYSTEM_PROMPT_JSON,
@@ -262,4 +341,13 @@ fn_dict_from_llm_cpp_multi_prompt = partial(
     fn_dict_from_llm_multi_prompt,
     FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
     FUNCTIONS_FOUND_USER_PROMPT,
+)
+
+classes_dict_from_llm_cpp_multi_prompt = partial(
+    classes_dict_from_llm_multi_prompt,
+    DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
+    DATA_STRUCTURES_FOUND_USER_PROMPT,
+    FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
+    FUNCTIONS_FOUND_USER_PROMPT,
+    "::",
 )

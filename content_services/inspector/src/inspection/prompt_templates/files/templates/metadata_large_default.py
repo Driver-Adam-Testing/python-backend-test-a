@@ -1,25 +1,21 @@
 from utils.lang_specialization.metadata import (
-    CONTENT_SUMMARY_FROM_CHUNKS,
     CONTENT_SUMMARY_PROMPT,
     METADATA_MEDIUM_AND_LARGE_SYSTEM_PROMPT,
-    PURPOSE_FROM_CHUNKS,
     PURPOSE_PROMPT_LARGE,
 )
 from utils.templates import S
 
-METADATA_MULTI_CONTEXT_TEMPLATE = [
+METADATA_LARGE_TEMPLATE = [
     (
-        S.MULTI_PROMPT_TEXT,
+        S.SINGLE_PROMPT_TEXT,
         "# Purpose",
         METADATA_MEDIUM_AND_LARGE_SYSTEM_PROMPT,
         PURPOSE_PROMPT_LARGE,
-        PURPOSE_FROM_CHUNKS,
     ),
     (
-        S.MULTI_PROMPT_TEXT,
+        S.SINGLE_PROMPT_TEXT,
         "# Content Summary",
         METADATA_MEDIUM_AND_LARGE_SYSTEM_PROMPT,
         CONTENT_SUMMARY_PROMPT,
-        CONTENT_SUMMARY_FROM_CHUNKS,
     ),
 ]

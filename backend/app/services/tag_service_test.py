@@ -15,6 +15,7 @@ from database.models_v1 import (
     DerivedContent,
     Enum_Codebase_Status,
     Enum_Derived_Content_Status,
+    Tag,
     Workspace,
 )
 from fastapi import HTTPException
@@ -101,6 +102,15 @@ def tag(
         yield tag
     finally:
         tag_service.delete_tag(current_user_with_org, tag.id)
+
+
+@pytest.fixture(scope="function")
+def delete_tag(tag_service: TagService, current_user_with_org: CurrentUser) -> Tag:
+    new_tag_input = NewTagInput(
+        name=f"TEST_TAG_{datetime.now()}", hex_color="#FFFFFF", type="tag"
+    )
+    tag = tag_service.create_tag(current_user_with_org, new_tag_input)
+    return tag
 
 
 @pytest.fixture(scope="function")
@@ -387,3 +397,22 @@ def test_list_tag_contents(
     assert results is not None
     assert results.limit == lt_input.limit
     assert results.offset == lt_input.offset
+
+
+def test_delete_tag(
+    tag_service: TagService,
+    current_user_with_org: CurrentUser,
+    delete_tag: Tag,
+) -> None:
+    tag_service.delete_tag(
+        current_user_with_org, delete_tag.id
+    )  # if no exception is raised, the test passes
+
+
+def test_delete_tag_from_other_org(
+    tag_service: TagService,
+    current_user_with_other_org: CurrentUser,
+    delete_tag: Tag,
+) -> None:
+    with pytest.raises(HTTPException):
+        tag_service.delete_tag(current_user_with_other_org, delete_tag.id)

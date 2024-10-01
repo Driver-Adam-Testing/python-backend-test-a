@@ -374,29 +374,33 @@ class TagService:
             count=content.count,
         )
 
-    def delete_tag(self: "TagService", user: CurrentUser, tag_id: UUID) -> bool:
+    def delete_tag(self: "TagService", user: CurrentUser, tag_id: UUID) -> None:
         organization_id = user.organization_id
 
-        tag = self.tag_repository.get(tag_id)
+        tag: Tag | None = self.tag_repository.get(tag_id)
+
         if tag is None or tag.organization_id != organization_id:
             logger.error(f"Tag {tag_id} not found for user {user.user_id}")
             raise HTTPException(status_code=404, detail="Tag not found")
 
-        if tag.content_links:
-            logger.error(
-                f"Tag {tag_id} has associated content. Disassociate content before deleting"
-            )
-            raise HTTPException(
-                status_code=400,
-                detail="Tag has associated content. Disassociate content before deleting",
-            )
-
         try:
-            self.tag_repository.delete(tag_id)
-            self.session.commit()
-            logger.info(f"Tag {tag_id} deleted for user {user.user_id}")
-            return True
+            delete_tag_and_related_entities(self.session, tag)
+            logger.info(f"Tag {tag_id} deleted by user {user.user_id}")
         except Exception as e:
             self.session.rollback()
-            logger.error(f"Error deleting tag {tag_id} for user {user.user_id}: {e}")
+            logger.exception(
+                f"Error deleting tag {tag_id} for user {user.user_id}: {e}"
+            )
             raise HTTPException(status_code=500, detail="Internal server error")
+
+
+def delete_tag_and_related_entities(session: Session, tag: Tag) -> None:
+    tag_contents = session.exec(
+        select(TagContent).where(TagContent.tag_id == tag.id)
+    ).all()
+
+    for tag_content in tag_contents:
+        session.delete(tag_content)
+
+    session.delete(tag)
+    session.commit()

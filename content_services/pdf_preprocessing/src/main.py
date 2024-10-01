@@ -25,6 +25,7 @@ pdf_preprocessing_modal_config = {
         modal.Secret.from_name("open-ai"),
         modal.Secret.from_name("db"),
         modal.Secret.from_name("aws-inspector-s3"),
+        modal.Secret.from_name("anthropic"),
     ],
     "proxy": modal.Proxy.from_name("pg-proxy")
     if os.environ["MODAL_ENVIRONMENT"] != "staging"
@@ -36,7 +37,11 @@ pdf_preprocessing_modal_config = {
 
 @app.function(
     image=modal.Image.debian_slim(python_version="3.12").pip_install("sendgrid"),
-    secrets=[modal.Secret.from_name("sendgrid"), modal.Secret.from_name("env-name")],
+    secrets=[
+        modal.Secret.from_name("sendgrid"),
+        modal.Secret.from_name("env-name"),
+        modal.Secret.from_name("anthropic"),
+    ],
 )
 def send_exception_email(exception_details: str) -> None:
     import sendgrid
@@ -60,7 +65,7 @@ def send_exception_email(exception_details: str) -> None:
 
 
 @app.function(timeout=10800, **pdf_preprocessing_modal_config)
-def create_and_embed_pdf_summaries(content_id: any) -> None:
+def create_and_embed_pdf_summaries(content_id: str) -> None:
     import io
 
     import requests
@@ -76,6 +81,7 @@ def create_and_embed_pdf_summaries(content_id: any) -> None:
     from sqlalchemy.orm import selectinload
     from sqlmodel import Session, select
 
+    print(f"Processing {content_id!s}")
     try:
         # TODO: call an orm function to do this.
         with Session(engine) as session:
@@ -102,6 +108,7 @@ def create_and_embed_pdf_summaries(content_id: any) -> None:
                 )
 
         response = requests.get(presigned_url)
+        print(str(presigned_url))
         response.raise_for_status()
 
         pdf_content = io.BytesIO(response.content)
@@ -168,6 +175,7 @@ def create_and_embed_pdf_summaries(content_id: any) -> None:
         exception_details = (
             f"Exception type: {exception_type}\nFile: {filename}\nLine: {line_number}"
         )
+        print(exception_details)
         send_exception_email.remote(exception_details)
         raise e
 

@@ -1,14 +1,14 @@
 from openai import OpenAI
 
 
-def query_file(file_id, query, assistant_id: str | None = None) -> str:
+def query_file(file_id: str, query: str, assistant_id: str | None = None) -> str:
     client = OpenAI()
     if assistant_id is None:
         assistant = client.beta.assistants.create(
-            name="File Searcher",
-            instructions="You are an expert microprocessors and hardware engineer, as well as a brilliant technical writer.",
+            name="Document Summarizer Assistant",
+            instructions="You are an expert microprocessors and hardware engineer, as well as a brilliant technical writer and summarizer. You understand PDFs of all kinds.",
             model="gpt-4o",
-            tools=[{"type": "file_search"}],
+            tools=[{"type": "file_search"}, {"type": "code_interpreter"}],
         )
         assistant_id = assistant.id
 
@@ -18,7 +18,8 @@ def query_file(file_id, query, assistant_id: str | None = None) -> str:
                 "role": "user",
                 "content": query,
                 "attachments": [
-                    {"file_id": file_id, "tools": [{"type": "file_search"}]}
+                    {"file_id": file_id, "tools": [{"type": "file_search"}]},
+                    {"file_id": file_id, "tools": [{"type": "code_interpreter"}]},
                 ],
             }
         ]
@@ -26,7 +27,7 @@ def query_file(file_id, query, assistant_id: str | None = None) -> str:
 
     run = client.beta.threads.runs.create_and_poll(
         thread_id=thread.id,
-        instructions="You're an expert technical writer and engineer who can understand technical documents.",
+        instructions="Summarize the key points of the document.",
         assistant_id=assistant_id,
     )
 

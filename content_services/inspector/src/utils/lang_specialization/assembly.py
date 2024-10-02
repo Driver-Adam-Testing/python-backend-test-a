@@ -25,14 +25,13 @@ When writing your paragraphs, consider questions like the following. You do not 
 - Does this code provide narrow or broad functionality?
 - What are the most important technical components?
 - Is this code a collection of many different components? If so, what is the common theme or purpose?
-- What kind of code is this? For example, is this code clearly an executable (e.g., main.c), a header file, a library file intended to be imported elsewhere, a collection of configuration variables, etc.?
 """
 
 SOURCE_CODE_SMALL_PURPOSE_USER_PROMPT = """
 You will be given the content of a source code file. In a single paragraph of 3 to 5 sentences, explain the purpose of the file. Consider questions such as the following when providing your output:
 
 - Does this code provide narrow or broad functionality?
-- What kind of code is this? For example, is this code clearly an executable (e.g., main.c), a header file, a library file intended to be imported elsewhere, a collection of configuration variables, etc.?
+- What are the most important technical components?
 """
 
 TECHNICAL_CONCEPTS = """
@@ -213,8 +212,7 @@ MACRO_NONE_CONTENT = "\n---\nNo macros defined in this file."
 VARIABLES_CHECKER_SYSTEM_PROMPT_JSON = """
 Your job is to list any global variables defined in the assembly code provided below.
 
-- A global variable is declared at the top level scope. Local variables declared and used inside of subroutines or other scopes are not global variables. Only include global variables.
-- You are only looking for global variables **defined** in the code given to you. If a variable is imported or used without being defined in the code, do not include it.
+- A global variable could be declared in the data or bss sections if present. Local variables declared and used inside of subroutines or other scopes are not global variables. Only include global variables.
 
 **You only include the name of any global variable**, not its value or contents.
 You only respond with a list of global variable names. **Always respond using exactly the following JSON schema**:

@@ -202,6 +202,17 @@ class Enum_Codebase_Status(str, enum.Enum):
     processing_error = "processing-error"
     codebase_rejected = "codebase-rejected"
 
+    def into_dc_status(self) -> Enum_Derived_Content_Status:
+        match self:
+            case Enum_Codebase_Status.processing:
+                return Enum_Derived_Content_Status.generating
+            case Enum_Codebase_Status.processing_complete:
+                return Enum_Derived_Content_Status.generation_complete
+            case Enum_Codebase_Status.processing_error:
+                return Enum_Derived_Content_Status.generation_error
+            case _:
+                raise ValueError(f"No valid mapping for status: {self}")
+
 
 class Workspace(SQLModel, table=True):  # type: ignore
     __tablename__ = "workspaces"

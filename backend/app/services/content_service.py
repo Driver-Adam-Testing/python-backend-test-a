@@ -742,16 +742,6 @@ class ContentService:
 def delete_document_and_related_entities(
     session: Session, content: DerivedContent
 ) -> None:
-    if not session.in_transaction():
-        with session.begin():
-            _delete_content_and_related_entities(session, content)
-    else:
-        _delete_content_and_related_entities(session, content)
-
-
-def _delete_content_and_related_entities(
-    session: Session, content: DerivedContent
-) -> None:
     try:
         # Delete related DocumentSource entities
         document_sources = session.exec(
@@ -821,16 +811,6 @@ def delete_document_sources_uncommited(session: Session, content_id: UUID) -> No
 def delete_codebase_and_related_entities(
     session: Session, service: ContentService, content_id: UUID
 ) -> list[DerivedContent]:
-    if not session.in_transaction():
-        with session.begin():
-            return _delete_codebase_and_related_entities(session, service, content_id)
-    else:
-        return _delete_codebase_and_related_entities(session, service, content_id)
-
-
-def _delete_codebase_and_related_entities(
-    session: Session, service: ContentService, content_id: UUID
-) -> list[DerivedContent]:
     records_to_delete_in_s3 = []
     codebase_record = service.content_repository.get(content_id)
     if not codebase_record:
@@ -845,28 +825,6 @@ def _delete_codebase_and_related_entities(
         derived_contents = session.exec(
             select(DerivedContent).where(DerivedContent.codebase_id == codebase_id)
         ).all()
-
-        """
-        This block is commented out because migrating pdf and app notes are source will remove the need to delete but that still a WIP
-
-        # filter out the pdfs and application notes
-        app_notes_and_pdfs = [
-            derived_content
-            for derived_content in derived_contents
-            if derived_content.content_type.type_name
-            in [
-                DerivedContentTypeNames.APPLICATION_NOTE.value,
-                DerivedContentTypeNames.SUPPLEMENTAL_DOCUMENT.value,
-            ]
-        ]
-
-        for record in app_notes_and_pdfs:
-            # TODO: dont delete set codebase_id to null
-        record.codebase_id = None
-        record.source_content_id = None
-        # delete all the document sources associated with the content
-        delete_document_sources_uncommited(session, record.id)
-        """
 
         # select derived_contents where source_content_id is not null
         irs = [

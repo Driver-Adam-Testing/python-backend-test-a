@@ -657,7 +657,7 @@ class ContentService:
         download_key = (
             f"documents/{content.relative_path}"
             if content.codebase_id is None
-            else f"{content.codebase_id}/source/{content.relative_path}"  # old path must include /source/
+            else f"{content.codebase_id}/{content.relative_path}"
         )
         logger.info(f"Trying download_key={download_key}")
         try:

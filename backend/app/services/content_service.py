@@ -704,41 +704,52 @@ class ContentService:
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid content type"
             )
 
-        try:
-            if content.content_type.type_name == DerivedContentTypeNames.CODEBASE.value:
-                records_to_delete_in_s3 = delete_codebase_and_related_entities(
-                    self.session, self, content_id
-                )
-                # delete remote content
-                for record in records_to_delete_in_s3:
-                    try:
-                        delete_from_remote_storage(record, organization_id)
-                    except Exception as e:
-                        """
-                        if we get here the bucket or content might not exist.
-                        This was added because automated testing was failing since the content is made up and does not exist in the bucket.
-                        See Eric for more information.
-                        """
-                        logger.exception(
-                            f"Error deleting content {record.id} from remote storage: {e}"
-                        )
-            else:
-                delete_document_and_related_entities(self.session, content)
-
-                if content.content_type.type_name == "supplemental-document":
-                    # delete remote content
-                    delete_from_remote_storage(content, organization_id)
-
-            logger.info(
-                f"Content {content_id} successfully deleted for organization {organization_id}"
+        if content.content_type.type_name == DerivedContentTypeNames.CODEBASE.value:
+            records_to_delete_in_s3 = delete_codebase_and_related_entities(
+                self.session, self, content_id
             )
+            # delete remote content
+            for record in records_to_delete_in_s3:
+                logger.info(
+                    f"Deleting content {record.relative_path} from remote storage"
+                )
+                try:
+                    delete_from_remote_storage(record, organization_id)
+                except Exception:
+                    """
+                    if we get here the bucket or content might not exist.
+                    This was added because automated testing was failing since the content is made up and does not exist in the bucket.
+                    See Eric for more information.
+                    """
+                    logger.exception(
+                        f"Error deleting content {record.id} from remote storage"
+                    )
+        else:
+            try:
+                delete_document_and_related_entities(self.session, content)
+                logger.info(
+                    f"Content {content_id} successfully deleted for organization {organization_id}"
+                )
+            except IntegrityError:
+                logger.exception(f"Error deleting content {content_id}")
+                raise HTTPException(status_code=400, detail="Error deleting content")
 
-        except IntegrityError:
-            logger.exception(f"Error deleting content {content_id}")
-            raise HTTPException(status_code=400, detail="Error deleting content")
+            if content.content_type.type_name == "supplemental-document":
+                # delete remote content
+                delete_from_remote_storage(content, organization_id)
 
 
 def delete_document_and_related_entities(
+    session: Session, content: DerivedContent
+) -> None:
+    if not session.in_transaction():
+        with session.begin():
+            _delete_content_and_related_entities(session, content)
+    else:
+        _delete_content_and_related_entities(session, content)
+
+
+def _delete_content_and_related_entities(
     session: Session, content: DerivedContent
 ) -> None:
     try:
@@ -779,11 +790,14 @@ def delete_document_and_related_entities(
             session.delete(derived_content)
 
         session.delete(content)
-        session.commit()
-    except IntegrityError:
+    # except IntegrityError:
+    except:
         logger.exception(f"Error deleting content {content.id}")
         session.rollback()
         raise
+    else:
+        # if not session.in_transaction():
+        session.commit()
 
 
 def delete_document_sources_uncommited(session: Session, content_id: UUID) -> None:
@@ -805,6 +819,16 @@ def delete_document_sources_uncommited(session: Session, content_id: UUID) -> No
 
 
 def delete_codebase_and_related_entities(
+    session: Session, service: ContentService, content_id: UUID
+) -> list[DerivedContent]:
+    if not session.in_transaction():
+        with session.begin():
+            return _delete_codebase_and_related_entities(session, service, content_id)
+    else:
+        return _delete_codebase_and_related_entities(session, service, content_id)
+
+
+def _delete_codebase_and_related_entities(
     session: Session, service: ContentService, content_id: UUID
 ) -> list[DerivedContent]:
     records_to_delete_in_s3 = []
@@ -886,14 +910,16 @@ def delete_codebase_and_related_entities(
         ).first()
 
         session.delete(codebase)
-        session.commit()
-        return records_to_delete_in_s3
-    except Exception as e:
+    except:
+        # except Exception as e:
         logger.exception(
-            f"Error deleting codebase_id {content_id} and related entities {e}"
+            f"Error deleting codebase_id {content_id} and related entities"
         )
         session.rollback()
         raise
+    else:
+        session.commit()
+        return records_to_delete_in_s3
 
 
 def organization_bucket_from_organization_id(organization_id: str) -> str:

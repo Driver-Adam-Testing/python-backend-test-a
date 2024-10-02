@@ -7,6 +7,7 @@ from botocore.exceptions import ClientError
 from database.derived_content_types import DerivedContentTypeNames
 from database.models_v1 import (
     ChunkAndEmbedding,
+    Codebase,
     DerivedContent,
     DerivedContentType,
     DocumentSource,
@@ -688,7 +689,7 @@ class ContentService:
                 detail="Content not found or not downloadable",
             )
 
-    def delete_content(self, organization_id: str, content_id: UUID) -> bool:
+    def delete_content(self, organization_id: str, content_id: UUID) -> None:
         logger.info(f"Deleting content {content_id} for organization {organization_id}")
 
         # Check if the content exists and is associated with the organization
@@ -709,6 +710,7 @@ class ContentService:
             DerivedContentTypeNames.APPLICATION_NOTE.value,
             DerivedContentTypeNames.TEMPLATE.value,
             DerivedContentTypeNames.SUPPLEMENTAL_DOCUMENT.value,
+            DerivedContentTypeNames.CODEBASE.value,
         }
 
         if content.content_type.type_name not in valid_content_types:
@@ -716,30 +718,44 @@ class ContentService:
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid content type"
             )
 
-        try:
-            content_deleted = exec_delete_document_and_related_entities(
-                self.session, content
+        if content.content_type.type_name == DerivedContentTypeNames.CODEBASE.value:
+            records_to_delete_in_s3 = delete_codebase_and_related_entities(
+                self.session, self, content_id
             )
-            logger.info(
-                f"Content {content_id} successfully deleted for organization {organization_id}"
-            )
+            # delete remote content
+            for record in records_to_delete_in_s3:
+                logger.info(
+                    f"Deleting content {record.relative_path} from remote storage"
+                )
+                try:
+                    delete_from_remote_storage(record, organization_id)
+                except Exception:
+                    """
+                    if we get here the bucket or content might not exist.
+                    This was added because automated testing was failing since the content is made up and does not exist in the bucket.
+                    See Eric for more information.
+                    """
+                    logger.exception(
+                        f"Error deleting content {record.id} from remote storage"
+                    )
+        else:
+            try:
+                delete_document_and_related_entities(self.session, content)
+                logger.info(
+                    f"Content {content_id} successfully deleted for organization {organization_id}"
+                )
+            except IntegrityError:
+                logger.exception(f"Error deleting content {content_id}")
+                raise HTTPException(status_code=400, detail="Error deleting content")
 
-            if (
-                content_deleted
-                and content.content_type.type_name == "supplemental-document"
-            ):
+            if content.content_type.type_name == "supplemental-document":
                 # delete remote content
                 delete_from_remote_storage(content, organization_id)
 
-            return content_deleted
-        except IntegrityError:
-            logger.exception(f"Error deleting content {content_id}")
-            raise HTTPException(status_code=400, detail="Error deleting content")
 
-
-def exec_delete_document_and_related_entities(
+def delete_document_and_related_entities(
     session: Session, content: DerivedContent
-) -> bool:
+) -> None:
     try:
         # Delete related DocumentSource entities
         document_sources = session.exec(
@@ -778,21 +794,121 @@ def exec_delete_document_and_related_entities(
             session.delete(derived_content)
 
         session.delete(content)
-        session.commit()
-        return True
-    except IntegrityError:
+    # except IntegrityError:
+    except:
         logger.exception(f"Error deleting content {content.id}")
         session.rollback()
         raise
+    else:
+        # if not session.in_transaction():
+        session.commit()
+
+
+def delete_document_sources_uncommited(session: Session, content_id: UUID) -> None:
+    # Delete related DocumentSource entities
+    document_sources = session.exec(
+        select(DocumentSource).where(
+            or_(
+                # fetch all document sources associated with the content. e.g. content is an app note
+                DocumentSource.document_id == content_id,
+                # fetch all document sources that are sources for the content.
+                # e.g. content is a pdf and is a source for a note.
+                DocumentSource.source_id == content_id,
+            )
+        )
+    ).all()
+    # Deleting Many-to-Many relationship requires fetching the related entities and deleting them
+    for document_source in document_sources:
+        session.delete(document_source)
+
+
+def delete_codebase_and_related_entities(
+    session: Session, service: ContentService, content_id: UUID
+) -> list[DerivedContent]:
+    records_to_delete_in_s3 = []
+    codebase_record = service.content_repository.get(content_id)
+    if not codebase_record:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Codebase not found"
+        )
+
+    codebase_id = codebase_record.codebase_id
+
+    try:
+        # get all derived content associated with the codebase
+        derived_contents = session.exec(
+            select(DerivedContent).where(DerivedContent.codebase_id == codebase_id)
+        ).all()
+
+        # select derived_contents where source_content_id is not null
+        irs = [
+            derived_content
+            for derived_content in derived_contents
+            if derived_content.source_content_id is not None
+        ]
+
+        for ir in irs:
+            session.delete(ir)
+
+        # Delete related TagContent entities for the codebase
+        tag_contents = session.exec(
+            select(TagContent).where(TagContent.content_id == content_id)
+        ).all()
+
+        for tag_content in tag_contents:
+            session.delete(tag_content)
+
+        # delete the derived_contents where source_content_id is null and codebase_id = codebase_id
+        source_content = [
+            derived_content
+            for derived_content in derived_contents
+            if derived_content.source_content_id is None
+        ]
+
+        for source in source_content:
+            session.delete(source)
+            if (
+                source.content_type.type_name
+                == DerivedContentTypeNames.CODEBASE_FILE.value
+            ):
+                records_to_delete_in_s3.append(source)
+
+        # delete the codebase record
+        codebase = session.exec(
+            select(Codebase).where(Codebase.id == codebase_id)
+        ).first()
+
+        session.delete(codebase)
+    except:
+        # except Exception as e:
+        logger.exception(
+            f"Error deleting codebase_id {content_id} and related entities"
+        )
+        session.rollback()
+        raise
+    else:
+        session.commit()
+        return records_to_delete_in_s3
+
+
+def organization_bucket_from_organization_id(organization_id: str) -> str:
+    """
+    Generate the organization bucket name from the organization ID
+    """
+    return hashlib.sha256(organization_id.encode()).hexdigest()[:63]
 
 
 def delete_from_remote_storage(content: DerivedContent, organization_id: str) -> None:
-    # TODO: make this a reusable function
-    # hash of organization_id to get the bucket name
-    organization_bucket = hashlib.sha256(organization_id.encode()).hexdigest()[:63]
-    key = (
-        content.relative_path
-        if content.relative_path.startswith("documents/")
-        else f"documents/{content.relative_path}"
+    organization_bucket = organization_bucket_from_organization_id(organization_id)
+    if content.content_type.type_name == DerivedContentTypeNames.CODEBASE_FILE.value:
+        key = f"{content.codebase_id}/source/{content.relative_path}"
+    else:
+        key = (
+            content.relative_path
+            if content.relative_path.startswith("documents/")
+            else f"documents/{content.relative_path}"
+        )
+    logger.info(
+        f"Deleting content {key} from s3 storage in bucket {organization_bucket}"
     )
     delete_file_from_s3(key=key, bucket=organization_bucket)

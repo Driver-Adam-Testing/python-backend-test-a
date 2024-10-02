@@ -341,6 +341,208 @@ def related_entities(
     return [delete_content, content, tag, chunk_and_embed]
 
 
+@pytest.fixture(scope="function")
+def complete_codebase_with_related_entities(
+    db: Session,
+    content_service: ContentService,
+    current_user_with_org: CurrentUser,
+    workspace: Workspace,
+) -> DerivedContent:
+    """
+    Create a complete codebase with related entities
+    """
+    # Create a codebase
+    codebase = Codebase(
+        workspace_id=workspace.id,
+        codebase_name="TEST_CODEBASE",
+        description="TEST_DESCRIPTION",
+        status=Enum_Codebase_Status.processing_complete.value,
+        storage_url="TEST_STORAGE_URL",
+        resource_root="TEST_CODEBASE/",
+        creator_id=current_user_with_org.user_id,
+    )
+    db.add(codebase)
+    db.commit()
+
+    codebase_content_type_id = (
+        content_service.derived_content_type_repository.get_by_type_name(
+            DerivedContentTypeNames.CODEBASE.value
+        )
+    ).id
+    codebase_directory_content_type_id = (
+        content_service.derived_content_type_repository.get_by_type_name(
+            DerivedContentTypeNames.CODEBASE_DIRECTORY.value
+        )
+    ).id
+    codebase_file_content_type_id = (
+        content_service.derived_content_type_repository.get_by_type_name(
+            DerivedContentTypeNames.CODEBASE_FILE.value
+        )
+    ).id
+    codebase_source_content_records = [
+        {
+            "content_type_id": codebase_content_type_id,
+            "source_content_id": None,
+            "content": None,
+            "metadata": {},
+            "status": "generation-complete",
+            "order": 0,
+            "relative_path": "TEST_CODEBASE",
+            "workspace_id": workspace.id,
+            "codebase_id": codebase.id,
+            "content_name": None,
+        },
+        {
+            "content_type_id": codebase_directory_content_type_id,
+            "source_content_id": None,
+            "content": None,
+            "metadata": {},
+            "status": "generation-complete",
+            "order": 0,
+            "relative_path": "TEST_CODEBASE/",
+            "workspace_id": workspace.id,
+            "codebase_id": codebase.id,
+            "content_name": None,
+        },
+        {
+            "content_type_id": codebase_file_content_type_id,
+            "source_content_id": None,
+            "content": None,
+            "metadata": {},
+            "status": "generation-complete",
+            "order": 0,
+            "relative_path": "TEST_CODEBASE/README.md",
+            "workspace_id": workspace.id,
+            "codebase_id": codebase.id,
+            "content_name": None,
+        },
+        {
+            "content_type_id": codebase_file_content_type_id,
+            "source_content_id": None,
+            "content": None,
+            "metadata": {
+                "size": 957,
+                "sloc": 33,
+                "is_hex": False,
+                "extension": "",
+                "is_binary": False,
+                "is_analyzable": True,
+                "is_blacklisted": False,
+            },
+            "status": "generation-complete",
+            "order": 0,
+            "relative_path": "TEST_CODEBASE/main.py",
+            "workspace_id": workspace.id,
+            "codebase_id": codebase.id,
+            "content_name": None,
+        },
+        {
+            "content_type_id": codebase_file_content_type_id,
+            "source_content_id": None,
+            "content": None,
+            "metadata": {
+                "size": 957,
+                "sloc": 33,
+                "is_hex": False,
+                "extension": "",
+                "is_binary": False,
+                "is_analyzable": True,
+                "is_blacklisted": False,
+            },
+            "status": "generation-complete",
+            "order": 0,
+            "relative_path": "TEST_CODEBASE/main_test.py",
+            "workspace_id": workspace.id,
+            "codebase_id": codebase.id,
+            "content_name": None,
+        },
+    ]
+    records = []
+    codebase_record = None
+
+    for record in codebase_source_content_records:
+        content = DerivedContent(**record)
+        if content.content_type_id == codebase_content_type_id:
+            codebase_record = content
+
+        records.append(content)
+        db.add(content)
+        db.commit()
+
+    ld_content_type_id = (
+        content_service.derived_content_type_repository.get_by_type_name(
+            DerivedContentTypeNames.LONG_DESCRIPTION.value
+        )
+    ).id
+    sd_content_type_id = (
+        content_service.derived_content_type_repository.get_by_type_name(
+            DerivedContentTypeNames.SHORT_SENTENCE_DESCRIPTION.value
+        )
+    ).id
+    spd_content_type_id = (
+        content_service.derived_content_type_repository.get_by_type_name(
+            DerivedContentTypeNames.SHORT_PARAGRAPH_DESCRIPTION.value
+        )
+    ).id
+
+    # add revived content to each
+    TECH_DOC_TEXT_IRS = {
+        DerivedContentTypeNames.LONG_DESCRIPTION.value: "To get started with the `TEST_CODEBASE` codebase, begin by setting up the containerized environment using the `READMD.md` located at `TEST_CODEBASE/README.md`.",
+        DerivedContentTypeNames.SHORT_SENTENCE_DESCRIPTION.value: "# Some overview text in markdown.",
+        DerivedContentTypeNames.SHORT_PARAGRAPH_DESCRIPTION.value: "The `main.py` in the `TEST_CODEBASE` codebase sets up a multi-stage build environment for a Python FastAPI application, installing dependencies, building the application, and preparing it for production deployment.",
+    }
+    # for i, record in enumerate(codebase_source_content_records):
+    for record in records:
+        long_description = DerivedContent(
+            content_type_id=ld_content_type_id,
+            content=TECH_DOC_TEXT_IRS[DerivedContentTypeNames.LONG_DESCRIPTION.value],
+            workspace_id=workspace.id,
+            codebase_id=codebase.id,
+            source_content_id=record.id,
+            status=Enum_Derived_Content_Status.generation_complete,
+            metadata={},
+            relative_path=record.relative_path,
+            order=0,
+        )
+        short_sentence_description = DerivedContent(
+            content_type_id=sd_content_type_id,
+            content=TECH_DOC_TEXT_IRS[
+                DerivedContentTypeNames.SHORT_SENTENCE_DESCRIPTION.value
+            ],
+            workspace_id=workspace.id,
+            codebase_id=codebase.id,
+            source_content_id=record.id,
+            status=Enum_Derived_Content_Status.generation_complete,
+            metadata={},
+            relative_path=record.relative_path,
+            order=0,
+        )
+        short_paragraph_description = DerivedContent(
+            content_type_id=spd_content_type_id,
+            content=TECH_DOC_TEXT_IRS[
+                DerivedContentTypeNames.SHORT_PARAGRAPH_DESCRIPTION.value
+            ],
+            workspace_id=workspace.id,
+            codebase_id=codebase.id,
+            source_content_id=record.id,
+            status=Enum_Derived_Content_Status.generation_complete,
+            metadata={},
+            relative_path=record.relative_path,
+            order=0,
+        )
+        db.add_all(
+            [
+                long_description,
+                short_sentence_description,
+                short_paragraph_description,
+            ]
+        )
+
+    db.commit()
+    print(f"Codebase content created for {codebase_record.codebase_id}")
+    return codebase_record
+
+
 def test_create_blank_document(
     content_service: ContentService,
     current_user_with_org: CurrentUser,
@@ -714,3 +916,26 @@ def test_delete_content_from_other_org(
         HTTPException
     ):  # Replace with the actual exception your service raises
         content_service.get_content_by_id(content_id, organization_id)
+
+
+def test_delete_codebase(
+    content_service: ContentService,
+    current_user_with_org: CurrentUser,
+    complete_codebase_with_related_entities: DerivedContent,
+) -> None:
+    organization_id = current_user_with_org.organization_id
+    content_id = complete_codebase_with_related_entities.id
+    content_service.delete_content(organization_id, content_id)
+
+
+def test_delete_codebase_from_other_org(
+    content_service: ContentService,
+    current_user_with_org: CurrentUser,
+    complete_codebase_with_related_entities: DerivedContent,
+) -> None:
+    organization_id = current_user_with_org.organization_id
+    content_id = complete_codebase_with_related_entities.id
+    with pytest.raises(HTTPException):
+        content_service.delete_content("some_other_org", content_id)
+
+    content_service.delete_content(organization_id, content_id)

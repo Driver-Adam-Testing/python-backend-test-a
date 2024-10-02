@@ -552,7 +552,7 @@ class ContentService:
         # Apply the codebase status to the file and folder DC statuses. This is required for the frontend
         # to know if a source can be used for search/agents.
         for source in sources:
-            if source.codebase_id and source.source_content_id in {
+            if source.codebase_id and source.content_type_id in {
                 codebase_file_id,
                 codebase_directory_id,
             }:

@@ -8,11 +8,16 @@ from utils.models import ChatOpenAI, OutputConfig, OutputConfigKind
 
 from .common import (
     MAX_VARIABLES_TO_DOCUMENT,
+    SYMBOL_CHUNK_OVERLAP,
+    SYMBOL_MAX_CHUNK_SIZE,
     FnData,
     NamedContent,
     fn_dict_from_llm,
+    fn_dict_from_llm_multi_prompt,
     render_function,
+    symbols_dict_from_llm_multi_prompt,
     variables_dict_from_llm,
+    variables_dict_from_llm_multi_prompt,
 )
 
 RUST_DATA_STRUCTURE = {"enum", "struct"}
@@ -449,6 +454,7 @@ def macros_dict_from_llm(
 
 
 BLIND_ADVANCE_IF_NO_END_LINE = 200
+DATA_STRUCTURE_BLIND_ADVANCE_IF_NO_END_LINE = 400
 
 
 def data_structure_dict_from_llm(
@@ -527,6 +533,111 @@ def data_structure_dict_from_llm(
             nested_data_structures=nested_data_structures,
         )
         data_structure_dict_documented[ds_name] = data_structure_data
+    return DataStructureDict(data=data_structure_dict_documented)
+
+
+FUNCTION_PREPEND_LINES = 100
+
+
+def data_structure_dict_from_llm_multi_prompt(
+    system_prompt_ds: str,
+    user_prompt_ds: str,
+    system_prompt_fn: str,
+    user_prompt_fn: str,
+    method_delimiter: str,
+    llm: ChatOpenAI,
+    data_structure_dict_raw: dict[str, dict[str, Any]],
+    code: str,
+    root_rel_path: Path,
+) -> DataStructureDict:
+    from shared.chunking.text_splitter import split_text
+
+    symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
+    data_structure_dict_documented = {}
+    global_method_counts = {}
+    for _, ds_data in data_structure_dict_raw.items():
+        for m in ds_data["methods"]:
+            name = m["name"]
+            global_method_counts[name] = global_method_counts.get(name, 0) + 1
+    for symbol in symbols:
+        for ds_name, ds_data in data_structure_dict_raw.items():
+            if symbol["name"] == ds_name:
+                if ds_data.get("undefined"):
+                    data_structure_base = DataStructureBaseData(
+                        type=None,
+                        members=[],
+                        description="",
+                        trait_bounds=[],
+                    )
+                start_line = symbol["line"]
+                end_line = start_line + DATA_STRUCTURE_BLIND_ADVANCE_IF_NO_END_LINE
+                class_code = "\n".join(code.splitlines()[start_line - 1 : end_line + 1])
+                code_chunks = split_text(
+                    text=class_code,
+                    chunk_size=SYMBOL_MAX_CHUNK_SIZE,
+                    chunk_overlap=SYMBOL_CHUNK_OVERLAP,
+                )
+                code_to_process = (
+                    class_code if len(code_chunks) == 1 else code_chunks[0].text
+                )
+                if not ds_data.get("undefined"):
+                    data_structure_base = DataStructureBaseData.from_llm(
+                        system_prompt=system_prompt_ds,
+                        user_prompt=user_prompt_ds,
+                        llm=llm,
+                        name=ds_name,
+                        code=code_to_process,
+                    )
+                methods = {}
+                nested_data_structures = []
+                for m in ds_data["methods"]:
+                    m_name = m["name"]
+                    pattern = m.get("pattern")
+                    scoped_name = ds_name + method_delimiter + m_name
+                    m_start_line = m["line"] - FUNCTION_PREPEND_LINES
+                    m_end_line = m_start_line + BLIND_ADVANCE_IF_NO_END_LINE
+
+                    m_code = "\n".join(
+                        code.splitlines()[m_start_line - 1 : m_end_line + 1]
+                    )
+                    # More than one method with the same name in the file: cut scope for LLM.
+                    if global_method_counts[m_name] > 1:
+                        scope_str = f"\n\nThere may be multiple definitions of the function in the code provided. Describe only the implementation for the `{ds_name}` data structure"
+                        if pattern is not None:
+                            scope_str += f" associated with the following type signature: `{pattern}`.\n\n"
+                        else:
+                            scope_str += ".\n\n"
+                        # # Use list to handle method overloading, if present.
+                        if scoped_name not in methods:
+                            methods[scoped_name] = []
+                        methods[scoped_name].append(
+                            FnData.from_llm(
+                                system_prompt=system_prompt_fn,
+                                user_prompt=user_prompt_fn + scope_str,
+                                llm=llm,
+                                fn_name=m_name,
+                                code=m_code,
+                            )
+                        )
+                    else:
+                        m_data = FnData.from_llm(
+                            system_prompt=system_prompt_fn,
+                            user_prompt=user_prompt_fn,
+                            llm=llm,
+                            fn_name=m_name,
+                            code=m_code,
+                        )
+                        methods[scoped_name] = m_data
+
+                for nested_data_structure in ds_data["nested_data_structures"]:
+                    nested_data_structures.append(nested_data_structure["name"])
+
+                data_structure_data = DataStructureData(
+                    base_data=data_structure_base,
+                    methods=methods,
+                    nested_data_structures=nested_data_structures,
+                )
+                data_structure_dict_documented[ds_name] = data_structure_data
     return DataStructureDict(data=data_structure_dict_documented)
 
 
@@ -675,6 +786,52 @@ def rust_traits_checker(
     return output
 
 
+MAX_MACROS_TO_DOCUMENT = 100
+MAX_TRAITS_TO_DOCUMENT = 100
+
+
+def macros_dict_from_llm_multi_prompt(
+    system_prompt: str,
+    user_prompt: str,
+    llm: ChatOpenAI,
+    macros_list: list[str],
+    code: str,
+    root_rel_path: Path,
+) -> MacroDict:
+    macros_dict = symbols_dict_from_llm_multi_prompt(
+        llm=llm,
+        symbols_list=macros_list,
+        code=code,
+        root_rel_path=root_rel_path,
+        data_class=MacroData,
+        system_prompt=system_prompt,
+        user_prompt=user_prompt,
+        max_symbols_to_document=MAX_MACROS_TO_DOCUMENT,
+    )
+    return MacroDict(data=macros_dict)
+
+
+def traits_dict_from_llm_multi_prompt(
+    system_prompt: str,
+    user_prompt: str,
+    llm: ChatOpenAI,
+    traits_list: list[str],
+    code: str,
+    root_rel_path: Path,
+) -> TraitDataDict:
+    traits_dict = symbols_dict_from_llm_multi_prompt(
+        llm=llm,
+        symbols_list=traits_list,
+        code=code,
+        root_rel_path=root_rel_path,
+        data_class=TraitData,
+        system_prompt=system_prompt,
+        user_prompt=user_prompt,
+        max_symbols_to_document=MAX_TRAITS_TO_DOCUMENT,
+    )
+    return TraitDataDict(data=traits_dict)
+
+
 variables_dict_from_llm_rust = partial(
     variables_dict_from_llm,
     VARIABLES_FOUND_SYSTEM_PROMPT_JSON,
@@ -708,11 +865,38 @@ traits_dict_from_llm_rust = partial(
     TRAITS_FOUND_USER_PROMPT,
 )
 
-# variables_dict_from_llm_py_multi_prompt = partial(
-#     variables_dict_from_llm_multi_prompt,
-#     VARIABLES_FOUND_SYSTEM_PROMPT_JSON,
-#     VARIABLES_FOUND_USER_PROMPT,
-# )
+variables_dict_from_llm_rust_multi_prompt = partial(
+    variables_dict_from_llm_multi_prompt,
+    VARIABLES_FOUND_SYSTEM_PROMPT_JSON,
+    VARIABLES_FOUND_USER_PROMPT,
+)
+
+macros_dict_from_llm_rust_multi_prompt = partial(
+    macros_dict_from_llm_multi_prompt,
+    MACROS_FOUND_SYSTEM_PROMPT_JSON,
+    MACROS_FOUND_USER_PROMPT,
+)
+
+traits_dict_from_llm_rust_multi_prompt = partial(
+    traits_dict_from_llm_multi_prompt,
+    TRAITS_FOUND_SYSTEM_PROMPT_JSON,
+    TRAITS_FOUND_USER_PROMPT,
+)
+
+fn_dict_from_llm_rust_multi_prompt = partial(
+    fn_dict_from_llm_multi_prompt,
+    FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
+    FUNCTIONS_FOUND_USER_PROMPT,
+)
+
+data_structure_dict_from_llm_rust_multi_prompt = partial(
+    data_structure_dict_from_llm_multi_prompt,
+    DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
+    DATA_STRUCTURES_FOUND_USER_PROMPT,
+    METHODS_FOUND_SYSTEM_PROMPT_JSON,
+    METHODS_FOUND_USER_PROMPT,
+    "::",
+)
 
 # class_dict_from_llm_py_multi_prompt = partial(
 #     classes_dict_from_llm_multi_prompt,

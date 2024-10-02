@@ -55,6 +55,9 @@ from inspection.prompt_templates.files.templates.source_code_large_py_multi_prom
 from inspection.prompt_templates.files.templates.source_code_large_rust import (
     SOURCE_CODE_LARGE_TEMPLATE_RUST,
 )
+from inspection.prompt_templates.files.templates.source_code_large_rust_multi_prompt import (
+    SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_RUST,
+)
 from inspection.prompt_templates.files.templates.source_code_large_verilog import (
     SOURCE_CODE_LARGE_TEMPLATE_VERILOG,
 )
@@ -334,7 +337,7 @@ def _return_with_simple_message(message: str) -> dict[str, Any]:
 
 
 # TODO: address C901
-def comprehend_file_top_down(  # noqa: C901
+def comprehend_file_top_down(
     llm: ChatOpenAI,
     node: LiteNode,
     source_code: str,
@@ -415,6 +418,8 @@ def comprehend_file_top_down(  # noqa: C901
                         template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_HEADER
                     case Lang.PYTHON:
                         template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_PY
+                    case Lang.RUST:
+                        template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_RUST
                     case _:
                         template = SOURCE_CODE_MULTI_CONTEXT_TEMPLATE_DEFAULT
                 long_template = Template(template=template)

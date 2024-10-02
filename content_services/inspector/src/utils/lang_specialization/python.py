@@ -219,31 +219,29 @@ def py_class_checker(
     code: str, root_rel_path: Path, structured_output: bool = True
 ) -> dict[str, dict[str, Any]] | str | None:
     symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-    classes_dict = {}
+    classes_dict = {
+        s["name"]: {
+            "methods": [],
+            "nested_classes": [],
+        }
+        for s in symbols
+        if s["kind"] in PY_CLASS and not s["name"].startswith("__anon")
+    }
     for s in symbols:
-        if s["kind"] in PY_CLASS and not s["name"].startswith("__anon"):
-            name = s["name"]
-            methods = []
-            nested_classes = []
-            for sub_s in symbols:
-                if (
-                    (sub_s.get("scopeKind") in PY_CLASS)
-                    and (sub_s.get("scope") == name)
-                    and (sub_s is not s)
-                ):
-                    # TODO: Pretty sure we're safe here as Python does not have method overloading.
-                    if sub_s["kind"] in PY_METHODS:
-                        methods.append(sub_s)
-                    elif sub_s["kind"] in PY_CLASS:
-                        nested_classes.append(sub_s)
-                    else:
-                        print(
-                            f"Unhandled child ({sub_s['name']}) of parent ({s['name']} in {root_rel_path}"
-                        )
-            classes_dict[name] = {
-                "methods": methods,
-                "nested_classes": nested_classes,
-            }
+        name = s["name"]
+        scope = s.get("scope")
+        if (
+            (scope is not None)
+            and not name.startswith("__anon")
+            and s.get("scopeKind") in PY_CLASS
+        ):
+            # TODO: Pretty sure we're safe here as Python does not have method overloading.
+            if s["kind"] in PY_METHODS:
+                classes_dict[scope]["methods"].append(s)
+            elif s["kind"] in PY_CLASS:
+                classes_dict[scope]["nested_classes"].append(s)
+            else:
+                print(f"Unhandled child ({name}) of parent ({scope} in {root_rel_path}")
     if len(classes_dict) > 0:
         if structured_output:
             output = classes_dict

@@ -4,12 +4,11 @@ This module is used to generate a symbol map from a source file using ctags.
 You will need to install universal ctags to use this module!
 """
 
+import json
+import os
 import subprocess
 import tempfile
-import os
 from pathlib import Path
-import json
-
 
 GREEN = "\033[92m"
 RESET = "\033[0m"
@@ -25,7 +24,7 @@ def extract_symbols_w_ctags(
         temp_file.flush()
         temp_file_name = temp_file.name
 
-    command = ["ctags", "--fields=+ne", "--output-format=json", temp_file_name]
+    command = ["/ctags", "--fields=+ne", "--output-format=json", temp_file_name]
 
     try:
         result = subprocess.run(command, capture_output=True, text=True, check=True)

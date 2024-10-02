@@ -66,6 +66,8 @@ You focus on writing technical documentation for data structures in Rust. You ar
 
 You will be given the name of a data structure to document and the source code where the data structure is defined.
 
+When listing trait bounds in trait_bounds, only include trait bounds associated with the definition of the data structure. If a trait bound is associated with a method implementation but not the data structure itself, do not include it.
+
 Your job is to describe the data structure. **Always respond using exactly the following JSON schema**:
 {
     "type": <struct or enum>,
@@ -75,7 +77,7 @@ Your job is to describe the data structure. **Always respond using exactly the f
         ...
     ],
     "description": <one paragraph description of the data structure>,
-    "trait_bounds": [<list of trait bounds for the data structure>],
+    "trait_bounds": [<list of trait bounds for the data structure, if any>],
 }
 
 Return JSON according to the schema above. Do not use the format ```json ... ```, just return the JSON data.
@@ -212,6 +214,8 @@ You focus on writing technical documentation for data structures in Rust. You ar
 
 You will be given the name of a Rust trait to document and the source code where the trait is defined.
 
+When listing trait bounds in trait_bounds and generic types in generic_types, only include trait bounds and generic types associated with the definition of the trait (compared to any concrete implementations of the trait for specific data structures that may also be provided in the code).
+
 Your job is to describe the data structure. **Always respond using exactly the following JSON schema**:
 {
     "trait_bounds": [<list of concrete trait bounds for the trait, if any>],
@@ -335,7 +339,7 @@ class TraitDataDict(BaseModel):
 
 
 class DataStructureBaseData(BaseModel):
-    type: str
+    type: str | None
     members: list[NamedContent]
     description: str
     trait_bounds: list[str]
@@ -372,6 +376,9 @@ def render_data_structure_base_data(
 ) -> str:
     output = ""
     output += f"\n---\n---\n### {data_structure_name}\n"
+    if data_structure_data.base_data.type is None:
+        output += f"`{data_structure_name}` implemented elsewhere\n\n"
+        return output
     output += f"- **Type**: `{data_structure_data.base_data.type}`\n"
     if len(data_structure_data.base_data.trait_bounds) > 0:
         output += "\n- **Trait Bounds**:\n"
@@ -461,35 +468,44 @@ def data_structure_dict_from_llm(
             name = m["name"]
             global_method_counts[name] = global_method_counts.get(name, 0) + 1
     for ds_name, ds_data in data_structure_dict_raw.items():
-        data_structure_base = DataStructureBaseData.from_llm(
-            system_prompt=system_prompt_ds,
-            user_prompt=user_prompt_ds,
-            llm=llm,
-            name=ds_name,
-            code=code,
-        )
+        if ds_data.get("undefined"):
+            data_structure_base = DataStructureBaseData(
+                type=None,
+                members=[],
+                description="",
+                trait_bounds=[],
+            )
+        else:
+            data_structure_base = DataStructureBaseData.from_llm(
+                system_prompt=system_prompt_ds,
+                user_prompt=user_prompt_ds,
+                llm=llm,
+                name=ds_name,
+                code=code,
+            )
         methods = {}
         nested_data_structures = []
         for m in ds_data["methods"]:
             m_name = m["name"]
+            pattern = m.get("pattern")
             scoped_name = ds_name + method_delimiter + m_name
             # More than one method with the same name in the file: cut scope for LLM.
             if global_method_counts[m_name] > 1:
-                m_start_line = m["line"]
-                # TODO: Better solution if end line is not present.
-                m_end_line = m.get("end", m_start_line + BLIND_ADVANCE_IF_NO_END_LINE)
-                code_lines = code.splitlines()
-                m_code = "\n".join(code_lines[m_start_line - 1 : m_end_line + 1])
-                # Use list to handle method overloading, if present.
+                scope_str = f"\n\nThere may be multiple definitions of the function in the code provided. Describe only the implementation for the `{ds_name}` data structure"
+                if pattern is not None:
+                    scope_str += f" associated with the following type signature: `{pattern}`.\n\n"
+                else:
+                    scope_str += ".\n\n"
+                # # Use list to handle method overloading, if present.
                 if scoped_name not in methods:
                     methods[scoped_name] = []
                 methods[scoped_name].append(
                     FnData.from_llm(
                         system_prompt=system_prompt_fn,
-                        user_prompt=user_prompt_fn,
+                        user_prompt=user_prompt_fn + scope_str,
                         llm=llm,
                         fn_name=m_name,
-                        code=m_code,
+                        code=code,
                     )
                 )
             else:
@@ -538,31 +554,39 @@ def rust_data_structure_checker(
     code: str, root_rel_path: Path, structured_output: bool = True
 ) -> dict[str, dict[str, Any]] | str | None:
     symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-    data_structures_dict = {}
+    data_structures_dict = {
+        s["name"]: {
+            "methods": [],
+            "nested_data_structures": [],
+            "undefined": False,
+        }
+        for s in symbols
+        if s["kind"] in RUST_DATA_STRUCTURE and not s["name"].startswith("__anon")
+    }
     for s in symbols:
-        if s["kind"] in RUST_DATA_STRUCTURE and not s["name"].startswith("__anon"):
-            name = s["name"]
-            methods = []
-            nested_data_structures = []
-            for sub_s in symbols:
-                if (
-                    (sub_s.get("scopeKind") in RUST_IMPLEMENTATIONS)
-                    and (sub_s.get("scope") == name)
-                    and (sub_s is not s)
-                ):
-                    # TODO: Pretty sure we're safe here as Rust does not have method overloading.
-                    if sub_s["kind"] in RUST_METHODS:
-                        methods.append(sub_s)
-                    elif sub_s["kind"] in RUST_DATA_STRUCTURE:
-                        nested_data_structures.append(sub_s)
-                    else:
-                        print(
-                            f"Unhandled child ({sub_s['name']}) of parent ({s['name']} in {root_rel_path}"
-                        )
-            data_structures_dict[name] = {
-                "methods": methods,
-                "nested_data_structures": nested_data_structures,
-            }
+        name = s["name"]
+        scope = s.get("scope")
+        if (
+            (scope is not None)
+            and not name.startswith("__anon")
+            and (s.get("kind") in RUST_METHODS)
+            and (s.get("scopeKind") in RUST_IMPLEMENTATIONS)
+        ):
+            if scope not in data_structures_dict:
+                data_structures_dict[scope] = {
+                    "methods": [],
+                    "nested_data_structures": [],
+                    "undefined": True,
+                }
+            data_structures_dict[scope]["methods"].append(s)
+        elif (
+            (scope is not None)
+            and not name.startswith("__anon")
+            and (s.get("kind") in RUST_DATA_STRUCTURE)
+            and (s.get("scopeKind") in RUST_DATA_STRUCTURE)
+        ):
+            if scope in data_structures_dict:
+                data_structures_dict[scope]["nested_data_structures"].append(s)
     if len(data_structures_dict) > 0:
         if structured_output:
             output = data_structures_dict
@@ -600,7 +624,11 @@ def rust_variables_checker(
     code: str, root_rel_path: Path, structured_output: bool = True
 ) -> list[str] | str | None:
     symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-    v_list = [s["name"] for s in symbols if s["kind"] in RUST_VARIABLES]
+    v_list = [
+        s["name"]
+        for s in symbols
+        if s["kind"] in RUST_VARIABLES and not s.get("scopeKind")
+    ]
     if len(v_list) > 0:
         if structured_output:
             output = v_list

@@ -434,7 +434,7 @@ def fn_dict_from_llm(
         elif isinstance(fn, dict):
             fn_name = fn["name"]
             fn_start_line = fn["line"]
-            fn_end_line = fn["end"]
+            fn_end_line = fn.get("end", fn_start_line + BLIND_ADVANCE_IF_NO_END_LINE)
             code_lines = code.splitlines()
             fn_code = "\n".join(code_lines[fn_start_line - 1 : fn_end_line + 1])
             if fn_name not in fn_dict:

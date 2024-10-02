@@ -22,6 +22,7 @@ Remove superfluous phrases such as "in conclusion" or "in summary".
 Remove unnecessary conclusion or summary paragraphs.
 Remove text that is redundant.
 Remove text that doesn't conform with the intent of original_user_prompt if it exists.
+Convert existing ASCII diagrams in codeblocks to syntactically correct mermaidjs.
 
 Remove any AI generated descriptions of the intention of the document itself.
 Remove any instructions to the user to change or add to the document.
@@ -31,7 +32,7 @@ Remove language from the text that uses words that describes and congratulates t
 
 Remove all speculation.
 If a text is speculative in it's entirety, remove it and admit you didn't have enough context to create non-speculative content.
-Convert all text diagrams to mermaidjs format.
+
 """
 
 MESSAGE = {"role": "system", "content": PROMPT}

@@ -8,7 +8,9 @@ from shared.agent.tools.tool_strict import ToolStrict
 
 
 class OpenAIStrictAgent(AgentBase):
-    def __init__(self, tools: list[ToolStrict] | None = None, *args, **kwargs):
+    def __init__(
+        self, tools: list[ToolStrict] | None = None, *args: any, **kwargs: any
+    ) -> None:
         if tools is None:
             tools = []
         processed_tools = [openai.pydantic_function_tool(tool) for tool in tools]
@@ -16,13 +18,17 @@ class OpenAIStrictAgent(AgentBase):
         self.client = OpenAI()
         super().__init__(*args, **kwargs)
 
-    def _execute_tool_calls(self, tool_calls) -> None:
-        # TODO: set tools to have an optional token limit for the results. This should be context_window / len(tool_calls) / max_iterations
+        for tool in tools:
+            if hasattr(tool, "system_prompt") and callable(tool.system_prompt):
+                self.add_message({"role": "system", "content": tool.system_prompt()})
+
+    def _execute_tool_calls(self, tool_calls: any) -> None:
         """
         OpenAI expects all tool calls to return in several tool messages with tool_call_id.
         """
 
-        def execute_tool_call(tc):
+        # TODO: set tools to have an optional token limit for the results. This should be context_window / len(tool_calls) / max_iterations
+        def execute_tool_call(tc: any) -> dict:
             message = {
                 "tool_call_id": tc.id,
                 "role": "tool",

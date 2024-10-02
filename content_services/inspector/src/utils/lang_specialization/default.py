@@ -1,5 +1,6 @@
 from functools import partial
 
+from openai import LengthFinishReasonError
 from utils.models import ChatOpenAI
 
 from .common import (
@@ -214,9 +215,14 @@ def _default_checker(
     code: str,
     as_list_data_ds: bool = False,
 ) -> list[str] | ListData | None:
-    list_data = ListData.from_llm(
-        llm=llm, system_prompt=system_prompt, user_prompt=user_prompt, code=code
-    )
+    try:
+        list_data = ListData.from_llm(
+            llm=llm, system_prompt=system_prompt, user_prompt=user_prompt, code=code
+        )
+    except LengthFinishReasonError as _:
+        # Generic catch for length finish reason error. TODO: more robust retry strategy?
+        print("LengthFinishReasonError for __default_checker list creation")
+        list_data = ListData(data=[])
     if len(list_data.data) > 0:
         if as_list_data_ds:
             return list_data

@@ -3,7 +3,9 @@ from database.models_v1 import DerivedContent
 from sqlalchemy.orm import selectinload
 from sqlmodel import select
 
+from shared.agent.agent_base import AgentBase
 from shared.agent.tools.tool_strict import ToolStrict
+from shared.interfaces.search import SearchResult, SearchResults
 
 
 class OpenFileTool(ToolStrict):
@@ -12,12 +14,12 @@ class OpenFileTool(ToolStrict):
     and display all the Content for that file.
 
     Attributes:
-        file_path (str): The path to the file to be opened.
+        file_path (str): The path to the file to be opened. PDFs cannot be opened.
     """
 
     file_path: str
 
-    def execute(self, agent) -> str:
+    def execute(self, agent: AgentBase) -> str:
         agent.scope.authorize(self.file_path)
 
         with get_session() as session:
@@ -57,4 +59,20 @@ class OpenFileTool(ToolStrict):
                 formatted_results.append(current_chunk_text)
                 previous_chunk_text = chunk.text
 
-            return "\n".join(formatted_results)
+            full_text = "\n".join(formatted_results)
+            search_result = SearchResult(
+                content=full_text,
+                score=1.0,
+                metadata={
+                    "content_type": "codebase-file",
+                    "path": self.file_path,
+                    "tool": "OpenFileTool",
+                },
+            )
+            agent.add_search_results(SearchResults(results=[search_result]))
+
+            return full_text
+
+    @classmethod
+    def system_prompt(cls) -> str:
+        return """Use the OpenFileTool to read a source code file in it's entirety. File paths must have a known source code extension."""

@@ -24,6 +24,8 @@ class ListContentInput(BaseModel):
     status: str | None = None
     content_type_id: list[str] | None = None
     content_type_name: list[str] | None = None
+    source_content_id: list[str] | None = None
+    order: int | None = None
     tags: list[str] | None = None
     tag_ids: list[str] | None = None
 
@@ -175,3 +177,8 @@ class DeleteTagItemResponse(BaseModel):
 
 class BatchDeleteTagsResponse(BaseModel):
     results: list[DeleteTagItemResponse]
+
+
+class DownloadContentResponse(BaseModel):
+    download_url: str
+    content_name: str

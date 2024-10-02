@@ -29,6 +29,9 @@ ignore = [
     "N818", # Exception name should be named with an Error suffix
     "E501",
     "PGH003", # Allow generic type ignores
+    "C901", # Don't check for 'too complex'
+    "ANN101", # Ignore missing type annotation for self
+    "ANN102", # Ignore missing type annotation for cls
 ]
 
 unfixable = [

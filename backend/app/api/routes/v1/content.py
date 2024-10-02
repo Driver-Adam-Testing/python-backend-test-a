@@ -15,6 +15,7 @@ from app.schemas.content_schema import (
     CreateContentRequest,
     DeleteContentSourcesRequest,
     DeleteDocumentSourceResponse,
+    DownloadContentResponse,
     ListContentInput,
     ListContentResults,
     ListContentTypesInput,
@@ -36,6 +37,8 @@ def list_content(
     offset: int | None = 0,
     content_type_id: Annotated[list[str] | None, Query()] = None,
     content_type_name: Annotated[list[str] | None, Query()] = None,
+    source_content_id: Annotated[list[str] | None, Query()] = None,
+    order: int | None = None,
     sort_by: str | None = None,
     sort_direction: str | None = "ASC",
     status: str | None = None,
@@ -52,6 +55,8 @@ def list_content(
     - limit: Maximum number of items to return
     - offset: Number of items to skip
     - content_type_id: List of content type IDs to filter by
+    - source_content_id: List of source content IDs to filter by
+    - order: list of order column values to filter by
     - content_type_name: List of content type names to filter by
     - sort_by: Field to sort by
     - sort_direction: Direction to sort (ASC or DESC)
@@ -71,6 +76,8 @@ def list_content(
             offset=offset,
             text=text,
             content_type_id=content_type_id,
+            source_content_id=source_content_id,
+            order=order,
             content_type_name=content_type_name,
             sort_by=sort_by,
             sort_direction=sort_direction,
@@ -136,6 +143,30 @@ def get_content_by_id(
     """
     content_service = ContentService(session)
     return content_service.get_content_by_id(content_id, user.organization_id)
+
+
+@router.get(
+    "/{content_id}/download",
+    summary="Get download URL from S3 by ID",
+)
+def get_download_content_by_id(
+    session: CurrentSession,
+    user: CurrentUser,
+    content_id: UUID,
+) -> DownloadContentResponse:
+    """
+    Get download URL from S3 by ID
+
+    Parameters:
+    - session: Current session object
+    - user: Current user object
+    - content_id: UUID of the content
+
+    Returns:
+    - DerivedContent: Content details
+    """
+    content_service = ContentService(session)
+    return content_service.get_content_download_url(content_id, user.organization_id)
 
 
 @router.get(

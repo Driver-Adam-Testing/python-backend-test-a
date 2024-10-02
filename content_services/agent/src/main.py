@@ -38,12 +38,12 @@ if os.environ["MODAL_ENVIRONMENT"] != "staging":
     agent_model_config["proxy"] = modal.Proxy.from_name("pg-proxy")
 
 
-@app.function(timeout=3600, **agent_model_config, keep_warm=1)
-def run(input: dict):
+@app.function(timeout=3600, **agent_model_config, keep_warm=5)
+def run(input: dict) -> any:
     from shared.interfaces.agents.pipeline_configuration import PipelineInput
     from shared.pipelines.agents.execute import execute_sequence
 
     if isinstance(input, dict):
         input = PipelineInput(**input)
-
+        print(input.model_dump())
     return execute_sequence(input).model_dump()

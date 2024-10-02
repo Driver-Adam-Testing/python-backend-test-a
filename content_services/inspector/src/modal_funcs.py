@@ -7,10 +7,12 @@ image = (
     modal.Image.debian_slim(python_version="3.12")
     .copy_local_dir(local_path="../../driver_db", remote_path="/driver_db")
     .copy_local_dir(local_path="../../packages/shared", remote_path="/shared_pkg")
+    .copy_local_file(
+        local_path="uctags-2024.10.02-linux-x86_64/bin/ctags", remote_path="/ctags"
+    )
     .pip_install(
         ["openai>=1.40.2", "pydantic>=2.8.2", "tiktoken", "/shared_pkg"]
     )  # TODO lock versions down
-    .apt_install("universal-ctags")
 )
 
 function_cfg = {"secrets": [modal.Secret.from_name("open-ai")], "image": image}

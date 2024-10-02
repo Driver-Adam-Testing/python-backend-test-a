@@ -20,8 +20,8 @@ SEMANTIC_SCORE_IGNORE_THRESHOLD = 1.25
 CHARS_PER_TOKEN_APPROXIMATION = 2.5
 
 
-def get_bm25_scores(query: str, texts: list[str]):
-    def tokenize_for_bm25(text: str):
+def get_bm25_scores(query: str, texts: list[str]) -> list[float]:
+    def tokenize_for_bm25(text: str) -> any:
         return re.findall(r"\b[\w_]+(?:'[\w_]+)?\b", text.lower())
 
     tokenized_query = tokenize_for_bm25(query)
@@ -32,7 +32,9 @@ def get_bm25_scores(query: str, texts: list[str]):
     return text_scores
 
 
-def overall_score(semantic_score: float | None = None, bm25_score: float | None = None):
+def overall_score(
+    semantic_score: float | None = None, bm25_score: float | None = None
+) -> float:
     # Normalize the semantic score to be between 0 and 1, cube it to exaggerate distance from 1.0
     normalized_semantic_score = (
         max(0, (1 - abs(1 - semantic_score)) ** 3)
@@ -83,7 +85,9 @@ def build_base_statement(input: SearchInput, embedded_query: any) -> any:
             statement = statement.where(
                 DerivedContentType.type_name.in_(input.content_type)
             )
-
+    if input.paths == []:
+        # If you sent a list that is empty, you want to filter, but have given no folders or files to look in. Return no results.
+        statement = statement.where(False)
     if input.paths:
         if isinstance(input.paths, str):
             input.paths = [input.paths]
@@ -103,12 +107,12 @@ def build_base_statement(input: SearchInput, embedded_query: any) -> any:
     return statement
 
 
-def search_content_without_session(input: SearchInput):
+def search_content_without_session(input: SearchInput) -> SearchResults:
     with get_session() as session:
         return search_content(session, input)
 
 
-def search_content(session: Session, input: SearchInput):
+def search_content(session: Session, input: SearchInput) -> SearchResults:
     if input.algorithm == "keyword":
         return keyword_search(session, input)
     elif input.algorithm == "semantic":
@@ -119,7 +123,7 @@ def search_content(session: Session, input: SearchInput):
         raise ValueError(f"Unsupported algorithm: {input.algorithm}")
 
 
-def keyword_search(session: Session, input: SearchInput):
+def keyword_search(session: Session, input: SearchInput) -> SearchResults:
     embedded_query = batch_embed_text([input.query])[0]
     statement = build_base_statement(input, embedded_query)
     statement = statement.where(ChunkAndEmbedding.__ts_vector__.match(input.query))
@@ -142,6 +146,7 @@ def keyword_search(session: Session, input: SearchInput):
                     "codebase_id": cm.codebase_id,
                     "content_type": cm.content_type.type_name,
                     "relative_path": cm.relative_path,
+                    "source_content_id": cm.source_content_id,
                     "semantic_score": s,
                     "keyword_score": bm25_score,
                 },
@@ -155,7 +160,7 @@ def keyword_search(session: Session, input: SearchInput):
     return SearchResults(results=results)
 
 
-def semantic_search(session: Session, input: SearchInput):
+def semantic_search(session: Session, input: SearchInput) -> SearchResults:
     embedded_query = batch_embed_text([input.query])[0]
     statement = build_base_statement(input, embedded_query)
     statement = statement.where(
@@ -186,6 +191,7 @@ def semantic_search(session: Session, input: SearchInput):
             "workspace_id": cm.workspace_id,
             "codebase_id": cm.codebase_id,
             "content_id": cm.id,
+            "source_content_id": cm.source_content_id,
             "chunk_number": c.chunk_number,
             "semantic_score": score,
         }
@@ -205,7 +211,7 @@ def semantic_search(session: Session, input: SearchInput):
     return SearchResults(results=search_results)
 
 
-def hybrid_search(session: Session, input: SearchInput):
+def hybrid_search(session: Session, input: SearchInput) -> SearchResults:
     embedded_query = batch_embed_text([input.query])[0]
     statement_l2 = build_base_statement(input, embedded_query)
     statement_l2 = statement_l2.where(
@@ -258,6 +264,7 @@ def hybrid_search(session: Session, input: SearchInput):
             "workspace_id": cm.workspace_id,
             "codebase_id": cm.codebase_id,
             "content_id": cm.id,
+            "source_content_id": cm.source_content_id,
             "chunk_number": c.chunk_number,
             "semantic_score": score,
             "bm25_score": keyword_scores[idx],

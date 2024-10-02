@@ -868,17 +868,15 @@ def _delete_codebase_and_related_entities(
         delete_document_sources_uncommited(session, record.id)
         """
 
-        # select derived_contents where source_content_id is not null  and codebase_id = this is then do delete
-        tech_docs = [
+        # select derived_contents where source_content_id is not null
+        irs = [
             derived_content
             for derived_content in derived_contents
             if derived_content.source_content_id is not None
-            and derived_content.codebase_id == codebase_id
         ]
 
-        for tech_doc in tech_docs:
-            # embeddings should be deleted with this gets deleted. if not we need to add the logic to delete them also
-            session.delete(tech_doc)
+        for ir in irs:
+            session.delete(ir)
 
         # Delete related TagContent entities for the codebase
         tag_contents = session.exec(
@@ -893,7 +891,6 @@ def _delete_codebase_and_related_entities(
             derived_content
             for derived_content in derived_contents
             if derived_content.source_content_id is None
-            and derived_content.codebase_id == codebase_id
         ]
 
         for source in source_content:

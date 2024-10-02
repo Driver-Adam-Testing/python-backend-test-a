@@ -935,9 +935,7 @@ def test_delete_codebase_from_other_org(
 ) -> None:
     organization_id = current_user_with_org.organization_id
     content_id = complete_codebase_with_related_entities.id
-    try:
-        with pytest.raises(HTTPException):
-            content_service.delete_content("some_other_org", content_id)
+    with pytest.raises(HTTPException):
+        content_service.delete_content("some_other_org", content_id)
 
-    finally:
-        content_service.delete_content(organization_id, content_id)
+    content_service.delete_content(organization_id, content_id)

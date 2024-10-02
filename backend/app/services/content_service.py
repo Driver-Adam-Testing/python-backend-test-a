@@ -1,3 +1,4 @@
+import functools
 import hashlib
 import json
 from datetime import datetime
@@ -534,33 +535,62 @@ class ContentService:
 
         sources = [link.source for link in content.source_links]
 
+        # We need caching, so bypassing content service stuff.
+        @functools.cache
+        def get_codebase(codebase_id: UUID) -> Codebase | None:
+            return self.session.exec(
+                select(Codebase).where(Codebase.id == codebase_id)
+            ).first()
+
+        codebase_file_id = self.derived_content_type_repository.get_by_type_name(
+            "codebase-file"
+        ).id
+        codebase_directory_id = self.derived_content_type_repository.get_by_type_name(
+            "codebase-directory"
+        ).id
+
+        # Apply the codebase status to the file and folder DC statuses. This is required for the frontend
+        # to know if a source can be used for search/agents.
+        for source in sources:
+            if source.codebase_id and source.content_type_id in {
+                codebase_file_id,
+                codebase_directory_id,
+            }:
+                codebase = get_codebase(source.codebase_id)
+                derived_content_status: Enum_Derived_Content_Status = (
+                    codebase.status.into_dc_status()
+                )
+                source.status = derived_content_status
+
+        # If the source is associated with a codebase, get the codebase status and propagate to children
+
         logger.info(f"Content sources resolved for content {content_id}")
         source_results = [
             ListContentResult(
-                id=result.id,
-                organization_id=result.workspace.organization_id,
-                content_type_id=result.content_type_id,
-                content_type_name=result.content_type.type_name,
-                content_name=get_content_name(result),
-                workspace_id=result.workspace_id,
-                workspace_name=result.workspace.display_name,
-                source_content_id=result.source_content_id,
-                codebase_id=result.codebase_id,
-                codebase_name=result.codebase.codebase_name
-                if result.codebase
+                id=source.id,
+                organization_id=source.workspace.organization_id,
+                content_type_id=source.content_type_id,
+                content_type_name=source.content_type.type_name,
+                content_name=get_content_name(source),
+                workspace_id=source.workspace_id,
+                workspace_name=source.workspace.display_name,
+                source_content_id=source.source_content_id,
+                codebase_id=source.codebase_id,
+                codebase_name=source.codebase.codebase_name
+                if source.codebase
                 else None,
-                relative_path=result.relative_path,
-                content=result.content,
-                misc_metadata=result.misc_metadata,
-                status=result.status,
-                created_at=result.created_at,
-                updated_at=result.updated_at,
-                source_content=result.source_content,
-                order=result.order,
-                tags=result.tags,
-                source_links=result.source_links,
+                relative_path=source.relative_path,
+                content=source.content,
+                misc_metadata=source.misc_metadata,
+                status=source.status,
+                created_at=source.created_at,
+                updated_at=source.updated_at,
+                source_content=source.source_content,
+                order=source.order,
+                tags=source.tags,
+                source_links=source.source_links,
             )
-            for result in sources
+            for source in sources
         ]
         return ContentSourceResponse(results=source_results)
 

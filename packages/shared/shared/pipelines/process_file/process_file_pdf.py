@@ -200,6 +200,7 @@ def process_extracted_tables(
 
 def process_image(image: io.BytesIO, index: int) -> ProcessedPdfFileContent:
     try:
+        print(f"Processing page {index + 1}")
         image_summary = summarize_images([image], prompt=DESCRIBE_IMAGE_PROMPT)
         return ProcessedPdfFileContent(
             content=image_summary,
@@ -237,21 +238,9 @@ def run_process_pdf(file_content: io.BytesIO) -> list[ProcessedPdfFileContent]:
 
     pages = split_pdf_into_pages(file_content=file_content)
     print(f"PDF whole summary: {whole_file_summary}")
-    for index, page_content in enumerate(pages):
-        print(f"Processing page {index + 1}")
-
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            futures = []
-            # futures.append(
-            #     executor.submit(
-            #         process_visual_summary,
-            #         page_content,
-            #         index,
-            #         assistant.id,
-            #         SUMMARIZE_PDF_PROMPT
-            #         + " \n\n<context> This file is one page of a larger file. only reference the file that you can search for.</context>  If there is an electrical schematic, describe all connections and features of the diagram.  If there is a chart, describe the type of chart and the values it depicts.",
-            #     )
-            # )
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+        futures = []
+        for index, page_content in enumerate(pages):
             try:
                 pdf_page_image = pdf_page_to_image(page_content)[0]
                 futures.append(executor.submit(process_image, pdf_page_image, index))
@@ -260,16 +249,17 @@ def run_process_pdf(file_content: io.BytesIO) -> list[ProcessedPdfFileContent]:
                     f"WARNING: An error occurred while converting PDF page to image on page {index + 1}: {e}"
                 )
             futures.append(executor.submit(process_extracted_text, page_content, index))
+            # TODO: move this to outer loop to process multi-page tables.
             futures.append(
                 executor.submit(process_extracted_tables, page_content, index)
             )
 
-            for future in concurrent.futures.as_completed(futures):
-                result = future.result()
-                if isinstance(result, list):
-                    processed_contents.extend(result)
-                elif result is not None:
-                    processed_contents.append(result)
+        for future in concurrent.futures.as_completed(futures):
+            result = future.result()
+            if isinstance(result, list):
+                processed_contents.extend(result)
+            elif result is not None:
+                processed_contents.append(result)
     print(processed_contents)
     return processed_contents
 

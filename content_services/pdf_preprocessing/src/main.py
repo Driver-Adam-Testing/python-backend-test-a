@@ -64,7 +64,7 @@ def send_exception_email(exception_details: str) -> None:
         print(f"Error sending email: {e}")
 
 
-@app.function(timeout=10800, **pdf_preprocessing_modal_config)
+@app.function(timeout=16200, **pdf_preprocessing_modal_config)
 def create_and_embed_pdf_summaries(content_id: str) -> None:
     import io
 

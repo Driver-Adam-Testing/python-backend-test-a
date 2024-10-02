@@ -1,4 +1,5 @@
 import os
+from contextlib import suppress
 from pathlib import Path
 from urllib.parse import urljoin
 from uuid import UUID, uuid4
@@ -85,6 +86,35 @@ def run_codebase_onboarding(
         create_bucket_if_dne(upload_bucket)
         codebase_id = uuid4()
         s3_dest_root = Path(str(codebase_id)) / "source"
+        base_url = create_base_storage_url(org_id)
+        final_storage_url = urljoin(base_url, str(codebase_id))
+
+        with Session(engine) as session, session.begin():
+            print(
+                f"Creating codebase and content record for codebase: {extracted_path!s} with ID: {codebase_id}"
+            )
+            codebase = Codebase(
+                id=codebase_id,
+                codebase_name=codebase_name,
+                creator_id=creator_id,
+                description="",
+                resource_root=f"{extracted_path!s}/",
+                storage_url=final_storage_url,
+                workspace_id=workspace_id,
+                status=Enum_Codebase_Status.processing,
+            )
+            session.add(codebase)
+
+            cb_sc_uuid = get_source_content_type_uuid("codebase")
+            cb_sc = DerivedContent(
+                codebase_id=codebase_id,
+                relative_path=str(extracted_path),
+                content_type_id=cb_sc_uuid,
+                workspace_id=workspace_id,
+                misc_metadata={},
+                status=Enum_Derived_Content_Status.generating,
+            )
+            session.add(cb_sc)
 
         for root, _, files in os.walk(extracted_path):
             all_directories.append(root)
@@ -102,38 +132,6 @@ def run_codebase_onboarding(
                     print(f"Uploaded {local_path} to {uploaded_dest_path}")
 
         with Session(engine) as session, session.begin():
-            base_url = create_base_storage_url(org_id)
-            final_storage_url = urljoin(base_url, str(codebase_id))
-            codebase = Codebase(
-                id=codebase_id,
-                codebase_name=codebase_name,
-                creator_id=creator_id,
-                description="",
-                resource_root=f"{extracted_path!s}/",
-                storage_url=final_storage_url,
-                workspace_id=workspace_id,
-                status=Enum_Codebase_Status.processing,
-            )
-            print(codebase)
-            session.add(codebase)
-            # Flush here to confirm that Source Contents created after this will know that the
-            # codebase exists
-            session.flush()
-            print(
-                f"Created but not commited codebase: {extracted_path!s}, with ID: {codebase_id}"
-            )
-
-            cb_sc_uuid = get_source_content_type_uuid("codebase")
-            cb_sc = DerivedContent(
-                codebase_id=codebase_id,
-                relative_path=str(extracted_path),
-                content_type_id=cb_sc_uuid,
-                workspace_id=workspace_id,
-                misc_metadata={},
-                status=Enum_Derived_Content_Status.generating,
-            )
-            session.add(cb_sc)
-
             # Add directories source contents
             dir_sc_uuid = get_source_content_type_uuid("codebase-directory")
             for directory in all_directories:
@@ -188,6 +186,9 @@ def run_codebase_onboarding(
     timeout=24 * 60 * 60,
     region="us-east",
     concurrency_limit=5,
+    # TODO: Keep-warm speeds up onboarding; let's keep till we create the codebase in the backend directly.
+    # This makes the codebase show up just a bit quicker in the UI.
+    keep_warm=1,
 )
 def onboard_and_inspect(
     presigned_url: str,
@@ -207,6 +208,32 @@ def onboard_and_inspect(
     from sqlmodel import Session, select
     from utils import get_source_content_type_uuid
 
+    def set_codebase_status(
+        codebase_id: UUID, status: Enum_Derived_Content_Status
+    ) -> None:
+        # TODO This function is nested to skirt import issues in modal.
+        with Session(engine) as session, session.begin():
+            codebase = session.get(Codebase, codebase_id)
+            if codebase:
+                codebase.status = Enum_Codebase_Status.processing_complete
+                session.add(codebase)
+            else:
+                raise Exception(f"Codebase with ID: {codebase_id} not found.")
+
+            cb_sc_uuid = get_source_content_type_uuid("codebase")
+            sel_statement = select(DerivedContent).where(
+                DerivedContent.codebase_id == codebase_id,
+                DerivedContent.content_type_id == cb_sc_uuid,
+            )
+            codebase_dc = session.exec(sel_statement).first()
+            if codebase_dc:
+                codebase_dc.status = status
+                session.add(codebase_dc)
+            else:
+                raise Exception(
+                    f"Codebase Source Content with ID: {codebase_id} not found."
+                )
+
     # TODO: send email on failure at any step in this process
     print(
         f"Onboarding for: {archive_name} from {provider} with org_id: {org_id}, creator_id: {creator_id}, workspace_id: {workspace_id} with presigned_url: {presigned_url}"
@@ -225,28 +252,9 @@ def onboard_and_inspect(
         inspect_db.remote(codebase_id, run_id)
         print("Inspection complete")
 
-        # Update codebase status to processing-complete
-        with Session(engine) as session, session.begin():
-            codebase = session.get(Codebase, codebase_id)
-            if codebase:
-                codebase.status = Enum_Codebase_Status.processing_complete
-                session.add(codebase)
-            else:
-                raise Exception(f"Codebase with ID: {codebase_id} not found.")
-
-            cb_sc_uuid = get_source_content_type_uuid("codebase")
-            sel_statement = select(DerivedContent).where(
-                DerivedContent.codebase_id == codebase_id,
-                DerivedContent.content_type_id == cb_sc_uuid,
-            )
-            codebase_dc = session.exec(sel_statement).first()
-            if codebase_dc:
-                codebase_dc.status = Enum_Derived_Content_Status.generation_complete
-                session.add(codebase_dc)
-            else:
-                raise Exception(
-                    f"Codebase Source Content with ID: {codebase_id} not found."
-                )
+        set_codebase_status(
+            codebase_id, Enum_Derived_Content_Status.generation_complete
+        )
     except Exception as e:
         exception_type = type(e).__name__
         exc_tb = e.__traceback__
@@ -256,6 +264,12 @@ def onboard_and_inspect(
             f"Exception type: {exception_type}\nFile: {filename}\nLine: {line_number}"
         )
         send_exception_email.remote(exception_details)
+
+        # Since codebase could possibly be undefined in this clean up action, we don't care if it fails
+        with suppress(Exception):
+            set_codebase_status(
+                codebase_id, Enum_Derived_Content_Status.generation_error
+            )
         raise e
 
 

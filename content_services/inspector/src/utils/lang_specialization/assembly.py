@@ -111,6 +111,7 @@ Your job is to list any functions, subroutines or procedures defined in the asse
 
 - You are only looking for functions, subroutines or procedures that are **fully defined and implemented** in the code given to you. That is, the implementation of the function is in the source code given to you.
 - do not consider macros as a function, subroutine, or procedure.
+- functions with the same name but one has a leading _ are the same function, only list one of these functions.
 
 You only respond with a list of functions, subroutines, and procedures. **Always respond using exactly the following JSON schema**:
 {

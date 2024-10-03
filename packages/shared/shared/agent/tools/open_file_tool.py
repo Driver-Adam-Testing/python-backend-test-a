@@ -67,6 +67,7 @@ class OpenFileTool(ToolStrict):
                     "content_type": "codebase-file",
                     "path": self.file_path,
                     "tool": "OpenFileTool",
+                    "relative_path": self.file_path,
                 },
             )
             agent.add_search_results(SearchResults(results=[search_result]))

@@ -54,6 +54,7 @@ class CodebaseFolderSummaryTool(ToolStrict):
                     metadata={
                         "content_type": "long_description",
                         "path": content.relative_path,
+                        "relative_path": content.relative_path,
                     },
                 )
                 search_results.append(search_result)

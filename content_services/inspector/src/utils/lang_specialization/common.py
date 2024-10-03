@@ -526,12 +526,23 @@ def class_dict_from_llm(
         for nested_class in cls_data["nested_classes"]:
             nested_classes.append(nested_class["name"])
 
+        # Dedupe members and methods
+        for member in class_base.members:
+            if (
+                member.name in methods
+                or cls_name + class_fn_delimiter + member.name in methods
+                or member.name in nested_classes
+                or cls_name + class_fn_delimiter + member.name in nested_classes
+            ):
+                class_base.members.remove(member)
+
         class_data = ClassData(
             base_data=class_base,
             methods=methods,
             nested_classes=nested_classes,
         )
         class_dict_documented[cls_name] = class_data
+
     return ClassDict(data=class_dict_documented)
 
 
@@ -710,6 +721,17 @@ def classes_dict_from_llm_multi_prompt(
                         )
                     for nested_class in cls_data["nested_classes"]:
                         nested_classes.append(nested_class["name"])
+
+                    # Dedupe members and methods
+                    for member in class_base_data.members:
+                        if (
+                            member.name in methods
+                            or cls_name + class_fn_delimiter + member.name in methods
+                            or member.name in nested_classes
+                            or cls_name + class_fn_delimiter + member.name
+                            in nested_classes
+                        ):
+                            class_base_data.members.remove(member)
 
                     class_data = ClassData(
                         base_data=class_base_data,

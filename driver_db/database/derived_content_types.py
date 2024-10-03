@@ -24,3 +24,4 @@ class DerivedContentTypeNames(Enum):
     PDF_IMAGE_SUMMARY = "pdf-image-summary"
     PDF_EXTRACTED_TEXT = "pdf-extracted-text"
     PDF_EXTRACTED_TABLE = "pdf-extracted-table"
+    TEMPLATE = "template"

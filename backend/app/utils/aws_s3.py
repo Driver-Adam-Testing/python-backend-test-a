@@ -1,3 +1,5 @@
+import hashlib
+
 import boto3
 
 from app.core.config import settings
@@ -12,7 +14,11 @@ s3_client = boto3.client(
 )
 
 
-def generate_put_presigned_url(key, content_type, metadata={}, expires=3600):
+def generate_put_presigned_url(
+    key, content_type, metadata: dict | None = None, expires=3600
+):
+    if metadata is None:
+        metadata = {}
     bucket = (
         settings.DROPZONE_BUCKET_NAME
         if not settings.USE_LEGACY_DROPZONE
@@ -44,3 +50,36 @@ def generate_get_presigned_url(key, expires=3600):
         },
         ExpiresIn=expires,
     )
+
+
+def generate_org_get_presigned_url(organization_id, key, expires=600):
+    bucket = hashlib.sha256(organization_id.encode()).hexdigest()[:63]
+    return s3_client.generate_presigned_url(
+        ClientMethod="get_object",
+        Params={
+            "Bucket": bucket,
+            "Key": key,
+        },
+        ExpiresIn=expires,
+    )
+
+
+def head_org_object(organization_id, key, expires=600) -> bool:
+    bucket = hashlib.sha256(organization_id.encode()).hexdigest()[:63]
+    try:
+        s3_client.head_object(
+            Bucket=bucket,
+            Key=key,
+        )
+        return True
+    except s3_client.exceptions.NoSuchKey:
+        return False
+
+
+def delete_file_from_s3(key: str, bucket: str) -> None:
+    """
+    Delete a file from S3.
+    NOTE: this should be in shared but shared package does not have access to settings need to instantiate boto3 client
+    """
+    response = s3_client.delete_object(Bucket=bucket, Key=key)
+    print(response)

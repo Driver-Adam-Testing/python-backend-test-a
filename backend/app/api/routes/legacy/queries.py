@@ -5,11 +5,10 @@ from datetime import datetime
 
 import strawberry
 from app.api.routes.legacy.api_types import (
-    CodebaseResults,  # type: ignore
+    CodebaseResults,  # type: ignore # noqa: PGH003
     GitProvider,
     GitRepository,
-    OrganizationResult,  # type: ignore
-    SupplementalContent,  # type: ignore
+    OrganizationResult,  # type: ignore # noqa: PGH003
 )
 from app.api.routes.legacy.application_note import (
     ApplicationNoteEditResponse,
@@ -21,7 +20,6 @@ from app.api.routes.legacy.document_set import DocumentSet, get_document_set
 from app.api.routes.legacy.orm_ops import (
     check_access,
     get_codebase_by_id,
-    supplemental_content_by_codebase_id,
 )
 from app.api.routes.legacy.scalars import ID, NodeType
 from app.api.routes.legacy.symbol_set import SymbolSetResponse, symbol_set
@@ -125,8 +123,10 @@ class Query:
             raise GraphQLError(
                 "id must not be None", extensions={"code": "BAD_REQUEST"}
             )
+        organization_id = info.context.user.organization_id
+        derived_content_id = id_str
         if not check_access(
-            session, info.context.user.organization_id, derived_content_id=id_str
+            session, organization_id, derived_content_id=derived_content_id
         ):
             raise GraphQLError("Access denied", extensions={"code": "NOT_FOUND"})
         return get_application_note(id_str, session, info.context.user.organization_id)
@@ -161,27 +161,9 @@ class Query:
         return application_note_edit(str(call_id))
 
     @strawberry.field
-    def supplementalContent(
-        self, info: Info, codebaseId: ID
-    ) -> list[SupplementalContent]:
-        session = info.context.session
-        user = info.context.user
-        organization_id = user.organization_id
-        if not check_access(session, organization_id, codebase_id=str(codebaseId)):
-            raise GraphQLError("Access denied", extensions={"code": "NOT_FOUND"})
-        get_metadata = False
-        # Determine if the GraphQL query includes SupplementalContent.file_size_bytes
-        if "file_size_bytes" or "pages" in info.selected_fields:
-            get_metadata = True
-
-        return supplemental_content_by_codebase_id(
-            session=session, codebase_id=str(codebaseId), get_metadata=get_metadata
-        )
-
-    @strawberry.field
     def me(self, info: Info) -> MeResponse:
         user = info.context.user
-        return MeResponse(id=user.subject)  # type: ignore
+        return MeResponse(id=user.subject)  # type: ignore # noqa: PGH003
 
     @strawberry.field
     def connectedGitProviders(self, info: Info) -> list[GitProvider]:
@@ -243,5 +225,4 @@ class Query:
                 for repo in git_repos
             ]
             # Assuming the response from fetch_repos is a list of dictionaries
-
         return repos

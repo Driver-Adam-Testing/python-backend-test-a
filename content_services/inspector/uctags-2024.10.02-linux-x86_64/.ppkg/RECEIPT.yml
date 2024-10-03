@@ -1,0 +1,34 @@
+pkgname: uctags
+pkgtype: exe
+version: 2024.10.02
+summary: Maintained ctags implementation
+web-url: https://ctags.io/
+git-url: https://github.com/universal-ctags/ctags
+git-sha: e8496cc8b6423cc8095545fdf5b10033090ef914
+dep-pkg: libjansson libyaml libxml2 libiconv
+license: GPL-2.0-or-later
+dep-upp: git gmake gm4 perl autoconf automake gmake
+bsystem: autogen
+binbstd: 0
+install: |
+    if [ "$TARGET_PLATFORM_NAME" = macos ] || [ "$TARGET_PLATFORM_NAME" = openbsd ] ; then
+        configure --disable-static
+    else
+        configure
+    fi
+parallel: 1
+profile: release
+builtfor: linux-musl-x86_64
+builtby: ppkg-0.10.0
+builtat: 1727843264
+builton:
+    os-arch: x86_64
+    os-kind: linux
+    os-type: linux
+    os-libc: musl
+    os-code: alpine
+    os-name: Alpine Linux
+    os-vers: 3.20.3
+    os-ncpu: 4
+    os-euid: 0
+    os-egid: 0

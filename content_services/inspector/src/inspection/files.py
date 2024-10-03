@@ -13,11 +13,20 @@ from utils.lang_specialization.common import Lang
 from utils.models import ChatOpenAI
 from utils.templates import Template
 
-from inspection.prompt_templates.files.templates.metadata_default import (
-    METADATA_TEMPLATE,
+from inspection.prompt_templates.files.templates.metadata_large_default import (
+    METADATA_LARGE_TEMPLATE,
+)
+from inspection.prompt_templates.files.templates.metadata_medium_default import (
+    METADATA_MEDIUM_TEMPLATE,
 )
 from inspection.prompt_templates.files.templates.metadata_multi_context_default import (
     METADATA_MULTI_CONTEXT_TEMPLATE,
+)
+from inspection.prompt_templates.files.templates.metadata_small_default import (
+    METADATA_SMALL_TEMPLATE,
+)
+from inspection.prompt_templates.files.templates.source_code_large_assembly import (
+    SOURCE_CODE_LARGE_TEMPLATE_ASSEMBLY,
 )
 from inspection.prompt_templates.files.templates.source_code_large_c import (
     SOURCE_CODE_LARGE_TEMPLATE_C,
@@ -46,8 +55,20 @@ from inspection.prompt_templates.files.templates.source_code_large_py import (
 from inspection.prompt_templates.files.templates.source_code_large_py_multi_prompt import (
     SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_PY,
 )
+from inspection.prompt_templates.files.templates.source_code_large_rust import (
+    SOURCE_CODE_LARGE_TEMPLATE_RUST,
+)
+from inspection.prompt_templates.files.templates.source_code_large_rust_multi_prompt import (
+    SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_RUST,
+)
+from inspection.prompt_templates.files.templates.source_code_large_verilog import (
+    SOURCE_CODE_LARGE_TEMPLATE_VERILOG,
+)
 from inspection.prompt_templates.files.templates.source_code_multi_context_default import (
     SOURCE_CODE_MULTI_CONTEXT_TEMPLATE_DEFAULT,
+)
+from inspection.prompt_templates.files.templates.source_code_small_assembly import (
+    SOURCE_CODE_SMALL_TEMPLATE_ASSEMBLY,
 )
 from inspection.prompt_templates.files.templates.source_code_small_c import (
     SOURCE_CODE_SMALL_TEMPLATE_C,
@@ -64,18 +85,58 @@ from inspection.prompt_templates.files.templates.source_code_small_header import
 from inspection.prompt_templates.files.templates.source_code_small_py import (
     SOURCE_CODE_SMALL_TEMPLATE_PY,
 )
+from inspection.prompt_templates.files.templates.source_code_small_rust import (
+    SOURCE_CODE_SMALL_TEMPLATE_RUST,
+)
+from inspection.prompt_templates.files.templates.source_code_small_verilog import (
+    SOURCE_CODE_SMALL_TEMPLATE_VERILOG,
+)
 
 PARENT_PATH = Path(__file__).parent
 
 
-class FileEnum(IntEnum):
+SMALL_METADATA_FILE_CUTOFF_BYTES = 500
+MEDIUM_METADATA_FILE_CUTOFF_BYTES = 2500
+
+
+class _FileEnumLLM(IntEnum):
     SOURCE_CODE_LARGE = 0
     SOURCE_CODE_SMALL = 1
     METADATA = 2
 
 
+class _FileKindLLM(BaseModel):
+    kind: _FileEnumLLM
+
+
+class FileEnum(IntEnum):
+    SOURCE_CODE_LARGE = 0
+    SOURCE_CODE_SMALL = 1
+    METADATA_LARGE = 2
+    METADATA_MEDIUM = 3
+    METADATA_SMALL = 4
+
+
 class FileKind(BaseModel):
     kind: FileEnum
+
+    @classmethod
+    def _from_file_kind_llm(cls, code: str, fk_llm: _FileKindLLM) -> Self:
+        match fk_llm.kind:
+            case _FileEnumLLM.METADATA:
+                num_bytes = len(code.encode("utf-8"))
+                if num_bytes <= SMALL_METADATA_FILE_CUTOFF_BYTES:
+                    return cls(kind=FileEnum.METADATA_SMALL)
+                elif num_bytes <= MEDIUM_METADATA_FILE_CUTOFF_BYTES:
+                    return cls(kind=FileEnum.METADATA_MEDIUM)
+                else:
+                    return cls(kind=FileEnum.METADATA_LARGE)
+            case _FileEnumLLM.SOURCE_CODE_LARGE:
+                return cls(kind=FileEnum.SOURCE_CODE_LARGE)
+            case _FileEnumLLM.SOURCE_CODE_SMALL:
+                return cls(kind=FileEnum.SOURCE_CODE_SMALL)
+            case _:
+                raise ValueError("Unreachable")
 
     @classmethod
     def from_llm(
@@ -92,7 +153,8 @@ class FileKind(BaseModel):
         human_prompt += f"File name: {file_name}\n\nFile contents:\n\n{code}"
         file_kind_raw = llm.generate_response(system_prompt, human_prompt)
         try:
-            file_kind = cls(kind=int(file_kind_raw))
+            file_kind_from_llm = _FileKindLLM(kind=int(file_kind_raw))
+            file_kind = cls._from_file_kind_llm(code=code, fk_llm=file_kind_from_llm)
         except ValueError as e:
             logging.warn(
                 f"Failed to parse integer from LLM response to determine file kind for file {file_name}: {e}"
@@ -113,6 +175,9 @@ SOURCE_CODE_LARGE_BY_LANG = {
     Lang.CPP: SOURCE_CODE_LARGE_TEMPLATE_CPP,
     Lang.HEADER: SOURCE_CODE_LARGE_TEMPLATE_HEADER,
     Lang.PYTHON: SOURCE_CODE_LARGE_TEMPLATE_PY,
+    Lang.VERILOG: SOURCE_CODE_LARGE_TEMPLATE_VERILOG,
+    Lang.RUST: SOURCE_CODE_LARGE_TEMPLATE_RUST,
+    Lang.ASSEMBLY: SOURCE_CODE_LARGE_TEMPLATE_ASSEMBLY,
 }
 SOURCE_CODE_SMALL_BY_LANG = {
     Lang.DEFAULT: SOURCE_CODE_SMALL_TEMPLATE_DEFAULT,
@@ -120,18 +185,46 @@ SOURCE_CODE_SMALL_BY_LANG = {
     Lang.CPP: SOURCE_CODE_SMALL_TEMPLATE_CPP,
     Lang.HEADER: SOURCE_CODE_SMALL_TEMPLATE_HEADER,
     Lang.PYTHON: SOURCE_CODE_SMALL_TEMPLATE_PY,
+    Lang.VERILOG: SOURCE_CODE_SMALL_TEMPLATE_VERILOG,
+    Lang.RUST: SOURCE_CODE_SMALL_TEMPLATE_RUST,
+    Lang.ASSEMBLY: SOURCE_CODE_SMALL_TEMPLATE_ASSEMBLY,
 }
-METADATA_BY_LANG = {
-    Lang.DEFAULT: METADATA_TEMPLATE,
-    Lang.C: METADATA_TEMPLATE,
-    Lang.CPP: METADATA_TEMPLATE,
-    Lang.HEADER: METADATA_TEMPLATE,
-    Lang.PYTHON: METADATA_TEMPLATE,
+METADATA_SMALL_BY_LANG = {
+    Lang.DEFAULT: METADATA_SMALL_TEMPLATE,
+    Lang.C: METADATA_SMALL_TEMPLATE,
+    Lang.CPP: METADATA_SMALL_TEMPLATE,
+    Lang.HEADER: METADATA_SMALL_TEMPLATE,
+    Lang.PYTHON: METADATA_SMALL_TEMPLATE,
+    Lang.VERILOG: METADATA_SMALL_TEMPLATE,
+    Lang.RUST: METADATA_SMALL_TEMPLATE,
+    Lang.ASSEMBLY: METADATA_SMALL_TEMPLATE,
+}
+METADATA_MEDIUM_BY_LANG = {
+    Lang.DEFAULT: METADATA_MEDIUM_TEMPLATE,
+    Lang.C: METADATA_MEDIUM_TEMPLATE,
+    Lang.CPP: METADATA_MEDIUM_TEMPLATE,
+    Lang.HEADER: METADATA_MEDIUM_TEMPLATE,
+    Lang.PYTHON: METADATA_MEDIUM_TEMPLATE,
+    Lang.VERILOG: METADATA_MEDIUM_TEMPLATE,
+    Lang.RUST: METADATA_MEDIUM_TEMPLATE,
+    Lang.ASSEMBLY: METADATA_MEDIUM_TEMPLATE,
+}
+METADATA_LARGE_BY_LANG = {
+    Lang.DEFAULT: METADATA_LARGE_TEMPLATE,
+    Lang.C: METADATA_LARGE_TEMPLATE,
+    Lang.CPP: METADATA_LARGE_TEMPLATE,
+    Lang.HEADER: METADATA_LARGE_TEMPLATE,
+    Lang.PYTHON: METADATA_LARGE_TEMPLATE,
+    Lang.VERILOG: METADATA_LARGE_TEMPLATE,
+    Lang.RUST: METADATA_LARGE_TEMPLATE,
+    Lang.ASSEMBLY: METADATA_LARGE_TEMPLATE,
 }
 TEMPLATE_DATA = {
     FileEnum.SOURCE_CODE_LARGE: SOURCE_CODE_LARGE_BY_LANG,
     FileEnum.SOURCE_CODE_SMALL: SOURCE_CODE_SMALL_BY_LANG,
-    FileEnum.METADATA: METADATA_BY_LANG,
+    FileEnum.METADATA_LARGE: METADATA_LARGE_BY_LANG,
+    FileEnum.METADATA_MEDIUM: METADATA_MEDIUM_BY_LANG,
+    FileEnum.METADATA_SMALL: METADATA_SMALL_BY_LANG,
 }
 
 
@@ -141,7 +234,9 @@ def file_long_from_code(
     system_prompt = get_prompt_template(
         PARENT_PATH / "prompt_templates/files/long_from_code.txt"
     )
-    human_prompt = f"`{file_name}` in codebase `{codebase_name}` with path `{str(path)}`:\n\n{code}"
+    human_prompt = (
+        f"`{file_name}` in codebase `{codebase_name}` with path `{path!s}`:\n\n{code}"
+    )
     return llm.generate_response(system_prompt, human_prompt)
 
 
@@ -252,6 +347,7 @@ def _return_with_simple_message(message: str) -> dict[str, Any]:
     }
 
 
+# TODO: address C901
 def comprehend_file_top_down(
     llm: ChatOpenAI,
     node: LiteNode,
@@ -306,38 +402,44 @@ def comprehend_file_top_down(
             llm=llm, file_name=node.root_rel_path.name, code=chunk_texts[0]
         )
 
-        if file_kind.kind == FileEnum.METADATA:
-            template = METADATA_MULTI_CONTEXT_TEMPLATE
-            long_template = Template(template=template)
-            file_description_long = long_template.run_with_code(
-                llm=llm,
-                root_rel_path=node.root_rel_path,
-                code=source_code,
-                code_chunks=chunk_texts,
-            )
-        else:
-            language = Lang.from_ext_and_source(
-                ext=node.root_rel_path.suffix, source=chunk_texts[0]
-            )
-            match language:
-                case Lang.C:
-                    template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_C
-                case Lang.CPP:
-                    template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CPP
-                case Lang.HEADER:
-                    template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_HEADER
-                case Lang.PYTHON:
-                    template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_PY
-                case _:
-                    template = SOURCE_CODE_MULTI_CONTEXT_TEMPLATE_DEFAULT
-            long_template = Template(template=template)
-
-            file_description_long = long_template.run_with_code(
-                llm=llm,
-                root_rel_path=node.root_rel_path,
-                code=source_code,
-                code_chunks=chunk_texts,
-            )
+        match file_kind.kind:
+            case (
+                FileEnum.METADATA_SMALL
+                | FileEnum.METADATA_MEDIUM
+                | FileEnum.METADATA_LARGE
+            ):
+                template = METADATA_MULTI_CONTEXT_TEMPLATE
+                long_template = Template(template=template)
+                file_description_long = long_template.run_with_code(
+                    llm=llm,
+                    root_rel_path=node.root_rel_path,
+                    code=source_code,
+                    code_chunks=chunk_texts,
+                )
+            case _:
+                language = Lang.from_ext_and_source(
+                    ext=node.root_rel_path.suffix, source=chunk_texts[0]
+                )
+                match language:
+                    case Lang.C:
+                        template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_C
+                    case Lang.CPP:
+                        template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CPP
+                    case Lang.HEADER:
+                        template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_HEADER
+                    case Lang.PYTHON:
+                        template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_PY
+                    case Lang.RUST:
+                        template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_RUST
+                    case _:
+                        template = SOURCE_CODE_MULTI_CONTEXT_TEMPLATE_DEFAULT
+                long_template = Template(template=template)
+                file_description_long = long_template.run_with_code(
+                    llm=llm,
+                    root_rel_path=node.root_rel_path,
+                    code=source_code,
+                    code_chunks=chunk_texts,
+                )
         # Now ready to generate final documentation content.
         chunk_detailed_descriptions = [file_description_long]
         file_description_single_sentence = file_single_sentence_from_chunk_descriptions(

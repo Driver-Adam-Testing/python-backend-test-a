@@ -10,7 +10,7 @@ from openai import (
     RateLimitError,
 )
 from shared.chunking.text_splitter import TextChunk
-from shared.utils.decorators import retry_with_exponential_backoff
+from shared.utils.decorators import async_retry_with_exponential_backoff
 
 TEXT_EMBEDDING_MODEL = os.getenv("TEXT_EMBEDDING_MODEL", "text-embedding-3-small")
 SUPPORTED_OPENAI_MODELS = ["text-embedding-3-small"]
@@ -41,7 +41,7 @@ def batch_embed_text(
     ]
 
 
-@retry_with_exponential_backoff(
+@async_retry_with_exponential_backoff(
     initial_delay=10.0,
     exponential_base=1.0005,
     errors=(

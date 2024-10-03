@@ -22,7 +22,7 @@ from database.models_v1 import (
     Workspace,
 )
 from fastapi import HTTPException
-from sqlalchemy.orm import Session
+from sqlmodel import Session, select
 
 from app.api.auth import CurrentUser
 from app.schemas.content_schema import (
@@ -48,38 +48,24 @@ def tag_service(db: Session) -> TagService:
 
 @pytest.fixture(scope="function")
 def workspace(
-    db: Session, current_user_with_org: CurrentUser
+    db: Session, current_user_with_org: CurrentUser, content_service: ContentService
 ) -> Generator[Workspace, None, None]:
-    workspace = Workspace(
-        display_name="Default",
-        organization_id=current_user_with_org.organization_id,
+    workspace = content_service.workspace_repository.get_default_workspace(
+        current_user_with_org.organization_id
     )
-    db.add(workspace)
-    db.commit()
-    yield workspace
-
-    # Cleanup
-    db.rollback()  # Ensure rollback before delete
-    db.delete(workspace)
-    db.commit()
+    return workspace
 
 
 @pytest.fixture(scope="function")
 def org_b_workspace(
-    db: Session, current_user_with_other_org: CurrentUser
+    db: Session,
+    current_user_with_other_org: CurrentUser,
+    content_service: ContentService,
 ) -> Generator[Workspace, None, None]:
-    workspace = Workspace(
-        display_name="Default",
-        organization_id=current_user_with_other_org.organization_id,
+    org_b_workspace = content_service.workspace_repository.get_default_workspace(
+        current_user_with_other_org.organization_id
     )
-    db.add(workspace)
-    db.commit()
-
-    try:
-        yield workspace
-    finally:
-        db.delete(workspace)
-        db.commit()
+    return org_b_workspace
 
 
 @pytest.fixture(scope="function")
@@ -88,7 +74,7 @@ def codebase(
 ) -> Generator[Codebase, None, None]:
     codebase = Codebase(
         workspace_id=workspace.id,
-        codebase_name="TEST_CODEBASE",
+        codebase_name=f"TEST_CODEBASE_{datetime.now()}",
         description="TEST_DESCRIPTION",
         status=Enum_Codebase_Status.processing_complete.value,
         storage_url="TEST_STORAGE_URL",
@@ -213,22 +199,50 @@ def codebase_content(
 def content(
     content_service: ContentService,
     current_user_with_org: CurrentUser,
-    workspace: Workspace,
-    codebase: Codebase,
     codebase_content: DerivedContent,
 ) -> Generator[DerivedContent, None, None]:
     organization_id = current_user_with_org.organization_id
-    workspace_id = workspace.id
-    codebase_id = codebase.id
-    document_name = f"TEST_CONTENT_{datetime.now()}"
-    content = content_service.create_blank_document(
-        organization_id, workspace_id, codebase_id, document_name
+    content = content_service.create_content(
+        organization_id, CreateContentRequest(content_type="application_note")
     )
     yield content
 
     # Cleanup
     content_service.content_repository.session.rollback()  # Ensure rollback before delete
     content_service.content_repository.delete(content.id)
+
+
+@pytest.fixture(scope="function")
+def codebase_file(
+    content_service: ContentService,
+    current_user_with_org: CurrentUser,
+    workspace: Workspace,
+    codebase: Codebase,
+    codebase_content: DerivedContent,
+) -> Generator[DerivedContent, None, None]:
+    workspace_id = workspace.id
+    codebase_id = codebase.id
+    content_type_id = (
+        content_service.derived_content_type_repository.get_by_type_name(
+            DerivedContentTypeNames.CODEBASE_FILE.value
+        )
+    ).id
+    codebase__file_record = DerivedContent(
+        content_type_id=content_type_id,
+        workspace_id=workspace_id,
+        codebase_id=codebase_id,
+        relative_path=codebase.codebase_name,
+        misc_metadata={},
+        status=Enum_Derived_Content_Status.generation_complete,
+        created_at=datetime.now(),
+        updated_at=datetime.now(),
+    )
+    content_service.content_repository.create(codebase__file_record)
+    yield codebase__file_record
+
+    # Cleanup
+    content_service.content_repository.session.rollback()  # Ensure rollback before delete
+    content_service.content_repository.delete(codebase__file_record.id)
 
 
 @pytest.fixture(scope="function")
@@ -240,11 +254,10 @@ def other_content(
     codebase_content: DerivedContent,
 ) -> Generator[DerivedContent, None, None]:
     organization_id = current_user_with_org.organization_id
-    workspace_id = workspace.id
-    codebase_id = codebase.id
-    document_name = f"TEST_CONTENT_{datetime.now()}"
-    content = content_service.create_blank_document(
-        organization_id, workspace_id, codebase_id, document_name
+    # workspace_id = workspace.id
+    # codebase_id = codebase.id
+    content = content_service.create_content(
+        organization_id, CreateContentRequest(content_type="application_note")
     )
     yield content
 
@@ -280,11 +293,10 @@ def delete_content(
     codebase_content: DerivedContent,
 ) -> DerivedContent:
     organization_id = current_user_with_org.organization_id
-    workspace_id = workspace.id
-    codebase_id = codebase.id
-    document_name = f"TEST_CONTENT_{datetime.now()}"
-    content = content_service.create_blank_document(
-        organization_id, workspace_id, codebase_id, document_name
+    # workspace_id = workspace.id
+    # codebase_id = codebase.id
+    content = content_service.create_content(
+        organization_id, CreateContentRequest(content_type="application_note")
     )
     return content
 
@@ -351,18 +363,27 @@ def complete_codebase_with_related_entities(
     """
     Create a complete codebase with related entities
     """
-    # Create a codebase
-    codebase = Codebase(
-        workspace_id=workspace.id,
-        codebase_name="TEST_CODEBASE",
-        description="TEST_DESCRIPTION",
-        status=Enum_Codebase_Status.processing_complete.value,
-        storage_url="TEST_STORAGE_URL",
-        resource_root="TEST_CODEBASE/",
-        creator_id=current_user_with_org.user_id,
+
+    statement = (
+        select(Codebase)
+        .where(Codebase.codebase_name == "TEST_CODEBASE")
+        .where(Codebase.workspace_id == workspace.id)
     )
-    db.add(codebase)
-    db.commit()
+    test_codebase = db.exec(statement).first()
+
+    if test_codebase is None:
+        # Create a codebase
+        test_codebase = Codebase(
+            workspace_id=workspace.id,
+            codebase_name="TEST_CODEBASE",
+            description="TEST_DESCRIPTION",
+            status=Enum_Codebase_Status.processing_complete.value,
+            storage_url="TEST_STORAGE_URL",
+            resource_root="TEST_CODEBASE/",
+            creator_id=current_user_with_org.user_id,
+        )
+        db.add(test_codebase)
+        db.commit()
 
     codebase_content_type_id = (
         content_service.derived_content_type_repository.get_by_type_name(
@@ -389,7 +410,7 @@ def complete_codebase_with_related_entities(
             "order": 0,
             "relative_path": "TEST_CODEBASE",
             "workspace_id": workspace.id,
-            "codebase_id": codebase.id,
+            "codebase_id": test_codebase.id,
             "content_name": None,
         },
         {
@@ -401,7 +422,7 @@ def complete_codebase_with_related_entities(
             "order": 0,
             "relative_path": "TEST_CODEBASE/",
             "workspace_id": workspace.id,
-            "codebase_id": codebase.id,
+            "codebase_id": test_codebase.id,
             "content_name": None,
         },
         {
@@ -413,7 +434,7 @@ def complete_codebase_with_related_entities(
             "order": 0,
             "relative_path": "TEST_CODEBASE/README.md",
             "workspace_id": workspace.id,
-            "codebase_id": codebase.id,
+            "codebase_id": test_codebase.id,
             "content_name": None,
         },
         {
@@ -433,7 +454,7 @@ def complete_codebase_with_related_entities(
             "order": 0,
             "relative_path": "TEST_CODEBASE/main.py",
             "workspace_id": workspace.id,
-            "codebase_id": codebase.id,
+            "codebase_id": test_codebase.id,
             "content_name": None,
         },
         {
@@ -453,7 +474,7 @@ def complete_codebase_with_related_entities(
             "order": 0,
             "relative_path": "TEST_CODEBASE/main_test.py",
             "workspace_id": workspace.id,
-            "codebase_id": codebase.id,
+            "codebase_id": test_codebase.id,
             "content_name": None,
         },
     ]
@@ -497,7 +518,7 @@ def complete_codebase_with_related_entities(
             content_type_id=ld_content_type_id,
             content=TECH_DOC_TEXT_IRS[DerivedContentTypeNames.LONG_DESCRIPTION.value],
             workspace_id=workspace.id,
-            codebase_id=codebase.id,
+            codebase_id=test_codebase.id,
             source_content_id=record.id,
             status=Enum_Derived_Content_Status.generation_complete,
             metadata={},
@@ -510,7 +531,7 @@ def complete_codebase_with_related_entities(
                 DerivedContentTypeNames.SHORT_SENTENCE_DESCRIPTION.value
             ],
             workspace_id=workspace.id,
-            codebase_id=codebase.id,
+            codebase_id=test_codebase.id,
             source_content_id=record.id,
             status=Enum_Derived_Content_Status.generation_complete,
             metadata={},
@@ -523,7 +544,7 @@ def complete_codebase_with_related_entities(
                 DerivedContentTypeNames.SHORT_PARAGRAPH_DESCRIPTION.value
             ],
             workspace_id=workspace.id,
-            codebase_id=codebase.id,
+            codebase_id=test_codebase.id,
             source_content_id=record.id,
             status=Enum_Derived_Content_Status.generation_complete,
             metadata={},
@@ -547,19 +568,17 @@ def test_create_blank_document(
     content_service: ContentService,
     current_user_with_org: CurrentUser,
     workspace: Workspace,
-    codebase: Codebase,
     codebase_content: DerivedContent,
 ) -> None:
     organization_id = current_user_with_org.organization_id
     workspace_id = workspace.id
-    codebase_id = codebase.id
-    document_name = f"TEST_CONTENT_{datetime.now()}"
-    new_content = content_service.create_blank_document(
-        organization_id, workspace_id, codebase_id, document_name
+
+    new_content = content_service.create_content(
+        organization_id, CreateContentRequest(content_type="application_note")
     )
     assert new_content is not None
     assert new_content.workspace_id == workspace_id
-    assert new_content.codebase_id == codebase_id
+    assert new_content.codebase_id is None
     assert new_content.content_type_id is not None
     content_service.content_repository.delete(new_content.id)
 
@@ -578,11 +597,15 @@ def test_create_application_note(
 def test_create_application_note_no_default_workspace(
     content_service: ContentService, current_user_with_other_org: CurrentUser
 ) -> None:
+    """
+    by default, the default workspace is created for an organization when finding the default workspace
+    """
     organization_id = current_user_with_other_org.organization_id
-    with pytest.raises(HTTPException):
-        content_service.create_content(
-            organization_id, CreateContentRequest(content_type="application_note")
-        )
+    content = content_service.create_content(
+        organization_id, CreateContentRequest(content_type="application_note")
+    )
+    assert content is not None
+    content_service.content_repository.delete(content.id)
 
 
 def test_create_other_content_type(
@@ -614,7 +637,7 @@ def test_get_list_content_from_other_org(
     current_user_with_other_org: CurrentUser,
     content: DerivedContent,
 ) -> None:
-    lc_input = ListContentInput(limit=10, offset=0)
+    lc_input = ListContentInput(limit=10, offset=0, text="TEST")
     results = content_service.get_list_content(
         current_user_with_other_org.organization_id, lc_input
     )
@@ -679,13 +702,14 @@ def test_get_content_by_id_from_other_org(
 def test_get_content_root_by_id(
     content_service: ContentService,
     current_user_with_org: CurrentUser,
-    content: DerivedContent,
+    codebase_file: DerivedContent,
+    codebase_content: DerivedContent,
 ) -> None:
     root_content = content_service.get_content_root_by_id(
-        content.id, current_user_with_org.organization_id
+        codebase_file.id, current_user_with_org.organization_id
     )
     assert root_content is not None
-    assert root_content.codebase_id == content.codebase_id
+    assert root_content.codebase_id == codebase_file.codebase_id
 
 
 def test_get_content_root_by_id_from_other_org(

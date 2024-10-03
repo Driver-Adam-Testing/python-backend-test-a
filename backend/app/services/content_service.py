@@ -1,5 +1,4 @@
 import hashlib
-import json
 from datetime import datetime
 from uuid import UUID
 
@@ -17,7 +16,7 @@ from database.models_v1 import (
     Workspace,
 )
 from fastapi import HTTPException, status
-from sqlalchemy.exc import IntegrityError, NoResultFound
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.selectable import Select
 from sqlmodel import Session, asc, desc, func, or_, select, text
@@ -158,78 +157,12 @@ class ContentService:
             message="Document source disassociated successfully",
         )
 
-    def create_blank_document(
-        self: "ContentService",
-        organization_id: str,
-        workspace_id: UUID,
-        codebase_id: UUID,
-        document_name: str | None = None,
-    ) -> DerivedContent:
-        logger.info(
-            f"Creating blank document for organization {organization_id}, workspace {workspace_id}, codebase {codebase_id}"
-        )
-
-        workspace_exists = self.workspace_repository.exists(
-            workspace_id, organization_id
-        )
-
-        if not workspace_exists:
-            logger.error(
-                f"Workspace {workspace_id} not found for organization {organization_id}"
-            )
-            raise NoResultFound("Workspace not found")
-
-        application_note_content_type = (
-            self.derived_content_type_repository.get_by_type_name("application_note")
-        )
-
-        codebase_content_type = self.derived_content_type_repository.get_by_type_name(
-            "codebase"
-        )
-
-        parent_content = self.session.exec(
-            select(DerivedContent)
-            .where(DerivedContent.content_type_id == codebase_content_type.id)
-            .where(DerivedContent.workspace_id == workspace_id)
-            .where(DerivedContent.codebase_id == codebase_id)
-        ).first()
-
-        blank_content_template = {
-            "name": "Untitled" if document_name is None else document_name,
-            "content": " ",
-            "description": "",
-        }
-
-        new_content = self.content_repository.create(
-            DerivedContent(
-                content_type_id=application_note_content_type.id,
-                workspace_id=workspace_id,
-                source_content_id=parent_content.id,
-                codebase_id=codebase_id,
-                relative_path=parent_content.relative_path,
-                content=json.dumps(blank_content_template),
-                misc_metadata={},
-                status=Enum_Derived_Content_Status.generation_complete,
-                created_at=datetime.now(),
-                updated_at=datetime.now(),
-            )
-        )
-        logger.info(
-            f"Blank document created with ID {new_content.id} for organization {organization_id}"
-        )
-        return new_content
-
     def create_content(
         self: "ContentService", organization_id: str, request: CreateContentRequest
     ) -> DerivedContent:
         logger.info(
             f"Creating content for organization {organization_id} with input {request}"
         )
-        # if codebase_id is None: and workspace_id is None: find the default workspace for the organization
-        if request.codebase_id is not None and request.workspace_id is not None:
-            return self.create_blank_document(
-                organization_id, request.workspace_id, request.codebase_id
-            )
 
         if (
             request.content_type != DerivedContentTypeNames.APPLICATION_NOTE.value
@@ -805,15 +738,6 @@ def delete_document_and_related_entities(
         session.commit()
 
 
-def delete_document_sources_uncommited(
-    session: Session, content_ids: list[UUID]
-) -> None:
-    # Delete related DocumentSource entities
-    session.query(DocumentSource).filter(
-        DocumentSource.source_id.in_(content_ids),
-    ).delete(synchronize_session="fetch")
-
-
 def delete_codebase_and_related_entities(
     session: Session, service: ContentService, content_id: UUID
 ) -> list[DerivedContent]:
@@ -840,45 +764,25 @@ def delete_codebase_and_related_entities(
         # Separate derived contents into those with and without source_content_id
         irs = [dc for dc in derived_contents if dc.source_content_id is not None]
         source_content = [dc for dc in derived_contents if dc.source_content_id is None]
-        # source_ids_to_delete = [source.id for source in source_content]
-        # source_ids_to_delete = [UUID('45d20573-bda4-4ed3-8889-69cbbd0ecfb8')]
-
-        # Delete related DocumentSource entities
-        # dcs = session.exec(
-        #     select(DocumentSource).where(
-        #         or_(
-        #             DocumentSource.document_id.in_([source.id for source in derived_contents]),
-        #             DocumentSource.source_id.in_([source.id for source in derived_contents]),
-        #         )
-        #     )
-        # ).all()
 
         session.query(DocumentSource).filter(
             DocumentSource.source_id.in_([source.id for source in source_content])
         ).delete(synchronize_session="fetch")
-        session.query(DocumentSource).filter(
-            DocumentSource.document_id.in_([source.id for source in source_content])
-        ).delete(synchronize_session="fetch")
-        # if source_ids_to_delete:
-        #     delete_document_sources_uncommited(session, source_ids_to_delete)
+
         # Delete related TagContent entities for the codebase
         tag_contents = session.exec(
             select(TagContent).where(TagContent.content_id == content_id)
         ).all()
 
         session.query(TagContent).filter(
-            TagContent.tag_id.in_([tc.tag_id for tc in tag_contents])
+            TagContent.content_id.in_([tc.content_id for tc in tag_contents])
         ).delete(synchronize_session="fetch")
+
         # Batch delete derived contents with source_content_id
         session.query(DerivedContent).filter(
             DerivedContent.id.in_([ir.id for ir in irs])
         ).delete(synchronize_session="fetch")
 
-        session.query(DerivedContent).filter(
-            DerivedContent.source_content_id.in_(
-                [source.id for source in source_content]
-            )
-        ).delete(synchronize_session="fetch")
         # Now delete the source content
         session.query(DerivedContent).filter(
             DerivedContent.id.in_([source.id for source in source_content])
@@ -897,6 +801,8 @@ def delete_codebase_and_related_entities(
             select(Codebase).where(Codebase.id == codebase_id)
         ).first()
         session.delete(codebase)
+
+        # raise Exception("Test rollback") rollback works
 
         session.commit()  # Commit if everything is successful
 

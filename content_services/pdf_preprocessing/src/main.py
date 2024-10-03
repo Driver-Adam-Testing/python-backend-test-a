@@ -144,6 +144,8 @@ def create_and_embed_pdf_summaries(content_id: str) -> None:
                 session.commit()
                 session.refresh(derived_content)
                 splits = split_text(result.content)
+                if not splits:
+                    continue
                 try:
                     embeds = batch_embed_text(splits)
                 except Exception as e:

@@ -769,13 +769,8 @@ def delete_codebase_and_related_entities(
             DocumentSource.source_id.in_([source.id for source in source_content])
         ).delete(synchronize_session="fetch")
 
-        # Delete related TagContent entities for the codebase
-        tag_contents = session.exec(
-            select(TagContent).where(TagContent.content_id == content_id)
-        ).all()
-
         session.query(TagContent).filter(
-            TagContent.content_id.in_([tc.content_id for tc in tag_contents])
+            TagContent.content_id.in_([source.id for source in source_content])
         ).delete(synchronize_session="fetch")
 
         # Batch delete derived contents with source_content_id

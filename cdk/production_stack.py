@@ -44,7 +44,7 @@ class ProductionStack(Stack):
             self,
             "DocumentOnboardingLambda",
             DocumentOnboardingLambdaParams(
-                environment="development",
+                environment="production",
                 api_url="https://api.us1.driverai.com/api/v1",
                 auth0_url="https://auth.driverai.com",
                 dropzone_bucket=self.backend.dropzone_bucket,

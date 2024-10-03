@@ -340,7 +340,10 @@ def extract_tables_from_pdf(file_content: io.BytesIO) -> list[any]:
     # TODO: Tabula requires a JVM
     import tabula
 
-    tables = tabula.read_pdf(file_content, pages="all", multiple_tables=True)
+    try:
+        tables = tabula.read_pdf(file_content, pages="all", multiple_tables=True)
+    except Exception:
+        return []
     if tables:
         return tables
     else:

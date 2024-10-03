@@ -40,7 +40,6 @@ pdf_preprocessing_modal_config = {
     secrets=[
         modal.Secret.from_name("sendgrid"),
         modal.Secret.from_name("env-name"),
-        modal.Secret.from_name("anthropic"),
     ],
 )
 def send_exception_email(exception_details: str) -> None:
@@ -145,8 +144,13 @@ def create_and_embed_pdf_summaries(content_id: str) -> None:
                 session.commit()
                 session.refresh(derived_content)
                 splits = split_text(result.content)
-
-                embeds = batch_embed_text(splits)
+                try:
+                    embeds = batch_embed_text(splits)
+                except Exception as e:
+                    # Print the offending text to be embedded
+                    print("Could not embed: ")
+                    print(str(splits))
+                    raise e
                 for i, split in enumerate(splits):
                     session.add(
                         ChunkAndEmbedding(

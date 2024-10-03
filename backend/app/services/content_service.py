@@ -18,6 +18,7 @@ from database.models_v1 import (
 )
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError, NoResultFound
+from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.selectable import Select
 from sqlmodel import Session, asc, desc, func, or_, select, text
 
@@ -804,22 +805,13 @@ def delete_document_and_related_entities(
         session.commit()
 
 
-def delete_document_sources_uncommited(session: Session, content_id: UUID) -> None:
+def delete_document_sources_uncommited(
+    session: Session, content_ids: list[UUID]
+) -> None:
     # Delete related DocumentSource entities
-    document_sources = session.exec(
-        select(DocumentSource).where(
-            or_(
-                # fetch all document sources associated with the content. e.g. content is an app note
-                DocumentSource.document_id == content_id,
-                # fetch all document sources that are sources for the content.
-                # e.g. content is a pdf and is a source for a note.
-                DocumentSource.source_id == content_id,
-            )
-        )
-    ).all()
-    # Deleting Many-to-Many relationship requires fetching the related entities and deleting them
-    for document_source in document_sources:
-        session.delete(document_source)
+    session.query(DocumentSource).filter(
+        DocumentSource.source_id.in_(content_ids),
+    ).delete(synchronize_session="fetch")
 
 
 def delete_codebase_and_related_entities(
@@ -835,60 +827,87 @@ def delete_codebase_and_related_entities(
     codebase_id = codebase_record.codebase_id
 
     try:
-        # get all derived content associated with the codebase
+        # Fetch all derived content and related entities in a single query
         derived_contents = session.exec(
-            select(DerivedContent).where(DerivedContent.codebase_id == codebase_id)
+            select(DerivedContent)
+            .where(DerivedContent.codebase_id == codebase_id)
+            .options(
+                selectinload(DerivedContent.source_links),
+                selectinload(DerivedContent.tag_links),
+            )
         ).all()
 
-        # select derived_contents where source_content_id is not null
-        irs = [
-            derived_content
-            for derived_content in derived_contents
-            if derived_content.source_content_id is not None
-        ]
+        # Separate derived contents into those with and without source_content_id
+        irs = [dc for dc in derived_contents if dc.source_content_id is not None]
+        source_content = [dc for dc in derived_contents if dc.source_content_id is None]
+        # source_ids_to_delete = [source.id for source in source_content]
+        # source_ids_to_delete = [UUID('45d20573-bda4-4ed3-8889-69cbbd0ecfb8')]
 
-        for ir in irs:
-            session.delete(ir)
+        # Delete related DocumentSource entities
+        # dcs = session.exec(
+        #     select(DocumentSource).where(
+        #         or_(
+        #             DocumentSource.document_id.in_([source.id for source in derived_contents]),
+        #             DocumentSource.source_id.in_([source.id for source in derived_contents]),
+        #         )
+        #     )
+        # ).all()
 
+        session.query(DocumentSource).filter(
+            DocumentSource.source_id.in_([source.id for source in source_content])
+        ).delete(synchronize_session="fetch")
+        session.query(DocumentSource).filter(
+            DocumentSource.document_id.in_([source.id for source in source_content])
+        ).delete(synchronize_session="fetch")
+        # if source_ids_to_delete:
+        #     delete_document_sources_uncommited(session, source_ids_to_delete)
         # Delete related TagContent entities for the codebase
         tag_contents = session.exec(
             select(TagContent).where(TagContent.content_id == content_id)
         ).all()
 
-        for tag_content in tag_contents:
-            session.delete(tag_content)
+        session.query(TagContent).filter(
+            TagContent.tag_id.in_([tc.tag_id for tc in tag_contents])
+        ).delete(synchronize_session="fetch")
+        # Batch delete derived contents with source_content_id
+        session.query(DerivedContent).filter(
+            DerivedContent.id.in_([ir.id for ir in irs])
+        ).delete(synchronize_session="fetch")
 
-        # delete the derived_contents where source_content_id is null and codebase_id = codebase_id
-        source_content = [
-            derived_content
-            for derived_content in derived_contents
-            if derived_content.source_content_id is None
-        ]
+        session.query(DerivedContent).filter(
+            DerivedContent.source_content_id.in_(
+                [source.id for source in source_content]
+            )
+        ).delete(synchronize_session="fetch")
+        # Now delete the source content
+        session.query(DerivedContent).filter(
+            DerivedContent.id.in_([source.id for source in source_content])
+        ).delete(synchronize_session="fetch")
 
-        for source in source_content:
-            session.delete(source)
-            if (
-                source.content_type.type_name
-                == DerivedContentTypeNames.CODEBASE_FILE.value
-            ):
-                records_to_delete_in_s3.append(source)
+        # Collect records for S3 deletion
+        records_to_delete_in_s3.extend(
+            source
+            for source in source_content
+            if source.content_type.type_name
+            == DerivedContentTypeNames.CODEBASE_FILE.value
+        )
 
-        # delete the codebase record
+        # Delete the codebase record
         codebase = session.exec(
             select(Codebase).where(Codebase.id == codebase_id)
         ).first()
-
         session.delete(codebase)
-    except:
-        # except Exception as e:
+
+        session.commit()  # Commit if everything is successful
+
+    except Exception as e:
         logger.exception(
-            f"Error deleting codebase_id {content_id} and related entities"
+            f"Error deleting codebase_id {content_id} and related entities: {e!s}"
         )
-        session.rollback()
+        session.rollback()  # Rollback on any exception
         raise
-    else:
-        session.commit()
-        return records_to_delete_in_s3
+
+    return records_to_delete_in_s3
 
 
 def organization_bucket_from_organization_id(organization_id: str) -> str:

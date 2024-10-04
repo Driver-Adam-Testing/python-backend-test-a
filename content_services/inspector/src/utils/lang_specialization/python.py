@@ -235,13 +235,17 @@ def py_class_checker(
             and not name.startswith("__anon")
             and s.get("scopeKind") in PY_CLASS
         ):
+            scope_split = scope.split(".")[-1]
             # TODO: Pretty sure we're safe here as Python does not have method overloading.
-            if s["kind"] in PY_METHODS:
-                classes_dict[scope]["methods"].append(s)
-            elif s["kind"] in PY_CLASS:
-                classes_dict[scope]["nested_classes"].append(s)
-            else:
-                print(f"Unhandled child ({name}) of parent ({scope} in {root_rel_path}")
+            if scope_split in classes_dict:
+                if s["kind"] in PY_METHODS:
+                    classes_dict[scope_split]["methods"].append(s)
+                elif s["kind"] in PY_CLASS:
+                    classes_dict[scope_split]["nested_classes"].append(s)
+                else:
+                    print(
+                        f"Unhandled child ({name}) of parent ({scope} in {root_rel_path}"
+                    )
     if len(classes_dict) > 0:
         if structured_output:
             output = classes_dict

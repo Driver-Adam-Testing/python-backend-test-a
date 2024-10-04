@@ -238,7 +238,7 @@ def run_process_pdf(file_content: io.BytesIO) -> list[ProcessedPdfFileContent]:
 
     pages = split_pdf_into_pages(file_content=file_content)
     print(f"PDF whole summary: {whole_file_summary}")
-    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=15) as executor:
         futures = []
         for index, page_content in enumerate(pages):
             try:

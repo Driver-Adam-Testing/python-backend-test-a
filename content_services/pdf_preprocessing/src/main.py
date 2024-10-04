@@ -30,8 +30,7 @@ pdf_preprocessing_modal_config = {
     "proxy": modal.Proxy.from_name("pg-proxy")
     if os.environ["MODAL_ENVIRONMENT"] != "staging"
     else None,
-    "concurrency_limit": 5,
-    "region": "us-east",
+    "concurrency_limit": 20,
 }
 
 
@@ -128,10 +127,13 @@ def create_and_embed_pdf_summaries(content_id: str) -> None:
 
                 # TODO: This should all be in a service.
 
+                # Remove NUL characters from the content
+                cleaned_content = str(result.content.replace("\x00", ""))
+
                 derived_content = DerivedContent(
                     workspace_id=content.workspace.id,
                     codebase_id=content.codebase_id,
-                    content=result.content,
+                    content=cleaned_content,
                     content_type_id=content_type_id,
                     source_content_id=content_id,
                     misc_metadata={
@@ -143,7 +145,7 @@ def create_and_embed_pdf_summaries(content_id: str) -> None:
                 session.add(derived_content)
                 session.commit()
                 session.refresh(derived_content)
-                splits = split_text(result.content)
+                splits = split_text(cleaned_content)
                 if not splits:
                     continue
                 try:

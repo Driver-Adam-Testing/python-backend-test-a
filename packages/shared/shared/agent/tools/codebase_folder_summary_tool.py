@@ -1,5 +1,6 @@
 from database.db import get_session
 from database.models_v1 import DerivedContent
+from sqlalchemy.orm import selectinload
 from sqlmodel import select
 
 from shared.agent.agent_base import AgentBase
@@ -25,14 +26,19 @@ class CodebaseFolderSummaryTool(ToolStrict):
 
         with get_session() as session:
             derived_content = session.exec(
-                select(DerivedContent).where(
+                select(DerivedContent)
+                .where(
                     (DerivedContent.relative_path == self.codebase_directory_path)
                     | (
                         DerivedContent.relative_path
                         == self.codebase_directory_path.rstrip("/")
                     ),
                     DerivedContent.content_type.has(type_name="long_description"),
+                    DerivedContent.workspace.has(
+                        organization_id=agent.scope.organization_id
+                    ),
                 )
+                .options(selectinload(DerivedContent.workspace))
             ).all()
 
             if not derived_content:

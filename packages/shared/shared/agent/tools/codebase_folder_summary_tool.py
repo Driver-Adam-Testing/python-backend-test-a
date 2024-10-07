@@ -55,6 +55,8 @@ class CodebaseFolderSummaryTool(ToolStrict):
                         "content_type": "long_description",
                         "path": content.relative_path,
                         "relative_path": content.relative_path,
+                        "codebase_id": content.codebase_id,
+                        "workspace_id": content.workspace_id,
                     },
                 )
                 search_results.append(search_result)

@@ -23,7 +23,7 @@ class OpenFileTool(ToolStrict):
         agent.scope.authorize(self.file_path)
 
         with get_session() as session:
-            derived_content = session.exec(
+            derived_content: DerivedContent | None = session.exec(
                 select(DerivedContent)
                 .where(
                     DerivedContent.relative_path == self.file_path,
@@ -68,6 +68,8 @@ class OpenFileTool(ToolStrict):
                     "path": self.file_path,
                     "tool": "OpenFileTool",
                     "relative_path": self.file_path,
+                    "codebase_id": derived_content.codebase_id,
+                    "workspace_id": derived_content.workspace_id,
                 },
             )
             agent.add_search_results(SearchResults(results=[search_result]))

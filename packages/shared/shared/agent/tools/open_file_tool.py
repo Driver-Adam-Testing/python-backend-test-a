@@ -28,8 +28,12 @@ class OpenFileTool(ToolStrict):
                 .where(
                     DerivedContent.relative_path == self.file_path,
                     DerivedContent.content_type.has(type_name="codebase-file"),
+                    DerivedContent.workspace.has(
+                        organization_id=agent.scope.organization_id
+                    ),
                 )
                 .options(selectinload(DerivedContent.chunks_and_embeds))
+                .options(selectinload(DerivedContent.workspace))
             ).first()
 
             if not derived_content:

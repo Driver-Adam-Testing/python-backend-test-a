@@ -30,15 +30,14 @@ agent_model_config = {
         modal.Secret.from_name("open-ai"),
         modal.Secret.from_name("db"),
     ],
-    "concurrency_limit": 5,
-    "region": "us-east",
+    "concurrency_limit": 36,
 }
 
 if os.environ["MODAL_ENVIRONMENT"] != "staging":
     agent_model_config["proxy"] = modal.Proxy.from_name("pg-proxy")
 
 
-@app.function(timeout=3600, **agent_model_config, keep_warm=5)
+@app.function(timeout=3600, **agent_model_config, keep_warm=10)
 def run(input: dict) -> any:
     from shared.interfaces.agents.pipeline_configuration import PipelineInput
     from shared.pipelines.agents.execute import execute_sequence

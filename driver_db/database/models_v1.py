@@ -1,7 +1,6 @@
 import enum
-import functools
 import uuid
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
@@ -37,65 +36,6 @@ class ContentType(str, enum.Enum):
     UNKNOWN = "UNKNOWN"
 
 
-class ContentMetadata(SQLModel, table=True):  # type: ignore
-    created_at: None | datetime = Field(
-        sa_column=Column(
-            DateTime(timezone=True), server_default=func.now(), nullable=False
-        ),
-        default=None,
-    )
-    updated_at: None | datetime = Field(
-        sa_column=Column(
-            DateTime(timezone=True),
-            server_default=func.now(),
-            onupdate=func.now(),
-            nullable=False,
-        ),
-    )
-    id: UUID | None = Field(default_factory=uuid.uuid4, primary_key=True)
-    workspace_id: UUID = Field(index=True)
-    codebase_id: UUID | None = Field(default=None, nullable=True, index=True)
-    content_type: ContentType = Field(Enum(ContentType), index=True)
-    relative_path: str | None = Field(default=None, nullable=True, index=True)
-    misc_metadata: dict = Field(default={}, sa_column=Column(JSON, nullable=False))  # type: ignore
-    chunks: list["Chunk"] = Relationship(back_populates="content_metadata")
-
-
-# TODO deprecate once all embeddings are in ChunkAndEmbedding
-class Chunk(SQLModel, table=True):  # type: ignore
-    # TODO Note: these timestamps weren't updated to match the others because this
-    # table is deprecated soon and there were tons of rows to populate.
-    created_at: datetime = Field(
-        default=None,
-        sa_column=Column(
-            DateTime(timezone=True),
-            default=functools.partial(datetime.now, tz=UTC),
-            nullable=True,
-        ),
-    )
-    updated_at: datetime = Field(
-        default=None,
-        sa_column=Column(
-            DateTime(timezone=True),
-            onupdate=functools.partial(datetime.now, tz=UTC),
-            nullable=True,
-        ),
-    )
-    id: UUID | None = Field(default_factory=uuid.uuid4, primary_key=True)
-    content_metadata_id: UUID = Field(
-        foreign_key="contentmetadata.id", nullable=False, index=True
-    )
-    content_metadata: ContentMetadata = Relationship(back_populates="chunks")
-    text: str
-    # Text Embeddings are actually indexed but it's not reflected in the model.py because it's using ivfflat
-    text_embedding_3_small: list[float] = Field(
-        sa_column=Column(Vector(1536), nullable=True)
-    )
-    chunk_number: int | None
-    token_count: int | None
-    line_number: int | None
-
-
 class RuntimeLogAgentInstance(SQLModel, table=True):  # type: ignore
     created_at: None | datetime = Field(
         sa_column=Column(
@@ -118,10 +58,6 @@ class RuntimeLogAgentInstance(SQLModel, table=True):  # type: ignore
     messages: list["RuntimeLogAgentMessage"] = Relationship(
         back_populates="agent_instance"
     )
-    errors: list["RuntimeLogAgentError"] = Relationship(back_populates="agent_instance")
-    content_retrievals: list["RuntimeLogContentRetrieval"] = Relationship(
-        back_populates="agent_instance"
-    )
     organization_id: str | None
 
 
@@ -139,53 +75,6 @@ class RuntimeLogAgentMessage(SQLModel, table=True):  # type: ignore
         foreign_key="runtimelogagentinstance.id", nullable=False
     )
     agent_instance: RuntimeLogAgentInstance = Relationship(back_populates="messages")
-
-
-class RuntimeLogAgentError(SQLModel, table=True):  # type: ignore
-    created_at: None | datetime = Field(
-        sa_column=Column(
-            DateTime(timezone=True), server_default=func.now(), nullable=False
-        ),
-        default=None,
-    )
-    id: UUID | None = Field(default_factory=uuid.uuid4, primary_key=True)
-    agent_instance_id: UUID = Field(
-        foreign_key="runtimelogagentinstance.id", nullable=False
-    )
-    agent_instance: RuntimeLogAgentInstance = Relationship(back_populates="errors")
-    error: str
-
-
-class RuntimeLogContentRetrieval(SQLModel, table=True):  # type: ignore
-    created_at: None | datetime = Field(
-        sa_column=Column(
-            DateTime(timezone=True), server_default=func.now(), nullable=False
-        ),
-        default=None,
-    )
-    id: UUID | None = Field(default_factory=uuid.uuid4, primary_key=True)
-    agent_instance_id: UUID = Field(
-        foreign_key="runtimelogagentinstance.id", nullable=False
-    )
-    agent_instance: RuntimeLogAgentInstance = Relationship(
-        back_populates="content_retrievals"
-    )
-    chunk_id: UUID = Field(foreign_key="chunk.id", nullable=False)
-
-
-# class RuntimeLogOperation(SQLModel, table=True):  # type: ignore
-# TODO this need to match the other created_at columns!
-#     created_at: datetime = Field(
-#         default=None,
-#         sa_column=Column(
-#             DateTime(timezone=True),
-#             default=functools.partial(datetime.now, tz=timezone.utc),
-#             nullable=True,
-#         ),
-#     )
-#     id: UUID | None = Field(default_factory=uuid.uuid4, primary_key=True)
-#     name: str
-#     request: dict = Field(default={}, sa_column=Column(JSON, nullable=True))
 
 
 @strawberry.enum

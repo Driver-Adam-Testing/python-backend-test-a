@@ -49,6 +49,9 @@ from inspection.prompt_templates.files.templates.source_code_large_header import
 from inspection.prompt_templates.files.templates.source_code_large_header_multi_prompt import (
     SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_HEADER,
 )
+from inspection.prompt_templates.files.templates.source_code_large_java import (
+    SOURCE_CODE_LARGE_TEMPLATE_JAVA,
+)
 from inspection.prompt_templates.files.templates.source_code_large_py import (
     SOURCE_CODE_LARGE_TEMPLATE_PY,
 )
@@ -81,6 +84,9 @@ from inspection.prompt_templates.files.templates.source_code_small_default impor
 )
 from inspection.prompt_templates.files.templates.source_code_small_header import (
     SOURCE_CODE_SMALL_TEMPLATE_HEADER,
+)
+from inspection.prompt_templates.files.templates.source_code_small_java import (
+    SOURCE_CODE_SMALL_TEMPLATE_JAVA,
 )
 from inspection.prompt_templates.files.templates.source_code_small_py import (
     SOURCE_CODE_SMALL_TEMPLATE_PY,
@@ -178,6 +184,7 @@ SOURCE_CODE_LARGE_BY_LANG = {
     Lang.VERILOG: SOURCE_CODE_LARGE_TEMPLATE_VERILOG,
     Lang.RUST: SOURCE_CODE_LARGE_TEMPLATE_RUST,
     Lang.ASSEMBLY: SOURCE_CODE_LARGE_TEMPLATE_ASSEMBLY,
+    Lang.JAVA: SOURCE_CODE_LARGE_TEMPLATE_JAVA,
 }
 SOURCE_CODE_SMALL_BY_LANG = {
     Lang.DEFAULT: SOURCE_CODE_SMALL_TEMPLATE_DEFAULT,
@@ -188,6 +195,7 @@ SOURCE_CODE_SMALL_BY_LANG = {
     Lang.VERILOG: SOURCE_CODE_SMALL_TEMPLATE_VERILOG,
     Lang.RUST: SOURCE_CODE_SMALL_TEMPLATE_RUST,
     Lang.ASSEMBLY: SOURCE_CODE_SMALL_TEMPLATE_ASSEMBLY,
+    Lang.JAVA: SOURCE_CODE_SMALL_TEMPLATE_JAVA,
 }
 METADATA_SMALL_BY_LANG = {
     Lang.DEFAULT: METADATA_SMALL_TEMPLATE,
@@ -198,6 +206,7 @@ METADATA_SMALL_BY_LANG = {
     Lang.VERILOG: METADATA_SMALL_TEMPLATE,
     Lang.RUST: METADATA_SMALL_TEMPLATE,
     Lang.ASSEMBLY: METADATA_SMALL_TEMPLATE,
+    Lang.JAVA: METADATA_SMALL_TEMPLATE,
 }
 METADATA_MEDIUM_BY_LANG = {
     Lang.DEFAULT: METADATA_MEDIUM_TEMPLATE,
@@ -208,6 +217,7 @@ METADATA_MEDIUM_BY_LANG = {
     Lang.VERILOG: METADATA_MEDIUM_TEMPLATE,
     Lang.RUST: METADATA_MEDIUM_TEMPLATE,
     Lang.ASSEMBLY: METADATA_MEDIUM_TEMPLATE,
+    Lang.JAVA: METADATA_MEDIUM_TEMPLATE,
 }
 METADATA_LARGE_BY_LANG = {
     Lang.DEFAULT: METADATA_LARGE_TEMPLATE,
@@ -218,6 +228,7 @@ METADATA_LARGE_BY_LANG = {
     Lang.VERILOG: METADATA_LARGE_TEMPLATE,
     Lang.RUST: METADATA_LARGE_TEMPLATE,
     Lang.ASSEMBLY: METADATA_LARGE_TEMPLATE,
+    Lang.JAVA: METADATA_LARGE_TEMPLATE,
 }
 TEMPLATE_DATA = {
     FileEnum.SOURCE_CODE_LARGE: SOURCE_CODE_LARGE_BY_LANG,

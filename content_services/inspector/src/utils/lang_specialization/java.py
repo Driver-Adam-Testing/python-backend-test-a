@@ -887,7 +887,7 @@ def java_interface_dict_from_llm(
                 methods[scoped_name] = m_data
         for f in cls_data["fields"]:
             f_name = f["name"]
-            scoped_name = cls_name + class_fn_delimiter + m_name
+            scoped_name = cls_name + class_fn_delimiter + f_name
             f_data = JavaFieldData.from_llm(
                 system_prompt=system_prompt_field,
                 user_prompt=user_prompt_field,

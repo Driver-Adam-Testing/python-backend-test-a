@@ -690,6 +690,140 @@ def java_class_dict_from_llm(
     return JavaClassDict(data=class_dict_documented)
 
 
+BLIND_ADVANCE_IF_NO_END_LINE = 200
+PADDING_LINES_TOP = 100
+PADDING_LINES_BOTTOM = 100
+SYMBOL_MAX_CHUNK_SIZE = 64_000
+SYMBOL_CHUNK_OVERLAP = 1_000
+
+
+def java_class_dict_from_llm_multi_prompt(
+    system_prompt_class: str,
+    user_prompt_class: str,
+    system_prompt_fn: str,
+    user_prompt_fn: str,
+    system_prompt_field: str,
+    user_prompt_field: str,
+    class_fn_delimiter: str,
+    llm: ChatOpenAI,
+    class_dict_raw: dict[str, dict[str, Any]],
+    code: str,
+    root_rel_path: Path,
+) -> JavaClassDict:
+    from shared.chunking.text_splitter import split_text
+
+    symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
+    class_dict_documented = {}
+    global_method_counts = {}
+    for _, cls_data in class_dict_raw.items():
+        for m in cls_data["methods"]:
+            name = m["name"]
+            global_method_counts[name] = global_method_counts.get(name, 0) + 1
+
+    for symbol in symbols:
+        for cls_name, cls_data in class_dict_raw.items():
+            if symbol["name"] == cls_name:
+                start_line = symbol["line"]
+                end_line = symbol.get(
+                    "end", symbol["line"] + BLIND_ADVANCE_IF_NO_END_LINE
+                )
+                class_code = "\n".join(code.splitlines()[start_line - 1 : end_line])
+                code_chunks = split_text(
+                    text=class_code,
+                    chunk_size=SYMBOL_MAX_CHUNK_SIZE,
+                    chunk_overlap=SYMBOL_CHUNK_OVERLAP,
+                )
+                if len(code_chunks) == 1:
+                    class_dict_documented = java_class_dict_from_llm(
+                        system_prompt_class=system_prompt_class,
+                        user_prompt_class=user_prompt_class,
+                        system_prompt_fn=system_prompt_fn,
+                        user_prompt_fn=user_prompt_fn,
+                        system_prompt_field=system_prompt_field,
+                        user_prompt_field=user_prompt_field,
+                        class_fn_delimiter=class_fn_delimiter,
+                        llm=llm,
+                        class_dict_raw={cls_name: cls_data},
+                        code=class_code,
+                    ).data[cls_name]
+                elif len(code_chunks) > 1:
+                    class_base = JavaClassBaseData.from_llm(
+                        system_prompt=system_prompt_class,
+                        user_prompt=user_prompt_class,
+                        llm=llm,
+                        name=cls_name,
+                        code=code_chunks[0].text,
+                    )
+                    methods = {}
+                    fields = {}
+                    nested_classes = []
+                    nested_interfaces = []
+                    for m in cls_data["methods"]:
+                        m_name = m["name"]
+                        scoped_name = cls_name + class_fn_delimiter + m_name
+                        m_start_line = m["line"]
+                        m_end_line = m.get(
+                            "end", m_start_line + BLIND_ADVANCE_IF_NO_END_LINE
+                        )
+                        m_code = "\n".join(
+                            code.splitlines()[m_start_line - 1 : m_end_line]
+                        )
+                        # More than one method with the same name in the file: cut scope for LLM.
+                        if global_method_counts[m_name] > 1:
+                            # Use list to handle method overloading, if present.
+                            if scoped_name not in methods:
+                                methods[scoped_name] = []
+                            methods[scoped_name].append(
+                                JavaMethodData.from_llm(
+                                    system_prompt=system_prompt_fn,
+                                    user_prompt=user_prompt_fn,
+                                    llm=llm,
+                                    fn_name=m_name,
+                                    code=m_code,
+                                )
+                            )
+                        else:
+                            m_data = JavaMethodData.from_llm(
+                                system_prompt=system_prompt_fn,
+                                user_prompt=user_prompt_fn,
+                                llm=llm,
+                                fn_name=m_name,
+                                code=m_code,
+                            )
+                            methods[scoped_name] = m_data
+                    for f in cls_data["fields"]:
+                        f_name = f["name"]
+                        f_start_line = f["line"] - PADDING_LINES_TOP
+                        f_end_line = f.get("end", f["line"] + PADDING_LINES_BOTTOM)
+                        f_code = "\n".join(code.splitlines()[f_start_line:f_end_line])
+                        scoped_name = cls_name + class_fn_delimiter + f_name
+                        f_data = JavaFieldData.from_llm(
+                            system_prompt=system_prompt_field,
+                            user_prompt=user_prompt_field,
+                            llm=llm,
+                            var_name=f_name,
+                            code=f_code,
+                        )
+                        fields[scoped_name] = f_data
+
+                    for nested_class in cls_data["nested_classes"]:
+                        nested_classes.append(nested_class["name"])
+
+                    for nested_interface in cls_data["nested_interfaces"]:
+                        nested_interfaces.append(nested_interface["name"])
+
+                    class_data = JavaClassData(
+                        base_data=class_base,
+                        methods=methods,
+                        fields=fields,
+                        nested_classes=nested_classes,
+                        nested_interfaces=nested_interfaces,
+                    )
+                    class_dict_documented[cls_name] = class_data
+
+    return JavaClassDict(data=class_dict_documented)
+
+
 def java_interface_dict_from_llm(
     system_prompt_class: str,
     user_prompt_class: str,
@@ -781,6 +915,132 @@ def java_interface_dict_from_llm(
     return JavaInterfaceDict(data=interface_dict_documented)
 
 
+def java_interface_dict_from_llm_multi_prompt(
+    system_prompt_class: str,
+    user_prompt_class: str,
+    system_prompt_fn: str,
+    user_prompt_fn: str,
+    system_prompt_field: str,
+    user_prompt_field: str,
+    class_fn_delimiter: str,
+    llm: ChatOpenAI,
+    interface_dict_raw: dict[str, dict[str, Any]],
+    code: str,
+    root_rel_path: Path,
+) -> JavaInterfaceDict:
+    from shared.chunking.text_splitter import split_text
+
+    symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
+    interface_dict_documented = {}
+    global_method_counts = {}
+    for _, cls_data in interface_dict_raw.items():
+        for m in cls_data["methods"]:
+            name = m["name"]
+            global_method_counts[name] = global_method_counts.get(name, 0) + 1
+    for symbol in symbols:
+        for cls_name, cls_data in interface_dict_raw.items():
+            if symbol["name"] == cls_name:
+                start_line = symbol["line"]
+                end_line = symbol.get(
+                    "end", symbol["line"] + BLIND_ADVANCE_IF_NO_END_LINE
+                )
+                interface_code = "\n".join(code.splitlines()[start_line - 1 : end_line])
+                code_chunks = split_text(
+                    text=interface_code,
+                    chunk_size=SYMBOL_MAX_CHUNK_SIZE,
+                    chunk_overlap=SYMBOL_CHUNK_OVERLAP,
+                )
+                if len(code_chunks) == 1:
+                    interface_dict_documented = java_interface_dict_from_llm(
+                        system_prompt_class=system_prompt_class,
+                        user_prompt_class=user_prompt_class,
+                        system_prompt_fn=system_prompt_fn,
+                        user_prompt_fn=user_prompt_fn,
+                        system_prompt_field=system_prompt_field,
+                        user_prompt_field=user_prompt_field,
+                        class_fn_delimiter=class_fn_delimiter,
+                        llm=llm,
+                        interface_dict_raw={cls_name: cls_data},
+                        code=interface_code,
+                    ).data[cls_name]
+                elif len(code_chunks) > 1:
+                    class_base = JavaInterfaceBaseData.from_llm(
+                        system_prompt=system_prompt_class,
+                        user_prompt=user_prompt_class,
+                        llm=llm,
+                        name=cls_name,
+                        code=code_chunks[0].text,
+                    )
+                    methods = {}
+                    fields = {}
+                    nested_classes = []
+                    nested_interfaces = []
+                    for m in cls_data["methods"]:
+                        m_name = m["name"]
+                        scoped_name = cls_name + class_fn_delimiter + m_name
+                        m_start_line = m["line"]
+                        m_end_line = m.get(
+                            "end", m_start_line + BLIND_ADVANCE_IF_NO_END_LINE
+                        )
+                        m_code = "\n".join(
+                            code.splitlines()[m_start_line - 1 : m_end_line]
+                        )
+                        # More than one method with the same name in the file: cut scope for LLM.
+                        if global_method_counts[m_name] > 1:
+                            # Use list to handle method overloading, if present.
+                            if scoped_name not in methods:
+                                methods[scoped_name] = []
+                            methods[scoped_name].append(
+                                JavaMethodData.from_llm(
+                                    system_prompt=system_prompt_fn,
+                                    user_prompt=user_prompt_fn,
+                                    llm=llm,
+                                    fn_name=m_name,
+                                    code=m_code,
+                                )
+                            )
+                        else:
+                            m_data = JavaMethodData.from_llm(
+                                system_prompt=system_prompt_fn,
+                                user_prompt=user_prompt_fn,
+                                llm=llm,
+                                fn_name=m_name,
+                                code=m_code,
+                            )
+                            methods[scoped_name] = m_data
+                    for f in cls_data["fields"]:
+                        f_name = f["name"]
+                        f_start_line = f["line"] - PADDING_LINES_TOP
+                        f_end_line = f.get("end", f["line"] + PADDING_LINES_BOTTOM)
+                        f_code = "\n".join(code.splitlines()[f_start_line:f_end_line])
+                        scoped_name = cls_name + class_fn_delimiter + m_name
+                        f_data = JavaFieldData.from_llm(
+                            system_prompt=system_prompt_field,
+                            user_prompt=user_prompt_field,
+                            llm=llm,
+                            var_name=f_name,
+                            code=f_code,
+                        )
+                        fields[scoped_name] = f_data
+
+                    for nested_class in cls_data["nested_classes"]:
+                        nested_classes.append(nested_class["name"])
+
+                    for nested_interface in cls_data["nested_interfaces"]:
+                        nested_interfaces.append(nested_interface["name"])
+
+                    class_data = JavaInterfaceData(
+                        base_data=class_base,
+                        methods=methods,
+                        fields=fields,
+                        nested_classes=nested_classes,
+                        nested_interfaces=nested_interfaces,
+                    )
+                    interface_dict_documented[cls_name] = class_data
+
+    return JavaInterfaceDict(data=interface_dict_documented)
+
+
 class_dict_from_llm_java = partial(
     java_class_dict_from_llm,
     CLASSES_FOUND_SYSTEM_PROMPT_JSON,
@@ -802,29 +1062,25 @@ interface_dict_from_llm_java = partial(
     FIELDS_FOUND_USER_PROMPT,
     ".",
 )
-# variables_dict_from_llm_cpp_multi_prompt = partial(
-#     variables_dict_from_llm_multi_prompt,
-#     VARIABLES_FOUND_SYSTEM_PROMPT_JSON,
-#     VARIABLES_FOUND_USER_PROMPT,
-# )
-#
-# data_structure_dict_from_llm_cpp_multi_prompt = partial(
-#     data_structure_dict_from_llm_multi_prompt,
-#     DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
-#     DATA_STRUCTURES_FOUND_USER_PROMPT,
-# )
-#
-# fn_dict_from_llm_cpp_multi_prompt = partial(
-#     fn_dict_from_llm_multi_prompt,
-#     FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
-#     FUNCTIONS_FOUND_USER_PROMPT,
-# )
-#
-# classes_dict_from_llm_cpp_multi_prompt = partial(
-#     classes_dict_from_llm_multi_prompt,
-#     DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
-#     DATA_STRUCTURES_FOUND_USER_PROMPT,
-#     FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
-#     FUNCTIONS_FOUND_USER_PROMPT,
-#     "::",
-# )
+
+class_dict_from_llm_java_multi_prompt = partial(
+    java_class_dict_from_llm,
+    CLASSES_FOUND_SYSTEM_PROMPT_JSON,
+    CLASSES_FOUND_USER_PROMPT,
+    METHODS_FOUND_SYSTEM_PROMPT_JSON,
+    METHODS_FOUND_USER_PROMPT,
+    FIELDS_FOUND_SYSTEM_PROMPT_JSON,
+    FIELDS_FOUND_USER_PROMPT,
+    ".",
+)
+
+interface_dict_from_llm_java_multi_prompt = partial(
+    java_interface_dict_from_llm,
+    INTERFACES_FOUND_SYSTEM_PROMPT_JSON,
+    INTERFACES_FOUND_USER_PROMPT,
+    METHODS_FOUND_SYSTEM_PROMPT_JSON,
+    METHODS_FOUND_USER_PROMPT,
+    FIELDS_FOUND_SYSTEM_PROMPT_JSON,
+    FIELDS_FOUND_USER_PROMPT,
+    ".",
+)

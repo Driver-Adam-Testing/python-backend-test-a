@@ -64,6 +64,9 @@ from inspection.prompt_templates.files.templates.source_code_large_py_multi_prom
 from inspection.prompt_templates.files.templates.source_code_large_ruby import (
     SOURCE_CODE_LARGE_TEMPLATE_RUBY,
 )
+from inspection.prompt_templates.files.templates.source_code_large_ruby_multi_prompt import (
+    SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_RUBY,
+)
 from inspection.prompt_templates.files.templates.source_code_large_rust import (
     SOURCE_CODE_LARGE_TEMPLATE_RUST,
 )
@@ -458,6 +461,8 @@ def comprehend_file_top_down(
                         template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_RUST
                     case Lang.JAVA:
                         template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_JAVA
+                    case Lang.RUBY:
+                        template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_RUBY
                     case _:
                         template = SOURCE_CODE_MULTI_CONTEXT_TEMPLATE_DEFAULT
                 long_template = Template(template=template)

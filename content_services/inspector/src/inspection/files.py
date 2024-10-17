@@ -457,17 +457,26 @@ def comprehend_file_top_down(
                     code_chunks=chunk_texts,
                 )
         # Now ready to generate final documentation content.
+        description_chunks = split_text(
+            text=file_description_long,
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+        )
+        if len(description_chunks) > 1:
+            chunks = [description_chunks[0].text]
+        else:
+            chunks = [file_description_long]
         chunk_detailed_descriptions = [file_description_long]
         file_description_single_sentence = file_single_sentence_from_chunk_descriptions(
             llm=llm,
-            chunks=[file_description_long],
+            chunks=chunks,
             file_name=node.root_rel_path.name,
             codebase_name=codebase_name,
         )
         file_description_single_paragraph = (
             file_single_paragraph_from_chunk_descriptions(
                 llm=llm,
-                chunks=[file_description_long],
+                chunks=chunks,
                 file_name=node.root_rel_path.name,
                 codebase_name=codebase_name,
             )

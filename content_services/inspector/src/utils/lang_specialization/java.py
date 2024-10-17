@@ -12,10 +12,9 @@ from .common import (
 )
 
 JAVA_INTERFACES = {"interface"}
-JAVA_CLASSES = {"class"}
+JAVA_CLASSES = {"class", "enum"}
 JAVA_METHODS = {"method"}
 JAVA_FIELDS = {"field"}
-JAVA_ENUMS = {"enum"}
 
 SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_JAVA = """
 You are an expert Java programmer and a software engineering documentation expert. You write detailed documentation to explain code written in Java.
@@ -734,7 +733,7 @@ def java_class_dict_from_llm_multi_prompt(
                     chunk_overlap=SYMBOL_CHUNK_OVERLAP,
                 )
                 if len(code_chunks) == 1:
-                    class_dict_documented = java_class_dict_from_llm(
+                    class_dict_documented[cls_name] = java_class_dict_from_llm(
                         system_prompt_class=system_prompt_class,
                         user_prompt_class=user_prompt_class,
                         system_prompt_fn=system_prompt_fn,
@@ -951,7 +950,7 @@ def java_interface_dict_from_llm_multi_prompt(
                     chunk_overlap=SYMBOL_CHUNK_OVERLAP,
                 )
                 if len(code_chunks) == 1:
-                    interface_dict_documented = java_interface_dict_from_llm(
+                    interface_dict_documented[cls_name] = java_interface_dict_from_llm(
                         system_prompt_class=system_prompt_class,
                         user_prompt_class=user_prompt_class,
                         system_prompt_fn=system_prompt_fn,
@@ -1064,7 +1063,7 @@ interface_dict_from_llm_java = partial(
 )
 
 class_dict_from_llm_java_multi_prompt = partial(
-    java_class_dict_from_llm,
+    java_class_dict_from_llm_multi_prompt,
     CLASSES_FOUND_SYSTEM_PROMPT_JSON,
     CLASSES_FOUND_USER_PROMPT,
     METHODS_FOUND_SYSTEM_PROMPT_JSON,
@@ -1075,7 +1074,7 @@ class_dict_from_llm_java_multi_prompt = partial(
 )
 
 interface_dict_from_llm_java_multi_prompt = partial(
-    java_interface_dict_from_llm,
+    java_interface_dict_from_llm_multi_prompt,
     INTERFACES_FOUND_SYSTEM_PROMPT_JSON,
     INTERFACES_FOUND_USER_PROMPT,
     METHODS_FOUND_SYSTEM_PROMPT_JSON,

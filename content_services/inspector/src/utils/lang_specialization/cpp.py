@@ -1,17 +1,25 @@
-from functools import partial
 from pathlib import Path
+from typing import Self
 
 from utils.codemap_ctags import extract_symbols_w_ctags
 
-from .common import (
-    class_dict_from_llm,
-    classes_dict_from_llm_multi_prompt,
-    data_structure_dict_from_llm,
-    data_structure_dict_from_llm_multi_prompt,
-    fn_dict_from_llm,
-    fn_dict_from_llm_multi_prompt,
-    variables_dict_from_llm,
-    variables_dict_from_llm_multi_prompt,
+# from .common import (
+#     class_dict_from_llm,
+#     classes_dict_from_llm_multi_prompt,
+#     data_structure_dict_from_llm,
+#     data_structure_dict_from_llm_multi_prompt,
+#     fn_dict_from_llm,
+#     fn_dict_from_llm_multi_prompt,
+#     variables_dict_from_llm,
+#     variables_dict_from_llm_multi_prompt,
+# )
+from .common_v2 import (
+    ClassData,
+    FnData,
+    ParserKind,
+    RawSymbolCollection,
+    RawSymbolData,
+    SymbolKind,
 )
 
 CPP_DATA_STRUCTURES = {"class", "struct", "enum", "union", "typedef"}
@@ -88,6 +96,8 @@ Summarize the data structure in the code provided below.
 
 - A data structure is custom or compound type in a given programming language, such as structs, classes, or enums. Functions, methods, and variables are not data structures.
 - When describing an important data structure, provide detail that matches the complexity of the data structure. Large and complex data structures should get longer explanations, while small ones a single sentence.
+
+Data structure to document:
 """
 
 DATA_STRUCTURES_NONE_CONTENT = "\n---\nNo custom data structures defined in this file."
@@ -123,6 +133,8 @@ FUNCTIONS_FOUND_USER_PROMPT = """
 Summarize the function or method in the code provided below. Describe the inputs, control flow and logic, and output.
 
 - When describing a function, provide detail that matches the complexity of the function body. Large and complex functions should get longer explanations, while small ones much less.
+
+Function to document:
 """
 
 FUNCTIONS_NONE_CONTENT = (
@@ -151,72 +163,157 @@ Summarize the variable in the code provided below.
 
 - A global variable is declared at the top level scope. Local variables declared and used inside of functions are not global variables. You will be describing a global variable.
 - When describing a variable, provide detail that matches the complexity of the variable. Large and complex global variables (e.g., containing large struct instances) should get longer explanations, while small ones (e.g., one line definitions) much less.
+
+Variable to document:
 """
 
 VARIABLES_NONE_CONTENT = "\n---\nNo global variables defined in this file."
 
 
-def cpp_class_checker(
-    code: str, root_rel_path: Path, structured_output: bool = True
-) -> list[dict] | str | None:
-    symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-    classes_dict = {
-        s["name"]: {"methods": [], "nested_classes": []}
-        for s in symbols
-        if s["kind"] in CPP_DATA_STRUCTURES and not s["name"].startswith("__anon")
-    }
-    for s in symbols:
-        if (
-            (s.get("scope"))
-            and not s["name"].startswith("__anon")
-            and (s["kind"] in CPP_FUNCTIONS)
-            and s["scopeKind"] in CPP_DATA_STRUCTURES
-        ):
-            if s["scope"].split("::")[-1] not in classes_dict:
-                classes_dict[s["scope"].split("::")[-1]] = {
-                    "methods": [],
-                    "nested_classes": [],
-                    "undefined": True,
+class CppClassRawSymbolCollection(RawSymbolCollection):
+    data: dict[str, RawSymbolData]
+
+    @classmethod
+    def from_ctags(cls, code: str, root_rel_path: Path) -> Self | None:
+        from shared.chunking.text_splitter import split_text
+
+        code_requires_multi_prompt = False
+        code_chunks = split_text(
+            text=code,
+            chunk_size=64_000,
+            chunk_overlap=1_000,
+        )
+        if len(code_chunks) > 1:
+            code_requires_multi_prompt = True
+
+        symbols = extract_symbols_w_ctags(
+            root_rel_path=root_rel_path, file_content=code
+        )
+
+        global_method_counts = {}
+        class_raw_symbol_data = {}
+        for s in symbols:
+            if s["kind"] in CPP_FUNCTIONS and not s["name"].startswith("__anon"):
+                global_method_counts[s["name"]] = (
+                    global_method_counts.get(s["name"], 0) + 1
+                )
+            if s["kind"] in CPP_DATA_STRUCTURES and not s["name"].startswith("__anon"):
+                class_raw_symbol_data[s["name"]] = RawSymbolData(
+                    parser_kind=ParserKind.UCTAGS,
+                    symbol_kind=SymbolKind.DATA_STRUCTURE,
+                    ir_kind=ClassData,
+                    name=s["name"],
+                    path=root_rel_path,
+                    scope=s.get("scope", None),
+                    scope_relation=None,
+                    children=[],
+                    start_line=s["line"],
+                    end_line=s["end"],
+                    text=None,
+                )
+                if not code_requires_multi_prompt:
+                    class_raw_symbol_data[s["name"]].text = code
+                else:
+                    cls_code = "\n".join(
+                        code.splitlines()[s["line"] - 1 : s["end"] + 1]
+                    )
+                    cls_chunks = split_text(
+                        text=cls_code,
+                        chunk_size=64_000,
+                        chunk_overlap=1_000,
+                    )
+                    if len(cls_chunks) == 1:
+                        class_raw_symbol_data[s["name"]].text = cls_code
+                    else:
+                        class_raw_symbol_data[s["name"]].text = cls_chunks[0].text
+
+        for s in symbols:
+            if (
+                (s.get("scope"))
+                and not s["name"].startswith("__anon")
+                and (s["kind"] in CPP_FUNCTIONS)
+                and s["scopeKind"] in CPP_DATA_STRUCTURES
+            ):
+                if s["scope"].split("::")[-1] not in class_raw_symbol_data:
+                    # Case where class is defined elsewhere (e.g. header), but methods for the class are defined in file
+                    class_raw_symbol_data[s["name"]] = RawSymbolData(
+                        parser_kind=ParserKind.UCTAGS,
+                        symbol_kind=SymbolKind.DATA_STRUCTURE,
+                        ir_kind=ClassData,
+                        name=s["name"],
+                        path=root_rel_path,
+                        scope=s.get("scope", None),
+                        scope_relation=None,
+                        children=[],
+                        start_line=s["line"],
+                        end_line=s["end"],
+                        text=None,
+                    )
+
+                fn_symbol_data = {
+                    "parser_kind": ParserKind.UCTAGS,
+                    "symbol_kind": SymbolKind.CALLABLE,
+                    "ir_kind": FnData,
+                    "name": s["name"],
+                    "path": root_rel_path,
+                    "scope": s["scope"].split("::")[-1],
+                    "scope_relation": "methods",
+                    "children": [],
+                    "start_line": s["line"],
+                    "end_line": s["end"],
                 }
-            classes_dict[s["scope"].split("::")[-1]]["methods"].append(s)
-        elif (
-            (s.get("scope"))
-            and not s["name"].startswith("__anon")
-            and (s["kind"] in CPP_DATA_STRUCTURES)
-            and (s["scopeKind"] in CPP_DATA_STRUCTURES)
-        ):
-            if s["scope"].split("::")[-1] in classes_dict:
-                classes_dict[s["scope"].split("::")[-1]]["nested_classes"].append(s)
+                if code_requires_multi_prompt or global_method_counts[s["name"]] > 1:
+                    fn_symbol_data["text"] = "\n".join(
+                        code.splitlines()[s["line"] - 1 : s["end"] + 1]
+                    )
+                else:
+                    fn_symbol_data["text"] = code
 
-    output = None
-    if len(classes_dict) > 0:
-        if structured_output:
-            output = classes_dict
-        else:
-            output = "\nClasses to document in the code:\n\n"
-            for n in classes_dict:
-                output += f"- {n}\n"
-    return output
+                class_raw_symbol_data[s["scope"].split("::")[-1]].children.append(
+                    RawSymbolData(**fn_symbol_data)
+                )
+            elif (
+                (s.get("scope"))
+                and not s["name"].startswith("__anon")
+                and (s["kind"] in CPP_DATA_STRUCTURES)
+                and (s["scopeKind"] in CPP_DATA_STRUCTURES)
+            ):
+                if s["scope"].split("::")[-1] in class_raw_symbol_data:
+                    class_raw_symbol_data[s["scope"].split("::")[-1]].children.append(
+                        RawSymbolData(
+                            parser_kind=ParserKind.UCTAGS,
+                            symbol_kind=SymbolKind.DATA_STRUCTURE,
+                            ir_kind=ClassData,
+                            name=s["name"],
+                            path=root_rel_path,
+                            scope=s["scope"].split("::")[-1],
+                            scope_relation="nested_classes",
+                            children=[],
+                            start_line=None,
+                            end_line=None,
+                            text=None,
+                        )
+                    )
+        return cls(data=class_raw_symbol_data)
 
 
-def cpp_data_structure_checker(
-    code: str, root_rel_path: Path, structured_output: bool = True
-) -> list[str] | str | None:
-    symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-    ds_list = []
-    for s in symbols:
-        if s["kind"] in CPP_DATA_STRUCTURES and not s["name"].startswith("__anon"):
-            ds_list.append(s["name"])
-    if len(ds_list) > 0:
-        if structured_output:
-            output = ds_list
-        else:
-            output = "\nData Structures to document in the code:\n\n"
-            for ds in ds_list:
-                output += f"- {ds}\n"
-    else:
-        output = None
-    return output
+# class CppFreeFnRawSymbolCollection(RawSymbolCollection):
+#     data: dict[str, RawSymbolData]
+#
+#     @classmethod
+#     def from_ctags(cls, code: str, root_rel_path: str):
+#         symbols = extract_symbols_w_ctags(
+#             root_rel_path=root_rel_path, file_content=code
+#         )
+#
+#         all_fn_names = [
+#             s["name"]
+#             for s in symbols
+#             if s["kind"] in CPP_FUNCTIONS and not s["name"].startswith("__anon")
+#         ]
+#
+#         fn_raw_symbol_data = {}
+#
 
 
 def cpp_function_checker(
@@ -298,56 +395,57 @@ def cpp_namespace_checker(
     return output
 
 
-variables_dict_from_llm_cpp = partial(
-    variables_dict_from_llm,
-    VARIABLES_FOUND_SYSTEM_PROMPT_JSON,
-    VARIABLES_FOUND_USER_PROMPT,
-)
-
-data_structure_dict_from_llm_cpp = partial(
-    data_structure_dict_from_llm,
-    DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
-    DATA_STRUCTURES_FOUND_USER_PROMPT,
-)
-
-fn_dict_from_llm_cpp = partial(
-    fn_dict_from_llm,
-    FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
-    FUNCTIONS_FOUND_USER_PROMPT,
-)
-
-class_dict_from_llm_cpp = partial(
-    class_dict_from_llm,
-    DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
-    DATA_STRUCTURES_FOUND_USER_PROMPT,
-    FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
-    FUNCTIONS_FOUND_USER_PROMPT,
-    "::",
-)
-
-variables_dict_from_llm_cpp_multi_prompt = partial(
-    variables_dict_from_llm_multi_prompt,
-    VARIABLES_FOUND_SYSTEM_PROMPT_JSON,
-    VARIABLES_FOUND_USER_PROMPT,
-)
-
-data_structure_dict_from_llm_cpp_multi_prompt = partial(
-    data_structure_dict_from_llm_multi_prompt,
-    DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
-    DATA_STRUCTURES_FOUND_USER_PROMPT,
-)
-
-fn_dict_from_llm_cpp_multi_prompt = partial(
-    fn_dict_from_llm_multi_prompt,
-    FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
-    FUNCTIONS_FOUND_USER_PROMPT,
-)
-
-classes_dict_from_llm_cpp_multi_prompt = partial(
-    classes_dict_from_llm_multi_prompt,
-    DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
-    DATA_STRUCTURES_FOUND_USER_PROMPT,
-    FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
-    FUNCTIONS_FOUND_USER_PROMPT,
-    "::",
-)
+# variables_dict_from_llm_cpp = partial(
+#     variables_dict_from_llm,
+#     VARIABLES_FOUND_SYSTEM_PROMPT_JSON,
+#     VARIABLES_FOUND_USER_PROMPT,
+# )
+#
+# data_structure_dict_from_llm_cpp = partial(
+#     data_structure_dict_from_llm,
+#     DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
+#     DATA_STRUCTURES_FOUND_USER_PROMPT,
+# )
+#
+# fn_dict_from_llm_cpp = partial(
+#     fn_dict_from_llm,
+#     FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
+#     FUNCTIONS_FOUND_USER_PROMPT,
+# )
+#
+# class_dict_from_llm_cpp = partial(
+#     class_dict_from_llm,
+#     DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
+#     DATA_STRUCTURES_FOUND_USER_PROMPT,
+#     FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
+#     FUNCTIONS_FOUND_USER_PROMPT,
+#     "::",
+# )
+#
+# variables_dict_from_llm_cpp_multi_prompt = partial(
+#     variables_dict_from_llm_multi_prompt,
+#     VARIABLES_FOUND_SYSTEM_PROMPT_JSON,
+#     VARIABLES_FOUND_USER_PROMPT,
+# )
+#
+# data_structure_dict_from_llm_cpp_multi_prompt = partial(
+#     data_structure_dict_from_llm_multi_prompt,
+#     DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
+#     DATA_STRUCTURES_FOUND_USER_PROMPT,
+# )
+#
+# fn_dict_from_llm_cpp_multi_prompt = partial(
+#     fn_dict_from_llm_multi_prompt,
+#     FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
+#     FUNCTIONS_FOUND_USER_PROMPT,
+# )
+#
+# classes_dict_from_llm_cpp_multi_prompt = partial(
+#     classes_dict_from_llm_multi_prompt,
+#     DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
+#     DATA_STRUCTURES_FOUND_USER_PROMPT,
+#     FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
+#     FUNCTIONS_FOUND_USER_PROMPT,
+#     "::",
+# )
+#

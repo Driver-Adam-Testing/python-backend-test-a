@@ -1,3 +1,4 @@
+from functools import partial
 from pathlib import Path
 from typing import Self
 
@@ -15,11 +16,14 @@ from utils.codemap_ctags import extract_symbols_w_ctags
 # )
 from .common_v2 import (
     ClassData,
+    ClassDict,
     FnData,
+    FnDict,
     ParserKind,
     RawSymbolCollection,
     RawSymbolData,
     SymbolKind,
+    code_requires_multi_prompt,
 )
 
 CPP_DATA_STRUCTURES = {"class", "struct", "enum", "union", "typedef"}
@@ -177,14 +181,7 @@ class CppClassRawSymbolCollection(RawSymbolCollection):
     def from_ctags(cls, code: str, root_rel_path: Path) -> Self | None:
         from shared.chunking.text_splitter import split_text
 
-        code_requires_multi_prompt = False
-        code_chunks = split_text(
-            text=code,
-            chunk_size=64_000,
-            chunk_overlap=1_000,
-        )
-        if len(code_chunks) > 1:
-            code_requires_multi_prompt = True
+        is_multi_prompt = code_requires_multi_prompt(code)
 
         symbols = extract_symbols_w_ctags(
             root_rel_path=root_rel_path, file_content=code
@@ -210,8 +207,9 @@ class CppClassRawSymbolCollection(RawSymbolCollection):
                     start_line=s["line"],
                     end_line=s["end"],
                     text=None,
+                    delimiter="::",
                 )
-                if not code_requires_multi_prompt:
+                if not is_multi_prompt:
                     class_raw_symbol_data[s["name"]].text = code
                 else:
                     cls_code = "\n".join(
@@ -236,18 +234,19 @@ class CppClassRawSymbolCollection(RawSymbolCollection):
             ):
                 if s["scope"].split("::")[-1] not in class_raw_symbol_data:
                     # Case where class is defined elsewhere (e.g. header), but methods for the class are defined in file
-                    class_raw_symbol_data[s["name"]] = RawSymbolData(
+                    class_raw_symbol_data[s["scope"].split("::")[-1]] = RawSymbolData(
                         parser_kind=ParserKind.UCTAGS,
                         symbol_kind=SymbolKind.DATA_STRUCTURE,
                         ir_kind=ClassData,
-                        name=s["name"],
+                        name=s["scope"].split("::")[-1],
                         path=root_rel_path,
-                        scope=s.get("scope", None),
+                        scope=None,
                         scope_relation=None,
                         children=[],
                         start_line=s["line"],
                         end_line=s["end"],
                         text=None,
+                        delimiter="::",
                     )
 
                 fn_symbol_data = {
@@ -261,8 +260,9 @@ class CppClassRawSymbolCollection(RawSymbolCollection):
                     "children": [],
                     "start_line": s["line"],
                     "end_line": s["end"],
+                    "delimiter": "::",
                 }
-                if code_requires_multi_prompt or global_method_counts[s["name"]] > 1:
+                if is_multi_prompt or global_method_counts[s["name"]] > 1:
                     fn_symbol_data["text"] = "\n".join(
                         code.splitlines()[s["line"] - 1 : s["end"] + 1]
                     )
@@ -283,116 +283,166 @@ class CppClassRawSymbolCollection(RawSymbolCollection):
                         RawSymbolData(
                             parser_kind=ParserKind.UCTAGS,
                             symbol_kind=SymbolKind.DATA_STRUCTURE,
-                            ir_kind=ClassData,
+                            ir_kind=None,
                             name=s["name"],
                             path=root_rel_path,
-                            scope=s["scope"].split("::")[-1],
+                            scope=None,
                             scope_relation="nested_classes",
                             children=[],
                             start_line=None,
                             end_line=None,
                             text=None,
+                            delimiter="::",
                         )
                     )
-        return cls(data=class_raw_symbol_data)
+        output = (
+            None if len(class_raw_symbol_data) == 0 else cls(data=class_raw_symbol_data)
+        )
+        return output
+
+    @classmethod
+    def from_ts(cls, code: str, root_rel_path: str) -> Self:
+        pass
+
+    def to_dict(self) -> dict[str, RawSymbolData]:
+        return self.data
 
 
-# class CppFreeFnRawSymbolCollection(RawSymbolCollection):
-#     data: dict[str, RawSymbolData]
+class CppFreeFnRawSymbolCollection(RawSymbolCollection):
+    data: dict[str, list[RawSymbolData]]
+
+    @classmethod
+    def from_ctags(cls, code: str, root_rel_path: str) -> Self:
+        is_multi_prompt = code_requires_multi_prompt(code)
+
+        symbols = extract_symbols_w_ctags(
+            root_rel_path=root_rel_path, file_content=code
+        )
+
+        all_fn_names = [
+            s["name"]
+            for s in symbols
+            if s["kind"] in CPP_FUNCTIONS and not s["name"].startswith("__anon")
+        ]
+
+        fn_raw_symbol_data = {}
+        for s in symbols:
+            if s["kind"] in CPP_FUNCTIONS and not s["name"].startswith("__anon"):
+                contained_in_class = False
+                if (s.get("scope")) and (s.get("scopeKind") in CPP_DATA_STRUCTURES):
+                    contained_in_class = True
+
+                fn_name = (
+                    s["name"]
+                    if s.get("scopeKind") not in CPP_DATA_STRUCTURES
+                    else s["scope"].split("::")[-1] + "::" + s["name"]
+                )
+                if not contained_in_class and all_fn_names.count(s["name"]) == 1:
+                    if fn_name not in fn_raw_symbol_data:
+                        fn_raw_symbol_data[fn_name] = []
+                    symbol_data = RawSymbolData(
+                        parser_kind=ParserKind.UCTAGS,
+                        symbol_kind=SymbolKind.CALLABLE,
+                        ir_kind=FnData,
+                        name=fn_name,
+                        path=root_rel_path,
+                        scope=None,
+                        scope_relation=None,
+                        children=[],
+                        start_line=s["line"],
+                        end_line=s["end"],
+                        text=None,
+                        delimiter="::",
+                    )
+                    if is_multi_prompt:
+                        symbol_data.text = "\n".join(
+                            code.splitlines()[s["line"] - 1 : s["end"] + 1]
+                        )
+                    else:
+                        symbol_data.text = code
+                    fn_raw_symbol_data[fn_name].append(symbol_data)
+
+                elif not contained_in_class and all_fn_names.count(s["name"]) > 1:
+                    if fn_name not in fn_raw_symbol_data:
+                        fn_raw_symbol_data[fn_name] = []
+                    symbol_data = RawSymbolData(
+                        parser_kind=ParserKind.UCTAGS,
+                        symbol_kind=SymbolKind.CALLABLE,
+                        ir_kind=FnData,
+                        name=fn_name,
+                        path=root_rel_path,
+                        scope=s.get("scope", None),
+                        scope_relation=None,
+                        children=[],
+                        start_line=s["line"],
+                        end_line=s["end"],
+                        text="\n".join(code.splitlines()[s["line"] - 1 : s["end"] + 1]),
+                        delimiter="::",
+                    )
+                    fn_raw_symbol_data[fn_name].append(symbol_data)
+        output = None if len(fn_raw_symbol_data) == 0 else cls(data=fn_raw_symbol_data)
+        return output
+
+    @classmethod
+    def from_ts(cls, code: str, root_rel_path: str) -> Self:
+        pass
+
+    def to_dict(self) -> dict[str, RawSymbolData]:
+        return self.data
+
+
+class_dict_from_llm_cpp = partial(
+    ClassDict.dict_from_llm,
+    {
+        "base_data": DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
+        "methods": FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
+    },
+    {
+        "base_data": DATA_STRUCTURES_FOUND_USER_PROMPT,
+        "methods": FUNCTIONS_FOUND_USER_PROMPT,
+    },
+    ClassData,
+)
+
+fn_dict_from_llm_cpp = partial(
+    FnDict.dict_from_llm,
+    FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
+    FUNCTIONS_FOUND_USER_PROMPT,
+    FnData,
+)
+
+# def cpp_variables_checker(
+#     code: str, root_rel_path: Path, structured_output: bool = True
+# ) -> list[str] | str | None:
+#     symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
+#     v_list = [s["name"] for s in symbols if s["kind"] in CPP_VARIABLES]
+#     if len(v_list) > 0:
+#         if structured_output:
+#             output = v_list
+#         else:
+#             output = "\nVariables to document in the code:\n\n"
+#             for v in v_list:
+#                 output += f"- {v}\n"
+#     else:
+#         output = None
+#     return output
 #
-#     @classmethod
-#     def from_ctags(cls, code: str, root_rel_path: str):
-#         symbols = extract_symbols_w_ctags(
-#             root_rel_path=root_rel_path, file_content=code
-#         )
 #
-#         all_fn_names = [
-#             s["name"]
-#             for s in symbols
-#             if s["kind"] in CPP_FUNCTIONS and not s["name"].startswith("__anon")
-#         ]
-#
-#         fn_raw_symbol_data = {}
-#
-
-
-def cpp_function_checker(
-    code: str, root_rel_path: Path, structured_output: bool = True
-) -> list[str | dict] | str | None:
-    symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-
-    fn_names = [
-        s["name"]
-        for s in symbols
-        if s["kind"] in CPP_FUNCTIONS and not s["name"].startswith("__anon")
-    ]
-    fn_list = []
-    for s in symbols:
-        if s["kind"] in CPP_FUNCTIONS and not s["name"].startswith("__anon"):
-            # Extra step to dedupe here since we document some functions in classes now
-            contained_in_class = False
-            if (s.get("scope")) and (s.get("scopeKind") in CPP_DATA_STRUCTURES):
-                contained_in_class = True
-
-            fn_name = (
-                s["name"]
-                if s.get("scopeKind") not in CPP_DATA_STRUCTURES
-                else s["scope"].split("::")[-1] + "::" + s["name"]
-            )
-            if not contained_in_class and fn_names.count(s["name"]) == 1:
-                # Some classes are defined in a different file than the functions of that class
-                # so we append the class name to the function name to make that clearer in docs
-                fn_list.append(fn_name)
-            elif not contained_in_class and fn_names.count(s["name"]) > 1:
-                # if the function is overloaded we append the the symbol dict
-                # such that when we generate we can isolate the function lines
-                s["name"] = fn_name
-                fn_list.append(s)
-
-    if len(fn_list) > 0:
-        if structured_output:
-            output = fn_list
-        else:
-            output = "\nFunctions to document in the code:\n\n"
-            for fn in fn_list:
-                output += f"- {fn}\n"
-    else:
-        output = None
-    return output
-
-
-def cpp_variables_checker(
-    code: str, root_rel_path: Path, structured_output: bool = True
-) -> list[str] | str | None:
-    symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-    v_list = [s["name"] for s in symbols if s["kind"] in CPP_VARIABLES]
-    if len(v_list) > 0:
-        if structured_output:
-            output = v_list
-        else:
-            output = "\nVariables to document in the code:\n\n"
-            for v in v_list:
-                output += f"- {v}\n"
-    else:
-        output = None
-    return output
-
-
-def cpp_namespace_checker(
-    code: str, root_rel_path: Path, structured_output: bool = True
-) -> list[str] | str | None:
-    symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-    ns_list = [s["name"] for s in symbols if s["kind"] == "namespace"]
-    if len(ns_list) > 0:
-        if structured_output:
-            output = ns_list
-        else:
-            output = "\nNamespaces to document in the code:\n\n"
-            for ns in ns_list:
-                output += f"- {ns}\n"
-    else:
-        output = None
-    return output
+# def cpp_namespace_checker(
+#     code: str, root_rel_path: Path, structured_output: bool = True
+# ) -> list[str] | str | None:
+#     symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
+#     ns_list = [s["name"] for s in symbols if s["kind"] == "namespace"]
+#     if len(ns_list) > 0:
+#         if structured_output:
+#             output = ns_list
+#         else:
+#             output = "\nNamespaces to document in the code:\n\n"
+#             for ns in ns_list:
+#                 output += f"- {ns}\n"
+#     else:
+#         output = None
+#     return output
 
 
 # variables_dict_from_llm_cpp = partial(

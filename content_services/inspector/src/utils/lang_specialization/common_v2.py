@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
 import abc
 from enum import Enum, IntEnum, auto
-from pathlib import Path
 from typing import Self, get_type_hints
 
 import openai
@@ -44,6 +48,21 @@ class Lang(IntEnum):
                 return cls.DEFAULT
 
 
+CHUNK_SIZE = 64_000
+CHUNK_OVERLAP = 1_000
+
+
+def code_requires_multi_prompt(code: str) -> bool:
+    from shared.chunking.text_splitter import split_text
+
+    code_chunks = split_text(
+        text=code,
+        chunk_size=CHUNK_SIZE,
+        chunk_overlap=CHUNK_OVERLAP,
+    )
+    return len(code_chunks) > 1
+
+
 def _disambiguate_header(source: str, fallback: Lang) -> Lang:
     llm = ChatOpenAI(model="gpt-4o-2024-08-06", temperature=0, request_timeout=120)
     system_prompt = """
@@ -81,8 +100,85 @@ def _disambiguate_header(source: str, fallback: Lang) -> Lang:
         return fallback
 
 
+# BLIND_ADVANCE_IF_NO_END_LINE = 200
+#
+# def create_to_be_documented_raw_symbol_via_ctags(
+#     ctags_symbol: dict,
+#     root_rel_path: Path,
+#     code: str,
+#     symbol_kind: SymbolKind,
+#     ir_kind: type[IrData] | type[NestedIrData],
+#     scope_relation: str | None, # scope relation should be the name of the field in the corresponding parent data class, e.g. "methods"
+#     delimiter: str | None,
+#     is_multi_prompt: bool
+# ) -> RawSymbolData:
+#     from shared.chunking.text_splitter import split_text
+#
+#     if ctags_symbol.get("scope") is not None:
+#         scope = ctags_symbol["scope"].split(delimiter)[-1]
+#     else:
+#         scope = None
+#
+#     raw_symbol_data = RawSymbolData(
+#         parser_kind=ParserKind.UCTAGS,
+#         symbol_kind=symbol_kind,
+#         ir_kind=ir_kind,
+#         name=ctags_symbol["name"],
+#         path=root_rel_path,
+#         scope=scope,
+#         scope_relation=scope_relation,
+#         children=[],
+#         start_line=ctags_symbol["line"],
+#         end_line=ctags_symbol.get("end_line", ctags_symbol["line"] + BLIND_ADVANCE_IF_NO_END_LINE),
+#         text=None,
+#         delimiter=delimiter
+#     )
+#     if is_multi_prompt:
+#         s_code = "\n".join(code.split("\n")[raw_symbol_data.start_line - 1:raw_symbol_data.end_line])
+#         s_code_chunks = split_text(
+#             text=s_code,
+#             chunk_size=CHUNK_SIZE,
+#             chunk_overlap=CHUNK_OVERLAP,
+#         )
+#         if len(s_code_chunks) > 1:
+#             raw_symbol_data.text = s_code_chunks[0].text
+#         else:
+#             raw_symbol_data.text = s_code
+#     else:
+#         raw_symbol_data.text = code
+#
+#     return raw_symbol_data
+#
+# def create_undocumented_raw_symbol_via_ctags(
+#     ctags_symbol: dict,
+#     root_rel_path: Path,
+#     symbol_kind: SymbolKind,
+#     scope_relation: str,
+#     delimiter: str | None,
+# ) -> RawSymbolData:
+#     if ctags_symbol.get("scope") is not None:
+#         scope = ctags_symbol["scope"].split(delimiter)[-1]
+#     else:
+#         scope = None
+#     return RawSymbolData(
+#         parser_kind=ParserKind.UCTAGS,
+#         symbol_kind=symbol_kind,
+#         ir_kind=None,
+#         name=ctags_symbol["name"],
+#         path=root_rel_path,
+#         scope=scope,
+#         scope_relation=scope_relation,
+#         children=[],
+#         start_line=None,
+#         end_line=None,
+#         text=None,
+#         delimiter=delimiter
+#     )
+
+
 def snake_case_to_spaced_string(snake_case: str) -> str:
-    return snake_case.replace("_", " ").capitalize()
+    split_str = snake_case.split("_")
+    return " ".join(item.capitalize() for item in split_str)
 
 
 class ParserKind(Enum):
@@ -112,6 +208,7 @@ class RawSymbolData(BaseModel):
     text: (
         str | None
     )  # If text is None - indicates something like a class that is implemented in another file but has methods implemented in this file
+    delimiter: str | None
 
 
 class RawSymbolCollection(BaseModel, abc.ABC):
@@ -167,13 +264,11 @@ class IrData(BaseModel, abc.ABC):
     @classmethod
     def from_llm(
         cls,
-        llm: ChatOpenAI,
         system_prompt: str,
         user_prompt: str,
+        llm: ChatOpenAI,
         symbol: RawSymbolData,
     ) -> Self:
-        if symbol.text is None:
-            return cls()
         user_prompt_complete = f"{user_prompt} {symbol.name}\n\nCode:\n\n{symbol.text}"
         try:
             content_raw = llm.generate_response(
@@ -191,16 +286,20 @@ class IrData(BaseModel, abc.ABC):
         output = ""
         for field_name, field_content in self:
             if isinstance(field_content, str):
-                output += f"- **{snake_case_to_spaced_string(field_name)}**: {field_content}\n"
+                if len(field_content) > 0:
+                    output += f"- **{snake_case_to_spaced_string(field_name)}**: {field_content}\n"
             elif isinstance(field_content, list):
-                output += f"- **{snake_case_to_spaced_string(field_name)}**:\n"
-                for item in field_content:
-                    if isinstance(item, str):
-                        output += f"    - {item}\n"
-                    elif isinstance(item, NamedContent):
-                        output += f"    - `{item.name}`: {item.content}\n"
-                    else:
-                        raise ValueError(f"Unsupported item type in list: {type(item)}")
+                if len(field_content) > 0:
+                    output += f"- **{snake_case_to_spaced_string(field_name)}**:\n"
+                    for item in field_content:
+                        if isinstance(item, str):
+                            output += f"    - {item}\n"
+                        elif isinstance(item, NamedContent):
+                            output += f"    - `{item.name}`: {item.content}\n"
+                        else:
+                            raise ValueError(
+                                f"Unsupported item type in list: {type(item)}"
+                            )
             else:
                 raise ValueError(
                     f"Unsupported field content type: {type(field_content)}"
@@ -210,48 +309,65 @@ class IrData(BaseModel, abc.ABC):
 
 
 class NestedIrData(BaseModel, abc.ABC):
-    base_data: IrData  # all nested data should have a base data field
+    base_data: IrData  # all NestedIrData must have a base data field
 
     @classmethod
     def from_llm(
         cls,
+        system_prompt: dict[str, str],
+        user_prompt: dict[str, str],
         llm: ChatOpenAI,
-        system_prompts: dict[str, str],
-        user_prompts: dict[str, str],
         symbol: RawSymbolData,
     ) -> Self | None:
-        data = {}
+        data = cls.default_class().dict()
 
-        # TODO: undefined class in file
-        data["base_data"] = cls.base_data.from_llm(
-            llm=llm,
-            system_prompt=system_prompts["base_data"],
-            user_prompt=user_prompts["base_data"],
-            symbol=symbol,
-        )
+        # TODO: just pass the base_data IrData class in instead?
         type_hint_dict = get_type_hints(cls)
+        base_data_cls = type_hint_dict["base_data"]
+
+        # None on text means no context to pass to the LLM, so no base data will be generated
+        # This can occur in C++ when a class is defined in a header, but some methods are defined in the source file
+        if symbol.text is not None:
+            data["base_data"] = base_data_cls.from_llm(
+                llm=llm,
+                system_prompt=system_prompt["base_data"],
+                user_prompt=user_prompt["base_data"],
+                symbol=symbol,
+            )
         for child_symbol in symbol.children:
             if (
                 child_symbol.scope_relation in type_hint_dict
-            ):  # scope relation is defined in the corresponding parser
-                # TODO: maybe just check if the ir_kind is None?
-                if isinstance(type_hint_dict[child_symbol.scope_relation], dict):
-                    data[child_symbol.scope_relation][child_symbol.name].append(
+            ):  # scope relation is defined on the child in the corresponding parser and must be equal to one of the fields in the data class
+                if child_symbol.ir_kind is not None:
+                    if child_symbol.scope_relation not in data:
+                        data[child_symbol.scope_relation] = {}
+                    if child_symbol.name not in data[child_symbol.scope_relation]:
+                        scoped_name = child_symbol.name
+                        if (
+                            child_symbol.scope_relation is not None
+                            and child_symbol.scope is not None
+                        ):
+                            scoped_name = f"{child_symbol.scope}{child_symbol.delimiter}{child_symbol.name}"
+                        data[child_symbol.scope_relation][scoped_name] = []
+
+                    data[child_symbol.scope_relation][scoped_name].append(
                         child_symbol.ir_kind.from_llm(
                             llm=llm,
-                            system_prompt=system_prompts[child_symbol.scope_relation],
-                            user_prompt=user_prompts[child_symbol.scope_relation],
+                            system_prompt=system_prompt[child_symbol.scope_relation],
+                            user_prompt=user_prompt[child_symbol.scope_relation],
                             symbol=child_symbol,
                         )
                     )
-                elif isinstance(type_hint_dict[child_symbol.scope_relation], list):
+                else:  # assumed behavior - since no docs to be generated, just append to a list
+                    if child_symbol.scope_relation not in data:
+                        data[child_symbol.scope_relation] = []
                     data[child_symbol.scope_relation].append(child_symbol.name)
             else:
-                print(
-                    f"Skipping symbol {child_symbol.name} because it does not have a corresponding field in the data class"
+                raise ValueError(
+                    f"Unsupported symbol {child_symbol.name} because it does not have a corresponding field in the data class of {child_symbol.scope_relation}"
                 )
 
-        return cls(data=data)
+        return cls(**data)
 
     def render_markdown(self) -> str:
         output = ""
@@ -261,22 +377,27 @@ class NestedIrData(BaseModel, abc.ABC):
 
         for field_name, field_content in self:
             if field_name != "base_data":
-                output += f"\n**{field_name}**\n"
                 if isinstance(field_content, list):
-                    for item in field_content:
-                        output += f"    - {item}\n"
+                    if len(field_content) > 0:
+                        output += f"\n**{snake_case_to_spaced_string(field_name)}**\n"
+                        for item in field_content:
+                            output += f"    - {item}\n"
                 elif isinstance(field_content, dict):
-                    # The dict case should be of the form {str: IrData | list[IrData]}
-                    for k, v in field_content.items():
-                        if isinstance(v, list):
-                            for item in v:
+                    if len(field_content) > 0:
+                        output += f"\n**{snake_case_to_spaced_string(field_name)}**\n"
+                        for k, v in field_content.items():
+                            if isinstance(v, list) and len(v) > 0:
+                                for item in v:
+                                    output += f"\n---\n#### {k}\n"
+                                    output += item.render_markdown()
+                            elif isinstance(v, IrData):
                                 output += f"\n---\n#### {k}\n"
-                                output += item.render_markdown()
-                        elif isinstance(v, IrData):
-                            output += f"\n---\n#### {k}\n"
-                            output += v.render_markdown()
-                        else:
-                            raise ValueError(f"Unsupported type in dict: {type(v)}")
+                                output += v.render_markdown()
+                            # TODO: double nesting?
+                            else:
+                                raise ValueError(
+                                    f"Unsupported type in field content dict: {type(v)}"
+                                )
                 else:
                     raise ValueError(
                         f"Unsupported type in field content: {type(field_content)}"
@@ -285,33 +406,52 @@ class NestedIrData(BaseModel, abc.ABC):
 
 
 class IrCollection(BaseModel, abc.ABC):
-    data: dict[str, type[IrData] | type[NestedIrData]]
+    data: dict[str, IrData | NestedIrData]
 
     @classmethod
     def dict_from_llm(
         cls,
-        llm: ChatOpenAI,
-        system_prompt: str,
-        user_prompt: str,
-        symbols_list: list[type[RawSymbolData]],
+        system_prompt: str | dict[str, str],
+        user_prompt: str | dict[str, str],
         data_cls: type[IrData],
+        llm: ChatOpenAI,
+        symbols_list: RawSymbolCollection,
     ) -> Self:
-        symbols_dict = {
-            s: data_cls.from_llm(
-                llm=llm,
-                system_prompt=system_prompt,
-                user_prompt=user_prompt,
-                symbol=s,
-            )
-            for s in symbols_list
-        }
+        symbols_dict = {}
+        for _, s in symbols_list.data.items():
+            if isinstance(s, list):
+                for item in s:
+                    if item.name not in symbols_dict:
+                        symbols_dict[item.name] = []
+                    symbols_dict[item.name].append(
+                        data_cls.from_llm(
+                            system_prompt=system_prompt,
+                            user_prompt=user_prompt,
+                            llm=llm,
+                            symbol=item,
+                        )
+                    )
+            elif isinstance(s, RawSymbolData):
+                if s.name not in symbols_dict:
+                    symbols_dict[s.name] = []
+                symbols_dict[s.name].append(
+                    data_cls.from_llm(
+                        system_prompt=system_prompt,
+                        user_prompt=user_prompt,
+                        llm=llm,
+                        symbol=s,
+                    )
+                )
         return cls(data=symbols_dict)
 
     def render_markdown(self) -> str:
         output = ""
         for k, v in self.data.items():
-            output += f"\n---\n### {k}\n"
-            output += v.render_markdown()
+            for item in v:
+                output += f"\n---\n### {k}\n"
+                output += item.render_markdown()
+
+        return output
 
     def __str__(self) -> str:
         return self.render_markdown()
@@ -360,9 +500,9 @@ class FnDict(IrCollection):
 
 
 class ClassBaseData(IrData):
+    description: str
     type: str | None
     members: list[NamedContent]
-    description: str
     inherits_from: list[str]
 
 
@@ -370,6 +510,14 @@ class ClassData(NestedIrData):
     base_data: ClassBaseData
     methods: dict[str, list[FnData]]
     nested_classes: list[str]
+
+    @classmethod
+    @abc.abstractmethod
+    def default_class(cls) -> Self:
+        base_data = ClassBaseData(
+            type="", members=[], description="Implemented elsewhere", inherits_from=[]
+        )
+        return cls(base_data=base_data, methods={}, nested_classes=[])
 
 
 class ClassDict(IrCollection):

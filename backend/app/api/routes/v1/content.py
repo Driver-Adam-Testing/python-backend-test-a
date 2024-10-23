@@ -12,6 +12,7 @@ from app.schemas.content_schema import (
     BatchContentSourceAssociationResponse,
     BatchDeleteDocumentSourceResponse,
     ContentSourceResponse,
+    ContentTagsResponse,
     CreateContentRequest,
     DeleteContentSourcesRequest,
     DeleteDocumentSourceResponse,
@@ -340,3 +341,27 @@ def delete_content(
     content_service = ContentService(session)
     content_service.delete_content(user.organization_id, content_id)
     return
+
+
+@router.get(
+    "/{content_id}/tags",
+    summary="Get tags associated with a content",
+)
+def get_content_tags(
+    session: CurrentSession,
+    user: CurrentUser,
+    content_id: UUID,
+) -> ContentTagsResponse:
+    """
+    Get tags associated with a content.
+
+    Parameters:
+    - session: Current session object
+    - user: Current user object
+    - content_id: UUID of the content
+
+    Returns:
+    - ContentTagsResponse: Response containing the list of tags associated with the content
+    """
+    content_service = ContentService(session)
+    return content_service.get_content_tags(content_id, user.organization_id)

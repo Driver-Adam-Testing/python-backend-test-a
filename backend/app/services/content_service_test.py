@@ -19,14 +19,17 @@ from database.models_v1 import (
     DerivedContentType,
     Enum_Codebase_Status,
     Enum_Derived_Content_Status,
+    Tag,
+    TagContent,
     Workspace,
 )
-from fastapi import HTTPException
+from fastapi import HTTPException, status
 from sqlmodel import Session, select
 
 from app.api.auth import CurrentUser
 from app.schemas.content_schema import (
     ContentSourceAssociationItem,
+    ContentTagsResponse,
     CreateContentRequest,
     ListContentInput,
     ListContentTypesInput,
@@ -89,20 +92,6 @@ def codebase(
     db.rollback()  # Ensure rollback before delete
     db.delete(codebase)
     db.commit()
-
-
-@pytest.fixture(scope="function")
-def tag(
-    tag_service: TagService, current_user_with_org: CurrentUser
-) -> Generator[NewTagInput, None, None]:
-    new_tag_input = NewTagInput(
-        name=f"TEST_TAG_{datetime.now()}", hex_color="#FFFFFF", type="tag"
-    )
-    tag = tag_service.create_tag(current_user_with_org, new_tag_input)
-    yield tag
-
-    # Cleanup
-    tag_service.delete_tag(current_user_with_org, tag.id)
 
 
 @pytest.fixture(scope="function")
@@ -564,6 +553,21 @@ def complete_codebase_with_related_entities(
     return codebase_record
 
 
+@pytest.fixture(scope="function")
+def tag(
+    tag_service: TagService, current_user_with_org: CurrentUser
+) -> Generator[NewTagInput, None, None]:
+    new_tag_input = NewTagInput(
+        name=f"TEST_TAG_{datetime.now()}", hex_color="#FFFFFF", type="tag"
+    )
+    tag = tag_service.create_tag(current_user_with_org, new_tag_input)
+
+    try:
+        yield tag
+    finally:
+        tag_service.delete_tag(current_user_with_org, tag.id)
+
+
 def test_create_blank_document(
     content_service: ContentService,
     current_user_with_org: CurrentUser,
@@ -963,3 +967,41 @@ def test_delete_codebase_from_other_org(
         content_service.delete_content("some_other_org", content_id)
 
     content_service.delete_content(organization_id, content_id)
+
+
+def test_get_content_tags(
+    db: Session,
+    content_service: ContentService,
+    current_user_with_org: CurrentUser,
+    workspace: Workspace,
+    content: DerivedContent,
+    tag: Tag,
+) -> None:
+    # Associate tags with content
+    tag_content = TagContent(tag_id=tag.id, content_id=content.id, include=True)
+    db.add_all([tag_content])
+    db.commit()
+
+    # Call the method
+    result = content_service.get_content_tags(
+        content.id, current_user_with_org.organization_id
+    )
+
+    # Assert the result
+    assert isinstance(result, ContentTagsResponse)
+    assert len(result.tags) == 1
+    assert {tag.name for tag in result.tags} == {tag.name}
+    assert {tag.color for tag in result.tags} == {tag.hex_color}
+
+    # Test with non-existent content
+    with pytest.raises(HTTPException) as exc_info:
+        content_service.get_content_tags(uuid4(), current_user_with_org.organization_id)
+    assert exc_info.value.status_code == status.HTTP_404_NOT_FOUND
+    assert exc_info.value.detail == "Content not found"
+
+    # Test with content from different organization
+    other_org_id = str(uuid4())
+    with pytest.raises(HTTPException) as exc_info:
+        content_service.get_content_tags(uuid4(), other_org_id)
+    assert exc_info.value.status_code == status.HTTP_404_NOT_FOUND
+    assert exc_info.value.detail == "Content not found"

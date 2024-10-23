@@ -1,7 +1,7 @@
 """init
 
 Revision ID: c2ec175264a8
-Revises:
+Revises: 8f59b93a989f
 Create Date: 2024-02-16 09:11:29.781054
 
 """
@@ -15,7 +15,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "c2ec175264a8"
-down_revision: str | None = None
+down_revision: str = "8f59b93a989f"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

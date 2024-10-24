@@ -171,7 +171,7 @@ def has_org_manage_permission(
 # Deprecated - use UserToken instead
 UserToken = Annotated[User, Depends(get_current_user)]
 # Deprecated - use M2MToken instead
-CurrentToken = Annotated[M2M, Depends(get_current_m2m)]
+M2MToken = Annotated[M2M, Depends(get_current_m2m)]
 
 UserToken = Annotated[User, Depends(get_current_user)]
 M2MToken = Annotated[M2M, Depends(get_current_m2m)]

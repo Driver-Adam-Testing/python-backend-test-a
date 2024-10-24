@@ -6,7 +6,7 @@ import modal
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from app.api.auth import CurrentToken
+from app.api.auth import M2MToken
 from app.api.session import CurrentSession
 from app.core.config import settings
 
@@ -34,7 +34,7 @@ class OnboardingRequestBody(BaseModel):
     response_description="Return HTTP Status Code 200 (OK)",
 )
 def trigger_onboarding(
-    current_token: CurrentToken,
+    current_token: M2MToken,
     session: CurrentSession,
     trigger_body: OnboardingRequestBody,
 ) -> Onboarding:
@@ -73,7 +73,7 @@ class PdfOnboardingRequestBody(BaseModel):
     response_description="Return HTTP Status Code 200 (OK)",
 )
 def trigger_pdf_summary_processing(
-    current_token: CurrentToken, session: CurrentSession, body: PdfOnboardingRequestBody
+    current_token: M2MToken, session: CurrentSession, body: PdfOnboardingRequestBody
 ) -> Onboarding:
     logging.info("Triggering pdf summary creation...")
     # archive_name = Path(trigger_body.object_key).name

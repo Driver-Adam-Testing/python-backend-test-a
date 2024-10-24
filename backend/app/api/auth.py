@@ -168,11 +168,6 @@ def has_org_manage_permission(
     raise HTTPException(status_code=403, detail="Insufficient permissions")
 
 
-# Deprecated - use UserToken instead
-UserToken = Annotated[User, Depends(get_current_user)]
-# Deprecated - use M2MToken instead
-M2MToken = Annotated[M2M, Depends(get_current_m2m)]
-
 UserToken = Annotated[User, Depends(get_current_user)]
 M2MToken = Annotated[M2M, Depends(get_current_m2m)]
 

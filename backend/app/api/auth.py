@@ -39,7 +39,7 @@ def verify_token(token: str) -> dict:
     rsa_key = get_rsa_key(get_jwks(), unverified_header["kid"])
     if not rsa_key:
         raise JWTError("Unable to find appropriate key")
-    # jwt.decode Raises if invalid:
+    # jwt.decode Raises:
     # JWTError : If the signature is invalid in any way.
     # ExpiredSignatureError : If the signature has expired.
     # JWTClaimsError : If any claim is invalid in any way.
@@ -52,9 +52,6 @@ def verify_token(token: str) -> dict:
     )
 
 
-# Is this the right way to return True or throw?
-
-
 UNPROTECTED_PATHS = [
     "/login",
     "/api/v1/healthcheck/",
@@ -65,6 +62,8 @@ UNPROTECTED_PATHS = [
     "/api/v1/git-provider/github/webhook",
     "/api/v1/git-provider/github/callback",
 ]
+
+security = HTTPBearer()
 
 
 class AuthMiddleware(BaseHTTPMiddleware):
@@ -93,9 +92,6 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
         response = await call_next(request)
         return response
-
-
-security = HTTPBearer()
 
 
 class User(BaseModel):
@@ -142,6 +138,7 @@ def get_current_m2m(
     # Making this optional since most endpoints are called w/ User tokens
     if token_payload.get("userId") is None:
         return M2M(**token_payload)
+    return None
 
 
 def has_readonly_permission(
@@ -172,7 +169,7 @@ def has_org_manage_permission(
 
 
 # Deprecated - use UserToken instead
-CurrentUser = Annotated[User | M2M, Depends(get_current_user)]
+CurrentUser = Annotated[User, Depends(get_current_user)]
 # Deprecated - use M2MToken instead
 CurrentToken = Annotated[M2M, Depends(get_current_m2m)]
 

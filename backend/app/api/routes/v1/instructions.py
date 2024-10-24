@@ -4,7 +4,7 @@ from database.models_v1 import Codebase, Workspace
 from fastapi import APIRouter, HTTPException
 from sqlmodel import select
 
-from app.api.auth import UserToken
+from app.api.auth import ContentReadonlyPermission, UserToken
 from app.api.session import CurrentSession
 from app.instructions import modal_interface
 from app.instructions.types import (
@@ -18,7 +18,11 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-@router.post("/execute", response_model=ExecuteInstructionResponse)
+@router.post(
+    "/execute",
+    response_model=ExecuteInstructionResponse,
+    dependencies=[ContentReadonlyPermission],
+)
 def execute_instruction(
     session: CurrentSession, body: ExecuteInstructionRequest, user: UserToken
 ) -> ExecuteInstructionResponse:
@@ -42,7 +46,11 @@ def execute_instruction(
     return ExecuteInstructionResponse(call_id=call_id)
 
 
-@router.post("/results", response_model=InstructionResultsResponse)
+@router.post(
+    "/results",
+    response_model=InstructionResultsResponse,
+    dependencies=[ContentReadonlyPermission],
+)
 def get_execution_results(
     body: BatchInstructionResultsRequest, user: UserToken
 ) -> InstructionResultsResponse:

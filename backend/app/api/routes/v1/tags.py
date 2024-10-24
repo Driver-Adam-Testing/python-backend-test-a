@@ -8,6 +8,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.api.auth import (
     ContentEditorPermission,
+    ContentReadonlyPermission,
     UserToken,
 )
 from app.api.session import CurrentSession
@@ -28,7 +29,11 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-@router.post("/", status_code=201)
+@router.post(
+    "/",
+    status_code=201,
+    dependencies=[ContentEditorPermission],
+)
 def new_tag(
     session: CurrentSession,
     user: UserToken,
@@ -39,7 +44,7 @@ def new_tag(
     return tag_service.create_tag(user=user, lt_input=new_tag)
 
 
-@router.get("/")
+@router.get("/", dependencies=[ContentReadonlyPermission])
 def read_tags(
     session: CurrentSession,
     user: UserToken,
@@ -55,7 +60,10 @@ def read_tags(
     )
 
 
-@router.put("/{tag_id}")
+@router.put(
+    "/{tag_id}",
+    dependencies=[ContentEditorPermission],
+)
 def update_tag(
     session: CurrentSession,
     user: UserToken,
@@ -67,7 +75,7 @@ def update_tag(
     return tag_service.edit_tag(user=user, tag_id=tag_id, lt_input=updated_tag)
 
 
-@router.get("/{tag_id}/content")
+@router.get("/{tag_id}/content", dependencies=[ContentReadonlyPermission])
 def read_tag_contents(
     session: CurrentSession,
     user: UserToken,
@@ -101,6 +109,7 @@ def read_tag_contents(
 @router.post(
     "/{tag_id}/content/{content_id}",
     summary="Associate a tag with this content",
+    dependencies=[ContentEditorPermission],
 )
 def associate_tag_with_content(
     session: CurrentSession,
@@ -118,6 +127,7 @@ def associate_tag_with_content(
 @router.delete(
     "/{tag_id}/content/{content_id}",
     summary="Disassociate a tag with this content",
+    dependencies=[ContentEditorPermission],
 )
 def disassociate_tag_with_content(
     session: CurrentSession,

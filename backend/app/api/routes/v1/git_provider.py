@@ -8,7 +8,7 @@ from fastapi import APIRouter, HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from app.api.auth import UserToken
+from app.api.auth import ContentEditorPermission, UserToken
 from app.api.session import CurrentSession
 from app.core.config import settings
 from app.repositories.workspace_repository import WorkspaceRepository
@@ -67,7 +67,7 @@ class GitRepository(BaseModel):
 
 
 # endpoint to clone repo and pipe to s3
-@router.post("/{provider}/clone-repo")
+@router.post("/{provider}/clone-repo", dependencies=[ContentEditorPermission])
 async def clone_repo(
     session: CurrentSession,
     current_user: UserToken,

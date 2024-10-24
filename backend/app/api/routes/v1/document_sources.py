@@ -2,7 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException
 
-from app.api.auth import UserToken
+from app.api.auth import ContentEditorPermission, ContentReadonlyPermission, UserToken
 from app.api.session import CurrentSession
 from app.schemas.document_source_schema import DocumentSourceCreate
 from app.services.document_source_service import DocumentSourceService
@@ -10,7 +10,7 @@ from app.services.document_source_service import DocumentSourceService
 router = APIRouter()
 
 
-@router.post("/")
+@router.post("/", dependencies=[ContentEditorPermission])
 def create_document_source(
     session: CurrentSession,
     user: UserToken,
@@ -20,7 +20,7 @@ def create_document_source(
     return document_source_service.create_document_source(document_source_create)
 
 
-@router.get("/{document_id}/{source_id}")
+@router.get("/{document_id}/{source_id}", dependencies=[ContentReadonlyPermission])
 def get_document_source(
     session: CurrentSession,
     user: UserToken,
@@ -36,7 +36,7 @@ def get_document_source(
     return document_source
 
 
-@router.delete("/{document_id}/{source_id}")
+@router.delete("/{document_id}/{source_id}", dependencies=[ContentEditorPermission])
 def delete_document_source(
     session: CurrentSession,
     user: UserToken,

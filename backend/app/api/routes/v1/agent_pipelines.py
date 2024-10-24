@@ -9,7 +9,7 @@ from shared.interfaces.agents.pipeline_configuration import (
 from shared.interfaces.request import DriverModalBatchRequest
 from shared.interfaces.response import DriverModalResponse
 
-from app.api.auth import UserToken
+from app.api.auth import ContentReadonlyPermission, UserToken
 
 router = APIRouter()
 
@@ -17,6 +17,7 @@ router = APIRouter()
 @router.post(
     "/",
     summary="Start a modal instance of the execute Agent Sequence",
+    dependencies=[ContentReadonlyPermission],
 )
 def execute_agent_sequence(user: UserToken, input: PipelineInput) -> PipelineResponse:
     from shared.pipelines.agents.execute import execute_sequence
@@ -28,6 +29,7 @@ def execute_agent_sequence(user: UserToken, input: PipelineInput) -> PipelineRes
 @router.post(
     "/async",
     summary="Start a modal instance of the execute Agent Sequence",
+    dependencies=[ContentReadonlyPermission],
 )
 def execute_agent_sequence_modal_async(
     user: UserToken, input: PipelineInput
@@ -38,7 +40,7 @@ def execute_agent_sequence_modal_async(
     return DriverModalResponse(call_id=instance.object_id)
 
 
-@router.get("/async/{call_id}")
+@router.get("/async/{call_id}", dependencies=[ContentReadonlyPermission])
 def get_execution_results(user: UserToken, call_id: str) -> PipelineResponse:
     function_call = FunctionCall.from_id(call_id)
     result = function_call.get(timeout=0)
@@ -50,7 +52,7 @@ class BatchInput(BaseModel):
 
 
 # TODO: this url is poorly formatted. used to keep the same as instructions for rapid development
-@router.post("/async/batch")
+@router.post("/async/batch", dependencies=[ContentReadonlyPermission])
 def get_batch_execution_results(
     user: UserToken, input: DriverModalBatchRequest
 ) -> dict:
@@ -86,6 +88,7 @@ def get_batch_execution_results(
 @router.post(
     "/sync",
     summary="Start a modal instance of the execute Agent Sequence",
+    dependencies=[ContentReadonlyPermission],
 )
 def execute_agent_sequence_modal_sync(
     user: UserToken, input: PipelineInput

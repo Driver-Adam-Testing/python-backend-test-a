@@ -9,11 +9,12 @@ from .common_v2 import (
     IrData,
     NamedContent,
     NestedIrData,
-    ParserKind,
     RawSymbolCollection,
     RawSymbolData,
     SymbolKind,
     code_requires_multi_prompt,
+    create_to_be_documented_raw_symbol_via_ctags,
+    create_undocumented_raw_symbol_via_ctags,
 )
 
 JAVA_INTERFACES = {"interface"}
@@ -268,8 +269,6 @@ class JavaClassRawSymbolCollection(RawSymbolCollection):
 
     @classmethod
     def from_ctags(cls, code: str, root_rel_path: Path) -> Self | None:
-        from shared.chunking.text_splitter import split_text
-
         is_multi_prompt = code_requires_multi_prompt(code)
 
         symbols = extract_symbols_w_ctags(
@@ -279,35 +278,18 @@ class JavaClassRawSymbolCollection(RawSymbolCollection):
         class_raw_symbol_data = {}
         for s in symbols:
             if s["kind"] in JAVA_CLASSES:
-                class_raw_symbol_data[s["name"]] = RawSymbolData(
-                    parser_kind=ParserKind.UCTAGS,
-                    symbol_kind=SymbolKind.DATA_STRUCTURE,
-                    ir_kind=JavaClassData,
-                    name=s["name"],
-                    path=root_rel_path,
-                    scope=s.get("scope"),
-                    scope_relation=None,
-                    children=[],
-                    start_line=s["line"],
-                    end_line=s.get("end"),
-                    text=None,
-                    delimiter=".",
+                class_raw_symbol_data[s["name"]] = (
+                    create_to_be_documented_raw_symbol_via_ctags(
+                        ctags_symbol=s,
+                        root_rel_path=root_rel_path,
+                        code=code,
+                        symbol_kind=SymbolKind.DATA_STRUCTURE,
+                        ir_kind=JavaClassData,
+                        scope_relation=None,
+                        delimiter=".",
+                        is_multi_prompt=is_multi_prompt,
+                    )
                 )
-                if not is_multi_prompt:
-                    class_raw_symbol_data[s["name"]].text = code
-                else:
-                    cls_code = "\n".join(
-                        code.splitlines()[s["line"] - 1 : s.get("end") + 1]
-                    )
-                    cls_chunks = split_text(
-                        text=cls_code,
-                        chunk_size=64_000,
-                        chunk_overlap=1_000,
-                    )
-                    if len(cls_chunks) == 1:
-                        class_raw_symbol_data[s["name"]].text = cls_code
-                    else:
-                        class_raw_symbol_data[s["name"]].text = cls_chunks[0].text
 
         for s in symbols:
             if (
@@ -316,26 +298,18 @@ class JavaClassRawSymbolCollection(RawSymbolCollection):
                 and s["scopeKind"] in JAVA_CLASSES
             ):
                 scope = s["scope"].split(".")[-1]
-                method_symbol_data = RawSymbolData(
-                    parser_kind=ParserKind.UCTAGS,
-                    symbol_kind=SymbolKind.CALLABLE,
-                    ir_kind=JavaMethodData,
-                    name=s["name"],
-                    path=root_rel_path,
-                    scope=scope,
-                    scope_relation="methods",
-                    children=[],
-                    start_line=s["line"],
-                    end_line=s.get("end"),
-                    text=None,
-                    delimiter=".",
+                class_raw_symbol_data[scope].children.append(
+                    create_to_be_documented_raw_symbol_via_ctags(
+                        ctags_symbol=s,
+                        root_rel_path=root_rel_path,
+                        code=code,
+                        symbol_kind=SymbolKind.CALLABLE,
+                        ir_kind=JavaMethodData,
+                        scope_relation="methods",
+                        delimiter=".",
+                        is_multi_prompt=is_multi_prompt,
+                    )
                 )
-                if is_multi_prompt:
-                    m_code = "\n".join(code.splitlines()[s["line"] - 1 : s["end"] + 1])
-                    method_symbol_data.text = m_code
-                else:
-                    method_symbol_data.text = code
-                class_raw_symbol_data[scope].children.append(method_symbol_data)
             elif (
                 (s.get("scope"))
                 and not s["name"].startswith("__anon")
@@ -344,21 +318,15 @@ class JavaClassRawSymbolCollection(RawSymbolCollection):
             ):
                 scope = s["scope"].split(".")[-1]
                 # No docs generated, just listing this, so text field unnecessary.
-                nested_class_symbol_data = RawSymbolData(
-                    parser_kind=ParserKind.UCTAGS,
-                    symbol_kind=SymbolKind.DATA_STRUCTURE,
-                    ir_kind=None,
-                    name=s["name"],
-                    path=root_rel_path,
-                    scope=scope,
-                    scope_relation="nested_classes",
-                    children=[],
-                    start_line=None,
-                    end_line=None,
-                    text=None,
-                    delimiter=".",
+                class_raw_symbol_data[scope].children.append(
+                    create_undocumented_raw_symbol_via_ctags(
+                        ctags_symbol=s,
+                        root_rel_path=root_rel_path,
+                        symbol_kind=SymbolKind.DATA_STRUCTURE,
+                        scope_relation="nested_classes",
+                        delimiter=".",
+                    )
                 )
-                class_raw_symbol_data[scope].children.append(nested_class_symbol_data)
             elif (
                 (s.get("scope"))
                 and (s["kind"] in JAVA_INTERFACES)
@@ -366,22 +334,14 @@ class JavaClassRawSymbolCollection(RawSymbolCollection):
             ):
                 scope = s["scope"].split(".")[-1]
                 # No docs generated, just listing this, so text field unnecessary.
-                nested_interface_symbol_data = RawSymbolData(
-                    parser_kind=ParserKind.UCTAGS,
-                    symbol_kind=SymbolKind.DATA_STRUCTURE,
-                    ir_kind=None,
-                    name=s["name"],
-                    path=root_rel_path,
-                    scope=scope,
-                    scope_relation="nested_interfaces",
-                    children=[],
-                    start_line=None,
-                    end_line=None,
-                    text=None,
-                    delimiter=".",
-                )
                 class_raw_symbol_data[scope].children.append(
-                    nested_interface_symbol_data
+                    create_undocumented_raw_symbol_via_ctags(
+                        ctags_symbol=s,
+                        root_rel_path=root_rel_path,
+                        symbol_kind=SymbolKind.DATA_STRUCTURE,
+                        scope_relation="nested_interfaces",
+                        delimiter=".",
+                    )
                 )
             elif (
                 (s.get("scope"))
@@ -389,27 +349,18 @@ class JavaClassRawSymbolCollection(RawSymbolCollection):
                 and (s["scopeKind"] in JAVA_CLASSES)
             ):
                 scope = s["scope"].split(".")[-1]
-                field_symbol_data = RawSymbolData(
-                    parser_kind=ParserKind.UCTAGS,
-                    symbol_kind=SymbolKind.VARIABLE,
-                    ir_kind=JavaFieldData,
-                    name=s["name"],
-                    path=root_rel_path,
-                    scope=scope,
-                    scope_relation="fields",
-                    children=[],
-                    start_line=s["line"],
-                    end_line=s.get("end"),
-                    text=None,
-                    delimiter=".",
+                class_raw_symbol_data[scope].children.append(
+                    create_to_be_documented_raw_symbol_via_ctags(
+                        ctags_symbol=s,
+                        root_rel_path=root_rel_path,
+                        code=code,
+                        symbol_kind=SymbolKind.VARIABLE,
+                        ir_kind=JavaFieldData,
+                        scope_relation="fields",
+                        delimiter=".",
+                        is_multi_prompt=is_multi_prompt,
+                    )
                 )
-                if is_multi_prompt:
-                    # TODO: blind padding for variable
-                    f_code = "\n".join(code.splitlines()[s["line"] - 1 : s["end"] + 1])
-                    field_symbol_data.text = f_code
-                else:
-                    field_symbol_data.text = code
-                class_raw_symbol_data[scope].children.append(field_symbol_data)
         output = (
             None if len(class_raw_symbol_data) == 0 else cls(data=class_raw_symbol_data)
         )
@@ -428,8 +379,6 @@ class JavaInterfaceRawSymbolCollection(RawSymbolCollection):
 
     @classmethod
     def from_ctags(cls, code: str, root_rel_path: Path) -> Self | None:
-        from shared.chunking.text_splitter import split_text
-
         is_multi_prompt = code_requires_multi_prompt(code)
 
         symbols = extract_symbols_w_ctags(
@@ -439,37 +388,18 @@ class JavaInterfaceRawSymbolCollection(RawSymbolCollection):
         interface_raw_symbol_data = {}
         for s in symbols:
             if s["kind"] in JAVA_INTERFACES:
-                interface_raw_symbol_data[s["name"]] = RawSymbolData(
-                    parser_kind=ParserKind.UCTAGS,
-                    symbol_kind=SymbolKind.DATA_STRUCTURE,
-                    ir_kind=JavaInterfaceData,
-                    name=s["name"],
-                    path=root_rel_path,
-                    scope=s.get("scope"),
-                    scope_relation=None,
-                    children=[],
-                    start_line=s["line"],
-                    end_line=s.get("end"),
-                    text=None,
-                    delimiter=".",
+                interface_raw_symbol_data[s["name"]] = (
+                    create_to_be_documented_raw_symbol_via_ctags(
+                        ctags_symbol=s,
+                        root_rel_path=root_rel_path,
+                        code=code,
+                        symbol_kind=SymbolKind.DATA_STRUCTURE,
+                        ir_kind=JavaInterfaceData,
+                        scope_relation=None,
+                        delimiter=".",
+                        is_multi_prompt=is_multi_prompt,
+                    )
                 )
-                if not is_multi_prompt:
-                    interface_raw_symbol_data[s["name"]].text = code
-                else:
-                    interface_code = "\n".join(
-                        code.splitlines()[s["line"] - 1 : s.get("end") + 1]
-                    )
-                    interface_chunks = split_text(
-                        text=interface_code,
-                        chunk_size=64_000,
-                        chunk_overlap=1_000,
-                    )
-                    if len(interface_chunks) == 1:
-                        interface_raw_symbol_data[s["name"]].text = interface_code
-                    else:
-                        interface_raw_symbol_data[s["name"]].text = interface_chunks[
-                            0
-                        ].text
 
         for s in symbols:
             if (
@@ -478,49 +408,34 @@ class JavaInterfaceRawSymbolCollection(RawSymbolCollection):
                 and s["scopeKind"] in JAVA_INTERFACES
             ):
                 scope = s["scope"].split(".")[-1]
-                method_symbol_data = RawSymbolData(
-                    parser_kind=ParserKind.UCTAGS,
-                    symbol_kind=SymbolKind.CALLABLE,
-                    ir_kind=JavaMethodData,
-                    name=scope + "." + s["name"],
-                    path=root_rel_path,
-                    scope=scope,
-                    scope_relation="methods",
-                    children=[],
-                    start_line=s["line"],
-                    end_line=s.get("end"),
-                    text=None,
-                    delimiter=".",
+                interface_raw_symbol_data[scope].children.append(
+                    create_to_be_documented_raw_symbol_via_ctags(
+                        ctags_symbol=s,
+                        root_rel_path=root_rel_path,
+                        code=code,
+                        symbol_kind=SymbolKind.CALLABLE,
+                        ir_kind=JavaMethodData,
+                        scope_relation="methods",
+                        delimiter=".",
+                        is_multi_prompt=is_multi_prompt,
+                    )
                 )
-                if is_multi_prompt:
-                    m_code = "\n".join(code.splitlines()[s["line"] - 1 : s["end"] + 1])
-                    method_symbol_data.text = m_code
-                else:
-                    method_symbol_data.text = code
-                interface_raw_symbol_data[scope].children.append(method_symbol_data)
             elif (
                 (s.get("scope"))
                 and not s["name"].startswith("__anon")
                 and (s["kind"] in JAVA_CLASSES)
                 and (s["scopeKind"] in JAVA_INTERFACES)
             ):
+                scope = s["scope"].split(".")[-1]
                 # No docs generated, just listing this, so text field unnecessary.
-                nested_class_symbol_data = RawSymbolData(
-                    parser_kind=ParserKind.UCTAGS,
-                    symbol_kind=SymbolKind.DATA_STRUCTURE,
-                    ir_kind=JavaInterfaceData,
-                    name=s["name"],
-                    path=root_rel_path,
-                    scope=None,
-                    scope_relation="nested_classes",
-                    children=[],
-                    start_line=None,
-                    end_line=None,
-                    text=None,
-                    delimiter=".",
-                )
                 interface_raw_symbol_data[scope].children.append(
-                    nested_class_symbol_data
+                    create_undocumented_raw_symbol_via_ctags(
+                        ctags_symbol=s,
+                        root_rel_path=root_rel_path,
+                        symbol_kind=SymbolKind.DATA_STRUCTURE,
+                        scope_relation="nested_classes",
+                        delimiter=".",
+                    )
                 )
             elif (
                 (s.get("scope"))
@@ -529,22 +444,14 @@ class JavaInterfaceRawSymbolCollection(RawSymbolCollection):
             ):
                 scope = s["scope"].split(".")[-1]
                 # No docs generated, just listing this, so text field unnecessary.
-                nested_interface_symbol_data = RawSymbolData(
-                    parser_kind=ParserKind.UCTAGS,
-                    symbol_kind=SymbolKind.DATA_STRUCTURE,
-                    ir_kind=JavaInterfaceData,
-                    name=s["name"],
-                    path=root_rel_path,
-                    scope=None,
-                    scope_relation="nested_interfaces",
-                    children=[],
-                    start_line=None,
-                    end_line=None,
-                    text=None,
-                    delimiter=".",
-                )
                 interface_raw_symbol_data[scope].children.append(
-                    nested_interface_symbol_data
+                    create_undocumented_raw_symbol_via_ctags(
+                        ctags_symbol=s,
+                        root_rel_path=root_rel_path,
+                        symbol_kind=SymbolKind.DATA_STRUCTURE,
+                        scope_relation="nested_interfaces",
+                        delimiter=".",
+                    )
                 )
             elif (
                 (s.get("scope"))
@@ -552,26 +459,18 @@ class JavaInterfaceRawSymbolCollection(RawSymbolCollection):
                 and (s["scopeKind"] in JAVA_INTERFACES)
             ):
                 scope = s["scope"].split(".")[-1]
-                field_symbol_data = RawSymbolData(
-                    parser_kind=ParserKind.UCTAGS,
-                    symbol_kind=SymbolKind.VARIABLE,
-                    ir_kind=JavaFieldData,
-                    name=scope + "." + s["name"],
-                    path=root_rel_path,
-                    scope=scope,
-                    scope_relation="fields",
-                    children=[],
-                    start_line=s["line"],
-                    end_line=s.get("end"),
-                    text=None,
-                    delimiter=".",
+                interface_raw_symbol_data[scope].children.append(
+                    create_to_be_documented_raw_symbol_via_ctags(
+                        ctags_symbol=s,
+                        root_rel_path=root_rel_path,
+                        code=code,
+                        symbol_kind=SymbolKind.VARIABLE,
+                        ir_kind=JavaFieldData,
+                        scope_relation="fields",
+                        delimiter=".",
+                        is_multi_prompt=is_multi_prompt,
+                    )
                 )
-                if is_multi_prompt:
-                    f_code = "\n".join(code.splitlines()[s["line"] - 1 : s["end"] + 1])
-                    field_symbol_data.text = f_code
-                else:
-                    field_symbol_data.text = code
-                interface_raw_symbol_data[scope].children.append(field_symbol_data)
         output = (
             None
             if len(interface_raw_symbol_data) == 0

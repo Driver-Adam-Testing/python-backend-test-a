@@ -3,8 +3,10 @@ from utils.lang_specialization.cpp import (
     SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_CPP,
     CppClassRawSymbolCollection,
     CppFreeFnRawSymbolCollection,
+    CppVariableRawSymbolCollection,
     class_dict_from_llm_cpp,
     fn_dict_from_llm_cpp,
+    variable_dict_from_llm_cpp,
 )
 from utils.lang_specialization.default import (
     default_imports_checker,
@@ -23,6 +25,13 @@ SOURCE_CODE_LARGE_TEMPLATE_CPP = [
         "# Imports and Dependencies",
         default_imports_checker,
         lambda _llm, output, _code: output,
+        None,
+    ),
+    (
+        S.FN_COND_JSON,
+        "# Global Variables",
+        CppVariableRawSymbolCollection.from_ctags,
+        variable_dict_from_llm_cpp,
         None,
     ),
     (

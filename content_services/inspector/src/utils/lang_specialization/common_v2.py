@@ -100,80 +100,95 @@ def _disambiguate_header(source: str, fallback: Lang) -> Lang:
         return fallback
 
 
-# BLIND_ADVANCE_IF_NO_END_LINE = 200
-#
-# def create_to_be_documented_raw_symbol_via_ctags(
-#     ctags_symbol: dict,
-#     root_rel_path: Path,
-#     code: str,
-#     symbol_kind: SymbolKind,
-#     ir_kind: type[IrData] | type[NestedIrData],
-#     scope_relation: str | None, # scope relation should be the name of the field in the corresponding parent data class, e.g. "methods"
-#     delimiter: str | None,
-#     is_multi_prompt: bool
-# ) -> RawSymbolData:
-#     from shared.chunking.text_splitter import split_text
-#
-#     if ctags_symbol.get("scope") is not None:
-#         scope = ctags_symbol["scope"].split(delimiter)[-1]
-#     else:
-#         scope = None
-#
-#     raw_symbol_data = RawSymbolData(
-#         parser_kind=ParserKind.UCTAGS,
-#         symbol_kind=symbol_kind,
-#         ir_kind=ir_kind,
-#         name=ctags_symbol["name"],
-#         path=root_rel_path,
-#         scope=scope,
-#         scope_relation=scope_relation,
-#         children=[],
-#         start_line=ctags_symbol["line"],
-#         end_line=ctags_symbol.get("end_line", ctags_symbol["line"] + BLIND_ADVANCE_IF_NO_END_LINE),
-#         text=None,
-#         delimiter=delimiter
-#     )
-#     if is_multi_prompt:
-#         s_code = "\n".join(code.split("\n")[raw_symbol_data.start_line - 1:raw_symbol_data.end_line])
-#         s_code_chunks = split_text(
-#             text=s_code,
-#             chunk_size=CHUNK_SIZE,
-#             chunk_overlap=CHUNK_OVERLAP,
-#         )
-#         if len(s_code_chunks) > 1:
-#             raw_symbol_data.text = s_code_chunks[0].text
-#         else:
-#             raw_symbol_data.text = s_code
-#     else:
-#         raw_symbol_data.text = code
-#
-#     return raw_symbol_data
-#
-# def create_undocumented_raw_symbol_via_ctags(
-#     ctags_symbol: dict,
-#     root_rel_path: Path,
-#     symbol_kind: SymbolKind,
-#     scope_relation: str,
-#     delimiter: str | None,
-# ) -> RawSymbolData:
-#     if ctags_symbol.get("scope") is not None:
-#         scope = ctags_symbol["scope"].split(delimiter)[-1]
-#     else:
-#         scope = None
-#     return RawSymbolData(
-#         parser_kind=ParserKind.UCTAGS,
-#         symbol_kind=symbol_kind,
-#         ir_kind=None,
-#         name=ctags_symbol["name"],
-#         path=root_rel_path,
-#         scope=scope,
-#         scope_relation=scope_relation,
-#         children=[],
-#         start_line=None,
-#         end_line=None,
-#         text=None,
-#         delimiter=delimiter
-#     )
+BLIND_ADVANCE_IF_NO_END_LINE = 200
+BLIND_PADDING_TOP = 100
+BLIND_PADDING_BOTTOM = 100
+
+
+def create_to_be_documented_raw_symbol_via_ctags(
+    ctags_symbol: dict,
+    root_rel_path: Path,
+    code: str,
+    symbol_kind: SymbolKind,
+    ir_kind: type[IrData] | type[NestedIrData],
+    scope_relation: str
+    | None,  # scope relation should be the name of the field in the corresponding parent data class, e.g. "methods"
+    delimiter: str | None,
+    is_multi_prompt: bool,
+    is_overloaded: bool = False,
+    use_padding: bool = False,
+) -> RawSymbolData:
+    from shared.chunking.text_splitter import split_text
+
+    if ctags_symbol.get("scope") is not None:
+        scope = ctags_symbol["scope"].split(delimiter)[-1]
+    else:
+        scope = None
+
+    raw_symbol_data = RawSymbolData(
+        parser_kind=ParserKind.UCTAGS,
+        symbol_kind=symbol_kind,
+        ir_kind=ir_kind,
+        name=ctags_symbol["name"],
+        path=root_rel_path,
+        scope=scope,
+        scope_relation=scope_relation,
+        children=[],
+        start_line=ctags_symbol["line"],
+        end_line=ctags_symbol.get(
+            "end", ctags_symbol["line"] + BLIND_ADVANCE_IF_NO_END_LINE
+        ),
+        text=None,
+        delimiter=delimiter,
+    )
+    if is_multi_prompt or is_overloaded:
+        if use_padding:
+            start_line = max(0, raw_symbol_data.start_line - BLIND_PADDING_TOP)
+            end_line = raw_symbol_data.end_line + BLIND_PADDING_BOTTOM
+        else:
+            start_line = raw_symbol_data.start_line
+            end_line = raw_symbol_data.end_line
+        s_code = "\n".join(code.split("\n")[start_line - 1 : end_line + 1])
+        s_code_chunks = split_text(
+            text=s_code,
+            chunk_size=CHUNK_SIZE,
+            chunk_overlap=CHUNK_OVERLAP,
+        )
+        if len(s_code_chunks) > 1:
+            raw_symbol_data.text = s_code_chunks[0].text
+        else:
+            raw_symbol_data.text = s_code
+    else:
+        raw_symbol_data.text = code
+
+    return raw_symbol_data
+
+
+def create_undocumented_raw_symbol_via_ctags(
+    ctags_symbol: dict,
+    root_rel_path: Path,
+    symbol_kind: SymbolKind,
+    scope_relation: str,
+    delimiter: str | None,
+) -> RawSymbolData:
+    if ctags_symbol.get("scope") is not None:
+        scope = ctags_symbol["scope"].split(delimiter)[-1]
+    else:
+        scope = None
+    return RawSymbolData(
+        parser_kind=ParserKind.UCTAGS,
+        symbol_kind=symbol_kind,
+        ir_kind=None,
+        name=ctags_symbol["name"],
+        path=root_rel_path,
+        scope=scope,
+        scope_relation=scope_relation,
+        children=[],
+        start_line=None,
+        end_line=None,
+        text=None,
+        delimiter=delimiter,
+    )
 
 
 def snake_case_to_spaced_string(snake_case: str) -> str:
@@ -310,6 +325,11 @@ class IrData(BaseModel, abc.ABC):
 
 class NestedIrData(BaseModel, abc.ABC):
     base_data: IrData  # all NestedIrData must have a base data field
+
+    @classmethod
+    @abc.abstractmethod
+    def default_class(cls) -> Self:
+        pass
 
     @classmethod
     def from_llm(
@@ -512,7 +532,6 @@ class ClassData(NestedIrData):
     nested_classes: list[str]
 
     @classmethod
-    @abc.abstractmethod
     def default_class(cls) -> Self:
         base_data = ClassBaseData(
             type="", members=[], description="Implemented elsewhere", inherits_from=[]

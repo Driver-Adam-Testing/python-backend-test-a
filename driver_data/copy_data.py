@@ -289,9 +289,7 @@ def main(org_id: str, codebase_id: UUID, skip_db: bool, skip_s3: bool) -> None:
     # Define the source and target database URLs
     source_database_url = os.getenv("SOURCE_DATABASE_URL")
     target_database_url = os.getenv("TARGET_DATABASE_URL")
-    print(
-        f"Migrating Org ID: {org_id} Codebase ID: {codebase_id} from \n\n{source_database_url}  \n\nto \n\n{target_database_url}\n\n"
-    )
+    print(f"Migrating Org ID: {org_id} Codebase ID: {codebase_id}")
 
     bucket_name = hashlib.sha256(org_id.encode()).hexdigest()[:63]
     new_storage_url = f"http://localhost:9000/{bucket_name}/{codebase_id!s}"

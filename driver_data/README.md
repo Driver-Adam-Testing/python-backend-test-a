@@ -4,11 +4,23 @@ This container copies database and S3 records for a given organization + codebas
 
 Currently, this only works with localhost as a target due to AWS cross-account permissions issues when copying S3 files. Whether or not we even _should_ move data between environments is an additional consideration.
 
-## Example (java-sample)
+## Example (download java-sample codebase from dev)
 
 ```
 poetry install --no-root
 poetry run python copy_data.py --org-id org_s76pU1v8LAYhTOWB --codebase-id fafab059-afe8-47b8-b195-2cbef2d58c6a
+```
+
+## Example (skip downloading DB records)
+
+```
+poetry run python copy_data.py --org-id org_s76pU1v8LAYhTOWB --codebase-id fafab059-afe8-47b8-b195-2cbef2d58c6a --skip-db
+```
+
+## Example (skip downloading DB records)
+
+```
+poetry run python copy_data.py --org-id org_s76pU1v8LAYhTOWB --codebase-id fafab059-afe8-47b8-b195-2cbef2d58c6a --skip-s3
 ```
 
 ## Example .env configuration (update accordingly)

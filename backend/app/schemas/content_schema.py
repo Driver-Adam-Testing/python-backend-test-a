@@ -182,3 +182,15 @@ class BatchDeleteTagsResponse(BaseModel):
 class DownloadContentResponse(BaseModel):
     download_url: str
     content_name: str
+
+
+class TagResult(BaseModel):
+    id: UUID
+    name: str
+    color: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class ContentTagsResponse(BaseModel):
+    tags: list[TagResult]

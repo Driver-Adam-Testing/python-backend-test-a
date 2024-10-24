@@ -6,7 +6,10 @@ from database.models_v1 import Tag
 from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy.exc import IntegrityError
 
-from app.api.auth import CurrentUser
+from app.api.auth import (
+    ContentEditorPermission,
+    CurrentUser,
+)
 from app.api.session import CurrentSession
 from app.schemas.content_schema import ListContentInput, TagAssociationResponse
 from app.schemas.tag_schema import (
@@ -128,12 +131,12 @@ def disassociate_tag_with_content(
     )
 
 
-@router.delete("/{tag_id}", status_code=204)
+@router.delete("/{tag_id}", status_code=204, dependencies=[ContentEditorPermission])
 def delete_tag(
     session: CurrentSession,
     user: CurrentUser,
     tag_id: UUID,
-):
+) -> None:
     """Delete a tag by its ID."""
     tag_service = TagService(session)
     try:

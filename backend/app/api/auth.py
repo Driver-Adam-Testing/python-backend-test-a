@@ -2,7 +2,7 @@ import json
 from typing import Annotated
 from urllib.request import urlopen
 
-from fastapi import Depends, Request
+from fastapi import Depends, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import jwt
@@ -39,14 +39,20 @@ def verify_token(token: str) -> dict:
     rsa_key = get_rsa_key(get_jwks(), unverified_header["kid"])
     if not rsa_key:
         raise JWTError("Unable to find appropriate key")
-    payload = jwt.decode(
+    # jwt.decode Raises if invalid:
+    # JWTError : If the signature is invalid in any way.
+    # ExpiredSignatureError : If the signature has expired.
+    # JWTClaimsError : If any claim is invalid in any way.
+    return jwt.decode(
         token,
         rsa_key,
         algorithms=ALGORITHMS,
         audience=settings.AUTH0_AUDIENCE,
         issuer=f"https://{settings.AUTH0_DOMAIN}/",
     )
-    return payload
+
+
+# Is this the right way to return True or throw?
 
 
 UNPROTECTED_PATHS = [
@@ -62,10 +68,14 @@ UNPROTECTED_PATHS = [
 
 
 class AuthMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        if request.method in ["GET", "POST"] and request.url.path in UNPROTECTED_PATHS:
-            pass
-        elif request.method == "OPTIONS":
+    async def dispatch(
+        self, request: Request, call_next: any
+    ) -> JSONResponse | Response:
+        if (
+            request.method in ["GET", "POST"]
+            and request.url.path in UNPROTECTED_PATHS
+            or request.method == "OPTIONS"
+        ):
             pass
         else:
             auth_header = request.headers.get("Authorization")
@@ -134,5 +144,41 @@ def get_current_m2m(
         return M2M(**token_payload)
 
 
+def has_readonly_permission(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    token: dict = Depends(get_token_payload),
+) -> True:
+    if "content:readonly" in token["permissions"]:
+        return True
+    raise HTTPException(status_code=403, detail="Insufficient permissions")
+
+
+def has_content_editor_permission(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    token: dict = Depends(get_token_payload),
+) -> True:
+    if "content:edit" in token["permissions"]:
+        return True
+    raise HTTPException(status_code=403, detail="Insufficient permissions")
+
+
+def has_org_manage_permission(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    token: dict = Depends(get_token_payload),
+) -> True:
+    if "organization:manage" in token["permissions"]:
+        return True
+    raise HTTPException(status_code=403, detail="Insufficient permissions")
+
+
+# Deprecated - use UserToken instead
 CurrentUser = Annotated[User | M2M, Depends(get_current_user)]
+# Deprecated - use M2MToken instead
 CurrentToken = Annotated[M2M, Depends(get_current_m2m)]
+
+UserToken = Annotated[User, Depends(get_current_user)]
+M2MToken = Annotated[M2M, Depends(get_current_m2m)]
+
+OrgManagerPermission = Depends(has_org_manage_permission)
+ContentEditorPermission = Depends(has_content_editor_permission)
+ContentReadonlyPermission = Depends(has_readonly_permission)

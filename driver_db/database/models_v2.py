@@ -1,11 +1,12 @@
 import enum
+import hashlib
 import uuid
 from datetime import UTC, datetime
-from typing import Optional, Union
+from typing import Union
 from uuid import UUID
 
 from pgvector.sqlalchemy import Vector
-from pydantic import BaseModel, field_validator, model_validator
+from pydantic import field_validator, model_validator
 from sqlalchemy import (
     Column,
     Computed,
@@ -22,7 +23,6 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as SaUuid
 from sqlmodel import Field, Relationship, SQLModel
 
-from .config import settings
 from .custom_types import TSVector
 
 
@@ -43,6 +43,8 @@ class Node(SQLModel, table=True):
         path (str): The unique path of the node, used to determine its location and type.
         custom_display_name (str): Optional custom name for display purposes.
         organization_id (str): Identifier for the organization to which the node belongs.
+        prefix (str): Optional prefix for the node path.
+        version_id (str): Optional version identifier for the node.
         created_at (datetime): Timestamp of when the node was created, defaults to the current UTC time.
         updated_at (datetime): Timestamp of the last update to the node, automatically updated.
 
@@ -54,8 +56,10 @@ class Node(SQLModel, table=True):
 
     Properties:
         node_type (str): Derived property indicating the type of node (FOLDER, FILE, or PAGE) based on its path.
-        absolute_path (str): Derived property providing the full path including the organization ID.
+        absolute_path (str): Derived property providing the full path including the organization ID, prefix, and version ID.
         display_name (str): Derived property for the display name, using custom_display_name if available.
+        organization_hash (str): Derived property providing a hash of the organization_id.
+        organization_relative_path (str): Derived property providing the path relative to the organization.
         source_url (str): Derived property providing an S3 URL using a hash of the organization_id.
         application_url (str): Derived property providing a URL using the app_id from config and the URL-encoded path.
 
@@ -69,7 +73,13 @@ class Node(SQLModel, table=True):
 
     __tablename__ = "nodes"
     __table_args__ = (
-        UniqueConstraint("organization_id", "path", name="uq_organization_id_path"),
+        UniqueConstraint(
+            "organization_id",
+            "prefix",
+            "version_id",
+            "path",
+            name="uq_organization_id_prefix_version_id_path",
+        ),
     )
 
     id: UUID = Field(
@@ -85,6 +95,8 @@ class Node(SQLModel, table=True):
         sa_column=Column(Text, nullable=True),
     )
     organization_id: str = Field(sa_column=Column(Text, nullable=False, index=True))
+    prefix: str | None = Field(sa_column=Column(Text, nullable=True))
+    version_id: str | None = Field(sa_column=Column(Text, nullable=True))
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(UTC),
         sa_column=Column(
@@ -103,38 +115,38 @@ class Node(SQLModel, table=True):
         ),
     )
 
-    # Relationships
+    # # Relationships
     contents: list["Content"] = Relationship(
         back_populates="node",
         sa_relationship_kwargs={"cascade": "all, delete-orphan"},
     )
-    tags: list["Tag"] = Relationship(
-        back_populates="nodes",
-        sa_relationship_kwargs={"secondary": "node_tags"},
-    )
+    # tags: list["Tag"] = Relationship(
+    #     back_populates="nodes",
+    #     sa_relationship_kwargs={"secondary": "node_tags"},
+    # )
 
     # DEMO -> children and parent can be loaded using sqlalchemy. Then we can build already authorized, topographical joins in python.
     children: list["Node"] = Relationship(
-        back_populates="parent",
         sa_relationship_kwargs={
             "primaryjoin": "and_(Node.organization_id == foreign(Node.organization_id), Node.path.like(foreign(Node.path) + '/%'))",
-            "cascade": "all, delete-orphan",
+            # "cascade": "all, delete-orphan",
+            "remote_side": "[Node.organization_id, Node.path]",
         },
     )
-    parent: Optional["Node"] = Relationship(
-        back_populates="children",
-        sa_relationship_kwargs={
-            "primaryjoin": "and_(Node.organization_id == remote(Node.organization_id), Node.path.like(remote(Node.path) + '/%'))",
-            "order_by": "func.length(Node.path).desc()",
-            "uselist": False,
-        },
-    )
-    ancestors: list["Node"] = Relationship(
-        sa_relationship_kwargs={
-            "primaryjoin": "and_(Node.organization_id == remote(Node.organization_id), Node.path.like(remote(Node.path) + '/%'))",
-            "order_by": "func.length(Node.path).desc()",
-        },
-    )
+    # parent: Optional["Node"] = Relationship(
+    #     back_populates="children",
+    #     sa_relationship_kwargs={
+    #         "primaryjoin": "and_(Node.organization_id == remote(Node.organization_id), Node.path.like(remote(Node.path) + '/%'))",
+    #         "order_by": "func.length(Node.path).desc()",
+    #         "uselist": False,
+    #     },
+    # )
+    # ancestors: list["Node"] = Relationship(
+    #     sa_relationship_kwargs={
+    #         "primaryjoin": "and_(Node.organization_id == remote(Node.organization_id), Node.path.like(remote(Node.path) + '/%'))",
+    #         "order_by": "func.length(Node.path).desc()",
+    #     },
+    # )
 
     # Derived Properties
 
@@ -151,17 +163,31 @@ class Node(SQLModel, table=True):
     # DEMO -> absolute paths as a model attribute. We can create absolute paths that are always available.
     @property
     def absolute_path(self) -> str:
-        return f"{self.organization_id}/{self.path}"
+        parts = [self.organization_id]
+        if self.prefix:
+            parts.append(self.prefix)
+        if self.version_id:
+            parts.append(self.version_id)
+        parts.append(self.path)
+        return "/" + "/".join(parts)
 
     @absolute_path.setter
     def absolute_path(self, value: str) -> None:
         try:
-            organization_id, path = value.split("/", 1)
-            self.organization_id = organization_id
-            self.path = path
+            parts = value.split("/")
+            self.organization_id = parts[0]
+            if len(parts) > 3:
+                self.prefix = parts[1]
+                self.version_id = parts[2]
+                self.path = "/".join(parts[3:])
+            elif len(parts) > 2:
+                self.prefix = parts[1]
+                self.path = "/".join(parts[2:])
+            else:
+                self.path = parts[1]
         except ValueError:
             raise ValueError(
-                "Invalid absolute path format. Expected format: 'organization_id/path'"
+                "Invalid absolute path format. Expected format: 'organization_id/prefix/version_id/path' or similar"
             )
 
     # DEMO -> Display name property
@@ -178,14 +204,24 @@ class Node(SQLModel, table=True):
     def display_name(self, value: str) -> None:
         self.custom_display_name = value
 
+    @property
+    def organization_hash(self) -> str:
+        return str(hashlib.sha256(self.organization_id.encode()).hexdigest())
+
+    @property
+    def organization_relative_path(self) -> str:
+        parts = []
+        if self.prefix:
+            parts.append(self.prefix)
+        if self.version_id:
+            parts.append(self.version_id)
+        parts.append(self.path)
+        return "/" + "/".join(parts)
+
     # DEMO -> Source URL property !!!! Needs to work right, I don't think it does. Must check with Eric
     @property
     def source_url(self) -> str:
-        import hashlib
-
-        hash_object = str(hashlib.sha256(self.organization_id.encode()))[:63]
-        hash_hex = hash_object.hexdigest()
-        return f"https://s3.amazonaws.com/{hash_hex}/{self.path}"
+        return f"https://s3.amazonaws.com/{self.organization_hash[:63]}{self.organization_relative_path}"
 
     # DEMO -> Application URL property --- This is an interesting one because it needs to conform via convention with the urls on the frontend.
     @property
@@ -193,7 +229,7 @@ class Node(SQLModel, table=True):
         from urllib.parse import quote
 
         encoded_path = quote(self.path)
-        return f"{settings.APPLICATION_HOST}/{encoded_path}"
+        return f"https://app.driverai.com/{encoded_path}"
 
     # Methods
     # DEMO -> Our child checks can be on here. There may be a way to overload relationships so that it can traverse the path to get direct children.
@@ -218,49 +254,49 @@ class Node(SQLModel, table=True):
             )
 
 
-# DEMO: NodeDto for API interactions
-class NodeDto(BaseModel):
-    id: UUID | None
-    path: str
-    created_at: datetime | None
-    updated_at: datetime | None
-    node_type: str
-    display_name: str | None
-    organization_id: str | None
-    parent_node: Optional["NodeDto"] = None
-    child_nodes: list["NodeDto"] | None = None
+# # DEMO: NodeDto for API interactions
+# class NodeDto(BaseModel):
+#     id: UUID | None
+#     path: str
+#     created_at: datetime | None
+#     updated_at: datetime | None
+#     node_type: str
+#     display_name: str | None
+#     organization_id: str | None
+#     parent_node: Optional["NodeDto"] = None
+#     child_nodes: list["NodeDto"] | None = None
 
-    @classmethod
-    def from_node(cls, node: Node) -> "NodeDto":
-        return cls(
-            id=node.id,
-            path=node.path,
-            created_at=node.created_at,
-            updated_at=node.updated_at,
-            node_type=node.node_type,
-            display_name=node.display_name,
-            organization_id=node.organization_id,
-            parent_node=cls.from_node(node.parent_node) if node.parent_node else None,
-            child_nodes=[cls.from_node(child) for child in node.child_nodes]
-            if node.child_nodes
-            else None,
-        )
+#     @classmethod
+#     def from_node(cls, node: Node) -> "NodeDto":
+#         return cls(
+#             id=node.id,
+#             path=node.path,
+#             created_at=node.created_at,
+#             updated_at=node.updated_at,
+#             node_type=node.node_type,
+#             display_name=node.display_name,
+#             organization_id=node.organization_id,
+#             parent_node=cls.from_node(node.parent_node) if node.parent_node else None,
+#             child_nodes=[cls.from_node(child) for child in node.child_nodes]
+#             if node.child_nodes
+#             else None,
+#         )
 
-    def to_node(self) -> Node:
-        kwargs = {"path": self.path}
-        if self.id is not None:
-            kwargs["id"] = self.id
-        if self.display_name is not None:
-            kwargs["custom_display_name"] = self.display_name
-        if self.organization_id is not None:
-            kwargs["organization_id"] = self.organization_id
-        if self.created_at is not None:
-            kwargs["created_at"] = self.created_at
-        if self.updated_at is not None:
-            kwargs["updated_at"] = self.updated_at
-        node = Node(**kwargs)
+#     def to_node(self) -> Node:
+#         kwargs = {"path": self.path}
+#         if self.id is not None:
+#             kwargs["id"] = self.id
+#         if self.display_name is not None:
+#             kwargs["custom_display_name"] = self.display_name
+#         if self.organization_id is not None:
+#             kwargs["organization_id"] = self.organization_id
+#         if self.created_at is not None:
+#             kwargs["created_at"] = self.created_at
+#         if self.updated_at is not None:
+#             kwargs["updated_at"] = self.updated_at
+#         node = Node(**kwargs)
 
-        return node
+#         return node
 
 
 # DEMO -> Content Categories
@@ -410,69 +446,69 @@ class Chunk(SQLModel, table=True):
     )
 
 
-class Tag(SQLModel, table=True):
-    __tablename__ = "tags"
-    __table_args__ = (
-        UniqueConstraint("name", "organization_id", name="unique_tag_name_per_org_id"),
-    )
+# class Tag(SQLModel, table=True):
+#     __tablename__ = "tags"
+#     __table_args__ = (
+#         UniqueConstraint("name", "organization_id", name="unique_tag_name_per_org_id"),
+#     )
 
-    id: UUID = Field(
-        default_factory=uuid.uuid4,
-        sa_column=Column(
-            SaUuid(as_uuid=True),
-            primary_key=True,
-        ),
-    )
-    name: str = Field(
-        sa_column=Column(Text, nullable=False),
-    )
-    hex_color: str = Field(
-        sa_column=Column(Text, nullable=False),
-    )
-    organization_id: UUID = Field(
-        sa_column=Column(SaUuid(as_uuid=True), nullable=False, index=True),
-    )
-    created_at: datetime = Field(
-        default_factory=lambda: datetime.now(UTC),
-        sa_column=Column(
-            DateTime(timezone=True),
-            server_default=func.now(),
-            nullable=False,
-        ),
-    )
-    updated_at: datetime = Field(
-        default_factory=lambda: datetime.now(UTC),
-        sa_column=Column(
-            DateTime(timezone=True),
-            server_default=func.now(),
-            onupdate=func.now(),
-            nullable=False,
-        ),
-    )
+#     id: UUID = Field(
+#         default_factory=uuid.uuid4,
+#         sa_column=Column(
+#             SaUuid(as_uuid=True),
+#             primary_key=True,
+#         ),
+#     )
+#     name: str = Field(
+#         sa_column=Column(Text, nullable=False),
+#     )
+#     hex_color: str = Field(
+#         sa_column=Column(Text, nullable=False),
+#     )
+#     organization_id: UUID = Field(
+#         sa_column=Column(SaUuid(as_uuid=True), nullable=False, index=True),
+#     )
+#     created_at: datetime = Field(
+#         default_factory=lambda: datetime.now(UTC),
+#         sa_column=Column(
+#             DateTime(timezone=True),
+#             server_default=func.now(),
+#             nullable=False,
+#         ),
+#     )
+#     updated_at: datetime = Field(
+#         default_factory=lambda: datetime.now(UTC),
+#         sa_column=Column(
+#             DateTime(timezone=True),
+#             server_default=func.now(),
+#             onupdate=func.now(),
+#             nullable=False,
+#         ),
+#     )
 
-    # Relationships
-    nodes: list[Node] = Relationship(
-        back_populates="tags",
-        sa_relationship_kwargs={"secondary": "node_tags"},
-    )
+#     # Relationships
+#     nodes: list[Node] = Relationship(
+#         back_populates="tags",
+#         sa_relationship_kwargs={"secondary": "node_tags"},
+#     )
 
 
-class NodeTag(SQLModel, table=True):
-    __tablename__ = "node_tags"
+# class NodeTag(SQLModel, table=True):
+#     __tablename__ = "node_tags"
 
-    node_id: UUID = Field(
-        sa_column=Column(
-            SaUuid(as_uuid=True), ForeignKey("nodes.id"), primary_key=True
-        ),
-    )
-    tag_id: UUID = Field(
-        sa_column=Column(SaUuid(as_uuid=True), ForeignKey("tags.id"), primary_key=True),
-    )
+#     node_id: UUID = Field(
+#         sa_column=Column(
+#             SaUuid(as_uuid=True), ForeignKey("nodes.id"), primary_key=True
+#         ),
+#     )
+#     tag_id: UUID = Field(
+#         sa_column=Column(SaUuid(as_uuid=True), ForeignKey("tags.id"), primary_key=True),
+#     )
 
-    # Relationships
-    node: Node = Relationship(
-        back_populates="tags",
-    )
-    tag: Tag = Relationship(
-        back_populates="nodes",
-    )
+#     # Relationships
+#     node: Node = Relationship(
+#         back_populates="tags",
+#     )
+#     tag: Tag = Relationship(
+#         back_populates="nodes",
+#     )

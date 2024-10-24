@@ -54,3 +54,9 @@ build-backend = "poetry.masonry.api"
 [tool.mypy]
 strict = true
 exclude = ["venv", "alembic"]
+
+[tool.pytest.ini_options]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "unit: run unit tests (deselect with '-m \"not unit\"')",
+]

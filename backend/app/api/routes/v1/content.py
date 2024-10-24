@@ -4,7 +4,7 @@ from uuid import UUID
 from database.models_v1 import DerivedContent
 from fastapi import APIRouter, Query
 
-from app.api.auth import CurrentUser
+from app.api.auth import UserToken
 from app.api.session import CurrentSession
 from app.core.logger import logger
 from app.schemas.content_schema import (
@@ -33,7 +33,7 @@ router = APIRouter()
 )
 def list_content(
     session: CurrentSession,
-    user: CurrentUser,
+    user: UserToken,
     limit: int | None = 20,
     offset: int | None = 0,
     content_type_id: Annotated[list[str] | None, Query()] = None,
@@ -128,7 +128,7 @@ def get_list_content_types(
 )
 def get_content_by_id(
     session: CurrentSession,
-    user: CurrentUser,
+    user: UserToken,
     content_id: UUID,
 ) -> DerivedContent:
     """
@@ -152,7 +152,7 @@ def get_content_by_id(
 )
 def get_download_content_by_id(
     session: CurrentSession,
-    user: CurrentUser,
+    user: UserToken,
     content_id: UUID,
 ) -> DownloadContentResponse:
     """
@@ -176,7 +176,7 @@ def get_download_content_by_id(
 )
 def get_content_root_by_id(
     session: CurrentSession,
-    user: CurrentUser,
+    user: UserToken,
     content_id: UUID,
 ) -> DerivedContent:
     """
@@ -201,7 +201,7 @@ def get_content_root_by_id(
 )
 def get_document_sources(
     session: CurrentSession,
-    user: CurrentUser,
+    user: UserToken,
     content_id: UUID,
 ) -> ContentSourceResponse:
     """
@@ -225,7 +225,7 @@ def get_document_sources(
 )
 def batch_associate_sources(
     session: CurrentSession,
-    user: CurrentUser,
+    user: UserToken,
     content_id: UUID,
     content_source_associations: BatchContentSourceAssociationRequest,
 ) -> BatchContentSourceAssociationResponse:
@@ -253,7 +253,7 @@ def batch_associate_sources(
 )
 def create_blank_document(
     session: CurrentSession,
-    user: CurrentUser,
+    user: UserToken,
     request: CreateContentRequest,
 ) -> DerivedContent:
     """
@@ -277,7 +277,7 @@ def create_blank_document(
 )
 def batch_disassociate_sources(
     session: CurrentSession,
-    user: CurrentUser,
+    user: UserToken,
     content_id: UUID,
     source_content_associations: DeleteContentSourcesRequest,
 ) -> BatchDeleteDocumentSourceResponse:
@@ -321,7 +321,7 @@ def batch_disassociate_sources(
 )
 def update_content(
     session: CurrentSession,
-    user: CurrentUser,
+    user: UserToken,
     content_id: UUID,
     update_data: dict,  # TODO add validation
 ) -> DerivedContent:
@@ -335,7 +335,7 @@ def update_content(
 )
 def delete_content(
     session: CurrentSession,
-    user: CurrentUser,
+    user: UserToken,
     content_id: UUID,
 ) -> None:
     content_service = ContentService(session)
@@ -349,7 +349,7 @@ def delete_content(
 )
 def get_content_tags(
     session: CurrentSession,
-    user: CurrentUser,
+    user: UserToken,
     content_id: UUID,
 ) -> ContentTagsResponse:
     """

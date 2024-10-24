@@ -8,7 +8,7 @@ from fastapi import APIRouter, HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from app.api.auth import CurrentUser
+from app.api.auth import UserToken
 from app.api.session import CurrentSession
 from app.core.config import settings
 from app.repositories.workspace_repository import WorkspaceRepository
@@ -70,7 +70,7 @@ class GitRepository(BaseModel):
 @router.post("/{provider}/clone-repo")
 async def clone_repo(
     session: CurrentSession,
-    current_user: CurrentUser,
+    current_user: UserToken,
     provider: str,
     repo: GitRepository,
 ):

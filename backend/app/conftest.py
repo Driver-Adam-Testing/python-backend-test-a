@@ -5,7 +5,7 @@ import pytest
 from database.db import engine
 from sqlmodel import Session
 
-from app.api.auth import CurrentUser
+from app.api.auth import UserToken
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -18,8 +18,8 @@ def db() -> Generator[Session, None, None]:
 
 
 @pytest.fixture(scope="function")
-def current_user_with_org() -> CurrentUser:
-    current_user = Mock(spec=CurrentUser)
+def current_user_with_org() -> UserToken:
+    current_user = Mock(spec=UserToken)
     current_user.user_id = "test_user_id"
     current_user.organization_id = "test_org_id"
     current_user.organization_name = "test_org_name"
@@ -28,8 +28,8 @@ def current_user_with_org() -> CurrentUser:
 
 
 @pytest.fixture(scope="function")
-def current_user_with_other_org() -> CurrentUser:
-    current_user = Mock(spec=CurrentUser)
+def current_user_with_other_org() -> UserToken:
+    current_user = Mock(spec=UserToken)
     current_user.user_id = "other_test_user_id"
     current_user.organization_id = "other_test_org_id"
     current_user.organization_name = "other_test_org_name"

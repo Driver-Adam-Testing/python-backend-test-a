@@ -2,7 +2,7 @@ from fastapi import APIRouter
 from shared.interfaces.search import SearchInput, SearchResults
 from shared.pipelines.search import search_content
 
-from app.api.auth import CurrentUser
+from app.api.auth import UserToken
 from app.api.session import CurrentSession
 
 router = APIRouter()
@@ -14,7 +14,7 @@ router = APIRouter()
     response_description="Return Search Results",
 )
 def search(
-    session: CurrentSession, user: CurrentUser, input: SearchInput
+    session: CurrentSession, user: UserToken, input: SearchInput
 ) -> SearchResults:
     # TODO: figure out how to do this without transforming the input.
 

@@ -8,7 +8,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.api.auth import (
     ContentEditorPermission,
-    CurrentUser,
+    UserToken,
 )
 from app.api.session import CurrentSession
 from app.schemas.content_schema import ListContentInput, TagAssociationResponse
@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 @router.post("/", status_code=201)
 def new_tag(
     session: CurrentSession,
-    user: CurrentUser,
+    user: UserToken,
     new_tag: NewTagInput,
 ) -> Tag:
     logging.info("Creating new tag")
@@ -42,7 +42,7 @@ def new_tag(
 @router.get("/")
 def read_tags(
     session: CurrentSession,
-    user: CurrentUser,
+    user: UserToken,
     limit: int | None = 20,
     offset: int | None = 0,
     name: str | None = None,
@@ -58,7 +58,7 @@ def read_tags(
 @router.put("/{tag_id}")
 def update_tag(
     session: CurrentSession,
-    user: CurrentUser,
+    user: UserToken,
     tag_id: str,
     updated_tag: EditTagInput,
 ) -> Tag:
@@ -70,7 +70,7 @@ def update_tag(
 @router.get("/{tag_id}/content")
 def read_tag_contents(
     session: CurrentSession,
-    user: CurrentUser,
+    user: UserToken,
     tag_id: str,
     content_type_id: Annotated[list[str] | None, Query()] = None,
     content_type_name: Annotated[list[str] | None, Query()] = None,
@@ -104,7 +104,7 @@ def read_tag_contents(
 )
 def associate_tag_with_content(
     session: CurrentSession,
-    user: CurrentUser,
+    user: UserToken,
     content_id: str,
     tag_id: str,
     input: CollectionSourceInput,
@@ -121,7 +121,7 @@ def associate_tag_with_content(
 )
 def disassociate_tag_with_content(
     session: CurrentSession,
-    user: CurrentUser,
+    user: UserToken,
     content_id: str,
     tag_id: str,
 ) -> TagAssociationResponse:
@@ -134,7 +134,7 @@ def disassociate_tag_with_content(
 @router.delete("/{tag_id}", status_code=204, dependencies=[ContentEditorPermission])
 def delete_tag(
     session: CurrentSession,
-    user: CurrentUser,
+    user: UserToken,
     tag_id: UUID,
 ) -> None:
     """Delete a tag by its ID."""

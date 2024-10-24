@@ -285,7 +285,7 @@ def sync_s3_to_minio(bucket_name: str, codebase_id: UUID) -> None:
     shutil.rmtree(codebase_id)
 
 
-def main(org_id: str, codebase_id: UUID) -> None:
+def main(org_id: str, codebase_id: UUID, skip_db: bool, skip_s3: bool) -> None:
     # Define the source and target database URLs
     source_database_url = os.getenv("SOURCE_DATABASE_URL")
     target_database_url = os.getenv("TARGET_DATABASE_URL")
@@ -293,43 +293,44 @@ def main(org_id: str, codebase_id: UUID) -> None:
         f"Migrating Org ID: {org_id} Codebase ID: {codebase_id} from \n\n{source_database_url}  \n\nto \n\n{target_database_url}\n\n"
     )
 
-    # TODO: Download from S3 too
     bucket_name = hashlib.sha256(org_id.encode()).hexdigest()[:63]
     new_storage_url = f"http://localhost:9000/{bucket_name}/{codebase_id!s}"
     new_creator_id = "DRIVER_DATA_COPY"
 
-    source_engine = create_engine(source_database_url)
-    dest_engine = create_engine(target_database_url)
+    if not skip_db:
+        source_engine = create_engine(source_database_url)
+        dest_engine = create_engine(target_database_url)
 
-    with (
-        Session(source_engine) as source_session,
-        Session(dest_engine) as destination_session,
-    ):
-        destination_session.begin()
-        with source_session.no_autoflush, destination_session.no_autoflush:
-            default_workspace = destination_session.exec(
-                select(Workspace)
-                .where(Workspace.organization_id == org_id)
-                .where(Workspace.display_name == "Default")
-            ).first()
-            if default_workspace is None:
-                default_workspace = Workspace(
-                    organization_id=org_id,
-                    display_name="Default",
-                    creator_id=new_creator_id,
+        with (
+            Session(source_engine) as source_session,
+            Session(dest_engine) as destination_session,
+        ):
+            destination_session.begin()
+            with source_session.no_autoflush, destination_session.no_autoflush:
+                default_workspace = destination_session.exec(
+                    select(Workspace)
+                    .where(Workspace.organization_id == org_id)
+                    .where(Workspace.display_name == "Default")
+                ).first()
+                if default_workspace is None:
+                    default_workspace = Workspace(
+                        organization_id=org_id,
+                        display_name="Default",
+                        creator_id=new_creator_id,
+                    )
+                    destination_session.add(default_workspace)
+                    destination_session.commit()
+                    destination_session.refresh(default_workspace)
+                migrate_codebase_data(
+                    source_session,
+                    destination_session,
+                    codebase_id,
+                    default_workspace.id,
+                    new_storage_url,
+                    new_creator_id,
                 )
-                destination_session.add(default_workspace)
-                destination_session.commit()
-                destination_session.refresh(default_workspace)
-            migrate_codebase_data(
-                source_session,
-                destination_session,
-                codebase_id,
-                default_workspace.id,
-                new_storage_url,
-                new_creator_id,
-            )
-    sync_s3_to_minio(bucket_name, codebase_id)
+    if not skip_s3:
+        sync_s3_to_minio(bucket_name, codebase_id)
 
 
 if __name__ == "__main__":
@@ -346,5 +347,11 @@ if __name__ == "__main__":
         help="Codebase ID to copy data from",
         required=True,
     )
+    parser.add_argument(
+        "--skip-db", help="Skip downloading DB records", required=False, default=False
+    )
+    parser.add_argument(
+        "--skip-s3", help="Skip downloading S3 files", required=False, default=False
+    )
     args = parser.parse_args()
-    main(args.org_id, args.codebase_id)
+    main(args.org_id, args.codebase_id, args.skip_db, args.skip_s3)

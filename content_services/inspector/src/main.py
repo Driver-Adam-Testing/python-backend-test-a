@@ -60,7 +60,7 @@ async def inspect_db(
     resume: bool = False,
     rerun_node_paths: list[str] | None = None,
     new_codebase_id: uuid.UUID | None = None,
-):
+) -> None:
     if new_codebase_id:
         assert (
             rerun_node_paths is None
@@ -108,7 +108,10 @@ async def inspect_db(
 
     # TODO handle the S3_ENDPOINT_URL gracefully
     s3_client = boto3.client("s3", endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL"))
-    with tempfile.TemporaryDirectory() as download_dir, tempfile.TemporaryDirectory() as new_download_dir:
+    with (
+        tempfile.TemporaryDirectory() as download_dir,
+        tempfile.TemporaryDirectory() as new_download_dir,
+    ):
         download_root = Path(download_dir)
         file_paths = []
         print("Downloading all source files for codebase from s3...")
@@ -256,7 +259,7 @@ async def inspect_files(
     run_id: str,
     resume: bool,
     is_rerun: bool,
-):
+) -> None:
     print("---------- All nodes ----------")
     for node, _ in nodes_with_id:
         print(node)
@@ -276,10 +279,7 @@ async def inspect_files(
                 {
                     t
                     for t in tasks
-                    if (
-                        isinstance(t, FileTechDocTask)
-                        or isinstance(t, FolderTechDocTask)
-                    )
+                    if isinstance(t, FileTechDocTask | FolderTechDocTask)
                     and t.node.root_rel_path.as_posix() in node.children
                 }
             )
@@ -357,9 +357,7 @@ async def inspect_files(
         load_persisted_results = root_node.status == NodeStatus.UNMODIFIED
 
         all_tech_docs_tasks = tuple(
-            t
-            for t in tasks
-            if (isinstance(t, FileTechDocTask) or isinstance(t, FolderTechDocTask))
+            t for t in tasks if isinstance(t, FileTechDocTask | FolderTechDocTask)
         )
         top_level_tech_docs_task = TopLevelDocsTask(
             codebase_name=codebase_name,
@@ -413,7 +411,7 @@ def get_file_content(path: Path) -> str:
 @app.local_entrypoint()
 def main(
     codebase_id: str, resume_from_id: str | None = None, rerun_paths: str | None = None
-):
+) -> None:
     print("Processing codebase with id: ", codebase_id)
 
     rerun_node_paths = (
@@ -440,3 +438,21 @@ def main(
         )
     finally:
         print("Run id: ", run_id)
+
+
+@app.local_entrypoint()
+def diff_flow() -> None:
+    codebase_id = "73fcda74-7c0b-4911-9ff8-9d09f1cac654"
+    existing_codebase_id = "43acca23-f561-46d6-8387-2e09a34d8b93"
+    run_id = "d947cc38-c20e-4c63-85cb-0f21c83e9d86"
+
+    print("Onboarding complete for codebase: ", codebase_id)
+    inspect_db.remote(
+        existing_codebase_id,
+        run_id,
+        True,
+        None,
+        codebase_id,
+    )
+
+    print("Diff flow complete for codebase: ", codebase_id)

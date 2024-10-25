@@ -8,6 +8,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
+from typing import Any
 
 import boto3
 import modal.exception
@@ -59,7 +60,7 @@ class TaskResultPersistence(ABC):
 
 
 class LocalDiskTaskResultPersistence(TaskResultPersistence):
-    def __init__(self, base_dir: Path):
+    def __init__(self, base_dir: Path) -> None:
         self.base_dir = Path(base_dir)
         self.base_dir.mkdir(parents=True, exist_ok=True)
 
@@ -106,7 +107,7 @@ class LocalDiskTaskResultPersistence(TaskResultPersistence):
 
 
 class S3TaskResultPersistence(TaskResultPersistence):
-    def __init__(self, bucket_name: str):
+    def __init__(self, bucket_name: str) -> None:
         self.s3_client = boto3.client("s3")
         self.bucket_name = bucket_name
 
@@ -208,6 +209,14 @@ class Task(abc.ABC):
         raise NotImplementedError
 
     @abstractmethod
+    async def post_run_io(
+        self,
+        task_result: TaskResult,
+        dependent_io_results: dict["Task", dict[str, any]],
+    ) -> dict[str, any]:
+        raise NotImplementedError
+
+    @abstractmethod
     def recoverable_errors(self) -> set[type[Exception]]:
         raise NotImplementedError
 
@@ -223,14 +232,14 @@ class Task(abc.ABC):
     def hashable_attrs(self) -> tuple:
         raise NotImplementedError
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         """
         Hash the task based on its attributes. Note that we use `hash_tuple`, which gives a reproducible hash
         across Python processes, unlike the built-in `hash` function.
         """
         return hash_tuple(self.hashable_attrs())
 
-    def __eq__(self, other):
+    def __eq__(self, other: "Task") -> bool:
         if isinstance(other, Task):
             return self.hashable_attrs() == other.hashable_attrs()
         return False
@@ -240,7 +249,10 @@ class Task(abc.ABC):
 class TaskManager:
     tasks: list[type[Task]] = field(default_factory=list)
     serial_exe: bool = False
-    task_results: dict[type[Task], TaskResult] = field(default_factory=dict)
+    task_results: dict[type[Task], TaskResult] = field(
+        default_factory=dict
+    )  # TODO remove TaskResult until used...
+    task_io_results: dict[type[Task], dict[str, any]] = field(default_factory=dict)
     task_to_asynctask: dict[type[Task], asyncio.Task] = field(default_factory=dict)
     persistence: None | TaskResultPersistence = field(
         default_factory=lambda: S3TaskResultPersistence(
@@ -253,14 +265,22 @@ class TaskManager:
     )
 
     @classmethod
-    def with_s3_persistence(cls, bucket_name: str, *args, **kwargs):
+    def with_s3_persistence(
+        cls,
+        bucket_name: str,
+        *args: Any,  # noqa: ANN401
+        **kwargs: Any,  # noqa: ANN401
+    ) -> "TaskManager":
         return cls(*args, persistence=S3TaskResultPersistence(bucket_name), **kwargs)
 
-    async def run_tasks(self, run_id: str, resume: bool = False):
+    async def run_tasks(
+        self, run_id: str, resume: bool = False
+    ) -> dict[type[Task], TaskResult]:
         if resume and self.persistence:
             # We can block the event loop with blocking IO when loading the state we aren't running
             # anything concurrent yet
             self.load_persisted_results(run_id)
+        # return
 
         if self.persistence:
             writer_task = asyncio.create_task(self._write_task_results(run_id))
@@ -281,7 +301,7 @@ class TaskManager:
 
         return self.task_results
 
-    def load_persisted_results(self, run_id):
+    def load_persisted_results(self, run_id: str) -> None:
         print("Loading persisted results for resumption...")
         persisted_results = self.persistence.load_all_results(run_id)
         flattened_tasks = self.tasks
@@ -296,18 +316,10 @@ class TaskManager:
         )
 
     async def _schedule_and_await_task(self, task: type[Task]) -> asyncio.Task:
-        asynctask = self._schedule_task_if_needed(task)
+        asynctask = self._schedule_task(task)
         return await asynctask
 
-    def _schedule_task_if_needed(self, task: type[Task]) -> asyncio.Task:
-        if self._can_skip_task(task):
-            print(
-                f"Skipping task '{task.task_name}'. It's state is '{self.task_results[task].state}'"
-            )
-            return asyncio.create_task(
-                asyncio.sleep(0)
-            )  # Create a dummy task to await. TODO see if we can remove
-
+    def _schedule_task(self, task: type[Task]) -> asyncio.Task:
         if task not in self.task_to_asynctask:
             task_coroutine = self._run_task(task)
             self.task_to_asynctask[task] = asyncio.create_task(task_coroutine)
@@ -328,7 +340,7 @@ class TaskManager:
             case TaskResultKind.UNRECOVERABLE_ERROR:
                 return True
 
-    async def _run_task(self, task: type[Task]):
+    async def _run_task(self, task: type[Task]) -> TaskResult:
         """
         Run the task, ensuring that all dependencies run first.
         """
@@ -342,20 +354,38 @@ class TaskManager:
             ]
             await asyncio.gather(*dependent_tasks)
 
-        print(f"Running task '{task.task_name}'...")
-        result = await task.run(
-            dependent_results={
-                dep_task: self.task_results[dep_task] for dep_task in task.dependencies
-            }
+        if self._can_skip_task(
+            task
+        ):  # TODO: this probably only works if we abandon the states other than success for a task result! Think about this.
+            print(f"Skipping task '{task.task_name}'...")
+            result = self.task_results[task]
+        else:
+            print(f"Running task '{task.task_name}'...")
+            result = await task.run(
+                dependent_results={
+                    dep_task: self.task_results[dep_task]
+                    for dep_task in task.dependencies
+                }
+            )
+            self.task_results[task] = result
+
+        # TODO consider dependency injection of a database session, if we are OK with that coupling!
+        print(f"Unconditionally running post-run IO for task '{task.task_name}'...")
+        io_result = await task.post_run_io(
+            task_result=result,
+            dependent_io_results={
+                dep_task: self.task_io_results[dep_task]
+                for dep_task in task.dependencies
+            },
         )
-        self.task_results[task] = result
+        self.task_io_results[task] = io_result
 
         task_hash_str = str(hash(task))
         await self.write_queue.put((task_hash_str, result))
 
         return result
 
-    async def _write_task_results(self, run_id: str):
+    async def _write_task_results(self, run_id: str) -> None:
         while True:
             item = await self.write_queue.get()
             if item is None:

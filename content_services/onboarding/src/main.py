@@ -318,42 +318,45 @@ def main() -> None:
 
 
 @app.local_entrypoint()
-def diff_flow():
+def diff_flow() -> None:
     import hashlib
 
-    existing_codebase_id = "e2624ceb-8d4e-4b53-b564-183cedf66dc7"
-    run_id = "9bdf3ce4-a576-4a8c-b62a-2fb768ac8919"
-    archive_name_new_code = "python-decouple-3.6-v2.zip"  # TODO is this actually used in the code?  # noqa: F841  # noqa: F841
-    override_codebase_name = "python-decouple-3.6-v2"  # noqa: F841
-    presigned_url_of_new_code = "https://development-codebase-dropzone.s3.us-east-1.amazonaws.com/codebases/470aeda416cbd987632d5d931bff4d7923b93ea7e89ab5ed8499599adef0943/python-decouple-3.6-v2.zip?response-content-disposition=inline&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEIL%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJIMEYCIQCWE1dkiVuVSzXYGcE%2Fd3SvSq5smH1Ik%2BWpTDiW4h2WOgIhAIB%2FfvKM9g5iEk3Bq%2BLB0JF1rMrRdpEWAk7N4L9%2F%2BOAfKtcDCKr%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEQARoMNTUwMDgyNzYxMTA5IgzIcpeuXj4EakFay58qqwMVgOwjfZhn9bHayNWi5EMQhHt8S1Xdk1q5N5uTvkid9CeD6xVEyEKDHibCGo8713emODMtLme99WC1qHtUdeI7q8dxf4xAVoILrmEw1jaJYmMVEg4YB4amKKEC7duqFP3l1kZIRY18x4f2mG%2BwHTdBjVJL1Vn03VgKMfHRvNZ8wo%2F%2FId2AVzLdoIJHQ5Ef0WYnqAzsx5KLMEv7C89SoSLZHHg11h0mPANBRb1m5Hx3Z0SzPFLJfW8vtH%2BOiFPeAbbf3%2FqzWsnvKlhSpsKrd2tHpdgKRY2%2FA%2Brtexn6WY2Vq4hT%2B3r5hAS1b5m%2F1m16BfUuCVQtPFHCYowGbv3%2BzhFwIYQiNKaCO78UYyitzoc8ixrymgEGOI%2BHLLW2%2Fg%2FbrorDmuFh2KOEbZk1MdLCmg8nV%2BA2WcRlPC8gjfF%2FDkZ0e%2BRtJDCUFB1PeVbwvVnmik%2BgM6GwXs%2BJ8WUNCettzFtBwCtWnKGDci2kHOeP7yu%2BoSK8EBf%2Bf2n4LDINZ5HruFYRt6KTxJR9%2FDDvqQkWP0L%2BYbZwawRDhrBYO8CLjr2AXDrulhe9N%2BWiBs28MNLDjLcGOpMCv3jUPHuoeX0NLaXdigLA6yzwtyJ9T0qma0SmwG4mI795xDcglG9W4U6UHYWJzHzp%2FRqDZJfK2RupXsm0H8kvVffi5N0LQjEA9tam7cFEfO12hNjaXa475GvbZ5yZApIWVDohFX4G8vaPPM2lHhlTKTMwNYFMDHAikW9gW4Vi5ruoblo1PQ795KgzydbwMRjisNaG1%2FsW2fVYhUVOFw9tfs3ejb8AFhJugOaO%2BPGhEJfmgK2AUNr2F5PdJ3qM2rCyt57DR7sxMhBHzzKrVRGpOkVl3WJoEUxcQM%2F0t2DVe17JzcZN9XHzAMscV2HqBg1%2F0MC12nBmyQ44nc%2FrT6h2xDFQj0mwbZrk199H7ymEdsY%2FE2w%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20240912T171826Z&X-Amz-SignedHeaders=host&X-Amz-Expires=43199&X-Amz-Credential=ASIAYAE342GK6NZHRHBE%2F20240912%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Signature=ab54b59b0aab609bdd8976ab5a95f7ee292b8196648111525b789ef33cedf1d4"  # noqa: F841
+    # existing_codebase_id = "e82242f5-32b4-453b-9741-7cf198f4cce1"
+    # run_id = "8bd74c69-421d-4a35-8c97-fa7cb4efae48"
+    archive_name_new_code = (
+        "desk-control-v2.zip"  # TODO is this actually used in the code?
+    )
+    override_codebase_name = "desk-control-v2"
+    presigned_url_of_new_code = "https://development-codebase-dropzone.s3.us-east-1.amazonaws.com/codebases/470aeda416cbd987632d5d931bff4d7923b93ea7e89ab5ed8499599adef0943/desk-control-v2.zip?response-content-disposition=inline&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEIf%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIQCF4UGpad%2BvqbsZpUl68XUrbo61bKMzi3nRVa%2F7gfvpEQIgTzVOUsh5cC8O3Rzm6JkxnhtZk9TqgZKEHd70T95k2eoqugQI8P%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARABGgw1NTAwODI3NjExMDkiDOWkBlsxftjg20FuqyqOBNTEpt90OAdzT9QY9ij3Ds88daNK2smgjRBVaNxtTcDE7LCQ96D%2Bmt7q9YB0a3noBeGGGtauF8QxQ1%2BJXdWZeNVUt3jGdeJmzjWIifmFwXfbpNh0C8HeBDlCZkKf8FHpjDYZBNrGStivzQf9HEjyErXQvdQ9TZfeUaZ4TyCxiavSV3zdYQcGfzHai5yXfTxkIZ4st5qwmLifdgPzju7QKIpfgPvmLSa0Ta95a7VOv5n7Hi6qmPgS0cRLpE7Fa6LTJ5osUP698Pu3nsYhh%2B%2BU2oMnlR97fsr8wvO20L7wCxOo8D5vqPCnKpfVnxdv3MwB8UTAIqYlRlePNd2cptnJF0x20c46hgeIz54GQPjbo9NqxrgK4rszzti%2BzR4%2F5tlBKsbllGqgOsY9gcgFQgHUlUpAYXfwSzuAxoNm0KT8dCCLOoqBNpg7iGkJ2a19N8Ydj%2B8O05rDPvaZ6HthBPJiFOjKi05diVIx1A0LHqieYtUJbqosRaq5gKKiqcggyPbBgLQ%2FpbltLacIcSJjGozavFTAGoUyBpKAOPrHGkAuVC35LBZCmgHTzA7ZAMGhJhuWgVGtTv3iJ%2BjikIOuA827a8O9Te1zxSziSw84BEwSVwHoolPgj1Vyt%2B2frQ1qQK3wd6hZtns5Knt6%2FNGHBtO8%2FyWeN%2B9VOCcDtwFaGeD6%2B5rpRtFz%2FlYtMjj%2FnXplmccw4%2BPuuAY6xQLEVHHeaxvXDYRpeiUHwtAc8Xe0J%2F54QyhlNe8SWw1%2FGXYFjz6V1%2FpnWNSAKNFDQzyt88QoW0NxtYkznMqE3XvHZj2O6H63%2BCQAg8sphz0NJHSOwr7iV%2FElfE7R1zptKSbG4xBRohDYDRYxgHUJDQBHJ%2FJOuqxJZcQSmzi5mo%2Bx%2B6RBwlxpcjSo4ez7A783HBAB%2FIRNIWF%2BLUyujpWiC0gY7%2B902Ost5QzZsRymJErdsKzrlg8mwI1jHi4fsZRPxkTvfrHHV9xSHNbhJ61sECYPAcgasZXOZIji7D2gj5qlhpVkykB3jQIRW2ACKdv17ZdiXDfB2yH1StfxNgrWpniNyN4%2Bbvt%2Bw7oDe%2B%2B2qLomGFxX2PpzhTYmqI4BRimXjms7PTOxXvvSp%2Fwyl4UTDN6QcHDEft149W2BfW4lPYOdtWjyzavl&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAYAE342GK3ZLMHSPM%2F20241025%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20241025T145912Z&X-Amz-Expires=43200&X-Amz-SignedHeaders=host&X-Amz-Signature=e401928b8807990e0361215541dcb41d5dcd0b64134dd9f78d12e16c932c9de6"
     # The above is located in 470aeda416cbd987632d5d931bff4d7923b93ea7e89ab5ed8499599adef0943 of the codebase dropzone.
 
     org_id = "org_s76pU1v8LAYhTOWB"
-    org_id = hashlib.sha256(org_id.encode()).hexdigest()[:63]  # noqa: F841
-    creator_id = "auth0|667dbba790b963e36720b911"  # noqa: F841
-    workspace_id = UUID("dcc08617-d685-4147-b491-8562515b820c")  # noqa: F841
+    org_id = hashlib.sha256(org_id.encode()).hexdigest()[:63]
+    creator_id = "auth0|667dbba790b963e36720b911"
+    workspace_id = UUID("32de9990-b63d-4e8e-9567-58e2a78292ec")
 
-    # codebase_id = run_codebase_onboarding.remote(
-    #     presigned_url_of_new_code,
-    #     archive_name_new_code,
-    #     org_id,
-    #     creator_id,
-    #     workspace_id,
-    #     "manual",
-    #     override_codebase_name=override_codebase_name,
-    # )
-
-    # For testing, we are going to hard code the new codebase id while we get inspector working
-    codebase_id = "5a73bd0a-5a36-4684-88ae-3ac483d904e8"
-
-    print("Onboarding complete for codebase: ", codebase_id)
-    inspect_db = modal.Function.lookup("inspector-v2", "inspect_db")
-    inspect_db.remote(
-        existing_codebase_id,
-        run_id,
-        True,
-        None,
-        codebase_id,
+    codebase_id = run_codebase_onboarding.remote(
+        presigned_url_of_new_code,
+        archive_name_new_code,
+        org_id,
+        creator_id,
+        workspace_id,
+        "manual",
+        override_codebase_name=override_codebase_name,
     )
+    print("Onboarding complete for codebase: ", codebase_id)
 
-    print("Diff flow complete for codebase: ", codebase_id)
+    # # For testing, we are going to hard code the new codebase id while we get inspector working
+    # codebase_id = "8050a448-8f5d-4ef5-9667-a10c0a146c5a"
+    #
+    # print("Onboarding complete for codebase: ", codebase_id)
+    # inspect_db = modal.Function.lookup("inspector-v2", "inspect_db")
+    # inspect_db.remote(
+    #     existing_codebase_id,
+    #     run_id,
+    #     True,
+    #     None,
+    #     codebase_id,
+    # )
+    #
+    # print("Diff flow complete for codebase: ", codebase_id)

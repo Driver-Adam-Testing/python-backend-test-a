@@ -46,12 +46,12 @@ class FolderTechDocTask(Task):
         source_content_id: uuid.UUID,
         load_persisted_results: bool,
     ) -> None:
-        self.node = node
         self.child_docs_tasks = child_docs_tasks
         self.codebase_name = codebase_name
         self.source_content_id = source_content_id
         super().__init__(
             task_name=task_name,
+            node=node,
             dependencies=child_docs_tasks,
             load_persisted_results=load_persisted_results,
         )
@@ -169,9 +169,6 @@ class FolderTechDocTask(Task):
                 ]  # Must be json serializable... TODO
         return {"content_ids": content_ids}
 
-    def hashable_attrs(self) -> tuple:
-        return (self.task_name, self.node, self.codebase_name, self.dependencies)
-
     def recoverable_errors(self) -> set[type[Exception]]:
         return {OpenAIError}
 
@@ -188,10 +185,11 @@ class FileTechDocTask(Task):
     ) -> None:
         self.codebase_name = codebase_name
         self.source_code = source_code
-        self.node = node
         self.source_content_id = source_content_id
         super().__init__(
-            task_name=task_name, load_persisted_results=load_persisted_results
+            task_name=task_name,
+            node=node,
+            load_persisted_results=load_persisted_results,
         )
 
     async def run_implementation(
@@ -329,9 +327,6 @@ class FileTechDocTask(Task):
                 ]  # Make json serializable for result writer by converting to string... TODO
         return {"content_ids": content_ids}
 
-    def hashable_attrs(self) -> tuple:
-        return (self.task_name, self.node, self.codebase_name, self.source_code)
-
     def recoverable_errors(self) -> set[type[Exception]]:
         return {OpenAIError}
 
@@ -346,12 +341,12 @@ class SymbolsTask(Task):
         source_content_id: uuid.UUID,
         load_persisted_results: bool,
     ) -> None:
-        self.node = node
         self.source_code = source_code
         self.tech_docs_task = tech_docs_task
         self.source_content_id = source_content_id
         super().__init__(
             task_name=task_name,
+            node=node,
             dependencies=(tech_docs_task,),
             load_persisted_results=load_persisted_results,
         )
@@ -440,15 +435,6 @@ class SymbolsTask(Task):
                 ]  # Must be json serializable... TODO
         return {"content_ids": content_ids}
 
-    def hashable_attrs(self) -> tuple:
-        # Put class name in here too
-        return (
-            self.task_name,
-            self.node,
-            self.source_code,
-            self.dependencies,
-        )
-
     def recoverable_errors(self) -> set[type[Exception]]:
         return set()
 
@@ -456,6 +442,7 @@ class SymbolsTask(Task):
 class TopLevelDocsTask(Task):
     def __init__(
         self,
+        node: LiteNode,
         codebase_name: str,
         ordered_tech_docs_tasks: tuple[TechDocsTask],
         source_content_id: uuid.UUID,
@@ -465,6 +452,7 @@ class TopLevelDocsTask(Task):
         self.source_content_id = source_content_id
         super().__init__(
             task_name=f"TopLevelTechDocsTask of {codebase_name}",
+            node=node,
             dependencies=ordered_tech_docs_tasks,
             load_persisted_results=load_persisted_results,
         )
@@ -565,9 +553,6 @@ class TopLevelDocsTask(Task):
                 ]  # Must be json serializable... TODO
         return {"content_ids": content_ids}
 
-    def hashable_attrs(self) -> tuple:
-        return (self.task_name, self.codebase_name, self.dependencies)
-
     def recoverable_errors(self) -> set[type[Exception]]:
         return {OpenAIError}
 
@@ -575,6 +560,7 @@ class TopLevelDocsTask(Task):
 class EmbeddingTask(Task):
     def __init__(
         self,
+        node: LiteNode,
         task_name: str,
         load_persisted_results: bool,
         source_code: str | None = None,
@@ -593,6 +579,7 @@ class EmbeddingTask(Task):
         deduped_tasks = tuple(set(dependent_tasks))
         super().__init__(
             task_name=task_name,
+            node=node,
             dependencies=deduped_tasks,
             load_persisted_results=load_persisted_results,
         )
@@ -732,9 +719,6 @@ class EmbeddingTask(Task):
                 ]
             )
         return chunks
-
-    def hashable_attrs(self) -> tuple:
-        return (self.task_name, self.dependencies)
 
     def recoverable_errors(self) -> set[type[Exception]]:
         return {OpenAIError}

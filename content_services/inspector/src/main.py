@@ -292,6 +292,7 @@ async def inspect_files(
                 load_persisted_results=load_persisted_results,
             )
             folder_embedding_task = EmbeddingTask(
+                node=node,
                 task_name=f"Embedding TechDoc (Folder) {node.root_rel_path}",
                 dependent_tasks=[folder_tech_docs_task],
                 load_persisted_results=load_persisted_results,
@@ -300,6 +301,7 @@ async def inspect_files(
         else:  # File
             source_code = get_file_content(codebase_root / lite_node.root_rel_path)
             source_file_embedding_task = EmbeddingTask(
+                node=node,
                 task_name=f"Embedding Source Code {node.root_rel_path}",
                 source_code=source_code,
                 source_content_id=sc_id,
@@ -315,6 +317,7 @@ async def inspect_files(
                 load_persisted_results=load_persisted_results,
             )
             file_tech_docs_embedding_task = EmbeddingTask(
+                node=node,
                 task_name=f"Embedding TechDoc (File) {node.root_rel_path}",
                 source_code=None,
                 source_content_id=None,
@@ -330,6 +333,7 @@ async def inspect_files(
                 load_persisted_results=load_persisted_results,
             )
             symbols_embedding_task = EmbeddingTask(
+                node=node,
                 task_name=f"Embedding Symbols {node.root_rel_path}",
                 source_code=None,
                 source_content_id=None,
@@ -360,12 +364,14 @@ async def inspect_files(
             t for t in tasks if isinstance(t, FileTechDocTask | FolderTechDocTask)
         )
         top_level_tech_docs_task = TopLevelDocsTask(
+            node=root_node,
             codebase_name=codebase_name,
             ordered_tech_docs_tasks=all_tech_docs_tasks,  # TODO where does source content go here?
             source_content_id=sc_codebase_id,
             load_persisted_results=load_persisted_results,
         )
         top_level_embedding_task = EmbeddingTask(
+            node=root_node,
             task_name="Embedding TopLevelDocs",
             dependent_tasks=[top_level_tech_docs_task],
             load_persisted_results=load_persisted_results,

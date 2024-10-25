@@ -41,8 +41,12 @@ class LiteNode:
     root_rel_path: Path
     status: NodeStatus = NodeStatus.UNMODIFIED
 
-    def __hash__(self):
-        return hash(self.root_rel_path) + hash(self.kind)
+    @property
+    def stable_id(self) -> str:
+        return f"{self.kind}_{self.root_rel_path}"
+
+    def __hash__(self) -> int:
+        return hash(self.stable_id)
 
     def __str__(self) -> str:
         return f"{self.root_rel_path}"
@@ -87,7 +91,7 @@ class Node(LiteNode):
 
     # TODO: this is funny because the node is not frozen in state.
     # Revisit this. Maybe we need a lite node that keeps its children?
-    def __hash__(self):
+    def __hash__(self) -> int:
         return super().__hash__()
 
 
@@ -97,7 +101,7 @@ class FileTreeDag:
     root_abs_path: Path
     node_rel_path_to_content_hash: dict[str, str] = field(default_factory=dict)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if not self.root_abs_path.exists():
             raise FileNotFoundError(
                 f"Codebase root path {self.root_abs_path} does not exist."
@@ -105,7 +109,7 @@ class FileTreeDag:
         self.root = Node(kind=NodeKind.ROOT_FOLDER, root_rel_path=Path(""), parent=None)
 
     def add_file(
-        self, path: Path, change_status=True, file_hash: str | None = None
+        self, path: Path, change_status: bool = True, file_hash: str | None = None
     ) -> None:
         if not path.exists():
             raise FileNotFoundError(f"Path {path} does not exist.")
@@ -150,9 +154,9 @@ class FileTreeDag:
 
         # If provided a hash for a file (leaf node), store it
         if file_hash:
-            self.node_rel_path_to_content_hash[
-                current.root_rel_path.as_posix()
-            ] = file_hash
+            self.node_rel_path_to_content_hash[current.root_rel_path.as_posix()] = (
+                file_hash
+            )
 
         # When a new node is added, ensure upstream nodes are correctly marked
         if node_added and change_status:
@@ -289,7 +293,7 @@ class FileTreeDag:
     ) -> list[Node]:
         sorter = graphlib.TopologicalSorter()
 
-        def add_nodes_and_edges(node: Node):
+        def add_nodes_and_edges(node: Node) -> None:
             sorter.add(node)
             for child in node.children.values():
                 sorter.add(node, child)
@@ -313,7 +317,7 @@ class FileTreeDag:
 
         return sorted_nodes
 
-    def compute_diff(self, old: "FileTreeDag"):
+    def compute_diff(self, old: "FileTreeDag") -> "FileTreeDag":
         # This DAG has annotations of the changes required to go from `old` to `self` state
         diff_dag = copy.deepcopy(old)
         # We change the path to the root path of self so that the
@@ -337,11 +341,7 @@ class FileTreeDag:
                     diff_dag.add_file(diff_dag.root_abs_path / path, change_status=True)
             else:
                 old_node = old_nodes[path]
-                if self_node.kind != old_node.kind:
-                    diff_dag.mark_as_modified(
-                        diff_dag.root_abs_path / path, include_upstream=True
-                    )
-                elif (
+                if self_node.kind != old_node.kind or (
                     self_node.kind == NodeKind.FILE
                     and self.node_rel_path_to_content_hash[path]
                     != old.node_rel_path_to_content_hash[
@@ -395,5 +395,5 @@ class FileTreeDag:
     #
     #     dot.render(str(path.absolute()), format="pdf", view=False)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self.root)

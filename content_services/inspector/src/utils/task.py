@@ -2,7 +2,6 @@ import abc
 import asyncio
 import hashlib
 import json
-import pickle
 from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
@@ -13,6 +12,8 @@ from typing import Any
 import boto3
 import modal.exception
 from botocore.exceptions import NoCredentialsError
+
+from utils.dag import LiteNode
 
 TaskName = str
 
@@ -161,19 +162,10 @@ class S3TaskResultPersistence(TaskResultPersistence):
             print(f"Error clearing objects in S3: {e}")
 
 
-def hash_tuple(t: tuple) -> int:
-    """
-    Hash a tuple of hashable objects.
-    """
-    serialized_tuple = pickle.dumps(t)
-    hash_object = hashlib.sha256()
-    hash_object.update(serialized_tuple)
-    return int(hash_object.hexdigest(), 16)
-
-
 @dataclass
 class Task(abc.ABC):
     task_name: str
+    node: LiteNode
     load_persisted_results: bool = False
     dependencies: tuple[type["Task"], ...] = field(default_factory=tuple)
     _base_recoverable_errors: set = field(init=False, repr=False)
@@ -228,21 +220,29 @@ class Task(abc.ABC):
                 return True
         return False
 
-    @abstractmethod
-    def hashable_attrs(self) -> tuple:
-        raise NotImplementedError
+    # TODO this could get really long, but does it matter?
+    @property
+    def stable_id(self) -> str:
+        id_str = f"{self.__class__.__name__}_{self.node.stable_id}"
+        if self.dependencies:
+            dep_str = "_".join([dep.stable_id for dep in self.dependencies])
+            id_str += f"_{dep_str}"
+        return id_str
+
+    @property
+    def hashed_stable_id(self) -> str:
+        return hashlib.sha256(self.stable_id.encode()).hexdigest()
 
     def __hash__(self) -> int:
-        """
-        Hash the task based on its attributes. Note that we use `hash_tuple`, which gives a reproducible hash
-        across Python processes, unlike the built-in `hash` function.
-        """
-        return hash_tuple(self.hashable_attrs())
+        return hash(self.stable_id)
 
     def __eq__(self, other: "Task") -> bool:
         if isinstance(other, Task):
-            return self.hashable_attrs() == other.hashable_attrs()
+            return hash(self) == hash(other)
         return False
+
+    def __str__(self) -> str:
+        return f"{self.__class__.__name__} for node: {self.node.root_rel_path}, node_status: {self.node.status}"
 
 
 @dataclass
@@ -307,7 +307,7 @@ class TaskManager:
         flattened_tasks = self.tasks
         print("Total tasks:", len(flattened_tasks))
         for task in flattened_tasks:
-            task_hash_str = str(hash(task))
+            task_hash_str = task.hashed_stable_id
             if task.load_persisted_results and task_hash_str in persisted_results:
                 print(f"Loaded results for task '{task.task_name}' from storage")
                 self.task_results[task] = persisted_results[task_hash_str]
@@ -380,7 +380,7 @@ class TaskManager:
         )
         self.task_io_results[task] = io_result
 
-        task_hash_str = str(hash(task))
+        task_hash_str = task.hashed_stable_id
         await self.write_queue.put((task_hash_str, result))
 
         return result

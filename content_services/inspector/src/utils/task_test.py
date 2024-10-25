@@ -1,24 +1,26 @@
 import asyncio
+import json
 import time
-
-import pytest
+from collections.abc import Generator
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import json
+from typing import Any
+
 import boto3
+import pytest
 from moto import mock_aws
 
 from utils.task import (
     LocalDiskTaskResultPersistence,
     S3TaskResultPersistence,
     Task,
-    TaskResult,
     TaskManager,
+    TaskResult,
 )
 
 
 class MockTaskResult:
-    def __init__(self, data: dict):
+    def __init__(self, data: dict[str, Any]) -> None:
         self.data = data
 
     def to_json(self) -> str:
@@ -32,15 +34,17 @@ class MockTaskResult:
 
 class TestLocalDiskTaskResultPersistence:
     @pytest.fixture
-    def temp_dir(self):
+    def temp_dir(self) -> Generator[Path, None, None]:
         with TemporaryDirectory() as tmpdirname:
             yield Path(tmpdirname)
 
     @pytest.fixture
-    def mock_task_result(self, monkeypatch):
+    def mock_task_result(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr("utils.task.TaskResult", MockTaskResult)
 
-    def test_save_and_load_task_result(self, temp_dir, mock_task_result):
+    def test_save_and_load_task_result(
+        self, temp_dir: Path, mock_task_result: None
+    ) -> None:
         persistence = LocalDiskTaskResultPersistence(base_dir=temp_dir)
         run_id = "test_run"
         task_id = "test_task"
@@ -52,7 +56,9 @@ class TestLocalDiskTaskResultPersistence:
         assert loaded_result is not None
         assert loaded_result.data == result.data
 
-    def test_load_nonexistent_task_result(self, temp_dir, mock_task_result):
+    def test_load_nonexistent_task_result(
+        self, temp_dir: Path, mock_task_result: None
+    ) -> None:
         persistence = LocalDiskTaskResultPersistence(base_dir=temp_dir)
         run_id = "test_run"
         task_id = "nonexistent_task"
@@ -61,7 +67,7 @@ class TestLocalDiskTaskResultPersistence:
 
         assert result is None
 
-    def test_load_all_results(self, temp_dir, mock_task_result):
+    def test_load_all_results(self, temp_dir: Path, mock_task_result: None) -> None:
         persistence = LocalDiskTaskResultPersistence(base_dir=temp_dir)
         run_id = "test_run"
         results = {
@@ -79,7 +85,7 @@ class TestLocalDiskTaskResultPersistence:
             assert task_id in loaded_results
             assert loaded_results[task_id].data == result.data
 
-    def test_clear_all_results(self, temp_dir, mock_task_result):
+    def test_clear_all_results(self, temp_dir: Path, mock_task_result: None) -> None:
         persistence = LocalDiskTaskResultPersistence(base_dir=temp_dir)
         run_id = "test_run"
         results = {
@@ -100,7 +106,7 @@ class TestLocalDiskTaskResultPersistence:
 
 class TestS3TaskResultPersistence:
     @pytest.fixture
-    def s3_bucket(self):
+    def s3_bucket(self) -> Generator[str, None, None]:
         with mock_aws():
             s3_client = boto3.client("s3")
             bucket_name = "test-bucket"
@@ -108,10 +114,12 @@ class TestS3TaskResultPersistence:
             yield bucket_name
 
     @pytest.fixture
-    def mock_task_result(self, monkeypatch):
+    def mock_task_result(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr("utils.task.TaskResult", MockTaskResult)
 
-    def test_save_and_load_task_result(self, s3_bucket, mock_task_result):
+    def test_save_and_load_task_result(
+        self, s3_bucket: str, mock_task_result: None
+    ) -> None:
         persistence = S3TaskResultPersistence(bucket_name=s3_bucket)
         run_id = "test_run"
         task_id = "test_task"
@@ -123,7 +131,9 @@ class TestS3TaskResultPersistence:
         assert loaded_result is not None
         assert loaded_result.data == result.data
 
-    def test_load_nonexistent_task_result(self, s3_bucket, mock_task_result):
+    def test_load_nonexistent_task_result(
+        self, s3_bucket: str, mock_task_result: None
+    ) -> None:
         persistence = S3TaskResultPersistence(bucket_name=s3_bucket)
         run_id = "test_run"
         task_id = "nonexistent_task"
@@ -132,7 +142,7 @@ class TestS3TaskResultPersistence:
 
         assert result is None
 
-    def test_load_all_results(self, s3_bucket, mock_task_result):
+    def test_load_all_results(self, s3_bucket: str, mock_task_result: None) -> None:
         persistence = S3TaskResultPersistence(bucket_name=s3_bucket)
         run_id = "test_run"
         results = {
@@ -150,7 +160,7 @@ class TestS3TaskResultPersistence:
             assert task_id in loaded_results
             assert loaded_results[task_id].data == result.data
 
-    def test_clear_all_results(self, s3_bucket, mock_task_result):
+    def test_clear_all_results(self, s3_bucket: str, mock_task_result: None) -> None:
         persistence = S3TaskResultPersistence(bucket_name=s3_bucket)
         run_id = "test_run"
         results = {
@@ -168,13 +178,20 @@ class TestS3TaskResultPersistence:
 
 
 class SleepTask(Task):
-    def __init__(self, task_name: str, sleep_time: float, dependencies: tuple[Task] | None = None):
+    def __init__(
+        self,
+        task_name: str,
+        sleep_time: float,
+        dependencies: tuple[Task, ...] | None = None,
+    ) -> None:
         dependencies = dependencies or tuple()
 
         super().__init__(task_name=task_name, dependencies=dependencies)
         self.sleep_time = sleep_time
 
-    async def run_implementation(self, dependent_results: dict["Task", TaskResult]) -> dict[str, any]:
+    async def run_implementation(
+        self, dependent_results: dict[Task, TaskResult]
+    ) -> dict[str, Any]:
         start_time = time.time()
         await asyncio.sleep(self.sleep_time)
         end_time = time.time()
@@ -183,13 +200,10 @@ class SleepTask(Task):
     def recoverable_errors(self) -> set[type[Exception]]:
         return set()
 
-    def hashable_attrs(self) -> tuple:
-        return (self.task_name, self.sleep_time)
-
 
 class TestTaskManager:
     @pytest.fixture
-    def setup_tasks(self):
+    def setup_tasks(self) -> tuple[TaskManager, Task, Task, Task]:
         task1 = SleepTask(task_name="task1", sleep_time=1)
         task2 = SleepTask(task_name="task2", sleep_time=1.5, dependencies=(task1,))
         task3 = SleepTask(task_name="task3", sleep_time=1, dependencies=(task1,))
@@ -200,7 +214,9 @@ class TestTaskManager:
         return task_manager, task1, task2, task3
 
     @pytest.mark.asyncio
-    async def test_task_dependency_basic(self, setup_tasks):
+    async def test_task_dependency_basic(
+        self, setup_tasks: tuple[TaskManager, Task, Task, Task]
+    ) -> None:
         task_manager, task1, task2, task3 = setup_tasks
 
         global_start_time = time.time()
@@ -236,7 +252,6 @@ class TestTaskManager:
 
         assert task2_completion_time >= global_start_time + 2
         assert task3_completion_time >= global_start_time + 2
-
 
     # Test rerunning will rerun tasks that ended in recoverable error but not the others!
 

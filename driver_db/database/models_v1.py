@@ -1,17 +1,28 @@
 import enum
-import functools
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
 import sqlalchemy.dialects.postgresql
 import strawberry
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import Column, DateTime, Enum, Integer, UniqueConstraint, func, text
+from sqlalchemy import (
+    Column,
+    Computed,
+    DateTime,
+    Enum,
+    Index,
+    Integer,
+    UniqueConstraint,
+    func,
+    text,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as SaUuid
 from sqlmodel import JSON, Field, Relationship, SQLModel
+
+from .custom_types import TSVector
 
 
 # TODO remove in favor of derived content types once new embeddings created
@@ -23,65 +34,6 @@ class ContentType(str, enum.Enum):
     CODE_SYMBOL = "CODE_SYMBOL"
     PDF_SUMMARY = "PDF_SUMMARY"
     UNKNOWN = "UNKNOWN"
-
-
-class ContentMetadata(SQLModel, table=True):  # type: ignore
-    created_at: None | datetime = Field(
-        sa_column=Column(
-            DateTime(timezone=True), server_default=func.now(), nullable=False
-        ),
-        default=None,
-    )
-    updated_at: None | datetime = Field(
-        sa_column=Column(
-            DateTime(timezone=True),
-            server_default=func.now(),
-            onupdate=func.now(),
-            nullable=False,
-        ),
-    )
-    id: UUID | None = Field(default_factory=uuid.uuid4, primary_key=True)
-    workspace_id: UUID = Field(index=True)
-    codebase_id: UUID | None = Field(default=None, nullable=True, index=True)
-    content_type: ContentType = Field(Enum(ContentType), index=True)
-    relative_path: str | None = Field(default=None, nullable=True, index=True)
-    misc_metadata: dict = Field(default={}, sa_column=Column(JSON, nullable=False))  # type: ignore
-    chunks: list["Chunk"] = Relationship(back_populates="content_metadata")
-
-
-# TODO deprecate once all embeddings are in ChunkAndEmbedding
-class Chunk(SQLModel, table=True):  # type: ignore
-    # TODO Note: these timestamps weren't updated to match the others because this
-    # table is deprecated soon and there were tons of rows to populate.
-    created_at: datetime = Field(
-        default=None,
-        sa_column=Column(
-            DateTime(timezone=True),
-            default=functools.partial(datetime.now, tz=timezone.utc),
-            nullable=True,
-        ),
-    )
-    updated_at: datetime = Field(
-        default=None,
-        sa_column=Column(
-            DateTime(timezone=True),
-            onupdate=functools.partial(datetime.now, tz=timezone.utc),
-            nullable=True,
-        ),
-    )
-    id: UUID | None = Field(default_factory=uuid.uuid4, primary_key=True)
-    content_metadata_id: UUID = Field(
-        foreign_key="contentmetadata.id", nullable=False, index=True
-    )
-    content_metadata: ContentMetadata = Relationship(back_populates="chunks")
-    text: str
-    # Text Embeddings are actually indexed but it's not reflected in the model.py because it's using ivfflat
-    text_embedding_3_small: list[float] = Field(
-        sa_column=Column(Vector(1536), nullable=True)
-    )
-    chunk_number: int | None
-    token_count: int | None
-    line_number: int | None
 
 
 class RuntimeLogAgentInstance(SQLModel, table=True):  # type: ignore
@@ -100,16 +52,13 @@ class RuntimeLogAgentInstance(SQLModel, table=True):  # type: ignore
         ),
     )
     id: UUID | None = Field(default_factory=uuid.uuid4, primary_key=True)
-    workspace_id: str
+    workspace_id: str | None
     codebase_id: str | None
     model: str
     messages: list["RuntimeLogAgentMessage"] = Relationship(
         back_populates="agent_instance"
     )
-    errors: list["RuntimeLogAgentError"] = Relationship(back_populates="agent_instance")
-    content_retrievals: list["RuntimeLogContentRetrieval"] = Relationship(
-        back_populates="agent_instance"
-    )
+    organization_id: str | None
 
 
 class RuntimeLogAgentMessage(SQLModel, table=True):  # type: ignore
@@ -128,53 +77,6 @@ class RuntimeLogAgentMessage(SQLModel, table=True):  # type: ignore
     agent_instance: RuntimeLogAgentInstance = Relationship(back_populates="messages")
 
 
-class RuntimeLogAgentError(SQLModel, table=True):  # type: ignore
-    created_at: None | datetime = Field(
-        sa_column=Column(
-            DateTime(timezone=True), server_default=func.now(), nullable=False
-        ),
-        default=None,
-    )
-    id: UUID | None = Field(default_factory=uuid.uuid4, primary_key=True)
-    agent_instance_id: UUID = Field(
-        foreign_key="runtimelogagentinstance.id", nullable=False
-    )
-    agent_instance: RuntimeLogAgentInstance = Relationship(back_populates="errors")
-    error: str
-
-
-class RuntimeLogContentRetrieval(SQLModel, table=True):  # type: ignore
-    created_at: None | datetime = Field(
-        sa_column=Column(
-            DateTime(timezone=True), server_default=func.now(), nullable=False
-        ),
-        default=None,
-    )
-    id: UUID | None = Field(default_factory=uuid.uuid4, primary_key=True)
-    agent_instance_id: UUID = Field(
-        foreign_key="runtimelogagentinstance.id", nullable=False
-    )
-    agent_instance: RuntimeLogAgentInstance = Relationship(
-        back_populates="content_retrievals"
-    )
-    chunk_id: UUID = Field(foreign_key="chunk.id", nullable=False)
-
-
-# class RuntimeLogOperation(SQLModel, table=True):  # type: ignore
-# TODO this need to match the other created_at columns!
-#     created_at: datetime = Field(
-#         default=None,
-#         sa_column=Column(
-#             DateTime(timezone=True),
-#             default=functools.partial(datetime.now, tz=timezone.utc),
-#             nullable=True,
-#         ),
-#     )
-#     id: UUID | None = Field(default_factory=uuid.uuid4, primary_key=True)
-#     name: str
-#     request: dict = Field(default={}, sa_column=Column(JSON, nullable=True))
-
-
 @strawberry.enum
 class Enum_Derived_Content_Status(str, enum.Enum):
     generating = "generating"
@@ -188,6 +90,17 @@ class Enum_Codebase_Status(str, enum.Enum):
     processing_complete = "processing-complete"
     processing_error = "processing-error"
     codebase_rejected = "codebase-rejected"
+
+    def into_dc_status(self) -> Enum_Derived_Content_Status:
+        match self:
+            case Enum_Codebase_Status.processing:
+                return Enum_Derived_Content_Status.generating
+            case Enum_Codebase_Status.processing_complete:
+                return Enum_Derived_Content_Status.generation_complete
+            case Enum_Codebase_Status.processing_error:
+                return Enum_Derived_Content_Status.generation_error
+            case _:
+                raise ValueError(f"No valid mapping for status: {self}")
 
 
 class Workspace(SQLModel, table=True):  # type: ignore
@@ -314,7 +227,7 @@ class TagContent(SQLModel, table=True):
     tag_id: None | uuid.UUID = Field(
         default=None, foreign_key="tags.id", primary_key=True
     )
-    include: None | bool = Field(default=None)
+    include: bool
     content_id: None | uuid.UUID = Field(
         default=None, foreign_key="derived_contents.id", primary_key=True
     )
@@ -335,7 +248,7 @@ class DocumentSource(SQLModel, table=True):
     document_id: None | uuid.UUID = Field(
         default=None, foreign_key="derived_contents.id", primary_key=True
     )
-    include: None | bool = Field(default=None)
+    include: bool
     source_id: None | uuid.UUID = Field(
         default=None, foreign_key="derived_contents.id", primary_key=True
     )
@@ -381,6 +294,9 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
         sa_column=Column(sqlalchemy.Text, nullable=False, index=True)
     )
     content: None | str = Field(
+        sa_column=Column(sqlalchemy.Text, nullable=True), default=None
+    )
+    content_name: None | str = Field(
         sa_column=Column(sqlalchemy.Text, nullable=True), default=None
     )
     misc_metadata: dict | None = Field(  # type: ignore
@@ -437,10 +353,9 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
     tag_links: list["TagContent"] = Relationship(back_populates="content")
     tags: list["Tag"] = Relationship(
         back_populates=None,
-        sa_relationship_kwargs={
-            "secondary": "tags_contents","viewonly": True
-        },
+        sa_relationship_kwargs={"secondary": "tags_contents", "viewonly": True},
     )
+
 
 class Tag(SQLModel, table=True):  # type: ignore
     __tablename__ = "tags"
@@ -494,16 +409,6 @@ class Tag(SQLModel, table=True):  # type: ignore
         back_populates="tag",
         sa_relationship_kwargs={"foreign_keys": "TagContent.tag_id"},
     )
-    contents: list["DerivedContent"] = Relationship(
-        back_populates=None,
-        sa_relationship_kwargs={
-            "secondary": "tags_contents",
-            "viewonly": True
-        },
-    )
-    derived_contents: list["DerivedContent"] = Relationship(
-        back_populates="tags", link_model=TagContent
-    )
 
 
 class ChunkAndEmbedding(SQLModel, table=True):  # type: ignore
@@ -537,3 +442,13 @@ class ChunkAndEmbedding(SQLModel, table=True):  # type: ignore
         ),
     )
 
+    __ts_vector__: any = Column(
+        "__ts_vector__",
+        TSVector(),
+        Computed("to_tsvector('english', text)", persisted=True),
+    )
+    __table_args__ = (
+        Index(
+            "ix_chunkandembedding___ts_vector__", __ts_vector__, postgresql_using="gin"
+        ),
+    )

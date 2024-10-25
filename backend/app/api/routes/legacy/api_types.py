@@ -2,14 +2,13 @@ from datetime import datetime
 from uuid import UUID
 
 import strawberry
+from app.api.routes.legacy.scalars import ID
 from database.models_v1 import (
     Codebase,
     DerivedContent,
     DerivedContentType,
     Workspace,
 )
-
-from app.api.routes.legacy.scalars import ID
 
 
 @strawberry.input
@@ -32,20 +31,6 @@ class RuntimeLogAgentMessageQuery:
     message: dict | None = None
     order: int | None = None
     agent_instance_id: UUID | None = None
-
-
-@strawberry.input
-class RuntimeLogAgentErrorQuery:
-    id: UUID | None = None
-    agent_instance_id: UUID | None = None
-    error: str | None = None
-
-
-@strawberry.input
-class RuntimeLogContentRetrievalQuery:
-    id: UUID | None = None
-    agent_instance_id: UUID | None = None
-    chunk_id: UUID | None = None
 
 
 @strawberry.input

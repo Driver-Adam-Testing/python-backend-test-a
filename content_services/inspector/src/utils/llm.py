@@ -2,8 +2,7 @@
 import logging
 
 import tiktoken
-
-from . import decorators
+from shared.utils import decorators
 
 logger = logging.getLogger(__name__)
 

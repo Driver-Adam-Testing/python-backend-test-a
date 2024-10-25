@@ -12,9 +12,11 @@ from app.schemas.content_schema import (
     BatchContentSourceAssociationResponse,
     BatchDeleteDocumentSourceResponse,
     ContentSourceResponse,
+    ContentTagsResponse,
     CreateContentRequest,
     DeleteContentSourcesRequest,
     DeleteDocumentSourceResponse,
+    DownloadContentResponse,
     ListContentInput,
     ListContentResults,
     ListContentTypesInput,
@@ -36,6 +38,8 @@ def list_content(
     offset: int | None = 0,
     content_type_id: Annotated[list[str] | None, Query()] = None,
     content_type_name: Annotated[list[str] | None, Query()] = None,
+    source_content_id: Annotated[list[str] | None, Query()] = None,
+    order: int | None = None,
     sort_by: str | None = None,
     sort_direction: str | None = "ASC",
     status: str | None = None,
@@ -52,6 +56,8 @@ def list_content(
     - limit: Maximum number of items to return
     - offset: Number of items to skip
     - content_type_id: List of content type IDs to filter by
+    - source_content_id: List of source content IDs to filter by
+    - order: list of order column values to filter by
     - content_type_name: List of content type names to filter by
     - sort_by: Field to sort by
     - sort_direction: Direction to sort (ASC or DESC)
@@ -71,6 +77,8 @@ def list_content(
             offset=offset,
             text=text,
             content_type_id=content_type_id,
+            source_content_id=source_content_id,
+            order=order,
             content_type_name=content_type_name,
             sort_by=sort_by,
             sort_direction=sort_direction,
@@ -136,6 +144,30 @@ def get_content_by_id(
     """
     content_service = ContentService(session)
     return content_service.get_content_by_id(content_id, user.organization_id)
+
+
+@router.get(
+    "/{content_id}/download",
+    summary="Get download URL from S3 by ID",
+)
+def get_download_content_by_id(
+    session: CurrentSession,
+    user: CurrentUser,
+    content_id: UUID,
+) -> DownloadContentResponse:
+    """
+    Get download URL from S3 by ID
+
+    Parameters:
+    - session: Current session object
+    - user: Current user object
+    - content_id: UUID of the content
+
+    Returns:
+    - DerivedContent: Content details
+    """
+    content_service = ContentService(session)
+    return content_service.get_content_download_url(content_id, user.organization_id)
 
 
 @router.get(
@@ -217,7 +249,7 @@ def batch_associate_sources(
 
 @router.post(
     "/",
-    summary="Create a blank application note.",
+    summary="Create a blank application note or template.",
 )
 def create_blank_document(
     session: CurrentSession,
@@ -281,3 +313,55 @@ def batch_disassociate_sources(
                 )
             )
     return BatchDeleteDocumentSourceResponse(results=results)
+
+
+@router.put(
+    "/{content_id}/",
+    summary="Update content by ID",
+)
+def update_content(
+    session: CurrentSession,
+    user: CurrentUser,
+    content_id: UUID,
+    update_data: dict,  # TODO add validation
+) -> DerivedContent:
+    content_service = ContentService(session)
+    return content_service.edit_content(user.organization_id, content_id, update_data)
+
+
+@router.delete(
+    "/{content_id}/",
+    status_code=204,
+)
+def delete_content(
+    session: CurrentSession,
+    user: CurrentUser,
+    content_id: UUID,
+) -> None:
+    content_service = ContentService(session)
+    content_service.delete_content(user.organization_id, content_id)
+    return
+
+
+@router.get(
+    "/{content_id}/tags",
+    summary="Get tags associated with a content",
+)
+def get_content_tags(
+    session: CurrentSession,
+    user: CurrentUser,
+    content_id: UUID,
+) -> ContentTagsResponse:
+    """
+    Get tags associated with a content.
+
+    Parameters:
+    - session: Current session object
+    - user: Current user object
+    - content_id: UUID of the content
+
+    Returns:
+    - ContentTagsResponse: Response containing the list of tags associated with the content
+    """
+    content_service = ContentService(session)
+    return content_service.get_content_tags(content_id, user.organization_id)

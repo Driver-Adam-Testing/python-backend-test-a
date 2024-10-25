@@ -36,7 +36,8 @@ jobs:
           python-version: "3.12"
       - name: Install Poetry
         uses: snok/install-poetry@v1
-      - run: poetry install --no-root
+      - name: Install dependencies without virtualenv
+        run: poetry install --no-root
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -45,7 +46,7 @@ jobs:
       - name: CDK Deploy
         env:
           DEPLOYMENT_ENVIRONMENT: production
-        run: npx cdk deploy --require-approval never
+        run: poetry run npx cdk deploy --require-approval never
       - name: Deploy Codebase Onboarding
         working-directory: content_services/onboarding
         env:
@@ -67,8 +68,15 @@ jobs:
           MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
           MODAL_ENV: ${{ vars.MODAL_ENV }}
         run: poetry install --no-root && poetry run modal deploy --env=$MODAL_ENV --tag=${GITHUB_SHA::8} src/main.py
-      - name: Deploy Comprehender
-        working-directory: content_services/comprehender
+      # - name: Deploy Comprehender
+      #   working-directory: content_services/comprehender
+      #   env:
+      #     MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+      #     MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+      #     MODAL_ENV: ${{ vars.MODAL_ENV }}
+      #   run: poetry install --no-root && poetry run modal deploy --env=$MODAL_ENV --tag=${GITHUB_SHA::8} src/main.py
+      - name: Deploy Agent
+        working-directory: content_services/agent
         env:
           MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
           MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}

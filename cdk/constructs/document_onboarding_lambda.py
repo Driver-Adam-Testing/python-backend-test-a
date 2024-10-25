@@ -55,6 +55,7 @@ class DocumentOnboardingLambda(Construct):
             index="src/main.py",
             environment={
                 "ENVIRONMENT": params.environment,
+                "LOG_LEVEL": "INFO",
                 "CLIENT_ID_SECRET": client_id_secret.secret_name,
                 "CLIENT_SECRET_SECRET": client_secret_secret.secret_name,
                 "API_URL": params.api_url,

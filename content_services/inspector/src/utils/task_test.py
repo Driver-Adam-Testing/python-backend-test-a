@@ -10,6 +10,7 @@ import boto3
 import pytest
 from moto import mock_aws
 
+from utils.dag import LiteNode, NodeKind
 from utils.task import (
     LocalDiskTaskResultPersistence,
     S3TaskResultPersistence,
@@ -186,8 +187,17 @@ class SleepTask(Task):
     ) -> None:
         dependencies = dependencies or tuple()
 
-        super().__init__(task_name=task_name, dependencies=dependencies)
+        # NOTE: we must give unique nodes to the tasks because our hasing scheme
+        # assumes that nodes will not have multiple tasks of the same name with the same dependencies.
+        # TODO: revist in the future if needed.
+        super().__init__(
+            task_name=task_name,
+            node=LiteNode(kind=NodeKind.FILE, root_rel_path=Path(task_name)),
+            dependencies=dependencies,
+        )
         self.sleep_time = sleep_time
+
+        self.captured_io_results = None  # Captures `dependent_io_results` in `post_run_io` for assertions about what was injected
 
     async def run_implementation(
         self, dependent_results: dict[Task, TaskResult]
@@ -199,6 +209,15 @@ class SleepTask(Task):
 
     def recoverable_errors(self) -> set[type[Exception]]:
         return set()
+
+    async def post_run_io(
+        self,
+        task_result: TaskResult,
+        dependent_io_results: dict["Task", dict[str, any]],
+    ) -> dict[str, any]:
+        # Store the dependent IO results for validation in the test
+        self.captured_io_results = dependent_io_results
+        return {"io_completed": True}
 
 
 class TestTaskManager:
@@ -252,6 +271,30 @@ class TestTaskManager:
 
         assert task2_completion_time >= global_start_time + 2
         assert task3_completion_time >= global_start_time + 2
+
+    @pytest.mark.asyncio
+    async def test_post_run_io_injection(
+        self, setup_tasks: tuple[TaskManager, Task, Task, Task]
+    ) -> None:
+        """
+        Tests that `post_run_io` is called and IO results are injected correctly
+        from any dependencies that have completed.
+        """
+        task_manager, task1, task2, task3 = setup_tasks
+
+        # Run the tasks to trigger `post_run_io`
+        await task_manager.run_tasks(run_id="test_run_io")
+
+        print(f"Task 1 IO Result: {task1.captured_io_results}")
+        print(f"Task 2 IO Result: {task2.captured_io_results}")
+        print(f"Task 3 IO Result: {task3.captured_io_results}")
+
+        # Ensure task1 has no captured IO results since it has no dependencies
+        assert task1.captured_io_results == dict()
+
+        # Validate that `post_run_io` was called and IO results were injected for dependencies
+        assert task2.captured_io_results == {task1: {"io_completed": True}}
+        assert task3.captured_io_results == {task1: {"io_completed": True}}
 
     # Test rerunning will rerun tasks that ended in recoverable error but not the others!
 

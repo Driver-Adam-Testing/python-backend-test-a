@@ -275,11 +275,14 @@ class FileTreeDag:
 
     def _remove_empty_parents(self, node: Node | None) -> None:
         """Recursively remove parent nodes if they have no children and are folders."""
+
+        # Stop immediately if this is the root node
+        if node is None or node.parent is None:
+            return
+
         while node and node.kind in {NodeKind.SUB_FOLDER, NodeKind.ROOT_FOLDER}:
             if node.children:
                 break
-            if node.parent is None:
-                break  # Stop if this is the root node
             parent = node.parent
             # Explicitly remove the empty folder node from its parent
             parent.remove_child(node.root_rel_path)

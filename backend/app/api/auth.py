@@ -1,4 +1,5 @@
 import json
+from collections.abc import Callable
 from typing import Annotated
 from urllib.request import urlopen
 
@@ -118,6 +119,7 @@ class M2M(BaseModel):
 
 
 def get_token_payload(request: Request) -> dict:
+    # The only way this is populated is after it has been validated
     return request.state.token_payload
 
 
@@ -125,7 +127,6 @@ def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     token_payload: dict = Depends(get_token_payload),
 ) -> User:
-    # Making this optional since some endpoints are called w/ M2M tokens
     if token_payload.get("userId") is not None:
         return User(**token_payload)
     return None
@@ -135,42 +136,30 @@ def get_current_m2m(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     token_payload: dict = Depends(get_token_payload),
 ) -> M2M:
-    # Making this optional since most endpoints are called w/ User tokens
     if token_payload.get("userId") is None:
         return M2M(**token_payload)
     return None
 
 
-def has_readonly_permission(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-    token: dict = Depends(get_token_payload),
-) -> True:
-    if "content:readonly" in token["permissions"]:
+def require_permission(permission: str) -> Callable[[dict], dict]:
+    def permission_dependency(
+        user: dict = Depends(get_current_user),
+        token_payload: dict = Depends(get_token_payload),
+    ) -> bool:
+        permissions = token_payload.get("permissions", [])
+        if permission not in permissions:
+            raise HTTPException(
+                status_code=403,
+                detail="Insufficient permissions",
+            )
         return True
-    raise HTTPException(status_code=403, detail="Insufficient permissions")
 
-
-def has_content_editor_permission(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-    token: dict = Depends(get_token_payload),
-) -> True:
-    if "content:edit" in token["permissions"]:
-        return True
-    raise HTTPException(status_code=403, detail="Insufficient permissions")
-
-
-def has_org_manage_permission(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-    token: dict = Depends(get_token_payload),
-) -> True:
-    if "organization:manage" in token["permissions"]:
-        return True
-    raise HTTPException(status_code=403, detail="Insufficient permissions")
+    return permission_dependency
 
 
 UserToken = Annotated[User, Depends(get_current_user)]
 M2MToken = Annotated[M2M, Depends(get_current_m2m)]
 
-OrgManagerPermission = Depends(has_org_manage_permission)
-ContentEditorPermission = Depends(has_content_editor_permission)
-ContentReadonlyPermission = Depends(has_readonly_permission)
+ContentEditorPermission = Depends(require_permission("content:edit"))
+ContentReadonlyPermission = Depends(require_permission("content:readonly"))
+OrgManagerPermission = Depends(require_permission("organization:manage"))

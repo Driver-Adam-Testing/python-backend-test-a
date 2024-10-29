@@ -9,7 +9,7 @@ from shared.interfaces.agents.pipeline_configuration import (
 from shared.interfaces.request import DriverModalBatchRequest
 from shared.interfaces.response import DriverModalResponse
 
-from app.api.auth import ContentReadonlyPermission, UserToken
+from app.api.auth import ContentEditorPermission, ContentReadonlyPermission, UserToken
 
 router = APIRouter()
 
@@ -17,7 +17,7 @@ router = APIRouter()
 @router.post(
     "/",
     summary="Start a modal instance of the execute Agent Sequence",
-    dependencies=[ContentReadonlyPermission],
+    dependencies=[ContentEditorPermission],
 )
 def execute_agent_sequence(user: UserToken, input: PipelineInput) -> PipelineResponse:
     from shared.pipelines.agents.execute import execute_sequence

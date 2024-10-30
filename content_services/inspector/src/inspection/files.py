@@ -31,9 +31,10 @@ from inspection.prompt_templates.files.templates.source_code_large_assembly impo
 from inspection.prompt_templates.files.templates.source_code_large_c import (
     SOURCE_CODE_LARGE_TEMPLATE_C,
 )
-from inspection.prompt_templates.files.templates.source_code_large_c_multi_prompt import (
-    SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_C,
-)
+
+# from inspection.prompt_templates.files.templates.source_code_large_c_multi_prompt import (
+#     SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_C,
+# )
 from inspection.prompt_templates.files.templates.source_code_large_cpp import (
     SOURCE_CODE_LARGE_TEMPLATE_CPP,
 )
@@ -84,10 +85,10 @@ from inspection.prompt_templates.files.templates.source_code_multi_context_defau
 from inspection.prompt_templates.files.templates.source_code_small_assembly import (
     SOURCE_CODE_SMALL_TEMPLATE_ASSEMBLY,
 )
-from inspection.prompt_templates.files.templates.source_code_small_c import (
-    SOURCE_CODE_SMALL_TEMPLATE_C,
-)
 
+# from inspection.prompt_templates.files.templates.source_code_small_c import (
+#     SOURCE_CODE_SMALL_TEMPLATE_C,
+# )
 # from inspection.prompt_templates.files.templates.source_code_small_cpp import (
 #     SOURCE_CODE_SMALL_TEMPLATE_CPP,
 # )
@@ -205,7 +206,7 @@ SOURCE_CODE_LARGE_BY_LANG = {
 }
 SOURCE_CODE_SMALL_BY_LANG = {
     Lang.DEFAULT: SOURCE_CODE_SMALL_TEMPLATE_DEFAULT,
-    Lang.C: SOURCE_CODE_SMALL_TEMPLATE_C,
+    Lang.C: SOURCE_CODE_LARGE_TEMPLATE_C,
     Lang.CPP: SOURCE_CODE_LARGE_TEMPLATE_CPP,
     Lang.HEADER: SOURCE_CODE_SMALL_TEMPLATE_HEADER,
     Lang.PYTHON: SOURCE_CODE_SMALL_TEMPLATE_PY,
@@ -453,8 +454,8 @@ def comprehend_file_top_down(
                     ext=node.root_rel_path.suffix, source=chunk_texts[0]
                 )
                 match language:
-                    case Lang.C:
-                        template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_C
+                    # case Lang.C:
+                    #     template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_C
                     # case Lang.CPP:
                     #     template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CPP
                     case Lang.HEADER:

@@ -13,8 +13,7 @@ from .common_v2 import (
     RawSymbolData,
     SymbolKind,
     code_requires_multi_prompt,
-    create_to_be_documented_raw_symbol_via_ctags,
-    create_undocumented_raw_symbol_via_ctags,
+    create_raw_symbol_via_ctags,
 )
 
 JAVA_INTERFACES = {"interface"}
@@ -278,17 +277,15 @@ class JavaClassRawSymbolCollection(RawSymbolCollection):
         class_raw_symbol_data = {}
         for s in symbols:
             if s["kind"] in JAVA_CLASSES:
-                class_raw_symbol_data[s["name"]] = (
-                    create_to_be_documented_raw_symbol_via_ctags(
-                        ctags_symbol=s,
-                        root_rel_path=root_rel_path,
-                        code=code,
-                        symbol_kind=SymbolKind.DATA_STRUCTURE,
-                        ir_kind=JavaClassData,
-                        scope_relation=None,
-                        delimiter=".",
-                        is_multi_prompt=is_multi_prompt,
-                    )
+                class_raw_symbol_data[s["name"]] = create_raw_symbol_via_ctags(
+                    ctags_symbol=s,
+                    root_rel_path=root_rel_path,
+                    code=code,
+                    symbol_kind=SymbolKind.DATA_STRUCTURE,
+                    ir_kind=JavaClassData,
+                    scope_relation=None,
+                    delimiter=".",
+                    is_multi_prompt=is_multi_prompt,
                 )
 
         for s in symbols:
@@ -299,7 +296,7 @@ class JavaClassRawSymbolCollection(RawSymbolCollection):
             ):
                 scope = s["scope"].split(".")[-1]
                 class_raw_symbol_data[scope].children.append(
-                    create_to_be_documented_raw_symbol_via_ctags(
+                    create_raw_symbol_via_ctags(
                         ctags_symbol=s,
                         root_rel_path=root_rel_path,
                         code=code,
@@ -319,7 +316,7 @@ class JavaClassRawSymbolCollection(RawSymbolCollection):
                 scope = s["scope"].split(".")[-1]
                 # No docs generated, just listing this, so text field unnecessary.
                 class_raw_symbol_data[scope].children.append(
-                    create_undocumented_raw_symbol_via_ctags(
+                    create_raw_symbol_via_ctags(
                         ctags_symbol=s,
                         root_rel_path=root_rel_path,
                         symbol_kind=SymbolKind.DATA_STRUCTURE,
@@ -335,7 +332,7 @@ class JavaClassRawSymbolCollection(RawSymbolCollection):
                 scope = s["scope"].split(".")[-1]
                 # No docs generated, just listing this, so text field unnecessary.
                 class_raw_symbol_data[scope].children.append(
-                    create_undocumented_raw_symbol_via_ctags(
+                    create_raw_symbol_via_ctags(
                         ctags_symbol=s,
                         root_rel_path=root_rel_path,
                         symbol_kind=SymbolKind.DATA_STRUCTURE,
@@ -350,7 +347,7 @@ class JavaClassRawSymbolCollection(RawSymbolCollection):
             ):
                 scope = s["scope"].split(".")[-1]
                 class_raw_symbol_data[scope].children.append(
-                    create_to_be_documented_raw_symbol_via_ctags(
+                    create_raw_symbol_via_ctags(
                         ctags_symbol=s,
                         root_rel_path=root_rel_path,
                         code=code,
@@ -388,17 +385,15 @@ class JavaInterfaceRawSymbolCollection(RawSymbolCollection):
         interface_raw_symbol_data = {}
         for s in symbols:
             if s["kind"] in JAVA_INTERFACES:
-                interface_raw_symbol_data[s["name"]] = (
-                    create_to_be_documented_raw_symbol_via_ctags(
-                        ctags_symbol=s,
-                        root_rel_path=root_rel_path,
-                        code=code,
-                        symbol_kind=SymbolKind.DATA_STRUCTURE,
-                        ir_kind=JavaInterfaceData,
-                        scope_relation=None,
-                        delimiter=".",
-                        is_multi_prompt=is_multi_prompt,
-                    )
+                interface_raw_symbol_data[s["name"]] = create_raw_symbol_via_ctags(
+                    ctags_symbol=s,
+                    root_rel_path=root_rel_path,
+                    code=code,
+                    symbol_kind=SymbolKind.DATA_STRUCTURE,
+                    ir_kind=JavaInterfaceData,
+                    scope_relation=None,
+                    delimiter=".",
+                    is_multi_prompt=is_multi_prompt,
                 )
 
         for s in symbols:
@@ -409,7 +404,7 @@ class JavaInterfaceRawSymbolCollection(RawSymbolCollection):
             ):
                 scope = s["scope"].split(".")[-1]
                 interface_raw_symbol_data[scope].children.append(
-                    create_to_be_documented_raw_symbol_via_ctags(
+                    create_raw_symbol_via_ctags(
                         ctags_symbol=s,
                         root_rel_path=root_rel_path,
                         code=code,
@@ -429,7 +424,7 @@ class JavaInterfaceRawSymbolCollection(RawSymbolCollection):
                 scope = s["scope"].split(".")[-1]
                 # No docs generated, just listing this, so text field unnecessary.
                 interface_raw_symbol_data[scope].children.append(
-                    create_undocumented_raw_symbol_via_ctags(
+                    create_raw_symbol_via_ctags(
                         ctags_symbol=s,
                         root_rel_path=root_rel_path,
                         symbol_kind=SymbolKind.DATA_STRUCTURE,
@@ -445,7 +440,7 @@ class JavaInterfaceRawSymbolCollection(RawSymbolCollection):
                 scope = s["scope"].split(".")[-1]
                 # No docs generated, just listing this, so text field unnecessary.
                 interface_raw_symbol_data[scope].children.append(
-                    create_undocumented_raw_symbol_via_ctags(
+                    create_raw_symbol_via_ctags(
                         ctags_symbol=s,
                         root_rel_path=root_rel_path,
                         symbol_kind=SymbolKind.DATA_STRUCTURE,
@@ -460,7 +455,7 @@ class JavaInterfaceRawSymbolCollection(RawSymbolCollection):
             ):
                 scope = s["scope"].split(".")[-1]
                 interface_raw_symbol_data[scope].children.append(
-                    create_to_be_documented_raw_symbol_via_ctags(
+                    create_raw_symbol_via_ctags(
                         ctags_symbol=s,
                         root_rel_path=root_rel_path,
                         code=code,

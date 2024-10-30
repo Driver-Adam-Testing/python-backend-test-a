@@ -1,15 +1,26 @@
 from functools import partial
 from pathlib import Path
+from typing import Self
 
 from utils.codemap_ctags import extract_symbols_w_ctags
 
-from .common import (
-    data_structure_dict_from_llm,
-    data_structure_dict_from_llm_multi_prompt,
-    fn_dict_from_llm,
-    fn_dict_from_llm_multi_prompt,
-    variables_dict_from_llm,
-    variables_dict_from_llm_multi_prompt,
+# from .common import (
+#     data_structure_dict_from_llm,
+#     data_structure_dict_from_llm_multi_prompt,
+#     fn_dict_from_llm,
+#     fn_dict_from_llm_multi_prompt,
+#     variables_dict_from_llm,
+#     variables_dict_from_llm_multi_prompt,
+# )
+from .common_v2 import (
+    IrCollection,
+    IrData,
+    NamedContent,
+    RawSymbolCollection,
+    RawSymbolData,
+    SymbolKind,
+    code_requires_multi_prompt,
+    create_raw_symbol_via_ctags,
 )
 
 C_DATA_STRUCTURES = {"enum", "union", "struct", "typedef"}
@@ -84,6 +95,8 @@ Summarize the data structure in the code provided below.
 
 - A data structure is custom or compound type in a given programming language, such as structs, classes, or enums. Functions, methods, and variables are not data structures.
 - When describing an important data structure, provide detail that matches the complexity of the data structure. Large and complex data structures should get longer explanations, while small ones a single sentence.
+
+Data structure to document:
 """
 
 DATA_STRUCTURES_NONE_CONTENT = "\n---\nNo custom data structures defined in this file."
@@ -119,6 +132,8 @@ FUNCTIONS_FOUND_USER_PROMPT = """
 Summarize the function in the code provided below. Describe the inputs, control flow and logic, and output.
 
 - When describing a function, provide detail that matches the complexity of the function body. Large and complex functions should get longer explanations, while small ones much less.
+
+Function to document:
 """
 
 FUNCTIONS_NONE_CONTENT = (
@@ -147,100 +162,184 @@ Summarize the variable in the code provided below.
 
 - A global variable is declared at the top level scope. Local variables declared and used inside of functions are not global variables. You will be describing a global variable.
 - When describing a variable, provide detail that matches the complexity of the variable. Large and complex global variables (e.g., containing large struct instances) should get longer explanations, while small ones (e.g., one line definitions) much less.
+
+Variable to document:
 """
 
 VARIABLES_NONE_CONTENT = "\n---\nNo global variables defined in this file."
 
 
-def c_data_structure_checker(
-    code: str, root_rel_path: Path, structured_output: bool = True
-) -> list[str] | str | None:
-    symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-    ds_list = []
-    for s in symbols:
-        if s["kind"] in C_DATA_STRUCTURES and not s["name"].startswith("__anon"):
-            ds_list.append(s["name"])
-    if len(ds_list) > 0:
-        if structured_output:
-            output = ds_list
-        else:
-            output = "\nData Structures to document in the code:\n\n"
-            for ds in ds_list:
-                output += f"- {ds}\n"
-    else:
-        output = None
-    return output
+class CDataStructureIrData(IrData):
+    type: str
+    members: list[NamedContent]
+    description: str
 
 
-def c_function_checker(
-    code: str, root_rel_path: Path, structured_output: bool = True
-) -> list[str] | str | None:
-    symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-    fn_list = []
-    for s in symbols:
-        if s["kind"] in C_FUNCTIONS and not s["name"].startswith("__anon"):
-            fn_list.append(s["name"])
-    if len(fn_list) > 0:
-        if structured_output:
-            output = fn_list
-        else:
-            output = "\nFunctions to document in the code:\n\n"
-            for fn in fn_list:
-                output += f"- {fn}\n"
-    else:
-        output = None
-    return output
+class CDataStructureDict(IrCollection):
+    data: dict[str, CDataStructureIrData | list[CDataStructureIrData]]
 
 
-def c_variables_checker(
-    code: str, root_rel_path: Path, structured_output: bool = True
-) -> list[str] | str | None:
-    symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-    v_list = [s["name"] for s in symbols if s["kind"] in C_VARIABLES]
-    if len(v_list) > 0:
-        if structured_output:
-            output = v_list
-        else:
-            output = "\nVariables to document in the code:\n\n"
-            for v in v_list:
-                output += f"- {v}\n"
-    else:
-        output = None
-    return output
+class CFunctionIrData(IrData):
+    single_sentence: str
+    inputs: list[NamedContent]
+    control_flow: list[str]
+    output: str
 
 
-variables_dict_from_llm_c = partial(
-    variables_dict_from_llm,
-    VARIABLES_FOUND_SYSTEM_PROMPT_JSON,
-    VARIABLES_FOUND_USER_PROMPT,
+class CFunctionDict(IrCollection):
+    data: dict[str, CFunctionIrData | list[CFunctionIrData]]
+
+
+class CVariableIrData(IrData):
+    type: str
+    description: str
+    use: str
+
+
+class CVariableDict(IrCollection):
+    data: dict[str, CVariableIrData | list[CVariableIrData]]
+
+
+class CDataStructureRawSymbolCollection(RawSymbolCollection):
+    data: dict[str, RawSymbolData]
+
+    @classmethod
+    def from_ctags(cls, code: str, root_rel_path: Path) -> Self | None:
+        is_multi_prompt = code_requires_multi_prompt(code)
+
+        symbols = extract_symbols_w_ctags(
+            root_rel_path=root_rel_path,
+            file_content=code,
+        )
+
+        data_structure_raw_symbol_data = {}
+        for s in symbols:
+            if s["kind"] in C_DATA_STRUCTURES:
+                data_structure_raw_symbol_data[s["name"]] = create_raw_symbol_via_ctags(
+                    ctags_symbol=s,
+                    root_rel_path=root_rel_path,
+                    code=code,
+                    symbol_kind=SymbolKind.DATA_STRUCTURE,
+                    ir_kind=CDataStructureIrData,
+                    scope_relation=None,
+                    delimiter=None,
+                    is_multi_prompt=is_multi_prompt,
+                )
+
+        output = (
+            None
+            if len(data_structure_raw_symbol_data) == 0
+            else cls(data=data_structure_raw_symbol_data)
+        )
+        return output
+
+    @classmethod
+    def from_ts(cls, code: str, root_rel_path: str) -> Self:
+        pass
+
+    def to_dict(self) -> dict[str, RawSymbolData]:
+        return self.data
+
+
+class CFunctionRawSymbolCollection(RawSymbolCollection):
+    data: dict[str, RawSymbolData]
+
+    @classmethod
+    def from_ctags(cls, code: str, root_rel_path: Path) -> Self | None:
+        is_multi_prompt = code_requires_multi_prompt(code)
+
+        symbols = extract_symbols_w_ctags(
+            root_rel_path=root_rel_path,
+            file_content=code,
+        )
+
+        function_raw_symbol_data = {}
+        for s in symbols:
+            if s["kind"] in C_FUNCTIONS:
+                function_raw_symbol_data[s["name"]] = create_raw_symbol_via_ctags(
+                    ctags_symbol=s,
+                    root_rel_path=root_rel_path,
+                    code=code,
+                    symbol_kind=SymbolKind.CALLABLE,
+                    ir_kind=CFunctionIrData,
+                    scope_relation=None,
+                    delimiter=None,
+                    is_multi_prompt=is_multi_prompt,
+                )
+
+        output = (
+            None
+            if len(function_raw_symbol_data) == 0
+            else cls(data=function_raw_symbol_data)
+        )
+        return output
+
+    @classmethod
+    def from_ts(cls, code: str, root_rel_path: str) -> Self:
+        pass
+
+    def to_dict(self) -> dict[str, RawSymbolData]:
+        return self.data
+
+
+class CVariableRawSymbolCollection(RawSymbolCollection):
+    data: dict[str, RawSymbolData]
+
+    @classmethod
+    def from_ctags(cls, code: str, root_rel_path: Path) -> Self | None:
+        is_multi_prompt = code_requires_multi_prompt(code)
+
+        symbols = extract_symbols_w_ctags(
+            root_rel_path=root_rel_path,
+            file_content=code,
+        )
+
+        variable_raw_symbol_data = {}
+        for s in symbols:
+            if s["kind"] in C_VARIABLES:
+                variable_raw_symbol_data[s["name"]] = create_raw_symbol_via_ctags(
+                    ctags_symbol=s,
+                    root_rel_path=root_rel_path,
+                    code=code,
+                    symbol_kind=SymbolKind.VARIABLE,
+                    ir_kind=CVariableIrData,
+                    scope_relation=None,
+                    delimiter=None,
+                    is_multi_prompt=is_multi_prompt,
+                )
+
+        output = (
+            None
+            if len(variable_raw_symbol_data) == 0
+            else cls(data=variable_raw_symbol_data)
+        )
+        return output
+
+    @classmethod
+    def from_ts(cls, code: str, root_rel_path: str) -> Self:
+        pass
+
+    def to_dict(self) -> dict[str, RawSymbolData]:
+        return self.data
+
+
+fn_dict_from_llm_c = partial(
+    CFunctionDict.dict_from_llm,
+    FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
+    FUNCTIONS_FOUND_USER_PROMPT,
+    CFunctionIrData,
 )
 
 data_structure_dict_from_llm_c = partial(
-    data_structure_dict_from_llm,
+    CDataStructureDict.dict_from_llm,
     DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
     DATA_STRUCTURES_FOUND_USER_PROMPT,
+    CDataStructureIrData,
 )
 
-fn_dict_from_llm_c = partial(
-    fn_dict_from_llm,
-    FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
-    FUNCTIONS_FOUND_USER_PROMPT,
-)
-
-variables_dict_from_llm_c_multi_prompt = partial(
-    variables_dict_from_llm_multi_prompt,
+variable_dict_from_llm_c = partial(
+    CVariableDict.dict_from_llm,
     VARIABLES_FOUND_SYSTEM_PROMPT_JSON,
     VARIABLES_FOUND_USER_PROMPT,
-)
-
-data_structure_dict_from_llm_c_multi_prompt = partial(
-    data_structure_dict_from_llm_multi_prompt,
-    DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
-    DATA_STRUCTURES_FOUND_USER_PROMPT,
-)
-
-fn_dict_from_llm_c_multi_prompt = partial(
-    fn_dict_from_llm_multi_prompt,
-    FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
-    FUNCTIONS_FOUND_USER_PROMPT,
+    CVariableIrData,
 )

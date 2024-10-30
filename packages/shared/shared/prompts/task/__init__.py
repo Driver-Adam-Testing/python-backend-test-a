@@ -8,4 +8,5 @@ from . import (
     prompt_augmentation,
     smart_instruction_run,
     edit_document,
+    codeblock_syntax_mermaid,
 )

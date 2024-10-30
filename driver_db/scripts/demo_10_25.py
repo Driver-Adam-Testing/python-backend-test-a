@@ -1,6 +1,13 @@
 from collections import defaultdict
+from uuid import uuid4
 
-from database.models_v2 import Node
+from database.models_v2 import (
+    Content,
+    ContentCategoryEnum,
+    ContentTypeEnum,
+    Node,
+    NodeTypeEnum,
+)
 
 nodes = [
     Node(
@@ -82,6 +89,7 @@ for node in nodes:
     print("\033[93mSource URL:\033[0m", node.source_url)
     print("\033[93mNode Type:\033[0m", node.node_type)
     print("\033[93mOrganization Hash:\033[0m", node.organization_hash)
+    print("\033[93mFile Type:\033[0m", node.file_type)
 
 
 def build_tree(paths: list[str]) -> defaultdict:
@@ -108,3 +116,32 @@ tree_structure = build_tree(absolute_paths)
 
 print("\n\033[93m--- Simulated 'ls' Tree Output ---\033[0m\n")
 print_tree(tree_structure)
+
+
+# Create a new content record
+driver_page_node = next(
+    (node for node in nodes if node.node_type == NodeTypeEnum.PAGE.value), None
+)
+
+if driver_page_node:
+    new_content = Content(
+        id=uuid4(),
+        node_id=driver_page_node.id,  # Using the node where it's a driver_page
+        content_type=ContentTypeEnum.PAGE_TEXT.value,
+        category=ContentCategoryEnum.USER_COMPOSED.value,
+        content="This is a user-composed note.",
+        content_metadata={"author": "John Doe", "version": "1.0"},
+    )
+else:
+    print("No driver_page node found.")
+
+# Print the new content record details
+print("\n\033[93m--- New Content Record ---\033[0m\n")
+print("\033[93mContent ID:\033[0m", new_content.id)
+print("\033[93mNode ID:\033[0m", new_content.node_id)
+print("\033[93mContent Type:\033[0m", new_content.content_type)
+print("\033[93mCategory:\033[0m", new_content.category)
+print("\033[93mContent:\033[0m", new_content.content)
+print("\033[93mContent Metadata:\033[0m", new_content.content_metadata)
+print("\033[93mCreated At:\033[0m", new_content.created_at)
+print("\033[93mUpdated At:\033[0m", new_content.updated_at)

@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.auth import CurrentUser
+from app.api.auth import UserToken
 from app.api.session import CurrentSession
 from app.core.logger import logger
 from app.schemas.upload_schema import (
@@ -17,7 +17,7 @@ router = APIRouter()
 @router.post("/codebase", summary="Upload a codebase")
 def upload_codebase(
     session: CurrentSession,
-    user: CurrentUser,
+    user: UserToken,
     request: UploadCodebaseRequest,
 ) -> UploadResponse:
     """Upload a codebase."""
@@ -29,7 +29,7 @@ def upload_codebase(
 @router.post("/pdf", summary="Upload a pdf")
 def upload_pdf(
     session: CurrentSession,
-    user: CurrentUser,
+    user: UserToken,
     request: UploadPDFRequest,
 ) -> PDFUploadResponse:
     """Upload a codebase."""

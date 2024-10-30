@@ -1,8 +1,9 @@
 import json
+from collections.abc import Callable
 from typing import Annotated
 from urllib.request import urlopen
 
-from fastapi import Depends, Request
+from fastapi import Depends, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import jwt
@@ -39,14 +40,17 @@ def verify_token(token: str) -> dict:
     rsa_key = get_rsa_key(get_jwks(), unverified_header["kid"])
     if not rsa_key:
         raise JWTError("Unable to find appropriate key")
-    payload = jwt.decode(
+    # jwt.decode Raises:
+    # JWTError : If the signature is invalid in any way.
+    # ExpiredSignatureError : If the signature has expired.
+    # JWTClaimsError : If any claim is invalid in any way.
+    return jwt.decode(
         token,
         rsa_key,
         algorithms=ALGORITHMS,
         audience=settings.AUTH0_AUDIENCE,
         issuer=f"https://{settings.AUTH0_DOMAIN}/",
     )
-    return payload
 
 
 UNPROTECTED_PATHS = [
@@ -60,12 +64,18 @@ UNPROTECTED_PATHS = [
     "/api/v1/git-provider/github/callback",
 ]
 
+security = HTTPBearer()
+
 
 class AuthMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        if request.method in ["GET", "POST"] and request.url.path in UNPROTECTED_PATHS:
-            pass
-        elif request.method == "OPTIONS":
+    async def dispatch(
+        self, request: Request, call_next: any
+    ) -> JSONResponse | Response:
+        if (
+            request.method in ["GET", "POST"]
+            and request.url.path in UNPROTECTED_PATHS
+            or request.method == "OPTIONS"
+        ):
             pass
         else:
             auth_header = request.headers.get("Authorization")
@@ -83,9 +93,6 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
         response = await call_next(request)
         return response
-
-
-security = HTTPBearer()
 
 
 class User(BaseModel):
@@ -112,6 +119,7 @@ class M2M(BaseModel):
 
 
 def get_token_payload(request: Request) -> dict:
+    # The only way this is populated is after it has been validated
     return request.state.token_payload
 
 
@@ -119,7 +127,6 @@ def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     token_payload: dict = Depends(get_token_payload),
 ) -> User:
-    # Making this optional since some endpoints are called w/ M2M tokens
     if token_payload.get("userId") is not None:
         return User(**token_payload)
     return None
@@ -129,10 +136,30 @@ def get_current_m2m(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     token_payload: dict = Depends(get_token_payload),
 ) -> M2M:
-    # Making this optional since most endpoints are called w/ User tokens
     if token_payload.get("userId") is None:
         return M2M(**token_payload)
+    return None
 
 
-CurrentUser = Annotated[User | M2M, Depends(get_current_user)]
-CurrentToken = Annotated[M2M, Depends(get_current_m2m)]
+def require_permission(permission: str) -> Callable[[dict], dict]:
+    def permission_dependency(
+        user: dict = Depends(get_current_user),
+        token_payload: dict = Depends(get_token_payload),
+    ) -> bool:
+        permissions = token_payload.get("permissions", [])
+        if permission not in permissions:
+            raise HTTPException(
+                status_code=403,
+                detail="Insufficient permissions",
+            )
+        return True
+
+    return permission_dependency
+
+
+UserToken = Annotated[User, Depends(get_current_user)]
+M2MToken = Annotated[M2M, Depends(get_current_m2m)]
+
+ContentEditorPermission = Depends(require_permission("content:edit"))
+ContentReadonlyPermission = Depends(require_permission("content:readonly"))
+OrgManagerPermission = Depends(require_permission("organization:manage"))

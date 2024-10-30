@@ -4,7 +4,7 @@ from uuid import UUID
 from database.models_v1 import DerivedContent
 from fastapi import APIRouter, Query
 
-from app.api.auth import CurrentUser
+from app.api.auth import ContentEditorPermission, ContentReadonlyPermission, UserToken
 from app.api.session import CurrentSession
 from app.core.logger import logger
 from app.schemas.content_schema import (
@@ -30,10 +30,11 @@ router = APIRouter()
 @router.get(
     "/",
     summary="List content matching the provided filter criteria",
+    dependencies=[ContentReadonlyPermission],
 )
 def list_content(
     session: CurrentSession,
-    user: CurrentUser,
+    user: UserToken,
     limit: int | None = 20,
     offset: int | None = 0,
     content_type_id: Annotated[list[str] | None, Query()] = None,
@@ -91,8 +92,7 @@ def list_content(
 
 
 @router.get(
-    "/types",
-    summary="List content types",
+    "/types", summary="List content types", dependencies=[ContentReadonlyPermission]
 )
 def get_list_content_types(
     session: CurrentSession,
@@ -125,10 +125,11 @@ def get_list_content_types(
 @router.get(
     "/{content_id}",
     summary="Get content by ID",
+    dependencies=[ContentReadonlyPermission],
 )
 def get_content_by_id(
     session: CurrentSession,
-    user: CurrentUser,
+    user: UserToken,
     content_id: UUID,
 ) -> DerivedContent:
     """
@@ -149,10 +150,11 @@ def get_content_by_id(
 @router.get(
     "/{content_id}/download",
     summary="Get download URL from S3 by ID",
+    dependencies=[ContentReadonlyPermission],
 )
 def get_download_content_by_id(
     session: CurrentSession,
-    user: CurrentUser,
+    user: UserToken,
     content_id: UUID,
 ) -> DownloadContentResponse:
     """
@@ -173,10 +175,11 @@ def get_download_content_by_id(
 @router.get(
     "/{content_id}/codebase-root",
     summary="Get root codebase content record for this.",
+    dependencies=[ContentReadonlyPermission],
 )
 def get_content_root_by_id(
     session: CurrentSession,
-    user: CurrentUser,
+    user: UserToken,
     content_id: UUID,
 ) -> DerivedContent:
     """
@@ -198,10 +201,11 @@ def get_content_root_by_id(
 @router.get(
     "/{content_id}/document-sources",
     summary="Get sources associated with a document",
+    dependencies=[ContentReadonlyPermission],
 )
 def get_document_sources(
     session: CurrentSession,
-    user: CurrentUser,
+    user: UserToken,
     content_id: UUID,
 ) -> ContentSourceResponse:
     """
@@ -222,10 +226,11 @@ def get_document_sources(
 @router.post(
     "/{content_id}/document-sources/batch/",
     summary="Associate multiple sources with this content.",
+    dependencies=[ContentEditorPermission],
 )
 def batch_associate_sources(
     session: CurrentSession,
-    user: CurrentUser,
+    user: UserToken,
     content_id: UUID,
     content_source_associations: BatchContentSourceAssociationRequest,
 ) -> BatchContentSourceAssociationResponse:
@@ -250,10 +255,11 @@ def batch_associate_sources(
 @router.post(
     "/",
     summary="Create a blank application note or template.",
+    dependencies=[ContentEditorPermission],
 )
 def create_blank_document(
     session: CurrentSession,
-    user: CurrentUser,
+    user: UserToken,
     request: CreateContentRequest,
 ) -> DerivedContent:
     """
@@ -274,10 +280,11 @@ def create_blank_document(
 @router.delete(
     "/{content_id}/document-sources/batch/",
     summary="Disassociate multiple sources from this content",
+    dependencies=[ContentEditorPermission],
 )
 def batch_disassociate_sources(
     session: CurrentSession,
-    user: CurrentUser,
+    user: UserToken,
     content_id: UUID,
     source_content_associations: DeleteContentSourcesRequest,
 ) -> BatchDeleteDocumentSourceResponse:
@@ -318,10 +325,11 @@ def batch_disassociate_sources(
 @router.put(
     "/{content_id}/",
     summary="Update content by ID",
+    dependencies=[ContentEditorPermission],
 )
 def update_content(
     session: CurrentSession,
-    user: CurrentUser,
+    user: UserToken,
     content_id: UUID,
     update_data: dict,  # TODO add validation
 ) -> DerivedContent:
@@ -330,12 +338,11 @@ def update_content(
 
 
 @router.delete(
-    "/{content_id}/",
-    status_code=204,
+    "/{content_id}/", status_code=204, dependencies=[ContentEditorPermission]
 )
 def delete_content(
     session: CurrentSession,
-    user: CurrentUser,
+    user: UserToken,
     content_id: UUID,
 ) -> None:
     content_service = ContentService(session)
@@ -346,10 +353,11 @@ def delete_content(
 @router.get(
     "/{content_id}/tags",
     summary="Get tags associated with a content",
+    dependencies=[ContentReadonlyPermission],
 )
 def get_content_tags(
     session: CurrentSession,
-    user: CurrentUser,
+    user: UserToken,
     content_id: UUID,
 ) -> ContentTagsResponse:
     """

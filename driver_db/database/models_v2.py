@@ -1,10 +1,12 @@
 import enum
 import hashlib
+import os
 import uuid
 from datetime import UTC, datetime
 from typing import Union
 from uuid import UUID
 
+from database.file_extensions import get_file_type
 from pgvector.sqlalchemy import Vector
 from pydantic import field_validator, model_validator
 from sqlalchemy import (
@@ -153,7 +155,7 @@ class Node(SQLModel, table=True):
     # DEMO -> Node type is derived. The .driver_page is an example of how we could encode that information into the path.
     @property
     def node_type(self) -> str:
-        if self.path.endswith(".driver_page") and "/" in self.path:
+        if self.path.endswith(".driver_page"):
             return NodeTypeEnum.PAGE.value
         elif self.path.endswith("/"):
             return NodeTypeEnum.FOLDER.value
@@ -177,6 +179,7 @@ class Node(SQLModel, table=True):
             parts = value.split("/")
             self.organization_id = parts[0]
             if len(parts) > 3:
+                # This is ambiguous and doesn't handle version without prefix. problem?
                 self.prefix = parts[1]
                 self.version_id = parts[2]
                 self.path = "/".join(parts[3:])
@@ -199,6 +202,14 @@ class Node(SQLModel, table=True):
             return self.path.rstrip("/").split("/")[-1]
         else:
             return self.path.split("/")[-1]
+
+    # DEMO -> File type property
+    @property
+    def file_type(self) -> str:
+        if self.node_type == NodeTypeEnum.FOLDER.value:
+            return "FOLDER"
+        _, extension = os.path.splitext(self.path)
+        return get_file_type(extension).value
 
     @display_name.setter
     def display_name(self, value: str) -> None:
@@ -301,9 +312,11 @@ class Node(SQLModel, table=True):
 
 # DEMO -> Content Categories
 class ContentCategoryEnum(str, enum.Enum):
-    SOURCE_TEXT = "SOURCE_TEXT"  # DEMO -> This signifies a sanitized extraction directly from source. These cannot be mutated
-    USER_GENERATED = "USER_GENERATED"  # DEMO -> These should not be Embedded because they can be constantly mutated
-    SYSTEM_GENERATED = "SYSTEM_GENERATED"  # DEMO -> These are usually IRs
+    SOURCE = "SOURCE"  # DEMO -> This signifies a sanitized extraction directly from source. These cannot be mutated
+    USER_COMPOSED = "USER_COMPOSED"  # DEMO -> These should not be Embedded because they can be constantly mutated
+    INTERMEDIATE_REPRESENTATION = (
+        "INTERMEDIATE_REPRESENTATION"  # DEMO -> These are usually IRs
+    )
 
 
 # DEMO -> These are client filter terms. They should not be used to determine logical path for post-processing.
@@ -313,7 +326,7 @@ class ContentTypeEnum(str, enum.Enum):
     SYMBOL_DEFINITION = "SYMBOL_DEFINITION"
     PDF_TEXT = "PDF_TEXT"
     PDF_IMAGE = "PDF_IMAGE"
-    USER_NOTE_TEXT = "USER_NOTE_TEXT"
+    PAGE_TEXT = "PAGE_TEXT"
     TEMPLATE_CODE = "TEMPLATE_CODE"
 
 

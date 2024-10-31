@@ -4,16 +4,6 @@ from typing import Self
 
 from utils.codemap_ctags import extract_symbols_w_ctags
 
-# from .common import (
-#     class_dict_from_llm,
-#     classes_dict_from_llm_multi_prompt,
-#     data_structure_dict_from_llm,
-#     data_structure_dict_from_llm_multi_prompt,
-#     fn_dict_from_llm,
-#     fn_dict_from_llm_multi_prompt,
-#     variables_dict_from_llm,
-#     variables_dict_from_llm_multi_prompt,
-# )
 from .common_v2 import (
     ClassData,
     FnData,
@@ -27,6 +17,7 @@ from .common_v2 import (
     VariableData,
     code_requires_multi_prompt,
     create_raw_symbol_via_ctags,
+    default_ctags_analysis,
 )
 
 CPP_DATA_STRUCTURES = {"class", "struct", "enum", "union", "typedef"}
@@ -437,32 +428,15 @@ class CppVariableRawSymbolCollection(RawSymbolCollection):
 
     @classmethod
     def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
-        is_multi_prompt = code_requires_multi_prompt(code)
-
-        symbols = extract_symbols_w_ctags(
-            root_rel_path=root_rel_path, file_content=code
+        return default_ctags_analysis(
+            collection_cls=cls,
+            code=code,
+            root_rel_path=root_rel_path,
+            symbol_kind=SymbolKind.VARIABLE,
+            ctags_kinds=CPP_VARIABLES,
+            delimiter="::",
+            add_symbol_padding=True,
         )
-
-        variable_raw_symbol_data = {}
-        for s in symbols:
-            if s["kind"] in CPP_VARIABLES and not s["name"].startswith("__anon"):
-                variable_raw_symbol_data[s["name"]] = create_raw_symbol_via_ctags(
-                    ctags_symbol=s,
-                    root_rel_path=root_rel_path,
-                    code=code,
-                    symbol_kind=SymbolKind.VARIABLE,
-                    scope_relation=None,
-                    delimiter="::",
-                    is_multi_prompt=is_multi_prompt,
-                    use_padding=True,
-                )
-
-        output = (
-            None
-            if len(variable_raw_symbol_data) == 0
-            else cls(data=variable_raw_symbol_data)
-        )
-        return output
 
     @classmethod
     def from_llm(cls, code: str, root_rel_path: str) -> Self:

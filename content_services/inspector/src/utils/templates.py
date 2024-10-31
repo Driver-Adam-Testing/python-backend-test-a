@@ -111,7 +111,9 @@ class Template(BaseModel):
                     | S.LLM_COND_JSON
                 ):  # Conditional construct using an LLM
                     section_title, conditional_llm_fn, true_action, false_action = args
-                    llm_fn_output: list[str] | None = conditional_llm_fn(llm, code)
+                    llm_fn_output: list[str] | None = conditional_llm_fn(
+                        llm, code, root_rel_path
+                    )
                     action = false_action if llm_fn_output is None else true_action
                     if action is None:
                         pass

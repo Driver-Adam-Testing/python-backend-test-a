@@ -31,17 +31,9 @@ from inspection.prompt_templates.files.templates.source_code_large_assembly impo
 from inspection.prompt_templates.files.templates.source_code_large_c import (
     SOURCE_CODE_LARGE_TEMPLATE_C,
 )
-
-# from inspection.prompt_templates.files.templates.source_code_large_c_multi_prompt import (
-#     SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_C,
-# )
 from inspection.prompt_templates.files.templates.source_code_large_cpp import (
     SOURCE_CODE_LARGE_TEMPLATE_CPP,
 )
-
-# from inspection.prompt_templates.files.templates.source_code_large_cpp_multi_prompt import (
-#     SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CPP,
-# )
 from inspection.prompt_templates.files.templates.source_code_large_default import (
     SOURCE_CODE_LARGE_TEMPLATE_DEFAULT,
 )
@@ -54,10 +46,6 @@ from inspection.prompt_templates.files.templates.source_code_large_header_multi_
 from inspection.prompt_templates.files.templates.source_code_large_java import (
     SOURCE_CODE_LARGE_TEMPLATE_JAVA,
 )
-
-# from inspection.prompt_templates.files.templates.source_code_large_java_multi_prompt import (
-#     SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_JAVA,
-# )
 from inspection.prompt_templates.files.templates.source_code_large_py import (
     SOURCE_CODE_LARGE_TEMPLATE_PY,
 )
@@ -85,23 +73,21 @@ from inspection.prompt_templates.files.templates.source_code_multi_context_defau
 from inspection.prompt_templates.files.templates.source_code_small_assembly import (
     SOURCE_CODE_SMALL_TEMPLATE_ASSEMBLY,
 )
-
-# from inspection.prompt_templates.files.templates.source_code_small_c import (
-#     SOURCE_CODE_SMALL_TEMPLATE_C,
-# )
-# from inspection.prompt_templates.files.templates.source_code_small_cpp import (
-#     SOURCE_CODE_SMALL_TEMPLATE_CPP,
-# )
+from inspection.prompt_templates.files.templates.source_code_small_c import (
+    SOURCE_CODE_SMALL_TEMPLATE_C,
+)
+from inspection.prompt_templates.files.templates.source_code_small_cpp import (
+    SOURCE_CODE_SMALL_TEMPLATE_CPP,
+)
 from inspection.prompt_templates.files.templates.source_code_small_default import (
     SOURCE_CODE_SMALL_TEMPLATE_DEFAULT,
 )
 from inspection.prompt_templates.files.templates.source_code_small_header import (
     SOURCE_CODE_SMALL_TEMPLATE_HEADER,
 )
-
-# from inspection.prompt_templates.files.templates.source_code_small_java import (
-#     SOURCE_CODE_SMALL_TEMPLATE_JAVA,
-# )
+from inspection.prompt_templates.files.templates.source_code_small_java import (
+    SOURCE_CODE_SMALL_TEMPLATE_JAVA,
+)
 from inspection.prompt_templates.files.templates.source_code_small_py import (
     SOURCE_CODE_SMALL_TEMPLATE_PY,
 )
@@ -206,14 +192,14 @@ SOURCE_CODE_LARGE_BY_LANG = {
 }
 SOURCE_CODE_SMALL_BY_LANG = {
     Lang.DEFAULT: SOURCE_CODE_SMALL_TEMPLATE_DEFAULT,
-    Lang.C: SOURCE_CODE_LARGE_TEMPLATE_C,
-    Lang.CPP: SOURCE_CODE_LARGE_TEMPLATE_CPP,
+    Lang.C: SOURCE_CODE_SMALL_TEMPLATE_C,
+    Lang.CPP: SOURCE_CODE_SMALL_TEMPLATE_CPP,
     Lang.HEADER: SOURCE_CODE_SMALL_TEMPLATE_HEADER,
     Lang.PYTHON: SOURCE_CODE_SMALL_TEMPLATE_PY,
     Lang.VERILOG: SOURCE_CODE_SMALL_TEMPLATE_VERILOG,
     Lang.RUST: SOURCE_CODE_SMALL_TEMPLATE_RUST,
     Lang.ASSEMBLY: SOURCE_CODE_SMALL_TEMPLATE_ASSEMBLY,
-    Lang.JAVA: SOURCE_CODE_LARGE_TEMPLATE_JAVA,
+    Lang.JAVA: SOURCE_CODE_SMALL_TEMPLATE_JAVA,
     Lang.RUBY: SOURCE_CODE_SMALL_TEMPLATE_RUBY,
 }
 METADATA_SMALL_BY_LANG = {

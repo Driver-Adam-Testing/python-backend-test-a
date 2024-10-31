@@ -11,6 +11,7 @@ from typing import Self
 
 import openai
 from pydantic import BaseModel, PrivateAttr
+from utils.codemap_ctags import extract_symbols_w_ctags
 from utils.models import ChatOpenAI, OutputConfig, OutputConfigKind
 
 
@@ -51,6 +52,7 @@ class Lang(IntEnum):
 class ParserKind(Enum):
     UCTAGS = auto()
     TREE_SITTER = auto()
+    LLM = auto()
 
 
 class SymbolKind(Enum):
@@ -220,6 +222,59 @@ def create_raw_symbol_via_ctags(
         raw_symbol_data.file_code = code
 
     return raw_symbol_data
+
+
+def create_raw_symbol_via_llm(
+    name: str,
+    path: Path,
+    code: str,
+    symbol_kind: SymbolKind,
+) -> RawSymbolData:
+    return RawSymbolData(
+        parser_kind=ParserKind.LLM,
+        symbol_kind=symbol_kind,
+        name=name,
+        path=path,
+        scope=None,
+        scope_relation=None,
+        children=[],
+        start_line=None,
+        end_line=None,
+        symbol_code=None,
+        file_code=code,
+        reference_code=None,
+        delimiter=None,
+    )
+
+
+def default_ctags_analysis(
+    collection_cls: type[RawSymbolCollection],
+    code: str,
+    root_rel_path: Path,
+    symbol_kind: SymbolKind,
+    ctags_kinds: set[str],
+    delimiter: str | None,
+    add_symbol_padding: bool = False,
+) -> RawSymbolCollection | None:
+    is_multi_prompt = code_requires_multi_prompt(code)
+    symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
+
+    raw_symbol_data = {}
+    for s in symbols:
+        if s["kind"] in ctags_kinds:
+            raw_symbol_data[s["name"]] = create_raw_symbol_via_ctags(
+                ctags_symbol=s,
+                root_rel_path=root_rel_path,
+                code=code,
+                symbol_kind=symbol_kind,
+                scope_relation=None,
+                delimiter=delimiter,
+                is_multi_prompt=is_multi_prompt,
+                use_padding=add_symbol_padding,
+            )
+
+    output = None if len(raw_symbol_data) == 0 else collection_cls(data=raw_symbol_data)
+    return output
 
 
 def snake_case_to_spaced_string(snake_case: str) -> str:

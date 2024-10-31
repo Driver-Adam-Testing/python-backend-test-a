@@ -42,7 +42,7 @@ In a single paragraph of 3 to 5 sentences, combine the multiple technical concep
 
 
 def default_imports_checker_multi_prompt(
-    llm: ChatOpenAI, code_chunks: list[str]
+    llm: ChatOpenAI, code_chunks: list[str], root_rel_path: str
 ) -> list[str] | None:
     return _default_checker(
         llm=llm,

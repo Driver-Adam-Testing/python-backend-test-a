@@ -355,6 +355,12 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
         back_populates=None,
         sa_relationship_kwargs={"secondary": "tags_contents", "viewonly": True},
     )
+    version_id: None | UUID = Field(
+        foreign_key="inspection_versions.id", nullable=True, index=True, default=None
+    )
+    inspection_version: Optional["InspectionVersion"] = Relationship(
+        back_populates="contents"
+    )
 
 
 class Tag(SQLModel, table=True):  # type: ignore
@@ -450,5 +456,60 @@ class ChunkAndEmbedding(SQLModel, table=True):  # type: ignore
     __table_args__ = (
         Index(
             "ix_chunkandembedding___ts_vector__", __ts_vector__, postgresql_using="gin"
+        ),
+    )
+
+
+class InspectionVersion(SQLModel, table=True):
+    __tablename__ = "inspection_versions"
+
+    id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    version: str  # Typically a Git commit hash
+    display_name: str | None = (
+        None  # User-defined name; could default to Git tags if available
+    )
+    created_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
+        default=None,
+    )
+    updated_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
+        ),
+    )
+    previous_version_id: UUID | None = Field(
+        foreign_key="inspection_versions.id", nullable=True
+    )  # Points to the previous version for chain tracking
+    contents: list["DerivedContent"] = Relationship(back_populates="inspection_version")
+    inspector_runs: list["InspectorRun"] = Relationship(
+        back_populates="inspection_version"
+    )
+
+
+class InspectorRun(SQLModel, table=True):
+    id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    inspection_version_id: UUID = Field(
+        foreign_key="inspection_versions.id", nullable=False
+    )
+    inspection_version: "InspectionVersion" = Relationship(
+        back_populates="inspector_runs"
+    )
+    created_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
+        default=None,
+    )
+    updated_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
         ),
     )

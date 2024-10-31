@@ -13,12 +13,14 @@ from utils.codemap_ctags import extract_symbols_w_ctags
 #     variables_dict_from_llm_multi_prompt,
 # )
 from .common_v2 import (
+    DataStructureData,
+    FnData,
     IrCollection,
     IrData,
-    NamedContent,
     RawSymbolCollection,
     RawSymbolData,
     SymbolKind,
+    VariableData,
     code_requires_multi_prompt,
     create_raw_symbol_via_ctags,
 )
@@ -169,42 +171,86 @@ Variable to document:
 VARIABLES_NONE_CONTENT = "\n---\nNo global variables defined in this file."
 
 
-class CDataStructureIrData(IrData):
-    type: str
-    members: list[NamedContent]
-    description: str
+class CDataStructureData(DataStructureData):
+    @classmethod
+    def system_prompt(cls) -> str:
+        return DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON
+
+    @classmethod
+    def user_prompt(cls, symbol: RawSymbolData) -> str:
+        user_prompt = f"{DATA_STRUCTURES_FOUND_USER_PROMPT}{symbol.name}\n\nData structure code:\n\n{symbol.symbol_code}"
+        if symbol.file_code:
+            user_prompt += f"\n\nFull File code:\n\n{symbol.file_code}"
+        return user_prompt
+
+    @classmethod
+    def child_to_ir(cls, symbol: RawSymbolData) -> IrData | None:
+        raise NotImplementedError("C data structures should not have children")
+
+    @classmethod
+    def child_to_field_name(cls, symbol: RawSymbolData) -> str:
+        raise NotImplementedError("C data structures should not have children")
 
 
 class CDataStructureDict(IrCollection):
-    data: dict[str, CDataStructureIrData | list[CDataStructureIrData]]
+    data: dict[str, CDataStructureData | list[CDataStructureData]]
 
 
-class CFunctionIrData(IrData):
-    single_sentence: str
-    inputs: list[NamedContent]
-    control_flow: list[str]
-    output: str
+class CFnData(FnData):
+    @classmethod
+    def system_prompt(cls) -> str:
+        return FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON
+
+    @classmethod
+    def user_prompt(cls, symbol: RawSymbolData) -> str:
+        user_prompt = f"{FUNCTIONS_FOUND_USER_PROMPT}{symbol.name}\n\nFunction code:\n\n{symbol.symbol_code}"
+        if symbol.file_code:
+            user_prompt += f"\n\nFull File code:\n\n{symbol.file_code}"
+        return user_prompt
+
+    @classmethod
+    def child_to_ir(cls, symbol: RawSymbolData) -> IrData | None:
+        raise NotImplementedError("C functions should not have children")
+
+    @classmethod
+    def child_to_field_name(cls, symbol: RawSymbolData) -> str:
+        raise NotImplementedError("C functions should not have children")
 
 
 class CFunctionDict(IrCollection):
-    data: dict[str, CFunctionIrData | list[CFunctionIrData]]
+    data: dict[str, CFnData | list[CFnData]]
 
 
-class CVariableIrData(IrData):
-    type: str
-    description: str
-    use: str
+class CVariableData(VariableData):
+    @classmethod
+    def system_prompt(cls) -> str:
+        return VARIABLES_FOUND_SYSTEM_PROMPT_JSON
+
+    @classmethod
+    def user_prompt(cls, symbol: RawSymbolData) -> str:
+        user_prompt = f"{VARIABLES_FOUND_USER_PROMPT}{symbol.name}\n\nVariable code:\n\n{symbol.symbol_code}"
+        if symbol.file_code:
+            user_prompt += f"\n\nFull File code:\n\n{symbol.file_code}"
+        return user_prompt
+
+    @classmethod
+    def child_to_ir(cls, symbol: RawSymbolData) -> IrData | None:
+        raise NotImplementedError("C variables should not have children")
+
+    @classmethod
+    def child_to_field_name(cls, symbol: RawSymbolData) -> str:
+        raise NotImplementedError("C variables should not have children")
 
 
 class CVariableDict(IrCollection):
-    data: dict[str, CVariableIrData | list[CVariableIrData]]
+    data: dict[str, CVariableData | list[CVariableData]]
 
 
 class CDataStructureRawSymbolCollection(RawSymbolCollection):
     data: dict[str, RawSymbolData]
 
     @classmethod
-    def from_ctags(cls, code: str, root_rel_path: Path) -> Self | None:
+    def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
         is_multi_prompt = code_requires_multi_prompt(code)
 
         symbols = extract_symbols_w_ctags(
@@ -220,7 +266,6 @@ class CDataStructureRawSymbolCollection(RawSymbolCollection):
                     root_rel_path=root_rel_path,
                     code=code,
                     symbol_kind=SymbolKind.DATA_STRUCTURE,
-                    ir_kind=CDataStructureIrData,
                     scope_relation=None,
                     delimiter=None,
                     is_multi_prompt=is_multi_prompt,
@@ -234,8 +279,10 @@ class CDataStructureRawSymbolCollection(RawSymbolCollection):
         return output
 
     @classmethod
-    def from_ts(cls, code: str, root_rel_path: str) -> Self:
-        pass
+    def from_llm(cls, code: str, root_rel_path: str) -> Self:
+        raise NotImplementedError(
+            "Static analysis should be used for C data structures"
+        )
 
     def to_dict(self) -> dict[str, RawSymbolData]:
         return self.data
@@ -261,7 +308,6 @@ class CFunctionRawSymbolCollection(RawSymbolCollection):
                     root_rel_path=root_rel_path,
                     code=code,
                     symbol_kind=SymbolKind.CALLABLE,
-                    ir_kind=CFunctionIrData,
                     scope_relation=None,
                     delimiter=None,
                     is_multi_prompt=is_multi_prompt,
@@ -302,7 +348,6 @@ class CVariableRawSymbolCollection(RawSymbolCollection):
                     root_rel_path=root_rel_path,
                     code=code,
                     symbol_kind=SymbolKind.VARIABLE,
-                    ir_kind=CVariableIrData,
                     scope_relation=None,
                     delimiter=None,
                     is_multi_prompt=is_multi_prompt,
@@ -325,21 +370,15 @@ class CVariableRawSymbolCollection(RawSymbolCollection):
 
 fn_dict_from_llm_c = partial(
     CFunctionDict.dict_from_llm,
-    FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
-    FUNCTIONS_FOUND_USER_PROMPT,
-    CFunctionIrData,
+    CFnData,
 )
 
 data_structure_dict_from_llm_c = partial(
     CDataStructureDict.dict_from_llm,
-    DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
-    DATA_STRUCTURES_FOUND_USER_PROMPT,
-    CDataStructureIrData,
+    CDataStructureData,
 )
 
 variable_dict_from_llm_c = partial(
     CVariableDict.dict_from_llm,
-    VARIABLES_FOUND_SYSTEM_PROMPT_JSON,
-    VARIABLES_FOUND_USER_PROMPT,
-    CVariableIrData,
+    CVariableData,
 )

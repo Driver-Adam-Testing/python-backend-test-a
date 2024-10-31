@@ -354,7 +354,7 @@ class CppClassRawSymbolCollection(RawSymbolCollection):
 
     @classmethod
     def from_llm(cls, code: str, root_rel_path: str) -> Self:
-        pass
+        raise NotImplementedError("Static analysis should be used for C++ classes")
 
     def to_dict(self) -> dict[str, RawSymbolData]:
         return self.data
@@ -426,7 +426,7 @@ class CppFreeFnRawSymbolCollection(RawSymbolCollection):
 
     @classmethod
     def from_llm(cls, code: str, root_rel_path: str) -> Self:
-        pass
+        raise NotImplementedError("Static analysis should be used for C++ functions")
 
     def to_dict(self) -> dict[str, RawSymbolData]:
         return self.data
@@ -466,7 +466,7 @@ class CppVariableRawSymbolCollection(RawSymbolCollection):
 
     @classmethod
     def from_llm(cls, code: str, root_rel_path: str) -> Self:
-        pass
+        raise NotImplementedError("Static analysis should be used for C++ variables")
 
     def to_dict(self) -> dict[str, RawSymbolData]:
         return self.data

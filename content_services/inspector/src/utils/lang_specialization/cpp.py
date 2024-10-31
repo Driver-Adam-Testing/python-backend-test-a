@@ -185,7 +185,10 @@ class CppVariableData(VariableData):
 
     @classmethod
     def user_prompt(cls, symbol: RawSymbolData) -> str:
-        return f"{VARIABLES_FOUND_USER_PROMPT}{symbol.name}Variable Code:\n\n{symbol.symbol_code}\n\nFull File Code:\n\n{symbol.file_code}"
+        user_prompt = f"{VARIABLES_FOUND_USER_PROMPT}{symbol.name}\n\nVariable Code:\n\n{symbol.symbol_code}"
+        if symbol.file_code:
+            user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
+        return user_prompt
 
     @classmethod
     def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
@@ -207,7 +210,10 @@ class CppFnData(FnData):
 
     @classmethod
     def user_prompt(cls, symbol: RawSymbolData) -> str:
-        return f"{FUNCTIONS_FOUND_USER_PROMPT}{symbol.name}\n\nFunction Code:\n\n{symbol.symbol_code}\n\nFull File Code:\n\n{symbol.file_code}"
+        user_prompt = f"{FUNCTIONS_FOUND_USER_PROMPT}{symbol.name}\n\nFunction Code:\n\n{symbol.symbol_code}"
+        if symbol.file_code:
+            user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
+        return user_prompt
 
     @classmethod
     def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
@@ -229,7 +235,10 @@ class CppClassData(ClassData):
 
     @classmethod
     def user_prompt(cls, symbol: RawSymbolData) -> str:
-        return f"{DATA_STRUCTURES_FOUND_USER_PROMPT}{symbol.name}\n\nData Structure Code:\n{symbol.symbol_code}\n\nFull File Code:\n{symbol.file_code}"
+        user_prompt = f"{DATA_STRUCTURES_FOUND_USER_PROMPT}{symbol.name}\n\nData Structure Code:\n\n{symbol.symbol_code}"
+        if symbol.file_code:
+            user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
+        return user_prompt
 
     @classmethod
     def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:

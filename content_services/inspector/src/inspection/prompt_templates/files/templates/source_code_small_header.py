@@ -2,11 +2,11 @@ from utils.lang_specialization.default import default_imports_checker
 from utils.lang_specialization.header import (
     SOURCE_CODE_SMALL_PURPOSE_USER_PROMPT,
     SOURCE_CODE_SMALL_SYSTEM_PROMPT_GENERAL_C_OR_CPP_HEADER,
+    HeaderDataStructureRawSymbolCollection,
+    HeaderFnRawSymbolCollection,
+    HeaderVariableRawSymbolCollection,
     class_dict_from_llm_header,
     fn_dict_from_llm_header,
-    header_class_checker,
-    header_function_checker,
-    header_variables_checker,
     variables_dict_from_llm_header,
 )
 from utils.templates import S
@@ -28,21 +28,21 @@ SOURCE_CODE_SMALL_TEMPLATE_HEADER = [
     (
         S.FN_COND_JSON,
         "# Global Variables",
-        header_variables_checker,
+        HeaderVariableRawSymbolCollection.from_static_analysis,
         variables_dict_from_llm_header,
         None,
     ),
     (
         S.FN_COND_JSON,
         "# Data Structures",
-        header_class_checker,
+        HeaderDataStructureRawSymbolCollection.from_static_analysis,
         class_dict_from_llm_header,
         None,
     ),
     (
         S.FN_COND_JSON,
         "# Functions",
-        header_function_checker,
+        HeaderFnRawSymbolCollection.from_static_analysis,
         fn_dict_from_llm_header,
         None,
     ),

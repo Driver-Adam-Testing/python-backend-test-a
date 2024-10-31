@@ -411,11 +411,12 @@ class IrData(BaseModel, abc.ABC):
 
         # Render child data
         child_dictionary = {
-            field_name: f"\n**{field_name}**\n"
-            for field_name in self._supported_child_ordering
+            field_name: "" for field_name in self._supported_child_ordering
         }
         for child_symbol, child_content in self._children:
             field_name = self.child_to_field_name(child_symbol)
+            if len(child_dictionary[field_name]) == 0:
+                child_dictionary[field_name] += f"\n**{field_name}**\n"
 
             if field_name not in child_dictionary:
                 raise ValueError(f"Unsupported child field name: {field_name}")
@@ -532,9 +533,9 @@ class FnData(IrData, abc.ABC):
 
 
 class ClassData(IrData, abc.ABC):
-    description: str
     type: str | None
     members: list[NamedContent]
+    description: str
     inherits_from: list[str]
     _supported_child_ordering: list[str] = PrivateAttr(
         default=["Methods", "Nested Classes"]

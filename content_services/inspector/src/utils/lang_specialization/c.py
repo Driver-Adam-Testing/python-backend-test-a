@@ -292,7 +292,7 @@ class CFunctionRawSymbolCollection(RawSymbolCollection):
     data: dict[str, RawSymbolData]
 
     @classmethod
-    def from_ctags(cls, code: str, root_rel_path: Path) -> Self | None:
+    def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
         is_multi_prompt = code_requires_multi_prompt(code)
 
         symbols = extract_symbols_w_ctags(
@@ -321,7 +321,7 @@ class CFunctionRawSymbolCollection(RawSymbolCollection):
         return output
 
     @classmethod
-    def from_ts(cls, code: str, root_rel_path: str) -> Self:
+    def from_llm(cls, code: str, root_rel_path: str) -> Self:
         pass
 
     def to_dict(self) -> dict[str, RawSymbolData]:
@@ -332,7 +332,7 @@ class CVariableRawSymbolCollection(RawSymbolCollection):
     data: dict[str, RawSymbolData]
 
     @classmethod
-    def from_ctags(cls, code: str, root_rel_path: Path) -> Self | None:
+    def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
         is_multi_prompt = code_requires_multi_prompt(code)
 
         symbols = extract_symbols_w_ctags(
@@ -361,7 +361,7 @@ class CVariableRawSymbolCollection(RawSymbolCollection):
         return output
 
     @classmethod
-    def from_ts(cls, code: str, root_rel_path: str) -> Self:
+    def from_llm(cls, code: str, root_rel_path: str) -> Self:
         pass
 
     def to_dict(self) -> dict[str, RawSymbolData]:

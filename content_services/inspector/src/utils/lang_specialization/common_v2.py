@@ -240,7 +240,7 @@ def create_raw_symbol_via_llm(
         children=[],
         start_line=None,
         end_line=None,
-        symbol_code=None,
+        symbol_code=code,
         file_code=code,
         reference_code=None,
         delimiter=None,

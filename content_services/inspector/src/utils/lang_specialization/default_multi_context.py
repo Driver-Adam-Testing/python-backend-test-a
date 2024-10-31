@@ -1,8 +1,5 @@
 from utils.lang_specialization.default import (
-    DATA_STRUCTURES_CHECKER_SYSTEM_PROMPT_JSON,
-    FUNCTIONS_CHECKER_SYSTEM_PROMPT_JSON,
     IMPORTS_SYSTEM_PROMPT_JSON,
-    VARIABLES_CHECKER_SYSTEM_PROMPT_JSON,
     _default_checker,
 )
 from utils.models import ChatOpenAI
@@ -28,18 +25,6 @@ You will be provided two or more paragraphs describing the purpose of a overlapp
 In a single paragraph of 3 to 5 sentences, combine the multiple purpose paragraphs into a single cohesive paragraph that describes the purpose of the entire code.
 """
 
-TECHNICAL_CONCEPTS_MULTI_CONTEXT = """
-In a single paragraph of 3 to 5 sentences, describe the important technical features and their interactions in the code provided below.
-
-In writing your description, write about about the conceptual use cases, applications, logic, and component interactions instead of focusing on particular functions, variables, etc.
-"""
-
-TECHNICAL_CONCEPTS_FROM_CHUNKS = """
-You will be provided two or more paragraphs describing the technical concepts of overlapping chunks of source code.
-
-In a single paragraph of 3 to 5 sentences, combine the multiple technical concept paragraphs into a single cohesive paragraph that describes the technical concepts of the entire code.
-"""
-
 
 def default_imports_checker_multi_prompt(
     llm: ChatOpenAI, code_chunks: list[str], root_rel_path: str
@@ -51,84 +36,3 @@ def default_imports_checker_multi_prompt(
         code=code_chunks[0],
         as_list_data_ds=True,
     )
-
-
-def default_variable_checker_multi_prompt(
-    llm: ChatOpenAI, code_chunks: list[str]
-) -> list[int, list[str]] | None:
-    checker_responses = []
-    for idx, code_chunk in enumerate(code_chunks):
-        response_data = _default_checker(
-            llm=llm,
-            user_prompt="",
-            system_prompt=VARIABLES_CHECKER_SYSTEM_PROMPT_JSON,
-            code=code_chunk,
-        )
-        if response_data is not None:
-            checker_responses.append([idx, response_data])
-    if len(checker_responses) > 0:
-        # Dedupe entities assuming we have chunk overlap
-        for idx in range(len(checker_responses[:-1])):
-            overlap_vars = set(checker_responses[idx][1]) & set(
-                checker_responses[idx + 1][1]
-            )
-            checker_responses[idx][1] = list(
-                set(checker_responses[idx][1]) - overlap_vars
-            )
-        return checker_responses
-    else:
-        return None
-
-
-def default_data_structure_checker_multi_prompt(
-    llm: ChatOpenAI, code_chunks: list[str]
-) -> list[int, list[str]] | None:
-    checker_responses = []
-    for idx, code_chunk in enumerate(code_chunks):
-        response_data = _default_checker(
-            llm=llm,
-            user_prompt="",
-            system_prompt=DATA_STRUCTURES_CHECKER_SYSTEM_PROMPT_JSON,
-            code=code_chunk,
-        )
-        if response_data is not None:
-            checker_responses.append([idx, response_data])
-    if len(checker_responses) > 0:
-        # Dedupe entities assuming we have chunk overlap
-        for idx in range(len(checker_responses[:-1])):
-            overlap_ds = set(checker_responses[idx][1]) & set(
-                checker_responses[idx + 1][1]
-            )
-            checker_responses[idx][1] = list(
-                set(checker_responses[idx][1]) - overlap_ds
-            )
-        return checker_responses
-    else:
-        return None
-
-
-def default_function_checker_multi_prompt(
-    llm: ChatOpenAI, code_chunks: list[str]
-) -> list[int, list[str]] | None:
-    checker_responses = []
-    for idx, code_chunk in enumerate(code_chunks):
-        response_data = _default_checker(
-            llm=llm,
-            user_prompt="",
-            system_prompt=FUNCTIONS_CHECKER_SYSTEM_PROMPT_JSON,
-            code=code_chunk,
-        )
-        if response_data is not None:
-            checker_responses.append([idx, response_data])
-    if len(checker_responses) > 0:
-        # Dedupe entities assuming we have chunk overlap
-        for idx in range(len(checker_responses[:-1])):
-            overlap_fns = set(checker_responses[idx][1]) & set(
-                checker_responses[idx + 1][1]
-            )
-            checker_responses[idx][1] = list(
-                set(checker_responses[idx][1]) - overlap_fns
-            )
-        return checker_responses
-    else:
-        return None

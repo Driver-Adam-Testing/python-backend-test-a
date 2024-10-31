@@ -1,5 +1,4 @@
 from utils.lang_specialization.assembly import (
-    SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT,
     SOURCE_CODE_SYSTEM_PROMPT_GENERAL_DEFAULT,
     AssemblyDataStructureRawSymbolCollection,
     AssemblyMacroRawSymbolCollection,
@@ -10,20 +9,26 @@ from utils.lang_specialization.assembly import (
     macro_dict_from_llm_assembly,
     variables_dict_from_llm_assembly,
 )
-from utils.lang_specialization.default import default_imports_checker
+from utils.lang_specialization.default_multi_context import (
+    SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT_MULTI_CONTEXT,
+    SOURCE_CODE_PURPOSE_FROM_CHUNKS,
+    default_imports_checker_multi_prompt,
+)
 from utils.templates import S
 
-SOURCE_CODE_LARGE_TEMPLATE_ASSEMBLY = [
+SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_ASSEMBLY = [
     (
-        S.SINGLE_PROMPT_TEXT,
+        S.MULTI_PROMPT_TEXT,
         "# Purpose",
         SOURCE_CODE_SYSTEM_PROMPT_GENERAL_DEFAULT,
-        SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT,
+        SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT_MULTI_CONTEXT,
+        SOURCE_CODE_PURPOSE_FROM_CHUNKS,
     ),
+    # NOTE: for simplicity this only looks at the first file chunk for imports (making assumptions about the structure of the file)
     (
-        S.LLM_COND_JSON,
+        S.MULTI_LLM_COND_JSON,
         "# Imports and Dependencies",
-        default_imports_checker,
+        default_imports_checker_multi_prompt,
         lambda _llm, output, _code: output,
         None,
     ),

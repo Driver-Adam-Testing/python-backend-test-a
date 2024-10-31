@@ -79,9 +79,9 @@ Summarize the data structure in the code provided below.
 
 - A data structure is custom or compound type in a given programming language, such as structs, classes, or enums. Functions, methods, and variables are not data structures.
 - When describing an important data structure, provide detail that matches the complexity of the data structure. Large and complex data structures should get longer explanations, while small ones a single sentence.
-"""
 
-DATA_STRUCTURES_NONE_CONTENT = "\n---\nNo custom data structures defined in this file."
+Data structure to document:
+"""
 
 
 FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON = """
@@ -114,11 +114,10 @@ FUNCTIONS_FOUND_USER_PROMPT = """
 Summarize the function or method in the code provided below. Describe the inputs, control flow and logic, and output.
 
 - When describing a function, provide detail that matches the complexity of the function body. Large and complex functions should get longer explanations, while small ones much less.
+
+Function to document:
 """
 
-FUNCTIONS_NONE_CONTENT = (
-    "\n---\nNo functions or function prototypes defined in this file."
-)
 
 VARIABLES_FOUND_SYSTEM_PROMPT_JSON = """
 You are an expert systems programmer and a software engineering documentation expert. You write detailed documentation to explain C and C++ code, especially header files.
@@ -142,9 +141,9 @@ Summarize the variable in the code provided below.
 
 - A global variable is declared at the top level scope. Local variables declared and used inside of functions are not global variables. You will be describing a global variable.
 - When describing a variable, provide detail that matches the complexity of the variable. Large and complex global variables (e.g., containing large struct instances) should get longer explanations, while small ones (e.g., one line definitions) much less.
-"""
 
-VARIABLES_NONE_CONTENT = "\n---\nNo global variables defined in this file."
+Variable to document:
+"""
 
 
 def header_class_checker(

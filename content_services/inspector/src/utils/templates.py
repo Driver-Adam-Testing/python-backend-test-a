@@ -122,6 +122,8 @@ class Template(BaseModel):
                             match _arity(action):
                                 case 0:
                                     content = action()
+                                case 2:
+                                    content = action(llm, llm_fn_output)
                                 case 3:
                                     content = action(llm, llm_fn_output, code)
                                 case _:

@@ -4,10 +4,10 @@ from utils.lang_specialization.default import (
 from utils.lang_specialization.java import (
     SOURCE_CODE_SMALL_PURPOSE_USER_PROMPT,
     SOURCE_CODE_SMALL_SYSTEM_PROMPT_GENERAL_JAVA,
+    JavaClassRawSymbolCollection,
+    JavaInterfaceRawSymbolCollection,
     class_dict_from_llm_java,
     interface_dict_from_llm_java,
-    java_class_checker,
-    java_interface_checker,
 )
 from utils.templates import S
 
@@ -28,14 +28,14 @@ SOURCE_CODE_SMALL_TEMPLATE_JAVA = [
     (
         S.FN_COND_JSON,
         "# Interfaces",
-        java_interface_checker,
+        JavaInterfaceRawSymbolCollection.from_ctags,
         interface_dict_from_llm_java,
         None,
     ),
     (
         S.FN_COND_JSON,
         "# Classes",
-        java_class_checker,
+        JavaClassRawSymbolCollection.from_ctags,
         class_dict_from_llm_java,
         None,
     ),

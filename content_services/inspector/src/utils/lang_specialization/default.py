@@ -308,14 +308,15 @@ def default_llm_analysis(
             system_prompt=system_prompt,
         )
         raw_symbol_data = {}
-        for chunk_idx, list_chunk in symbol_list:
-            for symbol_name in list_chunk:
-                raw_symbol_data[symbol_name] = create_raw_symbol_via_llm(
-                    symbol_kind=symbol_kind,
-                    name=symbol_name,
-                    path=root_rel_path,
-                    code=code_chunks[chunk_idx],
-                )
+        if symbol_list is not None:
+            for chunk_idx, list_chunk in symbol_list:
+                for symbol_name in list_chunk:
+                    raw_symbol_data[symbol_name] = create_raw_symbol_via_llm(
+                        symbol_kind=symbol_kind,
+                        name=symbol_name,
+                        path=root_rel_path,
+                        code=code_chunks[chunk_idx],
+                    )
     else:
         symbol_list = _default_checker(
             llm=llm,
@@ -324,10 +325,14 @@ def default_llm_analysis(
             code=code,
         )
         raw_symbol_data = {}
-        for symbol_name in symbol_list:
-            raw_symbol_data[symbol_name] = create_raw_symbol_via_llm(
-                symbol_kind=symbol_kind, name=symbol_name, path=root_rel_path, code=code
-            )
+        if symbol_list is not None:
+            for symbol_name in symbol_list:
+                raw_symbol_data[symbol_name] = create_raw_symbol_via_llm(
+                    symbol_kind=symbol_kind,
+                    name=symbol_name,
+                    path=root_rel_path,
+                    code=code,
+                )
     output = None if len(raw_symbol_data) == 0 else collection_cls(data=raw_symbol_data)
     return output
 
@@ -462,11 +467,11 @@ class DefaultDataStructureData(DataStructureData):
 
     @classmethod
     def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
-        raise NotImplementedError("Default variables should not have children")
+        raise NotImplementedError("Default data structures should not have children")
 
     @classmethod
     def child_to_field_name(cls, child: RawSymbolData) -> str:
-        raise NotImplementedError("Default variables should not have children")
+        raise NotImplementedError("Default data structures should not have children")
 
 
 class DefaultDataStructureCollection(IrCollection):

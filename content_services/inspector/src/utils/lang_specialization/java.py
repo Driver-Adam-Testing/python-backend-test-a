@@ -8,7 +8,6 @@ from .common_v2 import (
     IrCollection,
     IrData,
     NamedContent,
-    NestedIrData,
     RawSymbolCollection,
     RawSymbolData,
     SymbolKind,
@@ -204,7 +203,7 @@ class JavaClassBaseData(IrData):
     description: str
 
 
-class JavaClassData(NestedIrData):
+class JavaClassData(IrData):
     base_data: JavaClassBaseData
     methods: dict[str, JavaMethodData | list[JavaMethodData]]
     fields: dict[str, JavaFieldData | list[JavaFieldData]]
@@ -237,7 +236,7 @@ class JavaInterfaceBaseData(IrData):
     description: str
 
 
-class JavaInterfaceData(NestedIrData):
+class JavaInterfaceData(IrData):
     base_data: JavaInterfaceBaseData
     methods: dict[str, JavaMethodData | list[JavaMethodData]]
     fields: dict[str, JavaFieldData | list[JavaFieldData]]

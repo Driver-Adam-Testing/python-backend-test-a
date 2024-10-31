@@ -31,8 +31,14 @@ from inspection.prompt_templates.files.templates.source_code_large_assembly impo
 from inspection.prompt_templates.files.templates.source_code_large_c import (
     SOURCE_CODE_LARGE_TEMPLATE_C,
 )
+from inspection.prompt_templates.files.templates.source_code_large_c_multi_prompt import (
+    SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_C,
+)
 from inspection.prompt_templates.files.templates.source_code_large_cpp import (
     SOURCE_CODE_LARGE_TEMPLATE_CPP,
+)
+from inspection.prompt_templates.files.templates.source_code_large_cpp_multi_prompt import (
+    SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CPP,
 )
 from inspection.prompt_templates.files.templates.source_code_large_default import (
     SOURCE_CODE_LARGE_TEMPLATE_DEFAULT,
@@ -45,6 +51,9 @@ from inspection.prompt_templates.files.templates.source_code_large_header_multi_
 )
 from inspection.prompt_templates.files.templates.source_code_large_java import (
     SOURCE_CODE_LARGE_TEMPLATE_JAVA,
+)
+from inspection.prompt_templates.files.templates.source_code_large_java_multi_prompt import (
+    SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_JAVA,
 )
 from inspection.prompt_templates.files.templates.source_code_large_py import (
     SOURCE_CODE_LARGE_TEMPLATE_PY,
@@ -440,18 +449,18 @@ def comprehend_file_top_down(
                     ext=node.root_rel_path.suffix, source=chunk_texts[0]
                 )
                 match language:
-                    # case Lang.C:
-                    #     template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_C
-                    # case Lang.CPP:
-                    #     template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CPP
+                    case Lang.C:
+                        template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_C
+                    case Lang.CPP:
+                        template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CPP
                     case Lang.HEADER:
                         template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_HEADER
                     case Lang.PYTHON:
                         template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_PY
                     case Lang.RUST:
                         template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_RUST
-                    # case Lang.JAVA:
-                    #     template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_JAVA
+                    case Lang.JAVA:
+                        template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_JAVA
                     case Lang.RUBY:
                         template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_RUBY
                     case _:

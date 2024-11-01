@@ -260,7 +260,7 @@ class CDataStructureRawSymbolCollection(RawSymbolCollection):
 
         data_structure_raw_symbol_data = {}
         for s in symbols:
-            if s["kind"] in C_DATA_STRUCTURES:
+            if s["kind"] in C_DATA_STRUCTURES and not s["name"].startswith("__anon"):
                 data_structure_raw_symbol_data[s["name"]] = create_raw_symbol_via_ctags(
                     ctags_symbol=s,
                     root_rel_path=root_rel_path,
@@ -302,7 +302,7 @@ class CFunctionRawSymbolCollection(RawSymbolCollection):
 
         function_raw_symbol_data = {}
         for s in symbols:
-            if s["kind"] in C_FUNCTIONS:
+            if s["kind"] in C_FUNCTIONS and not s["name"].startswith("__anon"):
                 function_raw_symbol_data[s["name"]] = create_raw_symbol_via_ctags(
                     ctags_symbol=s,
                     root_rel_path=root_rel_path,

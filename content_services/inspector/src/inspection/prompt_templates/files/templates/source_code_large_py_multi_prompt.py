@@ -5,12 +5,12 @@ from utils.lang_specialization.default_multi_context import (
 )
 from utils.lang_specialization.python import (
     SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_PY,
-    class_dict_from_llm_py_multi_prompt,
-    fn_dict_from_llm_py_multi_prompt,
-    py_class_checker,
-    py_function_checker,
-    py_variables_checker,
-    variables_dict_from_llm_py_multi_prompt,
+    PyClassRawSymbolCollection,
+    PyFnRawSymbolCollection,
+    PyVariableRawSymbolCollection,
+    class_dict_from_llm_py,
+    fn_dict_from_llm_py,
+    variables_dict_from_llm_py,
 )
 from utils.templates import S
 
@@ -33,22 +33,22 @@ SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_PY = [
     (
         S.FN_COND_JSON,
         "# Global Variables",
-        py_variables_checker,
-        variables_dict_from_llm_py_multi_prompt,
+        PyVariableRawSymbolCollection.from_static_analysis,
+        variables_dict_from_llm_py,
         None,
     ),
     (
         S.FN_COND_JSON,
         "# Classes",
-        py_class_checker,
-        class_dict_from_llm_py_multi_prompt,
+        PyClassRawSymbolCollection.from_static_analysis,
+        class_dict_from_llm_py,
         None,
     ),
     (
         S.FN_COND_JSON,
         "# Functions",
-        py_function_checker,
-        fn_dict_from_llm_py_multi_prompt,
+        PyFnRawSymbolCollection.from_static_analysis,
+        fn_dict_from_llm_py,
         None,
     ),
 ]

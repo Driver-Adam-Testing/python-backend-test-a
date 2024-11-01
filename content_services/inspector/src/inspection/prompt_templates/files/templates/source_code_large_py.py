@@ -4,11 +4,11 @@ from utils.lang_specialization.default import (
 from utils.lang_specialization.python import (
     SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT,
     SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_PY,
+    PyClassRawSymbolCollection,
+    PyFnRawSymbolCollection,
+    PyVariableRawSymbolCollection,
     class_dict_from_llm_py,
     fn_dict_from_llm_py,
-    py_class_checker,
-    py_function_checker,
-    py_variables_checker,
     variables_dict_from_llm_py,
 )
 from utils.templates import S
@@ -30,21 +30,21 @@ SOURCE_CODE_LARGE_TEMPLATE_PY = [
     (
         S.FN_COND_JSON,
         "# Global Variables",
-        py_variables_checker,
+        PyVariableRawSymbolCollection.from_static_analysis,
         variables_dict_from_llm_py,
         None,
     ),
     (
         S.FN_COND_JSON,
         "# Classes",
-        py_class_checker,
+        PyClassRawSymbolCollection.from_static_analysis,
         class_dict_from_llm_py,
         None,
     ),
     (
         S.FN_COND_JSON,
         "# Functions",
-        py_function_checker,
+        PyFnRawSymbolCollection.from_static_analysis,
         fn_dict_from_llm_py,
         None,
     ),

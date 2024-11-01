@@ -1,16 +1,22 @@
 from functools import partial
 from pathlib import Path
-from typing import Any
+from typing import Self
 
 from utils.codemap_ctags import extract_symbols_w_ctags
 
-from .common import (
-    class_dict_from_llm,
-    classes_dict_from_llm_multi_prompt,
-    fn_dict_from_llm,
-    fn_dict_from_llm_multi_prompt,
-    variables_dict_from_llm,
-    variables_dict_from_llm_multi_prompt,
+from .common_v2 import (
+    ClassData,
+    FnData,
+    IrCollection,
+    IrData,
+    RawSymbolCollection,
+    RawSymbolData,
+    ScopeRelation,
+    SymbolKind,
+    VariableData,
+    code_requires_multi_prompt,
+    create_raw_symbol_via_ctags,
+    default_ctags_analysis,
 )
 
 PY_CLASS = {"class"}
@@ -88,6 +94,8 @@ CLASSES_FOUND_USER_PROMPT = """
 Summarize the class in the code provided below.
 
 - When describing a class, provide detail that matches the complexity of the class. Large and complex classes with many members should get longer explanations, while small ones a single sentence.
+
+Class to document:
 """
 
 METHODS_FOUND_SYSTEM_PROMPT_JSON = """
@@ -122,6 +130,8 @@ METHODS_FOUND_USER_PROMPT = """
 Summarize the class method in the code provided below. Describe the inputs, control flow and logic, and output.
 
 - When describing a class method, provide detail that matches the complexity of the function body. Large and complex functions should get longer explanations, while small ones much less.
+
+Method to document:
 """
 
 DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON = """
@@ -150,9 +160,10 @@ Summarize the data structure in the code provided below.
 
 - A data structure is custom or compound type in a given programming language, such as structs, classes, or enums. Functions, methods, and variables are not data structures. In Python, custom data structures are typically defined as classes.
 - When describing an important data structure, provide detail that matches the complexity of the data structure. Large and complex data structures should get longer explanations, while small ones a single sentence.
+
+Data structure to document:
 """
 
-DATA_STRUCTURES_NONE_CONTENT = "\n---\nNo custom data structures defined in this file."
 
 FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON = """
 You are an expert Python programmer and a software engineering documentation expert. You write detailed documentation to explain code written in Python.
@@ -184,9 +195,10 @@ FUNCTIONS_FOUND_USER_PROMPT = """
 Summarize the function in the code provided below. Describe the inputs, control flow and logic, and output.
 
 - When describing a function, provide detail that matches the complexity of the function body. Large and complex functions should get longer explanations, while small ones much less.
+
+Function to document:
 """
 
-FUNCTIONS_NONE_CONTENT = "\n---\nNo functions or class methods defined in this file."
 
 VARIABLES_FOUND_SYSTEM_PROMPT_JSON = """
 You are an expert Python programmer and a software engineering documentation expert. You write detailed documentation to explain code written in Python.
@@ -210,130 +222,222 @@ Summarize the variable in the code provided below.
 
 - A global variable is declared at the top level scope. Local variables declared and used inside of functions are not global variables. You will be describing a global variable.
 - When describing a variable, provide detail that matches the complexity of the variable. Large and complex global variables (e.g., containing large class instances) should get longer explanations, while small ones (e.g., one line definitions) much less.
+
+Variable to document:
 """
 
-VARIABLES_NONE_CONTENT = "\n---\nNo global variables defined in this file."
+
+# IR data classes
+class PyVariableData(VariableData):
+    @classmethod
+    def system_prompt(cls) -> str:
+        return VARIABLES_FOUND_SYSTEM_PROMPT_JSON
+
+    @classmethod
+    def user_prompt(cls, symbol: RawSymbolData) -> str:
+        user_prompt = f"{VARIABLES_FOUND_USER_PROMPT}{symbol.name}\n\nVariable Code:\n\n{symbol.symbol_code}"
+        if symbol.file_code:
+            user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
+        return user_prompt
+
+    @classmethod
+    def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
+        raise NotImplementedError("Variables should not have children")
+
+    @classmethod
+    def child_to_field_name(cls, child: RawSymbolData) -> str:
+        raise NotImplementedError("Variables should not have children")
 
 
-def py_class_checker(
-    code: str, root_rel_path: Path, structured_output: bool = True
-) -> dict[str, dict[str, Any]] | str | None:
-    symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-    classes_dict = {
-        s["name"]: {
-            "methods": [],
-            "nested_classes": [],
+class PyVariableCollection(IrCollection):
+    data: dict[str, PyVariableData | list[PyVariableData]]
+
+
+class PyFnData(FnData):
+    @classmethod
+    def system_prompt(cls) -> str:
+        return FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON
+
+    @classmethod
+    def user_prompt(cls, symbol: RawSymbolData) -> str:
+        user_prompt = f"{FUNCTIONS_FOUND_USER_PROMPT}{symbol.name}\n\nFunction Code:\n\n{symbol.symbol_code}"
+        if symbol.file_code:
+            user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
+        return user_prompt
+
+    @classmethod
+    def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
+        raise NotImplementedError("Functions should not have children")
+
+    @classmethod
+    def child_to_field_name(cls, child: RawSymbolData) -> str:
+        raise NotImplementedError("Functions should not have children")
+
+
+class PyFnCollection(IrCollection):
+    data: dict[str, PyFnData | list[PyFnData]]
+
+
+class PyClassData(ClassData):
+    @classmethod
+    def system_prompt(cls) -> str:
+        return CLASSES_FOUND_SYSTEM_PROMPT_JSON
+
+    @classmethod
+    def user_prompt(cls, symbol: RawSymbolData) -> str:
+        user_prompt = f"{CLASSES_FOUND_USER_PROMPT}{symbol.name}\n\nClass Code:\n\n{symbol.symbol_code}"
+        if symbol.file_code:
+            user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
+        return user_prompt
+
+    @classmethod
+    def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
+        mapping = {
+            SymbolKind.CALLABLE: PyFnData,
+            SymbolKind.CLASS: None,  # for child classes and structs we just list them
         }
-        for s in symbols
-        if s["kind"] in PY_CLASS and not s["name"].startswith("__anon")
-    }
-    for s in symbols:
-        name = s["name"]
-        scope = s.get("scope")
-        if (
-            (scope is not None)
-            and not name.startswith("__anon")
-            and s.get("scopeKind") in PY_CLASS
-        ):
-            scope_split = scope.split(".")[-1]
-            # TODO: Pretty sure we're safe here as Python does not have method overloading.
-            if scope_split in classes_dict:
-                if s["kind"] in PY_METHODS:
-                    classes_dict[scope_split]["methods"].append(s)
-                elif s["kind"] in PY_CLASS:
-                    classes_dict[scope_split]["nested_classes"].append(s)
-                else:
-                    print(
-                        f"Unhandled child ({name}) of parent ({scope} in {root_rel_path}"
-                    )
-    if len(classes_dict) > 0:
-        if structured_output:
-            output = classes_dict
-        else:
-            output = "\nClasses to document in the code:\n\n"
-            for n in classes_dict:
-                output += f"- {n}\n"
-    else:
-        output = None
+        return mapping.get(symbol.symbol_kind)
 
-    return output
+    @classmethod
+    def child_to_field_name(cls, child: RawSymbolData) -> str:
+        mapping = {
+            SymbolKind.CALLABLE: ScopeRelation.METHOD,
+            SymbolKind.CLASS: ScopeRelation.NESTED_CLASS,
+        }
+        return mapping.get(child.symbol_kind)
 
 
-def py_function_checker(
-    code: str, root_rel_path: Path, structured_output: bool = True
-) -> list[str] | str | None:
-    symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-    fn_list = []
-    for s in symbols:
-        if s["kind"] in PY_FUNCTIONS and not s["name"].startswith("__anon"):
-            fn_list.append(s["name"])
-    if len(fn_list) > 0:
-        if structured_output:
-            output = fn_list
-        else:
-            output = "\nFunctions and methods to document in the code:\n\n"
-            for fn in fn_list:
-                output += f"- {fn}\n"
-    else:
-        output = None
-    return output
+class PyClassCollection(IrCollection):
+    data: dict[str, PyClassData | list[PyClassData]]
 
 
-def py_variables_checker(
-    code: str, root_rel_path: Path, structured_output: bool = True
-) -> list[str] | str | None:
-    symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-    v_list = [s["name"] for s in symbols if s["kind"] in PY_VARIABLES]
-    if len(v_list) > 0:
-        if structured_output:
-            output = v_list
-        else:
-            output = "\nVariables to document in the code:\n\n"
-            for v in v_list:
-                output += f"- {v}\n"
-    else:
-        output = None
-    return output
+# Symbol extraction classes
+class PyVariableRawSymbolCollection(RawSymbolCollection):
+    data: dict[str, RawSymbolData]
+
+    @classmethod
+    def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
+        return default_ctags_analysis(
+            collection_cls=cls,
+            code=code,
+            root_rel_path=root_rel_path,
+            symbol_kind=SymbolKind.VARIABLE,
+            ctags_kinds=PY_VARIABLES,
+            delimiter=".",
+            add_symbol_padding=True,
+        )
+
+    @classmethod
+    def from_llm(cls, code: str, root_rel_path: str) -> Self:
+        raise NotImplementedError("Static analysis should be used for Py variables")
+
+    def to_dict(self) -> dict[str, RawSymbolData]:
+        return self.data
+
+
+class PyFnRawSymbolCollection(RawSymbolCollection):
+    data: dict[str, RawSymbolData]
+
+    @classmethod
+    def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
+        return default_ctags_analysis(
+            collection_cls=cls,
+            code=code,
+            root_rel_path=root_rel_path,
+            symbol_kind=SymbolKind.CALLABLE,
+            ctags_kinds=PY_FUNCTIONS,
+            delimiter=".",
+            add_symbol_padding=False,
+        )
+
+    @classmethod
+    def from_llm(cls, code: str, root_rel_path: str) -> Self:
+        raise NotImplementedError("Static analysis should be used for Py functions")
+
+    def to_dict(self) -> dict[str, RawSymbolData]:
+        return self.data
+
+
+class PyClassRawSymbolCollection(RawSymbolCollection):
+    data: dict[str, RawSymbolData]
+
+    @classmethod
+    def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
+        is_multi_prompt = code_requires_multi_prompt(code)
+
+        symbols = extract_symbols_w_ctags(
+            root_rel_path=root_rel_path, file_content=code
+        )
+
+        class_raw_symbol_data = {}
+        for s in symbols:
+            if s["kind"] in PY_CLASS:
+                class_raw_symbol_data[s["name"]] = create_raw_symbol_via_ctags(
+                    ctags_symbol=s,
+                    root_rel_path=root_rel_path,
+                    code=code,
+                    symbol_kind=SymbolKind.CLASS,
+                    scope_relation=None,
+                    delimiter=".",
+                    is_multi_prompt=is_multi_prompt,
+                )
+
+        for s in symbols:
+            if (
+                (s.get("scope") is not None)
+                and not s["name"].startswith("__anon")
+                and s.get("scopeKind") in PY_CLASS
+            ):
+                scope_split = s["scope"].split(".")[-1]
+                if scope_split in class_raw_symbol_data:
+                    if s["kind"] in PY_METHODS:
+                        class_raw_symbol_data[scope_split].children.append(
+                            create_raw_symbol_via_ctags(
+                                ctags_symbol=s,
+                                root_rel_path=root_rel_path,
+                                code=code,
+                                symbol_kind=SymbolKind.CALLABLE,
+                                scope_relation=ScopeRelation.METHOD,
+                                delimiter=".",
+                                is_multi_prompt=is_multi_prompt,
+                            )
+                        )
+                    elif s["kind"] in PY_CLASS:
+                        class_raw_symbol_data[scope_split].children.append(
+                            create_raw_symbol_via_ctags(
+                                ctags_symbol=s,
+                                root_rel_path=root_rel_path,
+                                code=code,
+                                symbol_kind=SymbolKind.CLASS,
+                                scope_relation=ScopeRelation.NESTED_CLASS,
+                                delimiter=".",
+                                is_multi_prompt=is_multi_prompt,
+                            )
+                        )
+        output = (
+            None if len(class_raw_symbol_data) == 0 else cls(data=class_raw_symbol_data)
+        )
+        return output
+
+    @classmethod
+    def from_llm(cls, code: str, root_rel_path: str) -> Self:
+        raise NotImplementedError("Static analysis should be used for Py classes")
+
+    def to_dict(self) -> dict[str, RawSymbolData]:
+        return self.data
 
 
 variables_dict_from_llm_py = partial(
-    variables_dict_from_llm,
-    VARIABLES_FOUND_SYSTEM_PROMPT_JSON,
-    VARIABLES_FOUND_USER_PROMPT,
+    PyVariableCollection.dict_from_llm,
+    PyVariableData,
 )
 
 class_dict_from_llm_py = partial(
-    class_dict_from_llm,
-    CLASSES_FOUND_SYSTEM_PROMPT_JSON,
-    CLASSES_FOUND_USER_PROMPT,
-    METHODS_FOUND_SYSTEM_PROMPT_JSON,
-    METHODS_FOUND_USER_PROMPT,
-    ".",
+    PyClassCollection.dict_from_llm,
+    PyClassData,
 )
 
 fn_dict_from_llm_py = partial(
-    fn_dict_from_llm,
-    FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
-    FUNCTIONS_FOUND_USER_PROMPT,
-)
-
-variables_dict_from_llm_py_multi_prompt = partial(
-    variables_dict_from_llm_multi_prompt,
-    VARIABLES_FOUND_SYSTEM_PROMPT_JSON,
-    VARIABLES_FOUND_USER_PROMPT,
-)
-
-class_dict_from_llm_py_multi_prompt = partial(
-    classes_dict_from_llm_multi_prompt,
-    CLASSES_FOUND_SYSTEM_PROMPT_JSON,
-    CLASSES_FOUND_USER_PROMPT,
-    FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
-    FUNCTIONS_FOUND_USER_PROMPT,
-    ".",
-)
-
-fn_dict_from_llm_py_multi_prompt = partial(
-    fn_dict_from_llm_multi_prompt,
-    FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
-    FUNCTIONS_FOUND_USER_PROMPT,
+    PyFnCollection.dict_from_llm,
+    PyFnData,
 )

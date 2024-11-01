@@ -242,8 +242,8 @@ class CppClassData(ClassData):
     @classmethod
     def child_to_field_name(cls, child: RawSymbolData) -> str:
         mapping = {
-            SymbolKind.CALLABLE: "Methods",
-            SymbolKind.DATA_STRUCTURE: "Nested Classes",
+            SymbolKind.CALLABLE: ScopeRelation.METHOD,
+            SymbolKind.DATA_STRUCTURE: ScopeRelation.NESTED_CLASS,
         }
         return mapping.get(child.symbol_kind)
 

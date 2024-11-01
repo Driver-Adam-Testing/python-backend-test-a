@@ -61,6 +61,7 @@ class SymbolKind(Enum):
     DATA_STRUCTURE = auto()
     CLASS = auto()
     INTERFACE = auto()
+    MODULE = auto()
 
 
 class ScopeRelation(StrEnum):
@@ -94,6 +95,8 @@ class RawSymbolData(BaseModel):
 
 
 class RawSymbolCollection(BaseModel, abc.ABC):
+    data: dict[str, RawSymbolData]
+
     @classmethod
     @abc.abstractmethod
     def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
@@ -104,7 +107,7 @@ class RawSymbolCollection(BaseModel, abc.ABC):
     def from_llm(cls, code: str, root_rel_path: Path) -> Self | None:
         pass
 
-    @abc.abstractmethod
+    @abc.abstractmethod  # todo: unabstract this
     def to_dict(self) -> dict[str, RawSymbolData]:
         pass
 
@@ -322,7 +325,7 @@ class ListData(BaseModel):
 
 class IrData(BaseModel, abc.ABC):
     _children: list = PrivateAttr(default_factory=list)
-    _supported_child_ordering: list[str] = PrivateAttr(
+    _supported_child_ordering: list[ScopeRelation] = PrivateAttr(
         default=[]
     )  # provide a list of field names in the order they should be rendered
     # Support for children and how they are presented are now defined by _supported_child_ordering and

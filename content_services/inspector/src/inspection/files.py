@@ -79,6 +79,9 @@ from inspection.prompt_templates.files.templates.source_code_large_rust_multi_pr
 from inspection.prompt_templates.files.templates.source_code_large_verilog import (
     SOURCE_CODE_LARGE_TEMPLATE_VERILOG,
 )
+from inspection.prompt_templates.files.templates.source_code_large_verilog_multi_prompt import (
+    SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_VERILOG,
+)
 from inspection.prompt_templates.files.templates.source_code_multi_context_default import (
     SOURCE_CODE_MULTI_CONTEXT_TEMPLATE_DEFAULT,
 )
@@ -468,6 +471,8 @@ def comprehend_file_top_down(
                         template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_RUBY
                     case Lang.ASSEMBLY:
                         template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_ASSEMBLY
+                    case Lang.VERILOG:
+                        template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_VERILOG
                     case _:
                         template = SOURCE_CODE_MULTI_CONTEXT_TEMPLATE_DEFAULT
                 long_template = Template(template=template)

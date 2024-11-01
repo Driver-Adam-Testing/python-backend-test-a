@@ -2,14 +2,16 @@ from functools import partial
 from pathlib import Path
 from typing import Self
 
-import openai
-from pydantic import BaseModel
-from utils.codemap_ctags import extract_symbols_w_ctags
-from utils.models import ChatOpenAI, OutputConfig, OutputConfigKind
-
-from .common import (
+from .common_v2 import (
+    FnData,
+    IrCollection,
+    IrData,
     NamedContent,
-    variables_dict_from_llm,
+    RawSymbolCollection,
+    RawSymbolData,
+    SymbolKind,
+    VariableData,
+    default_ctags_analysis,
 )
 
 # GO for:
@@ -90,9 +92,10 @@ Summarize the modules in the code provided below.
 - A verilog module may contain a list of parameter constants.
 - A verilog module communicates through a list of input and output ports.
 - When describing a module, provide detail that matches the complexity of the module. Large and complex modules should get longer explanations, while small ones a single sentence.
+
+Module to document:
 """
 
-MODULES_NONE_CONTENT = "\n---\nNo modules defined in this file."
 
 FUNCTIONS_AND_TASKS_FOUND_SYSTEM_PROMPT_JSON = """
 You are an expert Verilog and hardware description language programmer and a technical documentation expert. You write detailed documentation to explain code written in Verilog.
@@ -131,9 +134,9 @@ Summarize the functions and tasks in the code provided below.
 - A verilog function processes a single input and returns a single value.
 - A verilog task is more general and can calculate multiple return values, returning them using `output` and `inout` type arguments.
 - When describing a function or task, provide detail that matches the complexity of the funciton or task. Large and complex functions or tasks should get longer explanations, while small ones a single sentence.
-"""
 
-FUNCTIONS_AND_TASKS_NONE_CONTENT = "\n---\nNo functions or tasks defined in this file."
+Function to document:
+"""
 
 
 DATA_TYPES_FOUND_SYSTEM_PROMPT_JSON = """
@@ -162,214 +165,179 @@ Summarize the data types in the code provided below.
 - Registers are variables to store values.
 - Net data types represent values that change when some driver changes (e.g., a wire).
 - When describing a data type, provide detail that matches the complexity of the data type. Large and complex data types should get longer explanations, while simpler ones much less.
+
+Data type to document:
 """
 
-DATA_TYPES_NONE_CONTENT = "\n---\nNo data types defined in this file."
 
-
-class ModuleData(BaseModel):
+# IR Classes
+class VerilogModuleData(IrData):
     constants: list[NamedContent]
     ports: list[NamedContent]
     description: str
 
     @classmethod
-    def from_llm(
-        cls,
-        llm: ChatOpenAI,
-        system_prompt: str,
-        user_prompt: str,
-        m_name: str,
-        code: str,
-    ) -> Self:
-        user_prompt_complete = (
-            f"{user_prompt}Module to document: {m_name}\n\nCode:\n\n{code}"
-        )
-        try:
-            content_raw = llm.generate_response(
-                system_prompt=system_prompt,
-                user_prompt=user_prompt_complete,
-                output_cfg=OutputConfig(kind=OutputConfigKind.JSON_STRICT, payload=cls),
-            )
-        except openai.LengthFinishReasonError as _:
-            return cls(type="", members=[], description="Module too large to process")
-
-        return cls.parse_raw(content_raw)
-
-
-class ModuleDict(BaseModel):
-    data: dict[str, ModuleData]
-
-    def render_markdown(self) -> str:
-        output = ""
-        for k, v in self.data.items():
-            output += f"\n---\n### {k}\n"
-            output += "\n- **Constants**:\n"
-            if len(v.constants) > 0:
-                for c in v.constants:
-                    output += f"    - `{c.name}`: {c.content}\n"
-            else:
-                output += "    - None\n"
-            output += "\n- **Ports**:\n"
-            if len(v.ports) > 0:
-                for m in v.ports:
-                    output += f"    - `{m.name}`: {m.content}\n"
-            else:
-                output += "    - None\n"
-            output += f"\n- **Description**: {v.description}\n\n"
-        return output
-
-    def __str__(self) -> str:
-        return self.render_markdown()
-
-
-def module_dict_from_llm_verilog(
-    llm: ChatOpenAI, m_list: list[str], code: str
-) -> ModuleDict:
-    m_dict = {
-        m: ModuleData.from_llm(
-            llm=llm,
-            system_prompt=MODULES_FOUND_SYSTEM_PROMPT_JSON,
-            user_prompt=MODULES_FOUND_USER_PROMPT,
-            m_name=m,
-            code=code,
-        )
-        for m in m_list
-    }
-    return ModuleDict(data=m_dict)
-
-
-def verilog_module_checker(
-    code: str, root_rel_path: Path, structured_output: bool = True
-) -> list[str] | str | None:
-    symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-    m_list = []
-    for s in symbols:
-        if s["kind"] in VERILOG_MODULES:
-            m_list.append(s["name"])
-    if len(m_list) > 0:
-        if structured_output:
-            output = m_list
-        else:
-            output = "\nModules to document in the code:\n\n"
-            for m in m_list:
-                output += f"- {m}\n"
-    else:
-        output = None
-    return output
-
-
-class FnTaskData(BaseModel):
-    single_sentence: str
-    inputs: list[NamedContent]
-    control_flow: list[str]
-    outputs: list[str]
+    def system_prompt(cls) -> str:
+        return MODULES_FOUND_SYSTEM_PROMPT_JSON
 
     @classmethod
-    def from_llm(
-        cls,
-        llm: ChatOpenAI,
-        system_prompt: str,
-        user_prompt: str,
-        ft_name: str,
-        code: str,
-    ) -> Self:
-        user_prompt_complete = (
-            f"{user_prompt}Function or task to document: {ft_name}\n\nCode:\n\n{code}"
+    def user_prompt(cls, symbol: RawSymbolData) -> str:
+        user_prompt = f"{MODULES_FOUND_USER_PROMPT}{symbol.name}\n\nModule code:\n\n{symbol.symbol_code}"
+        if symbol.file_code:
+            user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
+        return user_prompt
+
+    @classmethod
+    def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
+        raise NotImplementedError("Modules should not have children")
+
+    @classmethod
+    def child_to_field_name(cls, child: RawSymbolData) -> str:
+        raise NotImplementedError("Modules should not have children")
+
+    @classmethod
+    def default_instance(cls) -> Self:
+        return cls(
+            description="",
+            constants=[],
+            ports=[],
         )
-        content_raw = llm.generate_response(
-            system_prompt=system_prompt,
-            user_prompt=user_prompt_complete,
-            output_cfg=OutputConfig(kind=OutputConfigKind.JSON_STRICT, payload=cls),
-        )
-
-        return cls.parse_raw(content_raw)
 
 
-class FnTaskDict(BaseModel):
-    data: dict[str, FnTaskData]
-
-    def render_markdown(self) -> str:
-        output = ""
-        for k, v in self.data.items():
-            output += f"\n---\n### {k}\n"
-            output += f"{v.single_sentence}\n"
-            output += "\n- **Inputs**:\n"
-            if len(v.inputs) > 0:
-                for i in v.inputs:
-                    output += f"    - `{i.name}`: {i.content}\n"
-            else:
-                output += "    - None\n"
-            output += "\n- **Output**:\n"
-            if len(v.outputs) > 0:
-                for o in v.outputs:
-                    output += f"    - {o}\n"
-            else:
-                output += "    - None\n"
-            output += "\n- **Logic and Control Flow**:\n"
-            for item in v.control_flow:
-                output += f"    - {item}\n"
-            output += "\n"
-        return output
-
-    def __str__(self) -> str:
-        return self.render_markdown()
+class VerilogModuleCollection(IrCollection):
+    data: dict[str, VerilogModuleData | list[VerilogModuleData]]
 
 
-def fntask_dict_from_llm_verilog(
-    llm: ChatOpenAI, ft_list: list[str], code: str
-) -> FnTaskDict:
-    ft_dict = {
-        ft: FnTaskData.from_llm(
-            llm=llm,
-            system_prompt=FUNCTIONS_AND_TASKS_FOUND_SYSTEM_PROMPT_JSON,
-            user_prompt=FUNCTIONS_AND_TASKS_FOUND_USER_PROMPT,
-            ft_name=ft,
+class VerilogFnTaskData(FnData):
+    @classmethod
+    def system_prompt(cls) -> str:
+        return FUNCTIONS_AND_TASKS_FOUND_SYSTEM_PROMPT_JSON
+
+    @classmethod
+    def user_prompt(cls, symbol: RawSymbolData) -> str:
+        user_prompt = f"{FUNCTIONS_AND_TASKS_FOUND_USER_PROMPT}{symbol.name}\n\nFunction or task code:\n\n{symbol.symbol_code}"
+        if symbol.file_code:
+            user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
+        return user_prompt
+
+    @classmethod
+    def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
+        raise NotImplementedError("Functions should not have children")
+
+    @classmethod
+    def child_to_field_name(cls, child: RawSymbolData) -> str:
+        raise NotImplementedError("Functions should not have children")
+
+
+class VerilogFnTaskCollection(IrCollection):
+    data: dict[str, VerilogFnTaskData | list[VerilogFnTaskData]]
+
+
+class VerilogDataTypeData(VariableData):
+    @classmethod
+    def system_prompt(cls) -> str:
+        return DATA_TYPES_FOUND_SYSTEM_PROMPT_JSON
+
+    @classmethod
+    def user_prompt(cls, symbol: RawSymbolData) -> str:
+        user_prompt = f"{DATA_TYPES_FOUND_USER_PROMPT}{symbol.name}\n\nData type code:\n\n{symbol.symbol_code}"
+        if symbol.file_code:
+            user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
+        return user_prompt
+
+    @classmethod
+    def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
+        raise NotImplementedError("Data types should not have children")
+
+    @classmethod
+    def child_to_field_name(cls, child: RawSymbolData) -> str:
+        raise NotImplementedError("Data types should not have children")
+
+
+class VerilogDataTypeCollection(IrCollection):
+    data: dict[str, VerilogDataTypeData | list[VerilogDataTypeData]]
+
+
+class VerilogModuleRawSymbolCollection(RawSymbolCollection):
+    data: dict[str, RawSymbolData | list[RawSymbolData]]
+
+    @classmethod
+    def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self:
+        return default_ctags_analysis(
+            collection_cls=cls,
             code=code,
+            root_rel_path=root_rel_path,
+            symbol_kind=SymbolKind.MODULE,
+            ctags_kinds=VERILOG_MODULES,
+            delimiter=None,
+            add_symbol_padding=False,
         )
-        for ft in ft_list
-    }
-    return FnTaskDict(data=ft_dict)
+
+    @classmethod
+    def from_llm(cls, code: str, root_rel_path: str) -> Self:
+        raise NotImplementedError("Static analysis should be used for Verilog")
+
+    def to_dict(self) -> dict[str, RawSymbolData]:
+        return self.data
 
 
-def verilog_fntask_checker(
-    code: str, root_rel_path: Path, structured_output: bool = True
-) -> list[str] | str | None:
-    symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-    ft_list = []
-    for s in symbols:
-        if s["kind"] in VERILOG_FUNCTIONS_AND_TASKS:
-            ft_list.append(s["name"])
-    if len(ft_list) > 0:
-        if structured_output:
-            output = ft_list
-        else:
-            output = "\nFunctions and tasks to document in the code:\n\n"
-            for ft in ft_list:
-                output += f"- {ft}\n"
-    else:
-        output = None
-    return output
+class VerilogFnTaskRawSymbolCollection(RawSymbolCollection):
+    data: dict[str, RawSymbolData | list[RawSymbolData]]
+
+    @classmethod
+    def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self:
+        return default_ctags_analysis(
+            collection_cls=cls,
+            code=code,
+            root_rel_path=root_rel_path,
+            symbol_kind=SymbolKind.CALLABLE,
+            ctags_kinds=VERILOG_FUNCTIONS_AND_TASKS,
+            delimiter=None,
+            add_symbol_padding=False,
+        )
+
+    @classmethod
+    def from_llm(cls, code: str, root_rel_path: str) -> Self:
+        raise NotImplementedError("Static analysis should be used for Verilog")
+
+    def to_dict(self) -> dict[str, RawSymbolData]:
+        return self.data
 
 
-def verilog_data_types_checker(
-    code: str, root_rel_path: Path, structured_output: bool = True
-) -> list[str] | str | None:
-    symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-    dt_list = [s["name"] for s in symbols if s["kind"] in VERILOG_DATA_TYPES]
-    if len(dt_list) > 0:
-        if structured_output:
-            output = dt_list
-        else:
-            output = "\nData types to document in the code:\n\n"
-            for dt in dt_list:
-                output += f"- {dt}\n"
-    else:
-        output = None
-    return output
+class VerilogDataTypeRawSymbolCollection(RawSymbolCollection):
+    data: dict[str, RawSymbolData | list[RawSymbolData]]
 
+    @classmethod
+    def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self:
+        return default_ctags_analysis(
+            collection_cls=cls,
+            code=code,
+            root_rel_path=root_rel_path,
+            symbol_kind=SymbolKind.VARIABLE,
+            ctags_kinds=VERILOG_DATA_TYPES,
+            delimiter=None,
+            add_symbol_padding=False,
+        )
+
+    @classmethod
+    def from_llm(cls, code: str, root_rel_path: str) -> Self:
+        raise NotImplementedError("Static analysis should be used for Verilog")
+
+    def to_dict(self) -> dict[str, RawSymbolData]:
+        return self.data
+
+
+module_dict_from_llm_verilog = partial(
+    VerilogModuleCollection.dict_from_llm,
+    VerilogModuleData,
+)
+
+function_task_dict_from_llm_verilog = partial(
+    VerilogFnTaskCollection.dict_from_llm,
+    VerilogFnTaskData,
+)
 
 data_types_dict_from_llm_verilog = partial(
-    variables_dict_from_llm,
-    DATA_TYPES_FOUND_SYSTEM_PROMPT_JSON,
-    DATA_TYPES_FOUND_USER_PROMPT,
+    VerilogDataTypeCollection.dict_from_llm,
+    VerilogDataTypeData,
 )

@@ -1,23 +1,24 @@
 from functools import partial
 from pathlib import Path
-from typing import Any, Self
+from typing import Self
 
-from pydantic import BaseModel
+from pydantic import PrivateAttr
 from utils.codemap_ctags import extract_symbols_w_ctags
-from utils.models import ChatOpenAI, OutputConfig, OutputConfigKind
 
-from .common import (
-    MAX_VARIABLES_TO_DOCUMENT,
-    SYMBOL_CHUNK_OVERLAP,
-    SYMBOL_MAX_CHUNK_SIZE,
+from .common_v2 import (
     FnData,
+    IrCollection,
+    IrData,
     NamedContent,
-    fn_dict_from_llm,
-    fn_dict_from_llm_multi_prompt,
-    render_function,
-    symbols_dict_from_llm_multi_prompt,
-    variables_dict_from_llm,
-    variables_dict_from_llm_multi_prompt,
+    ParserKind,
+    RawSymbolCollection,
+    RawSymbolData,
+    ScopeRelation,
+    SymbolKind,
+    VariableData,
+    code_requires_multi_prompt,
+    create_raw_symbol_via_ctags,
+    default_ctags_analysis,
 )
 
 RUST_DATA_STRUCTURE = {"enum", "struct"}
@@ -92,6 +93,8 @@ DATA_STRUCTURES_FOUND_USER_PROMPT = """
 Summarize the data structure in the code provided below.
 
 - When describing a data structure, provide detail that matches the complexity of the data structure. Large and complex data structures with many members should get longer explanations, while small ones a single sentence.
+
+Data structure to document:
 """
 
 METHODS_FOUND_SYSTEM_PROMPT_JSON = """
@@ -126,6 +129,8 @@ METHODS_FOUND_USER_PROMPT = """
 Summarize the data structure method in the code provided below. Describe the inputs, control flow and logic, and output.
 
 - When describing a data structure method, provide detail that matches the complexity of the method body. Large and complex methods should get longer explanations, while small ones much less.
+
+Method to document:
 """
 
 MACROS_FOUND_SYSTEM_PROMPT_JSON = """
@@ -154,6 +159,8 @@ MACROS_FOUND_USER_PROMPT = """
 Summarize the data structure in the code provided below.
 
 - When describing a data structure, provide detail that matches the complexity of the data structure. Large and complex data structures with many members should get longer explanations, while small ones a single sentence.
+
+Macro to document:
 """
 
 FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON = """
@@ -186,6 +193,8 @@ FUNCTIONS_FOUND_USER_PROMPT = """
 Summarize the function in the code provided below. Describe the inputs, control flow and logic, and output.
 
 - When describing a function, provide detail that matches the complexity of the function body. Large and complex functions should get longer explanations, while small ones much less.
+
+Function to document:
 """
 
 VARIABLES_FOUND_SYSTEM_PROMPT_JSON = """
@@ -210,6 +219,8 @@ Summarize the global variable or constant in the code provided below.
 
 - A global variable is declared at the top level scope. Local variables declared and used inside of functions are not global variables. You will be describing a global variable.
 - When describing a variable, provide detail that matches the complexity of the variable. Large and complex global variables (e.g., containing large data structure instances) should get longer explanations, while small ones (e.g., one line definitions) much less.
+
+Variable to document:
 """
 
 TRAITS_FOUND_SYSTEM_PROMPT_JSON = """
@@ -240,675 +251,464 @@ TRAITS_FOUND_USER_PROMPT = """
 Summarize the trait in the code provided below.
 
 - When describing a trait, provide detail that matches the complexity of the trait. Large and complex data structures with many methods, generics, and trait bounds should get longer explanations, while small ones a single sentence.
+
+Trait to document:
 """
 
 
-class MacroData(BaseModel):
+# IR Classes
+class RustMacroData(IrData):
     type: str
     description: str
     logic: list[str]
     use: str
 
     @classmethod
-    def from_llm(
-        cls,
-        llm: ChatOpenAI,
-        system_prompt: str,
-        user_prompt: str,
-        macro_name: str,
-        code: str,
-    ) -> Self:
-        user_prompt_complete = (
-            f"{user_prompt}Macro to document: {macro_name}\n\nCode:\n\n{code}"
+    def system_prompt(cls) -> str:
+        return MACROS_FOUND_SYSTEM_PROMPT_JSON
+
+    @classmethod
+    def user_prompt(cls, symbol: RawSymbolData) -> str:
+        user_prompt = f"{MACROS_FOUND_USER_PROMPT}{symbol.name}"
+        if symbol.file_code:
+            user_prompt += f"\n\nCode:\n\n{symbol.file_code}"
+        else:
+            user_prompt += f"\n\nCode:\n\n{symbol.symbol_code}"
+        return user_prompt
+
+    @classmethod
+    def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
+        raise NotImplementedError("Macros should not have children")
+
+    @classmethod
+    def child_to_field_name(cls, child: RawSymbolData) -> str:
+        raise NotImplementedError("Macros should not have children")
+
+    @classmethod
+    def default_instance(cls) -> Self:
+        return cls(
+            type="",
+            description="",
+            logic=[],
+            use="",
         )
-        content_raw = llm.generate_response(
-            system_prompt=system_prompt,
-            user_prompt=user_prompt_complete,
-            output_cfg=OutputConfig(kind=OutputConfigKind.JSON_STRICT, payload=cls),
-        )
-
-        return cls.parse_raw(content_raw)
 
 
-class MacroDict(BaseModel):
-    data: dict[str, MacroData]
-
-    def render_markdown(self) -> str:
-        output = ""
-        for k, v in self.data.items():
-            output += f"\n---\n## {k}\n"
-            output += f"- **Type**: `{v.type}`\n"
-            output += f"- **Description**: {v.description}\n"
-            output += "- **Logic**:\n"
-            for item in v.logic:
-                output += f"    - {item}\n"
-            output += f"- **Use**: {v.use}\n\n"
-
-        return output
-
-    def __str__(self) -> str:
-        return self.render_markdown()
+class RustMacroCollection(IrCollection):
+    data: dict[str, RustMacroData | list[RustMacroData]]
 
 
-class TraitData(BaseModel):
+class RustTraitData(IrData):
     trait_bounds: list[str]
     generic_types: list[str]
     methods: list[NamedContent]
     description: str
 
     @classmethod
-    def from_llm(
-        cls,
-        llm: ChatOpenAI,
-        system_prompt: str,
-        user_prompt: str,
-        trait_name: str,
-        code: str,
-    ) -> Self:
-        user_prompt_complete = (
-            f"{user_prompt}Trait to document: {trait_name}\n\nCode:\n\n{code}"
+    def system_prompt(cls) -> str:
+        return TRAITS_FOUND_SYSTEM_PROMPT_JSON
+
+    @classmethod
+    def user_prompt(cls, symbol: RawSymbolData) -> str:
+        user_prompt = f"{TRAITS_FOUND_USER_PROMPT}{symbol.name}"
+        if symbol.file_code:
+            user_prompt += f"\n\nCode:\n\n{symbol.file_code}"
+        else:
+            user_prompt += f"\n\nCode:\n\n{symbol.symbol_code}"
+        return user_prompt
+
+    @classmethod
+    def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
+        raise NotImplementedError("Traits should not have children")
+
+    @classmethod
+    def child_to_field_name(cls, child: RawSymbolData) -> str:
+        raise NotImplementedError("Traits should not have children")
+
+    @classmethod
+    def default_instance(cls) -> Self:
+        return cls(
+            trait_bounds=[],
+            generic_types=[],
+            methods=[],
+            description="",
         )
-        content_raw = llm.generate_response(
-            system_prompt=system_prompt,
-            user_prompt=user_prompt_complete,
-            output_cfg=OutputConfig(kind=OutputConfigKind.JSON_STRICT, payload=cls),
-        )
-
-        return cls.parse_raw(content_raw)
 
 
-class TraitDataDict(BaseModel):
-    data: dict[str, TraitData]
-
-    def render_markdown(self) -> str:
-        output = ""
-        for k, v in self.data.items():
-            output += f"\n---\n## {k}\n"
-            if len(v.trait_bounds) > 0:
-                output += "- **Trait Bounds**\n"
-                for tb in v.trait_bounds:
-                    output += f"    - `{tb}`\n"
-            if len(v.generic_types) > 0:
-                output += "- **Generic Types**\n"
-                for gt in v.generic_types:
-                    output += f"    - `{gt}`\n"
-            if len(v.methods) > 0:
-                output += "- **Methods**\n"
-                for m in v.methods:
-                    output += f"    - `{m.name}`: {m.content}\n"
-            output += f"- **Description**\n{v.description}\n"
-        return output
-
-    def __str__(self) -> str:
-        return self.render_markdown()
+class RustTraitCollection(IrCollection):
+    data: dict[str, RustTraitData | list[RustTraitData]]
 
 
-class DataStructureBaseData(BaseModel):
-    type: str | None
+class RustDataStructureData(IrData):
+    type: str
     members: list[NamedContent]
     description: str
     trait_bounds: list[str]
+    _supported_child_ordering: list[str] = PrivateAttr(
+        default=[ScopeRelation.METHOD, ScopeRelation.NESTED_DATA_STRUCTURE]
+    )
 
     @classmethod
-    def from_llm(
-        cls,
-        llm: ChatOpenAI,
-        system_prompt: str,
-        user_prompt: str,
-        name: str,
-        code: str,
-    ) -> Self:
-        user_prompt_complete = (
-            f"{user_prompt}Data structure to document: {name}\n\nCode:\n\n{code}"
-        )
-        content_raw = llm.generate_response(
-            system_prompt=system_prompt,
-            user_prompt=user_prompt_complete,
-            output_cfg=OutputConfig(kind=OutputConfigKind.JSON_STRICT, payload=cls),
-        )
+    def system_prompt(cls) -> str:
+        return DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON
 
-        return cls.parse_raw(content_raw)
-
-
-class DataStructureData(BaseModel):
-    base_data: DataStructureBaseData
-    methods: dict[str, FnData | list[FnData]]
-    nested_data_structures: list[str]
-
-
-def render_data_structure_base_data(
-    data_structure_name: str, data_structure_data: DataStructureData
-) -> str:
-    output = ""
-    output += f"\n---\n---\n### {data_structure_name}\n"
-    if data_structure_data.base_data.type is None:
-        output += f"`{data_structure_name}` implemented elsewhere\n\n"
-        return output
-    output += f"- **Type**: `{data_structure_data.base_data.type}`\n"
-    if len(data_structure_data.base_data.trait_bounds) > 0:
-        output += "\n- **Trait Bounds**:\n"
-        for i in data_structure_data.base_data.trait_bounds:
-            output += f"    - `{i}`\n"
-    output += f"\n- **Description**: {data_structure_data.base_data.description}\n\n"
-    output += "\n- **Members**:\n"
-    if len(data_structure_data.base_data.members) > 0:
-        non_dupe_members = 0
-        for m in data_structure_data.base_data.members:
-            if (
-                data_structure_name not in data_structure_data.methods
-                and data_structure_name
-                not in data_structure_data.nested_data_structures
-            ):
-                output += f"    - `{m.name}`: {m.content}\n"
-                non_dupe_members += 1
-        if non_dupe_members == 0:
-            output += "    - None\n"
-    return output
-
-
-class DataStructureDict(BaseModel):
-    data: dict[str, DataStructureData]
-
-    def render_markdown(self) -> str:
-        output = ""
-        for k, v in self.data.items():
-            output += render_data_structure_base_data(k, v)
-            if len(v.methods) > 0:
-                output += "\n**Methods**\n"
-                for n, m in v.methods.items():
-                    # Case of potentially overloaded method.
-                    if isinstance(m, list):
-                        for sub_m in m:
-                            output += render_function(n, sub_m, 4)
-                    else:
-                        output += render_function(n, m, 4)
-            if len(v.nested_data_structures) > 0:
-                output += "\n**Nested Data Structures**:\n"
-                for n in v.nested_data_structures:
-                    output += f"    - {n}\n"
-
-        return output
-
-    def __str__(self) -> str:
-        return self.render_markdown()
-
-
-def macros_dict_from_llm(
-    system_prompt: str,
-    user_prompt: str,
-    llm: ChatOpenAI,
-    macros_list: list[str],
-    code: str,
-) -> MacroDict:
-    macros_dict = {
-        m: MacroData.from_llm(
-            llm=llm,
-            system_prompt=system_prompt,
-            user_prompt=user_prompt,
-            macro_name=m,
-            code=code,
-        )
-        for m in macros_list[:MAX_VARIABLES_TO_DOCUMENT]
-    }
-    return MacroDict(data=macros_dict)
-
-
-BLIND_ADVANCE_IF_NO_END_LINE = 200
-DATA_STRUCTURE_BLIND_ADVANCE_IF_NO_END_LINE = 400
-
-
-def data_structure_dict_from_llm(
-    system_prompt_ds: str,
-    user_prompt_ds: str,
-    system_prompt_fn: str,
-    user_prompt_fn: str,
-    method_delimiter: str,
-    llm: ChatOpenAI,
-    data_structure_dict_raw: dict[str, dict[str, Any]],
-    code: str,
-) -> DataStructureDict:
-    data_structure_dict_documented = {}
-    global_method_counts = {}
-    for _, ds_data in data_structure_dict_raw.items():
-        for m in ds_data["methods"]:
-            name = m["name"]
-            global_method_counts[name] = global_method_counts.get(name, 0) + 1
-    for ds_name, ds_data in data_structure_dict_raw.items():
-        if ds_data.get("undefined"):
-            data_structure_base = DataStructureBaseData(
-                type=None,
-                members=[],
-                description="",
-                trait_bounds=[],
-            )
+    @classmethod
+    def user_prompt(cls, symbol: RawSymbolData) -> str:
+        user_prompt = f"{DATA_STRUCTURES_FOUND_USER_PROMPT}{symbol.name}"
+        if symbol.file_code:
+            user_prompt += f"\n\nCode:\n\n{symbol.file_code}"
         else:
-            data_structure_base = DataStructureBaseData.from_llm(
-                system_prompt=system_prompt_ds,
-                user_prompt=user_prompt_ds,
-                llm=llm,
-                name=ds_name,
-                code=code,
-            )
-        methods = {}
-        nested_data_structures = []
-        for m in ds_data["methods"]:
-            m_name = m["name"]
-            pattern = m.get("pattern")
-            scoped_name = ds_name + method_delimiter + m_name
-            # More than one method with the same name in the file: cut scope for LLM.
-            if global_method_counts[m_name] > 1:
-                scope_str = f"\n\nThere may be multiple definitions of the function in the code provided. Describe only the implementation for the `{ds_name}` data structure"
-                if pattern is not None:
-                    scope_str += f" associated with the following type signature: `{pattern}`.\n\n"
-                else:
-                    scope_str += ".\n\n"
-                # # Use list to handle method overloading, if present.
-                if scoped_name not in methods:
-                    methods[scoped_name] = []
-                methods[scoped_name].append(
-                    FnData.from_llm(
-                        system_prompt=system_prompt_fn,
-                        user_prompt=user_prompt_fn + scope_str,
-                        llm=llm,
-                        fn_name=m_name,
-                        code=code,
-                    )
-                )
-            else:
-                m_data = FnData.from_llm(
-                    system_prompt=system_prompt_fn,
-                    user_prompt=user_prompt_fn,
-                    llm=llm,
-                    fn_name=m_name,
-                    code=code,
-                )
-                methods[scoped_name] = m_data
+            user_prompt += f"\n\nCode:\n\n{symbol.symbol_code}"
+        return user_prompt
 
-        for nested_data_structure in ds_data["nested_data_structures"]:
-            nested_data_structures.append(nested_data_structure["name"])
-
-        data_structure_data = DataStructureData(
-            base_data=data_structure_base,
-            methods=methods,
-            nested_data_structures=nested_data_structures,
-        )
-        data_structure_dict_documented[ds_name] = data_structure_data
-    return DataStructureDict(data=data_structure_dict_documented)
-
-
-FUNCTION_PREPEND_LINES = 100
-
-
-def data_structure_dict_from_llm_multi_prompt(
-    system_prompt_ds: str,
-    user_prompt_ds: str,
-    system_prompt_fn: str,
-    user_prompt_fn: str,
-    method_delimiter: str,
-    llm: ChatOpenAI,
-    data_structure_dict_raw: dict[str, dict[str, Any]],
-    code: str,
-    root_rel_path: Path,
-) -> DataStructureDict:
-    from shared.chunking.text_splitter import split_text
-
-    symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-    data_structure_dict_documented = {}
-    global_method_counts = {}
-    for _, ds_data in data_structure_dict_raw.items():
-        for m in ds_data["methods"]:
-            name = m["name"]
-            global_method_counts[name] = global_method_counts.get(name, 0) + 1
-    for symbol in symbols:
-        for ds_name, ds_data in data_structure_dict_raw.items():
-            if symbol["name"] == ds_name:
-                if ds_data.get("undefined"):
-                    data_structure_base = DataStructureBaseData(
-                        type=None,
-                        members=[],
-                        description="",
-                        trait_bounds=[],
-                    )
-                start_line = symbol["line"]
-                end_line = start_line + DATA_STRUCTURE_BLIND_ADVANCE_IF_NO_END_LINE
-                class_code = "\n".join(code.splitlines()[start_line - 1 : end_line + 1])
-                code_chunks = split_text(
-                    text=class_code,
-                    chunk_size=SYMBOL_MAX_CHUNK_SIZE,
-                    chunk_overlap=SYMBOL_CHUNK_OVERLAP,
-                )
-                code_to_process = (
-                    class_code if len(code_chunks) == 1 else code_chunks[0].text
-                )
-                if not ds_data.get("undefined"):
-                    data_structure_base = DataStructureBaseData.from_llm(
-                        system_prompt=system_prompt_ds,
-                        user_prompt=user_prompt_ds,
-                        llm=llm,
-                        name=ds_name,
-                        code=code_to_process,
-                    )
-                methods = {}
-                nested_data_structures = []
-                for m in ds_data["methods"]:
-                    m_name = m["name"]
-                    pattern = m.get("pattern")
-                    scoped_name = ds_name + method_delimiter + m_name
-                    m_start_line = m["line"] - FUNCTION_PREPEND_LINES
-                    m_end_line = m_start_line + BLIND_ADVANCE_IF_NO_END_LINE
-
-                    m_code = "\n".join(
-                        code.splitlines()[m_start_line - 1 : m_end_line + 1]
-                    )
-                    # More than one method with the same name in the file: cut scope for LLM.
-                    if global_method_counts[m_name] > 1:
-                        scope_str = f"\n\nThere may be multiple definitions of the function in the code provided. Describe only the implementation for the `{ds_name}` data structure"
-                        if pattern is not None:
-                            scope_str += f" associated with the following type signature: `{pattern}`.\n\n"
-                        else:
-                            scope_str += ".\n\n"
-                        # # Use list to handle method overloading, if present.
-                        if scoped_name not in methods:
-                            methods[scoped_name] = []
-                        methods[scoped_name].append(
-                            FnData.from_llm(
-                                system_prompt=system_prompt_fn,
-                                user_prompt=user_prompt_fn + scope_str,
-                                llm=llm,
-                                fn_name=m_name,
-                                code=m_code,
-                            )
-                        )
-                    else:
-                        m_data = FnData.from_llm(
-                            system_prompt=system_prompt_fn,
-                            user_prompt=user_prompt_fn,
-                            llm=llm,
-                            fn_name=m_name,
-                            code=m_code,
-                        )
-                        methods[scoped_name] = m_data
-
-                for nested_data_structure in ds_data["nested_data_structures"]:
-                    nested_data_structures.append(nested_data_structure["name"])
-
-                data_structure_data = DataStructureData(
-                    base_data=data_structure_base,
-                    methods=methods,
-                    nested_data_structures=nested_data_structures,
-                )
-                data_structure_dict_documented[ds_name] = data_structure_data
-    return DataStructureDict(data=data_structure_dict_documented)
-
-
-def traits_dict_from_llm(
-    system_prompt: str,
-    user_prompt: str,
-    llm: ChatOpenAI,
-    traits_list: list[str],
-    code: str,
-) -> TraitDataDict:
-    traits_dict = {
-        v: TraitData.from_llm(
-            llm=llm,
-            system_prompt=system_prompt,
-            user_prompt=user_prompt,
-            trait_name=v,
-            code=code,
-        )
-        for v in traits_list[:MAX_VARIABLES_TO_DOCUMENT]
-    }
-    return TraitDataDict(data=traits_dict)
-
-
-def rust_data_structure_checker(
-    code: str, root_rel_path: Path, structured_output: bool = True
-) -> dict[str, dict[str, Any]] | str | None:
-    symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-    data_structures_dict = {
-        s["name"]: {
-            "methods": [],
-            "nested_data_structures": [],
-            "undefined": False,
+    @classmethod
+    def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
+        mapping = {
+            SymbolKind.CALLABLE: RustMethodData,
+            SymbolKind.DATA_STRUCTURE: None,
         }
-        for s in symbols
-        if s["kind"] in RUST_DATA_STRUCTURE and not s["name"].startswith("__anon")
-    }
-    for s in symbols:
-        name = s["name"]
-        scope = s.get("scope")
-        if (
-            (scope is not None)
-            and not name.startswith("__anon")
-            and (s.get("kind") in RUST_METHODS)
-            and (s.get("scopeKind") in RUST_IMPLEMENTATIONS)
-        ):
-            if scope not in data_structures_dict:
-                data_structures_dict[scope] = {
-                    "methods": [],
-                    "nested_data_structures": [],
-                    "undefined": True,
-                }
-            data_structures_dict[scope]["methods"].append(s)
-        elif (
-            (scope is not None)
-            and not name.startswith("__anon")
-            and (s.get("kind") in RUST_DATA_STRUCTURE)
-            and (s.get("scopeKind") in RUST_DATA_STRUCTURE)
-        ):
-            if scope in data_structures_dict:
-                data_structures_dict[scope]["nested_data_structures"].append(s)
-    if len(data_structures_dict) > 0:
-        if structured_output:
-            output = data_structures_dict
+        return mapping.get(symbol.symbol_kind)
+
+    @classmethod
+    def child_to_field_name(cls, child: RawSymbolData) -> str:
+        mapping = {
+            SymbolKind.CALLABLE: ScopeRelation.METHOD,
+            SymbolKind.DATA_STRUCTURE: ScopeRelation.NESTED_DATA_STRUCTURE,
+        }
+        return mapping.get(child.symbol_kind)
+
+    @classmethod
+    def default_instance(cls) -> Self:
+        return cls(
+            type="",
+            members=[],
+            description="Implemented elsewhere",
+            trait_bounds=[],
+        )
+
+
+class RustDataStructureCollection(IrCollection):
+    data: dict[str, RustDataStructureData | list[RustDataStructureData]]
+
+
+class RustMethodData(FnData):
+    @classmethod
+    def system_prompt(cls) -> str:
+        return METHODS_FOUND_SYSTEM_PROMPT_JSON
+
+    @classmethod
+    def user_prompt(cls, symbol: RawSymbolData) -> str:
+        # TODO: for overloaded case
+        user_prompt = f"{METHODS_FOUND_USER_PROMPT}{symbol.name}"
+        if symbol.file_code:
+            user_prompt += f"\n\nCode:\n\n{symbol.file_code}"
         else:
-            output = "\nData structures to document in the code:\n\n"
-            for n in data_structures_dict:
-                output += f"- {n}\n"
-    else:
-        output = None
+            user_prompt += f"\n\nCode:\n\n{symbol.symbol_code}"
+        return user_prompt
 
-    return output
+    @classmethod
+    def child_to_ir(cls, symbol: RawSymbolData) -> IrData | None:
+        raise NotImplementedError("Methods should not have children")
+
+    @classmethod
+    def child_to_field_name(cls, child: RawSymbolData) -> str:
+        raise NotImplementedError("Methods should not have children")
 
 
-def rust_function_checker(
-    code: str, root_rel_path: Path, structured_output: bool = True
-) -> list[str] | str | None:
-    symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-    fn_list = []
-    for s in symbols:
-        if s["kind"] in RUST_FUNCTIONS and not s["name"].startswith("__anon"):
-            fn_list.append(s["name"])
-    if len(fn_list) > 0:
-        if structured_output:
-            output = fn_list
+class RustFnData(FnData):
+    @classmethod
+    def system_prompt(cls) -> str:
+        return FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON
+
+    @classmethod
+    def user_prompt(cls, symbol: RawSymbolData) -> str:
+        user_prompt = f"{FUNCTIONS_FOUND_USER_PROMPT}{symbol.name}"
+        if symbol.file_code:
+            user_prompt += f"\n\nCode:\n\n{symbol.file_code}"
         else:
-            output = "\nFunctions to document in the code:\n\n"
-            for fn in fn_list:
-                output += f"- {fn}\n"
-    else:
-        output = None
-    return output
+            user_prompt += f"\n\nCode:\n\n{symbol.symbol_code}"
+        return user_prompt
+
+    @classmethod
+    def child_to_ir(cls, symbol: RawSymbolData) -> IrData | None:
+        raise NotImplementedError("Functions should not have children")
+
+    @classmethod
+    def child_to_field_name(cls, child: RawSymbolData) -> str:
+        raise NotImplementedError("Functions should not have children")
 
 
-def rust_variables_checker(
-    code: str, root_rel_path: Path, structured_output: bool = True
-) -> list[str] | str | None:
-    symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-    v_list = [
-        s["name"]
-        for s in symbols
-        if s["kind"] in RUST_VARIABLES and not s.get("scopeKind")
-    ]
-    if len(v_list) > 0:
-        if structured_output:
-            output = v_list
+class RustFnCollection(IrCollection):
+    data: dict[str, RustFnData | list[RustFnData]]
+
+
+class RustVariableData(VariableData):
+    @classmethod
+    def system_prompt(cls) -> str:
+        return VARIABLES_FOUND_SYSTEM_PROMPT_JSON
+
+    @classmethod
+    def user_prompt(cls, symbol: RawSymbolData) -> str:
+        user_prompt = f"{VARIABLES_FOUND_USER_PROMPT}{symbol.name}"
+        if symbol.file_code:
+            user_prompt += f"\n\nCode:\n\n{symbol.file_code}"
         else:
-            output = "\nVariables to document in the code:\n\n"
-            for v in v_list:
-                output += f"- {v}\n"
-    else:
-        output = None
-    return output
+            user_prompt += f"\n\nCode:\n\n{symbol.symbol_code}"
+        return user_prompt
+
+    @classmethod
+    def child_to_ir(cls, symbol: RawSymbolData) -> IrData | None:
+        raise NotImplementedError("Variables should not have children")
+
+    @classmethod
+    def child_to_field_name(cls, child: RawSymbolData) -> str:
+        raise NotImplementedError("Variables should not have children")
 
 
-def rust_macros_checker(
-    code: str, root_rel_path: Path, structured_output: bool = True
-) -> list[str] | str | None:
-    symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-    m_list = [s["name"] for s in symbols if s["kind"] in RUST_MACROS]
-    if len(m_list) > 0:
-        if structured_output:
-            output = m_list
-        else:
-            output = "\nMacros to document in the code:\n\n"
-            for v in m_list:
-                output += f"- {v}\n"
-    else:
-        output = None
-    return output
+class RustVariableCollection(IrCollection):
+    data: dict[str, RustVariableData | list[RustVariableData]]
 
 
-def rust_traits_checker(
-    code: str, root_rel_path: Path, stuctured_output: bool = True
-) -> list[str] | str | None:
-    symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-    t_list = [s["name"] for s in symbols if s["kind"] in RUST_TRAITS]
-    if len(t_list) > 0:
-        if stuctured_output:
-            output = t_list
-        else:
-            output = "\nTraits to document in the code:\n\n"
-            for t in t_list:
-                output += f"- {t}\n"
-    else:
-        output = None
-    return output
+class RustDataStructureRawSymbolCollection(RawSymbolCollection):
+    data: dict[str, RawSymbolData | list[RawSymbolData]]
+
+    @classmethod
+    def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self:
+        is_multi_prompt = code_requires_multi_prompt(code)
+
+        symbols = extract_symbols_w_ctags(
+            root_rel_path=root_rel_path, file_content=code
+        )
+
+        global_method_counts = {}
+        data_struct_raw_symbol_data = {}
+        for s in symbols:
+            if s["kind"] in RUST_METHODS and not s["name"].startswith("__anon"):
+                global_method_counts[s["name"]] = (
+                    global_method_counts.get(s["name"], 0) + 1
+                )
+            if s["kind"] in RUST_DATA_STRUCTURE and not s["name"].startswith("__anon"):
+                data_struct_raw_symbol_data[s["name"]] = create_raw_symbol_via_ctags(
+                    ctags_symbol=s,
+                    root_rel_path=root_rel_path,
+                    code=code,
+                    symbol_kind=SymbolKind.DATA_STRUCTURE,
+                    scope_relation=None,
+                    delimiter="::",
+                    is_multi_prompt=is_multi_prompt,
+                )
+
+        for s in symbols:
+            if (
+                s.get("scope")
+                and not s["name"].startswith("__anon")
+                and (s.get("kind") in RUST_METHODS)
+                and (s.get("scopeKind") in RUST_IMPLEMENTATIONS)
+            ):
+                if s["scope"] not in data_struct_raw_symbol_data:
+                    data_struct_raw_symbol_data[s["scope"]] = RawSymbolData(
+                        parser_kind=ParserKind.UCTAGS,
+                        symbol_kind=SymbolKind.DATA_STRUCTURE,
+                        name=s["scope"],
+                        path=root_rel_path,
+                        scope=None,
+                        scope_relation=None,
+                        children=[],
+                        start_line=None,
+                        end_line=None,
+                        symbol_code=None,
+                        file_code=None,
+                        reference_code=None,
+                        delimiter="::",
+                    )
+
+                is_overloaded = global_method_counts[s["name"]] > 1
+                data_struct_raw_symbol_data[s["scope"]].children.append(
+                    create_raw_symbol_via_ctags(
+                        ctags_symbol=s,
+                        root_rel_path=root_rel_path,
+                        code=code,
+                        symbol_kind=SymbolKind.CALLABLE,
+                        scope_relation=ScopeRelation.METHOD,
+                        delimiter="::",
+                        is_multi_prompt=is_multi_prompt,
+                        is_overloaded=is_overloaded,
+                    )
+                )
+            elif (
+                s.get("scope")
+                and not s["name"].startswith("__anon")
+                and (s.get("kind") in RUST_DATA_STRUCTURE)
+                and (s.get("scopeKind") in RUST_DATA_STRUCTURE)
+            ):
+                if s["scope"] in data_struct_raw_symbol_data:
+                    data_struct_raw_symbol_data[s["scope"]].children.append(
+                        create_raw_symbol_via_ctags(
+                            ctags_symbol=s,
+                            root_rel_path=root_rel_path,
+                            code=code,
+                            symbol_kind=SymbolKind.DATA_STRUCTURE,
+                            scope_relation=ScopeRelation.NESTED_DATA_STRUCTURE,
+                            delimiter="::",
+                            is_multi_prompt=is_multi_prompt,
+                        )
+                    )
+        output = (
+            None
+            if len(data_struct_raw_symbol_data) == 0
+            else cls(data=data_struct_raw_symbol_data)
+        )
+        return output
+
+    @classmethod
+    def from_llm(cls, code: str, root_rel_path: str) -> Self:
+        raise NotImplementedError("Static analysis should be used for Rust classes")
+
+    def to_dict(self) -> dict[str, RawSymbolData]:
+        return self.data
 
 
-MAX_MACROS_TO_DOCUMENT = 100
-MAX_TRAITS_TO_DOCUMENT = 100
+class RustFnRawSymbolCollection(RawSymbolCollection):
+    data: dict[str, RawSymbolData | list[RawSymbolData]]
+
+    @classmethod
+    def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self:
+        is_multi_prompt = code_requires_multi_prompt(code)
+
+        symbols = extract_symbols_w_ctags(
+            root_rel_path=root_rel_path, file_content=code
+        )
+
+        fn_raw_symbol_data = {}
+        for s in symbols:
+            if s["kind"] in RUST_FUNCTIONS and not s["name"].startswith("__anon"):
+                fn_raw_symbol_data[s["name"]] = create_raw_symbol_via_ctags(
+                    ctags_symbol=s,
+                    root_rel_path=root_rel_path,
+                    code=code,
+                    symbol_kind=SymbolKind.CALLABLE,
+                    scope_relation=None,
+                    delimiter="::",
+                    is_multi_prompt=is_multi_prompt,
+                )
+
+        output = None if len(fn_raw_symbol_data) == 0 else cls(data=fn_raw_symbol_data)
+        return output
+
+    @classmethod
+    def from_llm(cls, code: str, root_rel_path: str) -> Self:
+        raise NotImplementedError("Static analysis should be used for Rust functions")
+
+    def to_dict(self) -> dict[str, RawSymbolData]:
+        return self.data
 
 
-def macros_dict_from_llm_multi_prompt(
-    system_prompt: str,
-    user_prompt: str,
-    llm: ChatOpenAI,
-    macros_list: list[str],
-    code: str,
-    root_rel_path: Path,
-) -> MacroDict:
-    macros_dict = symbols_dict_from_llm_multi_prompt(
-        llm=llm,
-        symbols_list=macros_list,
-        code=code,
-        root_rel_path=root_rel_path,
-        data_class=MacroData,
-        system_prompt=system_prompt,
-        user_prompt=user_prompt,
-        max_symbols_to_document=MAX_MACROS_TO_DOCUMENT,
-    )
-    return MacroDict(data=macros_dict)
+class RustVariablesRawSymbolCollection(RawSymbolCollection):
+    data: dict[str, RawSymbolData | list[RawSymbolData]]
+
+    @classmethod
+    def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self:
+        is_multi_prompt = code_requires_multi_prompt(code)
+
+        symbols = extract_symbols_w_ctags(
+            root_rel_path=root_rel_path, file_content=code
+        )
+
+        variable_raw_symbol_data = {}
+        for s in symbols:
+            if s["kind"] in RUST_VARIABLES and not s.get("scopeKind"):
+                variable_raw_symbol_data[s["name"]] = create_raw_symbol_via_ctags(
+                    ctags_symbol=s,
+                    root_rel_path=root_rel_path,
+                    code=code,
+                    symbol_kind=SymbolKind.VARIABLE,
+                    scope_relation=None,
+                    delimiter="::",
+                    is_multi_prompt=is_multi_prompt,
+                )
+
+        output = (
+            None
+            if len(variable_raw_symbol_data) == 0
+            else cls(data=variable_raw_symbol_data)
+        )
+        return output
+
+    @classmethod
+    def from_llm(cls, code: str, root_rel_path: str) -> Self:
+        raise NotImplementedError("Static analysis should be used for Rust functions")
+
+    def to_dict(self) -> dict[str, RawSymbolData]:
+        return self.data
 
 
-def traits_dict_from_llm_multi_prompt(
-    system_prompt: str,
-    user_prompt: str,
-    llm: ChatOpenAI,
-    traits_list: list[str],
-    code: str,
-    root_rel_path: Path,
-) -> TraitDataDict:
-    traits_dict = symbols_dict_from_llm_multi_prompt(
-        llm=llm,
-        symbols_list=traits_list,
-        code=code,
-        root_rel_path=root_rel_path,
-        data_class=TraitData,
-        system_prompt=system_prompt,
-        user_prompt=user_prompt,
-        max_symbols_to_document=MAX_TRAITS_TO_DOCUMENT,
-    )
-    return TraitDataDict(data=traits_dict)
+class RustMacroRawSymbolCollection(RawSymbolCollection):
+    data: dict[str, RawSymbolData | list[RawSymbolData]]
+
+    @classmethod
+    def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self:
+        return default_ctags_analysis(
+            collection_cls=cls,
+            code=code,
+            root_rel_path=root_rel_path,
+            symbol_kind=SymbolKind.CALLABLE,
+            ctags_kinds=RUST_MACROS,
+            delimiter="::",
+            add_symbol_padding=False,
+        )
+
+    @classmethod
+    def from_llm(cls, code: str, root_rel_path: str) -> Self:
+        raise NotImplementedError("Static analysis should be used for Rust functions")
+
+    def to_dict(self) -> dict[str, RawSymbolData]:
+        return self.data
+
+
+class RustTraitsRawSymbolCollection(RawSymbolCollection):
+    data: dict[str, RawSymbolData | list[RawSymbolData]]
+
+    @classmethod
+    def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self:
+        return default_ctags_analysis(
+            collection_cls=cls,
+            code=code,
+            root_rel_path=root_rel_path,
+            symbol_kind=SymbolKind.DATA_STRUCTURE,
+            ctags_kinds=RUST_TRAITS,
+            delimiter="::",
+            add_symbol_padding=False,
+        )
+
+    @classmethod
+    def from_llm(cls, code: str, root_rel_path: str) -> Self:
+        raise NotImplementedError("Static analysis should be used for Rust functions")
+
+    def to_dict(self) -> dict[str, RawSymbolData]:
+        return self.data
 
 
 variables_dict_from_llm_rust = partial(
-    variables_dict_from_llm,
-    VARIABLES_FOUND_SYSTEM_PROMPT_JSON,
-    VARIABLES_FOUND_USER_PROMPT,
+    RustVariableCollection.dict_from_llm,
+    RustVariableData,
 )
 
 macros_dict_from_llm_rust = partial(
-    macros_dict_from_llm,
-    MACROS_FOUND_SYSTEM_PROMPT_JSON,
-    MACROS_FOUND_USER_PROMPT,
+    RustMacroCollection.dict_from_llm,
+    RustMacroData,
 )
 
 data_structure_dict_from_llm_rust = partial(
-    data_structure_dict_from_llm,
-    DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
-    DATA_STRUCTURES_FOUND_USER_PROMPT,
-    METHODS_FOUND_SYSTEM_PROMPT_JSON,
-    METHODS_FOUND_USER_PROMPT,
-    "::",
+    RustDataStructureCollection.dict_from_llm,
+    RustDataStructureData,
 )
 
 fn_dict_from_llm_rust = partial(
-    fn_dict_from_llm,
-    FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
-    FUNCTIONS_FOUND_USER_PROMPT,
+    RustFnCollection.dict_from_llm,
+    RustFnData,
 )
 
 traits_dict_from_llm_rust = partial(
-    traits_dict_from_llm,
-    TRAITS_FOUND_SYSTEM_PROMPT_JSON,
-    TRAITS_FOUND_USER_PROMPT,
+    RustTraitCollection.dict_from_llm,
+    RustTraitData,
 )
-
-variables_dict_from_llm_rust_multi_prompt = partial(
-    variables_dict_from_llm_multi_prompt,
-    VARIABLES_FOUND_SYSTEM_PROMPT_JSON,
-    VARIABLES_FOUND_USER_PROMPT,
-)
-
-macros_dict_from_llm_rust_multi_prompt = partial(
-    macros_dict_from_llm_multi_prompt,
-    MACROS_FOUND_SYSTEM_PROMPT_JSON,
-    MACROS_FOUND_USER_PROMPT,
-)
-
-traits_dict_from_llm_rust_multi_prompt = partial(
-    traits_dict_from_llm_multi_prompt,
-    TRAITS_FOUND_SYSTEM_PROMPT_JSON,
-    TRAITS_FOUND_USER_PROMPT,
-)
-
-fn_dict_from_llm_rust_multi_prompt = partial(
-    fn_dict_from_llm_multi_prompt,
-    FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
-    FUNCTIONS_FOUND_USER_PROMPT,
-)
-
-data_structure_dict_from_llm_rust_multi_prompt = partial(
-    data_structure_dict_from_llm_multi_prompt,
-    DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
-    DATA_STRUCTURES_FOUND_USER_PROMPT,
-    METHODS_FOUND_SYSTEM_PROMPT_JSON,
-    METHODS_FOUND_USER_PROMPT,
-    "::",
-)
-
-# class_dict_from_llm_py_multi_prompt = partial(
-#     classes_dict_from_llm_multi_prompt,
-#     CLASSES_FOUND_SYSTEM_PROMPT_JSON,
-#     CLASSES_FOUND_USER_PROMPT,
-#     FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
-#     FUNCTIONS_FOUND_USER_PROMPT,
-#     ".",
-# )
-
-# fn_dict_from_llm_py_multi_prompt = partial(
-#     fn_dict_from_llm_multi_prompt,
-#     FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
-#     FUNCTIONS_FOUND_USER_PROMPT,
-# )

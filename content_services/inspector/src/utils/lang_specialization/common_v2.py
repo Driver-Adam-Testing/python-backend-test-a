@@ -10,7 +10,7 @@ from enum import Enum, IntEnum, StrEnum, auto
 from typing import Self
 
 import openai
-from pydantic import BaseModel, PrivateAttr
+from pydantic import BaseModel, Field, PrivateAttr
 from utils.codemap_ctags import extract_symbols_w_ctags
 from utils.models import ChatOpenAI, OutputConfig, OutputConfigKind
 
@@ -67,6 +67,7 @@ class ScopeRelation(StrEnum):
     METHOD = "Methods"
     NESTED_CLASS = "Nested Classes"
     NESTED_INTERFACE = "Nested Interfaces"
+    NESTED_DATA_STRUCTURE = "Nested Data Structures"
     FIELD = "Fields"
     CLASS_METHOD = "Class Methods"
     INSTANCE_METHOD = "Instance Methods"
@@ -88,6 +89,8 @@ class RawSymbolData(BaseModel):
     file_code: str | None
     reference_code: str | None
     delimiter: str | None
+    is_large_file: bool = Field(default=False)
+    is_overloaded: bool = Field(default=False)
 
 
 class RawSymbolCollection(BaseModel, abc.ABC):
@@ -198,6 +201,8 @@ def create_raw_symbol_via_ctags(
         file_code=None,
         reference_code=None,
         delimiter=delimiter,
+        is_large_file=is_multi_prompt,
+        is_overloaded=is_overloaded,
     )
 
     if use_padding:

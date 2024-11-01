@@ -2,6 +2,7 @@ from functools import partial
 from pathlib import Path
 from typing import Self
 
+from pydantic import PrivateAttr
 from utils.codemap_ctags import extract_symbols_w_ctags
 
 from .common_v2 import (
@@ -10,6 +11,7 @@ from .common_v2 import (
     NamedContent,
     RawSymbolCollection,
     RawSymbolData,
+    ScopeRelation,
     SymbolKind,
     code_requires_multi_prompt,
     create_raw_symbol_via_ctags,
@@ -77,7 +79,6 @@ Summarize the interface in the code provided below.
 Interface to document:
 """
 
-INTERFACES_NONE_CONTENT = "\n---\nNo interfaces defined in this file."
 
 CLASSES_FOUND_SYSTEM_PROMPT_JSON = """
 You are an expert Java programmer and a software engineering documentation expert. You write detailed documentation to explain code written in Java.
@@ -105,7 +106,6 @@ Summarize the class in the code provided below.
 Class to document:
 """
 
-CLASSES_NONE_CONTENT = "\n---\nNo classes defined in this file."
 
 METHODS_FOUND_SYSTEM_PROMPT_JSON = """
 You are an expert Java programmer and a software engineering documentation expert. You write detailed documentation to explain code written in Java.
@@ -142,7 +142,6 @@ Summarize the method in the code provided below. Describe the inputs, control fl
 Method to document:
 """
 
-METHODS_NONE_CONTENT = "\n---\nNo methods defined in this file."
 
 FIELDS_FOUND_SYSTEM_PROMPT_JSON = """
 You are an expert Java programmer and a software engineering documentation expert. You write detailed documentation to explain code written in Java.
@@ -170,8 +169,6 @@ Summarize the field in the code provided below.
 Field to document:
 """
 
-FIELDS_NONE_CONTENT = "\n---\nNo fields defined in this file."
-
 
 class JavaMethodData(IrData):
     single_sentence: str
@@ -180,9 +177,34 @@ class JavaMethodData(IrData):
     control_flow: list[str]
     output: str
 
+    @classmethod
+    def system_prompt(cls) -> str:
+        return METHODS_FOUND_SYSTEM_PROMPT_JSON
 
-class JavaMethodDict(IrCollection):
-    data: dict[str, JavaMethodData | list[JavaMethodData]]
+    @classmethod
+    def user_prompt(cls, symbol: RawSymbolData) -> str:
+        user_prompt = f"{METHODS_FOUND_USER_PROMPT}{symbol.name}\n\nMethod Code:\n\n{symbol.symbol_code}"
+        if symbol.file_code:
+            user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
+        return user_prompt
+
+    @classmethod
+    def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
+        raise NotImplementedError("Methods should not have children")
+
+    @classmethod
+    def child_to_field_name(cls, child: RawSymbolData) -> str:
+        raise NotImplementedError("Methods should not have children")
+
+    @classmethod
+    def default_instance(cls) -> Self:
+        return cls(
+            single_sentence="",
+            inputs=[],
+            control_flow=[],
+            output="",
+            modifiers=[],
+        )
 
 
 class JavaFieldData(IrData):
@@ -191,82 +213,154 @@ class JavaFieldData(IrData):
     use: str
     modifiers: list[str]
 
+    @classmethod
+    def system_prompt(cls) -> str:
+        return FIELDS_FOUND_SYSTEM_PROMPT_JSON
 
-class JavaFieldDict(IrCollection):
-    data: dict[str, list[JavaFieldData]]
+    @classmethod
+    def user_prompt(cls, symbol: RawSymbolData) -> str:
+        user_prompt = f"{FIELDS_FOUND_USER_PROMPT}{symbol.name}\n\nField Code:\n\n{symbol.symbol_code}"
+        if symbol.file_code:
+            user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
+        return user_prompt
 
+    @classmethod
+    def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
+        raise NotImplementedError("fields should not have children")
 
-class JavaClassBaseData(IrData):
-    modifers: list[str]
-    interfaces_implemented: list[str]
-    classes_extended: list[str]
-    description: str
+    @classmethod
+    def child_to_field_name(cls, child: RawSymbolData) -> str:
+        raise NotImplementedError("fields should not have children")
+
+    @classmethod
+    def default_instance(cls) -> Self:
+        return cls(
+            type="",
+            description="",
+            use="",
+            modifiers=[],
+        )
 
 
 class JavaClassData(IrData):
-    base_data: JavaClassBaseData
-    methods: dict[str, JavaMethodData | list[JavaMethodData]]
-    fields: dict[str, JavaFieldData | list[JavaFieldData]]
-    nested_classes: list[str]
-    nested_interfaces: list[str]
+    modifiers: list[str]
+    interfaces_implemented: list[str]
+    classes_extended: list[str]
+    description: str
+    _supported_child_ordering: list[str] = PrivateAttr(
+        default=[
+            ScopeRelation.METHOD,
+            ScopeRelation.FIELD,
+            ScopeRelation.NESTED_CLASS,
+            ScopeRelation.NESTED_INTERFACE,
+        ]
+    )
 
     @classmethod
-    def default_class(cls) -> Self:
-        base_data = JavaClassBaseData(
-            modifers=[],
+    def system_prompt(cls) -> str:
+        return CLASSES_FOUND_SYSTEM_PROMPT_JSON
+
+    @classmethod
+    def user_prompt(cls, symbol: RawSymbolData) -> str:
+        user_prompt = f"{CLASSES_FOUND_USER_PROMPT}{symbol.name}\n\nClass Code:\n\n{symbol.symbol_code}"
+        if symbol.file_code:
+            user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
+        return user_prompt
+
+    @classmethod
+    def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
+        mapping = {
+            SymbolKind.CALLABLE: JavaMethodData,
+            SymbolKind.CLASS: None,  # for child classes just list them
+            SymbolKind.INTERFACE: None,  # for child interfaces just list them
+            SymbolKind.VARIABLE: JavaFieldData,
+        }
+        return mapping.get(symbol.symbol_kind)
+
+    @classmethod
+    def child_to_field_name(cls, child: RawSymbolData) -> str:
+        mapping = {
+            SymbolKind.CALLABLE: ScopeRelation.METHOD,
+            SymbolKind.CLASS: ScopeRelation.NESTED_CLASS,
+            SymbolKind.INTERFACE: ScopeRelation.NESTED_INTERFACE,
+            SymbolKind.VARIABLE: ScopeRelation.FIELD,
+        }
+        return mapping.get(child.symbol_kind)
+
+    @classmethod
+    def default_instance(cls) -> Self:
+        return cls(
+            modifiers=[],
             interfaces_implemented=[],
             classes_extended=[],
             description="",
         )
-        return cls(
-            base_data=base_data,
-            methods={},
-            fields={},
-            nested_classes=[],
-            nested_interfaces=[],
-        )
 
 
 class JavaClassDict(IrCollection):
-    data: dict[str, list[JavaClassData]]
-
-
-class JavaInterfaceBaseData(IrData):
-    interfaces_extended: list[str]
-    description: str
+    data: dict[str, JavaClassData | list[JavaClassData]]
 
 
 class JavaInterfaceData(IrData):
-    base_data: JavaInterfaceBaseData
-    methods: dict[str, JavaMethodData | list[JavaMethodData]]
-    fields: dict[str, JavaFieldData | list[JavaFieldData]]
-    nested_classes: list[str]
-    nested_interfaces: list[str]
+    interfaces_extended: list[str]
+    description: str
+    _supported_child_ordering: list[str] = PrivateAttr(
+        default=[
+            ScopeRelation.METHOD,
+            ScopeRelation.FIELD,
+            ScopeRelation.NESTED_CLASS,
+            ScopeRelation.NESTED_INTERFACE,
+        ]
+    )
 
     @classmethod
-    def default_class(cls) -> Self:
-        base_data = JavaInterfaceBaseData(
-            description="",
-            interfaces_extended=[],
-        )
+    def system_prompt(cls) -> str:
+        return INTERFACES_FOUND_SYSTEM_PROMPT_JSON
+
+    @classmethod
+    def user_prompt(cls, symbol: RawSymbolData) -> str:
+        user_prompt = f"{INTERFACES_FOUND_USER_PROMPT}{symbol.name}\n\nInterface Code:\n\n{symbol.symbol_code}"
+        if symbol.file_code:
+            user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
+        return user_prompt
+
+    @classmethod
+    def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
+        mapping = {
+            SymbolKind.CALLABLE: JavaMethodData,
+            SymbolKind.CLASS: None,  # for child classes just list them
+            SymbolKind.INTERFACE: None,  # for child interfaces just list them
+            SymbolKind.VARIABLE: JavaFieldData,
+        }
+        return mapping.get(symbol.symbol_kind)
+
+    @classmethod
+    def child_to_field_name(cls, child: RawSymbolData) -> str:
+        mapping = {
+            SymbolKind.CALLABLE: ScopeRelation.METHOD,
+            SymbolKind.CLASS: ScopeRelation.NESTED_CLASS,
+            SymbolKind.INTERFACE: ScopeRelation.NESTED_INTERFACE,
+            SymbolKind.VARIABLE: ScopeRelation.FIELD,
+        }
+        return mapping.get(child.symbol_kind)
+
+    @classmethod
+    def default_instance(cls) -> Self:
         return cls(
-            base_data=base_data,
-            methods={},
-            fields={},
-            nested_classes=[],
-            nested_interfaces=[],
+            interfaces_extended=[],
+            description="",
         )
 
 
 class JavaInterfaceDict(IrCollection):
-    data: dict[str, list[JavaInterfaceData]]
+    data: dict[str, JavaInterfaceData | list[JavaInterfaceData]]
 
 
 class JavaClassRawSymbolCollection(RawSymbolCollection):
     data: dict[str, RawSymbolData]
 
     @classmethod
-    def from_ctags(cls, code: str, root_rel_path: Path) -> Self | None:
+    def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
         is_multi_prompt = code_requires_multi_prompt(code)
 
         symbols = extract_symbols_w_ctags(
@@ -280,8 +374,7 @@ class JavaClassRawSymbolCollection(RawSymbolCollection):
                     ctags_symbol=s,
                     root_rel_path=root_rel_path,
                     code=code,
-                    symbol_kind=SymbolKind.DATA_STRUCTURE,
-                    ir_kind=JavaClassData,
+                    symbol_kind=SymbolKind.CLASS,
                     scope_relation=None,
                     delimiter=".",
                     is_multi_prompt=is_multi_prompt,
@@ -300,8 +393,7 @@ class JavaClassRawSymbolCollection(RawSymbolCollection):
                         root_rel_path=root_rel_path,
                         code=code,
                         symbol_kind=SymbolKind.CALLABLE,
-                        ir_kind=JavaMethodData,
-                        scope_relation="methods",
+                        scope_relation=ScopeRelation.METHOD,
                         delimiter=".",
                         is_multi_prompt=is_multi_prompt,
                     )
@@ -318,9 +410,11 @@ class JavaClassRawSymbolCollection(RawSymbolCollection):
                     create_raw_symbol_via_ctags(
                         ctags_symbol=s,
                         root_rel_path=root_rel_path,
-                        symbol_kind=SymbolKind.DATA_STRUCTURE,
-                        scope_relation="nested_classes",
+                        code=code,
+                        symbol_kind=SymbolKind.CLASS,
+                        scope_relation=ScopeRelation.NESTED_CLASS,
                         delimiter=".",
+                        is_multi_prompt=is_multi_prompt,
                     )
                 )
             elif (
@@ -334,9 +428,11 @@ class JavaClassRawSymbolCollection(RawSymbolCollection):
                     create_raw_symbol_via_ctags(
                         ctags_symbol=s,
                         root_rel_path=root_rel_path,
-                        symbol_kind=SymbolKind.DATA_STRUCTURE,
-                        scope_relation="nested_interfaces",
+                        code=code,
+                        symbol_kind=SymbolKind.INTERFACE,
+                        scope_relation=ScopeRelation.NESTED_INTERFACE,
                         delimiter=".",
+                        is_multi_prompt=is_multi_prompt,
                     )
                 )
             elif (
@@ -351,8 +447,7 @@ class JavaClassRawSymbolCollection(RawSymbolCollection):
                         root_rel_path=root_rel_path,
                         code=code,
                         symbol_kind=SymbolKind.VARIABLE,
-                        ir_kind=JavaFieldData,
-                        scope_relation="fields",
+                        scope_relation=ScopeRelation.FIELD,
                         delimiter=".",
                         is_multi_prompt=is_multi_prompt,
                     )
@@ -363,8 +458,8 @@ class JavaClassRawSymbolCollection(RawSymbolCollection):
         return output
 
     @classmethod
-    def from_ts(cls, code: str, root_rel_path: str) -> Self:
-        pass
+    def from_llm(cls, code: str, root_rel_path: str) -> Self:
+        raise NotImplementedError("Static analysis should be used for Java classes")
 
     def to_dict(self) -> dict[str, RawSymbolData]:
         return self.data
@@ -374,7 +469,7 @@ class JavaInterfaceRawSymbolCollection(RawSymbolCollection):
     data: dict[str, RawSymbolData]
 
     @classmethod
-    def from_ctags(cls, code: str, root_rel_path: Path) -> Self | None:
+    def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
         is_multi_prompt = code_requires_multi_prompt(code)
 
         symbols = extract_symbols_w_ctags(
@@ -388,8 +483,7 @@ class JavaInterfaceRawSymbolCollection(RawSymbolCollection):
                     ctags_symbol=s,
                     root_rel_path=root_rel_path,
                     code=code,
-                    symbol_kind=SymbolKind.DATA_STRUCTURE,
-                    ir_kind=JavaInterfaceData,
+                    symbol_kind=SymbolKind.INTERFACE,
                     scope_relation=None,
                     delimiter=".",
                     is_multi_prompt=is_multi_prompt,
@@ -408,8 +502,7 @@ class JavaInterfaceRawSymbolCollection(RawSymbolCollection):
                         root_rel_path=root_rel_path,
                         code=code,
                         symbol_kind=SymbolKind.CALLABLE,
-                        ir_kind=JavaMethodData,
-                        scope_relation="methods",
+                        scope_relation=ScopeRelation.METHOD,
                         delimiter=".",
                         is_multi_prompt=is_multi_prompt,
                     )
@@ -426,9 +519,11 @@ class JavaInterfaceRawSymbolCollection(RawSymbolCollection):
                     create_raw_symbol_via_ctags(
                         ctags_symbol=s,
                         root_rel_path=root_rel_path,
-                        symbol_kind=SymbolKind.DATA_STRUCTURE,
-                        scope_relation="nested_classes",
+                        code=code,
+                        symbol_kind=SymbolKind.CLASS,
+                        scope_relation=ScopeRelation.NESTED_CLASS,
                         delimiter=".",
+                        is_multi_prompt=is_multi_prompt,
                     )
                 )
             elif (
@@ -442,9 +537,11 @@ class JavaInterfaceRawSymbolCollection(RawSymbolCollection):
                     create_raw_symbol_via_ctags(
                         ctags_symbol=s,
                         root_rel_path=root_rel_path,
-                        symbol_kind=SymbolKind.DATA_STRUCTURE,
-                        scope_relation="nested_interfaces",
+                        code=code,
+                        symbol_kind=SymbolKind.INTERFACE,
+                        scope_relation=ScopeRelation.NESTED_INTERFACE,
                         delimiter=".",
+                        is_multi_prompt=is_multi_prompt,
                     )
                 )
             elif (
@@ -459,8 +556,7 @@ class JavaInterfaceRawSymbolCollection(RawSymbolCollection):
                         root_rel_path=root_rel_path,
                         code=code,
                         symbol_kind=SymbolKind.VARIABLE,
-                        ir_kind=JavaFieldData,
-                        scope_relation="fields",
+                        scope_relation=ScopeRelation.FIELD,
                         delimiter=".",
                         is_multi_prompt=is_multi_prompt,
                     )
@@ -473,8 +569,8 @@ class JavaInterfaceRawSymbolCollection(RawSymbolCollection):
         return output
 
     @classmethod
-    def from_ts(cls, code: str, root_rel_path: str) -> Self:
-        pass
+    def from_llm(cls, code: str, root_rel_path: str) -> Self:
+        raise NotImplementedError("Static analysis should be used for Java interfaces")
 
     def to_dict(self) -> dict[str, RawSymbolData]:
         return self.data
@@ -482,30 +578,10 @@ class JavaInterfaceRawSymbolCollection(RawSymbolCollection):
 
 class_dict_from_llm_java = partial(
     JavaClassDict.dict_from_llm,
-    {
-        "base_data": CLASSES_FOUND_SYSTEM_PROMPT_JSON,
-        "methods": METHODS_FOUND_SYSTEM_PROMPT_JSON,
-        "fields": FIELDS_FOUND_SYSTEM_PROMPT_JSON,
-    },
-    {
-        "base_data": CLASSES_FOUND_USER_PROMPT,
-        "methods": METHODS_FOUND_USER_PROMPT,
-        "fields": FIELDS_FOUND_USER_PROMPT,
-    },
     JavaClassData,
 )
 
 interface_dict_from_llm_java = partial(
     JavaInterfaceDict.dict_from_llm,
-    {
-        "base_data": INTERFACES_FOUND_SYSTEM_PROMPT_JSON,
-        "methods": METHODS_FOUND_SYSTEM_PROMPT_JSON,
-        "fields": FIELDS_FOUND_SYSTEM_PROMPT_JSON,
-    },
-    {
-        "base_data": INTERFACES_FOUND_USER_PROMPT,
-        "methods": METHODS_FOUND_USER_PROMPT,
-        "fields": FIELDS_FOUND_USER_PROMPT,
-    },
     JavaInterfaceData,
 )

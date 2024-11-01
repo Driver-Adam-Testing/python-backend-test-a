@@ -28,14 +28,14 @@ SOURCE_CODE_SMALL_TEMPLATE_JAVA = [
     (
         S.FN_COND_JSON,
         "# Interfaces",
-        JavaInterfaceRawSymbolCollection.from_ctags,
+        JavaInterfaceRawSymbolCollection.from_static_analysis,
         interface_dict_from_llm_java,
         None,
     ),
     (
         S.FN_COND_JSON,
         "# Classes",
-        JavaClassRawSymbolCollection.from_ctags,
+        JavaClassRawSymbolCollection.from_static_analysis,
         class_dict_from_llm_java,
         None,
     ),

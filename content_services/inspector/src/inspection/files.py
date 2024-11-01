@@ -28,6 +28,9 @@ from inspection.prompt_templates.files.templates.metadata_small_default import (
 from inspection.prompt_templates.files.templates.source_code_large_assembly import (
     SOURCE_CODE_LARGE_TEMPLATE_ASSEMBLY,
 )
+from inspection.prompt_templates.files.templates.source_code_large_assembly_multi_prompt import (
+    SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_ASSEMBLY,
+)
 from inspection.prompt_templates.files.templates.source_code_large_c import (
     SOURCE_CODE_LARGE_TEMPLATE_C,
 )
@@ -463,6 +466,8 @@ def comprehend_file_top_down(
                         template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_JAVA
                     case Lang.RUBY:
                         template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_RUBY
+                    case Lang.ASSEMBLY:
+                        template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_ASSEMBLY
                     case _:
                         template = SOURCE_CODE_MULTI_CONTEXT_TEMPLATE_DEFAULT
                 long_template = Template(template=template)

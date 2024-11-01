@@ -6,7 +6,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 import abc
-from enum import Enum, IntEnum, auto
+from enum import Enum, IntEnum, StrEnum, auto
 from typing import Self
 
 import openai
@@ -63,13 +63,13 @@ class SymbolKind(Enum):
     INTERFACE = auto()
 
 
-class ScopeRelation(Enum):
-    METHOD = auto()
-    NESTED_CLASS = auto()
-    NESTED_INTERFACE = auto()
-    FIELD = auto()
-    CLASS_METHOD = auto()
-    INSTANCE_METHOD = auto()
+class ScopeRelation(StrEnum):
+    METHOD = "Methods"
+    NESTED_CLASS = "Nested Classes"
+    NESTED_INTERFACE = "Nested Interfaces"
+    FIELD = "Fields"
+    CLASS_METHOD = "Class Methods"
+    INSTANCE_METHOD = "Instance Methods"
 
 
 class RawSymbolData(BaseModel):
@@ -538,7 +538,7 @@ class ClassData(IrData, abc.ABC):
     description: str
     inherits_from: list[str]
     _supported_child_ordering: list[str] = PrivateAttr(
-        default=["Methods", "Nested Classes"]
+        default=[ScopeRelation.METHOD, ScopeRelation.NESTED_CLASS]
     )
 
     @classmethod

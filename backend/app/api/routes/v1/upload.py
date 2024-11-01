@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.auth import UserToken
+from app.api.auth import ContentEditorPermission, UserToken
 from app.api.session import CurrentSession
 from app.core.logger import logger
 from app.schemas.upload_schema import (
@@ -14,7 +14,9 @@ from app.services.upload_service import UploadService
 router = APIRouter()
 
 
-@router.post("/codebase", summary="Upload a codebase")
+@router.post(
+    "/codebase", summary="Upload a codebase", dependencies=[ContentEditorPermission]
+)
 def upload_codebase(
     session: CurrentSession,
     user: UserToken,
@@ -26,7 +28,7 @@ def upload_codebase(
     return upload_service.upload_codebase(user, request)
 
 
-@router.post("/pdf", summary="Upload a pdf")
+@router.post("/pdf", summary="Upload a pdf", dependencies=[ContentEditorPermission])
 def upload_pdf(
     session: CurrentSession,
     user: UserToken,

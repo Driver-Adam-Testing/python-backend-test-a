@@ -14,6 +14,9 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from app.core.config import settings
 
 ALGORITHMS = ["RS256"]
+ORG_MANAGER = "organization:management"
+CONTENT_EDITOR = "content:editor"
+CONTENT_READONLY = "content:readonly"
 
 
 def get_jwks() -> dict:
@@ -107,6 +110,7 @@ class User(BaseModel):
     scope: str = Field(..., alias="scope")
     organization_name: str = Field(..., alias="org_name")
     authorized_party: str = Field(..., alias="azp")
+    permissions: list[str] = Field()
 
 
 class M2M(BaseModel):
@@ -160,6 +164,6 @@ def require_permission(permission: str) -> Callable[[dict], dict]:
 UserToken = Annotated[User, Depends(get_current_user)]
 M2MToken = Annotated[M2M, Depends(get_current_m2m)]
 
-ContentEditorPermission = Depends(require_permission("content:edit"))
-ContentReadonlyPermission = Depends(require_permission("content:readonly"))
-OrgManagerPermission = Depends(require_permission("organization:manage"))
+ContentEditorPermission = Depends(require_permission(CONTENT_EDITOR))
+ContentReadonlyPermission = Depends(require_permission(CONTENT_READONLY))
+OrgManagerPermission = Depends(require_permission(ORG_MANAGER))

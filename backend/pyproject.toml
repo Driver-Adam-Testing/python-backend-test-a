@@ -7,7 +7,7 @@ authors = ["Admin <admin@example.com>"]
 [tool.poetry.dependencies]
 python = "^3.12"
 uvicorn = {extras = ["standard"], version = "^0.24.0.post1"}
-fastapi = "^0.109.1"
+fastapi = "^0.115.4"
 python-multipart = "^0.0.7"
 email-validator = "^2.1.0.post1"
 passlib = {extras = ["bcrypt"], version = "^1.7.4"}
@@ -54,3 +54,15 @@ build-backend = "poetry.masonry.api"
 [tool.mypy]
 strict = true
 exclude = ["venv", "alembic"]
+
+[tool.pytest.ini_options]
+markers = [
+    "unit"
+]
+addopts = "--cov --cov-report=term-missing --cov-report=xml:coverage/coverage.xml"
+
+[tool.coverage]
+omit = [
+    "**/*_test.py",
+    "**/tests/**",
+]

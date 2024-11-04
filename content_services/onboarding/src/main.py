@@ -43,6 +43,7 @@ def run_codebase_onboarding(
     creator_id: str,
     workspace_id: str,
     provider: str,
+    override_codebase_name: str | None = None,
 ) -> None:
     from database.db import engine
     from database.models_v1 import (
@@ -68,12 +69,13 @@ def run_codebase_onboarding(
 
     print(f"Downloaded {archive_name} from S3")
 
-    codebase_name = None
     if provider == "github":
-        codebase_name = archive_name.rsplit(".", 1)[0]
+        override_codebase_name = archive_name.rsplit(".", 1)[0]
 
     # Override so unpack from github doesn't have hash in name.
-    extracted_path = unpack_archive(download_dest, override_codebase_name=codebase_name)
+    extracted_path = unpack_archive(
+        download_dest, override_codebase_name=override_codebase_name
+    )
     codebase_name = str(extracted_path)
     print("Codebase name : ", codebase_name)
     print("Unpacked archive to: ", extracted_path)
@@ -239,13 +241,12 @@ def onboard_and_inspect(
         f"Onboarding for: {archive_name} from {provider} with org_id: {org_id}, creator_id: {creator_id}, workspace_id: {workspace_id} with presigned_url: {presigned_url}"
     )
     try:
-        inspect_db = modal.Function.lookup("inspector-v2", "inspect_db")
-
         codebase_id = run_codebase_onboarding.remote(
             presigned_url, archive_name, org_id, creator_id, workspace_id, provider
         )
         print("onboarding complete for codebase: ", codebase_id)
 
+        inspect_db = modal.Function.lookup("inspector-v2", "inspect_db")
         run_id = uuid4()
         print("Inspecting...")
         print("Inspection ID: ", run_id)
@@ -314,3 +315,48 @@ def main() -> None:
     onboard_and_inspect.remote(
         presigned_url, archive_name, org_id, creator_id, workspace_id
     )
+
+
+@app.local_entrypoint()
+def diff_flow() -> None:
+    import hashlib
+
+    # existing_codebase_id = "e82242f5-32b4-453b-9741-7cf198f4cce1"
+    # run_id = "8bd74c69-421d-4a35-8c97-fa7cb4efae48"
+    archive_name_new_code = (
+        "desk-control-v2.zip"  # TODO is this actually used in the code?
+    )
+    override_codebase_name = "desk-control-v2"
+    presigned_url_of_new_code = "https://development-codebase-dropzone.s3.us-east-1.amazonaws.com/codebases/470aeda416cbd987632d5d931bff4d7923b93ea7e89ab5ed8499599adef0943/desk-control-v2.zip?response-content-disposition=inline&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEIf%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIQCF4UGpad%2BvqbsZpUl68XUrbo61bKMzi3nRVa%2F7gfvpEQIgTzVOUsh5cC8O3Rzm6JkxnhtZk9TqgZKEHd70T95k2eoqugQI8P%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARABGgw1NTAwODI3NjExMDkiDOWkBlsxftjg20FuqyqOBNTEpt90OAdzT9QY9ij3Ds88daNK2smgjRBVaNxtTcDE7LCQ96D%2Bmt7q9YB0a3noBeGGGtauF8QxQ1%2BJXdWZeNVUt3jGdeJmzjWIifmFwXfbpNh0C8HeBDlCZkKf8FHpjDYZBNrGStivzQf9HEjyErXQvdQ9TZfeUaZ4TyCxiavSV3zdYQcGfzHai5yXfTxkIZ4st5qwmLifdgPzju7QKIpfgPvmLSa0Ta95a7VOv5n7Hi6qmPgS0cRLpE7Fa6LTJ5osUP698Pu3nsYhh%2B%2BU2oMnlR97fsr8wvO20L7wCxOo8D5vqPCnKpfVnxdv3MwB8UTAIqYlRlePNd2cptnJF0x20c46hgeIz54GQPjbo9NqxrgK4rszzti%2BzR4%2F5tlBKsbllGqgOsY9gcgFQgHUlUpAYXfwSzuAxoNm0KT8dCCLOoqBNpg7iGkJ2a19N8Ydj%2B8O05rDPvaZ6HthBPJiFOjKi05diVIx1A0LHqieYtUJbqosRaq5gKKiqcggyPbBgLQ%2FpbltLacIcSJjGozavFTAGoUyBpKAOPrHGkAuVC35LBZCmgHTzA7ZAMGhJhuWgVGtTv3iJ%2BjikIOuA827a8O9Te1zxSziSw84BEwSVwHoolPgj1Vyt%2B2frQ1qQK3wd6hZtns5Knt6%2FNGHBtO8%2FyWeN%2B9VOCcDtwFaGeD6%2B5rpRtFz%2FlYtMjj%2FnXplmccw4%2BPuuAY6xQLEVHHeaxvXDYRpeiUHwtAc8Xe0J%2F54QyhlNe8SWw1%2FGXYFjz6V1%2FpnWNSAKNFDQzyt88QoW0NxtYkznMqE3XvHZj2O6H63%2BCQAg8sphz0NJHSOwr7iV%2FElfE7R1zptKSbG4xBRohDYDRYxgHUJDQBHJ%2FJOuqxJZcQSmzi5mo%2Bx%2B6RBwlxpcjSo4ez7A783HBAB%2FIRNIWF%2BLUyujpWiC0gY7%2B902Ost5QzZsRymJErdsKzrlg8mwI1jHi4fsZRPxkTvfrHHV9xSHNbhJ61sECYPAcgasZXOZIji7D2gj5qlhpVkykB3jQIRW2ACKdv17ZdiXDfB2yH1StfxNgrWpniNyN4%2Bbvt%2Bw7oDe%2B%2B2qLomGFxX2PpzhTYmqI4BRimXjms7PTOxXvvSp%2Fwyl4UTDN6QcHDEft149W2BfW4lPYOdtWjyzavl&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAYAE342GK3ZLMHSPM%2F20241025%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20241025T145912Z&X-Amz-Expires=43200&X-Amz-SignedHeaders=host&X-Amz-Signature=e401928b8807990e0361215541dcb41d5dcd0b64134dd9f78d12e16c932c9de6"
+    # The above is located in 470aeda416cbd987632d5d931bff4d7923b93ea7e89ab5ed8499599adef0943 of the codebase dropzone.
+
+    org_id = "org_s76pU1v8LAYhTOWB"
+    org_id = hashlib.sha256(org_id.encode()).hexdigest()[:63]
+    creator_id = "auth0|667dbba790b963e36720b911"
+    workspace_id = UUID("32de9990-b63d-4e8e-9567-58e2a78292ec")
+
+    codebase_id = run_codebase_onboarding.remote(
+        presigned_url_of_new_code,
+        archive_name_new_code,
+        org_id,
+        creator_id,
+        workspace_id,
+        "manual",
+        override_codebase_name=override_codebase_name,
+    )
+    print("Onboarding complete for codebase: ", codebase_id)
+
+    # # For testing, we are going to hard code the new codebase id while we get inspector working
+    # codebase_id = "8050a448-8f5d-4ef5-9667-a10c0a146c5a"
+    #
+    # print("Onboarding complete for codebase: ", codebase_id)
+    # inspect_db = modal.Function.lookup("inspector-v2", "inspect_db")
+    # inspect_db.remote(
+    #     existing_codebase_id,
+    #     run_id,
+    #     True,
+    #     None,
+    #     codebase_id,
+    # )
+    #
+    # print("Diff flow complete for codebase: ", codebase_id)

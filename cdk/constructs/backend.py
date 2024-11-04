@@ -24,11 +24,11 @@ class BackendParams:
 
     def __init__(
         self,
-        cors_origins,
-        allowed_ips,
-        environment,
-        use_legacy_dropzone,
-    ):
+        cors_origins: list[str],
+        allowed_ips: list[str],
+        environment: str,
+        use_legacy_dropzone: bool,
+    ) -> None:
         self.cors_origins = cors_origins
         self.allowed_ips = allowed_ips
         self.environment = environment
@@ -36,7 +36,7 @@ class BackendParams:
 
 
 class Backend(Construct):
-    def __init__(self, scope: Construct, id: str, params: BackendParams):
+    def __init__(self, scope: Construct, id: str, params: BackendParams) -> None:
         super().__init__(scope, id)
 
         vpc_id = aws_ssm.StringParameter.value_from_lookup(
@@ -152,6 +152,9 @@ class Backend(Construct):
             ),
             "AUTH0_DOMAIN": aws_ecs.Secret.from_secrets_manager(
                 auth0_secret, "AUTH0_DOMAIN"
+            ),
+            "AUTH0_MGMT_API_DOMAIN": aws_ecs.Secret.from_secrets_manager(
+                auth0_secret, "AUTH0_MGMT_API_DOMAIN"
             ),
             "AUTH0_CLIENT_ID": aws_ecs.Secret.from_secrets_manager(
                 auth0_secret, "AUTH0_CLIENT_ID"

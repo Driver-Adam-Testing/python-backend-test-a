@@ -32,6 +32,7 @@ from app.schemas.content_schema import (
     BatchContentSourceAssociationResponse,
     ContentSourceAssociationItem,
     ContentSourceResponse,
+    ContentTagsResponse,
     CreateContentRequest,
     DeleteDocumentSourceResponse,
     DownloadContentResponse,
@@ -40,6 +41,7 @@ from app.schemas.content_schema import (
     ListContentResults,
     ListContentTypesInput,
     ListContentTypesResults,
+    TagResult,
 )
 from app.services.utils.content_utils import get_content_name
 from app.utils.aws_s3 import (
@@ -715,6 +717,43 @@ class ContentService:
             if content.content_type.type_name == "supplemental-document":
                 # delete remote content
                 delete_from_remote_storage(content, organization_id)
+
+    def get_content_tags(
+        self: "ContentService", content_id: UUID, organization_id: str
+    ) -> ContentTagsResponse:
+        logger.info(f"Fetching tags for content {content_id}")
+
+        content = self.content_repository.get_by_conditions(
+            [
+                Workspace.organization_id == organization_id,
+                DerivedContent.id == content_id,
+            ],
+            [Workspace],
+        )
+
+        if not content or content.workspace.organization_id != organization_id:
+            logger.error(
+                f"Content {content_id} not found for organization {organization_id}"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
+            )
+
+        tag_results = [
+            TagResult(
+                id=tag.id,
+                name=tag.name,
+                color=tag.hex_color,
+                created_at=tag.created_at,
+                updated_at=tag.updated_at,
+            )
+            for tag in content.tags
+        ]
+
+        logger.info(f"Tags retrieved successfully for content {content_id}")
+        return ContentTagsResponse(
+            tags=tag_results,
+        )
 
 
 def delete_document_and_related_entities(

@@ -19,14 +19,17 @@ from database.models_v1 import (
     DerivedContentType,
     Enum_Codebase_Status,
     Enum_Derived_Content_Status,
+    Tag,
+    TagContent,
     Workspace,
 )
-from fastapi import HTTPException
+from fastapi import HTTPException, status
 from sqlmodel import Session, select
 
-from app.api.auth import CurrentUser
+from app.api.auth import UserToken
 from app.schemas.content_schema import (
     ContentSourceAssociationItem,
+    ContentTagsResponse,
     CreateContentRequest,
     ListContentInput,
     ListContentTypesInput,
@@ -48,7 +51,7 @@ def tag_service(db: Session) -> TagService:
 
 @pytest.fixture(scope="function")
 def workspace(
-    db: Session, current_user_with_org: CurrentUser, content_service: ContentService
+    db: Session, current_user_with_org: UserToken, content_service: ContentService
 ) -> Generator[Workspace, None, None]:
     workspace = content_service.workspace_repository.get_default_workspace(
         current_user_with_org.organization_id
@@ -59,7 +62,7 @@ def workspace(
 @pytest.fixture(scope="function")
 def org_b_workspace(
     db: Session,
-    current_user_with_other_org: CurrentUser,
+    current_user_with_other_org: UserToken,
     content_service: ContentService,
 ) -> Generator[Workspace, None, None]:
     org_b_workspace = content_service.workspace_repository.get_default_workspace(
@@ -70,7 +73,7 @@ def org_b_workspace(
 
 @pytest.fixture(scope="function")
 def codebase(
-    db: Session, workspace: Workspace, current_user_with_org: CurrentUser
+    db: Session, workspace: Workspace, current_user_with_org: UserToken
 ) -> Generator[Codebase, None, None]:
     codebase = Codebase(
         workspace_id=workspace.id,
@@ -89,20 +92,6 @@ def codebase(
     db.rollback()  # Ensure rollback before delete
     db.delete(codebase)
     db.commit()
-
-
-@pytest.fixture(scope="function")
-def tag(
-    tag_service: TagService, current_user_with_org: CurrentUser
-) -> Generator[NewTagInput, None, None]:
-    new_tag_input = NewTagInput(
-        name=f"TEST_TAG_{datetime.now()}", hex_color="#FFFFFF", type="tag"
-    )
-    tag = tag_service.create_tag(current_user_with_org, new_tag_input)
-    yield tag
-
-    # Cleanup
-    tag_service.delete_tag(current_user_with_org, tag.id)
 
 
 @pytest.fixture(scope="function")
@@ -166,7 +155,7 @@ def source_content(
 @pytest.fixture(scope="function")
 def codebase_content(
     content_service: ContentService,
-    current_user_with_org: CurrentUser,
+    current_user_with_org: UserToken,
     workspace: Workspace,
     codebase: Codebase,
 ) -> Generator[DerivedContent, None, None]:
@@ -198,7 +187,7 @@ def codebase_content(
 @pytest.fixture(scope="function")
 def content(
     content_service: ContentService,
-    current_user_with_org: CurrentUser,
+    current_user_with_org: UserToken,
     codebase_content: DerivedContent,
 ) -> Generator[DerivedContent, None, None]:
     organization_id = current_user_with_org.organization_id
@@ -215,7 +204,7 @@ def content(
 @pytest.fixture(scope="function")
 def codebase_file(
     content_service: ContentService,
-    current_user_with_org: CurrentUser,
+    current_user_with_org: UserToken,
     workspace: Workspace,
     codebase: Codebase,
     codebase_content: DerivedContent,
@@ -248,7 +237,7 @@ def codebase_file(
 @pytest.fixture(scope="function")
 def other_content(
     content_service: ContentService,
-    current_user_with_org: CurrentUser,
+    current_user_with_org: UserToken,
     workspace: Workspace,
     codebase: Codebase,
     codebase_content: DerivedContent,
@@ -269,7 +258,7 @@ def other_content(
 @pytest.fixture(scope="function")
 def org_b_content(
     content_service: ContentService,
-    current_user_with_org: CurrentUser,
+    current_user_with_org: UserToken,
     org_b_workspace: Workspace,
     codebase: Codebase,
 ) -> Generator[DerivedContent, None, None]:
@@ -287,7 +276,7 @@ def org_b_content(
 @pytest.fixture(scope="function")
 def delete_content(
     content_service: ContentService,
-    current_user_with_org: CurrentUser,
+    current_user_with_org: UserToken,
     workspace: Workspace,
     codebase: Codebase,
     codebase_content: DerivedContent,
@@ -321,7 +310,7 @@ def chunk_and_embed(
 def related_entities(
     content_service: ContentService,
     tag_service: TagService,
-    current_user_with_org: CurrentUser,
+    current_user_with_org: UserToken,
     content: DerivedContent,
     delete_content: DerivedContent,
     tag: NewTagInput,
@@ -357,7 +346,7 @@ def related_entities(
 def complete_codebase_with_related_entities(
     db: Session,
     content_service: ContentService,
-    current_user_with_org: CurrentUser,
+    current_user_with_org: UserToken,
     workspace: Workspace,
 ) -> DerivedContent:
     """
@@ -564,9 +553,24 @@ def complete_codebase_with_related_entities(
     return codebase_record
 
 
+@pytest.fixture(scope="function")
+def tag(
+    tag_service: TagService, current_user_with_org: UserToken
+) -> Generator[NewTagInput, None, None]:
+    new_tag_input = NewTagInput(
+        name=f"TEST_TAG_{datetime.now()}", hex_color="#FFFFFF", type="tag"
+    )
+    tag = tag_service.create_tag(current_user_with_org, new_tag_input)
+
+    try:
+        yield tag
+    finally:
+        tag_service.delete_tag(current_user_with_org, tag.id)
+
+
 def test_create_blank_document(
     content_service: ContentService,
-    current_user_with_org: CurrentUser,
+    current_user_with_org: UserToken,
     workspace: Workspace,
     codebase_content: DerivedContent,
 ) -> None:
@@ -584,7 +588,7 @@ def test_create_blank_document(
 
 
 def test_create_application_note(
-    content_service: ContentService, current_user_with_org: CurrentUser
+    content_service: ContentService, current_user_with_org: UserToken
 ) -> None:
     organization_id = current_user_with_org.organization_id
     new_content = content_service.create_content(
@@ -595,7 +599,7 @@ def test_create_application_note(
 
 
 def test_create_application_note_no_default_workspace(
-    content_service: ContentService, current_user_with_other_org: CurrentUser
+    content_service: ContentService, current_user_with_other_org: UserToken
 ) -> None:
     """
     by default, the default workspace is created for an organization when finding the default workspace
@@ -609,7 +613,7 @@ def test_create_application_note_no_default_workspace(
 
 
 def test_create_other_content_type(
-    content_service: ContentService, current_user_with_org: CurrentUser
+    content_service: ContentService, current_user_with_org: UserToken
 ) -> None:
     organization_id = current_user_with_org.organization_id
     with pytest.raises(HTTPException):
@@ -620,7 +624,7 @@ def test_create_other_content_type(
 
 def test_get_list_content(
     content_service: ContentService,
-    current_user_with_org: CurrentUser,
+    current_user_with_org: UserToken,
     content: DerivedContent,
 ) -> None:
     lc_input = ListContentInput(limit=10, offset=0)
@@ -634,7 +638,7 @@ def test_get_list_content(
 
 def test_get_list_content_from_other_org(
     content_service: ContentService,
-    current_user_with_other_org: CurrentUser,
+    current_user_with_other_org: UserToken,
     content: DerivedContent,
 ) -> None:
     lc_input = ListContentInput(limit=10, offset=0, text="TEST")
@@ -655,7 +659,7 @@ def test_get_list_content_types(content_service: ContentService) -> None:
 
 def test_get_content_sources(
     content_service: ContentService,
-    current_user_with_org: CurrentUser,
+    current_user_with_org: UserToken,
     content: DerivedContent,
 ) -> None:
     response = content_service.get_content_sources(
@@ -667,7 +671,7 @@ def test_get_content_sources(
 
 def test_get_content_sources_from_other_org(
     content_service: ContentService,
-    current_user_with_other_org: CurrentUser,
+    current_user_with_other_org: UserToken,
     content: DerivedContent,
 ) -> None:
     with pytest.raises(HTTPException):
@@ -678,7 +682,7 @@ def test_get_content_sources_from_other_org(
 
 def test_get_content_by_id(
     content_service: ContentService,
-    current_user_with_org: CurrentUser,
+    current_user_with_org: UserToken,
     content: DerivedContent,
 ) -> None:
     fetched_content = content_service.get_content_by_id(
@@ -690,7 +694,7 @@ def test_get_content_by_id(
 
 def test_get_content_by_id_from_other_org(
     content_service: ContentService,
-    current_user_with_other_org: CurrentUser,
+    current_user_with_other_org: UserToken,
     content: DerivedContent,
 ) -> None:
     with pytest.raises(HTTPException):
@@ -701,7 +705,7 @@ def test_get_content_by_id_from_other_org(
 
 def test_get_content_root_by_id(
     content_service: ContentService,
-    current_user_with_org: CurrentUser,
+    current_user_with_org: UserToken,
     codebase_file: DerivedContent,
     codebase_content: DerivedContent,
 ) -> None:
@@ -714,7 +718,7 @@ def test_get_content_root_by_id(
 
 def test_get_content_root_by_id_from_other_org(
     content_service: ContentService,
-    current_user_with_other_org: CurrentUser,
+    current_user_with_other_org: UserToken,
     content: DerivedContent,
 ) -> None:
     with pytest.raises(HTTPException):
@@ -725,7 +729,7 @@ def test_get_content_root_by_id_from_other_org(
 
 def test_associate_sources_with_content(
     content_service: ContentService,
-    current_user_with_org: CurrentUser,
+    current_user_with_org: UserToken,
     content: DerivedContent,
     source_content: DerivedContent,
 ) -> None:
@@ -749,7 +753,7 @@ def test_associate_sources_with_content(
 
 def test_associate_sources_with_content_from_other_org(
     content_service: ContentService,
-    current_user_with_other_org: CurrentUser,
+    current_user_with_other_org: UserToken,
     content: DerivedContent,
     source_content: DerivedContent,
 ) -> None:
@@ -768,7 +772,7 @@ def test_associate_sources_with_content_from_other_org(
 
 def test_associate_invalid_sources_with_content(
     content_service: ContentService,
-    current_user_with_org: CurrentUser,
+    current_user_with_org: UserToken,
     content: DerivedContent,
 ) -> None:
     content_id = content.id
@@ -786,7 +790,7 @@ def test_associate_invalid_sources_with_content(
 
 def test_disassociate_document_source(
     content_service: ContentService,
-    current_user_with_org: CurrentUser,
+    current_user_with_org: UserToken,
     content: DerivedContent,
     source_content: DerivedContent,
 ) -> None:
@@ -812,7 +816,7 @@ def test_disassociate_document_source(
 
 def test_disassociate_document_source_from_other_org(
     content_service: ContentService,
-    current_user_with_org: CurrentUser,
+    current_user_with_org: UserToken,
     content: DerivedContent,
     source_content: DerivedContent,
 ) -> None:
@@ -851,7 +855,7 @@ def test_disassociate_document_source_from_other_org(
 
 def test_edit_content(
     content_service: ContentService,
-    current_user_with_org: CurrentUser,
+    current_user_with_org: UserToken,
     content: DerivedContent,
 ) -> None:
     organization_id = current_user_with_org.organization_id
@@ -875,7 +879,7 @@ def test_edit_content(
 
 def test_edit_content_from_other_org(
     content_service: ContentService,
-    current_user_with_other_org: CurrentUser,
+    current_user_with_other_org: UserToken,
     content: DerivedContent,
 ) -> None:
     organization_id = current_user_with_other_org.organization_id
@@ -891,7 +895,7 @@ def test_edit_content_from_other_org(
 
 def test_delete_content(
     content_service: ContentService,
-    current_user_with_org: CurrentUser,
+    current_user_with_org: UserToken,
     delete_content: DerivedContent,
     related_entities: list,
 ) -> None:
@@ -918,7 +922,7 @@ def test_delete_content(
 
 def test_delete_content_from_other_org(
     content_service: ContentService,
-    current_user_with_org: CurrentUser,
+    current_user_with_org: UserToken,
     delete_content: DerivedContent,
     related_entities: list,
 ) -> None:
@@ -944,7 +948,7 @@ def test_delete_content_from_other_org(
 
 def test_delete_codebase(
     content_service: ContentService,
-    current_user_with_org: CurrentUser,
+    current_user_with_org: UserToken,
     complete_codebase_with_related_entities: DerivedContent,
 ) -> None:
     organization_id = current_user_with_org.organization_id
@@ -954,7 +958,7 @@ def test_delete_codebase(
 
 def test_delete_codebase_from_other_org(
     content_service: ContentService,
-    current_user_with_org: CurrentUser,
+    current_user_with_org: UserToken,
     complete_codebase_with_related_entities: DerivedContent,
 ) -> None:
     organization_id = current_user_with_org.organization_id
@@ -963,3 +967,41 @@ def test_delete_codebase_from_other_org(
         content_service.delete_content("some_other_org", content_id)
 
     content_service.delete_content(organization_id, content_id)
+
+
+def test_get_content_tags(
+    db: Session,
+    content_service: ContentService,
+    current_user_with_org: UserToken,
+    workspace: Workspace,
+    content: DerivedContent,
+    tag: Tag,
+) -> None:
+    # Associate tags with content
+    tag_content = TagContent(tag_id=tag.id, content_id=content.id, include=True)
+    db.add_all([tag_content])
+    db.commit()
+
+    # Call the method
+    result = content_service.get_content_tags(
+        content.id, current_user_with_org.organization_id
+    )
+
+    # Assert the result
+    assert isinstance(result, ContentTagsResponse)
+    assert len(result.tags) == 1
+    assert {tag.name for tag in result.tags} == {tag.name}
+    assert {tag.color for tag in result.tags} == {tag.hex_color}
+
+    # Test with non-existent content
+    with pytest.raises(HTTPException) as exc_info:
+        content_service.get_content_tags(uuid4(), current_user_with_org.organization_id)
+    assert exc_info.value.status_code == status.HTTP_404_NOT_FOUND
+    assert exc_info.value.detail == "Content not found"
+
+    # Test with content from different organization
+    other_org_id = str(uuid4())
+    with pytest.raises(HTTPException) as exc_info:
+        content_service.get_content_tags(uuid4(), other_org_id)
+    assert exc_info.value.status_code == status.HTTP_404_NOT_FOUND
+    assert exc_info.value.detail == "Content not found"

@@ -4,7 +4,7 @@ from typing import Self
 
 from utils.codemap_ctags import extract_symbols_w_ctags
 
-from .common_v2 import (
+from .common import (
     ClassData,
     FnData,
     IrCollection,

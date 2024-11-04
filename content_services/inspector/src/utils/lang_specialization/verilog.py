@@ -2,7 +2,7 @@ from functools import partial
 from pathlib import Path
 from typing import Self
 
-from .common_v2 import (
+from .common import (
     FnData,
     IrCollection,
     IrData,

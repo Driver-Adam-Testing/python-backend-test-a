@@ -5,7 +5,7 @@ from typing import Self
 from openai import LengthFinishReasonError
 from utils.models import ChatOpenAI
 
-from .common_v2 import (
+from .common import (
     CHUNK_OVERLAP,
     CHUNK_SIZE,
     DataStructureData,

@@ -4,15 +4,7 @@ from typing import Self
 
 from utils.codemap_ctags import extract_symbols_w_ctags
 
-# from .common import (
-#     data_structure_dict_from_llm,
-#     data_structure_dict_from_llm_multi_prompt,
-#     fn_dict_from_llm,
-#     fn_dict_from_llm_multi_prompt,
-#     variables_dict_from_llm,
-#     variables_dict_from_llm_multi_prompt,
-# )
-from .common_v2 import (
+from .common import (
     DataStructureData,
     FnData,
     IrCollection,

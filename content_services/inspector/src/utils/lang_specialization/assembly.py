@@ -4,7 +4,7 @@ from typing import Self
 
 from utils.models import ChatOpenAI
 
-from .common_v2 import (
+from .common import (
     DataStructureData,
     FnData,
     IrCollection,

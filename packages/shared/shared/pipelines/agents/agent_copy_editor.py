@@ -16,7 +16,7 @@ def run_agent_copy_editor(input: PipelineStepConfiguration) -> PipelineStepRespo
     for system_prompt in input.create_system_prompts():
         agent.add_message(system_prompt)
     if "```mermaid" in str(input.prompt):
-        agent.add_message(prompts.task.codeblock_syntax_mermaid)
+        agent.add_message(prompts.task.codeblock_syntax_mermaid.MESSAGE)
     agent.add_message(prompts.voice.copy_editor.MESSAGE)
     response = agent.invoke(str(input.prompt))
 

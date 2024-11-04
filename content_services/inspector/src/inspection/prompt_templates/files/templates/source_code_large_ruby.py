@@ -4,10 +4,10 @@ from utils.lang_specialization.default import (
 from utils.lang_specialization.ruby import (
     SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT,
     SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_RUBY,
+    RubyClassRawSymbolCollection,
+    RubyModuleRawSymbolCollection,
     class_dict_from_llm_ruby,
     module_dict_from_llm_ruby,
-    ruby_class_checker,
-    ruby_module_checker,
 )
 from utils.templates import S
 
@@ -28,14 +28,14 @@ SOURCE_CODE_LARGE_TEMPLATE_RUBY = [
     (
         S.FN_COND_JSON,
         "# Modules",
-        ruby_module_checker,
+        RubyModuleRawSymbolCollection.from_static_analysis,
         module_dict_from_llm_ruby,
         None,
     ),
     (
         S.FN_COND_JSON,
         "# Classes",
-        ruby_class_checker,
+        RubyClassRawSymbolCollection.from_static_analysis,
         class_dict_from_llm_ruby,
         None,
     ),

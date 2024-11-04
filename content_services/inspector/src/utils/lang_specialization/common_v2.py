@@ -72,6 +72,8 @@ class ScopeRelation(StrEnum):
     FIELD = "Fields"
     CLASS_METHOD = "Class Methods"
     INSTANCE_METHOD = "Instance Methods"
+    MODULE_METHOD = "Module Methods"
+    ATTRIBUTE = "Attributes"
 
 
 class RawSymbolData(BaseModel):

@@ -1,16 +1,21 @@
 from functools import partial
 from pathlib import Path
-from typing import Any, Self
+from typing import Self
 
-import openai
-from pydantic import BaseModel
+from pydantic import PrivateAttr
 from utils.codemap_ctags import extract_symbols_w_ctags
-from utils.models import ChatOpenAI, OutputConfig, OutputConfigKind
 
-from .common import (
+from .common_v2 import (
     FnData,
+    IrCollection,
+    IrData,
+    RawSymbolCollection,
+    RawSymbolData,
+    ScopeRelation,
+    SymbolKind,
     VariableData,
-    render_function,
+    code_requires_multi_prompt,
+    create_raw_symbol_via_ctags,
 )
 
 RUBY_CLASSES = {"class"}
@@ -82,6 +87,8 @@ METHODS_FOUND_USER_PROMPT = """
 Summarize the method in the code provided below. Describe the inputs, control flow and logic, and output.
 
 - When describing a method, provide detail that matches the complexity of the method body. Large and complex method should get longer explanations, while small ones much less.
+
+Method to document:
 """
 
 ATTRIBUTES_FOUND_SYSTEM_PROMPT_JSON = """
@@ -105,6 +112,8 @@ ATTRIBUTES_FOUND_USER_PROMPT = """
 Summarize the attribute in the code provided below.
 
 - When describing an attribute, provide detail that matches the complexity of the attribute. Large and complex attributes (e.g., containing large struct instances) should get longer explanations, while small ones (e.g., one line definitions) much less.
+
+Attribute to document:
 """
 
 CLASSES_FOUND_SYSTEM_PROMPT_JSON = """
@@ -129,9 +138,10 @@ CLASSES_FOUND_USER_PROMPT = """
 Summarize the class in the code provided below.
 
 - When describing an important class, provide detail that matches the complexity of the class. Large and complex class should get longer explanations, while small ones a single sentence.
+
+Class to document:
 """
 
-CLASSES_NONE_CONTENT = "\n---\nNo classes defined in this file."
 
 MODULES_FOUND_SYSTEM_PROMPT_JSON = """
 You are an expert Ruby programmer and a software engineering documentation expert. You write detailed documentation to explain code written in Ruby.
@@ -154,900 +164,357 @@ MODULES_FOUND_USER_PROMPT = """
 Summarize the module in the code provided below.
 
 - When describing an important module, provide detail that matches the complexity of the module. Large and complex module should get longer explanations, while small ones a single sentence.
+
+Module to document:
 """
 
-MODULES_NONE_CONTENT = "\n---\nNo modules defined in this file."
+
+# IR Classes
+class RubyMethodData(FnData):
+    @classmethod
+    def system_prompt(cls) -> str:
+        return METHODS_FOUND_SYSTEM_PROMPT_JSON
+
+    @classmethod
+    def user_prompt(cls, symbol: RawSymbolData) -> str:
+        # TODO: for overloaded case
+        user_prompt = f"{METHODS_FOUND_USER_PROMPT}{symbol.name}\n\nMethod Code:\n\n{symbol.symbol_code}"
+        if symbol.file_code:
+            user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
+        return user_prompt
+
+    @classmethod
+    def child_to_ir(cls, symbol: RawSymbolData) -> IrData | None:
+        raise NotImplementedError("Methods should not have children")
+
+    @classmethod
+    def child_to_field_name(cls, child: RawSymbolData) -> str:
+        raise NotImplementedError("Methods should not have children")
 
 
-class RubyClassBaseData(BaseModel):
+class RubyAttributeData(VariableData):
+    @classmethod
+    def system_prompt(cls) -> str:
+        return ATTRIBUTES_FOUND_SYSTEM_PROMPT_JSON
+
+    @classmethod
+    def user_prompt(cls, symbol: RawSymbolData) -> str:
+        user_prompt = f"{ATTRIBUTES_FOUND_USER_PROMPT}{symbol.name}\n\nAttribute Code:\n\n{symbol.symbol_code}"
+        if symbol.file_code:
+            user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
+        return user_prompt
+
+    @classmethod
+    def child_to_ir(cls, symbol: RawSymbolData) -> IrData | None:
+        raise NotImplementedError("Attributes should not have children")
+
+    @classmethod
+    def child_to_field_name(cls, child: RawSymbolData) -> str:
+        raise NotImplementedError("Attributes should not have children")
+
+
+class RubyClassData(IrData):
     description: str
     inherits_from: list[str]
     includes: list[str]
     extends: list[str]
     prepends: list[str]
+    _supported_child_ordering: list[str] = PrivateAttr(
+        default=[
+            ScopeRelation.ATTRIBUTE,
+            ScopeRelation.CLASS_METHOD,
+            ScopeRelation.INSTANCE_METHOD,
+        ]
+    )
 
     @classmethod
-    def from_llm(
-        cls,
-        llm: ChatOpenAI,
-        system_prompt: str,
-        user_prompt: str,
-        name: str,
-        code: str,
-    ) -> Self:
-        user_prompt_complete = (
-            f"{user_prompt}Class to document: {name}\n\nCode:\n\n{code}"
+    def system_prompt(cls) -> str:
+        return CLASSES_FOUND_SYSTEM_PROMPT_JSON
+
+    @classmethod
+    def user_prompt(cls, symbol: RawSymbolData) -> str:
+        user_prompt = f"{CLASSES_FOUND_USER_PROMPT}{symbol.name}\n\nClass Code:\n\n{symbol.symbol_code}"
+        if symbol.file_code:
+            user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
+        return user_prompt
+
+    @classmethod
+    def child_to_ir(cls, symbol: RawSymbolData) -> IrData | None:
+        mapping = {
+            SymbolKind.CALLABLE: RubyMethodData,
+            SymbolKind.VARIABLE: RubyAttributeData,
+        }
+        return mapping.get(symbol.symbol_kind)
+
+    @classmethod
+    def child_to_field_name(cls, child: RawSymbolData) -> str:
+        mapping = {
+            ScopeRelation.INSTANCE_METHOD: ScopeRelation.INSTANCE_METHOD,
+            ScopeRelation.CLASS_METHOD: ScopeRelation.CLASS_METHOD,
+            ScopeRelation.ATTRIBUTE: ScopeRelation.ATTRIBUTE,
+        }
+        return mapping.get(child.scope_relation)
+
+    @classmethod
+    def default_instance(cls) -> Self:
+        return cls(
+            description="",
+            inherits_from=[],
+            includes=[],
+            extends=[],
+            prepends=[],
         )
-        try:
-            content_raw = llm.generate_response(
-                system_prompt=system_prompt,
-                user_prompt=user_prompt_complete,
-                output_cfg=OutputConfig(kind=OutputConfigKind.JSON_STRICT, payload=cls),
-            )
-        except openai.LengthFinishReasonError as _:
-            print("LengthFinishReasonError caught")
-            return cls(
-                type="",
-                members=[],
-                description="Object too large to process",
-                inherits_from=[],
-            )
-
-        return cls.parse_raw(content_raw)
 
 
-class RubyClassData(BaseModel):
-    base_data: RubyClassBaseData
-    instance_methods: dict[str, FnData | list[FnData]]
-    class_methods: dict[str, FnData | list[FnData]]
-    attributes: dict[str, VariableData | list[VariableData]]
+class RubyClassCollection(IrCollection):
+    data: dict[str, RubyClassData | list[RubyClassData]]
 
 
-def render_class_base_data(class_data: RubyClassData) -> str:
-    output = ""
-    if len(class_data.base_data.inherits_from) > 0:
-        output += "\n- **Inherits From**:\n"
-        for i in class_data.base_data.inherits_from:
-            output += f"    - `{i}`\n"
-    if len(class_data.base_data.includes) > 0:
-        output += "\n- **Includes**:\n"
-        for i in class_data.base_data.includes:
-            output += f"    - `{i}`\n"
-    if len(class_data.base_data.extends) > 0:
-        output += "\n- **Extends**:\n"
-        for i in class_data.base_data.extends:
-            output += f"    - `{i}`\n"
-    if len(class_data.base_data.prepends) > 0:
-        output += "\n- **Prepends**:\n"
-        for i in class_data.base_data.prepends:
-            output += f"    - `{i}`\n"
-    output += f"\n- **Description**: {class_data.base_data.description}\n\n"
-    return output
-
-
-class RubyClassDict(BaseModel):
-    data: dict[str, RubyClassData]
-
-    def render_markdown(self) -> str:
-        output = "\n---"
-        for k, v in self.data.items():
-            output += f"\n### {k}\n"
-            output += render_class_base_data(v)
-            if len(v.attributes) > 0:
-                output += "\n**Attributes**\n"
-                for n, f in v.attributes.items():
-                    output += f"\n---\n#### {n}\n"
-                    output += f"- **Type**: `{f.type}`\n"
-                    output += f"- **Description**\n{f.description}\n"
-                    output += f"- **Use**\n{f.use}\n\n"
-            if len(v.class_methods) > 0:
-                output += "\n**Class Methods**\n"
-                for n, m in v.class_methods.items():
-                    # Case of potentially overloaded method.
-                    if isinstance(m, list):
-                        for sub_m in m:
-                            output += render_function(n, sub_m, 4)
-                    else:
-                        output += render_function(n, m, 4)
-            if len(v.instance_methods) > 0:
-                output += "\n**Instance Methods**\n"
-                for n, m in v.instance_methods.items():
-                    # Case of potentially overloaded method.
-                    if isinstance(m, list):
-                        for sub_m in m:
-                            output += render_function(n, sub_m, 4)
-                    else:
-                        output += render_function(n, m, 4)
-            output += "\n---\n---"
-
-        return output
-
-    def __str__(self) -> str:
-        return self.render_markdown()
-
-
-class RubyModuleBaseData(BaseModel):
+class RubyModuleData(IrData):
     description: str
     includes: list[str]
     extends: list[str]
     prepends: list[str]
+    _supported_child_ordering: list[str] = PrivateAttr(
+        default=[
+            ScopeRelation.ATTRIBUTE,
+            ScopeRelation.MODULE_METHOD,
+            ScopeRelation.INSTANCE_METHOD,
+        ]
+    )
 
     @classmethod
-    def from_llm(
-        cls,
-        llm: ChatOpenAI,
-        system_prompt: str,
-        user_prompt: str,
-        name: str,
-        code: str,
-    ) -> Self:
-        user_prompt_complete = (
-            f"{user_prompt}Module to document: {name}\n\nCode:\n\n{code}"
+    def system_prompt(cls) -> str:
+        return MODULES_FOUND_SYSTEM_PROMPT_JSON
+
+    @classmethod
+    def user_prompt(cls, symbol: RawSymbolData) -> str:
+        user_prompt = f"{MODULES_FOUND_USER_PROMPT}{symbol.name}\n\nModule Code:\n\n{symbol.symbol_code}"
+        if symbol.file_code:
+            user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
+        return user_prompt
+
+    @classmethod
+    def child_to_ir(cls, symbol: RawSymbolData) -> IrData | None:
+        mapping = {
+            SymbolKind.CALLABLE: RubyMethodData,
+            SymbolKind.VARIABLE: RubyAttributeData,
+        }
+        return mapping.get(symbol.symbol_kind)
+
+    @classmethod
+    def child_to_field_name(cls, child: RawSymbolData) -> str:
+        mapping = {
+            ScopeRelation.INSTANCE_METHOD: ScopeRelation.INSTANCE_METHOD,
+            ScopeRelation.MODULE_METHOD: ScopeRelation.MODULE_METHOD,
+            ScopeRelation.ATTRIBUTE: ScopeRelation.ATTRIBUTE,
+        }
+        return mapping.get(child.scope_relation)
+
+    @classmethod
+    def default_instance(cls) -> Self:
+        return cls(
+            description="",
+            includes=[],
+            extends=[],
+            prepends=[],
         )
-        try:
-            content_raw = llm.generate_response(
-                system_prompt=system_prompt,
-                user_prompt=user_prompt_complete,
-                output_cfg=OutputConfig(kind=OutputConfigKind.JSON_STRICT, payload=cls),
-            )
-        except openai.LengthFinishReasonError as _:
-            print("LengthFinishReasonError caught")
-            return cls(
-                type="",
-                members=[],
-                description="Object too large to process",
-                inherits_from=[],
-            )
-
-        return cls.parse_raw(content_raw)
 
 
-class RubyModuleData(BaseModel):
-    base_data: RubyModuleBaseData
-    instance_methods: dict[str, FnData | list[FnData]]
-    module_methods: dict[str, FnData | list[FnData]]
-    attributes: dict[str, VariableData | list[VariableData]]
+class RubyModuleCollection(IrCollection):
+    data: dict[str, RubyModuleData | list[RubyModuleData]]
 
 
-def render_module_base_data(class_data: RubyClassData) -> str:
-    output = ""
-    if len(class_data.base_data.includes) > 0:
-        output += "\n- **Includes**:\n"
-        for i in class_data.base_data.includes:
-            output += f"    - `{i}`\n"
-    if len(class_data.base_data.extends) > 0:
-        output += "\n- **Extends**:\n"
-        for i in class_data.base_data.extends:
-            output += f"    - `{i}`\n"
-    if len(class_data.base_data.prepends) > 0:
-        output += "\n- **Prepends**:\n"
-        for i in class_data.base_data.prepends:
-            output += f"    - `{i}`\n"
-    output += f"\n- **Description**: {class_data.base_data.description}\n\n"
-    return output
+class RubyClassRawSymbolCollection(RawSymbolCollection):
+    data: dict[str, RawSymbolData]
 
+    @classmethod
+    def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
+        is_multi_prompt = code_requires_multi_prompt(code)
 
-class RubyModuleDict(BaseModel):
-    data: dict[str, RubyModuleData]
+        symbols = extract_symbols_w_ctags(
+            root_rel_path=root_rel_path, file_content=code
+        )
 
-    def render_markdown(self) -> str:
-        output = "\n---"
-        for k, v in self.data.items():
-            output += f"\n### {k}\n"
-            output += render_module_base_data(v)
-            if len(v.attributes) > 0:
-                output += "\n**Attributes**\n"
-                for n, f in v.attributes.items():
-                    output += f"\n---\n#### {n}\n"
-                    output += f"- **Type**: `{f.type}`\n"
-                    output += f"- **Description**\n{f.description}\n"
-                    output += f"- **Use**\n{f.use}\n\n"
-            if len(v.module_methods) > 0:
-                output += "\n**Module Methods**\n"
-                for n, m in v.module_methods.items():
-                    # Case of potentially overloaded method.
-                    if isinstance(m, list):
-                        for sub_m in m:
-                            output += render_function(n, sub_m, 4)
-                    else:
-                        output += render_function(n, m, 4)
-            if len(v.instance_methods) > 0:
-                output += "\n**Instance Methods**\n"
-                for n, m in v.instance_methods.items():
-                    # Case of potentially overloaded method.
-                    if isinstance(m, list):
-                        for sub_m in m:
-                            output += render_function(n, sub_m, 4)
-                    else:
-                        output += render_function(n, m, 4)
-            output += "\n---\n---"
+        class_raw_symbol_data = {}
+        for s in symbols:
+            if s["kind"] in RUBY_CLASSES:
+                class_raw_symbol_data[s["name"]] = create_raw_symbol_via_ctags(
+                    ctags_symbol=s,
+                    root_rel_path=root_rel_path,
+                    code=code,
+                    symbol_kind=SymbolKind.CLASS,
+                    scope_relation=None,
+                    delimiter=".",
+                    is_multi_prompt=is_multi_prompt,
+                )
 
+        for s in symbols:
+            if (
+                (s.get("scope"))
+                and (s["kind"] in RUBY_ATTRIBUTES)
+                and s["scopeKind"] in RUBY_CLASSES
+            ):
+                scope = s["scope"].split(".")[-1]
+                class_raw_symbol_data[scope].children.append(
+                    create_raw_symbol_via_ctags(
+                        ctags_symbol=s,
+                        root_rel_path=root_rel_path,
+                        code=code,
+                        symbol_kind=SymbolKind.VARIABLE,
+                        scope_relation=ScopeRelation.ATTRIBUTE,
+                        delimiter=".",
+                        is_multi_prompt=is_multi_prompt,
+                    )
+                )
+            elif (
+                (s.get("scope"))
+                and (s["kind"] in RUBY_CLASS_AND_MODULE_METHODS)
+                and s["scopeKind"] in RUBY_CLASSES
+            ):
+                scope = s["scope"].split(".")[-1]
+                class_raw_symbol_data[scope].children.append(
+                    create_raw_symbol_via_ctags(
+                        ctags_symbol=s,
+                        root_rel_path=root_rel_path,
+                        code=code,
+                        symbol_kind=SymbolKind.CALLABLE,
+                        scope_relation=ScopeRelation.CLASS_METHOD,
+                        delimiter=".",
+                        is_multi_prompt=is_multi_prompt,
+                    )
+                )
+            elif (
+                (s.get("scope"))
+                and (s["kind"] in RUBY_INSTANCE_METHODS)
+                and s["scopeKind"] in RUBY_CLASSES
+            ):
+                scope = s["scope"].split(".")[-1]
+                class_raw_symbol_data[scope].children.append(
+                    create_raw_symbol_via_ctags(
+                        ctags_symbol=s,
+                        root_rel_path=root_rel_path,
+                        code=code,
+                        symbol_kind=SymbolKind.CALLABLE,
+                        scope_relation=ScopeRelation.INSTANCE_METHOD,
+                        delimiter=".",
+                        is_multi_prompt=is_multi_prompt,
+                    )
+                )
+
+        output = (
+            None if len(class_raw_symbol_data) == 0 else cls(data=class_raw_symbol_data)
+        )
         return output
 
-    def __str__(self) -> str:
-        return self.render_markdown()
+    @classmethod
+    def from_llm(cls, code: str, root_rel_path: str) -> Self:
+        raise NotImplementedError("static analysis should be used for Ruby classes")
+
+    @classmethod
+    def to_dict(self) -> dict[str, RawSymbolData]:
+        return self.data
 
 
-def ruby_class_checker(
-    code: str, root_rel_path: Path, structured_output: bool = True
-) -> list[dict] | str | None:
-    symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-    classes_dict = {
-        s["name"]: {
-            "instance_methods": [],
-            "class_methods": [],
-            "attributes": [],
-        }
-        for s in symbols
-        if s["kind"] in RUBY_CLASSES
-    }
-    for s in symbols:
-        if (
-            (s.get("scope"))
-            and (s["kind"] in RUBY_CLASS_AND_MODULE_METHODS)
-            and s["scopeKind"] in RUBY_CLASSES
-        ):
-            classes_dict[s["scope"].split(".")[-1]]["class_methods"].append(s)
-        if (
-            (s.get("scope"))
-            and (s["kind"] in RUBY_INSTANCE_METHODS)
-            and s["scopeKind"] in RUBY_CLASSES
-        ):
-            classes_dict[s["scope"].split(".")[-1]]["instance_methods"].append(s)
-        elif (
-            (s.get("scope"))
-            and (s["kind"] in RUBY_ATTRIBUTES)
-            and (s["scopeKind"] in RUBY_CLASSES)
-        ):
-            classes_dict[s["scope"].split(".")[-1]]["attributes"].append(s)
+class RubyModuleRawSymbolCollection(RawSymbolCollection):
+    data: dict[str, RawSymbolData]
 
-    output = None
-    if len(classes_dict) > 0:
-        if structured_output:
-            output = classes_dict
-        else:
-            output = "\nClasses to document in the code:\n\n"
-            for n in classes_dict:
-                output += f"- {n}\n"
-    return output
+    @classmethod
+    def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
+        is_multi_prompt = code_requires_multi_prompt(code)
 
-
-def ruby_module_checker(
-    code: str, root_rel_path: Path, structured_output: bool = True
-) -> list[dict] | str | None:
-    symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-    classes_dict = {
-        s["name"]: {
-            "instance_methods": [],
-            "module_methods": [],
-            "attributes": [],
-        }
-        for s in symbols
-        if s["kind"] in RUBY_MODULES
-    }
-    for s in symbols:
-        if (
-            (s.get("scope"))
-            and (s["kind"] in RUBY_CLASS_AND_MODULE_METHODS)
-            and s["scopeKind"] in RUBY_MODULES
-        ):
-            classes_dict[s["scope"].split(".")[-1]]["module_methods"].append(s)
-        if (
-            (s.get("scope"))
-            and (s["kind"] in RUBY_INSTANCE_METHODS)
-            and s["scopeKind"] in RUBY_MODULES
-        ):
-            classes_dict[s["scope"].split(".")[-1]]["instance_methods"].append(s)
-        elif (
-            (s.get("scope"))
-            and (s["kind"] in RUBY_ATTRIBUTES)
-            and (s["scopeKind"] in RUBY_MODULES)
-        ):
-            classes_dict[s["scope"].split(".")[-1]]["attributes"].append(s)
-
-    output = None
-    if len(classes_dict) > 0:
-        if structured_output:
-            output = classes_dict
-        else:
-            output = "\nClasses to document in the code:\n\n"
-            for n in classes_dict:
-                output += f"- {n}\n"
-    return output
-
-
-def ruby_class_dict_from_llm(
-    system_prompt_class: str,
-    user_prompt_class: str,
-    system_prompt_fn: str,
-    user_prompt_fn: str,
-    system_prompt_field: str,
-    user_prompt_field: str,
-    class_fn_delimiter: str,
-    llm: ChatOpenAI,
-    class_dict_raw: dict[str, dict[str, Any]],
-    code: str,
-) -> RubyClassDict:
-    class_dict_documented = {}
-    global_method_counts = {}
-    for _, cls_data in class_dict_raw.items():
-        for m in cls_data["class_methods"]:
-            name = m["name"]
-            global_method_counts[name] = global_method_counts.get(name, 0) + 1
-        for m in cls_data["instance_methods"]:
-            name = m["name"]
-            global_method_counts[name] = global_method_counts.get(name, 0) + 1
-    for cls_name, cls_data in class_dict_raw.items():
-        class_base = RubyClassBaseData.from_llm(
-            system_prompt=system_prompt_class,
-            user_prompt=user_prompt_class,
-            llm=llm,
-            name=cls_name,
-            code=code,
+        symbols = extract_symbols_w_ctags(
+            root_rel_path=root_rel_path, file_content=code
         )
-        class_methods = {}
-        instance_methods = {}
-        attributes = {}
-        for m in cls_data["class_methods"]:
-            m_name = m["name"]
-            scoped_name = cls_name + class_fn_delimiter + m_name
-            # More than one method with the same name in the file: cut scope for LLM.
-            if global_method_counts[m_name] > 1:
-                m_start_line = m["line"]
-                # TODO: Better solution if end line is not present.
-                m_end_line = m.get("end")
-                code_lines = code.splitlines()
-                m_code = "\n".join(code_lines[m_start_line - 1 : m_end_line + 1])
-                # Use list to handle method overloading, if present.
-                if scoped_name not in class_methods:
-                    class_methods[scoped_name] = []
-                class_methods[scoped_name].append(
-                    FnData.from_llm(
-                        system_prompt=system_prompt_fn,
-                        user_prompt=user_prompt_fn,
-                        llm=llm,
-                        fn_name=m_name,
-                        code=m_code,
-                    )
-                )
-            else:
-                m_data = FnData.from_llm(
-                    system_prompt=system_prompt_fn,
-                    user_prompt=user_prompt_fn,
-                    llm=llm,
-                    fn_name=m_name,
-                    code=code,
-                )
-                class_methods[scoped_name] = m_data
-        for m in cls_data["instance_methods"]:
-            m_name = m["name"]
-            scoped_name = cls_name + class_fn_delimiter + m_name
-            # More than one method with the same name in the file: cut scope for LLM.
-            if global_method_counts[m_name] > 1:
-                m_start_line = m["line"]
-                # TODO: Better solution if end line is not present.
-                m_end_line = m.get("end")
-                code_lines = code.splitlines()
-                m_code = "\n".join(code_lines[m_start_line - 1 : m_end_line + 1])
-                # Use list to handle method overloading, if present.
-                if scoped_name not in instance_methods:
-                    instance_methods[scoped_name] = []
-                instance_methods[scoped_name].append(
-                    FnData.from_llm(
-                        system_prompt=system_prompt_fn,
-                        user_prompt=user_prompt_fn,
-                        llm=llm,
-                        fn_name=m_name,
-                        code=m_code,
-                    )
-                )
-            else:
-                m_data = FnData.from_llm(
-                    system_prompt=system_prompt_fn,
-                    user_prompt=user_prompt_fn,
-                    llm=llm,
-                    fn_name=m_name,
-                    code=code,
-                )
-                instance_methods[scoped_name] = m_data
-        for a in cls_data["attributes"]:
-            a_name = a["name"]
-            scoped_name = cls_name + class_fn_delimiter + a_name
-            f_data = VariableData.from_llm(
-                system_prompt=system_prompt_field,
-                user_prompt=user_prompt_field,
-                llm=llm,
-                var_name=a_name,
-                code=code,
-            )
-            attributes[scoped_name] = f_data
 
-        class_data = RubyClassData(
-            base_data=class_base,
-            class_methods=class_methods,
-            instance_methods=instance_methods,
-            attributes=attributes,
+        module_raw_symbol_data = {}
+        for s in symbols:
+            if s["kind"] in RUBY_MODULES:
+                module_raw_symbol_data[s["name"]] = create_raw_symbol_via_ctags(
+                    ctags_symbol=s,
+                    root_rel_path=root_rel_path,
+                    code=code,
+                    symbol_kind=SymbolKind.MODULE,
+                    scope_relation=None,
+                    delimiter=".",
+                    is_multi_prompt=is_multi_prompt,
+                )
+
+        for s in symbols:
+            if (
+                (s.get("scope"))
+                and (s["kind"] in RUBY_ATTRIBUTES)
+                and s["scopeKind"] in RUBY_MODULES
+            ):
+                scope = s["scope"].split(".")[-1]
+                module_raw_symbol_data[scope].children.append(
+                    create_raw_symbol_via_ctags(
+                        ctags_symbol=s,
+                        root_rel_path=root_rel_path,
+                        code=code,
+                        symbol_kind=SymbolKind.VARIABLE,
+                        scope_relation=ScopeRelation.ATTRIBUTE,
+                        delimiter=".",
+                        is_multi_prompt=is_multi_prompt,
+                    )
+                )
+            elif (
+                (s.get("scope"))
+                and (s["kind"] in RUBY_CLASS_AND_MODULE_METHODS)
+                and s["scopeKind"] in RUBY_MODULES
+            ):
+                scope = s["scope"].split(".")[-1]
+                module_raw_symbol_data[scope].children.append(
+                    create_raw_symbol_via_ctags(
+                        ctags_symbol=s,
+                        root_rel_path=root_rel_path,
+                        code=code,
+                        symbol_kind=SymbolKind.CALLABLE,
+                        scope_relation=ScopeRelation.MODULE_METHOD,
+                        delimiter=".",
+                        is_multi_prompt=is_multi_prompt,
+                    )
+                )
+            elif (
+                (s.get("scope"))
+                and (s["kind"] in RUBY_INSTANCE_METHODS)
+                and s["scopeKind"] in RUBY_MODULES
+            ):
+                scope = s["scope"].split(".")[-1]
+                module_raw_symbol_data[scope].children.append(
+                    create_raw_symbol_via_ctags(
+                        ctags_symbol=s,
+                        root_rel_path=root_rel_path,
+                        code=code,
+                        symbol_kind=SymbolKind.CALLABLE,
+                        scope_relation=ScopeRelation.INSTANCE_METHOD,
+                        delimiter=".",
+                        is_multi_prompt=is_multi_prompt,
+                    )
+                )
+
+        output = (
+            None
+            if len(module_raw_symbol_data) == 0
+            else cls(data=module_raw_symbol_data)
         )
-        class_dict_documented[cls_name] = class_data
+        return output
 
-    return RubyClassDict(data=class_dict_documented)
+    @classmethod
+    def from_llm(cls, code: str, root_rel_path: str) -> Self:
+        raise NotImplementedError("static analysis should be used for Ruby modules")
 
-
-def ruby_class_dict_from_llm_multi_prompt(
-    system_prompt_class: str,
-    user_prompt_class: str,
-    system_prompt_fn: str,
-    user_prompt_fn: str,
-    system_prompt_field: str,
-    user_prompt_field: str,
-    class_fn_delimiter: str,
-    llm: ChatOpenAI,
-    class_dict_raw: dict[str, dict[str, Any]],
-    code: str,
-    root_rel_path: Path,
-) -> RubyClassDict:
-    from shared.chunking.text_splitter import split_text
-
-    symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-    class_dict_documented = {}
-    global_method_counts = {}
-    for _, cls_data in class_dict_raw.items():
-        for m in cls_data["class_methods"]:
-            name = m["name"]
-            global_method_counts[name] = global_method_counts.get(name, 0) + 1
-        for m in cls_data["instance_methods"]:
-            name = m["name"]
-            global_method_counts[name] = global_method_counts.get(name, 0) + 1
-
-    for symbol in symbols:
-        for cls_name, cls_data in class_dict_raw.items():
-            if symbol["name"] == cls_name:
-                start_line = symbol["line"]
-                end_line = symbol.get(
-                    "end", symbol["line"] + BLIND_ADVANCE_IF_NO_END_LINE
-                )
-                class_code = "\n".join(code.splitlines()[start_line - 1 : end_line])
-                code_chunks = split_text(
-                    text=class_code,
-                    chunk_size=SYMBOL_MAX_CHUNK_SIZE,
-                    chunk_overlap=SYMBOL_CHUNK_OVERLAP,
-                )
-
-                if len(code_chunks) == 1:
-                    class_dict_documented[cls_name] = ruby_class_dict_from_llm(
-                        system_prompt_class=system_prompt_class,
-                        user_prompt_class=user_prompt_class,
-                        system_prompt_fn=system_prompt_fn,
-                        user_prompt_fn=user_prompt_fn,
-                        system_prompt_field=system_prompt_field,
-                        user_prompt_field=user_prompt_field,
-                        class_fn_delimiter=class_fn_delimiter,
-                        llm=llm,
-                        class_dict_raw={cls_name: cls_data},
-                        code=class_code,
-                    ).data[cls_name]
-                elif len(code_chunks) > 1:
-                    class_base = RubyClassBaseData.from_llm(
-                        system_prompt=system_prompt_class,
-                        user_prompt=user_prompt_class,
-                        llm=llm,
-                        name=cls_name,
-                        code=code_chunks[0].text,
-                    )
-                    class_methods = {}
-                    instance_methods = {}
-                    attributes = {}
-                    for m in cls_data["class_methods"]:
-                        m_name = m["name"]
-                        scoped_name = cls_name + class_fn_delimiter + m_name
-                        m_start_line = m["line"]
-                        m_end_line = m.get(
-                            "end", m_start_line + BLIND_ADVANCE_IF_NO_END_LINE
-                        )
-                        m_code = "\n".join(
-                            code.splitlines()[m_start_line - 1 : m_end_line]
-                        )
-                        # More than one method with the same name in the file: cut scope for LLM.
-                        if global_method_counts[m_name] > 1:
-                            # Use list to handle method overloading, if present.
-                            if scoped_name not in class_methods:
-                                class_methods[scoped_name] = []
-                            class_methods[scoped_name].append(
-                                FnData.from_llm(
-                                    system_prompt=system_prompt_fn,
-                                    user_prompt=user_prompt_fn,
-                                    llm=llm,
-                                    fn_name=m_name,
-                                    code=m_code,
-                                )
-                            )
-                        else:
-                            m_data = FnData.from_llm(
-                                system_prompt=system_prompt_fn,
-                                user_prompt=user_prompt_fn,
-                                llm=llm,
-                                fn_name=m_name,
-                                code=m_code,
-                            )
-                            class_methods[scoped_name] = m_data
-                    for m in cls_data["instance_methods"]:
-                        m_name = m["name"]
-                        scoped_name = cls_name + class_fn_delimiter + m_name
-                        m_start_line = m["line"]
-                        m_end_line = m.get(
-                            "end", m_start_line + BLIND_ADVANCE_IF_NO_END_LINE
-                        )
-                        m_code = "\n".join(
-                            code.splitlines()[m_start_line - 1 : m_end_line]
-                        )
-                        # More than one method with the same name in the file: cut scope for LLM.
-                        if global_method_counts[m_name] > 1:
-                            # Use list to handle method overloading, if present.
-                            if scoped_name not in instance_methods:
-                                instance_methods[scoped_name] = []
-                            instance_methods[scoped_name].append(
-                                FnData.from_llm(
-                                    system_prompt=system_prompt_fn,
-                                    user_prompt=user_prompt_fn,
-                                    llm=llm,
-                                    fn_name=m_name,
-                                    code=m_code,
-                                )
-                            )
-                        else:
-                            m_data = FnData.from_llm(
-                                system_prompt=system_prompt_fn,
-                                user_prompt=user_prompt_fn,
-                                llm=llm,
-                                fn_name=m_name,
-                                code=m_code,
-                            )
-                            instance_methods[scoped_name] = m_data
-                    for a in cls_data["attributes"]:
-                        a_name = a["name"]
-                        a_start_line = a["line"] - PADDING_LINES_TOP
-                        a_end_line = a.get("end", a["line"] + PADDING_LINES_BOTTOM)
-                        a_code = "\n".join(code.splitlines()[a_start_line:a_end_line])
-                        scoped_name = cls_name + class_fn_delimiter + a_name
-                        a_data = VariableData.from_llm(
-                            system_prompt=system_prompt_field,
-                            user_prompt=user_prompt_field,
-                            llm=llm,
-                            var_name=a_name,
-                            code=a_code,
-                        )
-                        attributes[scoped_name] = a_data
-
-                    class_data = RubyClassData(
-                        base_data=class_base,
-                        class_methods=class_methods,
-                        instance_methods=instance_methods,
-                        attributes=attributes,
-                    )
-                    class_dict_documented[cls_name] = class_data
-
-    return RubyClassDict(data=class_dict_documented)
-
-
-def ruby_module_dict_from_llm(
-    system_prompt_class: str,
-    user_prompt_class: str,
-    system_prompt_fn: str,
-    user_prompt_fn: str,
-    system_prompt_field: str,
-    user_prompt_field: str,
-    class_fn_delimiter: str,
-    llm: ChatOpenAI,
-    module_dict_raw: dict[str, dict[str, Any]],
-    code: str,
-) -> RubyModuleDict:
-    module_dict_documented = {}
-    global_method_counts = {}
-    for _, mod_data in module_dict_raw.items():
-        for m in mod_data["module_methods"]:
-            name = m["name"]
-            global_method_counts[name] = global_method_counts.get(name, 0) + 1
-        for m in mod_data["instance_methods"]:
-            name = m["name"]
-            global_method_counts[name] = global_method_counts.get(name, 0) + 1
-    for mod_name, mod_data in module_dict_raw.items():
-        class_base = RubyModuleBaseData.from_llm(
-            system_prompt=system_prompt_class,
-            user_prompt=user_prompt_class,
-            llm=llm,
-            name=mod_name,
-            code=code,
-        )
-        module_methods = {}
-        instance_methods = {}
-        attributes = {}
-        for m in mod_data["module_methods"]:
-            m_name = m["name"]
-            scoped_name = mod_name + class_fn_delimiter + m_name
-            # More than one method with the same name in the file: cut scope for LLM.
-            if global_method_counts[m_name] > 1:
-                m_start_line = m["line"]
-                # TODO: Better solution if end line is not present.
-                m_end_line = m.get("end")
-                code_lines = code.splitlines()
-                m_code = "\n".join(code_lines[m_start_line - 1 : m_end_line + 1])
-                # Use list to handle method overloading, if present.
-                if scoped_name not in module_methods:
-                    module_methods[scoped_name] = []
-                module_methods[scoped_name].append(
-                    FnData.from_llm(
-                        system_prompt=system_prompt_fn,
-                        user_prompt=user_prompt_fn,
-                        llm=llm,
-                        fn_name=m_name,
-                        code=m_code,
-                    )
-                )
-            else:
-                m_data = FnData.from_llm(
-                    system_prompt=system_prompt_fn,
-                    user_prompt=user_prompt_fn,
-                    llm=llm,
-                    fn_name=m_name,
-                    code=code,
-                )
-                module_methods[scoped_name] = m_data
-        for m in mod_data["instance_methods"]:
-            m_name = m["name"]
-            scoped_name = mod_name + class_fn_delimiter + m_name
-            # More than one method with the same name in the file: cut scope for LLM.
-            if global_method_counts[m_name] > 1:
-                m_start_line = m["line"]
-                # TODO: Better solution if end line is not present.
-                m_end_line = m.get("end")
-                code_lines = code.splitlines()
-                m_code = "\n".join(code_lines[m_start_line - 1 : m_end_line + 1])
-                # Use list to handle method overloading, if present.
-                if scoped_name not in instance_methods:
-                    instance_methods[scoped_name] = []
-                instance_methods[scoped_name].append(
-                    FnData.from_llm(
-                        system_prompt=system_prompt_fn,
-                        user_prompt=user_prompt_fn,
-                        llm=llm,
-                        fn_name=m_name,
-                        code=m_code,
-                    )
-                )
-            else:
-                m_data = FnData.from_llm(
-                    system_prompt=system_prompt_fn,
-                    user_prompt=user_prompt_fn,
-                    llm=llm,
-                    fn_name=m_name,
-                    code=code,
-                )
-                instance_methods[scoped_name] = m_data
-        for a in mod_data["attributes"]:
-            a_name = a["name"]
-            scoped_name = mod_name + class_fn_delimiter + a_name
-            f_data = VariableData.from_llm(
-                system_prompt=system_prompt_field,
-                user_prompt=user_prompt_field,
-                llm=llm,
-                var_name=a_name,
-                code=code,
-            )
-            attributes[scoped_name] = f_data
-
-        module_data = RubyModuleData(
-            base_data=class_base,
-            module_methods=module_methods,
-            instance_methods=instance_methods,
-            attributes=attributes,
-        )
-        module_dict_documented[mod_name] = module_data
-
-    return RubyModuleDict(data=module_dict_documented)
-
-
-def ruby_module_dict_from_llm_multi_prompt(
-    system_prompt_class: str,
-    user_prompt_class: str,
-    system_prompt_fn: str,
-    user_prompt_fn: str,
-    system_prompt_field: str,
-    user_prompt_field: str,
-    class_fn_delimiter: str,
-    llm: ChatOpenAI,
-    module_dict_raw: dict[str, dict[str, Any]],
-    code: str,
-    root_rel_path: Path,
-) -> RubyModuleDict:
-    from shared.chunking.text_splitter import split_text
-
-    symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-    module_dict_documented = {}
-    global_method_counts = {}
-    for _, mod_data in module_dict_raw.items():
-        for m in mod_data["module_methods"]:
-            name = m["name"]
-            global_method_counts[name] = global_method_counts.get(name, 0) + 1
-        for m in mod_data["instance_methods"]:
-            name = m["name"]
-            global_method_counts[name] = global_method_counts.get(name, 0) + 1
-
-    for symbol in symbols:
-        for mod_name, mod_data in module_dict_raw.items():
-            if symbol["name"] == mod_name:
-                start_line = symbol["line"]
-                end_line = symbol.get(
-                    "end", symbol["line"] + BLIND_ADVANCE_IF_NO_END_LINE
-                )
-                mod_code = "\n".join(code.splitlines()[start_line - 1 : end_line])
-                code_chunks = split_text(
-                    text=mod_code,
-                    chunk_size=SYMBOL_MAX_CHUNK_SIZE,
-                    chunk_overlap=SYMBOL_CHUNK_OVERLAP,
-                )
-                if len(code_chunks) == 1:
-                    module_dict_documented[mod_name] = ruby_module_dict_from_llm(
-                        system_prompt_class=system_prompt_class,
-                        user_prompt_class=user_prompt_class,
-                        system_prompt_fn=system_prompt_fn,
-                        user_prompt_fn=user_prompt_fn,
-                        system_prompt_field=system_prompt_field,
-                        user_prompt_field=user_prompt_field,
-                        class_fn_delimiter=class_fn_delimiter,
-                        llm=llm,
-                        module_dict_raw={mod_name: mod_data},
-                        code=mod_code,
-                    ).data[mod_name]
-                elif len(code_chunks) > 1:
-                    class_base = RubyModuleBaseData.from_llm(
-                        system_prompt=system_prompt_class,
-                        user_prompt=user_prompt_class,
-                        llm=llm,
-                        name=mod_name,
-                        code=code_chunks[0].text,
-                    )
-                    module_methods = {}
-                    instance_methods = {}
-                    attributes = {}
-                    for m in mod_data["module_methods"]:
-                        m_name = m["name"]
-                        scoped_name = mod_name + class_fn_delimiter + m_name
-                        m_start_line = m["line"]
-                        m_end_line = m.get(
-                            "end", m_start_line + BLIND_ADVANCE_IF_NO_END_LINE
-                        )
-                        m_code = "\n".join(
-                            code.splitlines()[m_start_line - 1 : m_end_line]
-                        )
-                        # More than one method with the same name in the file: cut scope for LLM.
-                        if global_method_counts[m_name] > 1:
-                            # Use list to handle method overloading, if present.
-                            if scoped_name not in module_methods:
-                                module_methods[scoped_name] = []
-                            module_methods[scoped_name].append(
-                                FnData.from_llm(
-                                    system_prompt=system_prompt_fn,
-                                    user_prompt=user_prompt_fn,
-                                    llm=llm,
-                                    fn_name=m_name,
-                                    code=m_code,
-                                )
-                            )
-                        else:
-                            m_data = FnData.from_llm(
-                                system_prompt=system_prompt_fn,
-                                user_prompt=user_prompt_fn,
-                                llm=llm,
-                                fn_name=m_name,
-                                code=m_code,
-                            )
-                            module_methods[scoped_name] = m_data
-                    for m in mod_data["instance_methods"]:
-                        m_name = m["name"]
-                        scoped_name = mod_name + class_fn_delimiter + m_name
-                        m_start_line = m["line"]
-                        m_end_line = m.get(
-                            "end", m_start_line + BLIND_ADVANCE_IF_NO_END_LINE
-                        )
-                        m_code = "\n".join(
-                            code.splitlines()[m_start_line - 1 : m_end_line]
-                        )
-                        # More than one method with the same name in the file: cut scope for LLM.
-                        if global_method_counts[m_name] > 1:
-                            # Use list to handle method overloading, if present.
-                            if scoped_name not in instance_methods:
-                                instance_methods[scoped_name] = []
-                            instance_methods[scoped_name].append(
-                                FnData.from_llm(
-                                    system_prompt=system_prompt_fn,
-                                    user_prompt=user_prompt_fn,
-                                    llm=llm,
-                                    fn_name=m_name,
-                                    code=m_code,
-                                )
-                            )
-                        else:
-                            m_data = FnData.from_llm(
-                                system_prompt=system_prompt_fn,
-                                user_prompt=user_prompt_fn,
-                                llm=llm,
-                                fn_name=m_name,
-                                code=m_code,
-                            )
-                            instance_methods[scoped_name] = m_data
-                    for a in mod_data["attributes"]:
-                        a_name = a["name"]
-                        a_start_line = a["line"] - PADDING_LINES_TOP
-                        a_end_line = a.get("end", a["line"] + PADDING_LINES_BOTTOM)
-                        a_code = "\n".join(code.splitlines()[a_start_line:a_end_line])
-                        scoped_name = mod_name + class_fn_delimiter + a_name
-                        a_data = VariableData.from_llm(
-                            system_prompt=system_prompt_field,
-                            user_prompt=user_prompt_field,
-                            llm=llm,
-                            var_name=a_name,
-                            code=a_code,
-                        )
-                        attributes[scoped_name] = a_data
-
-                    module_data = RubyModuleData(
-                        base_data=class_base,
-                        module_methods=module_methods,
-                        instance_methods=instance_methods,
-                        attributes=attributes,
-                    )
-                    module_dict_documented[mod_name] = module_data
-
-    return RubyModuleDict(data=module_dict_documented)
-
-
-BLIND_ADVANCE_IF_NO_END_LINE = 200
-PADDING_LINES_TOP = 100
-PADDING_LINES_BOTTOM = 100
-SYMBOL_MAX_CHUNK_SIZE = 64_000
-SYMBOL_CHUNK_OVERLAP = 1_000
+    @classmethod
+    def to_dict(self) -> dict[str, RawSymbolData]:
+        return self.data
 
 
 class_dict_from_llm_ruby = partial(
-    ruby_class_dict_from_llm,
-    CLASSES_FOUND_SYSTEM_PROMPT_JSON,
-    CLASSES_FOUND_USER_PROMPT,
-    METHODS_FOUND_SYSTEM_PROMPT_JSON,
-    METHODS_FOUND_USER_PROMPT,
-    ATTRIBUTES_FOUND_SYSTEM_PROMPT_JSON,
-    ATTRIBUTES_FOUND_USER_PROMPT,
-    ".",
+    RubyClassCollection.dict_from_llm,
+    RubyClassData,
 )
 
 module_dict_from_llm_ruby = partial(
-    ruby_module_dict_from_llm,
-    MODULES_FOUND_SYSTEM_PROMPT_JSON,
-    MODULES_FOUND_USER_PROMPT,
-    METHODS_FOUND_SYSTEM_PROMPT_JSON,
-    METHODS_FOUND_USER_PROMPT,
-    ATTRIBUTES_FOUND_SYSTEM_PROMPT_JSON,
-    ATTRIBUTES_FOUND_USER_PROMPT,
-    ".",
-)
-
-class_dict_from_llm_ruby_multi_prompt = partial(
-    ruby_class_dict_from_llm_multi_prompt,
-    CLASSES_FOUND_SYSTEM_PROMPT_JSON,
-    CLASSES_FOUND_USER_PROMPT,
-    METHODS_FOUND_SYSTEM_PROMPT_JSON,
-    METHODS_FOUND_USER_PROMPT,
-    ATTRIBUTES_FOUND_SYSTEM_PROMPT_JSON,
-    ATTRIBUTES_FOUND_USER_PROMPT,
-    ".",
-)
-
-module_dict_from_llm_ruby_multi_prompt = partial(
-    ruby_module_dict_from_llm_multi_prompt,
-    MODULES_FOUND_SYSTEM_PROMPT_JSON,
-    MODULES_FOUND_USER_PROMPT,
-    METHODS_FOUND_SYSTEM_PROMPT_JSON,
-    METHODS_FOUND_USER_PROMPT,
-    ATTRIBUTES_FOUND_SYSTEM_PROMPT_JSON,
-    ATTRIBUTES_FOUND_USER_PROMPT,
-    ".",
+    RubyModuleCollection.dict_from_llm,
+    RubyModuleData,
 )

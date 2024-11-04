@@ -9,7 +9,7 @@ from database.models_v1 import (
 )
 from fastapi import APIRouter, Query
 from pydantic import BaseModel
-from sqlmodel import select
+from sqlmodel import func, select
 
 from app.api.auth import ContentReadonlyPermission, UserToken
 from app.api.session import CurrentSession
@@ -26,6 +26,9 @@ class VersionResponse(BaseModel):
 
 class CodebaseVersionsResponse(BaseModel):
     versions: list[VersionResponse]
+    total_count: int
+    limit: int
+    offset: int
 
 
 @router.get(
@@ -54,12 +57,24 @@ def get_codebase_versions(
             DerivedContent.content_type_id == codebase_type_id,
             InspectionVersion.version.isnot(None),
         )
-        # .distinct(InspectionVersion.id)
         .order_by(InspectionVersion.created_at.desc())
         .limit(limit)
         .offset(offset)
     )
     versions = session.exec(statement).all()
+
+    total_count = session.exec(
+        select(func.count(InspectionVersion.id))
+        .join(DerivedContent)
+        .join(Workspace)
+        .where(
+            DerivedContent.codebase_id == codebase_id,
+            Workspace.organization_id == user.organization_id,
+            DerivedContent.content_type_id == codebase_type_id,
+            InspectionVersion.version.isnot(None),
+        )
+    ).one()
+
     response_data = [
         VersionResponse(
             id=version.id,
@@ -70,4 +85,6 @@ def get_codebase_versions(
         for version in versions
     ]
 
-    return CodebaseVersionsResponse(versions=response_data)
+    return CodebaseVersionsResponse(
+        versions=response_data, total_count=total_count, limit=limit, offset=offset
+    )

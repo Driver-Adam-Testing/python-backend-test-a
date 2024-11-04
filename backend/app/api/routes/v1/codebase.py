@@ -11,7 +11,7 @@ from fastapi import APIRouter, Query
 from pydantic import BaseModel
 from sqlmodel import select
 
-from app.api.auth import CurrentUser
+from app.api.auth import ContentReadonlyPermission, UserToken
 from app.api.session import CurrentSession
 
 router = APIRouter()
@@ -31,10 +31,11 @@ class CodebaseVersionsResponse(BaseModel):
 @router.get(
     "/{codebase_id}/versions",
     summary="Get available codebase versions",
+    dependencies=[ContentReadonlyPermission],
 )
 def get_codebase_versions(
     session: CurrentSession,
-    user: CurrentUser,
+    user: UserToken,
     codebase_id: UUID,
     limit: int = Query(default=10, gt=0),
     offset: int = Query(default=0, ge=0),

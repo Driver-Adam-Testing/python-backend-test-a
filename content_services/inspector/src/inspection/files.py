@@ -9,7 +9,7 @@ from utils.dag import LiteNode
 from utils.io import (
     get_prompt_template,
 )
-from utils.lang_specialization.common import Lang
+from utils.lang_specialization.symbol_common import Lang
 from utils.models import ChatOpenAI
 from utils.templates import Template
 

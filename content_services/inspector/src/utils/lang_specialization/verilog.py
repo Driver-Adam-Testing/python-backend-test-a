@@ -2,15 +2,17 @@ from functools import partial
 from pathlib import Path
 from typing import Self
 
-from .common import (
+from .ir_common import (
     FnData,
     IrCollection,
     IrData,
     NamedContent,
+    VariableData,
+)
+from .symbol_common import (
     RawSymbolCollection,
     RawSymbolData,
     SymbolKind,
-    VariableData,
     default_ctags_analysis,
 )
 

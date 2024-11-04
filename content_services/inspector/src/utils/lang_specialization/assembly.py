@@ -4,19 +4,17 @@ from typing import Self
 
 from utils.models import ChatOpenAI
 
-from .common import (
+from .default import (
+    default_llm_analysis,
+)
+from .ir_common import (
     DataStructureData,
     FnData,
     IrCollection,
     IrData,
-    RawSymbolCollection,
-    RawSymbolData,
-    SymbolKind,
     VariableData,
 )
-from .default import (
-    default_llm_analysis,
-)
+from .symbol_common import RawSymbolCollection, RawSymbolData, SymbolKind
 
 SOURCE_CODE_SYSTEM_PROMPT_GENERAL_DEFAULT = """
 You are an assembly software engineering documentation expert. You write detailed documentation to explain software.

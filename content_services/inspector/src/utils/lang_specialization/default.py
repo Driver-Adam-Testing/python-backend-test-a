@@ -5,18 +5,20 @@ from typing import Self
 from openai import LengthFinishReasonError
 from utils.models import ChatOpenAI
 
-from .common import (
-    CHUNK_OVERLAP,
-    CHUNK_SIZE,
+from .ir_common import (
     DataStructureData,
     FnData,
     IrCollection,
     IrData,
     ListData,
+    VariableData,
+)
+from .symbol_common import (
+    CHUNK_OVERLAP,
+    CHUNK_SIZE,
     RawSymbolCollection,
     RawSymbolData,
     SymbolKind,
-    VariableData,
     code_requires_multi_prompt,
     create_raw_symbol_via_llm,
 )

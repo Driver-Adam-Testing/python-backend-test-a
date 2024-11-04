@@ -4,16 +4,18 @@ from typing import Self
 
 from utils.codemap_ctags import extract_symbols_w_ctags
 
-from .common import (
+from .ir_common import (
     ClassData,
     FnData,
     IrCollection,
     IrData,
+    VariableData,
+)
+from .symbol_common import (
     RawSymbolCollection,
     RawSymbolData,
     ScopeRelation,
     SymbolKind,
-    VariableData,
     code_requires_multi_prompt,
     create_raw_symbol_via_ctags,
     default_ctags_analysis,

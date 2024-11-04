@@ -12,6 +12,7 @@ would become
     Project -->|Contains| name["name"] & authors["authors"] & date["date"] & version["version"]
     HardwareModule -->|Contains| device["device"] & revision["revision"]
     ...
+Remove spaces in subgraph names, spaces in subgraph names prevent the diagram from rendering.
 """
 
 MESSAGE = {"role": "system", "content": PROMPT}

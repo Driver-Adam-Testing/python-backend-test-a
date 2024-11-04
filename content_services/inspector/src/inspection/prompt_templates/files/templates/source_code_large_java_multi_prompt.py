@@ -21,7 +21,7 @@ SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_JAVA = [
         SOURCE_CODE_PURPOSE_FROM_CHUNKS,
     ),
     (
-        S.LLM_COND_JSON,
+        S.MULTI_LLM_COND_JSON,
         "# Imports and Dependencies",
         default_imports_checker_multi_prompt,
         lambda _llm, output, _code: output,

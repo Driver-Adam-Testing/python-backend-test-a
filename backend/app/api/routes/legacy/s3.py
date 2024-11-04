@@ -28,8 +28,9 @@ class S3BucketAccess:
         # Hash the organization_id and take the first 63 characters to use as the bucket name
         return hashlib.sha256(organization_id.encode()).hexdigest()[:63]
 
-    def get_file_path(self, relative_path: str, prefix: str = "source") -> str:
+    def get_file_path(self, relative_path: str) -> str:
         # Ensure the leading slash is removed from the final path to avoid incorrect key generation
+        prefix: str = "source"
         if self.version_id:
             return f"{self.codebase_id}/version/{self.version_id}/{prefix}/{relative_path.lstrip('/')}"
         else:

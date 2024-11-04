@@ -90,6 +90,7 @@ for node in nodes:
     print("\033[93mNode Type:\033[0m", node.node_type)
     print("\033[93mOrganization Hash:\033[0m", node.organization_hash)
     print("\033[93mFile Type:\033[0m", node.file_type)
+    print("\033[93mIs Root:\033[0m", node.is_root)
 
 
 def build_tree(paths: list[str]) -> defaultdict:

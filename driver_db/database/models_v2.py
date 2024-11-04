@@ -162,6 +162,15 @@ class Node(SQLModel, table=True):
         else:
             return NodeTypeEnum.FILE.value
 
+    @property
+    def is_root(self) -> bool:
+        """
+        Determines if the current node is the root node.
+
+        A node is considered the root if its path is a file or a top-level directory.
+        """
+        return len(self.path.rstrip("/").split("/")) <= 1
+
     # DEMO -> absolute paths as a model attribute. We can create absolute paths that are always available.
     @property
     def absolute_path(self) -> str:

@@ -34,6 +34,7 @@ router = APIRouter()
 def list_content(
     session: CurrentSession,
     user: CurrentUser,
+    latest_version_only: bool = True,
     limit: int | None = 20,
     offset: int | None = 0,
     content_type_id: Annotated[list[str] | None, Query()] = None,
@@ -46,33 +47,13 @@ def list_content(
     tag: Annotated[list[str] | None, Query()] = None,
     tag_id: Annotated[list[str] | None, Query()] = None,
     text: str | None = None,
+    version_id: Annotated[list[str] | None, Query()] = None,
 ) -> ListContentResults:
-    """
-    List content matching the provided filter criteria.
-
-    Parameters:
-    - session: Current session object
-    - user: Current user object
-    - limit: Maximum number of items to return
-    - offset: Number of items to skip
-    - content_type_id: List of content type IDs to filter by
-    - source_content_id: List of source content IDs to filter by
-    - order: list of order column values to filter by
-    - content_type_name: List of content type names to filter by
-    - sort_by: Field to sort by
-    - sort_direction: Direction to sort (ASC or DESC)
-    - status: Status to filter by
-    - tag: List of tags to filter by
-    - tag_id: List of tag IDs to filter by
-    - text: Text to search for in content
-
-    Returns:
-    - ListContentResults: Results of the content list query
-    """
     content_service = ContentService(session)
     results = content_service.get_list_content(
         user.organization_id,
         ListContentInput(
+            latest_version_only=latest_version_only,
             limit=limit,
             offset=offset,
             text=text,
@@ -85,6 +66,7 @@ def list_content(
             status=status,
             tags=tag,
             tag_ids=tag_id,
+            version_id=version_id,
         ),
     )
     return results

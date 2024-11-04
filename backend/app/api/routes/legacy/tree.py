@@ -1,9 +1,13 @@
 # mypy: disable_error_code="call-arg"
 import strawberry
-from database.models_v1 import DerivedContent, DerivedContentType, Workspace
-from sqlmodel import Session, select
-
 from app.api.routes.legacy.scalars import ID
+from database.models_v1 import (
+    DerivedContent,
+    DerivedContentType,
+    InspectionVersion,
+    Workspace,
+)
+from sqlmodel import Session, select
 
 
 class NodeTypeEnum:
@@ -17,27 +21,77 @@ class NodeTypeEnum:
 class FlatNode:
     id: ID
     name: str | None
-    path: str | None  # TODO: relative_path is renamed path. There's a lot of transformation.
+    path: (
+        str | None
+    )  # TODO: relative_path is renamed path. There's a lot of transformation.
     kind: str | None
     children: list[str] | None = strawberry.field(default_factory=list)
 
 
 def get_codebase_tree(
-    codebase_id: str, session: Session, organization_id: str
+    codebase_id: str,
+    session: Session,
+    organization_id: str,
+    version_id: str | None = None,
 ) -> list[FlatNode]:
-    statement = (
-        select(DerivedContent, DerivedContentType)
-        .join(Workspace)
-        .where(DerivedContent.codebase_id == codebase_id)
-        .where(Workspace.id == DerivedContent.workspace_id)
-        .where(Workspace.organization_id == organization_id)
-        .where(
-            DerivedContentType.type_name.in_(["codebase-directory", "codebase-file"])
-        )  # type: ignore
-        .where(DerivedContentType.id == DerivedContent.content_type_id)
-    )
+    if version_id:
+        version = session.get(InspectionVersion, version_id)
+        if not version:
+            raise ValueError(f"Version with id {version_id} not found")
+    else:
+        # When no version id is provided, we look for a latest version.
+        # and return no version if there isn't one (fallback case to support existing)
+        codebase_type = session.exec(
+            select(DerivedContentType).where(DerivedContentType.type_name == "codebase")
+        ).first()
+        codebase_type_id = codebase_type.id
+        statement = (
+            select(InspectionVersion)
+            .join(DerivedContent)
+            .join(Workspace)
+            .where(
+                DerivedContent.codebase_id == codebase_id,
+                Workspace.organization_id == organization_id,
+                DerivedContent.content_type_id == codebase_type_id,
+                InspectionVersion.version.isnot(None),
+            )
+            .order_by(InspectionVersion.created_at.desc())
+        )
+        version = session.exec(statement).first()
 
-    source_contents = session.exec(statement).all()
+    if not version:
+        statement = (
+            select(DerivedContent, DerivedContentType)
+            .join(Workspace)
+            .where(DerivedContent.codebase_id == codebase_id)
+            .where(DerivedContent.version_id == None)  # noqa: E711
+            .where(Workspace.id == DerivedContent.workspace_id)
+            .where(Workspace.organization_id == organization_id)
+            .where(
+                DerivedContentType.type_name.in_(
+                    ["codebase-directory", "codebase-file"]
+                )
+            )  # type: ignore
+            .where(DerivedContentType.id == DerivedContent.content_type_id)
+        )
+        source_contents = session.exec(statement).all()
+    else:
+        # If we did find a version...
+        statement = (
+            select(DerivedContent, DerivedContentType)
+            .join(Workspace)
+            .where(DerivedContent.codebase_id == codebase_id)
+            .where(DerivedContent.version_id == version.id)
+            .where(Workspace.id == DerivedContent.workspace_id)
+            .where(Workspace.organization_id == organization_id)
+            .where(
+                DerivedContentType.type_name.in_(
+                    ["codebase-directory", "codebase-file"]
+                )
+            )  # type: ignore
+            .where(DerivedContentType.id == DerivedContent.content_type_id)
+        )
+        source_contents = session.exec(statement).all()
 
     directories_map = {}
     files = []

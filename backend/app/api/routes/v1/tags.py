@@ -77,12 +77,14 @@ def read_tag_contents(
     text: str | None = None,
     limit: int | None = 20,
     offset: int | None = 0,
+    latest_version_only: bool = True,
 ) -> ListTagContentsResults:
     tag_service = TagService(session)
     return tag_service.list_tag_contents(
         user=user,
         tag_id=tag_id,
         lt_input=ListContentInput(
+            latest_version_only=latest_version_only,
             limit=limit,
             offset=offset,
             text=text,
@@ -133,7 +135,7 @@ def delete_tag(
     session: CurrentSession,
     user: CurrentUser,
     tag_id: UUID,
-):
+) -> None:
     """Delete a tag by its ID."""
     tag_service = TagService(session)
     try:

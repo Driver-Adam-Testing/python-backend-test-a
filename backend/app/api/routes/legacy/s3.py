@@ -1,12 +1,16 @@
 import hashlib
+import logging
 
 import boto3
-
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class S3BucketAccess:
-    def __init__(self, organization_id: str, codebase_id: str):
+    def __init__(
+        self, organization_id: str, codebase_id: str, version_id: str | None = None
+    ) -> None:
         self.s3_client = boto3.client(
             "s3",
             aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
@@ -18,53 +22,26 @@ class S3BucketAccess:
         )
         self.organization_id_hashed = self._hash_organization_id(organization_id)
         self.codebase_id = codebase_id
+        self.version_id = version_id
 
     def _hash_organization_id(self, organization_id: str) -> str:
         # Hash the organization_id and take the first 63 characters to use as the bucket name
         return hashlib.sha256(organization_id.encode()).hexdigest()[:63]
 
-    def get_file_path(self, relative_path: str, prefix: str = "/source") -> str:
-        if prefix:
-            relative_path = f"{prefix}/{relative_path.lstrip('/')}"
+    def get_file_path(self, relative_path: str, prefix: str = "source") -> str:
         # Ensure the leading slash is removed from the final path to avoid incorrect key generation
-        return f"{self.codebase_id}/{relative_path.lstrip('/')}"
+        if self.version_id:
+            return f"{self.codebase_id}/version/{self.version_id}/{prefix}/{relative_path.lstrip('/')}"
+        else:
+            return f"{self.codebase_id}/{prefix}/{relative_path.lstrip('/')}"
 
     def upload_file(self, file_path: str, relative_path: str) -> None:
         s3_path = self.get_file_path(relative_path)
         self.s3_client.upload_file(file_path, self.organization_id_hashed, s3_path)
 
-    def list_files(self, prefix: str = "") -> list:
-        full_prefix = f"{self.codebase_id}/{prefix}"
-        response = self.s3_client.list_objects_v2(
-            Bucket=self.organization_id_hashed, Prefix=full_prefix
-        )
-        return [
-            obj["Key"]
-            for obj in response.get("Contents", [])
-            if obj["Key"] != full_prefix
-        ]
-
-    def get_signed_upload_url(self, relative_path: str, expiration=3600) -> str:
-        """Generate a signed URL for uploading files. Expiration time is in seconds."""
-        file_path = self.get_file_path(relative_path)
-        return self.s3_client.generate_presigned_url(
-            "put_object",
-            Params={"Bucket": self.organization_id_hashed, "Key": file_path, "ContentType": "application/pdf"},
-            ExpiresIn=expiration,
-        )
-
-    def get_signed_download_url(self, relative_path: str, expiration=3600) -> str:
-        """Generate a signed URL for downloading files. Expiration time is in seconds."""
-        file_path = self.get_file_path(relative_path, prefix="")
-        return self.s3_client.generate_presigned_url(
-            "get_object",
-            Params={"Bucket": self.organization_id_hashed, "Key": file_path},
-            ExpiresIn=expiration,
-        )
-
-    def get_file_content(self, relative_path: str, prefix: str = "/source") -> str:
+    def get_file_content(self, relative_path: str) -> str:
         """Return the content of a file from S3."""
-        file_path = self.get_file_path(relative_path, prefix)
+        file_path = self.get_file_path(relative_path)
         try:
             obj = self.s3_client.get_object(
                 Bucket=self.organization_id_hashed, Key=file_path

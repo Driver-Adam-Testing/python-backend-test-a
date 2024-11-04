@@ -5,10 +5,10 @@ from datetime import datetime
 
 import strawberry
 from app.api.routes.legacy.api_types import (
-    CodebaseResults,  # type: ignore # noqa: PGH003
+    CodebaseResults,  # type: ignore
     GitProvider,
     GitRepository,
-    OrganizationResult,  # type: ignore # noqa: PGH003
+    OrganizationResult,  # type: ignore
 )
 from app.api.routes.legacy.application_note import (
     ApplicationNoteEditResponse,
@@ -64,7 +64,7 @@ class Query:
             workspaces=[ws for ws in workspaces if ws.display_name != "Default"],
         )
 
-    @strawberry.field
+    @strawberry.field  # Update
     def codebase(self, info: Info, id: ID | None = None) -> CodebaseResults:
         session = info.context.session
         user_org_id = info.context.user.organization_id
@@ -82,14 +82,16 @@ class Query:
         return codebase
 
     @strawberry.field
-    def documentSet(
+    def documentSet(  # Needs update or optional version?
         self,
         info: Info,
         nodeKind: NodeType,
         path: str | None = None,
         workspaceId: ID | None = None,
         codebaseId: ID | None = None,
+        versionId: ID | None = None,
     ) -> DocumentSet:
+        logger.warning("versionId: %s", versionId)
         if path is None or workspaceId is None or codebaseId is None:
             raise GraphQLError(
                 "path, workspaceId, and codebaseId must not be None",
@@ -110,6 +112,7 @@ class Query:
             str(codebaseId),
             info.context.user.organization_id,
             session,
+            versionId,
         )
 
     @strawberry.field
@@ -133,13 +136,26 @@ class Query:
 
     @strawberry.field
     def tree(
-        self, info: Info, codebaseId: ID, workspaceId: ID | None = None
+        self,
+        info: Info,
+        codebaseId: ID,
+        workspaceId: ID | None = None,
+        versionId: ID | None = None,  # Optional version ID parameter
     ) -> list[FlatNode]:
         session = info.context.session
         user = info.context.user
+
         if not check_access(session, user.organization_id, codebase_id=str(codebaseId)):
             raise GraphQLError("Access denied", extensions={"code": "NOT_FOUND"})
-        return get_codebase_tree(str(codebaseId), session, user.organization_id)
+
+        return get_codebase_tree(
+            codebase_id=str(codebaseId),
+            session=session,
+            organization_id=user.organization_id,
+            version_id=str(versionId)
+            if versionId
+            else None,  # Pass version_id if provided
+        )
 
     @strawberry.field
     def symbolSet(
@@ -163,7 +179,7 @@ class Query:
     @strawberry.field
     def me(self, info: Info) -> MeResponse:
         user = info.context.user
-        return MeResponse(id=user.subject)  # type: ignore # noqa: PGH003
+        return MeResponse(id=user.subject)  # type: ignore
 
     @strawberry.field
     def connectedGitProviders(self, info: Info) -> list[GitProvider]:

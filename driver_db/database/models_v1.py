@@ -395,9 +395,8 @@ class Tag(SQLModel, table=True):  # type: ignore
         ),
         default=None,
     )
-    created_by: None | datetime = Field(
+    created_by: str = Field(
         sa_column=sqlalchemy.Column(sqlalchemy.String(128), nullable=False),
-        default=None,
     )
     updated_at: None | datetime = Field(
         sa_column=Column(
@@ -407,9 +406,8 @@ class Tag(SQLModel, table=True):  # type: ignore
             nullable=False,
         ),
     )
-    updated_by: None | datetime = Field(
+    updated_by: str = Field(
         sa_column=sqlalchemy.Column(sqlalchemy.String(128), nullable=False),
-        default=None,
     )
     content_links: list["TagContent"] = Relationship(
         back_populates="tag",

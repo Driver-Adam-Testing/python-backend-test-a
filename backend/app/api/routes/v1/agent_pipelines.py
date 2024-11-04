@@ -9,7 +9,7 @@ from shared.interfaces.agents.pipeline_configuration import (
 from shared.interfaces.request import DriverModalBatchRequest
 from shared.interfaces.response import DriverModalResponse
 
-from app.api.auth import CurrentUser
+from app.api.auth import ContentEditorPermission, ContentReadonlyPermission, UserToken
 
 router = APIRouter()
 
@@ -17,8 +17,9 @@ router = APIRouter()
 @router.post(
     "/",
     summary="Start a modal instance of the execute Agent Sequence",
+    dependencies=[ContentEditorPermission],
 )
-def execute_agent_sequence(user: CurrentUser, input: PipelineInput) -> PipelineResponse:
+def execute_agent_sequence(user: UserToken, input: PipelineInput) -> PipelineResponse:
     from shared.pipelines.agents.execute import execute_sequence
 
     input.scope.organization_id = user.organization_id
@@ -28,9 +29,10 @@ def execute_agent_sequence(user: CurrentUser, input: PipelineInput) -> PipelineR
 @router.post(
     "/async",
     summary="Start a modal instance of the execute Agent Sequence",
+    dependencies=[ContentReadonlyPermission],
 )
 def execute_agent_sequence_modal_async(
-    user: CurrentUser, input: PipelineInput
+    user: UserToken, input: PipelineInput
 ) -> DriverModalResponse:
     input.scope.organization_id = user.organization_id
     modal_function = Function.lookup("agent", "run")
@@ -38,8 +40,8 @@ def execute_agent_sequence_modal_async(
     return DriverModalResponse(call_id=instance.object_id)
 
 
-@router.get("/async/{call_id}")
-def get_execution_results(user: CurrentUser, call_id: str) -> PipelineResponse:
+@router.get("/async/{call_id}", dependencies=[ContentReadonlyPermission])
+def get_execution_results(user: UserToken, call_id: str) -> PipelineResponse:
     function_call = FunctionCall.from_id(call_id)
     result = function_call.get(timeout=0)
     return result
@@ -50,9 +52,9 @@ class BatchInput(BaseModel):
 
 
 # TODO: this url is poorly formatted. used to keep the same as instructions for rapid development
-@router.post("/async/batch")
+@router.post("/async/batch", dependencies=[ContentReadonlyPermission])
 def get_batch_execution_results(
-    user: CurrentUser, input: DriverModalBatchRequest
+    user: UserToken, input: DriverModalBatchRequest
 ) -> dict:
     results = {}
     for call_id in input.call_ids:
@@ -86,9 +88,10 @@ def get_batch_execution_results(
 @router.post(
     "/sync",
     summary="Start a modal instance of the execute Agent Sequence",
+    dependencies=[ContentReadonlyPermission],
 )
 def execute_agent_sequence_modal_sync(
-    user: CurrentUser, input: PipelineInput
+    user: UserToken, input: PipelineInput
 ) -> PipelineResponse:
     input.scope.organization_id = user.organization_id
     modal_function = Function.lookup("agent", "run")

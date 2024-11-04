@@ -9,9 +9,11 @@ from app.api.routes.v1 import (
     healthcheck,
     instructions,
     onboarding,
+    organization,
     search,
     tags,
     upload,
+    user,
 )
 from app.core.config import settings
 
@@ -35,6 +37,10 @@ api_router.include_router(
 api_router.include_router(upload.router, prefix="/upload", tags=["upload"])
 api_router.include_router(
     agent_pipelines.router, prefix="/agent_pipelines", tags=["agent_pipelines"]
+)
+api_router.include_router(user.router, prefix="/user", tags=["user"])
+api_router.include_router(
+    organization.router, prefix="/organization", tags=["organization"]
 )
 
 if settings.ENVIRONMENT != "production":

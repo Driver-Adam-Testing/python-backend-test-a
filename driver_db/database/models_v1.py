@@ -513,3 +513,86 @@ class InspectorRun(SQLModel, table=True):
             nullable=False,
         ),
     )
+
+
+class UsageSessionStatus(str, enum.Enum):
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+class UsageSession(SQLModel, table=True):
+    __tablename__ = "usage_sessions"
+    id: UUID | None = Field(default_factory=uuid.uuid4, primary_key=True)
+    status: UsageSessionStatus = Field(default=UsageSessionStatus.PENDING, index=True)
+    organization_id: str = Field(nullable=False)
+    user_id: str | None = Field(default=None, nullable=False)
+    session_metadata: dict | None = Field(
+        sa_column=Column("metadata", JSONB, nullable=True), default=None
+    )
+    created_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
+        default=None,
+    )
+    updated_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
+        default=None,
+    )
+
+    usage_events: list["UsageEvent"] = Relationship(back_populates="session")
+
+
+class UsageEventType(str, enum.Enum):
+    AGENT_PIPELINE_USAGE_DEBIT = "agent_pipeline_usage_debit"
+    INSPECTOR_TECH_DOC_USAGE_DEBIT = "inspector_tech_doc_usage_debit"
+    INSPECTOR_CODE_DIFF_USAGE_DEBIT = "inspector_code_diff_usage_debit"
+    ONBOARDING_USAGE_DEBIT = "onboarding_usage_debit"
+    SUMMARIZATION_USAGE_DEBIT = "summarization_usage_debit"
+    BASE_PLATFORM_USAGE_CREDIT = "base_platform_usage_credit"
+    ADDITIONAL_PLATFORM_USAGE_CREDIT = "additional_platform_usage_credit"
+
+
+class UsageEvent(SQLModel, table=True):
+    __tablename__ = "usage_events"
+    id: UUID | None = Field(default_factory=uuid.uuid4, primary_key=True)
+    event_type: UsageEventType = Field(nullable=False, index=True)
+    session_id: UUID = Field(
+        foreign_key="usage_sessions.id",
+        nullable=False,
+        ondelete="CASCADE",
+        index=True,
+    )
+    user_id: str | None = Field(default=None, nullable=True)
+    organization_id: str = Field(nullable=True)
+    event_source: str = Field(
+        max_length=255,
+        sa_column=Column(sqlalchemy.String(255), nullable=True),
+    )
+    sloc: int = Field(default=0, nullable=False)
+    bytes_in: int = Field(default=0, nullable=False)
+    bytes_out: int = Field(default=0, nullable=False)
+    tokens_in: int = Field(default=0, nullable=False)
+    tokens_out: int = Field(default=0, nullable=False)
+    spot_price: float = Field(default=0, nullable=True)
+    model_name: str = Field(
+        max_length=255, sa_column=Column(sqlalchemy.String(255), nullable=True)
+    )
+    timestamp: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
+        default=None,
+    )
+    message: str | None = Field(
+        sa_column=Column(sqlalchemy.Text, nullable=True), default=None
+    )
+    event_metadata: dict | None = Field(
+        sa_column=Column("metadata", JSONB, nullable=True), default=None
+    )
+    # Relationships
+    session: UsageSession | None = Relationship(back_populates="usage_events")

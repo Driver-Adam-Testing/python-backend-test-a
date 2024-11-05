@@ -119,14 +119,13 @@ async def get_analyzable_source_contents_by_codebase_id(
         if (
             res.content_type_id == file_content_type_id
             and res.misc_metadata["is_analyzable"] is True
-        ):
-            res_list.append(res)
-        elif res.content_type_id != file_content_type_id:
+        ) or res.content_type_id != file_content_type_id:
             res_list.append(res)
 
     return res_list
 
 
+# TODO may need to change
 def download_source_content_file(
     s3_client: any,
     codebase_storage_url: str,

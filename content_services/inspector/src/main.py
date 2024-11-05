@@ -1,12 +1,15 @@
 import hashlib
 import os
 import pprint
+import subprocess
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
+from uuid import UUID
 
 import modal
 from common import app
+from onboard import run_codebase_onboarding
 from tasks import (
     EmbeddingTask,
     FileTechDocTask,
@@ -462,3 +465,23 @@ def diff_flow() -> None:
     )
 
     print("Diff flow complete for codebase: ", codebase_id)
+
+
+def create_zip_from_commit(
+    repo_path: Path, commit: str, output_dir: Path, repo_name: str
+) -> Path:
+    zip_path = output_dir / f"{repo_name}_{commit}.zip"
+
+    # Use `git archive` to create the zip file directly from the commit
+    subprocess.run(
+        ["git", "archive", "-o", str(zip_path), commit], check=True, cwd=repo_path
+    )
+
+    return zip_path
+
+
+@app.local_entrypoint()
+def inspect_from_repo(public_repo_url: str, commit_sha: str) -> None:
+    # Hardcoded to driver default for now
+    workspace_id = UUID("32de9990-b63d-4e8e-9567-58e2a78292ec")
+    run_codebase_onboarding.remote(public_repo_url, commit_sha, workspace_id)

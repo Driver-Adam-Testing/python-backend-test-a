@@ -349,19 +349,11 @@ class TagService:
             logger.error(f"Tag {tag_id} not found for user {user.user_id}")
             raise HTTPException(status_code=404, detail="Tag not found")
 
+        lt_input.tag_ids = [tag_id]
+
         content = self.content_service.get_list_content(
             user.organization_id,
-            search_input=ListContentInput(
-                limit=lt_input.limit,
-                offset=lt_input.offset,
-                text=lt_input.text,
-                content_type_id=lt_input.content_type_id,
-                content_type_name=lt_input.content_type_name,
-                sort_by=lt_input.sort_by,
-                sort_direction=lt_input.sort_direction,
-                status=lt_input.status,
-                tag_ids=[tag_id],
-            ),
+            search_input=lt_input,
         )
         logger.info(
             f"Found {content.count} contents for tag {tag_id} for user {user.user_id}"

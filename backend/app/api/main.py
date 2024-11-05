@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from app.api.routes.legacy.schema import graphql_router, sandbox_router
 from app.api.routes.v1 import (
     agent_pipelines,
+    codebase,
     content,
     git_provider,
     healthcheck,
@@ -28,6 +29,7 @@ api_router.include_router(
 api_router.include_router(onboarding.router, prefix="/onboarding", tags=["onboarding"])
 api_router.include_router(search.router, prefix="/search", tags=["search"])
 api_router.include_router(content.router, prefix="/content", tags=["content"])
+api_router.include_router(codebase.router, prefix="/codebases", tags=["codebase"])
 api_router.include_router(tags.router, prefix="/tags", tags=["tags"])
 api_router.include_router(
     instructions.router, prefix="/instructions", tags=["instructions"]

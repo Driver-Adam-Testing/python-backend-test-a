@@ -390,7 +390,7 @@ def test_list_tag_contents(
     tag: NewTagInput,
     content: DerivedContent,
 ) -> None:
-    lt_input = ListContentInput(limit=10, offset=0)
+    lt_input = ListContentInput(limit=10, offset=0, latest_version_only=False)
     results = tag_service.list_tag_contents(
         current_user_with_org, str(tag.id), lt_input
     )

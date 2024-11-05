@@ -627,7 +627,7 @@ def test_get_list_content(
     current_user_with_org: UserToken,
     content: DerivedContent,
 ) -> None:
-    lc_input = ListContentInput(limit=10, offset=0)
+    lc_input = ListContentInput(limit=10, offset=0, latest_version_only=False)
     results = content_service.get_list_content(
         current_user_with_org.organization_id, lc_input
     )
@@ -641,7 +641,9 @@ def test_get_list_content_from_other_org(
     current_user_with_other_org: UserToken,
     content: DerivedContent,
 ) -> None:
-    lc_input = ListContentInput(limit=10, offset=0, text="TEST")
+    lc_input = ListContentInput(
+        limit=10, offset=0, text="TEST", latest_version_only=False
+    )
     results = content_service.get_list_content(
         current_user_with_other_org.organization_id, lc_input
     )

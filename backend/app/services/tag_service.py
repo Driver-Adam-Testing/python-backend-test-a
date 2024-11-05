@@ -12,7 +12,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
-from app.api.auth import CurrentUser
+from app.api.auth import UserToken
 from app.repositories.base_repository import BaseRepository
 from app.repositories.derived_content_type_repository import (
     DerivedContentTypeRepository,
@@ -189,7 +189,7 @@ class TagService:
             message="Collection associated successfully",
         )
 
-    def create_tag(self: "TagService", user: CurrentUser, lt_input: NewTagInput) -> Tag:
+    def create_tag(self: "TagService", user: UserToken, lt_input: NewTagInput) -> Tag:
         try:
             return self.tag_repository.create(
                 Tag(
@@ -276,7 +276,7 @@ class TagService:
             raise HTTPException(status_code=500, detail="Internal server error.")
 
     def edit_tag(
-        self: "TagService", user: CurrentUser, tag_id: str, lt_input: EditTagInput
+        self: "TagService", user: UserToken, tag_id: str, lt_input: EditTagInput
     ) -> Tag:
         tag = self.tag_repository.get_by_conditions(
             [
@@ -306,7 +306,7 @@ class TagService:
             raise HTTPException(status_code=500, detail="Internal server error")
 
     def list_tags(
-        self: "TagService", user: CurrentUser, lt_input: ListTagsInput
+        self: "TagService", user: UserToken, lt_input: ListTagsInput
     ) -> ListTagsResults:
         logger.info(f"Listing tags for user {user.user_id} with input {lt_input}")
         statement = [user.organization_id == Tag.organization_id]
@@ -336,7 +336,7 @@ class TagService:
         )
 
     def list_tag_contents(
-        self: "TagService", user: CurrentUser, tag_id: str, lt_input: ListContentInput
+        self: "TagService", user: UserToken, tag_id: str, lt_input: ListContentInput
     ) -> ListTagContentsResults:
         logger.info(
             f"Listing contents for tag {tag_id} for user {user.user_id} with input {lt_input}"
@@ -349,19 +349,11 @@ class TagService:
             logger.error(f"Tag {tag_id} not found for user {user.user_id}")
             raise HTTPException(status_code=404, detail="Tag not found")
 
+        lt_input.tag_ids = [tag_id]
+
         content = self.content_service.get_list_content(
             user.organization_id,
-            search_input=ListContentInput(
-                limit=lt_input.limit,
-                offset=lt_input.offset,
-                text=lt_input.text,
-                content_type_id=lt_input.content_type_id,
-                content_type_name=lt_input.content_type_name,
-                sort_by=lt_input.sort_by,
-                sort_direction=lt_input.sort_direction,
-                status=lt_input.status,
-                tag_ids=[tag_id],
-            ),
+            search_input=lt_input,
         )
         logger.info(
             f"Found {content.count} contents for tag {tag_id} for user {user.user_id}"
@@ -374,7 +366,7 @@ class TagService:
             count=content.count,
         )
 
-    def delete_tag(self: "TagService", user: CurrentUser, tag_id: UUID) -> None:
+    def delete_tag(self: "TagService", user: UserToken, tag_id: UUID) -> None:
         organization_id = user.organization_id
 
         tag: Tag | None = self.tag_repository.get(tag_id)

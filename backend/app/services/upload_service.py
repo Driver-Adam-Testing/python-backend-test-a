@@ -7,7 +7,7 @@ from uuid import uuid4
 from database.models_v1 import DerivedContent
 from fastapi import HTTPException
 
-from app.api.auth import CurrentUser
+from app.api.auth import UserToken
 from app.api.session import CurrentSession
 from app.core.logger import logger
 from app.repositories.base_repository import BaseRepository
@@ -34,7 +34,7 @@ class UploadService:
         self.derived_content_repository = DerivedContentTypeRepository(session)
 
     def upload_codebase(
-        self, user: CurrentUser, request: UploadCodebaseRequest
+        self, user: UserToken, request: UploadCodebaseRequest
     ) -> UploadResponse:
         logger.info(
             f"upload_codebase called with request: {request} for organization_id: {user.organization_id}"
@@ -81,7 +81,7 @@ class UploadService:
         return UploadResponse(upload_url=upload_url)
 
     def upload_pdf(
-        self, user: CurrentUser, request: UploadPDFRequest
+        self, user: UserToken, request: UploadPDFRequest
     ) -> PDFUploadResponse:
         default_workspace = self.workspace_repository.get_default_workspace(
             user.organization_id

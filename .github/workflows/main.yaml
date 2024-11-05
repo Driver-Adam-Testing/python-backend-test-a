@@ -2,8 +2,6 @@ name: Backend Production Deployment
 on:
   push:
     branches: ["main"]
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -13,13 +11,7 @@ permissions:
   id-token: write
   contents: read
 jobs:
-  # TODO:
-  # unittest:
-  #   runs-on: ubuntu-latest
-  #   environment: production
-  # integrationTest:
   main:
-    # needs: unittest
     runs-on: ubuntu-latest
     environment: production
     steps:
@@ -68,13 +60,6 @@ jobs:
           MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
           MODAL_ENV: ${{ vars.MODAL_ENV }}
         run: poetry install --no-root && poetry run modal deploy --env=$MODAL_ENV --tag=${GITHUB_SHA::8} src/main.py
-      # - name: Deploy Comprehender
-      #   working-directory: content_services/comprehender
-      #   env:
-      #     MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
-      #     MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
-      #     MODAL_ENV: ${{ vars.MODAL_ENV }}
-      #   run: poetry install --no-root && poetry run modal deploy --env=$MODAL_ENV --tag=${GITHUB_SHA::8} src/main.py
       - name: Deploy Agent
         working-directory: content_services/agent
         env:

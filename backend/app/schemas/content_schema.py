@@ -16,6 +16,7 @@ DataT = TypeVar("DataT", bound=SQLModel)
 
 
 class ListContentInput(BaseModel):
+    latest_version_only: bool  # Purposely NOT optional to prevent unexpected behavior
     text: str | None = None
     limit: int | None = 20
     offset: int | None = 0
@@ -28,6 +29,7 @@ class ListContentInput(BaseModel):
     order: int | None = None
     tags: list[str] | None = None
     tag_ids: list[str] | None = None
+    version_id: list[str] | None = None
 
 
 class ListContentTypesInput(BaseModel):
@@ -60,10 +62,11 @@ class ListContentResult(BaseModel):
     status: Enum_Derived_Content_Status | None
     tags: list[Tag]
     source_links: list[DocumentSource] | None
-    created_at: None | datetime
-    updated_at: None | datetime
+    created_at: datetime
+    updated_at: datetime
     source_content: Optional["DerivedContent"]
     order: int | None
+    version_id: UUID | None
 
 
 class ListContentResults(BaseModel):
@@ -182,3 +185,15 @@ class BatchDeleteTagsResponse(BaseModel):
 class DownloadContentResponse(BaseModel):
     download_url: str
     content_name: str
+
+
+class TagResult(BaseModel):
+    id: UUID
+    name: str
+    color: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class ContentTagsResponse(BaseModel):
+    tags: list[TagResult]

@@ -6,7 +6,11 @@ from database.models_v1 import Tag
 from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy.exc import IntegrityError
 
-from app.api.auth import CurrentUser
+from app.api.auth import (
+    ContentEditorPermission,
+    ContentReadonlyPermission,
+    UserToken,
+)
 from app.api.session import CurrentSession
 from app.schemas.content_schema import ListContentInput, TagAssociationResponse
 from app.schemas.tag_schema import (
@@ -25,10 +29,14 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-@router.post("/", status_code=201)
+@router.post(
+    "/",
+    status_code=201,
+    dependencies=[ContentEditorPermission],
+)
 def new_tag(
     session: CurrentSession,
-    user: CurrentUser,
+    user: UserToken,
     new_tag: NewTagInput,
 ) -> Tag:
     logging.info("Creating new tag")
@@ -36,10 +44,10 @@ def new_tag(
     return tag_service.create_tag(user=user, lt_input=new_tag)
 
 
-@router.get("/")
+@router.get("/", dependencies=[ContentReadonlyPermission])
 def read_tags(
     session: CurrentSession,
-    user: CurrentUser,
+    user: UserToken,
     limit: int | None = 20,
     offset: int | None = 0,
     name: str | None = None,
@@ -52,10 +60,13 @@ def read_tags(
     )
 
 
-@router.put("/{tag_id}")
+@router.put(
+    "/{tag_id}",
+    dependencies=[ContentEditorPermission],
+)
 def update_tag(
     session: CurrentSession,
-    user: CurrentUser,
+    user: UserToken,
     tag_id: str,
     updated_tag: EditTagInput,
 ) -> Tag:
@@ -64,10 +75,10 @@ def update_tag(
     return tag_service.edit_tag(user=user, tag_id=tag_id, lt_input=updated_tag)
 
 
-@router.get("/{tag_id}/content")
+@router.get("/{tag_id}/content", dependencies=[ContentReadonlyPermission])
 def read_tag_contents(
     session: CurrentSession,
-    user: CurrentUser,
+    user: UserToken,
     tag_id: str,
     content_type_id: Annotated[list[str] | None, Query()] = None,
     content_type_name: Annotated[list[str] | None, Query()] = None,
@@ -77,12 +88,14 @@ def read_tag_contents(
     text: str | None = None,
     limit: int | None = 20,
     offset: int | None = 0,
+    latest_version_only: bool = True,
 ) -> ListTagContentsResults:
     tag_service = TagService(session)
     return tag_service.list_tag_contents(
         user=user,
         tag_id=tag_id,
         lt_input=ListContentInput(
+            latest_version_only=latest_version_only,
             limit=limit,
             offset=offset,
             text=text,
@@ -98,10 +111,11 @@ def read_tag_contents(
 @router.post(
     "/{tag_id}/content/{content_id}",
     summary="Associate a tag with this content",
+    dependencies=[ContentEditorPermission],
 )
 def associate_tag_with_content(
     session: CurrentSession,
-    user: CurrentUser,
+    user: UserToken,
     content_id: str,
     tag_id: str,
     input: CollectionSourceInput,
@@ -115,10 +129,11 @@ def associate_tag_with_content(
 @router.delete(
     "/{tag_id}/content/{content_id}",
     summary="Disassociate a tag with this content",
+    dependencies=[ContentEditorPermission],
 )
 def disassociate_tag_with_content(
     session: CurrentSession,
-    user: CurrentUser,
+    user: UserToken,
     content_id: str,
     tag_id: str,
 ) -> TagAssociationResponse:
@@ -128,12 +143,12 @@ def disassociate_tag_with_content(
     )
 
 
-@router.delete("/{tag_id}", status_code=204)
+@router.delete("/{tag_id}", status_code=204, dependencies=[ContentEditorPermission])
 def delete_tag(
     session: CurrentSession,
-    user: CurrentUser,
+    user: UserToken,
     tag_id: UUID,
-):
+) -> None:
     """Delete a tag by its ID."""
     tag_service = TagService(session)
     try:

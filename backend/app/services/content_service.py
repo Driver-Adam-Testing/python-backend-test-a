@@ -1,6 +1,5 @@
 import functools
 import hashlib
-from datetime import datetime
 from uuid import UUID
 
 from botocore.exceptions import ClientError
@@ -12,6 +11,7 @@ from database.models_v1 import (
     DerivedContentType,
     DocumentSource,
     Enum_Derived_Content_Status,
+    InspectionVersion,
     Tag,
     TagContent,
     Workspace,
@@ -32,6 +32,7 @@ from app.schemas.content_schema import (
     BatchContentSourceAssociationResponse,
     ContentSourceAssociationItem,
     ContentSourceResponse,
+    ContentTagsResponse,
     CreateContentRequest,
     DeleteDocumentSourceResponse,
     DownloadContentResponse,
@@ -40,6 +41,7 @@ from app.schemas.content_schema import (
     ListContentResults,
     ListContentTypesInput,
     ListContentTypesResults,
+    TagResult,
 )
 from app.services.utils.content_utils import get_content_name
 from app.utils.aws_s3 import (
@@ -207,8 +209,6 @@ class ContentService:
                 content_name=content_name,
                 misc_metadata={},
                 status=Enum_Derived_Content_Status.generation_complete,
-                created_at=datetime.now(),
-                updated_at=datetime.now(),
             )
         )
         return new_content
@@ -255,6 +255,7 @@ class ContentService:
                     order=result.order,
                     tags=result.tags,
                     source_links=result.source_links,
+                    version_id=result.version_id,
                 )
             )
         logger.info(
@@ -407,7 +408,13 @@ class ContentService:
             count_statement = count_statement.where(
                 DerivedContent.content_type_id.in_(search_input.content_type_id)
             )
-
+        if search_input.version_id:
+            statement = statement.where(
+                DerivedContent.version_id.in_(search_input.version_id)
+            )
+            count_statement = count_statement.where(
+                DerivedContent.version_id.in_(search_input.version_id)
+            )
         if search_input.content_type_name:
             logger.info(
                 f"Filtering by content_type_name: {search_input.content_type_name}"
@@ -417,6 +424,53 @@ class ContentService:
             )
             count_statement = count_statement.where(
                 DerivedContentType.type_name.in_(search_input.content_type_name)
+            )
+        if search_input.latest_version_only:
+            # Find the latest version for each codebase_id in DerivedContent
+            latest_versions_subquery = (
+                select(
+                    DerivedContent.codebase_id,
+                    func.max(InspectionVersion.created_at).label("latest_created_at"),
+                )
+                .join(
+                    InspectionVersion, DerivedContent.version_id == InspectionVersion.id
+                )
+                .group_by(DerivedContent.codebase_id)
+                .subquery()
+            )
+
+            # We do the inner join so we can get the null version cases and the latest version cases for the codebases
+            # that have versions. This is important because many codebases will not have versions
+            # (backwards compatibility).
+            statement = statement.outerjoin(
+                InspectionVersion, (DerivedContent.version_id == InspectionVersion.id)
+            ).where(
+                or_(
+                    DerivedContent.version_id.is_(None),
+                    InspectionVersion.created_at
+                    == latest_versions_subquery.c.latest_created_at,
+                )
+            )
+
+            # For counting, we do an independent select, then filter the main count
+            # query by those identities. This seems very inefficient, since the subquery result could be big...
+            latest_version_ids_subquery = (
+                select(DerivedContent.id)
+                .outerjoin(
+                    InspectionVersion, DerivedContent.version_id == InspectionVersion.id
+                )
+                .where(
+                    or_(
+                        DerivedContent.version_id.is_(None),
+                        InspectionVersion.created_at
+                        == latest_versions_subquery.c.latest_created_at,
+                    )
+                )
+                .distinct()
+            )
+
+            count_statement = count_statement.where(
+                DerivedContent.id.in_(latest_version_ids_subquery)
             )
 
         if search_input.tags:
@@ -523,6 +577,7 @@ class ContentService:
                 order=source.order,
                 tags=source.tags,
                 source_links=source.source_links,
+                version_id=source.version_id,
             )
             for source in sources
         ]
@@ -715,6 +770,43 @@ class ContentService:
             if content.content_type.type_name == "supplemental-document":
                 # delete remote content
                 delete_from_remote_storage(content, organization_id)
+
+    def get_content_tags(
+        self: "ContentService", content_id: UUID, organization_id: str
+    ) -> ContentTagsResponse:
+        logger.info(f"Fetching tags for content {content_id}")
+
+        content = self.content_repository.get_by_conditions(
+            [
+                Workspace.organization_id == organization_id,
+                DerivedContent.id == content_id,
+            ],
+            [Workspace],
+        )
+
+        if not content or content.workspace.organization_id != organization_id:
+            logger.error(
+                f"Content {content_id} not found for organization {organization_id}"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
+            )
+
+        tag_results = [
+            TagResult(
+                id=tag.id,
+                name=tag.name,
+                color=tag.hex_color,
+                created_at=tag.created_at,
+                updated_at=tag.updated_at,
+            )
+            for tag in content.tags
+        ]
+
+        logger.info(f"Tags retrieved successfully for content {content_id}")
+        return ContentTagsResponse(
+            tags=tag_results,
+        )
 
 
 def delete_document_and_related_entities(

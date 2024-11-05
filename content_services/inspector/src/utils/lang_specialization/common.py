@@ -16,7 +16,9 @@ class Lang(IntEnum):
     VERILOG = 4
     RUST = 5
     ASSEMBLY = 6
-    DEFAULT = 7
+    JAVA = 7
+    RUBY = 8
+    DEFAULT = 9
 
     @classmethod
     def from_ext_and_source(cls, ext: str, source: str) -> Self:
@@ -35,6 +37,10 @@ class Lang(IntEnum):
                 return cls.RUST
             case ".s" | ".S" | ".asm" | ".nasm" | ".inc":
                 return cls.ASSEMBLY
+            case ".java":
+                return cls.JAVA
+            case ".rb" | ".rbi":
+                return cls.RUBY
             case _:
                 return cls.DEFAULT
 

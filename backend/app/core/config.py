@@ -1,17 +1,16 @@
 import secrets
 import warnings
-from typing import Annotated, Any, Literal
+from typing import Annotated, Literal
 
 from pydantic import (
     AnyUrl,
     BeforeValidator,
-    HttpUrl,
     computed_field,
 )
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-def parse_cors(v: Any) -> list[str] | str:
+def parse_cors(v: any) -> list[str] | str:
     if isinstance(v, str) and not v.startswith("["):
         return [i.strip() for i in v.split(",")]
     elif isinstance(v, list | str):
@@ -33,6 +32,7 @@ class Settings(BaseSettings):
     AUTH0_CLIENT_ID: str | None = None
     AUTH0_AUDIENCE: str | None = None
 
+    AUTH0_MGMT_API_DOMAIN: str | None = None
     AUTH0_MGMT_API_CLIENT_ID: str | None = None
     AUTH0_MGMT_API_CLIENT_SECRET: str | None = None
     AUTH0_MGMT_API_AUDIENCE: str | None = None

@@ -21,7 +21,7 @@ class CodeOnboardingLambdaParams:
 
     def __init__(
         self, environment, api_url, auth0_url, dropzone_bucket, use_legacy_dropzone
-    ):
+    ) -> None:
         self.environment = environment
         self.api_url = api_url
         self.auth0_url = auth0_url
@@ -30,7 +30,9 @@ class CodeOnboardingLambdaParams:
 
 
 class CodeOnboardingLambda(Construct):
-    def __init__(self, scope: Construct, id: str, params: CodeOnboardingLambdaParams):
+    def __init__(
+        self, scope: Construct, id: str, params: CodeOnboardingLambdaParams
+    ) -> None:
         super().__init__(scope, id)
 
         client_id_secret = aws_secretsmanager.Secret(scope, "ClientIdSecret")
@@ -43,6 +45,7 @@ class CodeOnboardingLambda(Construct):
             index="src/main.py",
             environment={
                 "ENVIRONMENT": params.environment,
+                "LOG_LEVEL": "INFO",
                 "CLIENT_ID_SECRET": client_id_secret.secret_name,
                 "CLIENT_SECRET_SECRET": client_secret_secret.secret_name,
                 "API_URL": params.api_url,
@@ -87,4 +90,3 @@ class CodeOnboardingLambda(Construct):
             aws_s3.NotificationKeyFilter(prefix="codebases/"),
         )
         legacy_dropzone_bucket.grant_read(lambda_function)
-

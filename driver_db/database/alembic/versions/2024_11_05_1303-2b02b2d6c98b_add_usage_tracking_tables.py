@@ -1,8 +1,8 @@
 """Add usage tracking tables
 
-Revision ID: df0597c467ba
+Revision ID: 2b02b2d6c98b
 Revises: fd35c6bb56dc
-Create Date: 2024-11-04 14:35:32.526696
+Create Date: 2024-11-05 13:03:05.302071
 
 """
 
@@ -12,7 +12,7 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = "df0597c467ba"
+revision = "2b02b2d6c98b"
 down_revision = "fd35c6bb56dc"
 branch_labels = None
 depends_on = None
@@ -58,35 +58,34 @@ def upgrade() -> None:
         sa.Column(
             "event_type",
             sa.Enum(
-                "AGENT_PIPELINE_USAGE_DEBIT",
-                "INSPECTOR_TECH_DOC_USAGE_DEBIT",
-                "INSPECTOR_CODE_DIFF_USAGE_DEBIT",
-                "ONBOARDING_USAGE_DEBIT",
-                "SUMMARIZATION_USAGE_DEBIT",
-                "BASE_PLATFORM_USAGE_CREDIT",
-                "ADDITIONAL_PLATFORM_USAGE_CREDIT",
+                "ap_debit",
+                "td_debit",
+                "cd_debit",
+                "ob_debit",
+                "su_debit",
+                "bp_credit",
+                "adt_credit",
                 name="usageeventtype",
             ),
             nullable=False,
         ),
+        # sa.Column('event_type', sa.Enum('AGENT_PIPELINE_USAGE_DEBIT', 'INSPECTOR_TECH_DOC_USAGE_DEBIT', 'INSPECTOR_CODE_DIFF_USAGE_DEBIT', 'ONBOARDING_USAGE_DEBIT', 'SUMMARIZATION_USAGE_DEBIT', 'BASE_PLATFORM_USAGE_CREDIT', 'ADDITIONAL_PLATFORM_USAGE_CREDIT', name='usageeventtype'), nullable=False),
         sa.Column("session_id", sa.Uuid(), nullable=False),
-        sa.Column("user_id", sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-        sa.Column("organization_id", sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-        sa.Column("event_source", sa.String(length=255), nullable=True),
-        sa.Column("sloc", sa.Integer(), nullable=False),
+        sa.Column(
+            "organization_id", sqlmodel.sql.sqltypes.AutoString(), nullable=False
+        ),
+        sa.Column("user_id", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+        sa.Column("event_source", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
         sa.Column("bytes_in", sa.Integer(), nullable=False),
         sa.Column("bytes_out", sa.Integer(), nullable=False),
         sa.Column("tokens_in", sa.Integer(), nullable=False),
         sa.Column("tokens_out", sa.Integer(), nullable=False),
-        sa.Column("spot_price", sa.Float(), nullable=True),
-        sa.Column("model_name", sa.String(length=255), nullable=True),
         sa.Column(
             "timestamp",
             sa.DateTime(timezone=True),
             server_default=sa.text("now()"),
             nullable=False,
         ),
-        sa.Column("message", sa.Text(), nullable=True),
         sa.Column("metadata", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
         sa.ForeignKeyConstraint(
             ["session_id"], ["usage_sessions.id"], ondelete="CASCADE"

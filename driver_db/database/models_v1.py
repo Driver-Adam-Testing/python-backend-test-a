@@ -554,7 +554,7 @@ class UsageEventType(str, enum.Enum):
     ONBOARDING_USAGE_DEBIT = "ob_debit"
     SUMMARIZATION_USAGE_DEBIT = "su_debit"
     BASE_PLATFORM_USAGE_CREDIT = "bp_credit"
-    ADDITIONAL_PLATFORM_USAGE_CREDIT = "ap_credit"
+    ADDITIONAL_PLATFORM_USAGE_CREDIT = "adt_credit"
 
 
 class UsageEvent(SQLModel, table=True):

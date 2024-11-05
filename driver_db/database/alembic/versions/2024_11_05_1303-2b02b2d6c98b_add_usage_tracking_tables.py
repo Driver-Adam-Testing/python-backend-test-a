@@ -69,7 +69,6 @@ def upgrade() -> None:
             ),
             nullable=False,
         ),
-        # sa.Column('event_type', sa.Enum('AGENT_PIPELINE_USAGE_DEBIT', 'INSPECTOR_TECH_DOC_USAGE_DEBIT', 'INSPECTOR_CODE_DIFF_USAGE_DEBIT', 'ONBOARDING_USAGE_DEBIT', 'SUMMARIZATION_USAGE_DEBIT', 'BASE_PLATFORM_USAGE_CREDIT', 'ADDITIONAL_PLATFORM_USAGE_CREDIT', name='usageeventtype'), nullable=False),
         sa.Column("session_id", sa.Uuid(), nullable=False),
         sa.Column(
             "organization_id", sqlmodel.sql.sqltypes.AutoString(), nullable=False

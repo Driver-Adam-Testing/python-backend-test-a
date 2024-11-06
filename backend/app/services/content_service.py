@@ -230,32 +230,31 @@ class ContentService:
             )
 
         content_results = []
-        for result in results:
+        for dc, version in results:
             content_results.append(
                 ListContentResult(
-                    id=result.id,
-                    organization_id=result.workspace.organization_id,
-                    content_type_id=result.content_type_id,
-                    content_type_name=result.content_type.type_name,
-                    content_name=get_content_name(result),
-                    workspace_id=result.workspace_id,
-                    workspace_name=result.workspace.display_name,
-                    source_content_id=result.source_content_id,
-                    codebase_id=result.codebase_id,
-                    codebase_name=result.codebase.codebase_name
-                    if result.codebase
-                    else None,
-                    relative_path=result.relative_path,
-                    content=result.content,
-                    misc_metadata=result.misc_metadata,
-                    status=result.status,
-                    created_at=result.created_at,
-                    updated_at=result.updated_at,
-                    source_content=result.source_content,
-                    order=result.order,
-                    tags=result.tags,
-                    source_links=result.source_links,
-                    version_id=result.version_id,
+                    id=dc.id,
+                    organization_id=dc.workspace.organization_id,
+                    content_type_id=dc.content_type_id,
+                    content_type_name=dc.content_type.type_name,
+                    content_name=get_content_name(dc),
+                    workspace_id=dc.workspace_id,
+                    workspace_name=dc.workspace.display_name,
+                    source_content_id=dc.source_content_id,
+                    codebase_id=dc.codebase_id,
+                    codebase_name=dc.codebase.codebase_name if dc.codebase else None,
+                    relative_path=dc.relative_path,
+                    content=dc.content,
+                    misc_metadata=dc.misc_metadata,
+                    status=dc.status,
+                    created_at=dc.created_at,
+                    updated_at=dc.updated_at,
+                    source_content=dc.source_content,
+                    order=dc.order,
+                    tags=dc.tags,
+                    source_links=dc.source_links,
+                    version_id=dc.version_id,
+                    version=version,
                 )
             )
         logger.info(
@@ -270,7 +269,7 @@ class ContentService:
 
     def _get_list_content(
         self: "ContentService", organization_id: str, search_input: ListContentInput
-    ) -> tuple[list[DerivedContent], int]:
+    ) -> tuple[list[tuple[DerivedContent, str]], int]:
         statement = self._build_base_query(organization_id)
         count_statement = self._build_base_count_query(organization_id, search_input)
 
@@ -290,10 +289,15 @@ class ContentService:
 
     def _build_base_query(self: "ContentService", organization_id: str) -> Select:
         return (
-            select(DerivedContent)
+            select(DerivedContent, InspectionVersion.version)
             .distinct()
             .join(DerivedContentType)
             .join(Workspace)
+            .join(
+                InspectionVersion,
+                isouter=True,
+                onclause=DerivedContent.version_id == InspectionVersion.id,
+            )
             .join(TagContent, isouter=True)
             .join(Tag, isouter=True)
             .join(

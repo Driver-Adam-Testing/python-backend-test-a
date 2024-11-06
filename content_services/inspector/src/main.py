@@ -59,61 +59,74 @@ class FileInfo:
 )
 async def inspect_db(
     codebase_id: uuid.UUID,
-    run_id: str,
-    resume: bool = False,
+    version_id: uuid.UUID,
+    workspace_id: uuid.UUID,
+    resume: bool = False,  # TODO: think about resume functionality with previous versions
     rerun_node_paths: list[str] | None = None,
-    new_codebase_id: uuid.UUID | None = None,
 ) -> None:
-    if new_codebase_id:
-        assert (
-            rerun_node_paths is None
-        ), "Cannot rerun specific nodes when doing diff update flow"
-
     import tempfile
 
     import boto3
     from utils.db import (
         SourceContentTypeMap,
+        create_inspector_run,
         download_source_content_file,
-        get_analyzable_source_contents_by_codebase_id,
+        get_analyzable_source_contents_by_version_id,
         get_codebase_by_id,
+        get_latest_run_from_version_id,
+        get_version_by_id,
+        get_workspace_by_id,
     )
 
+    workspace = await get_workspace_by_id(workspace_id)
+    org_id = workspace.organization_id
+    org_hashed_id = hashlib.sha256(org_id.encode()).hexdigest()[:63]
+
+    # Get the Version and check if it has previous_version_id
+    version = await get_version_by_id(version_id)
+    previous_version_id = version.previous_version_id
     codebase = await get_codebase_by_id(codebase_id)
-    source_contents_files = await get_analyzable_source_contents_by_codebase_id(
-        codebase_id, {SourceContentTypeMap.FILE}
+    codebase_name = codebase.codebase_name
+
+    if previous_version_id:
+        assert (
+            rerun_node_paths is None
+        ), "Cannot rerun specific nodes when doing diff update flow"
+
+    # Create the InspectorRun
+    run_id = await create_inspector_run(version_id)
+    previous_run_id = (
+        await get_latest_run_from_version_id(previous_version_id)
+        if previous_version_id
+        else None
     )
-    source_contents_all = await get_analyzable_source_contents_by_codebase_id(
-        codebase_id, {SourceContentTypeMap.FILE, SourceContentTypeMap.DIRECTORY}
+
+    # Get content records for version_id
+    source_contents_files = await get_analyzable_source_contents_by_version_id(
+        version_id, {SourceContentTypeMap.FILE}
     )
-    source_content_codebase = await get_analyzable_source_contents_by_codebase_id(
-        codebase_id, {SourceContentTypeMap.CODEBASE_ROOT}
+    source_contents_all = await get_analyzable_source_contents_by_version_id(
+        version_id, {SourceContentTypeMap.FILE, SourceContentTypeMap.DIRECTORY}
+    )
+    source_content_codebase = await get_analyzable_source_contents_by_version_id(
+        version_id, {SourceContentTypeMap.CODEBASE_ROOT}
     )
     assert len(source_content_codebase) == 1
     source_content_codebase_id = source_content_codebase[0].id
 
-    # Get the new stuff if applicable
-    if new_codebase_id:
-        new_codebase = await get_codebase_by_id(new_codebase_id)
-        new_source_contents_files = await get_analyzable_source_contents_by_codebase_id(
-            new_codebase_id, {SourceContentTypeMap.FILE}
-        )
-        new_source_contents_all = await get_analyzable_source_contents_by_codebase_id(
-            new_codebase_id, {SourceContentTypeMap.FILE, SourceContentTypeMap.DIRECTORY}
-        )
-        new_source_content_codebase = (
-            await get_analyzable_source_contents_by_codebase_id(
-                new_codebase_id, {SourceContentTypeMap.CODEBASE_ROOT}
+    # Get content recrods for previous_version_id if available
+    if previous_version_id:
+        previous_source_contents_files = (
+            await get_analyzable_source_contents_by_version_id(
+                previous_version_id, {SourceContentTypeMap.FILE}
             )
         )
-        assert len(new_source_content_codebase) == 1
-        new_source_content_codebase_id = new_source_content_codebase[0].id
 
-    # TODO handle the S3_ENDPOINT_URL gracefully
+    # Download s3 for version_id (and previous if avaialble)
     s3_client = boto3.client("s3", endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL"))
     with (
         tempfile.TemporaryDirectory() as download_dir,
-        tempfile.TemporaryDirectory() as new_download_dir,
+        tempfile.TemporaryDirectory() as previous_download_dir,
     ):
         download_root = Path(download_dir)
         file_paths = []
@@ -121,8 +134,9 @@ async def inspect_db(
         for sc in source_contents_files:
             download_abs_path = download_source_content_file(
                 s3_client=s3_client,
-                codebase_storage_url=codebase.storage_url,
-                codebase_root=codebase.resource_root,
+                bucket_name=org_hashed_id,
+                codebase_id=codebase_id,
+                version_id=version_id,
                 source_content_rel_path=sc.relative_path,
                 download_root=download_root,
             )
@@ -142,44 +156,48 @@ async def inspect_db(
             return new_root, first_component
 
         # We must build the dags with the codebase name removed so dags can be properly diffed. (Codebase name changes with version right now)
-        codebase_root_with_cb_name_inc, cb_name_old = change_root_with_first_component(
+        codebase_root_with_cb_name_inc, _ = change_root_with_first_component(
             download_root, file_paths[0]
         )
         codebase_dag: FileTreeDag = build_dag(
             root_path=codebase_root_with_cb_name_inc, file_paths=file_paths
         )
 
-        print("======= Nodes from original codebase processed =======")
+        print("======= Nodes from current codebase processed =======")
         for node in codebase_dag.topological_sort():
             print(node.root_rel_path, node.status)
 
-        if new_codebase_id:
-            new_download_root = Path(new_download_dir)
-            new_file_paths = []
-            print("Downloading all source files for new codebase from s3...")
-            for scn in new_source_contents_files:
+        if previous_version_id:
+            previous_download_root = Path(previous_download_dir)
+            previous_file_paths = []
+            print("Downloading all source files for previous codebase from s3...")
+            for scn in previous_source_contents_files:
                 download_abs_path = download_source_content_file(
                     s3_client=s3_client,
-                    codebase_storage_url=new_codebase.storage_url,
-                    codebase_root=new_codebase.resource_root,
+                    bucket_name=org_hashed_id,
+                    codebase_id=codebase_id,
+                    version_id=previous_version_id,
                     source_content_rel_path=scn.relative_path,
-                    download_root=new_download_root,
+                    download_root=previous_download_root,
                 )
-                new_file_paths.append(download_abs_path)
+                previous_file_paths.append(download_abs_path)
             print("Download complete for new version of code")
 
             (
-                new_codebase_root_with_cb_name_inc,
-                cb_name_new,
-            ) = change_root_with_first_component(new_download_root, new_file_paths[0])
-            new_codebase_dag: FileTreeDag = build_dag(
-                root_path=new_codebase_root_with_cb_name_inc, file_paths=new_file_paths
+                previous_codebase_root_with_cb_name_inc,
+                _,
+            ) = change_root_with_first_component(
+                previous_download_root, previous_file_paths[0]
             )
-            print("======= Nodes from new codebase =======")
-            for node in new_codebase_dag.topological_sort():
+            previous_codebase_dag: FileTreeDag = build_dag(
+                root_path=previous_codebase_root_with_cb_name_inc,
+                file_paths=previous_file_paths,
+            )
+            print("======= Nodes from previous codebase =======")
+            for node in previous_codebase_dag.topological_sort():
                 print(node.root_rel_path, node.status)
 
-            diff_dag = new_codebase_dag.compute_diff(codebase_dag)
+            diff_dag = codebase_dag.compute_diff(previous_codebase_dag)
             print("Diff dag computed")
 
             print("======= Nodes from diff dag =======")
@@ -196,25 +214,20 @@ async def inspect_db(
         if rerun_node_paths:
             sorted_nodes = codebase_dag.topological_sort(changed_nodes_only=True)
         else:
-            if new_codebase_id:
+            if previous_version_id:
                 sorted_nodes = diff_dag.topological_sort()
-                path_to_source_content_id = {
-                    Path(sc.relative_path): sc.id for sc in new_source_contents_all
-                }
-                cb_name = cb_name_new
             else:
                 sorted_nodes = codebase_dag.topological_sort()
-                path_to_source_content_id = {
-                    Path(sc.relative_path): sc.id for sc in source_contents_all
-                }
-                cb_name = cb_name_old
+        path_to_source_content_id = {
+            Path(sc.relative_path): sc.id for sc in source_contents_all
+        }
 
         print("======= Nodes being processed  =======")
         for node in sorted_nodes:
             print(node.root_rel_path, node.status)
 
         nodes_with_id: list[tuple[Node, uuid.UUID | None]] = [
-            (node, path_to_source_content_id[Path(cb_name) / node.root_rel_path])
+            (node, path_to_source_content_id[Path(codebase_name) / node.root_rel_path])
             for node in sorted_nodes
         ]
 
@@ -223,17 +236,15 @@ async def inspect_db(
             print(node.root_rel_path, sc_id)
 
         await inspect_files(
-            sc_codebase_id=new_source_content_codebase_id
-            if new_codebase_id
-            else source_content_codebase_id,
-            codebase_root=new_codebase_root_with_cb_name_inc
-            if new_codebase_id
-            else codebase_root_with_cb_name_inc,
+            sc_codebase_id=source_content_codebase_id,
+            version_id=version_id,
+            codebase_root=codebase_root_with_cb_name_inc,
             nodes_with_id=nodes_with_id,
-            codebase_name=codebase.codebase_name,  # We're passing in the old codebase name for consistency with old cb docs.
+            codebase_name=codebase_name,
             run_id=run_id,
             resume=resume,
             is_rerun=bool(rerun_node_paths),
+            previous_run_id=previous_run_id,
         )
 
 
@@ -256,12 +267,14 @@ def build_dag(root_path: Path, file_paths: list[Path]) -> FileTreeDag:
 
 async def inspect_files(
     sc_codebase_id: uuid.UUID,
+    version_id: uuid.UUID,
     codebase_root: Path,
     nodes_with_id: list[tuple[Node, uuid.UUID | None]],
     codebase_name: str,
     run_id: str,
     resume: bool,
     is_rerun: bool,
+    previous_run_id: str | None = None,
 ) -> None:
     print("---------- All nodes ----------")
     for node, _ in nodes_with_id:
@@ -288,6 +301,7 @@ async def inspect_files(
             )
             folder_tech_docs_task = FolderTechDocTask(
                 node=lite_node,
+                version_id=version_id,
                 task_name=f"FolderTechDoc {node.root_rel_path}",
                 child_docs_tasks=child_doc_tasks,
                 codebase_name=codebase_name,
@@ -313,6 +327,7 @@ async def inspect_files(
             )
             file_tech_docs_task = FileTechDocTask(
                 codebase_name=codebase_name,
+                version_id=version_id,
                 source_code=source_code,
                 node=lite_node,
                 task_name=f"TechDoc {node.root_rel_path}",
@@ -329,6 +344,7 @@ async def inspect_files(
             )
             symbols_task = SymbolsTask(
                 task_name=f"Symbols {node.root_rel_path}",
+                version_id=version_id,
                 node=lite_node,
                 source_code=source_code,
                 tech_docs_task=file_tech_docs_task,
@@ -368,6 +384,7 @@ async def inspect_files(
         )
         top_level_tech_docs_task = TopLevelDocsTask(
             node=root_node,
+            version_id=version_id,
             codebase_name=codebase_name,
             ordered_tech_docs_tasks=all_tech_docs_tasks,  # TODO where does source content go here?
             source_content_id=sc_codebase_id,
@@ -390,7 +407,9 @@ async def inspect_files(
         bucket_name=os.environ["BUCKET_NAME"], tasks=tasks, serial_exe=False
     )
 
-    task_results = await task_manager.run_tasks(run_id, resume=resume)
+    task_results = await task_manager.run_tasks(
+        run_id, resume=resume, previous_run_id=previous_run_id
+    )
 
     print("\n---------- Task results ----------")
     pprinter = pprint.PrettyPrinter(indent=2)
@@ -484,4 +503,7 @@ def create_zip_from_commit(
 def inspect_from_repo(public_repo_url: str, commit_sha: str) -> None:
     # Hardcoded to driver default for now
     workspace_id = UUID("32de9990-b63d-4e8e-9567-58e2a78292ec")
-    run_codebase_onboarding.remote(public_repo_url, commit_sha, workspace_id)
+    codebase_id, version_id = run_codebase_onboarding.remote(
+        public_repo_url, commit_sha, workspace_id
+    )
+    inspect_db.remote(codebase_id, version_id, workspace_id)

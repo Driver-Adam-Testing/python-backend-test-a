@@ -7,7 +7,6 @@ from pathlib import Path
 from urllib.parse import urlparse
 from uuid import UUID
 
-import chardet
 import requests
 from boto3 import resource
 from botocore.client import ClientError
@@ -166,6 +165,8 @@ def get_non_ascii_file_encoding(file_bytes: bytes) -> str:
 
 
 def evaluate_file_binary(filepath: Path) -> bool:
+    import chardet
+
     is_binary = False
     chunk_size = 2500
     min_confidence = 0.7

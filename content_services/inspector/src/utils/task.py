@@ -274,12 +274,13 @@ class TaskManager:
         return cls(*args, persistence=S3TaskResultPersistence(bucket_name), **kwargs)
 
     async def run_tasks(
-        self, run_id: str, resume: bool = False
+        self, run_id: str, resume: bool = False, previous_run_id: str | None = None
     ) -> dict[type[Task], TaskResult]:
-        if resume and self.persistence:
+        # TODO: remove resume, just use previous-run-id
+        if previous_run_id and self.persistence:
             # We can block the event loop with blocking IO when loading the state we aren't running
             # anything concurrent yet
-            self.load_persisted_results(run_id)
+            self.load_persisted_results(previous_run_id)
         # return
 
         if self.persistence:

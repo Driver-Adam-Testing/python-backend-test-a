@@ -431,7 +431,7 @@ class ContentService:
             )
         if search_input.latest_version_only:
             # Find the latest version for each codebase_id in DerivedContent
-            latest_versions_cte = (
+            latest_versions_subquery = (
                 select(
                     DerivedContent.codebase_id,
                     func.max(InspectionVersion.created_at).label("latest_created_at"),
@@ -440,45 +440,41 @@ class ContentService:
                     InspectionVersion, DerivedContent.version_id == InspectionVersion.id
                 )
                 .group_by(DerivedContent.codebase_id)
-                .cte("latest_versions")
+                .subquery()
             )
 
-            statement = (
-                statement.outerjoin(
-                    InspectionVersion,
-                    (DerivedContent.version_id == InspectionVersion.id),
+            # We do the inner join so we can get the null version cases and the latest version cases for the codebases
+            # that have versions. This is important because many codebases will not have versions
+            # (backwards compatibility).
+            statement = statement.outerjoin(
+                InspectionVersion, (DerivedContent.version_id == InspectionVersion.id)
+            ).where(
+                or_(
+                    DerivedContent.version_id.is_(None),
+                    InspectionVersion.created_at
+                    == latest_versions_subquery.c.latest_created_at,
                 )
+            )
+
+            # For counting, we do an independent select, then filter the main count
+            # query by those identities. This seems very inefficient, since the subquery result could be big...
+            latest_version_ids_subquery = (
+                select(DerivedContent.id)
                 .outerjoin(
-                    latest_versions_cte,
-                    latest_versions_cte.c.codebase_id == DerivedContent.codebase_id,
-                )
-                .where(
-                    or_(
-                        DerivedContent.version_id.is_(
-                            None
-                        ),  # Include items without versions (backwards compatibility)
-                        InspectionVersion.created_at
-                        == latest_versions_cte.c.latest_created_at,
-                        # Only include latest version
-                    )
-                )
-            )
-
-            count_statement = (
-                count_statement.outerjoin(
                     InspectionVersion, DerivedContent.version_id == InspectionVersion.id
-                )
-                .outerjoin(
-                    latest_versions_cte,
-                    latest_versions_cte.c.codebase_id == DerivedContent.codebase_id,
                 )
                 .where(
                     or_(
                         DerivedContent.version_id.is_(None),
                         InspectionVersion.created_at
-                        == latest_versions_cte.c.latest_created_at,
+                        == latest_versions_subquery.c.latest_created_at,
                     )
                 )
+                .distinct()
+            )
+
+            count_statement = count_statement.where(
+                DerivedContent.id.in_(latest_version_ids_subquery)
             )
 
         if search_input.tags:

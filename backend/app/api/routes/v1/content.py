@@ -35,7 +35,7 @@ router = APIRouter()
 def list_content(
     session: CurrentSession,
     user: UserToken,
-    latest_version_only: bool = True,
+    latest_version_only: bool = False,
     limit: int | None = 20,
     offset: int | None = 0,
     content_type_id: Annotated[list[str] | None, Query()] = None,

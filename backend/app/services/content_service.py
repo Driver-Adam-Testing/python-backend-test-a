@@ -474,12 +474,18 @@ class ContentService:
             )
 
         if search_input.tags:
-            tag_clauses = [Tag.name.contains(tag) for tag in search_input.tags]
+            tag_clauses = [
+                Tag.name.contains(tag) and Tag.type == "tag"
+                for tag in search_input.tags
+            ]
             statement = statement.where(or_(*tag_clauses))
             count_statement = count_statement.where(or_(*tag_clauses))
 
         if search_input.tag_ids:
-            tag_id_clauses = [Tag.id == tag_id for tag_id in search_input.tag_ids]
+            tag_id_clauses = [
+                Tag.id == tag_id and Tag.type == "tag"
+                for tag_id in search_input.tag_ids
+            ]
             tag_contents_clauses = [
                 TagContent.tag_id == tag_id for tag_id in search_input.tag_ids
             ]

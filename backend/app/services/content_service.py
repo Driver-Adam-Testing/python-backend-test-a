@@ -230,30 +230,32 @@ class ContentService:
             )
 
         content_results = []
-        for dc, version in results:
+        for derived_content, version in results:
             content_results.append(
                 ListContentResult(
-                    id=dc.id,
-                    organization_id=dc.workspace.organization_id,
-                    content_type_id=dc.content_type_id,
-                    content_type_name=dc.content_type.type_name,
-                    content_name=get_content_name(dc),
-                    workspace_id=dc.workspace_id,
-                    workspace_name=dc.workspace.display_name,
-                    source_content_id=dc.source_content_id,
-                    codebase_id=dc.codebase_id,
-                    codebase_name=dc.codebase.codebase_name if dc.codebase else None,
-                    relative_path=dc.relative_path,
-                    content=dc.content,
-                    misc_metadata=dc.misc_metadata,
-                    status=dc.status,
-                    created_at=dc.created_at,
-                    updated_at=dc.updated_at,
-                    source_content=dc.source_content,
-                    order=dc.order,
-                    tags=dc.tags,
-                    source_links=dc.source_links,
-                    version_id=dc.version_id,
+                    id=derived_content.id,
+                    organization_id=derived_content.workspace.organization_id,
+                    content_type_id=derived_content.content_type_id,
+                    content_type_name=derived_content.content_type.type_name,
+                    content_name=get_content_name(derived_content),
+                    workspace_id=derived_content.workspace_id,
+                    workspace_name=derived_content.workspace.display_name,
+                    source_content_id=derived_content.source_content_id,
+                    codebase_id=derived_content.codebase_id,
+                    codebase_name=derived_content.codebase.codebase_name
+                    if derived_content.codebase
+                    else None,
+                    relative_path=derived_content.relative_path,
+                    content=derived_content.content,
+                    misc_metadata=derived_content.misc_metadata,
+                    status=derived_content.status,
+                    created_at=derived_content.created_at,
+                    updated_at=derived_content.updated_at,
+                    source_content=derived_content.source_content,
+                    order=derived_content.order,
+                    tags=derived_content.tags,
+                    source_links=derived_content.source_links,
+                    version_id=derived_content.version_id,
                     version=version,
                 )
             )

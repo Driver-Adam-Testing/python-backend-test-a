@@ -18,9 +18,48 @@ def snake_case_to_spaced_string(snake_case: str) -> str:
     return " ".join(item.capitalize() for item in split_str)
 
 
+class RawContent(BaseModel):
+    # Rendered as f"{content}\n"
+    content: str
+
+    def render_markdown(self, field_name: str) -> str:
+        return f"{self.content}\n"
+
+
+class FieldNameWithBackTickContent(BaseModel):
+    # Rendered as f"**{snake_case_to_spaced_string(field_name)}**: `{content}`\n"
+    content: str
+
+    def render_markdown(self, field_name: str) -> str:
+        return f"- **{snake_case_to_spaced_string(field_name)}**: `{self.content}`\n"
+
+
+class FieldNameWithBulletedContent(BaseModel):
+    # Rendered as f"**{snake_case_to_spaced_string(field_name)}**:\n    - {content}\n"
+    content: str
+
+    def render_markdown(self, field_name: str) -> str:
+        return (
+            f"- **{snake_case_to_spaced_string(field_name)}**:\n    - {self.content}\n"
+        )
+
+
+class FieldNameWithRawContent(BaseModel):
+    # Rendered as f"**{snake_case_to_spaced_string(field_name)}**: {content}\n"
+    content: str
+
+    def render_markdown(self, field_name: str) -> str:
+        return f"- **{snake_case_to_spaced_string(field_name)}**: {self.content}\n"
+
+
 class NamedContent(BaseModel):
+    # Only to be used in a list, rendered as:
+    # f"**{snake_case_to_spaced_string(field_name)}**:\n `{name}`: {content}\n ..."
     name: str
     content: str
+
+    def render_markdown(self, field_name: str) -> str:
+        return f"    - `{self.name}`: {self.content}\n"
 
 
 class ListData(BaseModel):
@@ -125,7 +164,15 @@ class IrData(BaseModel, abc.ABC):
 
         # doesn't handle children, since children is a private attribute
         for field_name, field_content in self:
-            if isinstance(field_content, str):
+            if isinstance(
+                field_content,
+                RawContent
+                | FieldNameWithBackTickContent
+                | FieldNameWithBulletedContent
+                | FieldNameWithRawContent,
+            ):
+                output += field_content.render_markdown(field_name)
+            elif isinstance(field_content, str):
                 if len(field_content) > 0:
                     output += f"- **{snake_case_to_spaced_string(field_name)}**: {field_content}\n"
             elif isinstance(field_content, list):
@@ -135,14 +182,14 @@ class IrData(BaseModel, abc.ABC):
                         if isinstance(item, str):
                             output += f"    - {item}\n"
                         elif isinstance(item, NamedContent):
-                            output += f"    - `{item.name}`: {item.content}\n"
+                            output += item.render_markdown(field_name)
                         else:
                             raise ValueError(
                                 f"Unsupported item type in list: {type(item)}"
                             )
             else:
                 raise ValueError(
-                    f"Unsupported field content type: {type(field_content)}"
+                    f"Unsupported field content type for {field_name}: {type(field_content)}"
                 )
 
         # Render child data
@@ -225,9 +272,9 @@ class IrCollection(BaseModel, abc.ABC):
 
 ### Default Classes, must still be inherited from, or create new ones for any specialization ###
 class VariableData(IrData):
-    type: str
-    description: str
-    use: str
+    type: FieldNameWithBackTickContent
+    description: FieldNameWithRawContent
+    use: FieldNameWithRawContent
 
     @classmethod
     def default_instance(cls) -> Self:
@@ -253,10 +300,10 @@ class DataStructureData(IrData, abc.ABC):
 
 
 class FnData(IrData, abc.ABC):
-    single_sentence: str
+    single_sentence: RawContent
     inputs: list[NamedContent]
     control_flow: list[str]
-    output: str
+    output: FieldNameWithBulletedContent
 
     @classmethod
     def default_instance(cls) -> Self:
@@ -269,9 +316,9 @@ class FnData(IrData, abc.ABC):
 
 
 class ClassData(IrData, abc.ABC):
-    type: str | None
+    type: FieldNameWithBackTickContent
     members: list[NamedContent]
-    description: str
+    description: FieldNameWithRawContent
     inherits_from: list[str]
     _supported_child_ordering: list[str] = PrivateAttr(
         default=[ScopeRelation.METHOD, ScopeRelation.NESTED_CLASS]

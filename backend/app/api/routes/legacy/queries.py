@@ -59,9 +59,7 @@ class Query:
             id=info.context.user.organization_id,
             name=info.context.user.organization_display_name,
             display_name=info.context.user.organization_display_name,
-            # Hide Default workspace from listing in UI
-            # When the workspace table is removed, this filter will go away
-            workspaces=[ws for ws in workspaces if ws.display_name != "Default"],
+            workspaces=list(workspaces),
         )
 
     @strawberry.field

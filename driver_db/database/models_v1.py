@@ -547,20 +547,20 @@ class UsageSession(SQLModel, table=True):
     usage_events: list["UsageEvent"] = Relationship(back_populates="session")
 
 
-class UsageEventType(str, enum.Enum):
-    AGENT_PIPELINE_USAGE_DEBIT = "ap_debit"
-    INSPECTOR_TECH_DOC_USAGE_DEBIT = "td_debit"
-    INSPECTOR_CODE_DIFF_USAGE_DEBIT = "cd_debit"
-    ONBOARDING_USAGE_DEBIT = "ob_debit"
-    SUMMARIZATION_USAGE_DEBIT = "su_debit"
-    BASE_PLATFORM_USAGE_CREDIT = "bp_credit"
-    ADDITIONAL_PLATFORM_USAGE_CREDIT = "adt_credit"
+class UsageEventType(enum.IntEnum):
+    AGENT_PIPELINE_USAGE_DEBIT = 1
+    INSPECTOR_TECH_DOC_USAGE_DEBIT = 2
+    INSPECTOR_CODE_DIFF_USAGE_DEBIT = 3
+    ONBOARDING_USAGE_DEBIT = 4
+    SUMMARIZATION_USAGE_DEBIT = 5
+    BASE_PLATFORM_USAGE_CREDIT = 6
+    ADDITIONAL_PLATFORM_USAGE_CREDIT = 7
 
 
 class UsageEvent(SQLModel, table=True):
     __tablename__ = "usage_events"
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    event_type: UsageEventType = Field(nullable=False, index=True)
+    event_type: UsageEventType = Field(sa_column=Column(Integer, nullable=False))
     session_id: UUID = Field(
         foreign_key="usage_sessions.id",
         nullable=False,

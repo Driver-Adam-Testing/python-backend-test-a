@@ -584,6 +584,9 @@ class ContentService:
                 tags=source.tags,
                 source_links=source.source_links,
                 version_id=source.version_id,
+                version=source.inspection_version.version
+                if source.inspection_version
+                else None,
             )
             for source in sources
         ]

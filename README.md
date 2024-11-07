@@ -14,15 +14,15 @@ You can install pre-commit globally on your system using Python or Homebrew (for
 
 - **Using Global System Python**:
 
-    ```bash
-    pip install pre-commit
-    ```
+  ```bash
+  pip install pre-commit
+  ```
 
 - **Using Homebrew (macOS)**:
 
-    ```bash
-    brew install pre-commit
-    ```
+  ```bash
+  brew install pre-commit
+  ```
 
 #### 2. Install Pre-commit Hooks
 
@@ -31,9 +31,9 @@ Once pre-commit is installed, set up the hooks defined in the repository:
 - Navigate to the root of the monorepo.
 - Run the following command to install the hooks:
 
-    ```bash
-    pre-commit install
-    ```
+  ```bash
+  pre-commit install
+  ```
 
 This command installs the pre-commit hooks as defined in the `.pre-commit-config.yaml` file. These hooks will automatically run Ruff and other linters whenever you make a commit, helping maintain code quality and consistency.
 

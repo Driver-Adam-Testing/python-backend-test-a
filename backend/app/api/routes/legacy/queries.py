@@ -5,10 +5,10 @@ from datetime import datetime
 
 import strawberry
 from app.api.routes.legacy.api_types import (
-    CodebaseResults,  # type: ignore # noqa: PGH003
+    CodebaseResults,  # type: ignore
     GitProvider,
     GitRepository,
-    OrganizationResult,  # type: ignore # noqa: PGH003
+    OrganizationResult,  # type: ignore
 )
 from app.api.routes.legacy.application_note import (
     ApplicationNoteEditResponse,
@@ -59,9 +59,7 @@ class Query:
             id=info.context.user.organization_id,
             name=info.context.user.organization_display_name,
             display_name=info.context.user.organization_display_name,
-            # Hide Default workspace from listing in UI
-            # When the workspace table is removed, this filter will go away
-            workspaces=[ws for ws in workspaces if ws.display_name != "Default"],
+            workspaces=list(workspaces),
         )
 
     @strawberry.field
@@ -89,6 +87,7 @@ class Query:
         path: str | None = None,
         workspaceId: ID | None = None,
         codebaseId: ID | None = None,
+        versionId: ID | None = None,
     ) -> DocumentSet:
         if path is None or workspaceId is None or codebaseId is None:
             raise GraphQLError(
@@ -110,6 +109,7 @@ class Query:
             str(codebaseId),
             info.context.user.organization_id,
             session,
+            versionId,
         )
 
     @strawberry.field
@@ -133,13 +133,24 @@ class Query:
 
     @strawberry.field
     def tree(
-        self, info: Info, codebaseId: ID, workspaceId: ID | None = None
+        self,
+        info: Info,
+        codebaseId: ID,
+        workspaceId: ID | None = None,
+        versionId: ID | None = None,
     ) -> list[FlatNode]:
         session = info.context.session
         user = info.context.user
+
         if not check_access(session, user.organization_id, codebase_id=str(codebaseId)):
             raise GraphQLError("Access denied", extensions={"code": "NOT_FOUND"})
-        return get_codebase_tree(str(codebaseId), session, user.organization_id)
+
+        return get_codebase_tree(
+            codebase_id=str(codebaseId),
+            session=session,
+            organization_id=user.organization_id,
+            version_id=str(versionId) if versionId else None,
+        )
 
     @strawberry.field
     def symbolSet(
@@ -163,7 +174,7 @@ class Query:
     @strawberry.field
     def me(self, info: Info) -> MeResponse:
         user = info.context.user
-        return MeResponse(id=user.subject)  # type: ignore # noqa: PGH003
+        return MeResponse(id=user.subject)  # type: ignore
 
     @strawberry.field
     def connectedGitProviders(self, info: Info) -> list[GitProvider]:

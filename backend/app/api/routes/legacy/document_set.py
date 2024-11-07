@@ -5,17 +5,18 @@ from typing import Any
 from uuid import UUID
 
 import strawberry
-from database.models_v1 import (
-    DerivedContent,
-    DerivedContentType,
-)
-from fastapi import HTTPException
-from sqlmodel import Session, select
-
 from app.api.routes.legacy.s3 import S3BucketAccess
 
 # from app.api.routes.legacy.utils import source_type_id_map, derive_bucket_name, download_source_content
 from app.core.logger import logger
+from database.models_v1 import (
+    DerivedContent,
+    DerivedContentType,
+    InspectionVersion,
+    Workspace,
+)
+from fastapi import HTTPException
+from sqlmodel import Session, select
 
 
 # TODO turn model into enum and use directly, or use column to determine source/derived
@@ -106,7 +107,7 @@ class DocumentSet:
     chunk_descriptions: list[str] | None = strawberry.field(default=None)
     code: Code = strawberry.field(default_factory=Code)
     application_notes: list[ApplicationNote] | None = strawberry.field(
-        default_factory=lambda: []
+        default_factory=list
     )
 
 
@@ -140,6 +141,7 @@ def get_document_set(
     codebase_id: str,
     organization_id: str,
     session: Session,
+    version_id: str | None = None,
 ) -> DocumentSet:
     relative_path = path
     content_type = content_type_id_map(node_kind, session)
@@ -147,15 +149,43 @@ def get_document_set(
     if content_type["typeName"] == "codebase":
         relative_path = path.replace("/", "")
 
+    # Try to get a version
+    if version_id:
+        version = session.get(InspectionVersion, version_id)
+        if not version:
+            raise ValueError(f"Version with id {version_id} not found")
+    else:
+        # When no version id is provided, we look for a latest version.
+        # and return no version if there isn't one (fallback case to support existing)
+        codebase_type = session.exec(
+            select(DerivedContentType).where(DerivedContentType.type_name == "codebase")
+        ).first()
+        codebase_type_id = codebase_type.id
+        statement = (
+            select(InspectionVersion)
+            .join(DerivedContent)
+            .join(Workspace)
+            .where(
+                DerivedContent.codebase_id == codebase_id,
+                Workspace.organization_id == organization_id,
+                DerivedContent.content_type_id == codebase_type_id,
+                InspectionVersion.version.isnot(None),
+            )
+            .order_by(InspectionVersion.created_at.desc())
+        )
+        version = session.exec(statement).first()
+
     query = select(DerivedContent).where(
         DerivedContent.relative_path == relative_path,
         DerivedContent.content_type_id == content_type["id"],
         DerivedContent.source_content_id == None,  # noqa: E711
     )  # Note, we imply source content if there's not parent source content id!
     if workspace_id:
-        query = query.where(DerivedContent.workspace_id == workspace_id)  # noqa: E711
+        query = query.where(DerivedContent.workspace_id == workspace_id)
     if codebase_id:
-        query = query.where(DerivedContent.codebase_id == codebase_id)  # noqa: E711
+        query = query.where(DerivedContent.codebase_id == codebase_id)
+    if version:
+        query = query.where(DerivedContent.version_id == version.id)
     content = session.exec(query).first()
 
     if content is None:
@@ -267,7 +297,7 @@ def get_document_set(
                     )
                 )
             except json.JSONDecodeError as e:
-                logger.warning(f"[ParseError]: {doc.id} - {str(e)}")
+                logger.warning(f"[ParseError]: {doc.id} - {e!s}")
         else:
             logger.warning(
                 f"no DerivedContentTypes documentSet match for {derived_content_type}"
@@ -276,6 +306,7 @@ def get_document_set(
         s3_access = S3BucketAccess(
             organization_id=organization_id,
             codebase_id=codebase_id if codebase_id else str(content.codebase_id),
+            version_id=version_id,
         )
         code_content = s3_access.get_file_content(relative_path=content.relative_path)
         document_set.code = Code(  # type: ignore

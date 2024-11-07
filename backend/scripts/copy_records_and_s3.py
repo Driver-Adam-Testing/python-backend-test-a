@@ -4,9 +4,7 @@ import boto3
 from botocore.exceptions import NoCredentialsError
 from database.config import settings
 from database.models_v1 import (
-    Chunk,
     Codebase,
-    ContentMetadata,
     DerivedContent,
     DerivedContentType,
     Workspace,
@@ -29,8 +27,6 @@ models = [
     Codebase,
     DerivedContentType,
     DerivedContent,
-    ContentMetadata,
-    Chunk,
 ]
 
 

@@ -538,9 +538,11 @@ class UsageSession(SQLModel, table=True):
     )
     updated_at: None | datetime = Field(
         sa_column=Column(
-            DateTime(timezone=True), server_default=func.now(), nullable=False
+            DateTime(timezone=True),
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
         ),
-        default=None,
     )
 
     usage_events: list["UsageEvent"] = Relationship(

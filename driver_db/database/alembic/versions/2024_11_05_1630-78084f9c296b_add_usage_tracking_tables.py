@@ -25,9 +25,7 @@ def upgrade() -> None:
         sa.Column("id", sa.Uuid(), nullable=False),
         sa.Column(
             "status",
-            sa.Enum(
-                "PENDING", "RUNNING", "COMPLETED", "FAILED", name="usagesessionstatus"
-            ),
+            sa.Enum("RUNNING", "COMPLETED", "FAILED", name="usagesessionstatus"),
             nullable=False,
         ),
         sa.Column(

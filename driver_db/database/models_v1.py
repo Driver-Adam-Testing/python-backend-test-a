@@ -516,7 +516,6 @@ class InspectorRun(SQLModel, table=True):
 
 
 class UsageSessionStatus(str, enum.Enum):
-    PENDING = "pending"
     RUNNING = "running"
     COMPLETED = "completed"
     FAILED = "failed"
@@ -525,7 +524,7 @@ class UsageSessionStatus(str, enum.Enum):
 class UsageSession(SQLModel, table=True):
     __tablename__ = "usage_sessions"
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    status: UsageSessionStatus = Field(default=UsageSessionStatus.PENDING, index=True)
+    status: UsageSessionStatus = Field(default=UsageSessionStatus.RUNNING, index=True)
     organization_id: str
     user_id: str
     session_metadata: dict | None = Field(
@@ -544,7 +543,9 @@ class UsageSession(SQLModel, table=True):
         default=None,
     )
 
-    usage_events: list["UsageEvent"] = Relationship(back_populates="session")
+    usage_events: list["UsageEvent"] = Relationship(
+        back_populates="session", cascade_delete=True
+    )
 
 
 class UsageEventType(enum.IntEnum):

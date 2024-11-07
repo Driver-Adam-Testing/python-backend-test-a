@@ -39,6 +39,15 @@ class MeResponse:
     id: ID
 
 
+def is_code_content_requested(info: Info) -> bool:
+    code_field = next(
+        (field for field in info.selected_fields if field.name == "code"), None
+    )
+    if not code_field:
+        return False
+    return any(subfield.name == "content" for subfield in code_field.selections)
+
+
 @strawberry.type
 class Query:
     @strawberry.field
@@ -104,6 +113,8 @@ class Query:
             codebase_id=str(codebaseId),
         ):
             raise GraphQLError("Access denied", extensions={"code": "NOT_FOUND"})
+
+        fetch_code_content = is_code_content_requested(info)
         return get_document_set(
             nodeKind,
             path,
@@ -111,6 +122,7 @@ class Query:
             str(codebaseId),
             info.context.user.organization_id,
             session,
+            fetch_code_content,
             versionId,
         )
 

@@ -1,4 +1,5 @@
 import hashlib
+import re
 from typing import Any
 
 import httpx
@@ -52,14 +53,42 @@ async def refresh_access_token(refresh_token):
 
 # fetch user orgs
 async def fetch_repos(token: str) -> list[dict[str, Any]]:
-    url = "https://api.github.com/user/repos"
+    per_page = 100
+    max_pages = 100
+    url = f"https://api.github.com/user/repos?per_page={per_page}"
     headers = {"Authorization": f"token {token}"}
 
+    results = []
     try:
         async with httpx.AsyncClient() as client:
+            page_count = 1
             response = await client.get(url, headers=headers)
             response.raise_for_status()  # Raises an exception for 4XX/5XX responses
-            return response.json()
+            results = results + response.json()
+            # The last page will end with rel="first". Example:
+            # <https://api.github.com/user/repos?per_page=5&page=5>; rel="prev", <https://api.github.com/user/repos?per_page=5&page=1>; rel="first"
+            while "link" in response.headers and response.headers.get("link").endswith(
+                'rel="last"'
+            ):
+                page_count = page_count + 1
+                if page_count > max_pages:
+                    # GH API has rate limits that will probably kick in before we get this far.
+                    # Protecting ourselves from infinite loops explicitly too.
+                    # We should implement exponential backoff and parse the
+                    # rate limit responses being returned by GH here.
+                    raise ValueError("Aborting GH API pagination at 10000 pages.")
+                parts = response.headers["link"].split(",")
+                match = re.search(r'<([^>]+)>; rel="([^"]+)"', parts[0].strip())
+                if match:
+                    next_url, rel = match.groups()
+                    response = await client.get(next_url, headers=headers)
+                    response.raise_for_status()
+                    results = results + response.json()
+                else:
+                    raise ValueError(
+                        "Unable to parse link header for GitHub pagination"
+                    )
+        return results
     except Exception as e:
         print(f"Failed to fetch repositories: {e}")
         raise e

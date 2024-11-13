@@ -147,6 +147,7 @@ class IrData(BaseModel, abc.ABC):
             except openai.LengthFinishReasonError as _:
                 print("LengthFinishReasonError caught")
                 return None
+                # TODO: do something with this - switch to default_instance
             cls_instance = cls.parse_raw(content_raw)
 
         for child_symbol in symbol.children:

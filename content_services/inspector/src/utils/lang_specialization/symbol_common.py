@@ -10,8 +10,8 @@ from utils.models import ChatOpenAI
 CHUNK_SIZE = 64_000
 CHUNK_OVERLAP = 1_000
 BLIND_ADVANCE_IF_NO_END_LINE = 200
-BLIND_PADDING_TOP = 100
-BLIND_PADDING_BOTTOM = 100
+BLIND_PADDING_TOP = 10
+BLIND_PADDING_BOTTOM = 10
 
 
 class Lang(IntEnum):
@@ -24,7 +24,8 @@ class Lang(IntEnum):
     ASSEMBLY = 6
     JAVA = 7
     RUBY = 8
-    DEFAULT = 9
+    C_SHARP = 9
+    DEFAULT = 10
 
     @classmethod
     def from_ext_and_source(cls, ext: str, source: str) -> Self:
@@ -47,6 +48,8 @@ class Lang(IntEnum):
                 return cls.JAVA
             case ".rb" | ".rbi":
                 return cls.RUBY
+            case ".cs":
+                return cls.C_SHARP
             case _:
                 return cls.DEFAULT
 
@@ -76,6 +79,7 @@ class ScopeRelation(StrEnum):
     INSTANCE_METHOD = "Instance Methods"
     MODULE_METHOD = "Module Methods"
     ATTRIBUTE = "Attributes"
+    ENUMERATOR = "Enumerators"
 
 
 class RawSymbolData(BaseModel):

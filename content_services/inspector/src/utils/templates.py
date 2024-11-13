@@ -203,7 +203,7 @@ class Template(BaseModel):
                     # TODO: could possibly generalize by passing all code as a list of chunks even if len(chunks) == 1
                     section_title, conditional_llm_fn, true_action, false_action = args
                     llm_fn_output: list[str] | None = conditional_llm_fn(
-                        llm, code_chunks, root_rel_path
+                        llm, code, root_rel_path
                     )
                     action = false_action if llm_fn_output is None else true_action
                     if action is None:
@@ -213,6 +213,8 @@ class Template(BaseModel):
                             match _arity(action):
                                 case 0:
                                     content = action()
+                                case 2:
+                                    content = action(llm, llm_fn_output)
                                 case 3:
                                     content = action(llm, llm_fn_output, code_chunks)
                                 case _:

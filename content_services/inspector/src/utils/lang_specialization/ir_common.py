@@ -287,9 +287,9 @@ class VariableData(IrData):
 
 
 class DataStructureData(IrData, abc.ABC):
-    type: str
+    type: FieldNameWithBackTickContent
     members: list[NamedContent]
-    description: str
+    description: FieldNameWithRawContent
 
     @classmethod
     def default_instance(cls) -> Self:

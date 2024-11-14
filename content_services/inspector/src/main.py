@@ -62,9 +62,11 @@ async def inspect_db(
     new_codebase_id: uuid.UUID | None = None,
 ) -> None:
     if new_codebase_id:
-        assert (
-            rerun_node_paths is None
-        ), "Cannot rerun specific nodes when doing diff update flow"
+        raise ValueError("No longer supported")
+    # if new_codebase_id:
+    #     assert (
+    #         rerun_node_paths is None
+    #     ), "Cannot rerun specific nodes when doing diff update flow"
 
     import tempfile
 
@@ -89,29 +91,27 @@ async def inspect_db(
     assert len(source_content_codebase) == 1
     source_content_codebase_id = source_content_codebase[0].id
 
-    # Get the new stuff if applicable
-    if new_codebase_id:
-        new_codebase = await get_codebase_by_id(new_codebase_id)
-        new_source_contents_files = await get_analyzable_source_contents_by_codebase_id(
-            new_codebase_id, {SourceContentTypeMap.FILE}
-        )
-        new_source_contents_all = await get_analyzable_source_contents_by_codebase_id(
-            new_codebase_id, {SourceContentTypeMap.FILE, SourceContentTypeMap.DIRECTORY}
-        )
-        new_source_content_codebase = (
-            await get_analyzable_source_contents_by_codebase_id(
-                new_codebase_id, {SourceContentTypeMap.CODEBASE_ROOT}
-            )
-        )
-        assert len(new_source_content_codebase) == 1
-        new_source_content_codebase_id = new_source_content_codebase[0].id
+    # # Get the new stuff if applicable
+    # if new_codebase_id:
+    #     new_codebase = await get_codebase_by_id(new_codebase_id)
+    #     new_source_contents_files = await get_analyzable_source_contents_by_codebase_id(
+    #         new_codebase_id, {SourceContentTypeMap.FILE}
+    #     )
+    #     new_source_contents_all = await get_analyzable_source_contents_by_codebase_id(
+    #         new_codebase_id, {SourceContentTypeMap.FILE, SourceContentTypeMap.DIRECTORY}
+    #     )
+    #     new_source_content_codebase = (
+    #         await get_analyzable_source_contents_by_codebase_id(
+    #             new_codebase_id, {SourceContentTypeMap.CODEBASE_ROOT}
+    #         )
+    #     )
+    #     assert len(new_source_content_codebase) == 1
+    #     new_source_content_codebase_id = new_source_content_codebase[0].id
 
     # TODO handle the S3_ENDPOINT_URL gracefully
     s3_client = boto3.client("s3", endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL"))
-    with (
-        tempfile.TemporaryDirectory() as download_dir,
-        tempfile.TemporaryDirectory() as new_download_dir,
-    ):
+    with tempfile.TemporaryDirectory() as download_dir:
+        # tempfile.TemporaryDirectory() as new_download_dir,
         download_root = Path(download_dir)
         file_paths = []
         print("Downloading all source files for codebase from s3...")
@@ -126,62 +126,62 @@ async def inspect_db(
             file_paths.append(download_abs_path)
         print("Download complete")
 
-        def change_root_with_first_component(
-            original_root: Path | str, additional_path: Path | str
-        ) -> tuple[Path, str]:
-            original_root_path = Path(original_root)
-            additional_path_path = Path(additional_path)
-
-            relative_path = additional_path_path.relative_to(original_root_path)
-            first_component = relative_path.parts[0]
-            new_root = original_root_path / first_component
-
-            return new_root, first_component
+        # def change_root_with_first_component(
+        #     original_root: Path | str, additional_path: Path | str
+        # ) -> tuple[Path, str]:
+        #     original_root_path = Path(original_root)
+        #     additional_path_path = Path(additional_path)
+        #
+        #     relative_path = additional_path_path.relative_to(original_root_path)
+        #     first_component = relative_path.parts[0]
+        #     #new_root = original_root_path / first_component
+        #     new_root = original_root_path
+        #     return new_root, first_component
 
         # We must build the dags with the codebase name removed so dags can be properly diffed. (Codebase name changes with version right now)
-        codebase_root_with_cb_name_inc, cb_name_old = change_root_with_first_component(
-            download_root, file_paths[0]
-        )
+        # codebase_root_with_cb_name_inc, cb_name_old = change_root_with_first_component(
+        #     download_root, file_paths[0]
+        # )
         codebase_dag: FileTreeDag = build_dag(
-            root_path=codebase_root_with_cb_name_inc, file_paths=file_paths
+            root_path=download_root, file_paths=file_paths
         )
 
         print("======= Nodes from original codebase processed =======")
         for node in codebase_dag.topological_sort():
             print(node.root_rel_path, node.status)
 
-        if new_codebase_id:
-            new_download_root = Path(new_download_dir)
-            new_file_paths = []
-            print("Downloading all source files for new codebase from s3...")
-            for scn in new_source_contents_files:
-                download_abs_path = download_source_content_file(
-                    s3_client=s3_client,
-                    codebase_storage_url=new_codebase.storage_url,
-                    codebase_root=new_codebase.resource_root,
-                    source_content_rel_path=scn.relative_path,
-                    download_root=new_download_root,
-                )
-                new_file_paths.append(download_abs_path)
-            print("Download complete for new version of code")
-
-            (
-                new_codebase_root_with_cb_name_inc,
-                cb_name_new,
-            ) = change_root_with_first_component(new_download_root, new_file_paths[0])
-            new_codebase_dag: FileTreeDag = build_dag(
-                root_path=new_codebase_root_with_cb_name_inc, file_paths=new_file_paths
-            )
-            print("======= Nodes from new codebase =======")
-            for node in new_codebase_dag.topological_sort():
-                print(node.root_rel_path, node.status)
-
-            diff_dag = new_codebase_dag.compute_diff(codebase_dag)
-            print("Diff dag computed")
-
-            print("======= Nodes from diff dag =======")
-            for node in diff_dag.topological_sort():
-                print(node.root_rel_path, node.status)
+        # if new_codebase_id:
+        #     new_download_root = Path(new_download_dir)
+        #     new_file_paths = []
+        #     print("Downloading all source files for new codebase from s3...")
+        #     for scn in new_source_contents_files:
+        #         download_abs_path = download_source_content_file(
+        #             s3_client=s3_client,
+        #             codebase_storage_url=new_codebase.storage_url,
+        #             codebase_root=new_codebase.resource_root,
+        #             source_content_rel_path=scn.relative_path,
+        #             download_root=new_download_root,
+        #         )
+        #         new_file_paths.append(download_abs_path)
+        #     print("Download complete for new version of code")
+        #
+        #     # (
+        #     #     new_codebase_root_with_cb_name_inc,
+        #     #     cb_name_new,
+        #     # ) = change_root_with_first_component(new_download_root, new_file_paths[0])
+        #     new_codebase_dag: FileTreeDag = build_dag(
+        #         root_path=new_download_root, file_paths=new_file_paths
+        #     )
+        #     print("======= Nodes from new codebase =======")
+        #     for node in new_codebase_dag.topological_sort():
+        #         print(node.root_rel_path, node.status)
+        #
+        #     diff_dag = new_codebase_dag.compute_diff(codebase_dag)
+        #     print("Diff dag computed")
+        #
+        #     print("======= Nodes from diff dag =======")
+        #     for node in diff_dag.topological_sort():
+        #         print(node.root_rel_path, node.status)
 
         if rerun_node_paths:
             for rerun_path in rerun_node_paths:
@@ -193,18 +193,18 @@ async def inspect_db(
         if rerun_node_paths:
             sorted_nodes = codebase_dag.topological_sort(changed_nodes_only=True)
         else:
-            if new_codebase_id:
-                sorted_nodes = diff_dag.topological_sort()
-                path_to_source_content_id = {
-                    Path(sc.relative_path): sc.id for sc in new_source_contents_all
-                }
-                cb_name = cb_name_new
-            else:
-                sorted_nodes = codebase_dag.topological_sort()
-                path_to_source_content_id = {
-                    Path(sc.relative_path): sc.id for sc in source_contents_all
-                }
-                cb_name = cb_name_old
+            # if new_codebase_id:
+            #     sorted_nodes = diff_dag.topological_sort()
+            #     path_to_source_content_id = {
+            #         Path(sc.relative_path): sc.id for sc in new_source_contents_all
+            #     }
+            #     cb_name = codebase.codebase_name
+            # else:
+            sorted_nodes = codebase_dag.topological_sort()
+            path_to_source_content_id = {
+                Path(sc.relative_path): sc.id for sc in source_contents_all
+            }
+            cb_name = codebase.codebase_name
 
         print("======= Nodes being processed  =======")
         for node in sorted_nodes:
@@ -219,13 +219,10 @@ async def inspect_db(
         for node, sc_id in nodes_with_id:
             print(node.root_rel_path, sc_id)
 
+        # TODO resolve the old vs new.
         await inspect_files(
-            sc_codebase_id=new_source_content_codebase_id
-            if new_codebase_id
-            else source_content_codebase_id,
-            codebase_root=new_codebase_root_with_cb_name_inc
-            if new_codebase_id
-            else codebase_root_with_cb_name_inc,
+            sc_codebase_id=source_content_codebase_id,
+            codebase_root=download_root,
             nodes_with_id=nodes_with_id,
             codebase_name=codebase.codebase_name,  # We're passing in the old codebase name for consistency with old cb docs.
             run_id=run_id,

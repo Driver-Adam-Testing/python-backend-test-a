@@ -201,18 +201,18 @@ async def inspect_db(
             #     cb_name = codebase.codebase_name
             # else:
             sorted_nodes = codebase_dag.topological_sort()
-            path_to_source_content_id = {
-                Path(sc.relative_path): sc.id for sc in source_contents_all
-            }
-            cb_name = codebase.codebase_name
+        path_to_source_content_id = {
+            Path(sc.relative_path): sc.id for sc in source_contents_all
+        }
 
         print("======= Nodes being processed  =======")
         for node in sorted_nodes:
-            print(node.root_rel_path, node.status)
+            print(node.root_rel_path, node.status, node.kind)
 
         nodes_with_id: list[tuple[Node, uuid.UUID | None]] = [
-            (node, path_to_source_content_id[Path(cb_name) / node.root_rel_path])
+            (node, path_to_source_content_id[node.root_rel_path])
             for node in sorted_nodes
+            if node.root_rel_path != Path(".")
         ]
 
         print("======= Nodes with source content id =======")
@@ -224,6 +224,7 @@ async def inspect_db(
             sc_codebase_id=source_content_codebase_id,
             codebase_root=download_root,
             nodes_with_id=nodes_with_id,
+            root_node=sorted_nodes[-1],
             codebase_name=codebase.codebase_name,  # We're passing in the old codebase name for consistency with old cb docs.
             run_id=run_id,
             resume=resume,
@@ -252,6 +253,7 @@ async def inspect_files(
     sc_codebase_id: uuid.UUID,
     codebase_root: Path,
     nodes_with_id: list[tuple[Node, uuid.UUID | None]],
+    root_node: Node,
     codebase_name: str,
     run_id: str,
     resume: bool,
@@ -351,7 +353,7 @@ async def inspect_files(
     # in order to update them.
     if not is_rerun:
         # TODO when not rerrunning, we should always have the root node as the last. VERIFY!
-        root_node, _ = nodes_with_id[-1]
+        # root_node, _ = nodes_with_id[-1]
 
         # If no changes propagated to the root node due to child changes/additions/deletions,
         # we can reuse the persisted result for the tasks

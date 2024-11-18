@@ -1,6 +1,5 @@
 PROMPT = """You are a mermaidjs expert. Review any mermaid code blocks in this document.
 correct any errors preventing mermaid code blocks from rendering properly.
-Ensure the syntax and formatting comply with Mermaid's guidelines so the diagram displays as intended.
 Ensure there are no forbidden characters such as "(" or ")" or double hyphen "--" in the element labels to avoid rendering errors.
 
 Ensure that any conains lists in the mermaid block use the correct syntax for example:

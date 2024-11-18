@@ -10,6 +10,7 @@ from .ir_common import (
     FnData,
     IrCollection,
     IrData,
+    ListedRawContentNoNone,
     VariableData,
 )
 from .symbol_common import (
@@ -218,10 +219,10 @@ class RubyAttributeData(VariableData):
 
 class RubyClassData(IrData):
     description: FieldNameWithRawContent
-    inherits_from: list[str]
-    includes: list[str]
-    extends: list[str]
-    prepends: list[str]
+    inherits_from: ListedRawContentNoNone
+    includes: ListedRawContentNoNone
+    extends: ListedRawContentNoNone
+    prepends: ListedRawContentNoNone
     _supported_child_ordering: list[str] = PrivateAttr(
         default=[
             ScopeRelation.ATTRIBUTE,
@@ -275,9 +276,9 @@ class RubyClassCollection(IrCollection):
 
 class RubyModuleData(IrData):
     description: FieldNameWithRawContent
-    includes: list[str]
-    extends: list[str]
-    prepends: list[str]
+    includes: ListedRawContentNoNone
+    extends: ListedRawContentNoNone
+    prepends: ListedRawContentNoNone
     _supported_child_ordering: list[str] = PrivateAttr(
         default=[
             ScopeRelation.ATTRIBUTE,

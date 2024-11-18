@@ -7,7 +7,7 @@ from .ir_common import (
     FnData,
     IrCollection,
     IrData,
-    NamedContent,
+    ListedBacktickNameRawContentWithNone,
     VariableData,
 )
 from .symbol_common import (
@@ -175,8 +175,8 @@ Data type to document:
 
 # IR Classes
 class VerilogModuleData(IrData):
-    constants: list[NamedContent]
-    ports: list[NamedContent]
+    constants: ListedBacktickNameRawContentWithNone
+    ports: ListedBacktickNameRawContentWithNone
     description: FieldNameWithRawContent
 
     @classmethod

@@ -62,6 +62,70 @@ class NamedContent(BaseModel):
         return f"    - `{self.name}`: {self.content}\n"
 
 
+class ListedBacktickNameRawContentNoNone(BaseModel):
+    # Rendered as:
+    # f"**{snake_case_to_spaced_string(field_name)}**: \n - `{name}`: {content}\n
+    # for each NamedContent in the list. If no entries in list, no content is produced
+    content: list[NamedContent]
+
+    def render_markdown(self, field_name: str) -> str:
+        output_str = ""
+        if len(self.content) > 0:
+            output_str += f"- **{snake_case_to_spaced_string(field_name)}**:\n"
+            for item in self.content:
+                output_str += item.render_markdown(field_name)
+        return output_str
+
+
+class ListedBacktickNameRawContentWithNone(BaseModel):
+    # Rendered as:
+    # f"**{snake_case_to_spaced_string(field_name)}**: \n - `{name}`: {content}\n
+    # for each NamedContent in the list. If no entries in list, list is simply - None
+    content: list[NamedContent]
+
+    def render_markdown(self, field_name: str) -> str:
+        output_str = ""
+        output_str += f"- **{snake_case_to_spaced_string(field_name)}**:\n"
+        if len(self.content) > 0:
+            for item in self.content:
+                output_str += item.render_markdown(field_name)
+        else:
+            output_str += "    - None\n"
+        return output_str
+
+
+class ListedRawContentNoNone(BaseModel):
+    # Rendered as:
+    # f"**{snake_case_to_spaced_string(field_name)}**: \n - {content}\n
+    # for each str in the list. If no entries in list, no heading is rendered
+    content: list[str]
+
+    def render_markdown(self, field_name: str) -> str:
+        output_str = ""
+        if len(self.content) > 0:
+            output_str += f"- **{snake_case_to_spaced_string(field_name)}**:\n"
+            for item in self.content:
+                output_str += f"    - {item}\n"
+        return output_str
+
+
+class ListedRawContentWithNone(BaseModel):
+    # Rendered as:
+    # f"**{snake_case_to_spaced_string(field_name)}**: \n - {content}\n
+    # for each str in the list. If no entries in list, no heading is rendered
+    content: list[str]
+
+    def render_markdown(self, field_name: str) -> str:
+        output_str = ""
+        output_str += f"- **{snake_case_to_spaced_string(field_name)}**:\n"
+        if len(self.content) > 0:
+            for item in self.content:
+                output_str += f"    - {item}\n"
+        else:
+            output_str += "    - None\n"
+        return output_str
+
+
 class ListData(BaseModel):
     data: list[str]
 
@@ -170,7 +234,11 @@ class IrData(BaseModel, abc.ABC):
                 RawContent
                 | FieldNameWithBackTickContent
                 | FieldNameWithBulletedContent
-                | FieldNameWithRawContent,
+                | FieldNameWithRawContent
+                | ListedBacktickNameRawContentNoNone
+                | ListedBacktickNameRawContentWithNone
+                | ListedRawContentNoNone
+                | ListedRawContentWithNone,
             ):
                 output += field_content.render_markdown(field_name)
             elif isinstance(field_content, str):
@@ -288,7 +356,7 @@ class VariableData(IrData):
 
 class DataStructureData(IrData, abc.ABC):
     type: FieldNameWithBackTickContent
-    members: list[NamedContent]
+    members: ListedBacktickNameRawContentNoNone
     description: FieldNameWithRawContent
 
     @classmethod
@@ -302,8 +370,8 @@ class DataStructureData(IrData, abc.ABC):
 
 class FnData(IrData, abc.ABC):
     single_sentence: RawContent
-    inputs: list[NamedContent]
-    control_flow: list[str]
+    inputs: ListedBacktickNameRawContentWithNone
+    control_flow: ListedRawContentWithNone
     output: FieldNameWithBulletedContent
 
     @classmethod
@@ -318,9 +386,9 @@ class FnData(IrData, abc.ABC):
 
 class ClassData(IrData, abc.ABC):
     type: FieldNameWithBackTickContent
-    members: list[NamedContent]
+    members: ListedBacktickNameRawContentNoNone
     description: FieldNameWithRawContent
-    inherits_from: list[str]
+    inherits_from: ListedRawContentNoNone
     _supported_child_ordering: list[str] = PrivateAttr(
         default=[ScopeRelation.METHOD, ScopeRelation.NESTED_CLASS]
     )

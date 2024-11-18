@@ -10,6 +10,7 @@ from .ir_common import (
     FnData,
     IrCollection,
     IrData,
+    ListedRawContentNoNone,
 )
 from .symbol_common import (
     RawSymbolCollection,
@@ -307,9 +308,8 @@ class CsMethodData(FnData):
 
 class CsStructData(IrData):
     description: FieldNameWithRawContent
-    implements: list[str]
-    modifiers: list[str]
-    # TODO: support for Fields/internal variables instead of the members field
+    implements: ListedRawContentNoNone
+    modifiers: ListedRawContentNoNone
     _supported_child_ordering: list[str] = PrivateAttr(
         default=[
             ScopeRelation.FIELD,
@@ -364,9 +364,9 @@ class CsStructCollection(IrCollection):
 
 class CsClassData(IrData):
     description: FieldNameWithRawContent
-    inherits_from: list[str]
-    implements: list[str]
-    modifiers: list[str]
+    inherits_from: ListedRawContentNoNone
+    implements: ListedRawContentNoNone
+    modifiers: ListedRawContentNoNone
     # TODO: support for Fields/internal variables instead of the members field
     _supported_child_ordering: list[str] = PrivateAttr(
         default=[
@@ -422,7 +422,7 @@ class CsClassCollection(IrCollection):
 
 
 class CsInterfaceData(IrData):
-    interfaces_inherited: list[str]
+    interfaces_inherited: ListedRawContentNoNone
     description: FieldNameWithRawContent
     _supported_child_ordering: list[str] = PrivateAttr(
         default=[

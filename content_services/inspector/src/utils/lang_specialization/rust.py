@@ -11,7 +11,8 @@ from .ir_common import (
     FnData,
     IrCollection,
     IrData,
-    NamedContent,
+    ListedBacktickNameRawContentNoNone,
+    ListedRawContentNoNone,
     VariableData,
 )
 from .symbol_common import (
@@ -264,7 +265,7 @@ Trait to document:
 class RustMacroData(IrData):
     type: FieldNameWithBackTickContent
     description: FieldNameWithRawContent
-    logic: list[str]
+    logic: ListedRawContentNoNone
     use: FieldNameWithRawContent
 
     @classmethod
@@ -303,9 +304,9 @@ class RustMacroCollection(IrCollection):
 
 
 class RustTraitData(IrData):
-    trait_bounds: list[str]
-    generic_types: list[str]
-    methods: list[NamedContent]
+    trait_bounds: ListedRawContentNoNone
+    generic_types: ListedRawContentNoNone
+    methods: ListedBacktickNameRawContentNoNone
     description: FieldNameWithRawContent
 
     @classmethod
@@ -345,9 +346,9 @@ class RustTraitCollection(IrCollection):
 
 class RustDataStructureData(IrData):
     type: FieldNameWithBackTickContent
-    members: list[NamedContent]
+    members: ListedBacktickNameRawContentNoNone
     description: FieldNameWithRawContent
-    trait_bounds: list[str]
+    trait_bounds: ListedRawContentNoNone
     _supported_child_ordering: list[str] = PrivateAttr(
         default=[ScopeRelation.METHOD, ScopeRelation.NESTED_DATA_STRUCTURE]
     )

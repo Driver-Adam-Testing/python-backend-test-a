@@ -11,7 +11,8 @@ from .ir_common import (
     FieldNameWithRawContent,
     IrCollection,
     IrData,
-    NamedContent,
+    ListedBacktickNameRawContentWithNone,
+    ListedRawContentNoNone,
     RawContent,
 )
 from .symbol_common import (
@@ -178,9 +179,9 @@ Field to document:
 
 class JavaMethodData(IrData):
     single_sentence: RawContent
-    modifiers: list[str]
-    inputs: list[NamedContent]
-    control_flow: list[str]
+    modifiers: ListedRawContentNoNone
+    inputs: ListedBacktickNameRawContentWithNone
+    control_flow: ListedRawContentNoNone
     output: FieldNameWithBulletedContent
 
     @classmethod
@@ -217,7 +218,7 @@ class JavaFieldData(IrData):
     type: FieldNameWithBackTickContent
     description: FieldNameWithRawContent
     use: FieldNameWithRawContent
-    modifiers: list[str]
+    modifiers: ListedRawContentNoNone
 
     @classmethod
     def system_prompt(cls) -> str:
@@ -249,9 +250,9 @@ class JavaFieldData(IrData):
 
 
 class JavaClassData(IrData):
-    modifiers: list[str]
-    interfaces_implemented: list[str]
-    classes_extended: list[str]
+    modifiers: ListedRawContentNoNone
+    interfaces_implemented: ListedRawContentNoNone
+    classes_extended: ListedRawContentNoNone
     description: FieldNameWithRawContent
     _supported_child_ordering: list[str] = PrivateAttr(
         default=[
@@ -308,7 +309,7 @@ class JavaClassDict(IrCollection):
 
 
 class JavaInterfaceData(IrData):
-    interfaces_extended: list[str]
+    interfaces_extended: ListedRawContentNoNone
     description: FieldNameWithRawContent
     _supported_child_ordering: list[str] = PrivateAttr(
         default=[

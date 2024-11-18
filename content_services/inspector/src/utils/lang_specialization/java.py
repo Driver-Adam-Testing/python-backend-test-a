@@ -6,9 +6,13 @@ from pydantic import PrivateAttr
 from utils.codemap_ctags import extract_symbols_w_ctags
 
 from .ir_common import (
+    FieldNameWithBackTickContent,
+    FieldNameWithBulletedContent,
+    FieldNameWithRawContent,
     IrCollection,
     IrData,
     NamedContent,
+    RawContent,
 )
 from .symbol_common import (
     RawSymbolCollection,
@@ -173,11 +177,11 @@ Field to document:
 
 
 class JavaMethodData(IrData):
-    single_sentence: str
+    single_sentence: RawContent
     modifiers: list[str]
     inputs: list[NamedContent]
     control_flow: list[str]
-    output: str
+    output: FieldNameWithBulletedContent
 
     @classmethod
     def system_prompt(cls) -> str:
@@ -210,9 +214,9 @@ class JavaMethodData(IrData):
 
 
 class JavaFieldData(IrData):
-    type: str
-    description: str
-    use: str
+    type: FieldNameWithBackTickContent
+    description: FieldNameWithRawContent
+    use: FieldNameWithRawContent
     modifiers: list[str]
 
     @classmethod
@@ -248,7 +252,7 @@ class JavaClassData(IrData):
     modifiers: list[str]
     interfaces_implemented: list[str]
     classes_extended: list[str]
-    description: str
+    description: FieldNameWithRawContent
     _supported_child_ordering: list[str] = PrivateAttr(
         default=[
             ScopeRelation.METHOD,
@@ -305,7 +309,7 @@ class JavaClassDict(IrCollection):
 
 class JavaInterfaceData(IrData):
     interfaces_extended: list[str]
-    description: str
+    description: FieldNameWithRawContent
     _supported_child_ordering: list[str] = PrivateAttr(
         default=[
             ScopeRelation.METHOD,

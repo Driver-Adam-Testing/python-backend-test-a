@@ -6,6 +6,7 @@ from pydantic import PrivateAttr
 from utils.codemap_ctags import extract_symbols_w_ctags
 
 from .ir_common import (
+    FieldNameWithRawContent,
     FnData,
     IrCollection,
     IrData,
@@ -216,7 +217,7 @@ class RubyAttributeData(VariableData):
 
 
 class RubyClassData(IrData):
-    description: str
+    description: FieldNameWithRawContent
     inherits_from: list[str]
     includes: list[str]
     extends: list[str]
@@ -273,7 +274,7 @@ class RubyClassCollection(IrCollection):
 
 
 class RubyModuleData(IrData):
-    description: str
+    description: FieldNameWithRawContent
     includes: list[str]
     extends: list[str]
     prepends: list[str]

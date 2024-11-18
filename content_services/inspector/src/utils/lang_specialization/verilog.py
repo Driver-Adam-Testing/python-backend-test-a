@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Self
 
 from .ir_common import (
+    FieldNameWithRawContent,
     FnData,
     IrCollection,
     IrData,
@@ -176,7 +177,7 @@ Data type to document:
 class VerilogModuleData(IrData):
     constants: list[NamedContent]
     ports: list[NamedContent]
-    description: str
+    description: FieldNameWithRawContent
 
     @classmethod
     def system_prompt(cls) -> str:

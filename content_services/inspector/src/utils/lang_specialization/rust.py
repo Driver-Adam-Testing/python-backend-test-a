@@ -6,6 +6,8 @@ from pydantic import PrivateAttr
 from utils.codemap_ctags import extract_symbols_w_ctags
 
 from .ir_common import (
+    FieldNameWithBackTickContent,
+    FieldNameWithRawContent,
     FnData,
     IrCollection,
     IrData,
@@ -260,10 +262,10 @@ Trait to document:
 
 # IR Classes
 class RustMacroData(IrData):
-    type: str
-    description: str
+    type: FieldNameWithBackTickContent
+    description: FieldNameWithRawContent
     logic: list[str]
-    use: str
+    use: FieldNameWithRawContent
 
     @classmethod
     def system_prompt(cls) -> str:
@@ -304,7 +306,7 @@ class RustTraitData(IrData):
     trait_bounds: list[str]
     generic_types: list[str]
     methods: list[NamedContent]
-    description: str
+    description: FieldNameWithRawContent
 
     @classmethod
     def system_prompt(cls) -> str:
@@ -342,9 +344,9 @@ class RustTraitCollection(IrCollection):
 
 
 class RustDataStructureData(IrData):
-    type: str
+    type: FieldNameWithBackTickContent
     members: list[NamedContent]
-    description: str
+    description: FieldNameWithRawContent
     trait_bounds: list[str]
     _supported_child_ordering: list[str] = PrivateAttr(
         default=[ScopeRelation.METHOD, ScopeRelation.NESTED_DATA_STRUCTURE]

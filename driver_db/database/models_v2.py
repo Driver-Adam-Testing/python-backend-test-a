@@ -2,18 +2,14 @@ from datetime import datetime
 from uuid import UUID
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import (
-    Column,
-    DateTime,
-    ForeignKey,
-    Integer,
-    func,
-)
+from sqlalchemy import Column, Computed, DateTime, ForeignKey, Index, Integer, func
 from sqlalchemy.dialects.postgresql import UUID as SaUuid
-from sqlmodel import Field, Session, SQLModel, select, text
+from sqlmodel import Field, Relationship, Session, SQLModel, select, text
+
+from .custom_types import TSVector
 
 
-class PrimaryAssetTable(SQLModel, table=True):  # type: ignore
+class PrimaryAssetRow(SQLModel, table=True):  # type: ignore
     __tablename__ = "v2_primary_asset"
 
     id: UUID | None = Field(
@@ -42,8 +38,10 @@ class PrimaryAssetTable(SQLModel, table=True):  # type: ignore
         default=None,
     )
 
+    versions: list["VersionRow"] = Relationship(back_populates="primary_asset")
 
-class VersionTable(SQLModel, table=True):  # type: ignore
+
+class VersionRow(SQLModel, table=True):  # type: ignore
     __tablename__ = "v2_version"
 
     id: UUID | None = Field(
@@ -78,8 +76,11 @@ class VersionTable(SQLModel, table=True):  # type: ignore
         default=None,
     )
 
+    primary_asset: "PrimaryAssetRow" = Relationship(back_populates="versions")
+    nodes: list["NodeRow"] = Relationship(back_populates="version")
 
-class NodeTable(SQLModel, table=True):  # type: ignore
+
+class NodeRow(SQLModel, table=True):  # type: ignore
     __tablename__ = "v2_version_node"
 
     id: UUID | None = Field(
@@ -113,6 +114,9 @@ class NodeTable(SQLModel, table=True):  # type: ignore
         ),
         default=None,
     )
+
+    version: "VersionRow" = Relationship(back_populates="nodes")
+    contents: list["ContentRow"] = Relationship(back_populates="node")
 
 
 class FullNodeView(SQLModel, table=True):  # type: ignore
@@ -154,66 +158,52 @@ class FullNodeView(SQLModel, table=True):  # type: ignore
     node_created_at: None | datetime = Field(default=None)
     node_updated_at: None | datetime = Field(default=None)
 
-    def save(self, session: Session) -> None:
+    def add(self, session: Session) -> None:
         if self.primary_asset_id:
             primary_asset = session.exec(
-                select(PrimaryAssetTable).where(
-                    PrimaryAssetTable.id == self.primary_asset_id
+                select(PrimaryAssetRow).where(
+                    PrimaryAssetRow.id == self.primary_asset_id
                 )
             ).one_or_none()
             if primary_asset:
                 primary_asset.display_name = self.primary_asset_display_name
                 primary_asset.organization_id = self.primary_asset_organization_id
-                primary_asset.created_at = self.primary_asset_created_at
-                primary_asset.updated_at = self.primary_asset_updated_at
             else:
-                primary_asset = PrimaryAssetTable(
+                primary_asset = PrimaryAssetRow(
                     id=self.primary_asset_id,
                     display_name=self.primary_asset_display_name,
                     organization_id=self.primary_asset_organization_id,
-                    created_at=self.primary_asset_created_at,
-                    updated_at=self.primary_asset_updated_at,
                 )
                 session.add(primary_asset)
 
         if self.version_id:
             version = session.exec(
-                select(VersionTable).where(VersionTable.id == self.version_id)
+                select(VersionRow).where(VersionRow.id == self.version_id)
             ).one_or_none()
             if version:
                 version.display_name = self.version_display_name
-                version.created_at = self.version_created_at
-                version.updated_at = self.version_updated_at
             else:
-                version = VersionTable(
+                version = VersionRow(
                     id=self.version_id,
                     display_name=self.version_display_name,
-                    created_at=self.version_created_at,
-                    updated_at=self.version_updated_at,
                 )
                 session.add(version)
 
         if self.node_id:
             node = session.exec(
-                select(NodeTable).where(NodeTable.id == self.node_id)
+                select(NodeRow).where(NodeRow.id == self.node_id)
             ).one_or_none()
             if node:
                 node.relative_path = self.node_relative_path
-                node.created_at = self.node_created_at
-                node.updated_at = self.node_updated_at
             else:
-                node = NodeTable(
+                node = NodeRow(
                     id=self.node_id,
                     relative_path=self.node_relative_path,
-                    created_at=self.node_created_at,
-                    updated_at=self.node_updated_at,
                 )
                 session.add(node)
 
-        session.commit()
 
-
-class ContentTable(SQLModel, table=True):  # type: ignore
+class ContentRow(SQLModel, table=True):  # type: ignore
     __tablename__ = "v2_content"
 
     id: UUID | None = Field(
@@ -249,8 +239,11 @@ class ContentTable(SQLModel, table=True):  # type: ignore
         default=None,
     )
 
+    node: "NodeRow" = Relationship(back_populates="contents")
+    chunks: list["ChunkRow"] = Relationship(back_populates="content")
 
-class ChunkTable(SQLModel, table=True):  # type: ignore
+
+class ChunkRow(SQLModel, table=True):  # type: ignore
     __tablename__ = "v2_chunk"
 
     id: UUID | None = Field(
@@ -289,13 +282,13 @@ class ChunkTable(SQLModel, table=True):  # type: ignore
         default=None,
     )
 
-    # __ts_vector__: any = Column(
-    #     "__ts_vector__",
-    #     TSVector(),
-    #     Computed("to_tsvector('english', text)", persisted=True),
-    # )
-    # __table_args__ = (
-    #     Index(
-    #         "ix_chunkandembedding___ts_vector__", __ts_vector__, postgresql_using="gin"
-    #     ),
-    # )
+    content: "ContentRow" = Relationship(back_populates="chunks")
+
+    __ts_vector__: any = Column(
+        "__ts_vector__",
+        TSVector(),
+        Computed("to_tsvector('english', text)", persisted=True),
+    )
+    __table_args__ = (
+        Index("ix_chunk___ts_vector__", __ts_vector__, postgresql_using="gin"),
+    )

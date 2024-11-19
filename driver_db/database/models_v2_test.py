@@ -1,134 +1,350 @@
-from uuid import uuid4
+# test_models.py
 
 import pytest
-import sqlalchemy
-from sqlmodel import SQLModel
+from sqlalchemy import create_engine
+from sqlmodel import Session, text
 
-from .db import get_session
 from .models_v2 import (
-    Chunk,
-    Content,
-    ContentCategoryEnum,
-    ContentTypeEnum,
-    Node,
-    NodeDto,
-    Tag,
+    ChunkRow,
+    ContentRow,
+    FullNodeView,
+    NodeRow,
+    PrimaryAssetRow,
+    VersionRow,
 )
 
-
-@pytest.fixture(scope="module", autouse=True)
-def setup_database() -> None:
-    # Create tables in the PostgreSQL database
-    with get_session() as session:
-        SQLModel.metadata.create_all(bind=session.bind)
+# Define the test database URL (adjust with your credentials)
+TEST_DATABASE_URL = "postgresql://postgres:changethis@localhost:5432/postgres"
 
 
-@pytest.fixture
-def db_session() -> sqlalchemy.orm.Session:
-    with get_session() as session:
-        yield session
+@pytest.fixture(scope="session")
+def engine() -> create_engine:
+    """Create a test database, run migrations, and yield an engine connected to it."""
+    # Ensure the test database is fresh
+
+    engine = create_engine(TEST_DATABASE_URL)
+
+    yield engine
+
+    # Cleanup after tests
+    engine.dispose()
 
 
-def test_node_creation(db_session: sqlalchemy.orm.Session) -> None:
-    node = Node(
-        path="test/path", organization_id="org123", custom_display_name="Test Node"
+@pytest.fixture(scope="session")
+def connection(engine: create_engine) -> None:
+    """Establish a connection to the test database."""
+    connection = engine.connect()
+    yield connection
+    connection.close()
+
+
+@pytest.fixture(scope="function")
+def session(engine: create_engine) -> Session:
+    """Provide a transactional scope around a series of operations."""
+    connection = engine.connect()
+    transaction = connection.begin()
+    session = Session(bind=connection)
+
+    yield session
+
+    session.close()
+    transaction.rollback()
+    connection.close()
+
+
+def test_primary_asset_table(session: Session) -> None:
+    """Test creation and retrieval of a PrimaryAssetRow record."""
+    asset = PrimaryAssetRow(display_name="Test Asset", organization_id="org_123")
+    session.add(asset)
+    session.commit()
+
+    retrieved_asset = (
+        session.query(PrimaryAssetRow).filter_by(display_name="Test Asset").one()
     )
-    db_session.add(node)
-    db_session.commit()
-    db_session.refresh(node)
-
-    assert node.id is not None
-    assert node.path == "test/path"
-    assert node.organization_id == "org123"
-    assert node.display_name == "Test Node"
+    assert retrieved_asset.organization_id == "org_123"
 
 
-def test_node_dto_conversion() -> None:
-    node = Node(
-        path="test/path", organization_id="org123", custom_display_name="Test Node"
+def test_version_table(session: Session) -> None:
+    """Test creation and retrieval of a VersionRow record."""
+    asset = PrimaryAssetRow(display_name="Test Asset", organization_id="org_123")
+    session.add(asset)
+    session.commit()
+
+    version = VersionRow(primary_asset_id=asset.id, display_name="Version 1")
+    session.add(version)
+    session.commit()
+
+    retrieved_version = (
+        session.query(VersionRow).filter_by(display_name="Version 1").one()
     )
-    node_dto = NodeDto.from_node(node)
-    assert node_dto.path == node.path
-    assert node_dto.organization_id == node.organization_id
-
-    node_converted = node_dto.to_node()
-    assert node_converted.path == node.path
-    assert node_converted.organization_id == node.organization_id
+    assert retrieved_version.primary_asset_id == asset.id
 
 
-def test_content_validation(db_session: sqlalchemy.orm.Session) -> None:
-    content = Content(
-        node_id=uuid4(),
-        content_type=ContentTypeEnum.LONG_SUMMARY.value,
-        category=ContentCategoryEnum.SYSTEM_GENERATED.value,
-        content="Sample content",
+def test_node_table(session: Session) -> None:
+    """Test creation and retrieval of a NodeRow record."""
+    asset = PrimaryAssetRow(display_name="Test Asset", organization_id="org_123")
+    session.add(asset)
+    session.commit()
+
+    version = VersionRow(primary_asset_id=asset.id, display_name="Version 1")
+    session.add(version)
+    session.commit()
+
+    node = NodeRow(version_id=version.id, relative_path="/path/to/node")
+    session.add(node)
+    session.commit()
+
+    retrieved_node = (
+        session.query(NodeRow).filter_by(relative_path="/path/to/node").one()
     )
-    db_session.add(content)
-    db_session.commit()
-    db_session.refresh(content)
-
-    assert content.id is not None
-    assert content.content_type == ContentTypeEnum.LONG_SUMMARY.value
-    assert content.category == ContentCategoryEnum.SYSTEM_GENERATED.value
-
-    # Test invalid content type
-    with pytest.raises(ValueError):
-        invalid_content = Content(
-            node_id=uuid4(),
-            content_type="INVALID_TYPE",
-            category=ContentCategoryEnum.SYSTEM_GENERATED.value,
-            content="Invalid content",
-        )
-        db_session.add(invalid_content)
-        db_session.commit()
-
-    # Test invalid category
-    with pytest.raises(ValueError):
-        invalid_content = Content(
-            node_id=uuid4(),
-            content_type=ContentTypeEnum.LONG_SUMMARY.value,
-            category="INVALID_CATEGORY",
-            content="Invalid content",
-        )
-        db_session.add(invalid_content)
-        db_session.commit()
+    assert retrieved_node.version_id == version.id
 
 
-def test_chunk_creation(db_session: sqlalchemy.orm.Session) -> None:
-    content = Content(
-        node_id=uuid4(),
-        content_type=ContentTypeEnum.LONG_SUMMARY.value,
-        category=ContentCategoryEnum.SYSTEM_GENERATED.value,
-        content="Sample content",
+def test_content_table(session: Session) -> None:
+    """Test creation and retrieval of a ContentRow record."""
+    asset = PrimaryAssetRow(display_name="Test Asset", organization_id="org_123")
+    session.add(asset)
+    session.commit()
+
+    version = VersionRow(primary_asset_id=asset.id, display_name="Version 1")
+    session.add(version)
+    session.commit()
+
+    node = NodeRow(version_id=version.id, relative_path="/path/to/node")
+    session.add(node)
+    session.commit()
+
+    content = ContentRow(
+        version_node_id=node.id, text="Sample content", content_type="text/plain"
     )
-    db_session.add(content)
-    db_session.commit()
-    db_session.refresh(content)
+    session.add(content)
+    session.commit()
 
-    chunk = Chunk(content_id=content.id, text="Sample chunk text", chunk_number=1)
-    db_session.add(chunk)
-    db_session.commit()
-    db_session.refresh(chunk)
-
-    assert chunk.id is not None
-    assert chunk.text == "Sample chunk text"
-    assert chunk.chunk_number == 1
+    retrieved_content = session.query(ContentRow).filter_by(text="Sample content").one()
+    assert retrieved_content.version_node_id == node.id
 
 
-def test_tag_creation(db_session: sqlalchemy.orm.Session) -> None:
-    tag = Tag(name="Sample Tag", hex_color="#FFFFFF", organization_id=uuid4())
-    db_session.add(tag)
-    db_session.commit()
-    db_session.refresh(tag)
+def test_chunk_table(session: Session) -> None:
+    """Test creation and retrieval of a ChunkRow record."""
+    asset = PrimaryAssetRow(display_name="Test Asset", organization_id="org_123")
+    session.add(asset)
+    session.commit()
 
-    assert tag.id is not None
-    assert tag.name == "Sample Tag"
-    assert tag.hex_color == "#FFFFFF"
+    version = VersionRow(primary_asset_id=asset.id, display_name="Version 1")
+    session.add(version)
+    session.commit()
 
-    # Test unique constraint on tag name and organization_id
-    with pytest.raises(sqlalchemy.exc.IntegrityError):
-        duplicate_tag = Tag(
-            name="Sample Tag", hex_color="#000000", organization_id=tag.organization_id
-        )
-        db_session.add(duplicate_tag)
-        db_session.commit()
+    node = NodeRow(version_id=version.id, relative_path="/path/to/node")
+    session.add(node)
+    session.commit()
+
+    content = ContentRow(
+        version_node_id=node.id, text="Sample content", content_type="text/plain"
+    )
+    session.add(content)
+    session.commit()
+
+    chunk = ChunkRow(
+        content_id=content.id,
+        text="Chunk text",
+        chunk_number=1,
+        text_embedding_3_small=[0.1] * 1536,  # Sample embedding vector
+    )
+    session.add(chunk)
+    session.commit()
+
+    retrieved_chunk = session.query(ChunkRow).filter_by(chunk_number=1).one()
+    assert retrieved_chunk.content_id == content.id
+
+
+def test_save_functionality(session: Session) -> None:
+    """Test the save functionality of FullNodeView."""
+    # Create and commit a primary asset
+    asset = PrimaryAssetRow(display_name="Test Asset", organization_id="org_123")
+    session.add(asset)
+    session.commit()
+
+    # Create and commit a version linked to the primary asset
+    version = VersionRow(primary_asset_id=asset.id, display_name="Version 1")
+    session.add(version)
+    session.commit()
+
+    # Create and commit a node linked to the version
+    node = NodeRow(version_id=version.id, relative_path="/path/to/node")
+    session.add(node)
+    session.commit()
+
+    # Create a FullNodeView instance and save it
+    full_node_view = FullNodeView(
+        primary_asset_id=asset.id,
+        primary_asset_display_name=asset.display_name,
+        primary_asset_organization_id=asset.organization_id,
+        version_id=version.id,
+        version_display_name=version.display_name,
+        node_id=node.id,
+        node_relative_path=node.relative_path,
+    )
+    full_node_view.add(session)
+    session.commit()  # Ensure changes are committed
+
+    # Retrieve and assert the saved data
+    retrieved_asset = session.query(PrimaryAssetRow).filter_by(id=asset.id).one()
+    assert retrieved_asset.display_name == "Test Asset"
+    assert retrieved_asset.organization_id == "org_123"
+
+    retrieved_version = session.query(VersionRow).filter_by(id=version.id).one()
+    assert retrieved_version.display_name == "Version 1"
+
+    retrieved_node = session.query(NodeRow).filter_by(id=node.id).one()
+    assert retrieved_node.relative_path == "/path/to/node"
+
+
+def test_query_full_nodes(session: Session) -> None:
+    """Test querying the FullNodeView for expected data."""
+    # Create and commit a primary asset
+    asset = PrimaryAssetRow(display_name="Test Asset", organization_id="org_123")
+    session.add(asset)
+    session.commit()
+
+    # Create and commit a version linked to the primary asset
+    version = VersionRow(primary_asset_id=asset.id, display_name="Version 1")
+    session.add(version)
+    session.commit()
+
+    # Create and commit a node linked to the version
+    node = NodeRow(version_id=version.id, relative_path="/path/to/node")
+    session.add(node)
+    session.commit()
+
+    # Create a FullNodeView instance and save it
+    full_node_view = FullNodeView(
+        primary_asset_id=asset.id,
+        primary_asset_display_name=asset.display_name,
+        primary_asset_organization_id=asset.organization_id,
+        version_id=version.id,
+        version_display_name=version.display_name,
+        node_id=node.id,
+        node_relative_path=node.relative_path,
+    )
+    full_node_view.add(session)
+    session.commit()  # Ensure changes are committed
+
+    # Query the FullNodeView
+    retrieved_full_node = session.query(FullNodeView).filter_by(node_id=node.id).one()
+
+    # Assert the retrieved data matches the expected values
+    assert retrieved_full_node.primary_asset_id == asset.id
+    assert retrieved_full_node.primary_asset_display_name == "Test Asset"
+    assert retrieved_full_node.primary_asset_organization_id == "org_123"
+    assert retrieved_full_node.version_id == version.id
+    assert retrieved_full_node.version_display_name == "Version 1"
+    assert retrieved_full_node.node_id == node.id
+    assert retrieved_full_node.node_relative_path == "/path/to/node"
+
+
+def test_relationships_populated(session: Session) -> None:
+    """Test that all relationship fields are populated correctly."""
+    # Create and commit a primary asset
+    asset = PrimaryAssetRow(display_name="Test Asset", organization_id="org_123")
+    session.add(asset)
+    session.commit()
+
+    # Create and commit a version linked to the primary asset
+    version = VersionRow(primary_asset_id=asset.id, display_name="Version 1")
+    session.add(version)
+    session.commit()
+
+    # Create and commit a node linked to the version
+    node = NodeRow(version_id=version.id, relative_path="/path/to/node")
+    session.add(node)
+    session.commit()
+
+    # Create and commit content linked to the node
+    content = ContentRow(
+        version_node_id=node.id, text="Sample content", content_type="text/plain"
+    )
+    session.add(content)
+    session.commit()
+
+    # Create and commit a chunk linked to the content
+    chunk = ChunkRow(
+        content_id=content.id,
+        text="Chunk text",
+        chunk_number=1,
+        text_embedding_3_small=[0.1] * 1536,  # Sample embedding vector
+    )
+    session.add(chunk)
+    session.commit()
+
+    # Retrieve and assert relationships
+    retrieved_version = session.query(VersionRow).filter_by(id=version.id).one()
+    assert retrieved_version.primary_asset.id == asset.id
+
+    retrieved_node = session.query(NodeRow).filter_by(id=node.id).one()
+    assert retrieved_node.version.id == version.id
+
+    retrieved_content = session.query(ContentRow).filter_by(id=content.id).one()
+    assert retrieved_content.node.id == node.id
+
+    retrieved_chunk = session.query(ChunkRow).filter_by(id=chunk.id).one()
+    assert retrieved_chunk.content.id == content.id
+
+
+def test_cascading_deletes(session: Session) -> None:
+    """Test that cascading deletes work correctly."""
+
+    # Create and commit a primary asset
+    asset = PrimaryAssetRow(display_name="Test Asset", organization_id="org_123")
+    session.add(asset)
+    session.commit()
+
+    # Create and commit a version linked to the primary asset
+    version = VersionRow(primary_asset_id=asset.id, display_name="Version 1")
+    session.add(version)
+    session.commit()
+
+    # Save the version id
+    version_id = version.id
+
+    # Create and commit a node linked to the version
+    node = NodeRow(version_id=version.id, relative_path="/path/to/node")
+    session.add(node)
+    session.commit()
+
+    # Save the node id
+    node_id = node.id
+
+    # Create and commit content linked to the node
+    content = ContentRow(
+        version_node_id=node.id, text="Sample content", content_type="text/plain"
+    )
+    session.add(content)
+    session.commit()
+
+    # Save the content id
+    content_id = content.id
+
+    # Create and commit a chunk linked to the content
+    chunk = ChunkRow(
+        content_id=content.id,
+        text="Chunk text",
+        chunk_number=1,
+        text_embedding_3_small=[0.1] * 1536,  # Sample embedding vector
+    )
+    session.add(chunk)
+    session.commit()
+
+    # Save the chunk id
+    chunk_id = chunk.id
+
+    session.refresh(asset)
+    session.execute(
+        text("DELETE FROM v2_primary_asset WHERE id = :id"), {"id": asset.id}
+    )
+    session.commit()
+
+    # Assert that the version, node, content, and chunk are deleted
+    assert session.query(VersionRow).filter_by(id=version_id).one_or_none() is None
+    assert session.query(NodeRow).filter_by(id=node_id).one_or_none() is None
+    assert session.query(ContentRow).filter_by(id=content_id).one_or_none() is None
+    assert session.query(ChunkRow).filter_by(id=chunk_id).one_or_none() is None

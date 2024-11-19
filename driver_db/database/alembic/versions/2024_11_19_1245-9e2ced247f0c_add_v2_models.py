@@ -84,9 +84,7 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.Column("version_id", sa.UUID(), nullable=False),
-        sa.Column(
-            "version_relative_path", sqlmodel.sql.sqltypes.AutoString(), nullable=False
-        ),
+        sa.Column("relative_path", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),

@@ -18,24 +18,27 @@ def snake_case_to_spaced_string(snake_case: str) -> str:
     return " ".join(item.capitalize() for item in split_str)
 
 
-class RawContent(BaseModel):
-    # Rendered as f"{content}\n"
+class MdRenderable(BaseModel, abc.ABC):
+    @abc.abstractmethod
+    def render_markdown(self, field_name: str) -> str:
+        pass
+
+
+class RawContent(MdRenderable):
     content: str
 
     def render_markdown(self, field_name: str) -> str:
         return f"{self.content}\n"
 
 
-class FieldNameWithBackTickContent(BaseModel):
-    # Rendered as f"**{snake_case_to_spaced_string(field_name)}**: `{content}`\n"
+class FieldNameWithBackTickContent(MdRenderable):
     content: str
 
     def render_markdown(self, field_name: str) -> str:
         return f"- **{snake_case_to_spaced_string(field_name)}**: `{self.content}`\n"
 
 
-class FieldNameWithBulletedContent(BaseModel):
-    # Rendered as f"**{snake_case_to_spaced_string(field_name)}**:\n    - {content}\n"
+class FieldNameWithBulletedContent(MdRenderable):
     content: str
 
     def render_markdown(self, field_name: str) -> str:
@@ -44,17 +47,14 @@ class FieldNameWithBulletedContent(BaseModel):
         )
 
 
-class FieldNameWithRawContent(BaseModel):
-    # Rendered as f"**{snake_case_to_spaced_string(field_name)}**: {content}\n"
+class FieldNameWithRawContent(MdRenderable):
     content: str
 
     def render_markdown(self, field_name: str) -> str:
         return f"- **{snake_case_to_spaced_string(field_name)}**: {self.content}\n"
 
 
-class NamedContent(BaseModel):
-    # Only to be used in a list, rendered as:
-    # f"**{snake_case_to_spaced_string(field_name)}**:\n `{name}`: {content}\n ..."
+class NamedContent(MdRenderable):
     name: str
     content: str
 
@@ -62,10 +62,7 @@ class NamedContent(BaseModel):
         return f"    - `{self.name}`: {self.content}\n"
 
 
-class ListedBacktickNameRawContentNoNone(BaseModel):
-    # Rendered as:
-    # f"**{snake_case_to_spaced_string(field_name)}**: \n - `{name}`: {content}\n
-    # for each NamedContent in the list. If no entries in list, no content is produced
+class ListedBacktickNameRawContentNoNone(MdRenderable):
     content: list[NamedContent]
 
     def render_markdown(self, field_name: str) -> str:
@@ -77,10 +74,7 @@ class ListedBacktickNameRawContentNoNone(BaseModel):
         return output_str
 
 
-class ListedBacktickNameRawContentWithNone(BaseModel):
-    # Rendered as:
-    # f"**{snake_case_to_spaced_string(field_name)}**: \n - `{name}`: {content}\n
-    # for each NamedContent in the list. If no entries in list, list is simply - None
+class ListedBacktickNameRawContentWithNone(MdRenderable):
     content: list[NamedContent]
 
     def render_markdown(self, field_name: str) -> str:
@@ -94,10 +88,7 @@ class ListedBacktickNameRawContentWithNone(BaseModel):
         return output_str
 
 
-class ListedRawContentNoNone(BaseModel):
-    # Rendered as:
-    # f"**{snake_case_to_spaced_string(field_name)}**: \n - {content}\n
-    # for each str in the list. If no entries in list, no heading is rendered
+class ListedRawContentNoNone(MdRenderable):
     content: list[str]
 
     def render_markdown(self, field_name: str) -> str:
@@ -109,10 +100,7 @@ class ListedRawContentNoNone(BaseModel):
         return output_str
 
 
-class ListedRawContentWithNone(BaseModel):
-    # Rendered as:
-    # f"**{snake_case_to_spaced_string(field_name)}**: \n - {content}\n
-    # for each str in the list. If no entries in list, no heading is rendered
+class ListedRawContentWithNone(MdRenderable):
     content: list[str]
 
     def render_markdown(self, field_name: str) -> str:
@@ -229,36 +217,11 @@ class IrData(BaseModel, abc.ABC):
 
         # doesn't handle children, since children is a private attribute
         for field_name, field_content in self:
-            if isinstance(
-                field_content,
-                RawContent
-                | FieldNameWithBackTickContent
-                | FieldNameWithBulletedContent
-                | FieldNameWithRawContent
-                | ListedBacktickNameRawContentNoNone
-                | ListedBacktickNameRawContentWithNone
-                | ListedRawContentNoNone
-                | ListedRawContentWithNone,
-            ):
+            if isinstance(field_content, MdRenderable):
                 output += field_content.render_markdown(field_name)
-            elif isinstance(field_content, str):
-                if len(field_content) > 0:
-                    output += f"- **{snake_case_to_spaced_string(field_name)}**: {field_content}\n"
-            elif isinstance(field_content, list):
-                if len(field_content) > 0:
-                    output += f"- **{snake_case_to_spaced_string(field_name)}**:\n"
-                    for item in field_content:
-                        if isinstance(item, str):
-                            output += f"    - {item}\n"
-                        elif isinstance(item, NamedContent):
-                            output += item.render_markdown(field_name)
-                        else:
-                            raise ValueError(
-                                f"Unsupported item type in list: {type(item)}"
-                            )
             else:
                 raise ValueError(
-                    f"Unsupported field content type for {field_name}: {type(field_content)}"
+                    f"Unsupported field content type for {field_name}: {type(field_content)}. Add a MdRenderable class to render this content."
                 )
 
         # Render child data

@@ -20,69 +20,69 @@ def snake_case_to_spaced_string(snake_case: str) -> str:
 
 class MdRenderable(BaseModel, abc.ABC):
     @abc.abstractmethod
-    def render_markdown(self, field_name: str) -> str:
+    def render_markdown(self, doc_label: str) -> str:
         pass
 
 
 class RawContent(MdRenderable):
     content: str
 
-    def render_markdown(self, field_name: str) -> str:
+    def render_markdown(self, doc_label: str) -> str:
         return f"{self.content}\n"
 
 
 class FieldNameWithBackTickContent(MdRenderable):
     content: str
 
-    def render_markdown(self, field_name: str) -> str:
-        return f"- **{snake_case_to_spaced_string(field_name)}**: `{self.content}`\n"
+    def render_markdown(self, doc_label: str) -> str:
+        return f"- **{snake_case_to_spaced_string(doc_label)}**: `{self.content}`\n"
 
 
 class FieldNameWithBulletedContent(MdRenderable):
     content: str
 
-    def render_markdown(self, field_name: str) -> str:
+    def render_markdown(self, doc_label: str) -> str:
         return (
-            f"- **{snake_case_to_spaced_string(field_name)}**:\n    - {self.content}\n"
+            f"- **{snake_case_to_spaced_string(doc_label)}**:\n    - {self.content}\n"
         )
 
 
 class FieldNameWithRawContent(MdRenderable):
     content: str
 
-    def render_markdown(self, field_name: str) -> str:
-        return f"- **{snake_case_to_spaced_string(field_name)}**: {self.content}\n"
+    def render_markdown(self, doc_label: str) -> str:
+        return f"- **{snake_case_to_spaced_string(doc_label)}**: {self.content}\n"
 
 
 class NamedContent(MdRenderable):
     name: str
     content: str
 
-    def render_markdown(self, field_name: str) -> str:
+    def render_markdown(self, doc_label: str) -> str:
         return f"    - `{self.name}`: {self.content}\n"
 
 
 class ListedBacktickNameRawContentNoNone(MdRenderable):
     content: list[NamedContent]
 
-    def render_markdown(self, field_name: str) -> str:
+    def render_markdown(self, doc_label: str) -> str:
         output_str = ""
         if len(self.content) > 0:
-            output_str += f"- **{snake_case_to_spaced_string(field_name)}**:\n"
+            output_str += f"- **{snake_case_to_spaced_string(doc_label)}**:\n"
             for item in self.content:
-                output_str += item.render_markdown(field_name)
+                output_str += item.render_markdown(doc_label)
         return output_str
 
 
 class ListedBacktickNameRawContentWithNone(MdRenderable):
     content: list[NamedContent]
 
-    def render_markdown(self, field_name: str) -> str:
+    def render_markdown(self, doc_label: str) -> str:
         output_str = ""
-        output_str += f"- **{snake_case_to_spaced_string(field_name)}**:\n"
+        output_str += f"- **{snake_case_to_spaced_string(doc_label)}**:\n"
         if len(self.content) > 0:
             for item in self.content:
-                output_str += item.render_markdown(field_name)
+                output_str += item.render_markdown(doc_label)
         else:
             output_str += "    - None\n"
         return output_str
@@ -91,10 +91,10 @@ class ListedBacktickNameRawContentWithNone(MdRenderable):
 class ListedRawContentNoNone(MdRenderable):
     content: list[str]
 
-    def render_markdown(self, field_name: str) -> str:
+    def render_markdown(self, doc_label: str) -> str:
         output_str = ""
         if len(self.content) > 0:
-            output_str += f"- **{snake_case_to_spaced_string(field_name)}**:\n"
+            output_str += f"- **{snake_case_to_spaced_string(doc_label)}**:\n"
             for item in self.content:
                 output_str += f"    - {item}\n"
         return output_str
@@ -103,9 +103,9 @@ class ListedRawContentNoNone(MdRenderable):
 class ListedRawContentWithNone(MdRenderable):
     content: list[str]
 
-    def render_markdown(self, field_name: str) -> str:
+    def render_markdown(self, doc_label: str) -> str:
         output_str = ""
-        output_str += f"- **{snake_case_to_spaced_string(field_name)}**:\n"
+        output_str += f"- **{snake_case_to_spaced_string(doc_label)}**:\n"
         if len(self.content) > 0:
             for item in self.content:
                 output_str += f"    - {item}\n"
@@ -216,25 +216,25 @@ class IrData(BaseModel, abc.ABC):
         output = ""
 
         # doesn't handle children, since children is a private attribute
-        for field_name, field_content in self:
-            if isinstance(field_content, MdRenderable):
-                output += field_content.render_markdown(field_name)
+        for label_name, label_content in self:
+            if isinstance(label_content, MdRenderable):
+                output += label_content.render_markdown(label_name)
             else:
                 raise ValueError(
-                    f"Unsupported field content type for {field_name}: {type(field_content)}. Add a MdRenderable class to render this content."
+                    f"Unsupported field content type for {label_name}: {type(label_content)}. Add a MdRenderable class to render this content."
                 )
 
         # Render child data
         child_dictionary = {
-            field_name: "" for field_name in self._supported_child_ordering
+            label_name: "" for label_name in self._supported_child_ordering
         }
         for child_symbol, child_content in self._children:
-            field_name = self.child_to_field_name(child_symbol)
-            if len(child_dictionary[field_name]) == 0:
-                child_dictionary[field_name] += f"\n**{field_name}**\n"
+            label_name = self.child_to_field_name(child_symbol)
+            if len(child_dictionary[label_name]) == 0:
+                child_dictionary[label_name] += f"\n**{label_name}**\n"
 
-            if field_name not in child_dictionary:
-                raise ValueError(f"Unsupported child field name: {field_name}")
+            if label_name not in child_dictionary:
+                raise ValueError(f"Unsupported child field name: {label_name}")
 
             if child_content is not None:
                 scoped_name = (
@@ -244,13 +244,13 @@ class IrData(BaseModel, abc.ABC):
                     if child_symbol.scope
                     else child_symbol.name
                 )
-                child_dictionary[field_name] += f"\n---\n#### {scoped_name}\n"
-                child_dictionary[field_name] += child_content.render_markdown()
+                child_dictionary[label_name] += f"\n---\n#### {scoped_name}\n"
+                child_dictionary[label_name] += child_content.render_markdown()
             else:
-                child_dictionary[field_name] += f"    - {child_symbol.name}\n"
+                child_dictionary[label_name] += f"    - {child_symbol.name}\n"
 
-        for _, field_content in child_dictionary.items():
-            output += field_content
+        for _, label_content in child_dictionary.items():
+            output += label_content
 
         output += "\n"
         return output
@@ -262,7 +262,7 @@ class IrCollection(BaseModel, abc.ABC):
     @classmethod
     def dict_from_llm(
         cls,
-        data_cls: type[IrData],
+        ir_data: type[IrData],
         llm: ChatOpenAI,
         symbols_list: RawSymbolCollection,
     ) -> Self:
@@ -273,7 +273,7 @@ class IrCollection(BaseModel, abc.ABC):
                     if item.name not in symbols_dict:
                         symbols_dict[item.name] = []
                     symbols_dict[item.name].append(
-                        data_cls.from_llm(
+                        ir_data.from_llm(
                             llm=llm,
                             symbol=item,
                         )
@@ -282,7 +282,7 @@ class IrCollection(BaseModel, abc.ABC):
                 if s.name not in symbols_dict:
                     symbols_dict[s.name] = []
                 symbols_dict[s.name].append(
-                    data_cls.from_llm(
+                    ir_data.from_llm(
                         llm=llm,
                         symbol=s,
                     )

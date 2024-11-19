@@ -70,6 +70,8 @@ class SymbolKind(Enum):
 
 
 class ScopeRelation(StrEnum):
+    # This represents the relationship of a child symbol
+    # to its parent (scope), e.g. it is a METHOD of the parent class
     METHOD = "Methods"
     NESTED_CLASS = "Nested Classes"
     NESTED_INTERFACE = "Nested Interfaces"
@@ -88,9 +90,7 @@ class RawSymbolData(BaseModel):
     name: str
     path: Path
     scope: str | None
-    scope_relation: (
-        ScopeRelation | None
-    )  # this specifies the relation of the symbol to the scope, e.g. method, nested class, etc.
+    scope_relation: ScopeRelation | None
     children: list[Self]
     start_line: int | None
     end_line: int | None

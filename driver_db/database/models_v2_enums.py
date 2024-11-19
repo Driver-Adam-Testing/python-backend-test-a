@@ -1,0 +1,32 @@
+import enum
+
+
+class NodeType(enum.Enum):
+    FILE = "file"
+    DIRECTORY = "directory"
+
+
+class ContentType(enum.Enum):
+    PDF_VISUAL_SUMMARY = "pdf-visual-summary"
+    PDF_TEXT_SUMMARY = "pdf-text-summary"
+    PDF_IMAGE_SUMMARY = "pdf-image-summary"
+    PDF_EXTRACTED_TEXT = "pdf-extracted-text"
+    PDF_EXTRACTED_TABLE = "pdf-extracted-table"
+    TEMPLATE = "template"
+    SHORT_PARAGRAPH_DESCRIPTION = "short_paragraph_description"
+    TERSE_SENTENCE_DESCRIPTION = "terse_sentence_description"
+    LONG_DESCRIPTION = "long_description"
+    QUICK_START_ENTRY = "quick_start_entry"
+    QUICK_START_GETTING_STARTED = "quick_start_getting_started"
+    QUICK_START_DEPENDENCIES = "quick_start_dependencies"
+    QUICK_START_USE = "quick_start_use"
+    ARCHITECTURE_DIAGRAM = "architecture_diagram"
+    CHUNK_DESCRIPTIONS = "chunk_descriptions"
+    APPLICATION_NOTE = "application_note"
+    SHORT_SENTENCE_DESCRIPTION = "short_sentence_description"
+    SYMBOL = "symbol"
+    PDF_SUMMARY = "pdf_summary"
+    CODEBASE = "codebase"
+    CODEBASE_DIRECTORY = "codebase-directory"
+    CODEBASE_FILE = "codebase-file"
+    SUPPLEMENTAL_DOCUMENT = "supplemental-document"

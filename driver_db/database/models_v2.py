@@ -1,536 +1,301 @@
-import enum
-import hashlib
-import os
-import uuid
-from datetime import UTC, datetime
-from typing import Union
+from datetime import datetime
 from uuid import UUID
 
-from database.file_extensions import get_file_type
 from pgvector.sqlalchemy import Vector
-from pydantic import field_validator, model_validator
 from sqlalchemy import (
     Column,
-    Computed,
     DateTime,
     ForeignKey,
-    Index,
     Integer,
-    Text,
-    UniqueConstraint,
     func,
-    text,
 )
-from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as SaUuid
-from sqlmodel import Field, Relationship, SQLModel
-
-from .custom_types import TSVector
+from sqlmodel import Field, Session, SQLModel, select, text
 
 
-# DEMO -> Node Types
-class NodeTypeEnum(str, enum.Enum):
-    FOLDER = "FOLDER"
-    FILE = "FILE"
-    PAGE = "PAGE"
+class PrimaryAssetTable(SQLModel, table=True):  # type: ignore
+    __tablename__ = "v2_primary_asset"
 
-
-# DEMO -> Node objects
-class Node(SQLModel, table=True):
-    """
-    Represents a Node entity in the database, which can be a folder, file, or page within an organization.
-
-    Attributes:
-        id (UUID): Unique identifier for the node, automatically generated.
-        path (str): The unique path of the node, used to determine its location and type.
-        custom_display_name (str): Optional custom name for display purposes.
-        organization_id (str): Identifier for the organization to which the node belongs.
-        prefix (str): Optional prefix for the node path.
-        version_id (str): Optional version identifier for the node.
-        created_at (datetime): Timestamp of when the node was created, defaults to the current UTC time.
-        updated_at (datetime): Timestamp of the last update to the node, automatically updated.
-
-    Relationships:
-        contents (List[Content]): List of content items associated with the node.
-        tags (List[Tag]): List of tags associated with the node, through a secondary relationship.
-        children (List[Node]): List of child nodes, representing a hierarchical structure.
-        parent (Optional[Node]): The parent node, if any, in the hierarchical structure.
-
-    Properties:
-        node_type (str): Derived property indicating the type of node (FOLDER, FILE, or PAGE) based on its path.
-        absolute_path (str): Derived property providing the full path including the organization ID, prefix, and version ID.
-        display_name (str): Derived property for the display name, using custom_display_name if available.
-        organization_hash (str): Derived property providing a hash of the organization_id.
-        organization_relative_path (str): Derived property providing the path relative to the organization.
-        source_url (str): Derived property providing an S3 URL using a hash of the organization_id.
-        application_url (str): Derived property providing a URL using the app_id from config and the URL-encoded path.
-
-    Methods:
-        is_child(parent_node_or_path: Node | str) -> bool:
-            Determines if the current node is a child of the given parent node or path.
-
-        is_parent(child_node_or_path: Node | str) -> bool:
-            Determines if the current node is a parent of the given child node or path.
-    """
-
-    __tablename__ = "nodes"
-    __table_args__ = (
-        UniqueConstraint(
-            "organization_id",
-            "prefix",
-            "version_id",
-            "path",
-            name="uq_organization_id_prefix_version_id_path",
-        ),
-    )
-
-    id: UUID = Field(
-        default_factory=uuid.uuid4,
+    id: UUID | None = Field(
         sa_column=Column(
             SaUuid(as_uuid=True),
             primary_key=True,
             server_default=text("uuid_generate_v4()"),
         ),
+        default=None,
     )
-    path: str = Field(sa_column=Column(Text, nullable=False, index=True))
-    custom_display_name: str = Field(
-        sa_column=Column(Text, nullable=True),
-    )
-    organization_id: str = Field(sa_column=Column(Text, nullable=False, index=True))
-    prefix: str | None = Field(sa_column=Column(Text, nullable=True))
-    version_id: str | None = Field(sa_column=Column(Text, nullable=True))
-    created_at: datetime = Field(
-        default_factory=lambda: datetime.now(UTC),
+    display_name: str
+    organization_id: str
+    created_at: None | datetime = Field(
         sa_column=Column(
-            DateTime(timezone=True),
-            server_default=func.now(),
-            nullable=False,
+            DateTime(timezone=True), server_default=func.now(), nullable=False
         ),
+        default=None,
     )
-    updated_at: datetime = Field(
-        default_factory=lambda: datetime.now(UTC),
+    updated_at: None | datetime = Field(
         sa_column=Column(
             DateTime(timezone=True),
             server_default=func.now(),
             onupdate=func.now(),
             nullable=False,
         ),
+        default=None,
     )
 
-    # # Relationships
-    contents: list["Content"] = Relationship(
-        back_populates="node",
-        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
+
+class VersionTable(SQLModel, table=True):  # type: ignore
+    __tablename__ = "v2_version"
+
+    id: UUID | None = Field(
+        sa_column=Column(
+            SaUuid(as_uuid=True),
+            primary_key=True,
+            server_default=text("uuid_generate_v4()"),
+        ),
+        default=None,
     )
-    # tags: list["Tag"] = Relationship(
-    #     back_populates="nodes",
-    #     sa_relationship_kwargs={"secondary": "node_tags"},
-    # )
-
-    # DEMO -> children and parent can be loaded using sqlalchemy. Then we can build already authorized, topographical joins in python.
-    children: list["Node"] = Relationship(
-        sa_relationship_kwargs={
-            "primaryjoin": "and_(Node.organization_id == foreign(Node.organization_id), Node.path.like(foreign(Node.path) + '/%'))",
-            # "cascade": "all, delete-orphan",
-            "remote_side": "[Node.organization_id, Node.path]",
-        },
+    primary_asset_id: UUID = Field(
+        sa_column=Column(
+            SaUuid(as_uuid=True),
+            ForeignKey("v2_primary_asset.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
     )
-    # parent: Optional["Node"] = Relationship(
-    #     back_populates="children",
-    #     sa_relationship_kwargs={
-    #         "primaryjoin": "and_(Node.organization_id == remote(Node.organization_id), Node.path.like(remote(Node.path) + '/%'))",
-    #         "order_by": "func.length(Node.path).desc()",
-    #         "uselist": False,
-    #     },
-    # )
-    # ancestors: list["Node"] = Relationship(
-    #     sa_relationship_kwargs={
-    #         "primaryjoin": "and_(Node.organization_id == remote(Node.organization_id), Node.path.like(remote(Node.path) + '/%'))",
-    #         "order_by": "func.length(Node.path).desc()",
-    #     },
-    # )
+    display_name: str
+    created_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
+        default=None,
+    )
+    updated_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
+        ),
+        default=None,
+    )
 
-    # Derived Properties
 
-    # DEMO -> Node type is derived. The .driver_page is an example of how we could encode that information into the path.
-    @property
-    def node_type(self) -> str:
-        if self.path.endswith(".driver_page"):
-            return NodeTypeEnum.PAGE.value
-        elif self.path.endswith("/"):
-            return NodeTypeEnum.FOLDER.value
-        else:
-            return NodeTypeEnum.FILE.value
+class NodeTable(SQLModel, table=True):  # type: ignore
+    __tablename__ = "v2_version_node"
 
-    @property
-    def is_root(self) -> bool:
-        """
-        Determines if the current node is the root node.
+    id: UUID | None = Field(
+        sa_column=Column(
+            SaUuid(as_uuid=True),
+            primary_key=True,
+            server_default=text("uuid_generate_v4()"),
+        ),
+        default=None,
+    )
+    version_id: UUID = Field(
+        sa_column=Column(
+            SaUuid(as_uuid=True),
+            ForeignKey("v2_version.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
+    )
+    relative_path: str
+    created_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
+        default=None,
+    )
+    updated_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
+        ),
+        default=None,
+    )
 
-        A node is considered the root if its path is a file or a top-level directory.
-        """
-        return len(self.path.rstrip("/").split("/")) <= 1
 
-    # DEMO -> absolute paths as a model attribute. We can create absolute paths that are always available.
-    @property
-    def absolute_path(self) -> str:
-        parts = [self.organization_id]
-        if self.prefix:
-            parts.append(self.prefix)
-        if self.version_id:
-            parts.append(self.version_id)
-        parts.append(self.path)
-        return "/" + "/".join(parts)
+class FullNodeView(SQLModel, table=True):  # type: ignore
+    __tablename__ = "v2_full_node"
+    __view_creation__ = text("""
+            CREATE VIEW v2_full_node AS
+            SELECT
+                pa.id AS primary_asset_id,
+                pa.display_name AS primary_asset_display_name,
+                pa.organization_id AS primary_asset_organization_id,
+                pa.created_at AS primary_asset_created_at,
+                pa.updated_at AS primary_asset_updated_at,
+                v.id AS version_id,
+                v.display_name AS version_display_name,
+                v.created_at AS version_created_at,
+                v.updated_at AS version_updated_at,
+                n.id AS node_id,
+                n.relative_path AS node_relative_path,
+                n.created_at AS node_created_at,
+                n.updated_at AS node_updated_at
+            FROM
+                v2_primary_asset pa
+            LEFT JOIN
+                v2_version v ON pa.id = v.primary_asset_id
+            LEFT JOIN
+                v2_version_node n ON v.id = n.version_id
+            """)
+    primary_asset_id: UUID | None = Field(default=None, primary_key=True)
+    primary_asset_display_name: str | None = Field(default=None)
+    primary_asset_organization_id: str | None = Field(default=None)
+    primary_asset_created_at: None | datetime = Field(default=None)
+    primary_asset_updated_at: None | datetime = Field(default=None)
+    version_id: UUID | None = Field(default=None)
+    version_display_name: str | None = Field(default=None)
+    version_created_at: None | datetime = Field(default=None)
+    version_updated_at: None | datetime = Field(default=None)
+    node_id: UUID | None = Field(default=None)
+    node_relative_path: str | None = Field(default=None)
+    node_created_at: None | datetime = Field(default=None)
+    node_updated_at: None | datetime = Field(default=None)
 
-    @absolute_path.setter
-    def absolute_path(self, value: str) -> None:
-        try:
-            parts = value.split("/")
-            self.organization_id = parts[0]
-            if len(parts) > 3:
-                # This is ambiguous and doesn't handle version without prefix. problem?
-                self.prefix = parts[1]
-                self.version_id = parts[2]
-                self.path = "/".join(parts[3:])
-            elif len(parts) > 2:
-                self.prefix = parts[1]
-                self.path = "/".join(parts[2:])
+    def save(self, session: Session) -> None:
+        if self.primary_asset_id:
+            primary_asset = session.exec(
+                select(PrimaryAssetTable).where(
+                    PrimaryAssetTable.id == self.primary_asset_id
+                )
+            ).one_or_none()
+            if primary_asset:
+                primary_asset.display_name = self.primary_asset_display_name
+                primary_asset.organization_id = self.primary_asset_organization_id
+                primary_asset.created_at = self.primary_asset_created_at
+                primary_asset.updated_at = self.primary_asset_updated_at
             else:
-                self.path = parts[1]
-        except ValueError:
-            raise ValueError(
-                "Invalid absolute path format. Expected format: 'organization_id/prefix/version_id/path' or similar"
-            )
+                primary_asset = PrimaryAssetTable(
+                    id=self.primary_asset_id,
+                    display_name=self.primary_asset_display_name,
+                    organization_id=self.primary_asset_organization_id,
+                    created_at=self.primary_asset_created_at,
+                    updated_at=self.primary_asset_updated_at,
+                )
+                session.add(primary_asset)
 
-    # DEMO -> Display name property
-    @property
-    def display_name(self) -> str:
-        if self.custom_display_name:
-            return self.custom_display_name
-        elif self.node_type == NodeTypeEnum.FOLDER.value:
-            return self.path.rstrip("/").split("/")[-1]
-        else:
-            return self.path.split("/")[-1]
-
-    # DEMO -> File type property
-    @property
-    def file_type(self) -> str:
-        if self.node_type == NodeTypeEnum.FOLDER.value:
-            return "FOLDER"
-        _, extension = os.path.splitext(self.path)
-        return get_file_type(extension).value
-
-    @display_name.setter
-    def display_name(self, value: str) -> None:
-        self.custom_display_name = value
-
-    @property
-    def organization_hash(self) -> str:
-        return str(hashlib.sha256(self.organization_id.encode()).hexdigest())
-
-    @property
-    def organization_relative_path(self) -> str:
-        parts = []
-        if self.prefix:
-            parts.append(self.prefix)
         if self.version_id:
-            parts.append(self.version_id)
-        parts.append(self.path)
-        return "/" + "/".join(parts)
+            version = session.exec(
+                select(VersionTable).where(VersionTable.id == self.version_id)
+            ).one_or_none()
+            if version:
+                version.display_name = self.version_display_name
+                version.created_at = self.version_created_at
+                version.updated_at = self.version_updated_at
+            else:
+                version = VersionTable(
+                    id=self.version_id,
+                    display_name=self.version_display_name,
+                    created_at=self.version_created_at,
+                    updated_at=self.version_updated_at,
+                )
+                session.add(version)
 
-    # DEMO -> Source URL property !!!! Needs to work right, I don't think it does. Must check with Eric
-    @property
-    def source_url(self) -> str:
-        return f"https://s3.amazonaws.com/{self.organization_hash[:63]}{self.organization_relative_path}"
+        if self.node_id:
+            node = session.exec(
+                select(NodeTable).where(NodeTable.id == self.node_id)
+            ).one_or_none()
+            if node:
+                node.relative_path = self.node_relative_path
+                node.created_at = self.node_created_at
+                node.updated_at = self.node_updated_at
+            else:
+                node = NodeTable(
+                    id=self.node_id,
+                    relative_path=self.node_relative_path,
+                    created_at=self.node_created_at,
+                    updated_at=self.node_updated_at,
+                )
+                session.add(node)
 
-    # DEMO -> Application URL property --- This is an interesting one because it needs to conform via convention with the urls on the frontend.
-    @property
-    def application_url(self) -> str:
-        from urllib.parse import quote
-
-        encoded_path = quote(self.path)
-        return f"https://app.driverai.com/{encoded_path}"
-
-    # Methods
-    # DEMO -> Our child checks can be on here. There may be a way to overload relationships so that it can traverse the path to get direct children.
-    def is_child(self, parent_node_or_path: Union["Node", str]) -> bool:
-        if isinstance(parent_node_or_path, Node):
-            return self.absolute_path.startswith(
-                parent_node_or_path.absolute_path.rstrip("/") + "/"
-            )
-        elif isinstance(parent_node_or_path, str):
-            return self.path.startswith(
-                parent_node_or_path.rstrip("/") + "/"
-            ) or self.absolute_path.startswith(parent_node_or_path.rstrip("/") + "/")
-
-    def is_parent(self, child_node_or_path: Union["Node", str]) -> bool:
-        if isinstance(child_node_or_path, Node):
-            return child_node_or_path.absolute_path.startswith(
-                self.absolute_path.rstrip("/") + "/"
-            )
-        elif isinstance(child_node_or_path, str):
-            return child_node_or_path.startswith(
-                (self.path.rstrip("/") + "/", self.absolute_path.rstrip("/") + "/")
-            )
+        session.commit()
 
 
-# # DEMO: NodeDto for API interactions
-# class NodeDto(BaseModel):
-#     id: UUID | None
-#     path: str
-#     created_at: datetime | None
-#     updated_at: datetime | None
-#     node_type: str
-#     display_name: str | None
-#     organization_id: str | None
-#     parent_node: Optional["NodeDto"] = None
-#     child_nodes: list["NodeDto"] | None = None
+class ContentTable(SQLModel, table=True):  # type: ignore
+    __tablename__ = "v2_content"
 
-#     @classmethod
-#     def from_node(cls, node: Node) -> "NodeDto":
-#         return cls(
-#             id=node.id,
-#             path=node.path,
-#             created_at=node.created_at,
-#             updated_at=node.updated_at,
-#             node_type=node.node_type,
-#             display_name=node.display_name,
-#             organization_id=node.organization_id,
-#             parent_node=cls.from_node(node.parent_node) if node.parent_node else None,
-#             child_nodes=[cls.from_node(child) for child in node.child_nodes]
-#             if node.child_nodes
-#             else None,
-#         )
-
-#     def to_node(self) -> Node:
-#         kwargs = {"path": self.path}
-#         if self.id is not None:
-#             kwargs["id"] = self.id
-#         if self.display_name is not None:
-#             kwargs["custom_display_name"] = self.display_name
-#         if self.organization_id is not None:
-#             kwargs["organization_id"] = self.organization_id
-#         if self.created_at is not None:
-#             kwargs["created_at"] = self.created_at
-#         if self.updated_at is not None:
-#             kwargs["updated_at"] = self.updated_at
-#         node = Node(**kwargs)
-
-#         return node
-
-
-# DEMO -> Content Categories
-class ContentCategoryEnum(str, enum.Enum):
-    SOURCE = "SOURCE"  # DEMO -> This signifies a sanitized extraction directly from source. These cannot be mutated
-    USER_COMPOSED = "USER_COMPOSED"  # DEMO -> These should not be Embedded because they can be constantly mutated
-    INTERMEDIATE_REPRESENTATION = (
-        "INTERMEDIATE_REPRESENTATION"  # DEMO -> These are usually IRs
-    )
-
-
-# DEMO -> These are client filter terms. They should not be used to determine logical path for post-processing.
-class ContentTypeEnum(str, enum.Enum):
-    LONG_SUMMARY = "LONG_SUMMARY"
-    SHORT_SUMMARY = "SHORT_SUMMARY"
-    SYMBOL_DEFINITION = "SYMBOL_DEFINITION"
-    PDF_TEXT = "PDF_TEXT"
-    PDF_IMAGE = "PDF_IMAGE"
-    PAGE_TEXT = "PAGE_TEXT"
-    TEMPLATE_CODE = "TEMPLATE_CODE"
-
-
-class Content(SQLModel, table=True):
-    __tablename__ = "contents"
-
-    id: UUID = Field(
-        default_factory=uuid.uuid4,
+    id: UUID | None = Field(
         sa_column=Column(
             SaUuid(as_uuid=True),
             primary_key=True,
+            server_default=text("uuid_generate_v4()"),
         ),
+        default=None,
     )
-    node_id: UUID = Field(
+    version_node_id: UUID = Field(
         sa_column=Column(
-            SaUuid(as_uuid=True), ForeignKey("nodes.id"), nullable=False, index=True
-        ),
-    )
-    content_type: str = Field(
-        sa_column=Column(Text, nullable=False),
-    )
-    category: str = Field(
-        sa_column=Column(Text, nullable=False),
-    )
-    content: str | None = Field(sa_column=Column(Text, nullable=True))
-    content_metadata: dict = Field(
-        default_factory=dict,
-        sa_column=Column(JSONB, nullable=False),
-    )
-    created_at: datetime = Field(
-        default_factory=lambda: datetime.now(UTC),
-        sa_column=Column(
-            DateTime(timezone=True),
-            server_default=func.now(),
+            SaUuid(as_uuid=True),
+            ForeignKey("v2_version_node.id", ondelete="CASCADE"),
             nullable=False,
         ),
     )
-    updated_at: datetime = Field(
-        default_factory=lambda: datetime.now(UTC),
+    text: str
+    content_type: str
+    created_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
+        default=None,
+    )
+    updated_at: None | datetime = Field(
         sa_column=Column(
             DateTime(timezone=True),
             server_default=func.now(),
             onupdate=func.now(),
             nullable=False,
         ),
+        default=None,
     )
 
-    # Relationships
-    node: Node = Relationship(
-        back_populates="contents",
-    )
-    chunks: list["Chunk"] = Relationship(
-        back_populates="content",
-        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
-    )
 
-    # Validators
-    @field_validator("content_type")
-    def validate_content_type(cls, value: str) -> str:
-        if value not in ContentTypeEnum.__members__:
-            raise ValueError(f"Invalid content_type: {value}")
-        return value
+class ChunkTable(SQLModel, table=True):  # type: ignore
+    __tablename__ = "v2_chunk"
 
-    @field_validator("category")
-    def validate_category(cls, value: str) -> str:
-        if value not in ContentCategoryEnum.__members__:
-            raise ValueError(f"Invalid category: {value}")
-        return value
-
-    @model_validator(mode="before")
-    def check_immutable_source_text(cls, values: dict) -> dict:
-        if (
-            values.get("id")
-            and values.get("category") == ContentCategoryEnum.SOURCE_TEXT.value
-        ):
-            raise ValueError(
-                "Cannot modify a Content record with category SOURCE_TEXT once it is created."
-            )
-        return values
-
-
-class Chunk(SQLModel, table=True):
-    __tablename__ = "chunks"
-
-    id: UUID = Field(
-        default_factory=uuid.uuid4,
+    id: UUID | None = Field(
         sa_column=Column(
             SaUuid(as_uuid=True),
             primary_key=True,
+            server_default=text("uuid_generate_v4()"),
         ),
+        default=None,
     )
     content_id: UUID = Field(
         sa_column=Column(
-            SaUuid(as_uuid=True), ForeignKey("contents.id"), nullable=False, index=True
-        ),
-    )
-    text: str = Field(sa_column=Column(Text, nullable=False))
-    text_embedding_3_small: list[float] = Field(
-        sa_column=Column(
-            Vector(1536), nullable=True
-        )  # TODO this column will need to be indexed ONCE POPULATED1
-    )
-    chunk_number: int = Field(sa_column=Column(Integer, nullable=False))
-    chunk_metadata: dict = Field(
-        default_factory=dict,
-        sa_column=Column(JSONB, nullable=False),
-    )
-    created_at: datetime = Field(
-        default_factory=lambda: datetime.now(UTC),
-        sa_column=Column(
-            DateTime(timezone=True),
-            server_default=func.now(),
+            SaUuid(as_uuid=True),
+            ForeignKey("v2_content.id", ondelete="CASCADE"),
             nullable=False,
         ),
     )
-
-    # Relationships
-    content: Content = Relationship(
-        back_populates="chunks",
+    text: str
+    text_embedding_3_small: list[float] = Field(
+        sa_column=Column(Vector(1536), nullable=True)
     )
-    __ts_vector__: any = Column(
-        "__ts_vector__",
-        TSVector(),
-        Computed("to_tsvector('english', text)", persisted=True),
-    )
-    __table_args__ = (
-        Index(
-            "ix_chunkandembedding___ts_vector__", __ts_vector__, postgresql_using="gin"
+    chunk_number: int = Field(sa_column=Column(Integer, nullable=False))
+    created_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
         ),
+        default=None,
+    )
+    updated_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
+        ),
+        default=None,
     )
 
-
-# class Tag(SQLModel, table=True):
-#     __tablename__ = "tags"
-#     __table_args__ = (
-#         UniqueConstraint("name", "organization_id", name="unique_tag_name_per_org_id"),
-#     )
-
-#     id: UUID = Field(
-#         default_factory=uuid.uuid4,
-#         sa_column=Column(
-#             SaUuid(as_uuid=True),
-#             primary_key=True,
-#         ),
-#     )
-#     name: str = Field(
-#         sa_column=Column(Text, nullable=False),
-#     )
-#     hex_color: str = Field(
-#         sa_column=Column(Text, nullable=False),
-#     )
-#     organization_id: UUID = Field(
-#         sa_column=Column(SaUuid(as_uuid=True), nullable=False, index=True),
-#     )
-#     created_at: datetime = Field(
-#         default_factory=lambda: datetime.now(UTC),
-#         sa_column=Column(
-#             DateTime(timezone=True),
-#             server_default=func.now(),
-#             nullable=False,
-#         ),
-#     )
-#     updated_at: datetime = Field(
-#         default_factory=lambda: datetime.now(UTC),
-#         sa_column=Column(
-#             DateTime(timezone=True),
-#             server_default=func.now(),
-#             onupdate=func.now(),
-#             nullable=False,
-#         ),
-#     )
-
-#     # Relationships
-#     nodes: list[Node] = Relationship(
-#         back_populates="tags",
-#         sa_relationship_kwargs={"secondary": "node_tags"},
-#     )
-
-
-# class NodeTag(SQLModel, table=True):
-#     __tablename__ = "node_tags"
-
-#     node_id: UUID = Field(
-#         sa_column=Column(
-#             SaUuid(as_uuid=True), ForeignKey("nodes.id"), primary_key=True
-#         ),
-#     )
-#     tag_id: UUID = Field(
-#         sa_column=Column(SaUuid(as_uuid=True), ForeignKey("tags.id"), primary_key=True),
-#     )
-
-#     # Relationships
-#     node: Node = Relationship(
-#         back_populates="tags",
-#     )
-#     tag: Tag = Relationship(
-#         back_populates="nodes",
-#     )
+    # __ts_vector__: any = Column(
+    #     "__ts_vector__",
+    #     TSVector(),
+    #     Computed("to_tsvector('english', text)", persisted=True),
+    # )
+    # __table_args__ = (
+    #     Index(
+    #         "ix_chunkandembedding___ts_vector__", __ts_vector__, postgresql_using="gin"
+    #     ),
+    # )

@@ -5,6 +5,7 @@ from aws_cdk import (
     aws_ecs,
     aws_ecs_patterns,
     aws_elasticloadbalancingv2,
+    aws_events,
     aws_iam,
     aws_logs,
     aws_route53,
@@ -21,6 +22,7 @@ class BackendParams:
     allowed_ips: list[str]
     environment: str
     use_legacy_dropzone: bool
+    metrics_bus: aws_events.EventBus
 
     def __init__(
         self,
@@ -28,11 +30,13 @@ class BackendParams:
         allowed_ips: list[str],
         environment: str,
         use_legacy_dropzone: bool,
+        metrics_bus: aws_events.EventBus,
     ) -> None:
         self.cors_origins = cors_origins
         self.allowed_ips = allowed_ips
         self.environment = environment
         self.use_legacy_dropzone = use_legacy_dropzone
+        self.metrics_bus = metrics_bus
 
 
 class Backend(Construct):
@@ -268,6 +272,25 @@ class Backend(Construct):
                 ),
             )
         )
+
+        # In the service: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/events/client/put_events.html
+        # response = client.put_events(
+        #     Entries=[
+        #         {
+        #             'Time': datetime(2015, 1, 1),
+        #             'Source': 'string',
+        #             'Resources': [
+        #                 'string',
+        #             ],
+        #             'DetailType': 'string',
+        #             'Detail': 'string', JSON-stringified whatever. Max size for 1 entry is 256KB
+        #             'EventBusName': 'string',
+        #             'TraceHeader': 'string'
+        #         },
+        #     ],
+        #     EndpointId='string'
+        # )
+        params.metrics_bus.grant_all_put_events(self.service.task_definition.task_role)
 
         # TODO - re-enable WAF when endpoints have been refactored not to send entire app notes
         # https://linear.app/driver-ai/issue/PE-1077/explore-options-for-allowing-app-notes-containing-httplocalhost-and

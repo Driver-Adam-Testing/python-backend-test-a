@@ -9,6 +9,7 @@ from cdk.constructs.code_onboarding_lambda import (
     CodeOnboardingLambdaParams,
 )
 from cdk.constructs.inspector import Inspector, InspectorParams
+from cdk.constructs.metrics_lambda import MetricsLambda, MetricsLambdaParams
 
 
 class OpsStack(Stack):
@@ -17,7 +18,10 @@ class OpsStack(Stack):
 
         cors_origins = "https://app.dev.driverai.com,https://labs.dev.driverai.com,https://app2.dev.driverai.com,http://localhost:3000,https://app.beta.driverai.com"
 
-        backend = Backend(
+        self.metrics_lambda = MetricsLambda(
+            self, "MetricsLambda", MetricsLambdaParams(environment="ops")
+        )
+        self.backend = Backend(
             self,
             "ApiBackend",
             BackendParams(
@@ -25,6 +29,7 @@ class OpsStack(Stack):
                 cors_origins=cors_origins,
                 allowed_ips=["98.142.217.111/32"],
                 use_legacy_dropzone=False,
+                metrics_bus=self.metrics_lambda.metrics_bus,
             ),
         )
         self.onboarding_lambda = CodeOnboardingLambda(
@@ -34,7 +39,7 @@ class OpsStack(Stack):
                 environment="ops",
                 api_url="https://api.ops.driverai.com/api/v1",
                 auth0_url="https://auth.dev.driverai.com",
-                dropzone_bucket=backend.dropzone_bucket,
+                dropzone_bucket=self.backend.dropzone_bucket,
                 use_legacy_dropzone=True,
             ),
         )

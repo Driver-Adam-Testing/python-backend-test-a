@@ -61,6 +61,12 @@ from inspection.prompt_templates.files.templates.source_code_large_py import (
 from inspection.prompt_templates.files.templates.source_code_large_py_multi_prompt import (
     SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_PY,
 )
+from inspection.prompt_templates.files.templates.source_code_large_ruby import (
+    SOURCE_CODE_LARGE_TEMPLATE_RUBY,
+)
+from inspection.prompt_templates.files.templates.source_code_large_ruby_multi_prompt import (
+    SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_RUBY,
+)
 from inspection.prompt_templates.files.templates.source_code_large_rust import (
     SOURCE_CODE_LARGE_TEMPLATE_RUST,
 )
@@ -93,6 +99,9 @@ from inspection.prompt_templates.files.templates.source_code_small_java import (
 )
 from inspection.prompt_templates.files.templates.source_code_small_py import (
     SOURCE_CODE_SMALL_TEMPLATE_PY,
+)
+from inspection.prompt_templates.files.templates.source_code_small_ruby import (
+    SOURCE_CODE_SMALL_TEMPLATE_RUBY,
 )
 from inspection.prompt_templates.files.templates.source_code_small_rust import (
     SOURCE_CODE_SMALL_TEMPLATE_RUST,
@@ -188,6 +197,7 @@ SOURCE_CODE_LARGE_BY_LANG = {
     Lang.RUST: SOURCE_CODE_LARGE_TEMPLATE_RUST,
     Lang.ASSEMBLY: SOURCE_CODE_LARGE_TEMPLATE_ASSEMBLY,
     Lang.JAVA: SOURCE_CODE_LARGE_TEMPLATE_JAVA,
+    Lang.RUBY: SOURCE_CODE_LARGE_TEMPLATE_RUBY,
 }
 SOURCE_CODE_SMALL_BY_LANG = {
     Lang.DEFAULT: SOURCE_CODE_SMALL_TEMPLATE_DEFAULT,
@@ -199,6 +209,7 @@ SOURCE_CODE_SMALL_BY_LANG = {
     Lang.RUST: SOURCE_CODE_SMALL_TEMPLATE_RUST,
     Lang.ASSEMBLY: SOURCE_CODE_SMALL_TEMPLATE_ASSEMBLY,
     Lang.JAVA: SOURCE_CODE_SMALL_TEMPLATE_JAVA,
+    Lang.RUBY: SOURCE_CODE_SMALL_TEMPLATE_RUBY,
 }
 METADATA_SMALL_BY_LANG = {
     Lang.DEFAULT: METADATA_SMALL_TEMPLATE,
@@ -210,6 +221,7 @@ METADATA_SMALL_BY_LANG = {
     Lang.RUST: METADATA_SMALL_TEMPLATE,
     Lang.ASSEMBLY: METADATA_SMALL_TEMPLATE,
     Lang.JAVA: METADATA_SMALL_TEMPLATE,
+    Lang.RUBY: METADATA_SMALL_TEMPLATE,
 }
 METADATA_MEDIUM_BY_LANG = {
     Lang.DEFAULT: METADATA_MEDIUM_TEMPLATE,
@@ -221,6 +233,7 @@ METADATA_MEDIUM_BY_LANG = {
     Lang.RUST: METADATA_MEDIUM_TEMPLATE,
     Lang.ASSEMBLY: METADATA_MEDIUM_TEMPLATE,
     Lang.JAVA: METADATA_MEDIUM_TEMPLATE,
+    Lang.RUBY: METADATA_MEDIUM_TEMPLATE,
 }
 METADATA_LARGE_BY_LANG = {
     Lang.DEFAULT: METADATA_LARGE_TEMPLATE,
@@ -232,6 +245,7 @@ METADATA_LARGE_BY_LANG = {
     Lang.RUST: METADATA_LARGE_TEMPLATE,
     Lang.ASSEMBLY: METADATA_LARGE_TEMPLATE,
     Lang.JAVA: METADATA_LARGE_TEMPLATE,
+    Lang.RUBY: METADATA_LARGE_TEMPLATE,
 }
 TEMPLATE_DATA = {
     FileEnum.SOURCE_CODE_LARGE: SOURCE_CODE_LARGE_BY_LANG,
@@ -447,6 +461,8 @@ def comprehend_file_top_down(
                         template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_RUST
                     case Lang.JAVA:
                         template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_JAVA
+                    case Lang.RUBY:
+                        template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_RUBY
                     case _:
                         template = SOURCE_CODE_MULTI_CONTEXT_TEMPLATE_DEFAULT
                 long_template = Template(template=template)
@@ -457,17 +473,26 @@ def comprehend_file_top_down(
                     code_chunks=chunk_texts,
                 )
         # Now ready to generate final documentation content.
+        description_chunks = split_text(
+            text=file_description_long,
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+        )
+        if len(description_chunks) > 1:
+            chunks = [description_chunks[0].text]
+        else:
+            chunks = [file_description_long]
         chunk_detailed_descriptions = [file_description_long]
         file_description_single_sentence = file_single_sentence_from_chunk_descriptions(
             llm=llm,
-            chunks=[file_description_long],
+            chunks=chunks,
             file_name=node.root_rel_path.name,
             codebase_name=codebase_name,
         )
         file_description_single_paragraph = (
             file_single_paragraph_from_chunk_descriptions(
                 llm=llm,
-                chunks=[file_description_long],
+                chunks=chunks,
                 file_name=node.root_rel_path.name,
                 codebase_name=codebase_name,
             )

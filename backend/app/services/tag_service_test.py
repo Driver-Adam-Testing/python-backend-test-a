@@ -22,7 +22,7 @@ from fastapi import HTTPException
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
-from app.api.auth import CurrentUser
+from app.api.auth import UserToken
 from app.schemas.content_schema import ListContentInput
 from app.schemas.tag_schema import EditTagInput, ListTagsInput, NewTagInput
 from app.services.tag_service import TagService
@@ -35,7 +35,7 @@ def tag_service(db: Session) -> TagService:
 
 @pytest.fixture(scope="function")
 def workspace(
-    db: Session, current_user_with_org: CurrentUser
+    db: Session, current_user_with_org: UserToken
 ) -> Generator[Workspace, None, None]:
     workspace = Workspace(
         display_name="Default",
@@ -53,7 +53,7 @@ def workspace(
 
 @pytest.fixture(scope="function")
 def org_b_workspace(
-    db: Session, current_user_with_org: CurrentUser
+    db: Session, current_user_with_org: UserToken
 ) -> Generator[Workspace, None, None]:
     workspace = Workspace(display_name="Default", organization_id="org_b")
     db.add(workspace)
@@ -68,7 +68,7 @@ def org_b_workspace(
 
 @pytest.fixture(scope="function")
 def codebase(
-    db: Session, workspace: Workspace, current_user_with_org: CurrentUser
+    db: Session, workspace: Workspace, current_user_with_org: UserToken
 ) -> Generator[Codebase, None, None]:
     codebase = Codebase(
         workspace_id=workspace.id,
@@ -91,7 +91,7 @@ def codebase(
 
 @pytest.fixture(scope="function")
 def tag(
-    tag_service: TagService, current_user_with_org: CurrentUser
+    tag_service: TagService, current_user_with_org: UserToken
 ) -> Generator[NewTagInput, None, None]:
     new_tag_input = NewTagInput(
         name=f"TEST_TAG_{datetime.now()}", hex_color="#FFFFFF", type="tag"
@@ -105,7 +105,7 @@ def tag(
 
 
 @pytest.fixture(scope="function")
-def delete_tag(tag_service: TagService, current_user_with_org: CurrentUser) -> Tag:
+def delete_tag(tag_service: TagService, current_user_with_org: UserToken) -> Tag:
     new_tag_input = NewTagInput(
         name=f"TEST_TAG_{datetime.now()}", hex_color="#FFFFFF", type="tag"
     )
@@ -116,7 +116,7 @@ def delete_tag(tag_service: TagService, current_user_with_org: CurrentUser) -> T
 @pytest.fixture(scope="function")
 def codebase_content(
     tag_service: TagService,
-    current_user_with_org: CurrentUser,
+    current_user_with_org: UserToken,
     workspace: Workspace,
     codebase: Codebase,
 ) -> Generator[DerivedContent, None, None]:
@@ -150,7 +150,7 @@ def codebase_content(
 @pytest.fixture(scope="function")
 def org_b_codebase_content(
     tag_service: TagService,
-    current_user_with_org: CurrentUser,
+    current_user_with_org: UserToken,
     org_b_workspace: Workspace,
     codebase: Codebase,
 ) -> Generator[DerivedContent, None, None]:
@@ -184,7 +184,7 @@ def org_b_codebase_content(
 @pytest.fixture(scope="function")
 def content(
     tag_service: TagService,
-    current_user_with_org: CurrentUser,
+    current_user_with_org: UserToken,
     workspace: Workspace,
     codebase: Codebase,
     codebase_content: DerivedContent,
@@ -206,7 +206,7 @@ def content(
 @pytest.fixture(scope="function")
 def org_b_content(
     tag_service: TagService,
-    current_user_with_org: CurrentUser,
+    current_user_with_org: UserToken,
     org_b_workspace: Workspace,
     codebase: Codebase,
     org_b_codebase_content: DerivedContent,
@@ -225,7 +225,7 @@ def org_b_content(
         tag_service.content_service.content_repository.delete(test_content.id)
 
 
-def test_create_tag(db: Session, current_user_with_org: CurrentUser) -> None:
+def test_create_tag(db: Session, current_user_with_org: UserToken) -> None:
     tag_service = TagService(db)
     new_tag_input = NewTagInput(
         name=f"TEST_TAG_{datetime.now()}", hex_color="#FFFFFF", type="tag"
@@ -240,7 +240,7 @@ def test_create_tag(db: Session, current_user_with_org: CurrentUser) -> None:
 
 
 def test_create_existing_tag(
-    tag_service: TagService, tag: NewTagInput, current_user_with_org: CurrentUser
+    tag_service: TagService, tag: NewTagInput, current_user_with_org: UserToken
 ) -> None:
     with pytest.raises(HTTPException):
         tag_service.create_tag(
@@ -249,7 +249,7 @@ def test_create_existing_tag(
 
 
 def test_invalid_tag_update(
-    tag_service: TagService, tag: NewTagInput, current_user_with_org: CurrentUser
+    tag_service: TagService, tag: NewTagInput, current_user_with_org: UserToken
 ) -> None:
     new_name = "UPDATED_TAG"
     new_hex_color = "#000000."
@@ -259,7 +259,7 @@ def test_invalid_tag_update(
 
 
 def test_update_tag(
-    tag_service: TagService, tag: NewTagInput, current_user_with_org: CurrentUser
+    tag_service: TagService, tag: NewTagInput, current_user_with_org: UserToken
 ) -> None:
     new_name = f"UPDATED_TAG_{datetime.now()}"
     new_hex_color = "#000000"
@@ -273,7 +273,7 @@ def test_update_tag(
 
 
 def test_list_tags_from_other_org(
-    tag_service: TagService, current_user_with_other_org: CurrentUser, tag: NewTagInput
+    tag_service: TagService, current_user_with_other_org: UserToken, tag: NewTagInput
 ) -> None:
     lt_input = ListTagsInput(limit=10, offset=0, name=tag.name, type=tag.type)
     tag_results = tag_service.list_tags(current_user_with_other_org, lt_input)
@@ -284,7 +284,7 @@ def test_list_tags_from_other_org(
 
 def test_associate_tag(
     tag_service: TagService,
-    current_user_with_org: CurrentUser,
+    current_user_with_org: UserToken,
     tag: NewTagInput,
     content: DerivedContent,
 ) -> None:
@@ -304,7 +304,7 @@ def test_associate_tag(
 
 def test_associate_tag_from_other_org(
     tag_service: TagService,
-    current_user_with_other_org: CurrentUser,
+    current_user_with_other_org: UserToken,
     tag: NewTagInput,
     content: DerivedContent,
 ) -> None:
@@ -319,7 +319,7 @@ def test_associate_tag_from_other_org(
 
 def test_associate_tag_content_from_other_org(
     tag_service: TagService,
-    current_user_with_org: CurrentUser,
+    current_user_with_org: UserToken,
     tag: NewTagInput,
     org_b_content: DerivedContent,
 ) -> None:
@@ -334,7 +334,7 @@ def test_associate_tag_content_from_other_org(
 
 def test_disassociate_tag(
     tag_service: TagService,
-    current_user_with_org: CurrentUser,
+    current_user_with_org: UserToken,
     tag: NewTagInput,
     content: DerivedContent,
 ) -> None:
@@ -352,7 +352,7 @@ def test_disassociate_tag(
 
 def test_disassociate_tag_from_other_org(
     tag_service: TagService,
-    current_user_with_org: CurrentUser,
+    current_user_with_org: UserToken,
     tag: NewTagInput,
     content: DerivedContent,
 ) -> None:
@@ -373,7 +373,7 @@ def test_disassociate_tag_from_other_org(
 
 def test_disassociate_tag_content_from_other_org(
     tag_service: TagService,
-    current_user_with_org: CurrentUser,
+    current_user_with_org: UserToken,
     tag: NewTagInput,
     org_b_content: DerivedContent,
 ) -> None:
@@ -386,11 +386,11 @@ def test_disassociate_tag_content_from_other_org(
 
 def test_list_tag_contents(
     tag_service: TagService,
-    current_user_with_org: CurrentUser,
+    current_user_with_org: UserToken,
     tag: NewTagInput,
     content: DerivedContent,
 ) -> None:
-    lt_input = ListContentInput(limit=10, offset=0)
+    lt_input = ListContentInput(limit=10, offset=0, latest_version_only=False)
     results = tag_service.list_tag_contents(
         current_user_with_org, str(tag.id), lt_input
     )
@@ -401,7 +401,7 @@ def test_list_tag_contents(
 
 def test_delete_tag(
     tag_service: TagService,
-    current_user_with_org: CurrentUser,
+    current_user_with_org: UserToken,
     delete_tag: Tag,
 ) -> None:
     tag_service.delete_tag(
@@ -411,7 +411,7 @@ def test_delete_tag(
 
 def test_delete_tag_from_other_org(
     tag_service: TagService,
-    current_user_with_other_org: CurrentUser,
+    current_user_with_other_org: UserToken,
     delete_tag: Tag,
 ) -> None:
     with pytest.raises(HTTPException):

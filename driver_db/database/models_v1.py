@@ -355,6 +355,12 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
         back_populates=None,
         sa_relationship_kwargs={"secondary": "tags_contents", "viewonly": True},
     )
+    version_id: None | UUID = Field(
+        foreign_key="inspection_versions.id", nullable=True, index=True, default=None
+    )
+    inspection_version: Optional["InspectionVersion"] = Relationship(
+        back_populates="contents"
+    )
 
 
 class Tag(SQLModel, table=True):  # type: ignore
@@ -389,9 +395,8 @@ class Tag(SQLModel, table=True):  # type: ignore
         ),
         default=None,
     )
-    created_by: None | datetime = Field(
+    created_by: str = Field(
         sa_column=sqlalchemy.Column(sqlalchemy.String(128), nullable=False),
-        default=None,
     )
     updated_at: None | datetime = Field(
         sa_column=Column(
@@ -401,9 +406,8 @@ class Tag(SQLModel, table=True):  # type: ignore
             nullable=False,
         ),
     )
-    updated_by: None | datetime = Field(
+    updated_by: str = Field(
         sa_column=sqlalchemy.Column(sqlalchemy.String(128), nullable=False),
-        default=None,
     )
     content_links: list["TagContent"] = Relationship(
         back_populates="tag",
@@ -452,3 +456,133 @@ class ChunkAndEmbedding(SQLModel, table=True):  # type: ignore
             "ix_chunkandembedding___ts_vector__", __ts_vector__, postgresql_using="gin"
         ),
     )
+
+
+class InspectionVersion(SQLModel, table=True):
+    __tablename__ = "inspection_versions"
+
+    id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    version: str  # Typically a Git commit hash
+    display_name: str | None = (
+        None  # User-defined name; could default to Git tags if available
+    )
+    created_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
+        default=None,
+    )
+    updated_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
+        ),
+    )
+    previous_version_id: UUID | None = Field(
+        foreign_key="inspection_versions.id", nullable=True
+    )  # Points to the previous version for chain tracking
+    contents: list["DerivedContent"] = Relationship(back_populates="inspection_version")
+    inspector_runs: list["InspectorRun"] = Relationship(
+        back_populates="inspection_version"
+    )
+
+
+class InspectorRun(SQLModel, table=True):
+    id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    inspection_version_id: UUID = Field(
+        foreign_key="inspection_versions.id", nullable=False
+    )
+    inspection_version: "InspectionVersion" = Relationship(
+        back_populates="inspector_runs"
+    )
+    created_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
+        default=None,
+    )
+    updated_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
+        ),
+    )
+
+
+class UsageSessionStatus(str, enum.Enum):
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+class UsageSession(SQLModel, table=True):
+    __tablename__ = "usage_sessions"
+    id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    status: UsageSessionStatus = Field(default=UsageSessionStatus.RUNNING, index=True)
+    organization_id: str
+    user_id: str
+    session_metadata: dict | None = Field(
+        sa_column=Column("metadata", JSONB, nullable=True), default=None
+    )
+    created_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
+        default=None,
+    )
+    updated_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
+        ),
+    )
+
+    usage_events: list["UsageEvent"] = Relationship(
+        back_populates="session", cascade_delete=True
+    )
+
+
+class UsageEventType(enum.IntEnum):
+    AGENT_PIPELINE_USAGE_DEBIT = 1
+    INSPECTOR_TECH_DOC_USAGE_DEBIT = 2
+    INSPECTOR_CODE_DIFF_USAGE_DEBIT = 3
+    ONBOARDING_USAGE_DEBIT = 4
+    SUMMARIZATION_USAGE_DEBIT = 5
+    BASE_PLATFORM_USAGE_CREDIT = 6
+    ADDITIONAL_PLATFORM_USAGE_CREDIT = 7
+
+
+class UsageEvent(SQLModel, table=True):
+    __tablename__ = "usage_events"
+    id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    event_type: UsageEventType = Field(sa_column=Column(Integer, nullable=False))
+    session_id: UUID = Field(
+        foreign_key="usage_sessions.id",
+        nullable=False,
+        ondelete="CASCADE",
+        index=True,
+    )
+    organization_id: str
+    user_id: str
+    event_source: str
+    bytes_in: int = Field(default=0, nullable=False)
+    bytes_out: int = Field(default=0, nullable=False)
+    tokens_in: int = Field(default=0, nullable=False)
+    tokens_out: int = Field(default=0, nullable=False)
+    timestamp: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
+        default=None,
+    )
+    event_metadata: dict | None = Field(
+        sa_column=Column("metadata", JSONB, nullable=True), default=None
+    )
+    # Relationships
+    session: UsageSession | None = Relationship(back_populates="usage_events")

@@ -2,7 +2,7 @@
 
 import pytest
 from sqlalchemy import create_engine
-from sqlmodel import Session, text
+from sqlmodel import Session, select, text
 
 from .models_v2 import (
     ChunkRow,
@@ -58,9 +58,9 @@ def test_primary_asset_table(session: Session) -> None:
     session.add(asset)
     session.commit()
 
-    retrieved_asset = (
-        session.query(PrimaryAssetRow).filter_by(display_name="Test Asset").one()
-    )
+    retrieved_asset = session.exec(
+        select(PrimaryAssetRow).where(PrimaryAssetRow.display_name == "Test Asset")
+    ).one()
     assert retrieved_asset.organization_id == "org_123"
 
 
@@ -74,9 +74,9 @@ def test_version_table(session: Session) -> None:
     session.add(version)
     session.commit()
 
-    retrieved_version = (
-        session.query(VersionRow).filter_by(display_name="Version 1").one()
-    )
+    retrieved_version = session.exec(
+        select(VersionRow).where(VersionRow.display_name == "Version 1")
+    ).one()
     assert retrieved_version.primary_asset_id == asset.id
 
 
@@ -94,9 +94,9 @@ def test_node_table(session: Session) -> None:
     session.add(node)
     session.commit()
 
-    retrieved_node = (
-        session.query(NodeRow).filter_by(relative_path="/path/to/node").one()
-    )
+    retrieved_node = session.exec(
+        select(NodeRow).where(NodeRow.relative_path == "/path/to/node")
+    ).one()
     assert retrieved_node.version_id == version.id
 
 
@@ -120,7 +120,9 @@ def test_content_table(session: Session) -> None:
     session.add(content)
     session.commit()
 
-    retrieved_content = session.query(ContentRow).filter_by(text="Sample content").one()
+    retrieved_content = session.exec(
+        select(ContentRow).where(ContentRow.text == "Sample content")
+    ).one()
     assert retrieved_content.version_node_id == node.id
 
 
@@ -153,7 +155,9 @@ def test_chunk_table(session: Session) -> None:
     session.add(chunk)
     session.commit()
 
-    retrieved_chunk = session.query(ChunkRow).filter_by(chunk_number=1).one()
+    retrieved_chunk = session.exec(
+        select(ChunkRow).where(ChunkRow.chunk_number == 1)
+    ).one()
     assert retrieved_chunk.content_id == content.id
 
 
@@ -188,14 +192,18 @@ def test_save_functionality(session: Session) -> None:
     session.commit()  # Ensure changes are committed
 
     # Retrieve and assert the saved data
-    retrieved_asset = session.query(PrimaryAssetRow).filter_by(id=asset.id).one()
+    retrieved_asset = session.exec(
+        select(PrimaryAssetRow).where(PrimaryAssetRow.id == asset.id)
+    ).one()
     assert retrieved_asset.display_name == "Test Asset"
     assert retrieved_asset.organization_id == "org_123"
 
-    retrieved_version = session.query(VersionRow).filter_by(id=version.id).one()
+    retrieved_version = session.exec(
+        select(VersionRow).where(VersionRow.id == version.id)
+    ).one()
     assert retrieved_version.display_name == "Version 1"
 
-    retrieved_node = session.query(NodeRow).filter_by(id=node.id).one()
+    retrieved_node = session.exec(select(NodeRow).where(NodeRow.id == node.id)).one()
     assert retrieved_node.relative_path == "/path/to/node"
 
 
@@ -230,7 +238,9 @@ def test_query_full_nodes(session: Session) -> None:
     session.commit()  # Ensure changes are committed
 
     # Query the FullNodeView
-    retrieved_full_node = session.query(FullNodeView).filter_by(node_id=node.id).one()
+    retrieved_full_node = session.exec(
+        select(FullNodeView).where(FullNodeView.node_id == node.id)
+    ).one()
 
     # Assert the retrieved data matches the expected values
     assert retrieved_full_node.primary_asset_id == asset.id
@@ -277,16 +287,22 @@ def test_relationships_populated(session: Session) -> None:
     session.commit()
 
     # Retrieve and assert relationships
-    retrieved_version = session.query(VersionRow).filter_by(id=version.id).one()
+    retrieved_version = session.exec(
+        select(VersionRow).where(VersionRow.id == version.id)
+    ).one()
     assert retrieved_version.primary_asset.id == asset.id
 
-    retrieved_node = session.query(NodeRow).filter_by(id=node.id).one()
+    retrieved_node = session.exec(select(NodeRow).where(NodeRow.id == node.id)).one()
     assert retrieved_node.version.id == version.id
 
-    retrieved_content = session.query(ContentRow).filter_by(id=content.id).one()
+    retrieved_content = session.exec(
+        select(ContentRow).where(ContentRow.id == content.id)
+    ).one()
     assert retrieved_content.node.id == node.id
 
-    retrieved_chunk = session.query(ChunkRow).filter_by(id=chunk.id).one()
+    retrieved_chunk = session.exec(
+        select(ChunkRow).where(ChunkRow.id == chunk.id)
+    ).one()
     assert retrieved_chunk.content.id == content.id
 
 
@@ -344,7 +360,22 @@ def test_cascading_deletes(session: Session) -> None:
     session.commit()
 
     # Assert that the version, node, content, and chunk are deleted
-    assert session.query(VersionRow).filter_by(id=version_id).one_or_none() is None
-    assert session.query(NodeRow).filter_by(id=node_id).one_or_none() is None
-    assert session.query(ContentRow).filter_by(id=content_id).one_or_none() is None
-    assert session.query(ChunkRow).filter_by(id=chunk_id).one_or_none() is None
+    assert (
+        session.exec(
+            select(VersionRow).where(VersionRow.id == version_id)
+        ).one_or_none()
+        is None
+    )
+    assert (
+        session.exec(select(NodeRow).where(NodeRow.id == node_id)).one_or_none() is None
+    )
+    assert (
+        session.exec(
+            select(ContentRow).where(ContentRow.id == content_id)
+        ).one_or_none()
+        is None
+    )
+    assert (
+        session.exec(select(ChunkRow).where(ChunkRow.id == chunk_id)).one_or_none()
+        is None
+    )

@@ -1,9 +1,9 @@
-""" """
 
 import logging
 import os
 
 from database.db import create_engine
+from database.models_v1 import UsageEvent
 from sqlmodel import Session
 from src.utils.config import settings
 
@@ -33,9 +33,24 @@ def get_engine() -> Session:
 def handler(event, context) -> str:
     logger.info(event)
     results = []
-
-    with Session(engine) as session:
-        for record in event["Records"]:
-            logger.info(record)
-
-    return "Ok"
+    event_data = event["detail"]
+    logger.info(event_data)
+    with Session(get_engine()) as session:
+        usage_event = UsageEvent(
+            session_id=event_data["session_id"],
+            event_source=event_data["event_source"],
+            event_type=event_data["event_type"],
+            organization_id=event_data["organization_id"],
+            user_id=event_data["user_id"],
+            bytes_in=event_data["bytes_in"],
+            bytes_out=event_data["bytes_out"],
+            tokens_in=event_data["tokens_in"],
+            tokens_out=event_data["tokens_out"],
+            timestamp=event_data["timestamp"],
+            event_metadata=event_data["event_metadata"],
+        )
+        session.add(usage_event)
+        session.commit()
+        session.refresh(usage_event)
+        print(usage_event)
+    return str(usage_event.id)

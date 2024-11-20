@@ -2748,6 +2748,22 @@ files = [
 ]
 
 [[package]]
+name = "pypandoc-binary"
+version = "1.14"
+description = "Thin wrapper for pandoc."
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "pypandoc_binary-1.14-py3-none-macosx_10_9_x86_64.whl", hash = "sha256:d060a29c4fdb4e2721004cf8903625e7b91bf6fe0c842d87daf120924d8fd986"},
+    {file = "pypandoc_binary-1.14-py3-none-macosx_11_0_arm64.whl", hash = "sha256:da0a919b955725dc981239a33c341e399ab8a0559d6843d9c0833abcba6b3a09"},
+    {file = "pypandoc_binary-1.14-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:6a17bc6b36608dcf206ad867ce88a19c82d0bd371dde1c954281582632c569c2"},
+    {file = "pypandoc_binary-1.14-py3-none-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:4538ddffd45e5c9581e79e1c89e4980476f03d71002f7e5d17947e21f16f216c"},
+    {file = "pypandoc_binary-1.14-py3-none-musllinux_1_1_aarch64.whl", hash = "sha256:cfa51ecf2baa78345df296a6bc43edaaff7a72fe8dbb82ece2adcaa229d51a80"},
+    {file = "pypandoc_binary-1.14-py3-none-musllinux_1_1_x86_64.whl", hash = "sha256:0ac308649961f64c03ef076add281217cb64764e54854a43e57560e62415a941"},
+    {file = "pypandoc_binary-1.14-py3-none-win_amd64.whl", hash = "sha256:daffd93ca5450ad2dce21d9408401f5798389ff5afa46fd28f334f44e40d057b"},
+]
+
+[[package]]
 name = "pytest"
 version = "7.4.4"
 description = "pytest: simple powerful testing with Python"
@@ -4181,4 +4197,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "0e4ec9ba4b88419524a817f5d2f75ec9199668d52cd297aec56a1d89afd84643"
+content-hash = "292f8712b19fc97a660ee06d02235351051bf809fd88e6430cd6038b6ab59bba"

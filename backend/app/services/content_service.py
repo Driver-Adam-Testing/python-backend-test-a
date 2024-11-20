@@ -1,7 +1,10 @@
 import functools
 import hashlib
+import io
+import zipfile
 from uuid import UUID
 
+import pypandoc
 from botocore.exceptions import ClientError
 from database.derived_content_types import DerivedContentTypeNames
 from database.models_v1 import (
@@ -17,6 +20,7 @@ from database.models_v1 import (
     Workspace,
 )
 from fastapi import HTTPException, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.selectable import Select
@@ -815,6 +819,30 @@ class ContentService:
         logger.info(f"Tags retrieved successfully for content {content_id}")
         return ContentTagsResponse(
             tags=tag_results,
+        )
+
+    def convert_markdown_to_rst(self, content: dict[str, str]) -> StreamingResponse:
+        zip_buffer = io.BytesIO()
+
+        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+            for name, markdown in content.items():
+                try:
+                    # Convert markdown to RST using pypandoc
+                    rst_content = pypandoc.convert_text(
+                        markdown, "rst", format="markdown"
+                    )
+                except RuntimeError as e:
+                    logger.error(f"Pandoc conversion error for {name}: {e!s}")
+                    continue
+
+                # Add the RST content to the zip file
+                zip_file.writestr(f"{name}.rst", rst_content)
+
+        zip_buffer.seek(0)
+        return StreamingResponse(
+            zip_buffer,
+            media_type="application/x-zip-compressed",
+            headers={"Content-Disposition": "attachment; filename=converted_rst.zip"},
         )
 
 

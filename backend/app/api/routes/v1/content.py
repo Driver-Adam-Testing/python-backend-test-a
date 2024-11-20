@@ -19,6 +19,7 @@ from app.schemas.content_schema import (
     DeleteDocumentSourceResponse,
     DownloadContentResponse,
     ExportRequest,
+    ExportSingleRequest,
     ListContentInput,
     ListContentResults,
     ListContentTypesInput,
@@ -364,7 +365,7 @@ def get_content_tags(
     summary="Export Markdown content to the requested format and return as a zipped file",
     dependencies=[ContentEditorPermission],
 )
-async def export_markdown_content(
+async def export_multiple_markdown_content_to_zip(
     session: CurrentSession,
     request: ExportRequest = Body(...),
 ) -> StreamingResponse:
@@ -377,4 +378,35 @@ async def export_markdown_content(
     - StreamingResponse: A zipped file containing the exported content
     """
     content_service = ContentService(session)
-    return content_service.export_list(request.content, request.type)
+    zip_buffer = content_service.export_list(request.content, request.type)
+    return StreamingResponse(
+        zip_buffer,
+        media_type="application/x-zip-compressed",
+        headers={"Content-Disposition": "attachment; filename=exported_content.zip"},
+    )
+
+
+@router.post(
+    "/export-rst",
+    summary="Export Markdown content to RST and return the file",
+    dependencies=[ContentEditorPermission],
+)
+async def export_markdown_content_to_rst(
+    session: CurrentSession,
+    request: ExportSingleRequest = Body(...),
+) -> StreamingResponse:
+    """
+    Export Markdown content to the requested format and return as a zipped file.
+
+    Parameters:
+    - request: ExportRequest object containing 'content' and 'type'
+    Returns:
+    - StreamingResponse: A zipped file containing the exported content
+    """
+    content_service = ContentService(session)
+    rst_content = content_service.export_single(request.content)
+    return StreamingResponse(
+        rst_content,
+        media_type="text/x-rst",
+        headers={"Content-Disposition": "attachment; filename=exported_content.rst"},
+    )

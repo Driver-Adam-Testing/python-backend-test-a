@@ -209,3 +209,7 @@ class ExportType(str, Enum):
 class ExportRequest(BaseModel):
     content: dict[str, str]
     type: ExportType
+
+
+class ExportSingleRequest(BaseModel):
+    content: str

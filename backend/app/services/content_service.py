@@ -2,6 +2,7 @@ import functools
 import hashlib
 import io
 import zipfile
+from io import BytesIO
 from uuid import UUID
 
 import pypandoc
@@ -20,7 +21,6 @@ from database.models_v1 import (
     Workspace,
 )
 from fastapi import HTTPException, status
-from fastapi.responses import StreamingResponse
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.selectable import Select
@@ -822,9 +822,7 @@ class ContentService:
             tags=tag_results,
         )
 
-    def export_list(
-        self, content: dict[str, str], type: ExportType
-    ) -> StreamingResponse:
+    def export_list(self, content: dict[str, str], type: ExportType) -> BytesIO:
         zip_buffer = io.BytesIO()
 
         logger.info(f"Exporting {len(content)} content items to type {type}")
@@ -846,13 +844,16 @@ class ContentService:
                     zip_file.writestr(f"{name}.md", markdown)
 
         zip_buffer.seek(0)
-        return StreamingResponse(
-            zip_buffer,
-            media_type="application/x-zip-compressed",
-            headers={
-                "Content-Disposition": "attachment; filename=converted_content.zip"
-            },
-        )
+        return zip_buffer
+
+    def export_single(self, content: str) -> str:
+        logger.info("Exporting single content item")
+        try:
+            rst_content = pypandoc.convert_text(content, "rst", format="markdown")
+            return rst_content
+        except RuntimeError as e:
+            logger.error(f"Pandoc conversion error: {e!s}")
+            raise HTTPException(status_code=500, detail="Pandoc conversion error")
 
 
 def delete_document_and_related_entities(

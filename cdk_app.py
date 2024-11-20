@@ -5,8 +5,6 @@ import aws_cdk as cdk
 
 from cdk.development_stack import DevelopmentStack
 from cdk.ops_stack import OpsStack
-from cdk.production_stack import ProductionStack
-from cdk.staging_stack import StagingStack
 
 app = cdk.App()
 
@@ -27,23 +25,23 @@ elif deployment_environment == "ops":
         "DriverApiStack",
         env=cdk.Environment(account="058264523856", region="us-east-1"),
     )
-elif deployment_environment == "development":
-    DevelopmentStack(
-        app,
-        "DriverApiStack",
-        env=cdk.Environment(account="550082761109", region="us-east-1"),
-    )
-elif deployment_environment == "staging":
-    StagingStack(
-        app,
-        "DriverApiStack",
-        env=cdk.Environment(account="794038236739", region="us-east-1"),
-    )
-elif deployment_environment == "production":
-    ProductionStack(
-        app,
-        "DriverApiStack",
-        env=cdk.Environment(account="896724907114", region="us-east-1"),
-    )
+# elif deployment_environment == "development":
+#     DevelopmentStack(
+#         app,
+#         "DriverApiStack",
+#         env=cdk.Environment(account="550082761109", region="us-east-1"),
+#     )
+# elif deployment_environment == "staging":
+#     StagingStack(
+#         app,
+#         "DriverApiStack",
+#         env=cdk.Environment(account="794038236739", region="us-east-1"),
+#     )
+# elif deployment_environment == "production":
+#     ProductionStack(
+#         app,
+#         "DriverApiStack",
+#         env=cdk.Environment(account="896724907114", region="us-east-1"),
+#     )
 
 app.synth()

@@ -206,11 +206,11 @@ class JavaMethodData(IrData):
     @classmethod
     def default_instance(cls) -> Self:
         return cls(
-            single_sentence="",
-            inputs=[],
-            control_flow=[],
-            output="",
-            modifiers=[],
+            single_sentence=RawContent(content=""),
+            inputs=ListedBacktickNameRawContentWithNone(content=[]),
+            control_flow=ListedRawContentNoNone(content=[]),
+            output=FieldNameWithBulletedContent(content=""),
+            modifiers=ListedRawContentNoNone(content=[]),
         )
 
 
@@ -242,10 +242,10 @@ class JavaFieldData(IrData):
     @classmethod
     def default_instance(cls) -> Self:
         return cls(
-            type="",
-            description="",
-            use="",
-            modifiers=[],
+            type=FieldNameWithBackTickContent(content=""),
+            description=FieldNameWithRawContent(content=""),
+            use=FieldNameWithRawContent(content=""),
+            modifiers=ListedRawContentNoNone(content=[]),
         )
 
 
@@ -297,10 +297,10 @@ class JavaClassData(IrData):
     @classmethod
     def default_instance(cls) -> Self:
         return cls(
-            modifiers=[],
-            interfaces_implemented=[],
-            classes_extended=[],
-            description="",
+            modifiers=ListedRawContentNoNone(content=[]),
+            interfaces_implemented=ListedRawContentNoNone(content=[]),
+            classes_extended=ListedRawContentNoNone(content=[]),
+            description=FieldNameWithRawContent(content=""),
         )
 
 
@@ -358,8 +358,8 @@ class JavaInterfaceData(IrData):
     @classmethod
     def default_instance(cls) -> Self:
         return cls(
-            interfaces_extended=[],
-            description="",
+            interfaces_extended=ListedRawContentNoNone(content=[]),
+            description=FieldNameWithRawContent(content=""),
         )
 
 

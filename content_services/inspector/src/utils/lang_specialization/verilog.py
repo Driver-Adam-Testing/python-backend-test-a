@@ -202,9 +202,9 @@ class VerilogModuleData(IrData):
     @classmethod
     def default_instance(cls) -> Self:
         return cls(
-            description="",
-            constants=[],
-            ports=[],
+            description=FieldNameWithRawContent(content=""),
+            constants=ListedBacktickNameRawContentWithNone(content=[]),
+            ports=ListedBacktickNameRawContentWithNone(content=[]),
         )
 
 

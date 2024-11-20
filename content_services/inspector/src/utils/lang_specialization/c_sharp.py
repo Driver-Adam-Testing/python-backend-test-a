@@ -251,7 +251,7 @@ class CsEnumData(IrData):
 
     @classmethod
     def default_instance(cls) -> Self:
-        return cls(description="")
+        return cls(description=FieldNameWithRawContent(content=""))
 
 
 class CsEnumCollection(IrCollection):
@@ -286,7 +286,7 @@ class CsVariableData(IrData):
 
     @classmethod
     def default_instance(cls) -> Self:
-        return cls(description="")
+        return cls(description=FieldNameWithRawContent(content=""))
 
 
 class CsMethodData(FnData):
@@ -356,9 +356,9 @@ class CsStructData(IrData):
     @classmethod
     def default_instance(cls) -> Self:
         return cls(
-            description="",
-            implements=[],
-            modifiers=[],
+            description=FieldNameWithRawContent(content=""),
+            implements=ListedRawContentNoNone(content=[]),
+            modifiers=ListedRawContentNoNone(content=[]),
         )
 
 
@@ -418,10 +418,10 @@ class CsClassData(IrData):
     @classmethod
     def default_instance(cls) -> Self:
         return cls(
-            description="",
-            inherits_from=[],
-            implements=[],
-            modifiers=[],
+            description=FieldNameWithRawContent(content=""),
+            inherits_from=ListedRawContentNoNone(content=[]),
+            implements=ListedRawContentNoNone(content=[]),
+            modifiers=ListedRawContentNoNone(content=[]),
         )
 
 
@@ -473,8 +473,8 @@ class CsInterfaceData(IrData):
     @classmethod
     def default_instance(cls) -> Self:
         return cls(
-            interfaces_inherited=[],
-            description="",
+            interfaces_inherited=ListedRawContentNoNone(content=[]),
+            description=FieldNameWithRawContent(content=""),
         )
 
 

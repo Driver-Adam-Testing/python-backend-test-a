@@ -287,6 +287,8 @@ class IrCollection(BaseModel, abc.ABC):
                         symbol=s,
                     )
                 )
+            else:
+                raise ValueError("Unsupported type in RawSymbolCollection")
         return cls(data=symbols_dict)
 
     @classmethod
@@ -320,9 +322,9 @@ class VariableData(IrData):
     @classmethod
     def default_instance(cls) -> Self:
         return cls(
-            type="",
-            description="",
-            use="",
+            type=FieldNameWithBackTickContent(content=""),
+            description=FieldNameWithRawContent(content=""),
+            use=FieldNameWithRawContent(content=""),
         )
 
 
@@ -334,9 +336,9 @@ class DataStructureData(IrData, abc.ABC):
     @classmethod
     def default_instance(cls) -> Self:
         return cls(
-            type="",
-            members=[],
-            description="",
+            type=FieldNameWithBackTickContent(content=""),
+            members=ListedBacktickNameRawContentNoNone(content=[]),
+            description=FieldNameWithRawContent(content=""),
         )
 
 
@@ -349,10 +351,10 @@ class FnData(IrData, abc.ABC):
     @classmethod
     def default_instance(cls) -> Self:
         return cls(
-            single_sentence="",
-            inputs=[],
-            control_flow=[],
-            output="",
+            single_sentence=RawContent(content=""),
+            inputs=ListedBacktickNameRawContentWithNone(content=[]),
+            control_flow=ListedBacktickNameRawContentWithNone(content=[]),
+            output=FieldNameWithBulletedContent(content=""),
         )
 
 
@@ -368,8 +370,8 @@ class ClassData(IrData, abc.ABC):
     @classmethod
     def default_instance(cls) -> Self:
         return cls(
-            description="Implemented elsewhere",
-            type="",
-            members=[],
-            inherits_from=[],
+            description=FieldNameWithRawContent(content="Implemented elsewhere"),
+            type=FieldNameWithBackTickContent(content=""),
+            members=ListedBacktickNameRawContentNoNone(content=[]),
+            inherits_from=ListedRawContentNoNone(content=[]),
         )

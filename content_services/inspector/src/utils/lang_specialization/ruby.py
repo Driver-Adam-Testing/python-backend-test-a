@@ -262,11 +262,11 @@ class RubyClassData(IrData):
     @classmethod
     def default_instance(cls) -> Self:
         return cls(
-            description="",
-            inherits_from=[],
-            includes=[],
-            extends=[],
-            prepends=[],
+            description=FieldNameWithRawContent(content=""),
+            inherits_from=ListedRawContentNoNone(content=[]),
+            includes=ListedRawContentNoNone(content=[]),
+            extends=ListedRawContentNoNone(content=[]),
+            prepends=ListedRawContentNoNone(content=[]),
         )
 
 
@@ -322,10 +322,10 @@ class RubyModuleData(IrData):
     @classmethod
     def default_instance(cls) -> Self:
         return cls(
-            description="",
-            includes=[],
-            extends=[],
-            prepends=[],
+            description=FieldNameWithRawContent(content=""),
+            includes=ListedRawContentNoNone(content=[]),
+            extends=ListedRawContentNoNone(content=[]),
+            prepends=ListedRawContentNoNone(content=[]),
         )
 
 

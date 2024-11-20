@@ -292,10 +292,10 @@ class RustMacroData(IrData):
     @classmethod
     def default_instance(cls) -> Self:
         return cls(
-            type="",
-            description="",
-            logic=[],
-            use="",
+            type=FieldNameWithBackTickContent(content=""),
+            description=FieldNameWithRawContent(content=""),
+            logic=ListedRawContentNoNone(content=[]),
+            use=FieldNameWithRawContent(content=""),
         )
 
 
@@ -337,10 +337,10 @@ class RustTraitData(IrData):
     @classmethod
     def default_instance(cls) -> Self:
         return cls(
-            trait_bounds=[],
-            generic_types=[],
-            methods=[],
-            description="",
+            trait_bounds=ListedRawContentNoNone(content=[]),
+            generic_types=ListedRawContentNoNone(content=[]),
+            methods=ListedBacktickNameRawContentNoNone(content=[]),
+            description=FieldNameWithRawContent(content=""),
         )
 
 
@@ -393,10 +393,10 @@ class RustDataStructureData(IrData):
     @classmethod
     def default_instance(cls) -> Self:
         return cls(
-            type="",
-            members=[],
-            description="Implemented elsewhere",
-            trait_bounds=[],
+            type=FieldNameWithBackTickContent(content=""),
+            members=ListedBacktickNameRawContentNoNone(content=[]),
+            description=FieldNameWithRawContent(content="Implemented elsewhere"),
+            trait_bounds=ListedRawContentNoNone(content=[]),
         )
 
 

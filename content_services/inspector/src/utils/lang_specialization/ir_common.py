@@ -371,7 +371,7 @@ class ClassData(IrData, abc.ABC):
     def default_instance(cls) -> Self:
         return cls(
             description=FieldNameWithRawContent(content="Implemented elsewhere"),
-            type=FieldNameWithBackTickContent(content=""),
+            type=FieldNameWithBackTickContent(content="N/A"),
             members=ListedBacktickNameRawContentNoNone(content=[]),
             inherits_from=ListedRawContentNoNone(content=[]),
         )

@@ -393,7 +393,7 @@ class RustDataStructureData(IrData):
     @classmethod
     def default_instance(cls) -> Self:
         return cls(
-            type=FieldNameWithBackTickContent(content=""),
+            type=FieldNameWithBackTickContent(content="N/A"),
             members=ListedBacktickNameRawContentNoNone(content=[]),
             description=FieldNameWithRawContent(content="Implemented elsewhere"),
             trait_bounds=ListedRawContentNoNone(content=[]),

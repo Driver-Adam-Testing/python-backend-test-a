@@ -1,8 +1,8 @@
-from functools import partial
 from pathlib import Path
 from typing import Self
 
 from utils.codemap_ctags import extract_symbols_w_ctags
+from utils.models import ChatOpenAI
 
 from .ir_common import (
     ClassData,
@@ -390,6 +390,10 @@ class HeaderDataStructureData(ClassData):
 class HeaderDataStructureCollection(IrCollection):
     data: dict[str, HeaderDataStructureData | list[HeaderDataStructureData]]
 
+    @classmethod
+    def dict_from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls._dict_from_llm(HeaderDataStructureData, llm, symbols_list)
+
 
 class HeaderFnData(FnData):
     @classmethod
@@ -414,6 +418,10 @@ class HeaderFnData(FnData):
 
 class HeaderFnCollection(IrCollection):
     data: dict[str, HeaderFnData | list[HeaderFnData]]
+
+    @classmethod
+    def dict_from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls._dict_from_llm(HeaderFnData, llm, symbols_list)
 
 
 class HeaderVariableData(VariableData):
@@ -440,18 +448,6 @@ class HeaderVariableData(VariableData):
 class HeaderVariableCollection(IrCollection):
     data: dict[str, HeaderVariableData | list[HeaderVariableData]]
 
-
-variables_dict_from_llm_header = partial(
-    HeaderVariableCollection.dict_from_llm,
-    HeaderVariableData,
-)
-
-fn_dict_from_llm_header = partial(
-    HeaderFnCollection.dict_from_llm,
-    HeaderFnData,
-)
-
-class_dict_from_llm_header = partial(
-    HeaderDataStructureCollection.dict_from_llm,
-    HeaderDataStructureData,
-)
+    @classmethod
+    def dict_from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls._dict_from_llm(HeaderVariableData, llm, symbols_list)

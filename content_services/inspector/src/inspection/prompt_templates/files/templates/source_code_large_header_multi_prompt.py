@@ -5,12 +5,12 @@ from utils.lang_specialization.default_multi_context import (
 )
 from utils.lang_specialization.header import (
     SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_C_OR_CPP_HEADER,
+    HeaderDataStructureCollection,
     HeaderDataStructureRawSymbolCollection,
+    HeaderFnCollection,
     HeaderFnRawSymbolCollection,
+    HeaderVariableCollection,
     HeaderVariableRawSymbolCollection,
-    class_dict_from_llm_header,
-    fn_dict_from_llm_header,
-    variables_dict_from_llm_header,
 )
 from utils.templates import S
 
@@ -33,21 +33,21 @@ SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_HEADER = [
         S.FN_COND_JSON,
         "# Global Variables",
         HeaderVariableRawSymbolCollection.from_static_analysis,
-        variables_dict_from_llm_header,
+        HeaderVariableCollection.dict_from_llm,
         None,
     ),
     (
         S.FN_COND_JSON,
         "# Data Structures",
         HeaderDataStructureRawSymbolCollection.from_static_analysis,
-        class_dict_from_llm_header,
+        HeaderDataStructureCollection.dict_from_llm,
         None,
     ),
     (
         S.FN_COND_JSON,
         "# Functions",
         HeaderFnRawSymbolCollection.from_static_analysis,
-        fn_dict_from_llm_header,
+        HeaderFnCollection.dict_from_llm,
         None,
     ),
 ]

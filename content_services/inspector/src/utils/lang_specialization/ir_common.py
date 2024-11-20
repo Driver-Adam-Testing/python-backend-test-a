@@ -260,7 +260,7 @@ class IrCollection(BaseModel, abc.ABC):
     data: dict[str, IrData | list[IrData]]
 
     @classmethod
-    def dict_from_llm(
+    def _dict_from_llm(
         cls,
         ir_data: type[IrData],
         llm: ChatOpenAI,
@@ -288,6 +288,15 @@ class IrCollection(BaseModel, abc.ABC):
                     )
                 )
         return cls(data=symbols_dict)
+
+    @classmethod
+    @abc.abstractmethod
+    def dict_from_llm(
+        cls,
+        llm: ChatOpenAI,
+        symbols_list: RawSymbolCollection,
+    ) -> Self:
+        pass
 
     def render_markdown(self) -> str:
         output = ""

@@ -190,8 +190,8 @@ class CDataStructureCollection(IrCollection):
     data: dict[str, CDataStructureData | list[CDataStructureData]]
 
     @classmethod
-    def dict_from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
-        return cls._dict_from_llm(CDataStructureData, llm, symbols_list)
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(CDataStructureData, llm, symbols_list)
 
 
 class CFnData(FnData):
@@ -219,8 +219,8 @@ class CFunctionCollection(IrCollection):
     data: dict[str, CFnData | list[CFnData]]
 
     @classmethod
-    def dict_from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
-        return cls._dict_from_llm(CFnData, llm, symbols_list)
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(CFnData, llm, symbols_list)
 
 
 class CVariableData(VariableData):
@@ -248,8 +248,8 @@ class CVariableCollection(IrCollection):
     data: dict[str, CVariableData | list[CVariableData]]
 
     @classmethod
-    def dict_from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
-        return cls._dict_from_llm(CVariableData, llm, symbols_list)
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(CVariableData, llm, symbols_list)
 
 
 class CDataStructureRawSymbolCollection(RawSymbolCollection):

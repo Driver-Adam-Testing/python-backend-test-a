@@ -1,6 +1,7 @@
-from functools import partial
 from pathlib import Path
 from typing import Self
+
+from utils.models import ChatOpenAI
 
 from .ir_common import (
     FieldNameWithRawContent,
@@ -210,6 +211,10 @@ class VerilogModuleData(IrData):
 class VerilogModuleCollection(IrCollection):
     data: dict[str, VerilogModuleData | list[VerilogModuleData]]
 
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(VerilogModuleData, llm, symbols_list)
+
 
 class VerilogFnTaskData(FnData):
     @classmethod
@@ -235,6 +240,10 @@ class VerilogFnTaskData(FnData):
 class VerilogFnTaskCollection(IrCollection):
     data: dict[str, VerilogFnTaskData | list[VerilogFnTaskData]]
 
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(VerilogFnTaskData, llm, symbols_list)
+
 
 class VerilogDataTypeData(VariableData):
     @classmethod
@@ -259,6 +268,10 @@ class VerilogDataTypeData(VariableData):
 
 class VerilogDataTypeCollection(IrCollection):
     data: dict[str, VerilogDataTypeData | list[VerilogDataTypeData]]
+
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(VerilogDataTypeData, llm, symbols_list)
 
 
 class VerilogModuleRawSymbolCollection(RawSymbolCollection):
@@ -328,19 +341,3 @@ class VerilogDataTypeRawSymbolCollection(RawSymbolCollection):
 
     def to_dict(self) -> dict[str, RawSymbolData]:
         return self.data
-
-
-module_dict_from_llm_verilog = partial(
-    VerilogModuleCollection.dict_from_llm,
-    VerilogModuleData,
-)
-
-function_task_dict_from_llm_verilog = partial(
-    VerilogFnTaskCollection.dict_from_llm,
-    VerilogFnTaskData,
-)
-
-data_types_dict_from_llm_verilog = partial(
-    VerilogDataTypeCollection.dict_from_llm,
-    VerilogDataTypeData,
-)

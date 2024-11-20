@@ -260,7 +260,7 @@ class IrCollection(BaseModel, abc.ABC):
     data: dict[str, IrData | list[IrData]]
 
     @classmethod
-    def _dict_from_llm(
+    def from_llm_with_ir_data(
         cls,
         ir_data: type[IrData],
         llm: ChatOpenAI,
@@ -291,7 +291,7 @@ class IrCollection(BaseModel, abc.ABC):
 
     @classmethod
     @abc.abstractmethod
-    def dict_from_llm(
+    def from_llm(
         cls,
         llm: ChatOpenAI,
         symbols_list: RawSymbolCollection,

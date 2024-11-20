@@ -391,8 +391,8 @@ class HeaderDataStructureCollection(IrCollection):
     data: dict[str, HeaderDataStructureData | list[HeaderDataStructureData]]
 
     @classmethod
-    def dict_from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
-        return cls._dict_from_llm(HeaderDataStructureData, llm, symbols_list)
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(HeaderDataStructureData, llm, symbols_list)
 
 
 class HeaderFnData(FnData):
@@ -420,8 +420,8 @@ class HeaderFnCollection(IrCollection):
     data: dict[str, HeaderFnData | list[HeaderFnData]]
 
     @classmethod
-    def dict_from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
-        return cls._dict_from_llm(HeaderFnData, llm, symbols_list)
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(HeaderFnData, llm, symbols_list)
 
 
 class HeaderVariableData(VariableData):
@@ -449,5 +449,5 @@ class HeaderVariableCollection(IrCollection):
     data: dict[str, HeaderVariableData | list[HeaderVariableData]]
 
     @classmethod
-    def dict_from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
-        return cls._dict_from_llm(HeaderVariableData, llm, symbols_list)
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(HeaderVariableData, llm, symbols_list)

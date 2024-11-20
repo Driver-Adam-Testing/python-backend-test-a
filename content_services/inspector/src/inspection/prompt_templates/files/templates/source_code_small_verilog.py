@@ -1,10 +1,10 @@
 from utils.lang_specialization.verilog import (
     SOURCE_CODE_SMALL_PURPOSE_USER_PROMPT,
     SOURCE_CODE_SMALL_SYSTEM_PROMPT_GENERAL_VERILOG,
+    VerilogFnTaskCollection,
     VerilogFnTaskRawSymbolCollection,
+    VerilogModuleCollection,
     VerilogModuleRawSymbolCollection,
-    function_task_dict_from_llm_verilog,
-    module_dict_from_llm_verilog,
 )
 from utils.templates import S
 
@@ -19,14 +19,14 @@ SOURCE_CODE_SMALL_TEMPLATE_VERILOG = [
         S.FN_COND_JSON,
         "# Modules",
         VerilogModuleRawSymbolCollection.from_static_analysis,
-        module_dict_from_llm_verilog,
+        VerilogModuleCollection.from_llm,
         None,
     ),
     (
         S.FN_COND_JSON,
         "# Functions and Tasks",
         VerilogFnTaskRawSymbolCollection.from_static_analysis,
-        function_task_dict_from_llm_verilog,
+        VerilogFnTaskCollection.from_llm,
         None,
     ),
 ]

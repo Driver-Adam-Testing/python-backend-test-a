@@ -1,4 +1,3 @@
-from functools import partial
 from pathlib import Path
 from typing import Self
 
@@ -371,6 +370,10 @@ class AssemblyDataStructureData(DataStructureData):
 class AssemblyDataStructureCollection(IrCollection):
     data: dict[str, AssemblyDataStructureData | list[AssemblyDataStructureData]]
 
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(AssemblyDataStructureData, llm, symbols_list)
+
 
 class AssemblySubroutineData(FnData):
     @classmethod
@@ -395,6 +398,10 @@ class AssemblySubroutineData(FnData):
 class AssemblySubroutineCollection(IrCollection):
     data: dict[str, AssemblySubroutineData | list[AssemblySubroutineData]]
 
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(AssemblySubroutineData, llm, symbols_list)
+
 
 class AssemblyMacroData(FnData):
     @classmethod
@@ -416,6 +423,10 @@ class AssemblyMacroData(FnData):
 
 class AssemblyMacroCollection(IrCollection):
     data: dict[str, AssemblyMacroData | list[AssemblyMacroData]]
+
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(AssemblyMacroData, llm, symbols_list)
 
 
 class AssemblyVariableData(VariableData):
@@ -441,23 +452,6 @@ class AssemblyVariableData(VariableData):
 class AssemblyVariableCollection(IrCollection):
     data: dict[str, AssemblyVariableData | list[AssemblyVariableData]]
 
-
-variables_dict_from_llm_assembly = partial(
-    AssemblyVariableCollection.dict_from_llm,
-    AssemblyVariableData,
-)
-
-data_structure_dict_from_llm_assembly = partial(
-    AssemblyDataStructureCollection.dict_from_llm,
-    AssemblyDataStructureData,
-)
-
-fn_dict_from_llm_assembly = partial(
-    AssemblySubroutineCollection.dict_from_llm,
-    AssemblySubroutineData,
-)
-
-macro_dict_from_llm_assembly = partial(
-    AssemblyMacroCollection.dict_from_llm,
-    AssemblyMacroData,
-)
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(AssemblyVariableData, llm, symbols_list)

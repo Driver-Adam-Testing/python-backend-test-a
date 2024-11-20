@@ -1,9 +1,9 @@
-from functools import partial
 from pathlib import Path
 from typing import Self
 
 from pydantic import PrivateAttr
 from utils.codemap_ctags import extract_symbols_w_ctags
+from utils.models import ChatOpenAI
 
 from .ir_common import (
     FieldNameWithRawContent,
@@ -257,6 +257,10 @@ class CsEnumData(IrData):
 class CsEnumCollection(IrCollection):
     data: dict[str, CsEnumData | list[CsEnumData]]
 
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(CsEnumData, llm, symbols_list)
+
 
 class CsVariableData(IrData):
     description: FieldNameWithRawContent
@@ -361,6 +365,10 @@ class CsStructData(IrData):
 class CsStructCollection(IrCollection):
     data: dict[str, CsStructData | list[CsStructData]]
 
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(CsStructData, llm, symbols_list)
+
 
 class CsClassData(IrData):
     description: FieldNameWithRawContent
@@ -420,6 +428,10 @@ class CsClassData(IrData):
 class CsClassCollection(IrCollection):
     data: dict[str, CsClassData | list[CsClassData]]
 
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(CsClassData, llm, symbols_list)
+
 
 class CsInterfaceData(IrData):
     interfaces_inherited: ListedRawContentNoNone
@@ -468,6 +480,10 @@ class CsInterfaceData(IrData):
 
 class CsInterfaceCollection(IrCollection):
     data: dict[str, CsInterfaceData | list[CsInterfaceData]]
+
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(CsInterfaceData, llm, symbols_list)
 
 
 # Symbol Extraction Classes
@@ -869,25 +885,3 @@ class CsEnumRawSymbolCollection(RawSymbolCollection):
 
     def to_dict(self) -> dict[str, RawSymbolData]:
         return self.data
-
-
-# Template interface functions
-class_dict_from_llm_cs = partial(
-    CsClassCollection.dict_from_llm,
-    CsClassData,
-)
-
-struct_dict_from_llm_cs = partial(
-    CsStructCollection.dict_from_llm,
-    CsStructData,
-)
-
-interface_dict_from_llm_cs = partial(
-    CsInterfaceCollection.dict_from_llm,
-    CsInterfaceData,
-)
-
-enum_dict_from_llm_cs = partial(
-    CsEnumCollection.dict_from_llm,
-    CsEnumData,
-)

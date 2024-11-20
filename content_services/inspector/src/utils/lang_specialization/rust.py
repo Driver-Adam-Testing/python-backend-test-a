@@ -1,9 +1,9 @@
-from functools import partial
 from pathlib import Path
 from typing import Self
 
 from pydantic import PrivateAttr
 from utils.codemap_ctags import extract_symbols_w_ctags
+from utils.models import ChatOpenAI
 
 from .ir_common import (
     FieldNameWithBackTickContent,
@@ -302,6 +302,10 @@ class RustMacroData(IrData):
 class RustMacroCollection(IrCollection):
     data: dict[str, RustMacroData | list[RustMacroData]]
 
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(RustMacroData, llm, symbols_list)
+
 
 class RustTraitData(IrData):
     trait_bounds: ListedRawContentNoNone
@@ -342,6 +346,10 @@ class RustTraitData(IrData):
 
 class RustTraitCollection(IrCollection):
     data: dict[str, RustTraitData | list[RustTraitData]]
+
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(RustTraitData, llm, symbols_list)
 
 
 class RustDataStructureData(IrData):
@@ -395,6 +403,10 @@ class RustDataStructureData(IrData):
 class RustDataStructureCollection(IrCollection):
     data: dict[str, RustDataStructureData | list[RustDataStructureData]]
 
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(RustDataStructureData, llm, symbols_list)
+
 
 class RustMethodData(FnData):
     @classmethod
@@ -446,6 +458,10 @@ class RustFnData(FnData):
 class RustFnCollection(IrCollection):
     data: dict[str, RustFnData | list[RustFnData]]
 
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(RustFnData, llm, symbols_list)
+
 
 class RustVariableData(VariableData):
     @classmethod
@@ -472,6 +488,10 @@ class RustVariableData(VariableData):
 
 class RustVariableCollection(IrCollection):
     data: dict[str, RustVariableData | list[RustVariableData]]
+
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(RustVariableData, llm, symbols_list)
 
 
 class RustDataStructureRawSymbolCollection(RawSymbolCollection):
@@ -691,29 +711,3 @@ class RustTraitsRawSymbolCollection(RawSymbolCollection):
 
     def to_dict(self) -> dict[str, RawSymbolData]:
         return self.data
-
-
-variables_dict_from_llm_rust = partial(
-    RustVariableCollection.dict_from_llm,
-    RustVariableData,
-)
-
-macros_dict_from_llm_rust = partial(
-    RustMacroCollection.dict_from_llm,
-    RustMacroData,
-)
-
-data_structure_dict_from_llm_rust = partial(
-    RustDataStructureCollection.dict_from_llm,
-    RustDataStructureData,
-)
-
-fn_dict_from_llm_rust = partial(
-    RustFnCollection.dict_from_llm,
-    RustFnData,
-)
-
-traits_dict_from_llm_rust = partial(
-    RustTraitCollection.dict_from_llm,
-    RustTraitData,
-)

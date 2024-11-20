@@ -1,4 +1,3 @@
-from functools import partial
 from pathlib import Path
 from typing import Self
 
@@ -433,6 +432,10 @@ class DefaultFnData(FnData):
 class DefaultFnCollection(IrCollection):
     data: dict[str, DefaultFnData | list[DefaultFnData]]
 
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(DefaultFnData, llm, symbols_list)
+
 
 class DefaultVariableData(VariableData):
     @classmethod
@@ -457,6 +460,10 @@ class DefaultVariableData(VariableData):
 class DefaultVariableCollection(IrCollection):
     data: dict[str, DefaultVariableData | list[DefaultVariableData]]
 
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(DefaultVariableData, llm, symbols_list)
+
 
 class DefaultDataStructureData(DataStructureData):
     @classmethod
@@ -479,18 +486,6 @@ class DefaultDataStructureData(DataStructureData):
 class DefaultDataStructureCollection(IrCollection):
     data: dict[str, DefaultDataStructureData | list[DefaultDataStructureData]]
 
-
-fn_dict_from_llm_default = partial(
-    DefaultFnCollection.dict_from_llm,
-    DefaultFnData,
-)
-
-variables_dict_from_llm_default = partial(
-    DefaultVariableCollection.dict_from_llm,
-    DefaultVariableData,
-)
-
-data_structure_dict_from_llm_default = partial(
-    DefaultDataStructureCollection.dict_from_llm,
-    DefaultDataStructureData,
-)
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(DefaultDataStructureData, llm, symbols_list)

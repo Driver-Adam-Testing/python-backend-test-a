@@ -5,10 +5,10 @@ from utils.lang_specialization.default_multi_context import (
 )
 from utils.lang_specialization.java import (
     SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_JAVA,
+    JavaClassCollection,
     JavaClassRawSymbolCollection,
+    JavaInterfaceCollection,
     JavaInterfaceRawSymbolCollection,
-    class_dict_from_llm_java,
-    interface_dict_from_llm_java,
 )
 from utils.templates import S
 
@@ -31,14 +31,14 @@ SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_JAVA = [
         S.FN_COND_JSON,
         "# Interfaces",
         JavaInterfaceRawSymbolCollection.from_static_analysis,
-        interface_dict_from_llm_java,
+        JavaInterfaceCollection.from_llm,
         None,
     ),
     (
         S.FN_COND_JSON,
         "# Classes",
         JavaClassRawSymbolCollection.from_static_analysis,
-        class_dict_from_llm_java,
+        JavaClassCollection.from_llm,
         None,
     ),
 ]

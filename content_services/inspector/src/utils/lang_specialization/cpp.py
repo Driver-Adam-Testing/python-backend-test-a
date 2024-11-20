@@ -1,8 +1,8 @@
-from functools import partial
 from pathlib import Path
 from typing import Self
 
 from utils.codemap_ctags import extract_symbols_w_ctags
+from utils.models import ChatOpenAI
 
 from .ir_common import (
     ClassData,
@@ -195,6 +195,10 @@ class CppVariableData(VariableData):
 class CppVariableCollection(IrCollection):
     data: dict[str, CppVariableData | list[CppVariableData]]
 
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(CppVariableData, llm, symbols_list)
+
 
 class CppFnData(FnData):
     @classmethod
@@ -219,6 +223,10 @@ class CppFnData(FnData):
 
 class CppFnCollection(IrCollection):
     data: dict[str, CppFnData | list[CppFnData]]
+
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(CppFnData, llm, symbols_list)
 
 
 class CppClassData(ClassData):
@@ -252,6 +260,10 @@ class CppClassData(ClassData):
 
 class CppClassCollection(IrCollection):
     data: dict[str, CppClassData | list[CppClassData]]
+
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(CppClassData, llm, symbols_list)
 
 
 # Symbol Extraction Classes
@@ -446,20 +458,3 @@ class CppVariableRawSymbolCollection(RawSymbolCollection):
 
     def to_dict(self) -> dict[str, RawSymbolData]:
         return self.data
-
-
-# Template interface functions
-class_dict_from_llm_cpp = partial(
-    CppClassCollection.dict_from_llm,
-    CppClassData,
-)
-
-fn_dict_from_llm_cpp = partial(
-    CppFnCollection.dict_from_llm,
-    CppFnData,
-)
-
-variable_dict_from_llm_cpp = partial(
-    CppVariableCollection.dict_from_llm,
-    CppVariableData,
-)

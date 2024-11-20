@@ -1,9 +1,9 @@
-from functools import partial
 from pathlib import Path
 from typing import Self
 
 from pydantic import PrivateAttr
 from utils.codemap_ctags import extract_symbols_w_ctags
+from utils.models import ChatOpenAI
 
 from .ir_common import (
     FieldNameWithBackTickContent,
@@ -304,8 +304,12 @@ class JavaClassData(IrData):
         )
 
 
-class JavaClassDict(IrCollection):
+class JavaClassCollection(IrCollection):
     data: dict[str, JavaClassData | list[JavaClassData]]
+
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(JavaClassData, llm, symbols_list)
 
 
 class JavaInterfaceData(IrData):
@@ -359,8 +363,12 @@ class JavaInterfaceData(IrData):
         )
 
 
-class JavaInterfaceDict(IrCollection):
+class JavaInterfaceCollection(IrCollection):
     data: dict[str, JavaInterfaceData | list[JavaInterfaceData]]
+
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(JavaInterfaceData, llm, symbols_list)
 
 
 class JavaClassRawSymbolCollection(RawSymbolCollection):
@@ -581,14 +589,3 @@ class JavaInterfaceRawSymbolCollection(RawSymbolCollection):
 
     def to_dict(self) -> dict[str, RawSymbolData]:
         return self.data
-
-
-class_dict_from_llm_java = partial(
-    JavaClassDict.dict_from_llm,
-    JavaClassData,
-)
-
-interface_dict_from_llm_java = partial(
-    JavaInterfaceDict.dict_from_llm,
-    JavaInterfaceData,
-)

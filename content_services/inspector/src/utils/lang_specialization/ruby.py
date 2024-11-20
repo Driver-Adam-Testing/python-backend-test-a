@@ -1,9 +1,9 @@
-from functools import partial
 from pathlib import Path
 from typing import Self
 
 from pydantic import PrivateAttr
 from utils.codemap_ctags import extract_symbols_w_ctags
+from utils.models import ChatOpenAI
 
 from .ir_common import (
     FieldNameWithRawContent,
@@ -273,6 +273,10 @@ class RubyClassData(IrData):
 class RubyClassCollection(IrCollection):
     data: dict[str, RubyClassData | list[RubyClassData]]
 
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(RubyClassData, llm, symbols_list)
+
 
 class RubyModuleData(IrData):
     description: FieldNameWithRawContent
@@ -327,6 +331,10 @@ class RubyModuleData(IrData):
 
 class RubyModuleCollection(IrCollection):
     data: dict[str, RubyModuleData | list[RubyModuleData]]
+
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(RubyModuleData, llm, symbols_list)
 
 
 class RubyClassRawSymbolCollection(RawSymbolCollection):
@@ -511,14 +519,3 @@ class RubyModuleRawSymbolCollection(RawSymbolCollection):
     @classmethod
     def to_dict(self) -> dict[str, RawSymbolData]:
         return self.data
-
-
-class_dict_from_llm_ruby = partial(
-    RubyClassCollection.dict_from_llm,
-    RubyClassData,
-)
-
-module_dict_from_llm_ruby = partial(
-    RubyModuleCollection.dict_from_llm,
-    RubyModuleData,
-)

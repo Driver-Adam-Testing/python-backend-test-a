@@ -11,6 +11,7 @@ from cdk.constructs.document_onboarding_lambda import (
     DocumentOnboardingLambdaParams,
 )
 from cdk.constructs.inspector import Inspector, InspectorParams
+from cdk.constructs.metrics_lambda import MetricsLambda, MetricsLambdaParams
 
 
 class DevelopmentStack(Stack):
@@ -19,6 +20,14 @@ class DevelopmentStack(Stack):
 
         cors_origins = "https://app.dev.driverai.com,https://labs.dev.driverai.com,https://app2.dev.driverai.com,http://localhost:3000,https://app.beta.driverai.com"
 
+        self.metrics_lambda = MetricsLambda(
+            self,
+            "MetricsLambda",
+            MetricsLambdaParams(
+                environment="development",
+                database_url="",  # os.getenv("DATABASE_URL")
+            ),
+        )
         self.backend = Backend(
             self,
             "ApiBackend",
@@ -27,6 +36,7 @@ class DevelopmentStack(Stack):
                 cors_origins=cors_origins,
                 allowed_ips=["98.142.217.111/32"],
                 use_legacy_dropzone=True,
+                metrics_bus=self.metrics_lambda.metrics_bus,
             ),
         )
         self.onboarding_lambda = CodeOnboardingLambda(

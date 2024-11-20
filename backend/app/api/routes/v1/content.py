@@ -4,7 +4,6 @@ from uuid import UUID
 from database.models_v1 import DerivedContent
 from fastapi import APIRouter, Body, Query
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
 
 from app.api.auth import ContentEditorPermission, ContentReadonlyPermission, UserToken
 from app.api.session import CurrentSession
@@ -19,6 +18,7 @@ from app.schemas.content_schema import (
     DeleteContentSourcesRequest,
     DeleteDocumentSourceResponse,
     DownloadContentResponse,
+    ExportRequest,
     ListContentInput,
     ListContentResults,
     ListContentTypesInput,
@@ -359,27 +359,22 @@ def get_content_tags(
     return content_service.get_content_tags(content_id, user.organization_id)
 
 
-class MarkdownContent(BaseModel):
-    content: dict[str, str]
-
-
 @router.post(
-    "/convert-to-rst",
-    summary="Convert Markdown content to RST and return as a zipped file",
+    "/export",
+    summary="Export Markdown content to the requested format and return as a zipped file",
     dependencies=[ContentEditorPermission],
 )
-async def convert_markdown_to_rst(
+async def export_markdown_content(
     session: CurrentSession,
-    content: MarkdownContent = Body(...),
+    request: ExportRequest = Body(...),
 ) -> StreamingResponse:
     """
-    Convert Markdown content to RST and return as a zipped file.
+    Export Markdown content to the requested format and return as a zipped file.
 
     Parameters:
-    - content: A dictionary mapping content names to markdown strings
-
+    - request: ExportRequest object containing 'content' and 'type'
     Returns:
-    - StreamingResponse: A zipped file containing the converted RST files
+    - StreamingResponse: A zipped file containing the exported content
     """
     content_service = ContentService(session)
-    return content_service.convert_markdown_to_rst(content.content)
+    return content_service.export_list(request.content, request.type)

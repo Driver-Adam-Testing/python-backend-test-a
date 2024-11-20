@@ -40,6 +40,7 @@ from app.schemas.content_schema import (
     CreateContentRequest,
     DeleteDocumentSourceResponse,
     DownloadContentResponse,
+    ExportType,
     ListContentInput,
     ListContentResult,
     ListContentResults,
@@ -821,28 +822,36 @@ class ContentService:
             tags=tag_results,
         )
 
-    def convert_markdown_to_rst(self, content: dict[str, str]) -> StreamingResponse:
+    def export_list(
+        self, content: dict[str, str], type: ExportType
+    ) -> StreamingResponse:
         zip_buffer = io.BytesIO()
 
+        logger.info(f"Exporting {len(content)} content items to type {type}")
         with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
             for name, markdown in content.items():
-                try:
-                    # Convert markdown to RST using pypandoc
-                    rst_content = pypandoc.convert_text(
-                        markdown, "rst", format="markdown"
-                    )
-                except RuntimeError as e:
-                    logger.error(f"Pandoc conversion error for {name}: {e!s}")
-                    continue
-
-                # Add the RST content to the zip file
-                zip_file.writestr(f"{name}.rst", rst_content)
+                if type == ExportType.rst:
+                    try:
+                        # Convert markdown to RST using pypandoc
+                        rst_content = pypandoc.convert_text(
+                            markdown, "rst", format="markdown"
+                        )
+                        # Add the RST content to the zip file
+                        zip_file.writestr(f"{name}.rst", rst_content)
+                    except RuntimeError as e:
+                        logger.error(f"Pandoc conversion error for {name}: {e!s}")
+                        continue
+                elif type == ExportType.md:
+                    # Add the markdown content directly to the zip file
+                    zip_file.writestr(f"{name}.md", markdown)
 
         zip_buffer.seek(0)
         return StreamingResponse(
             zip_buffer,
             media_type="application/x-zip-compressed",
-            headers={"Content-Disposition": "attachment; filename=converted_rst.zip"},
+            headers={
+                "Content-Disposition": "attachment; filename=converted_content.zip"
+            },
         )
 
 

@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import Enum
 from typing import Generic, Optional, TypeVar
 from uuid import UUID
 
@@ -198,3 +199,13 @@ class TagResult(BaseModel):
 
 class ContentTagsResponse(BaseModel):
     tags: list[TagResult]
+
+
+class ExportType(str, Enum):
+    rst = "rst"
+    md = "md"
+
+
+class ExportRequest(BaseModel):
+    content: dict[str, str]
+    type: ExportType

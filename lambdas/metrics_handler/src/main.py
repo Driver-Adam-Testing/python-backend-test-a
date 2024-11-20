@@ -1,4 +1,3 @@
-
 import logging
 import os
 
@@ -18,24 +17,23 @@ else:
 logger = logging.getLogger()
 logger.info(f"Log level set to {log_level}")
 
-engine = None
+# engine = None
 
+# def get_engine() -> Session:
+#     global engine
+#     if engine is None:
+#         engine = create_engine(settings.DATABASE_URL)
+#     return engine
 
-def get_engine() -> Session:
-    global engine
-    if engine is None:
-        engine = create_engine(settings.DATABASE_URL)
-    return engine
-
+engine = create_engine(settings.DATABASE_URL)
 
 # # Python lambdas have to be synchronous ¯\_(ツ)_/¯
 # # https://stackoverflow.com/questions/60455830/can-you-have-an-async-handler-in-lambda-python-3-6
 def handler(event, context) -> str:
     logger.info(event)
-    results = []
     event_data = event["detail"]
     logger.info(event_data)
-    with Session(get_engine()) as session:
+    with Session(engine) as session:
         usage_event = UsageEvent(
             session_id=event_data["session_id"],
             event_source=event_data["event_source"],

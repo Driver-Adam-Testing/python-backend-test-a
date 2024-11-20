@@ -61,15 +61,24 @@ def send_events_concurrently(n: int):
                          "provider": "openai"}
         }
 
+    success_count = 0
+    failure_count = 0
+
     with ThreadPoolExecutor(max_workers=25) as executor:
         futures = [executor.submit(send_event, "inspector_tech_doc_usage_debit", "ea5c97b2-e4fa-44ad-9824-c076bd537c6c", detail) for _ in range(n)]
         
         for future in as_completed(futures):
             try:
                 response = future.result()
-                print(response)
+                success_count += 1
             except Exception as e:
-                print(f"Error sending event: {e}")
+                failure_count += 1
+
+            # Print the current status on the same line
+            print(f"\rSuccessfully sent: {success_count} | Failed: {failure_count}", end="")
+
+    # Final summary
+    print(f"\nFinal count - Successfully sent: {success_count} | Failed: {failure_count}")
 
 def main(n: int):
     send_events_concurrently(n)

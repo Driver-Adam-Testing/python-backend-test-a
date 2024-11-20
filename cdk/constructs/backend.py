@@ -124,6 +124,7 @@ class Backend(Construct):
                     "allowedHeaders": ["*"],
                 }
             ],
+            lifecycle_rules=[aws_s3.LifecycleRule(expiration=Duration.days(7))],
         )
 
         container_environment_vars = {

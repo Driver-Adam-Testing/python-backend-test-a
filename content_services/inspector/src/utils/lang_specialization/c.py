@@ -1,8 +1,8 @@
-from functools import partial
 from pathlib import Path
 from typing import Self
 
 from utils.codemap_ctags import extract_symbols_w_ctags
+from utils.models import ChatOpenAI
 
 from .ir_common import (
     DataStructureData,
@@ -186,8 +186,12 @@ class CDataStructureData(DataStructureData):
         raise NotImplementedError("C data structures should not have children")
 
 
-class CDataStructureDict(IrCollection):
+class CDataStructureCollection(IrCollection):
     data: dict[str, CDataStructureData | list[CDataStructureData]]
+
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(CDataStructureData, llm, symbols_list)
 
 
 class CFnData(FnData):
@@ -211,8 +215,12 @@ class CFnData(FnData):
         raise NotImplementedError("C functions should not have children")
 
 
-class CFunctionDict(IrCollection):
+class CFunctionCollection(IrCollection):
     data: dict[str, CFnData | list[CFnData]]
+
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(CFnData, llm, symbols_list)
 
 
 class CVariableData(VariableData):
@@ -236,8 +244,12 @@ class CVariableData(VariableData):
         raise NotImplementedError("C variables should not have children")
 
 
-class CVariableDict(IrCollection):
+class CVariableCollection(IrCollection):
     data: dict[str, CVariableData | list[CVariableData]]
+
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(CVariableData, llm, symbols_list)
 
 
 class CDataStructureRawSymbolCollection(RawSymbolCollection):
@@ -360,19 +372,3 @@ class CVariableRawSymbolCollection(RawSymbolCollection):
 
     def to_dict(self) -> dict[str, RawSymbolData]:
         return self.data
-
-
-fn_dict_from_llm_c = partial(
-    CFunctionDict.dict_from_llm,
-    CFnData,
-)
-
-data_structure_dict_from_llm_c = partial(
-    CDataStructureDict.dict_from_llm,
-    CDataStructureData,
-)
-
-variable_dict_from_llm_c = partial(
-    CVariableDict.dict_from_llm,
-    CVariableData,
-)

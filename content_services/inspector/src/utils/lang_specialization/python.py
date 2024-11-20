@@ -1,8 +1,8 @@
-from functools import partial
 from pathlib import Path
 from typing import Self
 
 from utils.codemap_ctags import extract_symbols_w_ctags
+from utils.models import ChatOpenAI
 
 from .ir_common import (
     ClassData,
@@ -254,6 +254,10 @@ class PyVariableData(VariableData):
 class PyVariableCollection(IrCollection):
     data: dict[str, PyVariableData | list[PyVariableData]]
 
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(PyVariableData, llm, symbols_list)
+
 
 class PyFnData(FnData):
     @classmethod
@@ -278,6 +282,10 @@ class PyFnData(FnData):
 
 class PyFnCollection(IrCollection):
     data: dict[str, PyFnData | list[PyFnData]]
+
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(PyFnData, llm, symbols_list)
 
 
 class PyClassData(ClassData):
@@ -311,6 +319,10 @@ class PyClassData(ClassData):
 
 class PyClassCollection(IrCollection):
     data: dict[str, PyClassData | list[PyClassData]]
+
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(PyClassData, llm, symbols_list)
 
 
 # Symbol extraction classes
@@ -427,19 +439,3 @@ class PyClassRawSymbolCollection(RawSymbolCollection):
 
     def to_dict(self) -> dict[str, RawSymbolData]:
         return self.data
-
-
-variables_dict_from_llm_py = partial(
-    PyVariableCollection.dict_from_llm,
-    PyVariableData,
-)
-
-class_dict_from_llm_py = partial(
-    PyClassCollection.dict_from_llm,
-    PyClassData,
-)
-
-fn_dict_from_llm_py = partial(
-    PyFnCollection.dict_from_llm,
-    PyFnData,
-)

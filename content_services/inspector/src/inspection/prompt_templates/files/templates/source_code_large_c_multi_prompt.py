@@ -1,11 +1,11 @@
 from utils.lang_specialization.c import (
     SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_C,
+    CDataStructureCollection,
     CDataStructureRawSymbolCollection,
+    CFunctionCollection,
     CFunctionRawSymbolCollection,
+    CVariableCollection,
     CVariableRawSymbolCollection,
-    data_structure_dict_from_llm_c,
-    fn_dict_from_llm_c,
-    variable_dict_from_llm_c,
 )
 from utils.lang_specialization.default_multi_context import (
     SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT_MULTI_CONTEXT,
@@ -33,21 +33,21 @@ SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_C = [
         S.FN_COND_JSON,
         "# Global Variables",
         CVariableRawSymbolCollection.from_static_analysis,
-        variable_dict_from_llm_c,
+        CVariableCollection.from_llm,
         None,
     ),
     (
         S.FN_COND_JSON,
         "# Data Structures",
         CDataStructureRawSymbolCollection.from_static_analysis,
-        data_structure_dict_from_llm_c,
+        CDataStructureCollection.from_llm,
         None,
     ),
     (
         S.FN_COND_JSON,
         "# Functions",
         CFunctionRawSymbolCollection.from_static_analysis,
-        fn_dict_from_llm_c,
+        CFunctionCollection.from_llm,
         None,
     ),
 ]

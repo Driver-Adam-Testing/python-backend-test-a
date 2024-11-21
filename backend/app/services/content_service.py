@@ -823,9 +823,8 @@ class ContentService:
         try:
             rst_content = pypandoc.convert_text(content, "rst", format="markdown")
             return rst_content
-        except RuntimeError as e:
-            logger.error(f"Pandoc conversion error: {e!s}")
-            raise HTTPException(status_code=500, detail="Pandoc conversion error")
+        except RuntimeError:
+            raise HTTPException(status_code=500, detail="Conversion error")
 
 
 def delete_document_and_related_entities(

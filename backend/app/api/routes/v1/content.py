@@ -2,7 +2,7 @@ from typing import Annotated
 from uuid import UUID
 
 from database.models_v1 import DerivedContent
-from fastapi import APIRouter, Body, Query
+from fastapi import APIRouter, Query
 from fastapi.responses import StreamingResponse
 
 from app.api.auth import ContentEditorPermission, ContentReadonlyPermission, UserToken
@@ -364,18 +364,10 @@ def get_content_tags(
     summary="Export Markdown content to RST and return the file",
     dependencies=[ContentEditorPermission],
 )
-async def export_markdown_content_to_rst(
+def export_markdown_content_to_rst(
     session: CurrentSession,
-    request: ExportSingleRequest = Body(...),
+    request: ExportSingleRequest,
 ) -> StreamingResponse:
-    """
-    Export Markdown content to RST and return the file.
-
-    Parameters:
-    - request: ExportSingleRequest object containing 'content'
-    Returns:
-    - StreamingResponse: A RST file containing the exported content
-    """
     content_service = ContentService(session)
     rst_content = content_service.convert_markdown_to_rst(request.content)
     return StreamingResponse(

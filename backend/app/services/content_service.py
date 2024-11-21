@@ -819,7 +819,7 @@ class ContentService:
         )
 
     def convert_markdown_to_rst(self, content: str) -> str:
-        logger.info("Exporting single content item")
+        logger.info("Converting markdown content to rst")
         try:
             rst_content = pypandoc.convert_text(content, "rst", format="markdown")
             return rst_content

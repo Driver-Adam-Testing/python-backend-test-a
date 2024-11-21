@@ -198,3 +198,7 @@ class TagResult(BaseModel):
 
 class ContentTagsResponse(BaseModel):
     tags: list[TagResult]
+
+
+class ExportSingleRequest(BaseModel):
+    content: str

@@ -49,15 +49,8 @@ class MetricsLambda(Construct):
             reserved_concurrent_executions=10,
             timeout=Duration.seconds(60),
         )
-        # const eventTarget = new awsEventsTargets.LambdaFunction(lambdaAlias, {
-        #     event: awsEvents.RuleTargetInput.fromObject(meetingSyncEvent)
-        # })
         event_target = targets.LambdaFunction(
             self.lambda_function,
-            # event=aws_events.RuleTargetInput.from_object(meeting_sync_event)
-            # event_pattern=aws_events.EventPattern(
-            #     source=["*"]
-            # )
         )
         self.metrics_bus = aws_events.EventBus(
             self, "MetricsBus", event_bus_name="metrics-event-bus"

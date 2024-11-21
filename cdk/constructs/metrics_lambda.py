@@ -7,6 +7,7 @@ from aws_cdk import (
     aws_events,
     aws_lambda,
     aws_lambda_python_alpha,
+    aws_secretsmanager,
     aws_sns,
     aws_sqs,
 )
@@ -32,6 +33,7 @@ class MetricsLambda(Construct):
     def __init__(self, scope: Construct, id: str, params: MetricsLambdaParams) -> None:
         super().__init__(scope, id)
 
+        database_url_secret = aws_secretsmanager.Secret(self, "MetricsLambdaDBSecret")
         driver_db_path = os.path.abspath("driver_db")
         self.lambda_function = aws_lambda_python_alpha.PythonFunction(
             scope,
@@ -43,6 +45,7 @@ class MetricsLambda(Construct):
                 "ENVIRONMENT": params.environment,
                 "LOG_LEVEL": "INFO",
                 "DATABASE_URL": params.database_url,
+                "DATABASE_URL_SECRET_NAME": database_url_secret.secret_name,
             },
             bundling=aws_lambda_python_alpha.BundlingOptions(
                 platform="linux/amd64",

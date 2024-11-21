@@ -2,6 +2,7 @@ import functools
 import hashlib
 import io
 import zipfile
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from io import BytesIO
 from uuid import UUID
 
@@ -826,22 +827,33 @@ class ContentService:
         zip_buffer = io.BytesIO()
 
         logger.info(f"Exporting {len(content)} content items to type {type}")
-        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
-            for name, markdown in content.items():
-                if type == ExportType.rst:
-                    try:
-                        # Convert markdown to RST using pypandoc
-                        rst_content = pypandoc.convert_text(
-                            markdown, "rst", format="markdown"
-                        )
-                        # Add the RST content to the zip file
-                        zip_file.writestr(f"{name}.rst", rst_content)
-                    except RuntimeError as e:
-                        logger.error(f"Pandoc conversion error for {name}: {e!s}")
-                        continue
-                elif type == ExportType.md:
-                    # Add the markdown content directly to the zip file
-                    zip_file.writestr(f"{name}.md", markdown)
+
+        def process_content(name: str, markdown: str) -> tuple[str, str] | None:
+            if type == ExportType.rst:
+                try:
+                    # Convert markdown to RST using pypandoc
+                    rst_content = pypandoc.convert_text(
+                        markdown, "rst", format="markdown"
+                    )
+                    return f"{name}.rst", rst_content
+                except RuntimeError as e:
+                    logger.error(f"Pandoc conversion error for {name}: {e!s}")
+                    return None
+            elif type == ExportType.md:
+                # Return the markdown content directly
+                return f"{name}.md", markdown
+
+        with ThreadPoolExecutor() as executor:
+            futures = {
+                executor.submit(process_content, name, markdown): name
+                for name, markdown in content.items()
+            }
+            with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+                for future in as_completed(futures):
+                    result = future.result()
+                    if result:
+                        file_name, file_content = result
+                        zip_file.writestr(file_name, file_content)
 
         zip_buffer.seek(0)
         return zip_buffer

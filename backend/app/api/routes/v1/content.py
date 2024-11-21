@@ -18,7 +18,6 @@ from app.schemas.content_schema import (
     DeleteContentSourcesRequest,
     DeleteDocumentSourceResponse,
     DownloadContentResponse,
-    ExportRequest,
     ExportSingleRequest,
     ListContentInput,
     ListContentResults,
@@ -361,32 +360,6 @@ def get_content_tags(
 
 
 @router.post(
-    "/export",
-    summary="Export Markdown content to the requested format and return as a zipped file",
-    dependencies=[ContentEditorPermission],
-)
-async def export_multiple_markdown_content_to_zip(
-    session: CurrentSession,
-    request: ExportRequest = Body(...),
-) -> StreamingResponse:
-    """
-    Export Markdown content to the requested format and return as a zipped file.
-
-    Parameters:
-    - request: ExportRequest object containing 'content' and 'type'
-    Returns:
-    - StreamingResponse: A zipped file containing the exported content
-    """
-    content_service = ContentService(session)
-    zip_buffer = content_service.export_list(request.content, request.type)
-    return StreamingResponse(
-        zip_buffer,
-        media_type="application/x-zip-compressed",
-        headers={"Content-Disposition": "attachment; filename=exported_content.zip"},
-    )
-
-
-@router.post(
     "/export-rst",
     summary="Export Markdown content to RST and return the file",
     dependencies=[ContentEditorPermission],
@@ -396,15 +369,15 @@ async def export_markdown_content_to_rst(
     request: ExportSingleRequest = Body(...),
 ) -> StreamingResponse:
     """
-    Export Markdown content to the requested format and return as a zipped file.
+    Export Markdown content to RST and return the file.
 
     Parameters:
-    - request: ExportRequest object containing 'content' and 'type'
+    - request: ExportSingleRequest object containing 'content'
     Returns:
-    - StreamingResponse: A zipped file containing the exported content
+    - StreamingResponse: A RST file containing the exported content
     """
     content_service = ContentService(session)
-    rst_content = content_service.export_single(request.content)
+    rst_content = content_service.convert_markdown_to_rst(request.content)
     return StreamingResponse(
         rst_content,
         media_type="text/x-rst",

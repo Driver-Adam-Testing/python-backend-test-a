@@ -1,9 +1,5 @@
 import functools
 import hashlib
-import io
-import zipfile
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from io import BytesIO
 from uuid import UUID
 
 import pypandoc
@@ -41,7 +37,6 @@ from app.schemas.content_schema import (
     CreateContentRequest,
     DeleteDocumentSourceResponse,
     DownloadContentResponse,
-    ExportType,
     ListContentInput,
     ListContentResult,
     ListContentResults,
@@ -823,42 +818,7 @@ class ContentService:
             tags=tag_results,
         )
 
-    def export_list(self, content: dict[str, str], type: ExportType) -> BytesIO:
-        zip_buffer = io.BytesIO()
-
-        logger.info(f"Exporting {len(content)} content items to type {type}")
-
-        def process_content(name: str, markdown: str) -> tuple[str, str] | None:
-            if type == ExportType.rst:
-                try:
-                    # Convert markdown to RST using pypandoc
-                    rst_content = pypandoc.convert_text(
-                        markdown, "rst", format="markdown"
-                    )
-                    return f"{name}.rst", rst_content
-                except RuntimeError as e:
-                    logger.error(f"Pandoc conversion error for {name}: {e!s}")
-                    return None
-            elif type == ExportType.md:
-                # Return the markdown content directly
-                return f"{name}.md", markdown
-
-        with ThreadPoolExecutor() as executor:
-            futures = {
-                executor.submit(process_content, name, markdown): name
-                for name, markdown in content.items()
-            }
-            with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
-                for future in as_completed(futures):
-                    result = future.result()
-                    if result:
-                        file_name, file_content = result
-                        zip_file.writestr(file_name, file_content)
-
-        zip_buffer.seek(0)
-        return zip_buffer
-
-    def export_single(self, content: str) -> str:
+    def convert_markdown_to_rst(self, content: str) -> str:
         logger.info("Exporting single content item")
         try:
             rst_content = pypandoc.convert_text(content, "rst", format="markdown")

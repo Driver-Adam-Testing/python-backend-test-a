@@ -36,7 +36,9 @@ def get_aws_client() -> boto3.client:
 
 
 class UsageEventSendError(Exception):
-    """Custom exception for errors encountered while sending usage events."""
+    """
+    Exception raised when an error occurs while sending a usage event
+    """
 
     def __init__(
         self,
@@ -111,7 +113,7 @@ class LLMUsageSession:
             "Source": "metrics.client",
             "DetailType": str(
                 UsageEventType(usage_metric.event_type)
-            ),  # convert int to string
+            ),  # return a more human-readable version of the enum name
             "Detail": json.dumps(usage_metric.model_dump(), default=str),
             "EventBusName": "metrics-event-bus",
             "TraceHeader": str(usage_metric.session_id),

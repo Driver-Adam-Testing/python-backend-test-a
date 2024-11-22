@@ -171,8 +171,8 @@ def evaluate_file_binary(filepath: Path) -> bool:
         b"\x06",
         b"\x07",
         b"\x08",
-        b"\x0E",
-        b"\x0F",
+        b"\x0e",
+        b"\x0f",
         b"\x10",
         b"\x11",
         b"\x12",
@@ -183,8 +183,8 @@ def evaluate_file_binary(filepath: Path) -> bool:
         b"\x17",
         b"\x18",
         b"\x19",
-        b"\x1A",
-        b"\x1B",
+        b"\x1a",
+        b"\x1b",
     ]
 
     with open(filepath, "rb") as r_file:
@@ -351,3 +351,22 @@ def run_file_stats_and_reencode(
     file_stats["is_blacklisted"] = is_blacklisted
 
     return file_stats
+
+
+def generate_get_presigned_url(bucket: str, key: str, expires: int = 3600) -> str:
+    import boto3
+
+    s3_client = boto3.client(
+        "s3",
+        region_name="us-east-1",
+        aws_access_key_id=os.environ.get("AWS_ACCESS_KEY_ID"),
+        aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY"),
+    )
+    return s3_client.generate_presigned_url(
+        ClientMethod="get_object",
+        Params={
+            "Bucket": bucket,
+            "Key": key,
+        },
+        ExpiresIn=expires,
+    )

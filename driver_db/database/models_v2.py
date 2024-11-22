@@ -81,7 +81,7 @@ class VersionRow(SQLModel, table=True):  # type: ignore
 
 
 class NodeRow(SQLModel, table=True):  # type: ignore
-    __tablename__ = "v2_version_node"
+    __tablename__ = "v2_node"
 
     id: UUID | None = Field(
         sa_column=Column(
@@ -142,7 +142,7 @@ class FullNodeView(SQLModel, table=True):  # type: ignore
             LEFT JOIN
                 v2_version v ON pa.id = v.primary_asset_id
             LEFT JOIN
-                v2_version_node n ON v.id = n.version_id
+                v2_node n ON v.id = n.version_id
             """)
     primary_asset_id: UUID | None = Field(default=None, primary_key=True)
     primary_asset_display_name: str | None = Field(default=None)
@@ -214,10 +214,10 @@ class ContentRow(SQLModel, table=True):  # type: ignore
         ),
         default=None,
     )
-    version_node_id: UUID = Field(
+    node_id: UUID = Field(
         sa_column=Column(
             SaUuid(as_uuid=True),
-            ForeignKey("v2_version_node.id", ondelete="CASCADE"),
+            ForeignKey("v2_node.id", ondelete="CASCADE"),
             nullable=False,
         ),
     )

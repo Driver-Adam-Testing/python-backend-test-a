@@ -30,3 +30,148 @@ class ContentType(enum.Enum):
     CODEBASE_DIRECTORY = "codebase-directory"
     CODEBASE_FILE = "codebase-file"
     SUPPLEMENTAL_DOCUMENT = "supplemental-document"
+
+
+class FileTypeEnum(enum.Enum):
+    PYTHON = "PYTHON"
+    GROOVY = "GROOVY"
+    C = "C"
+    HEADER = "HEADER"
+    CPP = "CPP"
+    ASSEMBLY = "ASSEMBLY"
+    LINKER_SCRIPT = "LINKER_SCRIPT"
+    ACTIONSCRIPT = "ACTIONSCRIPT"
+    HPP = "HPP"
+    JAVA = "JAVA"
+    JAVASCRIPT = "JAVASCRIPT"
+    TYPESCRIPT = "TYPESCRIPT"
+    GO = "GO"
+    RUST = "RUST"
+    SHELL = "SHELL"
+    BATCH = "BATCH"
+    TEMPLATE = "TEMPLATE"
+    DART = "DART"
+    KOTLIN = "KOTLIN"
+    SWIFT = "SWIFT"
+    CXX = "CXX"
+    OBJECTIVE_C = "OBJECTIVE_C"
+    VERILOG = "VERILOG"
+    SYSTEM_VERILOG = "SYSTEM_VERILOG"
+    VHDL = "VHDL"
+    CSHARP = "CSHARP"
+    TERRAFORM = "TERRAFORM"
+    SQL = "SQL"
+    SAS = "SAS"
+    RUBY = "RUBY"
+    PERL = "PERL"
+    COBOL = "COBOL"
+    D = "D"
+    NSIS = "NSIS"
+    SCSS = "SCSS"
+    LESS = "LESS"
+    HTML = "HTML"
+    CSS = "CSS"
+    CRYSTAL = "CRYSTAL"
+    TCL = "TCL"
+    JSON = "JSON"
+    YAML = "YAML"
+    TOML = "TOML"
+    MARKDOWN = "MARKDOWN"
+    TEXT = "TEXT"
+    RESTRUCTUREDTEXT = "RESTRUCTUREDTEXT"
+    XML = "XML"
+    JSX = "JSX"
+    INI = "INI"
+    CONFIG = "CONFIG"
+    DITA = "DITA"
+    ADOC = "ADOC"
+    ASPX = "ASPX"
+    CMX = "CMX"
+    PEP = "PEP"
+    APP = "APP"
+    PRE = "PRE"
+    LST = "LST"
+    DRIVER_PAGE = "DRIVER_PAGE"
+    UNKNOWN = "UNKNOWN"
+
+
+def get_file_type(extension: str) -> FileTypeEnum:
+    extension_map = {
+        ".py": FileTypeEnum.PYTHON,
+        ".groovy": FileTypeEnum.GROOVY,
+        ".c": FileTypeEnum.C,
+        ".h": FileTypeEnum.HEADER,
+        ".cpp": FileTypeEnum.CPP,
+        ".s": FileTypeEnum.ASSEMBLY,
+        ".S": FileTypeEnum.ASSEMBLY,
+        ".ld": FileTypeEnum.LINKER_SCRIPT,
+        ".sct": FileTypeEnum.LINKER_SCRIPT,
+        ".icf": FileTypeEnum.LINKER_SCRIPT,
+        ".as": FileTypeEnum.ACTIONSCRIPT,
+        ".asm": FileTypeEnum.ASSEMBLY,
+        ".hpp": FileTypeEnum.HPP,
+        ".java": FileTypeEnum.JAVA,
+        ".js": FileTypeEnum.JAVASCRIPT,
+        ".ts": FileTypeEnum.TYPESCRIPT,
+        ".tsx": FileTypeEnum.TYPESCRIPT,
+        ".go": FileTypeEnum.GO,
+        ".rs": FileTypeEnum.RUST,
+        ".sh": FileTypeEnum.SHELL,
+        ".bat": FileTypeEnum.BATCH,
+        ".tpl": FileTypeEnum.TEMPLATE,
+        ".inc": FileTypeEnum.TEMPLATE,
+        ".dart": FileTypeEnum.DART,
+        ".kt": FileTypeEnum.KOTLIN,
+        ".kts": FileTypeEnum.KOTLIN,
+        ".swift": FileTypeEnum.SWIFT,
+        ".cxx": FileTypeEnum.CXX,
+        ".m": FileTypeEnum.OBJECTIVE_C,
+        ".v": FileTypeEnum.VERILOG,
+        ".sv": FileTypeEnum.SYSTEM_VERILOG,
+        ".vhd": FileTypeEnum.VHDL,
+        ".cs": FileTypeEnum.CSHARP,
+        ".tf": FileTypeEnum.TERRAFORM,
+        ".tfvars": FileTypeEnum.TERRAFORM,
+        ".sql": FileTypeEnum.SQL,
+        ".sas": FileTypeEnum.SAS,
+        ".rb": FileTypeEnum.RUBY,
+        ".pl": FileTypeEnum.PERL,
+        ".cbl": FileTypeEnum.COBOL,
+        ".cob": FileTypeEnum.COBOL,
+        ".d": FileTypeEnum.D,
+        ".nsi": FileTypeEnum.NSIS,
+        ".scss": FileTypeEnum.SCSS,
+        ".less": FileTypeEnum.LESS,
+        ".html": FileTypeEnum.HTML,
+        ".css": FileTypeEnum.CSS,
+        ".cr": FileTypeEnum.CRYSTAL,
+        ".tcl": FileTypeEnum.TCL,
+        ".tcb": FileTypeEnum.TCL,
+        ".json": FileTypeEnum.JSON,
+        ".yml": FileTypeEnum.YAML,
+        ".yaml": FileTypeEnum.YAML,
+        ".toml": FileTypeEnum.TOML,
+        ".md": FileTypeEnum.MARKDOWN,
+        ".mkd": FileTypeEnum.MARKDOWN,
+        ".mk": FileTypeEnum.MARKDOWN,
+        ".txt": FileTypeEnum.TEXT,
+        ".rst": FileTypeEnum.RESTRUCTUREDTEXT,
+        ".xml": FileTypeEnum.XML,
+        ".jsx": FileTypeEnum.JSX,
+        ".ini": FileTypeEnum.INI,
+        ".conf": FileTypeEnum.CONFIG,
+        ".dita": FileTypeEnum.DITA,
+        ".ditamap": FileTypeEnum.DITA,
+        ".adoc": FileTypeEnum.ADOC,
+        ".tt": FileTypeEnum.TEMPLATE,
+        ".config": FileTypeEnum.CONFIG,
+        ".settings": FileTypeEnum.CONFIG,
+        ".aspx": FileTypeEnum.ASPX,
+        ".cmx": FileTypeEnum.CMX,
+        ".pep": FileTypeEnum.PEP,
+        ".app": FileTypeEnum.APP,
+        ".pre": FileTypeEnum.PRE,
+        ".lst": FileTypeEnum.LST,
+        ".driver_page": FileTypeEnum.DRIVER_PAGE,
+    }
+    return extension_map.get(extension, FileTypeEnum.UNKNOWN)

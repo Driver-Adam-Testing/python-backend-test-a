@@ -18,7 +18,7 @@ class OpsStack(Stack):
             self,
             "MetricsLambda",
             MetricsLambdaParams(
-                environment="ops", database_url=os.getenv("DATABASE_URL")
+                environment=os.getenv("ENVIRONMENT","ops"), database_url=os.getenv("DATABASE_URL")
             ),
         )
         # self.backend = Backend(

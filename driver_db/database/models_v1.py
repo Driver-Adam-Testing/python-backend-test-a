@@ -557,6 +557,10 @@ class UsageEventType(enum.IntEnum):
     BASE_PLATFORM_USAGE_CREDIT = 6
     ADDITIONAL_PLATFORM_USAGE_CREDIT = 7
 
+    def __str__(self) -> str:
+        # This will return a more human-readable version of the enum name
+        return self.name.replace("_", " ").title()
+
 
 class UsageEvent(SQLModel, table=True):
     __tablename__ = "usage_events"

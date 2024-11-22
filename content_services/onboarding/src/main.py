@@ -1,5 +1,6 @@
 import os
 from contextlib import suppress
+from datetime import datetime
 from pathlib import Path
 from urllib.parse import urljoin
 from uuid import UUID, uuid4
@@ -51,7 +52,14 @@ def run_codebase_onboarding(
         DerivedContent,
         Enum_Codebase_Status,
         Enum_Derived_Content_Status,
+        UsageEventType,
     )
+    from shared.interfaces.usage.event_metadata import (
+        UsageEventMetadata,
+        UsageMetric,
+        UsageSessionMetadata,
+    )
+    from shared.usage.llm_session import LLMUsageSession, UsageEventSendError
     from sqlmodel import Session
     from utils import (
         create_base_storage_url,
@@ -149,23 +157,58 @@ def run_codebase_onboarding(
                     )
                     session.add(dir_sc)
                     print(f"Created but not committed source content for: {directory}.")
-
+            codebase_sloc = 0
+            codebase_size_in_bytes = 0
             # Add file source contents
             for file_path in codebase_stats:
                 if not codebase_stats[file_path]["is_blacklisted"]:
                     file_sc_type = get_source_content_type_uuid("codebase-file")
+                    misc_metadata = codebase_stats[file_path]
+
                     file_sc = DerivedContent(
                         codebase_id=codebase_id,
                         relative_path=str(file_path),
                         content_type_id=file_sc_type,
                         workspace_id=workspace_id,
-                        misc_metadata=codebase_stats[file_path],
+                        misc_metadata=misc_metadata,
                     )
                     session.add(file_sc)
-
+                    # Only add to SLOC and size if the file is analyzable
+                    if codebase_stats[file_path]["is_analyzable"]:
+                        codebase_sloc += misc_metadata["sloc"]
+                        codebase_size_in_bytes += misc_metadata["size"]
                     print(
                         f"Created but not commited source content for: {file_path}. Processable: {codebase_stats[file_path]['is_analyzable']}. Stats: {codebase_stats[file_path]}"
                     )
+
+        try:
+            session_meta = UsageSessionMetadata(
+                content_type="codebase", content_id=str(codebase_id)
+            )
+            with LLMUsageSession(org_id, creator_id, session_meta) as llm_session:
+                usage_metric = UsageMetric(
+                    session_id=llm_session.session_id,
+                    organization_id=org_id,
+                    user_id=creator_id,
+                    event_source="codebase_onboarding",
+                    bytes_in=-codebase_size_in_bytes,
+                    bytes_out=0,
+                    tokens_in=0,
+                    tokens_out=0,
+                    timestamp=datetime.now(),
+                    event_type=UsageEventType.ONBOARDING_USAGE_DEBIT,
+                    event_metadata=UsageEventMetadata(
+                        model="None",
+                        provider="None",
+                        input={},
+                        output="",
+                        sloc=codebase_sloc,
+                    ),
+                )
+                llm_session.send_event(usage_metric)
+                # TODO: check usage balance guardrails here
+        except UsageEventSendError as e:
+            print(f"Error sending usage event: {e}")
 
     print("Codebase onboarding complete for codebase id: ", codebase_id)
     return codebase_id

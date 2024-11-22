@@ -8,16 +8,20 @@ from cdk.constructs.code_onboarding_lambda import (
     CodeOnboardingLambda,
     CodeOnboardingLambdaParams,
 )
+from cdk.constructs.document_onboarding_lambda import (
+    DocumentOnboardingLambda,
+    DocumentOnboardingLambdaParams,
+)
 from cdk.constructs.inspector import Inspector, InspectorParams
 
 
 class OpsStack(Stack):
-    def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
+    def __init__(self, scope: Construct, construct_id: str, **kwargs: any) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
         cors_origins = "https://app.dev.driverai.com,https://labs.dev.driverai.com,https://app2.dev.driverai.com,http://localhost:3000,https://app.beta.driverai.com"
 
-        backend = Backend(
+        self.backend = Backend(
             self,
             "ApiBackend",
             BackendParams(
@@ -34,8 +38,19 @@ class OpsStack(Stack):
                 environment="ops",
                 api_url="https://api.ops.driverai.com/api/v1",
                 auth0_url="https://auth.dev.driverai.com",
-                dropzone_bucket=backend.dropzone_bucket,
-                use_legacy_dropzone=True,
+                dropzone_bucket=self.backend.dropzone_bucket,
+                use_legacy_dropzone=False,
+            ),
+        )
+        self.document_onboarding_lambda = DocumentOnboardingLambda(
+            self,
+            "DocumentOnboardingLambda",
+            DocumentOnboardingLambdaParams(
+                environment="ops",
+                api_url="https://api.ops.driverai.com/api/v1",
+                auth0_url="https://auth.dev.driverai.com",
+                dropzone_bucket=self.backend.dropzone_bucket,
+                use_legacy_dropzone=False,
             ),
         )
         self.inspector = Inspector(

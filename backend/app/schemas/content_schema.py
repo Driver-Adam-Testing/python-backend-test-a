@@ -67,6 +67,7 @@ class ListContentResult(BaseModel):
     source_content: Optional["DerivedContent"]
     order: int | None
     version_id: UUID | None
+    version: str | None
 
 
 class ListContentResults(BaseModel):
@@ -197,3 +198,7 @@ class TagResult(BaseModel):
 
 class ContentTagsResponse(BaseModel):
     tags: list[TagResult]
+
+
+class ExportSingleRequest(BaseModel):
+    content: str

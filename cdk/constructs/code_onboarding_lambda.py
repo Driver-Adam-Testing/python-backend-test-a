@@ -67,7 +67,7 @@ class CodeOnboardingLambda(Construct):
             aws_lambda_event_sources.SnsEventSource(sns_topic)
         )
         params.dropzone_bucket.add_event_notification(
-            aws_s3.EventType.OBJECT_CREATED,
+            aws_s3.EventType.OBJECT_TAGGING_PUT,
             aws_s3_notifications.SnsDestination(sns_topic),
             aws_s3.NotificationKeyFilter(prefix="codebases/"),
         )
@@ -85,7 +85,7 @@ class CodeOnboardingLambda(Construct):
             bucket_name=f"{params.environment}-codebase-dropzone",
         )
         legacy_dropzone_bucket.add_event_notification(
-            aws_s3.EventType.OBJECT_CREATED,
+            aws_s3.EventType.OBJECT_TAGGING_PUT,
             aws_s3_notifications.SnsDestination(sns_topic),
             aws_s3.NotificationKeyFilter(prefix="codebases/"),
         )

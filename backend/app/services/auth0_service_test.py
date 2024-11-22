@@ -336,11 +336,13 @@ class TestAuth0Service(unittest.TestCase):
 
     @pytest.mark.unit
     @patch("auth0.authentication.Users.userinfo")
+    @patch("auth0.management.Organizations.get_organization")
     @patch("auth0.management.Organizations.create_organization_invitation")
     def test_create_invitation(
-        self, mock_create_invitation: any, mock_userinfo: any
+        self, mock_create_invitation: any, mock_get_org: any, mock_userinfo: any
     ) -> None:
         mock_create_invitation.return_value = {"invitation": "created"}
+        mock_get_org.return_value = {"metadata": {}}
         mock_userinfo.return_value = {"name": "Johnny Cache"}
         auth0_service = Auth0Service()
         response = auth0_service.create_invitation(

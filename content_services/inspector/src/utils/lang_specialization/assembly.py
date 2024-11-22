@@ -1,13 +1,19 @@
-from functools import partial
+from pathlib import Path
+from typing import Self
 
 from utils.models import ChatOpenAI
 
-from .common import (
-    ListData,
-    data_structure_dict_from_llm,
-    fn_dict_from_llm,
-    variables_dict_from_llm,
+from .default import (
+    default_llm_analysis,
 )
+from .ir_common import (
+    DataStructureData,
+    FnData,
+    IrCollection,
+    IrData,
+    VariableData,
+)
+from .symbol_common import RawSymbolCollection, RawSymbolData, SymbolKind
 
 SOURCE_CODE_SYSTEM_PROMPT_GENERAL_DEFAULT = """
 You are an assembly software engineering documentation expert. You write detailed documentation to explain software.
@@ -34,12 +40,6 @@ You will be given the content of a source code file. In a single paragraph of 3 
 - What are the most important technical components?
 """
 
-TECHNICAL_CONCEPTS = """
-You will be given the content of a source code file. In a single paragraph of 3 to 5 sentences, describe the important technical features and their interactions in the file.
-
-In writing your description, write about about the conceptual use cases, applications, logic, and component interactions instead of focusing on particular functions, variables, etc.
-"""
-
 IMPORTS_SYSTEM_PROMPT_JSON = """
 Identify and list the imports and dependencies used in the code provided below.
 
@@ -54,8 +54,6 @@ You only respond with a list of imports and dependencies. **Always respond using
 
 If there are no imports or dependencies return an empty array.
 """
-
-IMPORTS_NONE_CONTENT = "\n---\nNo imports or dependencies defined in this file."
 
 
 DATA_STRUCTURES_CHECKER_SYSTEM_PROMPT_JSON = """
@@ -101,9 +99,10 @@ Summarize the data structure in the code provided below.
 
 - A data structure is custom or compound type in a given programming language, such as structs, classes, or enums. Functions, methods, and variables are not data structures.
 - When describing an important data structure, provide detail that matches the complexity of the data structure. Large and complex data structures should get longer explanations, while small ones a single sentence.
+
+Data structure to document:
 """
 
-DATA_STRUCTURES_NONE_CONTENT = "\n---\nNo custom data structures defined in this file."
 
 FUNCTIONS_CHECKER_SYSTEM_PROMPT_JSON = """
 Your job is to list any functions, subroutines or procedures defined in the assembly code provided below.
@@ -154,9 +153,10 @@ FUNCTIONS_FOUND_USER_PROMPT = """
 Summarize the function, subroutine or procedure in the code provided below. Describe the inputs, control flow and logic, and output.
 
 - When describing a function/subroutine/procedure, provide detail that matches the complexity of the body. Large and complex functions should get longer explanations, while small ones much less.
+
+Function/Subroutine/Procedure to document:
 """
 
-FUNCTIONS_NONE_CONTENT = "\n---\nNo subroutines defined in this file."
 
 MACRO_CHECKER_SYSTEM_PROMPT_JSON = """
 Your job is to list any macros defined in the assembly code provided below.
@@ -205,9 +205,10 @@ MACRO_FOUND_USER_PROMPT = """
 Summarize the macro in the code provided below. Describe the inputs, control flow and logic, and output.
 
 - When describing a macro, provide detail that matches the complexity of the body. Large and complex macros should get longer explanations, while small ones much less.
+
+Macro to document:
 """
 
-MACRO_NONE_CONTENT = "\n---\nNo macros defined in this file."
 
 VARIABLES_CHECKER_SYSTEM_PROMPT_JSON = """
 Your job is to list any global variables defined in the assembly code provided below.
@@ -249,96 +250,208 @@ Summarize the variable in the code provided below.
 
 - A global variable is declared at the top level scope. Local variables declared and used inside of functions are not global variables. You will be describing a global variable.
 - When describing a variable, provide detail that matches the complexity of the variable. Large and complex global variables (e.g., containing large struct instances) should get longer explanations, while small ones (e.g., one line definitions) much less.
+
+Variable to document:
 """
 
-VARIABLES_NONE_CONTENT = "\n---\nNo global variables defined in this file."
+
+# Symbol extraction classes
+class AssemblyDataStructureRawSymbolCollection(RawSymbolCollection):
+    data: dict[str, RawSymbolData]
+
+    @classmethod
+    def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
+        raise NotImplementedError("Assembly parsing uses llm extraction")
+
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, code: str, root_rel_path: str) -> Self | None:
+        return default_llm_analysis(
+            collection_cls=cls,
+            llm=llm,
+            code=code,
+            root_rel_path=root_rel_path,
+            system_prompt=DATA_STRUCTURES_CHECKER_SYSTEM_PROMPT_JSON,
+            user_prompt="",
+            symbol_kind=SymbolKind.DATA_STRUCTURE,
+        )
+
+    def to_dict(self) -> dict[str, RawSymbolData]:
+        return self.data
 
 
-def _default_checker(
-    llm: ChatOpenAI,
-    user_prompt: str,
-    system_prompt: str,
-    code: str,
-    as_list_data_ds: bool = False,
-) -> list[str] | ListData | None:
-    list_data = ListData.from_llm(
-        llm=llm, system_prompt=system_prompt, user_prompt=user_prompt, code=code
-    )
-    if len(list_data.data) > 0:
-        if as_list_data_ds:
-            return list_data
-        else:
-            return list_data.data
-    else:
-        return None
+class AssemblySubroutineRawSymbolCollection(RawSymbolCollection):
+    data: dict[str, RawSymbolData]
+
+    @classmethod
+    def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
+        raise NotImplementedError("Assembly parsing uses llm extraction")
+
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, code: str, root_rel_path: str) -> Self | None:
+        return default_llm_analysis(
+            collection_cls=cls,
+            llm=llm,
+            code=code,
+            root_rel_path=root_rel_path,
+            system_prompt=FUNCTIONS_CHECKER_SYSTEM_PROMPT_JSON,
+            user_prompt="",
+            symbol_kind=SymbolKind.CALLABLE,
+        )
+
+    def to_dict(self) -> dict[str, RawSymbolData]:
+        return self.data
 
 
-def assembly_imports_checker(llm: ChatOpenAI, code: str) -> ListData | None:
-    return _default_checker(
-        llm=llm,
-        user_prompt="",
-        system_prompt=IMPORTS_SYSTEM_PROMPT_JSON,
-        code=code,
-        as_list_data_ds=True,
-    )
+class AssemblyMacroRawSymbolCollection(RawSymbolCollection):
+    data: dict[str, RawSymbolData]
+
+    @classmethod
+    def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
+        raise NotImplementedError("Assembly parsing uses llm extraction")
+
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, code: str, root_rel_path: str) -> Self | None:
+        return default_llm_analysis(
+            collection_cls=cls,
+            llm=llm,
+            code=code,
+            root_rel_path=root_rel_path,
+            system_prompt=MACRO_CHECKER_SYSTEM_PROMPT_JSON,
+            user_prompt="",
+            symbol_kind=SymbolKind.CALLABLE,
+        )
+
+    def to_dict(self) -> dict[str, RawSymbolData]:
+        return self.data
 
 
-def assembly_variable_checker(llm: ChatOpenAI, code: str) -> list[str] | None:
-    return _default_checker(
-        llm=llm,
-        user_prompt="",
-        system_prompt=VARIABLES_CHECKER_SYSTEM_PROMPT_JSON,
-        code=code,
-    )
+class AssemblyVariableRawSymbolCollection(RawSymbolCollection):
+    data: dict[str, RawSymbolData]
+
+    @classmethod
+    def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
+        raise NotImplementedError("Assembly parsing uses llm extraction")
+
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, code: str, root_rel_path: str) -> Self | None:
+        return default_llm_analysis(
+            collection_cls=cls,
+            llm=llm,
+            code=code,
+            root_rel_path=root_rel_path,
+            system_prompt=VARIABLES_CHECKER_SYSTEM_PROMPT_JSON,
+            user_prompt="",
+            symbol_kind=SymbolKind.VARIABLE,
+        )
+
+    def to_dict(self) -> dict[str, RawSymbolData]:
+        return self.data
 
 
-def assembly_data_structure_checker(llm: ChatOpenAI, code: str) -> list[str] | None:
-    return _default_checker(
-        llm=llm,
-        user_prompt="",
-        system_prompt=DATA_STRUCTURES_CHECKER_SYSTEM_PROMPT_JSON,
-        code=code,
-    )
+# IR Classes
+class AssemblyDataStructureData(DataStructureData):
+    @classmethod
+    def system_prompt(cls) -> str:
+        return DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON
+
+    @classmethod
+    def user_prompt(cls, symbol: RawSymbolData) -> str:
+        return f"{DATA_STRUCTURES_FOUND_USER_PROMPT}{symbol.name}\n\nCode:\n\n{symbol.file_code}"
+
+    @classmethod
+    def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
+        raise NotImplementedError("Assembly data structures should not have children")
+
+    @classmethod
+    def child_to_field_name(cls, child: RawSymbolData) -> str:
+        raise NotImplementedError("Assembly data structures should not have children")
 
 
-def assembly_function_checker(llm: ChatOpenAI, code: str) -> list[str] | None:
-    return _default_checker(
-        llm=llm,
-        user_prompt="",
-        system_prompt=FUNCTIONS_CHECKER_SYSTEM_PROMPT_JSON,
-        code=code,
-    )
+class AssemblyDataStructureCollection(IrCollection):
+    data: dict[str, AssemblyDataStructureData | list[AssemblyDataStructureData]]
+
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(AssemblyDataStructureData, llm, symbols_list)
 
 
-def assembly_macro_checker(llm: ChatOpenAI, code: str) -> list[str] | None:
-    return _default_checker(
-        llm=llm,
-        user_prompt="",
-        system_prompt=MACRO_CHECKER_SYSTEM_PROMPT_JSON,
-        code=code,
-    )
+class AssemblySubroutineData(FnData):
+    @classmethod
+    def system_prompt(cls) -> str:
+        return FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON
+
+    @classmethod
+    def user_prompt(cls, symbol: RawSymbolData) -> str:
+        return (
+            f"{FUNCTIONS_FOUND_USER_PROMPT}{symbol.name}\n\nCode:\n\n{symbol.file_code}"
+        )
+
+    @classmethod
+    def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
+        raise NotImplementedError("Assembly functions should not have children")
+
+    @classmethod
+    def child_to_field_name(cls, child: RawSymbolData) -> str:
+        raise NotImplementedError("Assembly functions should not have children")
 
 
-variables_dict_from_llm_assembly = partial(
-    variables_dict_from_llm,
-    VARIABLES_FOUND_SYSTEM_PROMPT_JSON,
-    VARIABLES_FOUND_USER_PROMPT,
-)
+class AssemblySubroutineCollection(IrCollection):
+    data: dict[str, AssemblySubroutineData | list[AssemblySubroutineData]]
 
-data_structure_dict_from_llm_assembly = partial(
-    data_structure_dict_from_llm,
-    DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
-    DATA_STRUCTURES_FOUND_USER_PROMPT,
-)
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(AssemblySubroutineData, llm, symbols_list)
 
-fn_dict_from_llm_assembly = partial(
-    fn_dict_from_llm,
-    FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
-    FUNCTIONS_FOUND_USER_PROMPT,
-)
 
-macro_dict_from_llm_assembly = partial(
-    fn_dict_from_llm,
-    MACRO_FOUND_SYSTEM_PROMPT_JSON,
-    MACRO_FOUND_USER_PROMPT,
-)
+class AssemblyMacroData(FnData):
+    @classmethod
+    def system_prompt(cls) -> str:
+        return MACRO_FOUND_SYSTEM_PROMPT_JSON
+
+    @classmethod
+    def user_prompt(cls, symbol: RawSymbolData) -> str:
+        return f"{MACRO_FOUND_USER_PROMPT}{symbol.name}\n\nCode:\n\n{symbol.file_code}"
+
+    @classmethod
+    def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
+        raise NotImplementedError("Assembly macros should not have children")
+
+    @classmethod
+    def child_to_field_name(cls, child: RawSymbolData) -> str:
+        raise NotImplementedError("Assembly macros should not have children")
+
+
+class AssemblyMacroCollection(IrCollection):
+    data: dict[str, AssemblyMacroData | list[AssemblyMacroData]]
+
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(AssemblyMacroData, llm, symbols_list)
+
+
+class AssemblyVariableData(VariableData):
+    @classmethod
+    def system_prompt(cls) -> str:
+        return VARIABLES_FOUND_SYSTEM_PROMPT_JSON
+
+    @classmethod
+    def user_prompt(cls, symbol: RawSymbolData) -> str:
+        return (
+            f"{VARIABLES_FOUND_USER_PROMPT}{symbol.name}\n\nCode:\n\n{symbol.file_code}"
+        )
+
+    @classmethod
+    def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
+        raise NotImplementedError("Assembly variables should not have children")
+
+    @classmethod
+    def child_to_field_name(cls, child: RawSymbolData) -> str:
+        raise NotImplementedError("Assembly variables should not have children")
+
+
+class AssemblyVariableCollection(IrCollection):
+    data: dict[str, AssemblyVariableData | list[AssemblyVariableData]]
+
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(AssemblyVariableData, llm, symbols_list)

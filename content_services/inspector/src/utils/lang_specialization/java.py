@@ -1,14 +1,27 @@
-from functools import partial
 from pathlib import Path
-from typing import Any, Self
+from typing import Self
 
-import openai
-from pydantic import BaseModel
+from pydantic import PrivateAttr
 from utils.codemap_ctags import extract_symbols_w_ctags
-from utils.models import ChatOpenAI, OutputConfig, OutputConfigKind
+from utils.models import ChatOpenAI
 
-from .common import (
-    NamedContent,
+from .ir_common import (
+    FieldNameWithBackTickContent,
+    FieldNameWithBulletedContent,
+    FieldNameWithRawContent,
+    IrCollection,
+    IrData,
+    ListedBacktickNameRawContentWithNone,
+    ListedRawContentNoNone,
+    RawContent,
+)
+from .symbol_common import (
+    RawSymbolCollection,
+    RawSymbolData,
+    ScopeRelation,
+    SymbolKind,
+    code_requires_multi_prompt,
+    create_raw_symbol_via_ctags,
 )
 
 JAVA_INTERFACES = {"interface"}
@@ -69,9 +82,10 @@ INTERFACES_FOUND_USER_PROMPT = """
 Summarize the interface in the code provided below.
 
 - When describing an important interface, provide detail that matches the complexity of the interface. Large and complex interfaces should get longer explanations, while small ones a single sentence.
+
+Interface to document:
 """
 
-INTERFACES_NONE_CONTENT = "\n---\nNo interfaces defined in this file."
 
 CLASSES_FOUND_SYSTEM_PROMPT_JSON = """
 You are an expert Java programmer and a software engineering documentation expert. You write detailed documentation to explain code written in Java.
@@ -95,9 +109,10 @@ CLASSES_FOUND_USER_PROMPT = """
 Summarize the class in the code provided below.
 
 - When describing an important class, provide detail that matches the complexity of the class. Large and complex class should get longer explanations, while small ones a single sentence.
+
+Class to document:
 """
 
-CLASSES_NONE_CONTENT = "\n---\nNo classes defined in this file."
 
 METHODS_FOUND_SYSTEM_PROMPT_JSON = """
 You are an expert Java programmer and a software engineering documentation expert. You write detailed documentation to explain code written in Java.
@@ -130,9 +145,10 @@ METHODS_FOUND_USER_PROMPT = """
 Summarize the method in the code provided below. Describe the inputs, control flow and logic, and output.
 
 - When describing a method, provide detail that matches the complexity of the method body. Large and complex method should get longer explanations, while small ones much less.
+
+Method to document:
 """
 
-METHODS_NONE_CONTENT = "\n---\nNo methods defined in this file."
 
 FIELDS_FOUND_SYSTEM_PROMPT_JSON = """
 You are an expert Java programmer and a software engineering documentation expert. You write detailed documentation to explain code written in Java.
@@ -156,930 +172,420 @@ FIELDS_FOUND_USER_PROMPT = """
 Summarize the field in the code provided below.
 
 - When describing a field, provide detail that matches the complexity of the field. Large and complex global fields should get longer explanations, while small ones much less.
+
+Field to document:
 """
 
-FIELDS_NONE_CONTENT = "\n---\nNo fields defined in this file."
 
-
-class JavaMethodData(BaseModel):
-    single_sentence: str
-    inputs: list[NamedContent]
-    control_flow: list[str]
-    output: str
-    modifiers: list[str]
+class JavaMethodData(IrData):
+    single_sentence: RawContent
+    modifiers: ListedRawContentNoNone
+    inputs: ListedBacktickNameRawContentWithNone
+    control_flow: ListedRawContentNoNone
+    output: FieldNameWithBulletedContent
 
     @classmethod
-    def from_llm(
-        cls,
-        llm: ChatOpenAI,
-        system_prompt: str,
-        user_prompt: str,
-        fn_name: str,
-        code: str,
-    ) -> Self:
-        user_prompt_complete = (
-            f"{user_prompt}Method to document: {fn_name}\n\nCode:\n\n{code}"
-        )
-        try:
-            content_raw = llm.generate_response(
-                system_prompt=system_prompt,
-                user_prompt=user_prompt_complete,
-                output_cfg=OutputConfig(kind=OutputConfigKind.JSON_STRICT, payload=cls),
-            )
-        except openai.LengthFinishReasonError as _:
-            print("LengthFinishReasonError caught")
-            return cls(
-                single_sentence="Method too large to process",
-                inputs=[],
-                control_flow=[],
-                output="",
-            )
-
-        return cls.parse_raw(content_raw)
-
-
-def render_method(
-    method_name: str, method_data: JavaMethodData, markdown_header_level: int
-) -> str:
-    header = "#" * markdown_header_level
-    output = ""
-    output += f"\n---\n{header} {method_name}\n"
-    output += f"{method_data.single_sentence}\n"
-    if len(method_data.modifiers) > 0:
-        output += "\n- **Modifiers**:\n"
-        for m in method_data.modifiers:
-            output += f"    - {m}\n"
-
-    output += "\n- **Inputs**:\n"
-    if len(method_data.inputs) > 0:
-        for i in method_data.inputs:
-            output += f"    - `{i.name}`: {i.content}\n"
-    else:
-        output += "    - None\n"
-    output += "\n- **Output**:\n"
-    output += f"    - {method_data.output}\n"
-    output += "\n- **Logic and Control Flow**:\n"
-    for item in method_data.control_flow:
-        output += f"    - {item}\n"
-    output += "\n"
-    return output
-
-
-class JavaMethodDict(BaseModel):
-    data: dict[str, JavaMethodData | list[JavaMethodData]]
-
-    def render_markdown(self) -> str:
-        output = ""
-        for k, v in self.data.items():
-            if isinstance(v, list):
-                for fn in v:
-                    output += render_method(k, fn, 3)
-            else:
-                output += render_method(k, v, 3)
-        return output
-
-    def __str__(self) -> str:
-        return self.render_markdown()
-
-
-class JavaFieldData(BaseModel):
-    type: str
-    description: str
-    use: str
-    modifiers: list[str]
+    def system_prompt(cls) -> str:
+        return METHODS_FOUND_SYSTEM_PROMPT_JSON
 
     @classmethod
-    def from_llm(
-        cls,
-        llm: ChatOpenAI,
-        system_prompt: str,
-        user_prompt: str,
-        var_name: str,
-        code: str,
-    ) -> Self:
-        user_prompt_complete = (
-            f"{user_prompt}Field to document: {var_name}\n\nCode:\n\n{code}"
-        )
-        content_raw = llm.generate_response(
-            system_prompt=system_prompt,
-            user_prompt=user_prompt_complete,
-            output_cfg=OutputConfig(kind=OutputConfigKind.JSON_STRICT, payload=cls),
-        )
-
-        return cls.parse_raw(content_raw)
-
-
-class JavaFieldDict(BaseModel):
-    data: dict[str, JavaFieldData]
-
-    def render_markdown(self) -> str:
-        output = ""
-        for k, v in self.data.items():
-            output += f"\n---\n## {k}\n"
-            output += f"- **Type**: `{v.type}`\n"
-            output += f"- **Description**\n{v.description}\n"
-            output += f"- **Use**\n{v.use}\n\n"
-            if len(v.modifiers) > 0:
-                output += "- **Modifiers**:\n"
-                for m in v.modifiers:
-                    output += f"    - {m}\n"
-
-        return output
-
-    def __str__(self) -> str:
-        return self.render_markdown()
-
-
-class JavaClassBaseData(BaseModel):
-    description: str
-    interfaces_implemented: list[str]
-    classes_extended: list[str]
-    modifers: list[str]
+    def user_prompt(cls, symbol: RawSymbolData) -> str:
+        user_prompt = f"{METHODS_FOUND_USER_PROMPT}{symbol.name}\n\nMethod Code:\n\n{symbol.symbol_code}"
+        if symbol.file_code:
+            user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
+        return user_prompt
 
     @classmethod
-    def from_llm(
-        cls,
-        llm: ChatOpenAI,
-        system_prompt: str,
-        user_prompt: str,
-        name: str,
-        code: str,
-    ) -> Self:
-        user_prompt_complete = (
-            f"{user_prompt}Class to document: {name}\n\nCode:\n\n{code}"
-        )
-        try:
-            content_raw = llm.generate_response(
-                system_prompt=system_prompt,
-                user_prompt=user_prompt_complete,
-                output_cfg=OutputConfig(kind=OutputConfigKind.JSON_STRICT, payload=cls),
-            )
-        except openai.LengthFinishReasonError as _:
-            print("LengthFinishReasonError caught")
-            return cls(
-                type="",
-                members=[],
-                description="Object too large to process",
-                inherits_from=[],
-            )
-
-        return cls.parse_raw(content_raw)
-
-
-class JavaClassData(BaseModel):
-    base_data: JavaClassBaseData
-    methods: dict[str, JavaMethodData | list[JavaMethodData]]
-    fields: dict[str, JavaFieldData | list[JavaFieldData]]
-    nested_classes: list[str]
-    nested_interfaces: list[str]
-
-
-def render_class_base_data(class_data: JavaClassData) -> str:
-    output = ""
-    if len(class_data.base_data.modifers) > 0:
-        output += "- **Modifiers**:\n"
-        for m in class_data.base_data.modifers:
-            output += f"    - {m}\n"
-    if len(class_data.base_data.classes_extended) > 0:
-        output += "\n- **Extends**:\n"
-        for i in class_data.base_data.classes_extended:
-            output += f"    - `{i}`\n"
-    if len(class_data.base_data.interfaces_implemented) > 0:
-        output += "\n- **Implements**:\n"
-        for i in class_data.base_data.interfaces_implemented:
-            output += f"    - `{i}`\n"
-    output += f"\n- **Description**: {class_data.base_data.description}\n\n"
-    return output
-
-
-class JavaClassDict(BaseModel):
-    data: dict[str, JavaClassData]
-
-    def render_markdown(self) -> str:
-        output = "\n---"
-        for k, v in self.data.items():
-            output += f"\n### {k}\n"
-            output += render_class_base_data(v)
-            if len(v.methods) > 0:
-                output += "\n**Methods**\n"
-                for n, m in v.methods.items():
-                    # Case of potentially overloaded method.
-                    if isinstance(m, list):
-                        for sub_m in m:
-                            output += render_method(n, sub_m, 4)
-                    else:
-                        output += render_method(n, m, 4)
-            if len(v.fields) > 0:
-                output += "\n**Fields**\n"
-                for n, f in v.fields.items():
-                    output += f"\n---\n#### {n}\n"
-                    output += f"- **Type**: `{f.type}`\n"
-                    if len(f.modifiers) > 0:
-                        output += "- **Modifiers**:\n"
-                        for m in f.modifiers:
-                            output += f"    - {m}\n"
-                    output += f"- **Description**\n{f.description}\n"
-                    output += f"- **Use**\n{f.use}\n\n"
-            if len(v.nested_classes) > 0:
-                output += "\n**Nested Classes**:\n"
-                for n in v.nested_classes:
-                    output += f"    - {n}\n"
-            if len(v.nested_interfaces) > 0:
-                output += "\n**Nested Interfaces**:\n"
-                for n in v.nested_interfaces:
-                    output += f"    - {n}\n"
-            output += "\n---\n---"
-
-        return output
-
-    def __str__(self) -> str:
-        return self.render_markdown()
-
-
-class JavaInterfaceBaseData(BaseModel):
-    description: str
-    interfaces_extended: list[str]
+    def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
+        raise NotImplementedError("Methods should not have children")
 
     @classmethod
-    def from_llm(
-        cls,
-        llm: ChatOpenAI,
-        system_prompt: str,
-        user_prompt: str,
-        name: str,
-        code: str,
-    ) -> Self:
-        user_prompt_complete = (
-            f"{user_prompt}Interface to document: {name}\n\nCode:\n\n{code}"
+    def child_to_field_name(cls, child: RawSymbolData) -> str:
+        raise NotImplementedError("Methods should not have children")
+
+    @classmethod
+    def default_instance(cls) -> Self:
+        return cls(
+            single_sentence=RawContent(content=""),
+            inputs=ListedBacktickNameRawContentWithNone(content=[]),
+            control_flow=ListedRawContentNoNone(content=[]),
+            output=FieldNameWithBulletedContent(content=""),
+            modifiers=ListedRawContentNoNone(content=[]),
         )
-        try:
-            content_raw = llm.generate_response(
-                system_prompt=system_prompt,
-                user_prompt=user_prompt_complete,
-                output_cfg=OutputConfig(kind=OutputConfigKind.JSON_STRICT, payload=cls),
-            )
-        except openai.LengthFinishReasonError as _:
-            print("LengthFinishReasonError caught")
-            return cls(
-                type="",
-                members=[],
-                description="Object too large to process",
-                inherits_from=[],
-            )
-
-        return cls.parse_raw(content_raw)
 
 
-class JavaInterfaceData(BaseModel):
-    base_data: JavaInterfaceBaseData
-    methods: dict[str, JavaMethodData | list[JavaMethodData]]
-    fields: dict[str, JavaFieldData | list[JavaFieldData]]
-    nested_classes: list[str]
-    nested_interfaces: list[str]
+class JavaFieldData(IrData):
+    type: FieldNameWithBackTickContent
+    description: FieldNameWithRawContent
+    use: FieldNameWithRawContent
+    modifiers: ListedRawContentNoNone
+
+    @classmethod
+    def system_prompt(cls) -> str:
+        return FIELDS_FOUND_SYSTEM_PROMPT_JSON
+
+    @classmethod
+    def user_prompt(cls, symbol: RawSymbolData) -> str:
+        user_prompt = f"{FIELDS_FOUND_USER_PROMPT}{symbol.name}\n\nField Code:\n\n{symbol.symbol_code}"
+        if symbol.file_code:
+            user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
+        return user_prompt
+
+    @classmethod
+    def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
+        raise NotImplementedError("fields should not have children")
+
+    @classmethod
+    def child_to_field_name(cls, child: RawSymbolData) -> str:
+        raise NotImplementedError("fields should not have children")
+
+    @classmethod
+    def default_instance(cls) -> Self:
+        return cls(
+            type=FieldNameWithBackTickContent(content=""),
+            description=FieldNameWithRawContent(content=""),
+            use=FieldNameWithRawContent(content=""),
+            modifiers=ListedRawContentNoNone(content=[]),
+        )
 
 
-def render_interface_base_data(interface_data: JavaInterfaceData) -> str:
-    output = ""
-    if len(interface_data.base_data.interfaces_extended) > 0:
-        output += "\n- **Extends**:\n"
-        for i in interface_data.base_data.interfaces_extended:
-            output += f"    - `{i}`\n"
-    output += f"\n- **Description**: {interface_data.base_data.description}\n\n"
-    return output
+class JavaClassData(IrData):
+    modifiers: ListedRawContentNoNone
+    interfaces_implemented: ListedRawContentNoNone
+    classes_extended: ListedRawContentNoNone
+    description: FieldNameWithRawContent
+    _supported_child_ordering: list[str] = PrivateAttr(
+        default=[
+            ScopeRelation.METHOD,
+            ScopeRelation.FIELD,
+            ScopeRelation.NESTED_CLASS,
+            ScopeRelation.NESTED_INTERFACE,
+        ]
+    )
 
+    @classmethod
+    def system_prompt(cls) -> str:
+        return CLASSES_FOUND_SYSTEM_PROMPT_JSON
 
-class JavaInterfaceDict(BaseModel):
-    data: dict[str, JavaInterfaceData]
+    @classmethod
+    def user_prompt(cls, symbol: RawSymbolData) -> str:
+        user_prompt = f"{CLASSES_FOUND_USER_PROMPT}{symbol.name}\n\nClass Code:\n\n{symbol.symbol_code}"
+        if symbol.file_code:
+            user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
+        return user_prompt
 
-    def render_markdown(self) -> str:
-        output = "\n---"
-        for k, v in self.data.items():
-            output += f"\n### {k}\n"
-            output += render_interface_base_data(v)
-            if len(v.methods) > 0:
-                # TODO: perhaps don't give much documentation
-                # for methods in interface as they are abstract, unless default...
-                output += "\n**Methods**\n"
-                for n, m in v.methods.items():
-                    # Case of potentially overloaded method.
-                    if isinstance(m, list):
-                        for sub_m in m:
-                            output += render_method(n, sub_m, 4)
-                    else:
-                        output += render_method(n, m, 4)
-            if len(v.fields) > 0:
-                output += "\n**Fields**\n"
-                for n, f in v.fields.items():
-                    output += f"\n---\n#### {n}\n"
-                    output += f"- **Type**: `{f.type}`\n"
-                    if len(f.modifiers) > 0:
-                        output += "- **Modifiers**:\n"
-                        for m in f.modifiers:
-                            output += f"    - {m}\n"
-                    output += f"- **Description**\n{f.description}\n"
-                    output += f"- **Use**\n{f.use}\n\n"
-            if len(v.nested_classes) > 0:
-                output += "\n**Nested Classes**:\n"
-                for n in v.nested_classes:
-                    output += f"    - {n}\n"
-            if len(v.nested_interfaces) > 0:
-                output += "\n**Nested Interfaces**:\n"
-                for n in v.nested_interfaces:
-                    output += f"    - {n}\n"
-            output += "\n---\n---"
-
-        return output
-
-    def __str__(self) -> str:
-        return self.render_markdown()
-
-
-def java_class_checker(
-    code: str, root_rel_path: Path, structured_output: bool = True
-) -> list[dict] | str | None:
-    symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-    classes_dict = {
-        s["name"]: {
-            "methods": [],
-            "nested_classes": [],
-            "nested_interfaces": [],
-            "fields": [],
+    @classmethod
+    def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
+        mapping = {
+            SymbolKind.CALLABLE: JavaMethodData,
+            SymbolKind.CLASS: None,  # for child classes just list them
+            SymbolKind.INTERFACE: None,  # for child interfaces just list them
+            SymbolKind.VARIABLE: JavaFieldData,
         }
-        for s in symbols
-        if s["kind"] in JAVA_CLASSES
-    }
-    for s in symbols:
-        if (
-            (s.get("scope"))
-            and (s["kind"] in JAVA_METHODS)
-            and s["scopeKind"] in JAVA_CLASSES
-        ):
-            classes_dict[s["scope"].split(".")[-1]]["methods"].append(s)
-        elif (
-            (s.get("scope"))
-            and not s["name"].startswith("__anon")
-            and (s["kind"] in JAVA_CLASSES)
-            and (s["scopeKind"] in JAVA_CLASSES)
-        ):
-            classes_dict[s["scope"].split(".")[-1]]["nested_classes"].append(s)
-        elif (
-            (s.get("scope"))
-            and (s["kind"] in JAVA_INTERFACES)
-            and (s["scopeKind"] in JAVA_CLASSES)
-        ):
-            classes_dict[s["scope"].split(".")[-1]]["nested_interfaces"].append(s)
-        elif (
-            (s.get("scope"))
-            and (s["kind"] in JAVA_FIELDS)
-            and (s["scopeKind"] in JAVA_CLASSES)
-        ):
-            classes_dict[s["scope"].split(".")[-1]]["fields"].append(s)
+        return mapping.get(symbol.symbol_kind)
 
-    output = None
-    if len(classes_dict) > 0:
-        if structured_output:
-            output = classes_dict
-        else:
-            output = "\nClasses to document in the code:\n\n"
-            for n in classes_dict:
-                output += f"- {n}\n"
-    return output
-
-
-def java_interface_checker(
-    code: str, root_rel_path: Path, structured_output: bool = True
-) -> list[dict] | str | None:
-    symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-    interfaces_dict = {
-        s["name"]: {
-            "methods": [],
-            "nested_classes": [],
-            "nested_interfaces": [],
-            "fields": [],
+    @classmethod
+    def child_to_field_name(cls, child: RawSymbolData) -> str:
+        mapping = {
+            SymbolKind.CALLABLE: ScopeRelation.METHOD,
+            SymbolKind.CLASS: ScopeRelation.NESTED_CLASS,
+            SymbolKind.INTERFACE: ScopeRelation.NESTED_INTERFACE,
+            SymbolKind.VARIABLE: ScopeRelation.FIELD,
         }
-        for s in symbols
-        if s["kind"] in JAVA_INTERFACES
-    }
-    for s in symbols:
-        if (
-            (s.get("scope"))
-            and (s["kind"] in JAVA_METHODS)
-            and s["scopeKind"] in JAVA_INTERFACES
-        ):
-            interfaces_dict[s["scope"].split(".")[-1]]["methods"].append(s)
-        elif (
-            (s.get("scope"))
-            and not s["name"].startswith("__anon")
-            and (s["kind"] in JAVA_INTERFACES)
-            and (s["scopeKind"] in JAVA_INTERFACES)
-        ):
-            interfaces_dict[s["scope"].split(".")[-1]]["nested_classes"].append(s)
-        elif (
-            (s.get("scope"))
-            and (s["kind"] in JAVA_INTERFACES)
-            and (s["scopeKind"] in JAVA_INTERFACES)
-        ):
-            interfaces_dict[s["scope"].split(".")[-1]]["nested_interfaces"].append(s)
-        elif (
-            (s.get("scope"))
-            and (s["kind"] in JAVA_FIELDS)
-            and (s["scopeKind"] in JAVA_INTERFACES)
-        ):
-            interfaces_dict[s["scope"].split(".")[-1]]["fields"].append(s)
+        return mapping.get(child.symbol_kind)
 
-    output = None
-    if len(interfaces_dict) > 0:
-        if structured_output:
-            output = interfaces_dict
-        else:
-            output = "\nClasses to document in the code:\n\n"
-            for n in interfaces_dict:
-                output += f"- {n}\n"
-    return output
-
-
-def java_class_dict_from_llm(
-    system_prompt_class: str,
-    user_prompt_class: str,
-    system_prompt_fn: str,
-    user_prompt_fn: str,
-    system_prompt_field: str,
-    user_prompt_field: str,
-    class_fn_delimiter: str,
-    llm: ChatOpenAI,
-    class_dict_raw: dict[str, dict[str, Any]],
-    code: str,
-) -> JavaClassDict:
-    class_dict_documented = {}
-    global_method_counts = {}
-    for _, cls_data in class_dict_raw.items():
-        for m in cls_data["methods"]:
-            name = m["name"]
-            global_method_counts[name] = global_method_counts.get(name, 0) + 1
-    for cls_name, cls_data in class_dict_raw.items():
-        class_base = JavaClassBaseData.from_llm(
-            system_prompt=system_prompt_class,
-            user_prompt=user_prompt_class,
-            llm=llm,
-            name=cls_name,
-            code=code,
+    @classmethod
+    def default_instance(cls) -> Self:
+        return cls(
+            modifiers=ListedRawContentNoNone(content=[]),
+            interfaces_implemented=ListedRawContentNoNone(content=[]),
+            classes_extended=ListedRawContentNoNone(content=[]),
+            description=FieldNameWithRawContent(content=""),
         )
-        methods = {}
-        fields = {}
-        nested_classes = []
-        nested_interfaces = []
-        for m in cls_data["methods"]:
-            m_name = m["name"]
-            scoped_name = cls_name + class_fn_delimiter + m_name
-            # More than one method with the same name in the file: cut scope for LLM.
-            if global_method_counts[m_name] > 1:
-                m_start_line = m["line"]
-                # TODO: Better solution if end line is not present.
-                m_end_line = m.get("end")
-                code_lines = code.splitlines()
-                m_code = "\n".join(code_lines[m_start_line - 1 : m_end_line + 1])
-                # Use list to handle method overloading, if present.
-                if scoped_name not in methods:
-                    methods[scoped_name] = []
-                methods[scoped_name].append(
-                    JavaMethodData.from_llm(
-                        system_prompt=system_prompt_fn,
-                        user_prompt=user_prompt_fn,
-                        llm=llm,
-                        fn_name=m_name,
-                        code=m_code,
-                    )
-                )
-            else:
-                m_data = JavaMethodData.from_llm(
-                    system_prompt=system_prompt_fn,
-                    user_prompt=user_prompt_fn,
-                    llm=llm,
-                    fn_name=m_name,
+
+
+class JavaClassCollection(IrCollection):
+    data: dict[str, JavaClassData | list[JavaClassData]]
+
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(JavaClassData, llm, symbols_list)
+
+
+class JavaInterfaceData(IrData):
+    interfaces_extended: ListedRawContentNoNone
+    description: FieldNameWithRawContent
+    _supported_child_ordering: list[str] = PrivateAttr(
+        default=[
+            ScopeRelation.METHOD,
+            ScopeRelation.FIELD,
+            ScopeRelation.NESTED_CLASS,
+            ScopeRelation.NESTED_INTERFACE,
+        ]
+    )
+
+    @classmethod
+    def system_prompt(cls) -> str:
+        return INTERFACES_FOUND_SYSTEM_PROMPT_JSON
+
+    @classmethod
+    def user_prompt(cls, symbol: RawSymbolData) -> str:
+        user_prompt = f"{INTERFACES_FOUND_USER_PROMPT}{symbol.name}\n\nInterface Code:\n\n{symbol.symbol_code}"
+        if symbol.file_code:
+            user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
+        return user_prompt
+
+    @classmethod
+    def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
+        mapping = {
+            SymbolKind.CALLABLE: JavaMethodData,
+            SymbolKind.CLASS: None,  # for child classes just list them
+            SymbolKind.INTERFACE: None,  # for child interfaces just list them
+            SymbolKind.VARIABLE: JavaFieldData,
+        }
+        return mapping.get(symbol.symbol_kind)
+
+    @classmethod
+    def child_to_field_name(cls, child: RawSymbolData) -> str:
+        mapping = {
+            SymbolKind.CALLABLE: ScopeRelation.METHOD,
+            SymbolKind.CLASS: ScopeRelation.NESTED_CLASS,
+            SymbolKind.INTERFACE: ScopeRelation.NESTED_INTERFACE,
+            SymbolKind.VARIABLE: ScopeRelation.FIELD,
+        }
+        return mapping.get(child.symbol_kind)
+
+    @classmethod
+    def default_instance(cls) -> Self:
+        return cls(
+            interfaces_extended=ListedRawContentNoNone(content=[]),
+            description=FieldNameWithRawContent(content=""),
+        )
+
+
+class JavaInterfaceCollection(IrCollection):
+    data: dict[str, JavaInterfaceData | list[JavaInterfaceData]]
+
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(JavaInterfaceData, llm, symbols_list)
+
+
+class JavaClassRawSymbolCollection(RawSymbolCollection):
+    data: dict[str, RawSymbolData]
+
+    @classmethod
+    def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
+        is_multi_prompt = code_requires_multi_prompt(code)
+
+        symbols = extract_symbols_w_ctags(
+            root_rel_path=root_rel_path, file_content=code
+        )
+
+        class_raw_symbol_data = {}
+        for s in symbols:
+            if s["kind"] in JAVA_CLASSES:
+                class_raw_symbol_data[s["name"]] = create_raw_symbol_via_ctags(
+                    ctags_symbol=s,
+                    root_rel_path=root_rel_path,
                     code=code,
+                    symbol_kind=SymbolKind.CLASS,
+                    scope_relation=None,
+                    delimiter=".",
+                    is_multi_prompt=is_multi_prompt,
                 )
-                methods[scoped_name] = m_data
-        for f in cls_data["fields"]:
-            f_name = f["name"]
-            scoped_name = cls_name + class_fn_delimiter + f_name
-            f_data = JavaFieldData.from_llm(
-                system_prompt=system_prompt_field,
-                user_prompt=user_prompt_field,
-                llm=llm,
-                var_name=f_name,
-                code=code,
-            )
-            fields[scoped_name] = f_data
 
-        for nested_class in cls_data["nested_classes"]:
-            nested_classes.append(nested_class["name"])
-
-        for nested_interface in cls_data["nested_interfaces"]:
-            nested_interfaces.append(nested_interface["name"])
-
-        class_data = JavaClassData(
-            base_data=class_base,
-            methods=methods,
-            fields=fields,
-            nested_classes=nested_classes,
-            nested_interfaces=nested_interfaces,
+        for s in symbols:
+            if (
+                (s.get("scope"))
+                and (s["kind"] in JAVA_METHODS)
+                and s["scopeKind"] in JAVA_CLASSES
+            ):
+                scope = s["scope"].split(".")[-1]
+                class_raw_symbol_data[scope].children.append(
+                    create_raw_symbol_via_ctags(
+                        ctags_symbol=s,
+                        root_rel_path=root_rel_path,
+                        code=code,
+                        symbol_kind=SymbolKind.CALLABLE,
+                        scope_relation=ScopeRelation.METHOD,
+                        delimiter=".",
+                        is_multi_prompt=is_multi_prompt,
+                    )
+                )
+            elif (
+                (s.get("scope"))
+                and not s["name"].startswith("__anon")
+                and (s["kind"] in JAVA_CLASSES)
+                and (s["scopeKind"] in JAVA_CLASSES)
+            ):
+                scope = s["scope"].split(".")[-1]
+                # No docs generated, just listing this, so text field unnecessary.
+                class_raw_symbol_data[scope].children.append(
+                    create_raw_symbol_via_ctags(
+                        ctags_symbol=s,
+                        root_rel_path=root_rel_path,
+                        code=code,
+                        symbol_kind=SymbolKind.CLASS,
+                        scope_relation=ScopeRelation.NESTED_CLASS,
+                        delimiter=".",
+                        is_multi_prompt=is_multi_prompt,
+                    )
+                )
+            elif (
+                (s.get("scope"))
+                and (s["kind"] in JAVA_INTERFACES)
+                and (s["scopeKind"] in JAVA_CLASSES)
+            ):
+                scope = s["scope"].split(".")[-1]
+                # No docs generated, just listing this, so text field unnecessary.
+                class_raw_symbol_data[scope].children.append(
+                    create_raw_symbol_via_ctags(
+                        ctags_symbol=s,
+                        root_rel_path=root_rel_path,
+                        code=code,
+                        symbol_kind=SymbolKind.INTERFACE,
+                        scope_relation=ScopeRelation.NESTED_INTERFACE,
+                        delimiter=".",
+                        is_multi_prompt=is_multi_prompt,
+                    )
+                )
+            elif (
+                (s.get("scope"))
+                and (s["kind"] in JAVA_FIELDS)
+                and (s["scopeKind"] in JAVA_CLASSES)
+            ):
+                scope = s["scope"].split(".")[-1]
+                class_raw_symbol_data[scope].children.append(
+                    create_raw_symbol_via_ctags(
+                        ctags_symbol=s,
+                        root_rel_path=root_rel_path,
+                        code=code,
+                        symbol_kind=SymbolKind.VARIABLE,
+                        scope_relation=ScopeRelation.FIELD,
+                        delimiter=".",
+                        is_multi_prompt=is_multi_prompt,
+                    )
+                )
+        output = (
+            None if len(class_raw_symbol_data) == 0 else cls(data=class_raw_symbol_data)
         )
-        class_dict_documented[cls_name] = class_data
+        return output
 
-    return JavaClassDict(data=class_dict_documented)
+    @classmethod
+    def from_llm(cls, code: str, root_rel_path: str) -> Self:
+        raise NotImplementedError("Static analysis should be used for Java classes")
 
-
-BLIND_ADVANCE_IF_NO_END_LINE = 200
-PADDING_LINES_TOP = 100
-PADDING_LINES_BOTTOM = 100
-SYMBOL_MAX_CHUNK_SIZE = 64_000
-SYMBOL_CHUNK_OVERLAP = 1_000
+    def to_dict(self) -> dict[str, RawSymbolData]:
+        return self.data
 
 
-def java_class_dict_from_llm_multi_prompt(
-    system_prompt_class: str,
-    user_prompt_class: str,
-    system_prompt_fn: str,
-    user_prompt_fn: str,
-    system_prompt_field: str,
-    user_prompt_field: str,
-    class_fn_delimiter: str,
-    llm: ChatOpenAI,
-    class_dict_raw: dict[str, dict[str, Any]],
-    code: str,
-    root_rel_path: Path,
-) -> JavaClassDict:
-    from shared.chunking.text_splitter import split_text
+class JavaInterfaceRawSymbolCollection(RawSymbolCollection):
+    data: dict[str, RawSymbolData]
 
-    symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-    class_dict_documented = {}
-    global_method_counts = {}
-    for _, cls_data in class_dict_raw.items():
-        for m in cls_data["methods"]:
-            name = m["name"]
-            global_method_counts[name] = global_method_counts.get(name, 0) + 1
+    @classmethod
+    def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
+        is_multi_prompt = code_requires_multi_prompt(code)
 
-    for symbol in symbols:
-        for cls_name, cls_data in class_dict_raw.items():
-            if symbol["name"] == cls_name:
-                start_line = symbol["line"]
-                end_line = symbol.get(
-                    "end", symbol["line"] + BLIND_ADVANCE_IF_NO_END_LINE
-                )
-                class_code = "\n".join(code.splitlines()[start_line - 1 : end_line])
-                code_chunks = split_text(
-                    text=class_code,
-                    chunk_size=SYMBOL_MAX_CHUNK_SIZE,
-                    chunk_overlap=SYMBOL_CHUNK_OVERLAP,
-                )
-                if len(code_chunks) == 1:
-                    class_dict_documented[cls_name] = java_class_dict_from_llm(
-                        system_prompt_class=system_prompt_class,
-                        user_prompt_class=user_prompt_class,
-                        system_prompt_fn=system_prompt_fn,
-                        user_prompt_fn=user_prompt_fn,
-                        system_prompt_field=system_prompt_field,
-                        user_prompt_field=user_prompt_field,
-                        class_fn_delimiter=class_fn_delimiter,
-                        llm=llm,
-                        class_dict_raw={cls_name: cls_data},
-                        code=class_code,
-                    ).data[cls_name]
-                elif len(code_chunks) > 1:
-                    class_base = JavaClassBaseData.from_llm(
-                        system_prompt=system_prompt_class,
-                        user_prompt=user_prompt_class,
-                        llm=llm,
-                        name=cls_name,
-                        code=code_chunks[0].text,
-                    )
-                    methods = {}
-                    fields = {}
-                    nested_classes = []
-                    nested_interfaces = []
-                    for m in cls_data["methods"]:
-                        m_name = m["name"]
-                        scoped_name = cls_name + class_fn_delimiter + m_name
-                        m_start_line = m["line"]
-                        m_end_line = m.get(
-                            "end", m_start_line + BLIND_ADVANCE_IF_NO_END_LINE
-                        )
-                        m_code = "\n".join(
-                            code.splitlines()[m_start_line - 1 : m_end_line]
-                        )
-                        # More than one method with the same name in the file: cut scope for LLM.
-                        if global_method_counts[m_name] > 1:
-                            # Use list to handle method overloading, if present.
-                            if scoped_name not in methods:
-                                methods[scoped_name] = []
-                            methods[scoped_name].append(
-                                JavaMethodData.from_llm(
-                                    system_prompt=system_prompt_fn,
-                                    user_prompt=user_prompt_fn,
-                                    llm=llm,
-                                    fn_name=m_name,
-                                    code=m_code,
-                                )
-                            )
-                        else:
-                            m_data = JavaMethodData.from_llm(
-                                system_prompt=system_prompt_fn,
-                                user_prompt=user_prompt_fn,
-                                llm=llm,
-                                fn_name=m_name,
-                                code=m_code,
-                            )
-                            methods[scoped_name] = m_data
-                    for f in cls_data["fields"]:
-                        f_name = f["name"]
-                        f_start_line = f["line"] - PADDING_LINES_TOP
-                        f_end_line = f.get("end", f["line"] + PADDING_LINES_BOTTOM)
-                        f_code = "\n".join(code.splitlines()[f_start_line:f_end_line])
-                        scoped_name = cls_name + class_fn_delimiter + f_name
-                        f_data = JavaFieldData.from_llm(
-                            system_prompt=system_prompt_field,
-                            user_prompt=user_prompt_field,
-                            llm=llm,
-                            var_name=f_name,
-                            code=f_code,
-                        )
-                        fields[scoped_name] = f_data
-
-                    for nested_class in cls_data["nested_classes"]:
-                        nested_classes.append(nested_class["name"])
-
-                    for nested_interface in cls_data["nested_interfaces"]:
-                        nested_interfaces.append(nested_interface["name"])
-
-                    class_data = JavaClassData(
-                        base_data=class_base,
-                        methods=methods,
-                        fields=fields,
-                        nested_classes=nested_classes,
-                        nested_interfaces=nested_interfaces,
-                    )
-                    class_dict_documented[cls_name] = class_data
-
-    return JavaClassDict(data=class_dict_documented)
-
-
-def java_interface_dict_from_llm(
-    system_prompt_class: str,
-    user_prompt_class: str,
-    system_prompt_fn: str,
-    user_prompt_fn: str,
-    system_prompt_field: str,
-    user_prompt_field: str,
-    class_fn_delimiter: str,
-    llm: ChatOpenAI,
-    interface_dict_raw: dict[str, dict[str, Any]],
-    code: str,
-) -> JavaInterfaceDict:
-    interface_dict_documented = {}
-    global_method_counts = {}
-    for _, cls_data in interface_dict_raw.items():
-        for m in cls_data["methods"]:
-            name = m["name"]
-            global_method_counts[name] = global_method_counts.get(name, 0) + 1
-    for cls_name, cls_data in interface_dict_raw.items():
-        class_base = JavaInterfaceBaseData.from_llm(
-            system_prompt=system_prompt_class,
-            user_prompt=user_prompt_class,
-            llm=llm,
-            name=cls_name,
-            code=code,
+        symbols = extract_symbols_w_ctags(
+            root_rel_path=root_rel_path, file_content=code
         )
-        methods = {}
-        fields = {}
-        nested_classes = []
-        nested_interfaces = []
-        for m in cls_data["methods"]:
-            m_name = m["name"]
-            scoped_name = cls_name + class_fn_delimiter + m_name
-            # More than one method with the same name in the file: cut scope for LLM.
-            if global_method_counts[m_name] > 1:
-                m_start_line = m["line"]
-                # TODO: Better solution if end line is not present.
-                m_end_line = m.get("end")
-                code_lines = code.splitlines()
-                m_code = "\n".join(code_lines[m_start_line - 1 : m_end_line + 1])
-                # Use list to handle method overloading, if present.
-                if scoped_name not in methods:
-                    methods[scoped_name] = []
-                methods[scoped_name].append(
-                    JavaMethodData.from_llm(
-                        system_prompt=system_prompt_fn,
-                        user_prompt=user_prompt_fn,
-                        llm=llm,
-                        fn_name=m_name,
-                        code=m_code,
-                    )
-                )
-            else:
-                m_data = JavaMethodData.from_llm(
-                    system_prompt=system_prompt_fn,
-                    user_prompt=user_prompt_fn,
-                    llm=llm,
-                    fn_name=m_name,
+
+        interface_raw_symbol_data = {}
+        for s in symbols:
+            if s["kind"] in JAVA_INTERFACES:
+                interface_raw_symbol_data[s["name"]] = create_raw_symbol_via_ctags(
+                    ctags_symbol=s,
+                    root_rel_path=root_rel_path,
                     code=code,
+                    symbol_kind=SymbolKind.INTERFACE,
+                    scope_relation=None,
+                    delimiter=".",
+                    is_multi_prompt=is_multi_prompt,
                 )
-                methods[scoped_name] = m_data
-        for f in cls_data["fields"]:
-            f_name = f["name"]
-            scoped_name = cls_name + class_fn_delimiter + f_name
-            f_data = JavaFieldData.from_llm(
-                system_prompt=system_prompt_field,
-                user_prompt=user_prompt_field,
-                llm=llm,
-                var_name=f_name,
-                code=code,
-            )
-            fields[scoped_name] = f_data
 
-        for nested_class in cls_data["nested_classes"]:
-            nested_classes.append(nested_class["name"])
-
-        for nested_interface in cls_data["nested_interfaces"]:
-            nested_interfaces.append(nested_interface["name"])
-
-        class_data = JavaInterfaceData(
-            base_data=class_base,
-            methods=methods,
-            fields=fields,
-            nested_classes=nested_classes,
-            nested_interfaces=nested_interfaces,
+        for s in symbols:
+            if (
+                (s.get("scope"))
+                and (s["kind"] in JAVA_METHODS)
+                and s["scopeKind"] in JAVA_INTERFACES
+            ):
+                scope = s["scope"].split(".")[-1]
+                interface_raw_symbol_data[scope].children.append(
+                    create_raw_symbol_via_ctags(
+                        ctags_symbol=s,
+                        root_rel_path=root_rel_path,
+                        code=code,
+                        symbol_kind=SymbolKind.CALLABLE,
+                        scope_relation=ScopeRelation.METHOD,
+                        delimiter=".",
+                        is_multi_prompt=is_multi_prompt,
+                    )
+                )
+            elif (
+                (s.get("scope"))
+                and not s["name"].startswith("__anon")
+                and (s["kind"] in JAVA_CLASSES)
+                and (s["scopeKind"] in JAVA_INTERFACES)
+            ):
+                scope = s["scope"].split(".")[-1]
+                # No docs generated, just listing this, so text field unnecessary.
+                interface_raw_symbol_data[scope].children.append(
+                    create_raw_symbol_via_ctags(
+                        ctags_symbol=s,
+                        root_rel_path=root_rel_path,
+                        code=code,
+                        symbol_kind=SymbolKind.CLASS,
+                        scope_relation=ScopeRelation.NESTED_CLASS,
+                        delimiter=".",
+                        is_multi_prompt=is_multi_prompt,
+                    )
+                )
+            elif (
+                (s.get("scope"))
+                and (s["kind"] in JAVA_INTERFACES)
+                and (s["scopeKind"] in JAVA_INTERFACES)
+            ):
+                scope = s["scope"].split(".")[-1]
+                # No docs generated, just listing this, so text field unnecessary.
+                interface_raw_symbol_data[scope].children.append(
+                    create_raw_symbol_via_ctags(
+                        ctags_symbol=s,
+                        root_rel_path=root_rel_path,
+                        code=code,
+                        symbol_kind=SymbolKind.INTERFACE,
+                        scope_relation=ScopeRelation.NESTED_INTERFACE,
+                        delimiter=".",
+                        is_multi_prompt=is_multi_prompt,
+                    )
+                )
+            elif (
+                (s.get("scope"))
+                and (s["kind"] in JAVA_FIELDS)
+                and (s["scopeKind"] in JAVA_INTERFACES)
+            ):
+                scope = s["scope"].split(".")[-1]
+                interface_raw_symbol_data[scope].children.append(
+                    create_raw_symbol_via_ctags(
+                        ctags_symbol=s,
+                        root_rel_path=root_rel_path,
+                        code=code,
+                        symbol_kind=SymbolKind.VARIABLE,
+                        scope_relation=ScopeRelation.FIELD,
+                        delimiter=".",
+                        is_multi_prompt=is_multi_prompt,
+                    )
+                )
+        output = (
+            None
+            if len(interface_raw_symbol_data) == 0
+            else cls(data=interface_raw_symbol_data)
         )
-        interface_dict_documented[cls_name] = class_data
+        return output
 
-    return JavaInterfaceDict(data=interface_dict_documented)
+    @classmethod
+    def from_llm(cls, code: str, root_rel_path: str) -> Self:
+        raise NotImplementedError("Static analysis should be used for Java interfaces")
 
-
-def java_interface_dict_from_llm_multi_prompt(
-    system_prompt_class: str,
-    user_prompt_class: str,
-    system_prompt_fn: str,
-    user_prompt_fn: str,
-    system_prompt_field: str,
-    user_prompt_field: str,
-    class_fn_delimiter: str,
-    llm: ChatOpenAI,
-    interface_dict_raw: dict[str, dict[str, Any]],
-    code: str,
-    root_rel_path: Path,
-) -> JavaInterfaceDict:
-    from shared.chunking.text_splitter import split_text
-
-    symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-    interface_dict_documented = {}
-    global_method_counts = {}
-    for _, cls_data in interface_dict_raw.items():
-        for m in cls_data["methods"]:
-            name = m["name"]
-            global_method_counts[name] = global_method_counts.get(name, 0) + 1
-    for symbol in symbols:
-        for cls_name, cls_data in interface_dict_raw.items():
-            if symbol["name"] == cls_name:
-                start_line = symbol["line"]
-                end_line = symbol.get(
-                    "end", symbol["line"] + BLIND_ADVANCE_IF_NO_END_LINE
-                )
-                interface_code = "\n".join(code.splitlines()[start_line - 1 : end_line])
-                code_chunks = split_text(
-                    text=interface_code,
-                    chunk_size=SYMBOL_MAX_CHUNK_SIZE,
-                    chunk_overlap=SYMBOL_CHUNK_OVERLAP,
-                )
-                if len(code_chunks) == 1:
-                    interface_dict_documented[cls_name] = java_interface_dict_from_llm(
-                        system_prompt_class=system_prompt_class,
-                        user_prompt_class=user_prompt_class,
-                        system_prompt_fn=system_prompt_fn,
-                        user_prompt_fn=user_prompt_fn,
-                        system_prompt_field=system_prompt_field,
-                        user_prompt_field=user_prompt_field,
-                        class_fn_delimiter=class_fn_delimiter,
-                        llm=llm,
-                        interface_dict_raw={cls_name: cls_data},
-                        code=interface_code,
-                    ).data[cls_name]
-                elif len(code_chunks) > 1:
-                    class_base = JavaInterfaceBaseData.from_llm(
-                        system_prompt=system_prompt_class,
-                        user_prompt=user_prompt_class,
-                        llm=llm,
-                        name=cls_name,
-                        code=code_chunks[0].text,
-                    )
-                    methods = {}
-                    fields = {}
-                    nested_classes = []
-                    nested_interfaces = []
-                    for m in cls_data["methods"]:
-                        m_name = m["name"]
-                        scoped_name = cls_name + class_fn_delimiter + m_name
-                        m_start_line = m["line"]
-                        m_end_line = m.get(
-                            "end", m_start_line + BLIND_ADVANCE_IF_NO_END_LINE
-                        )
-                        m_code = "\n".join(
-                            code.splitlines()[m_start_line - 1 : m_end_line]
-                        )
-                        # More than one method with the same name in the file: cut scope for LLM.
-                        if global_method_counts[m_name] > 1:
-                            # Use list to handle method overloading, if present.
-                            if scoped_name not in methods:
-                                methods[scoped_name] = []
-                            methods[scoped_name].append(
-                                JavaMethodData.from_llm(
-                                    system_prompt=system_prompt_fn,
-                                    user_prompt=user_prompt_fn,
-                                    llm=llm,
-                                    fn_name=m_name,
-                                    code=m_code,
-                                )
-                            )
-                        else:
-                            m_data = JavaMethodData.from_llm(
-                                system_prompt=system_prompt_fn,
-                                user_prompt=user_prompt_fn,
-                                llm=llm,
-                                fn_name=m_name,
-                                code=m_code,
-                            )
-                            methods[scoped_name] = m_data
-                    for f in cls_data["fields"]:
-                        f_name = f["name"]
-                        f_start_line = f["line"] - PADDING_LINES_TOP
-                        f_end_line = f.get("end", f["line"] + PADDING_LINES_BOTTOM)
-                        f_code = "\n".join(code.splitlines()[f_start_line:f_end_line])
-                        scoped_name = cls_name + class_fn_delimiter + m_name
-                        f_data = JavaFieldData.from_llm(
-                            system_prompt=system_prompt_field,
-                            user_prompt=user_prompt_field,
-                            llm=llm,
-                            var_name=f_name,
-                            code=f_code,
-                        )
-                        fields[scoped_name] = f_data
-
-                    for nested_class in cls_data["nested_classes"]:
-                        nested_classes.append(nested_class["name"])
-
-                    for nested_interface in cls_data["nested_interfaces"]:
-                        nested_interfaces.append(nested_interface["name"])
-
-                    class_data = JavaInterfaceData(
-                        base_data=class_base,
-                        methods=methods,
-                        fields=fields,
-                        nested_classes=nested_classes,
-                        nested_interfaces=nested_interfaces,
-                    )
-                    interface_dict_documented[cls_name] = class_data
-
-    return JavaInterfaceDict(data=interface_dict_documented)
-
-
-class_dict_from_llm_java = partial(
-    java_class_dict_from_llm,
-    CLASSES_FOUND_SYSTEM_PROMPT_JSON,
-    CLASSES_FOUND_USER_PROMPT,
-    METHODS_FOUND_SYSTEM_PROMPT_JSON,
-    METHODS_FOUND_USER_PROMPT,
-    FIELDS_FOUND_SYSTEM_PROMPT_JSON,
-    FIELDS_FOUND_USER_PROMPT,
-    ".",
-)
-
-interface_dict_from_llm_java = partial(
-    java_interface_dict_from_llm,
-    INTERFACES_FOUND_SYSTEM_PROMPT_JSON,
-    INTERFACES_FOUND_USER_PROMPT,
-    METHODS_FOUND_SYSTEM_PROMPT_JSON,
-    METHODS_FOUND_USER_PROMPT,
-    FIELDS_FOUND_SYSTEM_PROMPT_JSON,
-    FIELDS_FOUND_USER_PROMPT,
-    ".",
-)
-
-class_dict_from_llm_java_multi_prompt = partial(
-    java_class_dict_from_llm_multi_prompt,
-    CLASSES_FOUND_SYSTEM_PROMPT_JSON,
-    CLASSES_FOUND_USER_PROMPT,
-    METHODS_FOUND_SYSTEM_PROMPT_JSON,
-    METHODS_FOUND_USER_PROMPT,
-    FIELDS_FOUND_SYSTEM_PROMPT_JSON,
-    FIELDS_FOUND_USER_PROMPT,
-    ".",
-)
-
-interface_dict_from_llm_java_multi_prompt = partial(
-    java_interface_dict_from_llm_multi_prompt,
-    INTERFACES_FOUND_SYSTEM_PROMPT_JSON,
-    INTERFACES_FOUND_USER_PROMPT,
-    METHODS_FOUND_SYSTEM_PROMPT_JSON,
-    METHODS_FOUND_USER_PROMPT,
-    FIELDS_FOUND_SYSTEM_PROMPT_JSON,
-    FIELDS_FOUND_USER_PROMPT,
-    ".",
-)
+    def to_dict(self) -> dict[str, RawSymbolData]:
+        return self.data

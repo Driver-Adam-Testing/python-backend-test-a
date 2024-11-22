@@ -3,6 +3,7 @@ from uuid import UUID
 
 from database.models_v1 import DerivedContent
 from fastapi import APIRouter, Query
+from fastapi.responses import StreamingResponse
 
 from app.api.auth import ContentEditorPermission, ContentReadonlyPermission, UserToken
 from app.api.session import CurrentSession
@@ -17,6 +18,7 @@ from app.schemas.content_schema import (
     DeleteContentSourcesRequest,
     DeleteDocumentSourceResponse,
     DownloadContentResponse,
+    ExportSingleRequest,
     ListContentInput,
     ListContentResults,
     ListContentTypesInput,
@@ -35,7 +37,7 @@ router = APIRouter()
 def list_content(
     session: CurrentSession,
     user: UserToken,
-    latest_version_only: bool = True,
+    latest_version_only: bool = False,
     limit: int | None = 20,
     offset: int | None = 0,
     content_type_id: Annotated[list[str] | None, Query()] = None,
@@ -355,3 +357,21 @@ def get_content_tags(
     """
     content_service = ContentService(session)
     return content_service.get_content_tags(content_id, user.organization_id)
+
+
+@router.post(
+    "/export-rst",
+    summary="Export Markdown content to RST and return the file",
+    dependencies=[ContentEditorPermission],
+)
+def export_markdown_content_to_rst(
+    session: CurrentSession,
+    request: ExportSingleRequest,
+) -> StreamingResponse:
+    content_service = ContentService(session)
+    rst_content = content_service.convert_markdown_to_rst(request.content)
+    return StreamingResponse(
+        rst_content,
+        media_type="text/x-rst",
+        headers={"Content-Disposition": "attachment; filename=exported_content.rst"},
+    )

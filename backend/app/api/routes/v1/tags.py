@@ -88,7 +88,7 @@ def read_tag_contents(
     text: str | None = None,
     limit: int | None = 20,
     offset: int | None = 0,
-    latest_version_only: bool = True,
+    latest_version_only: bool = False,
 ) -> ListTagContentsResults:
     tag_service = TagService(session)
     return tag_service.list_tag_contents(

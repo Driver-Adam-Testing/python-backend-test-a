@@ -72,3 +72,18 @@ def ensure_bucket_exists(bucket_name: str, region: str | None = None) -> bool:
             # Something else went wrong when checking the bucket
             logging.error(f"Error checking bucket {bucket_name}: {e}")
             raise Exception(f"Error checking bucket {bucket_name}: {e}")
+
+
+def has_no_threats_tag(bucket: str, key: str) -> bool:
+    tags = s3_client.get_object_tagging(Bucket=bucket, Key=key)
+    return (
+        len(
+            [
+                tag
+                for tag in tags["TagSet"]
+                if tag["Key"] == "GuardDutyMalwareScanStatus"
+                and tag["Value"] == "NO_THREATS_FOUND"
+            ]
+        )
+        == 1
+    )

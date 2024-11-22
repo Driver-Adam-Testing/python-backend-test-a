@@ -4,12 +4,12 @@ from utils.lang_specialization.default import (
 from utils.lang_specialization.header import (
     SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT,
     SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_C_OR_CPP_HEADER,
-    class_dict_from_llm_header,
-    fn_dict_from_llm_header,
-    header_class_checker,
-    header_function_checker,
-    header_variables_checker,
-    variables_dict_from_llm_header,
+    HeaderDataStructureCollection,
+    HeaderDataStructureRawSymbolCollection,
+    HeaderFnCollection,
+    HeaderFnRawSymbolCollection,
+    HeaderVariableCollection,
+    HeaderVariableRawSymbolCollection,
 )
 from utils.templates import S
 
@@ -30,22 +30,22 @@ SOURCE_CODE_LARGE_TEMPLATE_HEADER = [
     (
         S.FN_COND_JSON,
         "# Global Variables",
-        header_variables_checker,
-        variables_dict_from_llm_header,
+        HeaderVariableRawSymbolCollection.from_static_analysis,
+        HeaderVariableCollection.from_llm,
         None,
     ),
     (
         S.FN_COND_JSON,
         "# Data Structures",
-        header_class_checker,
-        class_dict_from_llm_header,
+        HeaderDataStructureRawSymbolCollection.from_static_analysis,
+        HeaderDataStructureCollection.from_llm,
         None,
     ),
     (
         S.FN_COND_JSON,
         "# Functions",
-        header_function_checker,
-        fn_dict_from_llm_header,
+        HeaderFnRawSymbolCollection.from_static_analysis,
+        HeaderFnCollection.from_llm,
         None,
     ),
 ]

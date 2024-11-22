@@ -1,6 +1,9 @@
+from utils.lang_specialization.default_multi_context import (
+    SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT_MULTI_CONTEXT,
+    SOURCE_CODE_PURPOSE_FROM_CHUNKS,
+)
 from utils.lang_specialization.verilog import (
-    SOURCE_CODE_SMALL_PURPOSE_USER_PROMPT,
-    SOURCE_CODE_SMALL_SYSTEM_PROMPT_GENERAL_VERILOG,
+    SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_VERILOG,
     VerilogFnTaskCollection,
     VerilogFnTaskRawSymbolCollection,
     VerilogModuleCollection,
@@ -8,12 +11,13 @@ from utils.lang_specialization.verilog import (
 )
 from utils.templates import S
 
-SOURCE_CODE_SMALL_TEMPLATE_VERILOG = [
+SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_VERILOG = [
     (
-        S.SINGLE_PROMPT_TEXT,
+        S.MULTI_PROMPT_TEXT,
         "# Purpose",
-        SOURCE_CODE_SMALL_SYSTEM_PROMPT_GENERAL_VERILOG,
-        SOURCE_CODE_SMALL_PURPOSE_USER_PROMPT,
+        SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_VERILOG,
+        SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT_MULTI_CONTEXT,
+        SOURCE_CODE_PURPOSE_FROM_CHUNKS,
     ),
     (
         S.FN_COND_JSON,

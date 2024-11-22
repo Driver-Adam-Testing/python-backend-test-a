@@ -1,12 +1,12 @@
 from utils.lang_specialization.cpp import (
     SOURCE_CODE_SMALL_PURPOSE_USER_PROMPT,
     SOURCE_CODE_SMALL_SYSTEM_PROMPT_GENERAL_CPP,
-    class_dict_from_llm_cpp,
-    cpp_class_checker,
-    cpp_function_checker,
-    cpp_variables_checker,
-    fn_dict_from_llm_cpp,
-    variables_dict_from_llm_cpp,
+    CppClassCollection,
+    CppClassRawSymbolCollection,
+    CppFnCollection,
+    CppFreeFnRawSymbolCollection,
+    CppVariableCollection,
+    CppVariableRawSymbolCollection,
 )
 from utils.lang_specialization.default import default_imports_checker
 from utils.templates import S
@@ -28,22 +28,22 @@ SOURCE_CODE_SMALL_TEMPLATE_CPP = [
     (
         S.FN_COND_JSON,
         "# Global Variables",
-        cpp_variables_checker,
-        variables_dict_from_llm_cpp,
+        CppVariableRawSymbolCollection.from_static_analysis,
+        CppVariableCollection.from_llm,
         None,
     ),
     (
         S.FN_COND_JSON,
         "# Data Structures",
-        cpp_class_checker,
-        class_dict_from_llm_cpp,
+        CppClassRawSymbolCollection.from_static_analysis,
+        CppClassCollection.from_llm,
         None,
     ),
     (
         S.FN_COND_JSON,
         "# Functions",
-        cpp_function_checker,
-        fn_dict_from_llm_cpp,
+        CppFreeFnRawSymbolCollection.from_static_analysis,
+        CppFnCollection.from_llm,
         None,
     ),
 ]

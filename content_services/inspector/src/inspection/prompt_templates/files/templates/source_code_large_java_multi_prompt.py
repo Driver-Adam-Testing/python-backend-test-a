@@ -5,10 +5,10 @@ from utils.lang_specialization.default_multi_context import (
 )
 from utils.lang_specialization.java import (
     SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_JAVA,
-    class_dict_from_llm_java_multi_prompt,
-    interface_dict_from_llm_java_multi_prompt,
-    java_class_checker,
-    java_interface_checker,
+    JavaClassCollection,
+    JavaClassRawSymbolCollection,
+    JavaInterfaceCollection,
+    JavaInterfaceRawSymbolCollection,
 )
 from utils.templates import S
 
@@ -21,7 +21,7 @@ SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_JAVA = [
         SOURCE_CODE_PURPOSE_FROM_CHUNKS,
     ),
     (
-        S.LLM_COND_JSON,
+        S.MULTI_LLM_COND_JSON,
         "# Imports and Dependencies",
         default_imports_checker_multi_prompt,
         lambda _llm, output, _code: output,
@@ -30,15 +30,15 @@ SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_JAVA = [
     (
         S.FN_COND_JSON,
         "# Interfaces",
-        java_interface_checker,
-        interface_dict_from_llm_java_multi_prompt,
+        JavaInterfaceRawSymbolCollection.from_static_analysis,
+        JavaInterfaceCollection.from_llm,
         None,
     ),
     (
         S.FN_COND_JSON,
         "# Classes",
-        java_class_checker,
-        class_dict_from_llm_java_multi_prompt,
+        JavaClassRawSymbolCollection.from_static_analysis,
+        JavaClassCollection.from_llm,
         None,
     ),
 ]

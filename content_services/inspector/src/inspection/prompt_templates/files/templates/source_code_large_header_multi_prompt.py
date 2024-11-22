@@ -5,12 +5,12 @@ from utils.lang_specialization.default_multi_context import (
 )
 from utils.lang_specialization.header import (
     SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_C_OR_CPP_HEADER,
-    classes_dict_from_llm_header_multi_prompt,
-    fn_dict_from_llm_header_multi_prompt,
-    header_class_checker,
-    header_function_checker,
-    header_variables_checker,
-    variables_dict_from_llm_header_multi_prompt,
+    HeaderDataStructureCollection,
+    HeaderDataStructureRawSymbolCollection,
+    HeaderFnCollection,
+    HeaderFnRawSymbolCollection,
+    HeaderVariableCollection,
+    HeaderVariableRawSymbolCollection,
 )
 from utils.templates import S
 
@@ -32,22 +32,22 @@ SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_HEADER = [
     (
         S.FN_COND_JSON,
         "# Global Variables",
-        header_variables_checker,
-        variables_dict_from_llm_header_multi_prompt,
+        HeaderVariableRawSymbolCollection.from_static_analysis,
+        HeaderVariableCollection.from_llm,
         None,
     ),
     (
         S.FN_COND_JSON,
         "# Data Structures",
-        header_class_checker,
-        classes_dict_from_llm_header_multi_prompt,
+        HeaderDataStructureRawSymbolCollection.from_static_analysis,
+        HeaderDataStructureCollection.from_llm,
         None,
     ),
     (
         S.FN_COND_JSON,
         "# Functions",
-        header_function_checker,
-        fn_dict_from_llm_header_multi_prompt,
+        HeaderFnRawSymbolCollection.from_static_analysis,
+        HeaderFnCollection.from_llm,
         None,
     ),
 ]

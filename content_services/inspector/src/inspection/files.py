@@ -9,7 +9,7 @@ from utils.dag import LiteNode
 from utils.io import (
     get_prompt_template,
 )
-from utils.lang_specialization.common import Lang
+from utils.lang_specialization.symbol_common import Lang
 from utils.models import ChatOpenAI
 from utils.templates import Template
 
@@ -28,6 +28,9 @@ from inspection.prompt_templates.files.templates.metadata_small_default import (
 from inspection.prompt_templates.files.templates.source_code_large_assembly import (
     SOURCE_CODE_LARGE_TEMPLATE_ASSEMBLY,
 )
+from inspection.prompt_templates.files.templates.source_code_large_assembly_multi_prompt import (
+    SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_ASSEMBLY,
+)
 from inspection.prompt_templates.files.templates.source_code_large_c import (
     SOURCE_CODE_LARGE_TEMPLATE_C,
 )
@@ -39,6 +42,12 @@ from inspection.prompt_templates.files.templates.source_code_large_cpp import (
 )
 from inspection.prompt_templates.files.templates.source_code_large_cpp_multi_prompt import (
     SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CPP,
+)
+from inspection.prompt_templates.files.templates.source_code_large_cs import (
+    SOURCE_CODE_LARGE_TEMPLATE_CS,
+)
+from inspection.prompt_templates.files.templates.source_code_large_cs_multi_prompt import (
+    SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CS,
 )
 from inspection.prompt_templates.files.templates.source_code_large_default import (
     SOURCE_CODE_LARGE_TEMPLATE_DEFAULT,
@@ -76,6 +85,9 @@ from inspection.prompt_templates.files.templates.source_code_large_rust_multi_pr
 from inspection.prompt_templates.files.templates.source_code_large_verilog import (
     SOURCE_CODE_LARGE_TEMPLATE_VERILOG,
 )
+from inspection.prompt_templates.files.templates.source_code_large_verilog_multi_prompt import (
+    SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_VERILOG,
+)
 from inspection.prompt_templates.files.templates.source_code_multi_context_default import (
     SOURCE_CODE_MULTI_CONTEXT_TEMPLATE_DEFAULT,
 )
@@ -87,6 +99,9 @@ from inspection.prompt_templates.files.templates.source_code_small_c import (
 )
 from inspection.prompt_templates.files.templates.source_code_small_cpp import (
     SOURCE_CODE_SMALL_TEMPLATE_CPP,
+)
+from inspection.prompt_templates.files.templates.source_code_small_cs import (
+    SOURCE_CODE_SMALL_TEMPLATE_CS,
 )
 from inspection.prompt_templates.files.templates.source_code_small_default import (
     SOURCE_CODE_SMALL_TEMPLATE_DEFAULT,
@@ -198,6 +213,7 @@ SOURCE_CODE_LARGE_BY_LANG = {
     Lang.ASSEMBLY: SOURCE_CODE_LARGE_TEMPLATE_ASSEMBLY,
     Lang.JAVA: SOURCE_CODE_LARGE_TEMPLATE_JAVA,
     Lang.RUBY: SOURCE_CODE_LARGE_TEMPLATE_RUBY,
+    Lang.C_SHARP: SOURCE_CODE_LARGE_TEMPLATE_CS,
 }
 SOURCE_CODE_SMALL_BY_LANG = {
     Lang.DEFAULT: SOURCE_CODE_SMALL_TEMPLATE_DEFAULT,
@@ -210,6 +226,7 @@ SOURCE_CODE_SMALL_BY_LANG = {
     Lang.ASSEMBLY: SOURCE_CODE_SMALL_TEMPLATE_ASSEMBLY,
     Lang.JAVA: SOURCE_CODE_SMALL_TEMPLATE_JAVA,
     Lang.RUBY: SOURCE_CODE_SMALL_TEMPLATE_RUBY,
+    Lang.C_SHARP: SOURCE_CODE_SMALL_TEMPLATE_CS,
 }
 METADATA_SMALL_BY_LANG = {
     Lang.DEFAULT: METADATA_SMALL_TEMPLATE,
@@ -222,6 +239,7 @@ METADATA_SMALL_BY_LANG = {
     Lang.ASSEMBLY: METADATA_SMALL_TEMPLATE,
     Lang.JAVA: METADATA_SMALL_TEMPLATE,
     Lang.RUBY: METADATA_SMALL_TEMPLATE,
+    Lang.C_SHARP: METADATA_SMALL_TEMPLATE,
 }
 METADATA_MEDIUM_BY_LANG = {
     Lang.DEFAULT: METADATA_MEDIUM_TEMPLATE,
@@ -234,6 +252,7 @@ METADATA_MEDIUM_BY_LANG = {
     Lang.ASSEMBLY: METADATA_MEDIUM_TEMPLATE,
     Lang.JAVA: METADATA_MEDIUM_TEMPLATE,
     Lang.RUBY: METADATA_MEDIUM_TEMPLATE,
+    Lang.C_SHARP: METADATA_MEDIUM_TEMPLATE,
 }
 METADATA_LARGE_BY_LANG = {
     Lang.DEFAULT: METADATA_LARGE_TEMPLATE,
@@ -246,6 +265,7 @@ METADATA_LARGE_BY_LANG = {
     Lang.ASSEMBLY: METADATA_LARGE_TEMPLATE,
     Lang.JAVA: METADATA_LARGE_TEMPLATE,
     Lang.RUBY: METADATA_LARGE_TEMPLATE,
+    Lang.C_SHARP: METADATA_LARGE_TEMPLATE,
 }
 TEMPLATE_DATA = {
     FileEnum.SOURCE_CODE_LARGE: SOURCE_CODE_LARGE_BY_LANG,
@@ -463,6 +483,12 @@ def comprehend_file_top_down(
                         template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_JAVA
                     case Lang.RUBY:
                         template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_RUBY
+                    case Lang.ASSEMBLY:
+                        template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_ASSEMBLY
+                    case Lang.VERILOG:
+                        template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_VERILOG
+                    case Lang.C_SHARP:
+                        template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CS
                     case _:
                         template = SOURCE_CODE_MULTI_CONTEXT_TEMPLATE_DEFAULT
                 long_template = Template(template=template)
@@ -533,8 +559,9 @@ def comprehend_file_top_down(
                 path=node.root_rel_path,
                 code=source_code,
             )
-        except openai.BadRequestError:
+        except openai.BadRequestError as e:
             # TODO: this is a hack. Should rethink the tokenizing
+            raise e
             description = "Could not process file"
             success = False
             results = _return_with_simple_message(

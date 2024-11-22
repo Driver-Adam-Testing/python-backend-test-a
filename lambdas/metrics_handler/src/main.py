@@ -1,6 +1,8 @@
 import logging
 import os
 
+import botocore
+from aws_secretsmanager_caching import SecretCache, SecretCacheConfig
 from database.db import create_engine
 from database.models_v1 import UsageEvent
 from sqlmodel import Session
@@ -31,8 +33,20 @@ engine = create_engine(settings.DATABASE_URL)
 # # https://stackoverflow.com/questions/60455830/can-you-have-an-async-handler-in-lambda-python-3-6
 def handler(event, context) -> str:
     logger.info(event)
-    event_data = event["detail"]
-    logger.info(event_data)
+
+    sm_client = botocore.session.get_session().create_client("secretsmanager")
+    cache_config = SecretCacheConfig()
+    cache = SecretCache(config=cache_config, client=sm_client)
+
+    database_url = (
+        cache.get_secret_string(settings.DATABASE_URL_SECRET_NAME)
+        if settings.ENVIRONMENT != "local"
+        else settings.DATABASE_URL
+    )
+
+    results = []
+
+
     with Session(engine) as session:
         usage_event = UsageEvent(
             session_id=event_data["session_id"],

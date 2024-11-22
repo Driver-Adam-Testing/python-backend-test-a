@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     )
     ENVIRONMENT: Literal["local", "ops", "development"] = "local"
     DATABASE_URL: str
+    DATABASE_URL_SECRET_NAME: str
 
 
 settings = Settings()  # type: ignore

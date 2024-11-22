@@ -19,37 +19,42 @@ else:
 logger = logging.getLogger()
 logger.info(f"Log level set to {log_level}")
 
-# engine = None
+sm_client = botocore.session.get_session().create_client("secretsmanager")
+cache_config = SecretCacheConfig()
+cache = SecretCache(config=cache_config, client=sm_client)
 
+database_url = (
+    cache.get_secret_string(settings.DATABASE_URL_SECRET_NAME)
+    if settings.ENVIRONMENT != "local"
+    else settings.DATABASE_URL
+)
+
+# engine = None
 # def get_engine() -> Session:
 #     global engine
 #     if engine is None:
-#         engine = create_engine(settings.DATABASE_URL)
+#         engine = create_engine(database_url)
 #     return engine
 
-engine = create_engine(settings.DATABASE_URL)
+engine = create_engine(database_url)
+
 
 # # Python lambdas have to be synchronous ¯\_(ツ)_/¯
 # # https://stackoverflow.com/questions/60455830/can-you-have-an-async-handler-in-lambda-python-3-6
-def handler(event, context) -> str:
+def handler(event: dict, context: any) -> str:
     logger.info(event)
-
-    sm_client = botocore.session.get_session().create_client("secretsmanager")
-    cache_config = SecretCacheConfig()
-    cache = SecretCache(config=cache_config, client=sm_client)
-
-    database_url = (
-        cache.get_secret_string(settings.DATABASE_URL_SECRET_NAME)
-        if settings.ENVIRONMENT != "local"
-        else settings.DATABASE_URL
-    )
-
-    results = []
-
-
+    logger.info(context)
+    event_data = event["detail"]
+    logger.info(event_data)
     with Session(engine) as session:
+        session_id = event_data["session_id"]
+        # usage_session = session.get(UsageSession, session_id)
+        # if usage_session is None:
+        #     return "Session not found"
+        # raise Exception("Session not found")
+
         usage_event = UsageEvent(
-            session_id=event_data["session_id"],
+            session_id=session_id,
             event_source=event_data["event_source"],
             event_type=event_data["event_type"],
             organization_id=event_data["organization_id"],

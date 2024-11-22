@@ -1,3 +1,5 @@
+import os
+
 from aws_cdk import Stack
 from constructs import Construct
 
@@ -16,7 +18,7 @@ class TestInDevStack(Stack):
             self,
             "MetricsLambda",
             MetricsLambdaParams(
-                environment="testindev",
-                database_url="",  # os.getenv("DATABASE_URL")
+                environment=os.getenv("ENVIRONMENT", "development"),
+                database_url=os.getenv("DATABASE_URL"),
             ),
         )

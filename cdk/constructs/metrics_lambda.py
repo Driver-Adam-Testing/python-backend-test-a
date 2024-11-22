@@ -55,6 +55,7 @@ class MetricsLambda(Construct):
             reserved_concurrent_executions=10,
             timeout=Duration.seconds(60),
         )
+        database_url_secret.grant_read(self.lambda_function)
         event_target = targets.LambdaFunction(
             self.lambda_function,
         )

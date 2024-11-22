@@ -125,6 +125,8 @@ class LLMUsageSession:
                 # EndpointId=endpoint_id  # Include endpoint ID if provided
             )
             self.events_sent += 1
+            print(f"Sent event: {response}")
+            # TODO: check response for errors and retry if necessary or report to error handling service
             return response
         except Exception as e:
             print(f"Error sending event: {e}")

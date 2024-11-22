@@ -586,3 +586,45 @@ class UsageEvent(SQLModel, table=True):
     )
     # Relationships
     session: UsageSession | None = Relationship(back_populates="usage_events")
+
+
+class User(SQLModel, table=True):
+    """This table is separate from the Auth0 user table to allow for additional user metadata to be stored.
+
+    There is no guarantee that there will be a row in this table for every user in the Auth0 user table.
+    Rather, a row for a user is created (right now) when a VCS installation (e.g. github app) is associated with a user.
+    """
+
+    id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    user_id: str = Field(index=True)
+    organization_id: str
+    github_app_installation_id: str | None = Field(default=None, index=True)
+    created_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
+        default=None,
+    )
+    updated_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
+        ),
+    )
+
+    __table_args__ = (
+        # Ensure unique user-org pairs
+        UniqueConstraint("user_id", "organization_id", name="uq_user_org"),
+        # Ensure unique GitHub installation IDs when the installation ID is not null
+        # ✅ Allowed: github_app_installation_id="1234"
+        # ❌ Not Allowed: Another row with github_app_installation_id="1234"
+        # ✅ Allowed: Multiple rows with github_app_installation_id=None
+        Index(
+            "uq_installation_id_non_null",
+            "github_app_installation_id",
+            unique=True,
+            postgresql_where=Column("github_app_installation_id").isnot(None),
+        ),
+    )

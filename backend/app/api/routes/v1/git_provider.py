@@ -2,6 +2,7 @@ import base64
 import hashlib
 import hmac
 import json
+import logging
 from datetime import datetime
 
 from fastapi import APIRouter, HTTPException, Request, Response, status
@@ -14,6 +15,8 @@ from app.core.config import settings
 from app.repositories.workspace_repository import WorkspaceRepository
 from app.utils.aws_secrets_manager import format_secret_key, read_secret, write_secret
 from app.utils.gh_ops import download_and_upload_repo, exchange_code_for_token
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -32,7 +35,13 @@ async def git_provider_callback(
     installation_id: str,
     request: Request,
     response: Response,
-):
+) -> Response:
+    """
+    Callback endpoint to handle the OAuth flow for GitHub.
+
+    Stores the access token in AWS Secrets Manager for the org/user for later use
+    in cloning the repo and uploading to S3, for example.
+    """
     if provider != "github":
         raise HTTPException(status_code=400, detail="Bad request")
 
@@ -66,54 +75,65 @@ class GitRepository(BaseModel):
     metadata: dict
 
 
-# endpoint to clone repo and pipe to s3
 @router.post("/{provider}/clone-repo", dependencies=[ContentEditorPermission])
-async def clone_repo(
+def clone_and_upload_repo_to_s3(
     session: CurrentSession,
     current_user: UserToken,
     provider: str,
     repo: GitRepository,
-):
+) -> JSONResponse:
+    if provider not in ["github"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid provider"
+        )
+
     secret_key = format_secret_key(
         current_user.organization_id, current_user.user_id, provider
     )
     value = read_secret(secret_key)
-    token = None
+    if not value or "SecretString" not in value:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Authentication failed"
+        )
+
+    secret_sauce = json.loads(value["SecretString"])
+    token = secret_sauce.get("access_token")
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Authentication failed"
+        )
+
     workspace_repo = WorkspaceRepository(session)
-    default_workspace = workspace_repo.get_default_workspace(
-        current_user.organization_id
+    workspace_id = str(
+        workspace_repo.get_default_workspace(current_user.organization_id).id
     )
-    if not default_workspace:
-        raise HTTPException(status_code=400, detail="Default workspace not found")
 
-    workspace_id = str(default_workspace.id)
-    upload_complete = False
-    if value is not None:
-        s = value["SecretString"]
-        secret_sauce = json.loads(s)
-        token = secret_sauce["access_token"]
-        upload_complete = await download_and_upload_repo(
-            repo.org,
-            current_user.user_id,
-            current_user.organization_id,
-            workspace_id,
-            repo.repo_name,
-            token,
-            provider,
-        )
+    # I'm not sure why we are returning a boolean, but I left this unchanged.
+    # It seems the code within should just raise an appropriate exception.
+    upload_complete = download_and_upload_repo(
+        repo.org,
+        current_user.user_id,
+        current_user.organization_id,
+        workspace_id,
+        repo.repo_name,
+        token,
+    )
 
-    if upload_complete is True:
+    if upload_complete:
         return JSONResponse(
-            status_code=status.HTTP_202_ACCEPTED, content={"message": "Upload complete"}
-        )
-    else:
-        return JSONResponse(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={"message": "Upload failed"},
+            status_code=status.HTTP_202_ACCEPTED,
+            content={"message": "Upload complete"},
         )
 
+    raise HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail="Failed to process the request",
+    )
 
-def verify_signature(payload_body, secret_token, signature_header):
+
+def verify_signature(
+    payload_body: bytes, secret_token: str, signature_header: str
+) -> None:
     """Verify that the payload was sent from GitHub by validating SHA256.
 
     Raise and return 403 if not authorized.
@@ -135,40 +155,62 @@ def verify_signature(payload_body, secret_token, signature_header):
         raise HTTPException(status_code=403, detail="Request signatures didn't match!")
 
 
-@router.post("/{provider}/webhook")
-async def webhook(provider: str, request: Request):
-    # Ensure the request body is read as bytes for signature verification
-    body_bytes = await request.body()  # Get the raw request body as bytes
-    body = await request.json()  # Parse the JSON body for further processing
+# TODO update this so we kick of the onboarding process on certain events
+@router.post("/github/webhook")
+async def webhook(request: Request) -> JSONResponse:
+    body_bytes = await request.body()
+    body = await request.json()
     github_event = request.headers.get("x-github-event", "")
     signature_header = request.headers.get("x-hub-signature-256", "")
+    secret_token = settings.GH_WEBHOOK_SECRET
 
-    # Verify the GitHub signature
-    secret_token = (
-        settings.GH_WEBHOOK_SECRET
-    )  # Ensure you have this configured in your settings or environment
     try:
         verify_signature(body_bytes, secret_token, signature_header)
     except HTTPException as e:
-        return JSONResponse(status_code=e.status_code, content={"detail": e.detail})
+        logger.warning("Signature verification failed")
+        return JSONResponse(
+            status_code=e.status_code, content={"detail": "Error occurred"}
+        )
 
-    # TODO handle install event
-    # TODO handle uninstall event
-    # TODO handle revoke event
+    if github_event == "push":
+        repository = body.get("repository", {})
+        org_name = repository.get("owner", {}).get("login", "unknown")
+        repo_name = repository.get("name", "unknown")
+        default_branch = repository.get("default_branch", "unknown")
+        pushed_ref = body.get("ref", "")
 
-    # Respond to indicate that the delivery was successfully received
-    if github_event == "issues":
-        action = body.get("action", "")
-        if action == "opened":
-            print(f"An issue was opened with this title: {body['issue']['title']}")
-        elif action == "closed":
-            print(f"An issue was closed by {body['issue']['user']['login']}")
-        else:
-            print(f"Unhandled action for the issue event: {action}")
+        if pushed_ref != f"refs/heads/{default_branch}":
+            logger.info(
+                "Push event ignored: Not the default branch. Org: %s, Repo: %s, Ref: %s",
+                org_name,
+                repo_name,
+                pushed_ref,
+            )
+            return JSONResponse(
+                status_code=status.HTTP_202_ACCEPTED,
+                content={"message": "Push event ignored (not default branch)"},
+            )
+
+        logger.info(
+            "Push event on default branch. Org: %s, Repo: %s, Branch: %s",
+            org_name,
+            repo_name,
+            default_branch,
+        )
+        # TODO: here is where we can check if the last version is complete, and if so,
+        #  kick off the onboarding process
+        return JSONResponse(
+            status_code=status.HTTP_202_ACCEPTED,
+            content={"message": f"Push event processed for {org_name}/{repo_name}"},
+        )
+
     elif github_event == "ping":
-        print("GitHub sent the ping event")
-    else:
-        print(f"Unhandled event: {github_event}")
+        logger.info("Ping event received from GitHub.")
+        return JSONResponse(
+            status_code=status.HTTP_202_ACCEPTED, content={"message": "Ping received"}
+        )
+
+    logger.info("Unhandled event type: %s", github_event)
     return JSONResponse(
-        status_code=status.HTTP_202_ACCEPTED, content={"message": "Accepted"}
+        status_code=status.HTTP_202_ACCEPTED, content={"message": "Event ignored"}
     )

@@ -1,4 +1,5 @@
 import json
+from typing import Any
 from urllib.parse import unquote_plus
 
 import botocore
@@ -11,7 +12,10 @@ from src.utils.config import settings
 
 # Python lambdas have to be synchronous ¯\_(ツ)_/¯
 # https://stackoverflow.com/questions/60455830/can-you-have-an-async-handler-in-lambda-python-3-6
-def handler(event, context):
+def handler(
+    event: dict,
+    context: Any,  # noqa: ANN401
+) -> str:
     # botocore.session.get_session().set_stream_logger('', logging.DEBUG)
     # Parse the SNS message
     for record in event["Records"]:
@@ -51,37 +55,37 @@ def handler(event, context):
             token_response.raise_for_status()  # Raises an exception for 4XX/5XX responses
             token_json = token_response.json()
 
-            print("Processing S3 event(s)...")
-            # Extract information from the S3 event
-            for s3_record in sns_message["Records"]:
-                bucket_name = s3_record["s3"]["bucket"]["name"]
-                object_key = s3_record["s3"]["object"]["key"]
-                real_object_key = unquote_plus(object_key)
-                print("key = " + real_object_key)
-                print("bucket = " + bucket_name)
-                metadata = head_object(bucket=bucket_name, key=real_object_key)
-                presigned_url = generate_get_presigned_url(
-                    bucket=bucket_name, key=real_object_key
-                )
-                print(
-                    f"Triggering codebase onboarding for bucket = {bucket_name}, key = {object_key}"
-                )
-                return exec_onboarding_service(
-                    {
-                        "download_url": presigned_url,
-                        "object_key": object_key,
-                        "org_id": metadata["Metadata"]["organization_id"],
-                        "creator_id": metadata["Metadata"]["creator_id"],
-                        "workspace_id": metadata["Metadata"]["workspace_id"],
-                        "filepath": metadata["Metadata"]["file_path"],
-                        "codebase_name": metadata["Metadata"]["codebase_name"],
-                        "provider": metadata["Metadata"]["provider"],
-                    },
-                    token_json["access_token"],
-                )
+        print("Processing S3 event(s)...")
+        for s3_record in sns_message["Records"]:
+            bucket_name = s3_record["s3"]["bucket"]["name"]
+            object_key = s3_record["s3"]["object"]["key"]
+            real_object_key = unquote_plus(object_key)
+            print("key = " + real_object_key)
+            print("bucket = " + bucket_name)
+            metadata = head_object(bucket=bucket_name, key=real_object_key)
+            presigned_url = generate_get_presigned_url(
+                bucket=bucket_name, key=real_object_key
+            )
+            print(
+                f"Triggering codebase onboarding for bucket = {bucket_name}, key = {object_key}"
+            )
+            return exec_onboarding_service(
+                {
+                    "download_url": presigned_url,
+                    "object_key": object_key,
+                    "org_id": metadata["Metadata"]["organization_id"],
+                    "creator_id": metadata["Metadata"]["creator_id"],
+                    "workspace_id": metadata["Metadata"]["workspace_id"],
+                    "filepath": metadata["Metadata"]["file_path"],
+                    "codebase_name": metadata["Metadata"]["codebase_name"],
+                    "provider": metadata["Metadata"]["provider"],
+                    "version": metadata["Metadata"].get("version"),
+                },
+                token_json["access_token"],
+            )
 
 
-def exec_onboarding_service(event, token):
+def exec_onboarding_service(event: dict[str, Any], token: str) -> str:
     with httpx.Client(base_url=settings.API_URL, follow_redirects=True) as driverClient:
         payload = {**event}
         print(payload)

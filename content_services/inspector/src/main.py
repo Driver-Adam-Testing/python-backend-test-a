@@ -1,15 +1,17 @@
 import hashlib
 import os
 import pprint
-import subprocess
 import uuid
+from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
 from uuid import UUID
 
 import modal
 from common import app
+from database.models_v1 import Enum_Derived_Content_Status
 from onboard import run_codebase_onboarding
+from onboarding.onboard_utils import set_codebase_status
 from tasks import (
     EmbeddingTask,
     FileTechDocTask,
@@ -436,74 +438,171 @@ def get_file_content(path: Path) -> str:
     return Path(path).read_text()
 
 
-@app.local_entrypoint()
-def main(
-    codebase_id: str, resume_from_id: str | None = None, rerun_paths: str | None = None
-) -> None:
-    print("Processing codebase with id: ", codebase_id)
+# TODO resurrect rerun
 
-    rerun_node_paths = (
-        rerun_paths.split(",") if rerun_paths and rerun_paths.strip() else None
-    )
-    if rerun_node_paths:
-        print("Rerunning nodes:")
-        rerun_node_paths = [path.lstrip("/") for path in rerun_node_paths]
-        for path in rerun_node_paths:
-            print("--> ", path)
+# @app.local_entrypoint()
+# def main(
+#     codebase_id: str, resume_from_id: str | None = None, rerun_paths: str | None = None
+# ) -> None:
+#     print("Processing codebase with id: ", codebase_id)
+#
+#     rerun_node_paths = (
+#         rerun_paths.split(",") if rerun_paths and rerun_paths.strip() else None
+#     )
+#     if rerun_node_paths:
+#         print("Rerunning nodes:")
+#         rerun_node_paths = [path.lstrip("/") for path in rerun_node_paths]
+#         for path in rerun_node_paths:
+#             print("--> ", path)
+#
+#     if resume_from_id:
+#         resume = True
+#         run_id = resume_from_id
+#     else:
+#         resume = False
+#         run_id = uuid.uuid4()  # When rerunning we would supply this. This is used to identify the run in the db
+#     try:
+#         inspect_db.remote(
+#             uuid.UUID(codebase_id),
+#             run_id,
+#             resume=resume,
+#             rerun_node_paths=rerun_node_paths,
+#         )
+#     finally:
+#         print("Run id: ", run_id)
 
-    if resume_from_id:
-        resume = True
-        run_id = resume_from_id
-    else:
-        resume = False
-        run_id = uuid.uuid4()  # When rerunning we would supply this. This is used to identify the run in the db
+
+@app.function(
+    image=modal.Image.debian_slim(python_version="3.12").pip_install("sendgrid"),
+    secrets=[modal.Secret.from_name("sendgrid"), modal.Secret.from_name("env-name")],
+)
+def send_exception_email(exception_details: str) -> None:
+    import sendgrid
+    from sendgrid.helpers.mail import Content, Email, Mail, To
+
+    env_name = os.environ.get("ENV_NAME")
+    sendgrid_api_key = os.environ.get("SENDGRID_API_KEY")
+
+    sg = sendgrid.SendGridAPIClient(api_key=sendgrid_api_key)
+    from_email = Email("support@driverai.com")  # Replace with your email
+    to_email = To("support@driverai.com")  # Replace with recipient's email
+    subject = f"MODAL {env_name}: Exception Occurred"
+    content = Content("text/plain", f"An exception occurred: {exception_details}")
+    mail = Mail(from_email, to_email, subject, content)
+
     try:
-        inspect_db.remote(
-            uuid.UUID(codebase_id),
-            run_id,
-            resume=resume,
-            rerun_node_paths=rerun_node_paths,
+        response = sg.send(mail)
+        print(f"Email sent: {response.status_code}")
+    except Exception as e:
+        print(f"Error sending email: {e}")
+
+
+# @app.function(
+#     image=modal.Image.debian_slim(python_version="3.12")
+#     .copy_local_dir(local_path="../../driver_db", remote_path="/driver_db")
+#     .copy_local_dir(local_path="../../packages/shared", remote_path="/shared_pkg")
+#     .pip_install(
+#         ["boto3", "openai>=1.40.2", "pydantic>=2.8.2", "tiktoken", "/shared_pkg"]
+#     ),
+#     secrets=[
+#         modal.Secret.from_name("db"),
+#         modal.Secret.from_name("aws-inspector-s3"),
+#         modal.Secret.from_name("open-ai"),
+#     ],
+#     mounts=[
+#         modal.Mount.from_local_dir(
+#             local_path="../../driver_db/certs",
+#             remote_path="/root/data/",
+#         ),
+#     ],
+#     proxy=modal.Proxy.from_name("pg-proxy")
+#     if os.environ["MODAL_ENVIRONMENT"] != "staging"
+#     else None,
+#     memory="2048",
+#     timeout=3600 * 8,
+#     region="us-east",
+#     concurrency_limit=5,
+# )
+
+
+@app.function(
+    image=modal.Image.debian_slim(python_version="3.12")
+    .copy_local_dir(local_path="../../driver_db", remote_path="/driver_db")
+    .pip_install("/driver_db"),
+    secrets=[
+        modal.Secret.from_name("db"),
+    ],
+    mounts=[
+        modal.Mount.from_local_dir(
+            local_path="../../driver_db/certs",
+            remote_path="/root/data/",
+        ),
+    ],
+    proxy=modal.Proxy.from_name("pg-proxy")
+    if os.environ["MODAL_ENVIRONMENT"] != "staging"
+    else None,
+    timeout=3600 * 8,
+    region="us-east",
+    concurrency_limit=5,
+    keep_warm=1,
+)
+def onboard_and_inspect(
+    presigned_url: str,
+    archive_name: str,
+    org_id: str,
+    creator_id: str,
+    workspace_id: UUID,
+    provider: str = "manual",
+    version: str | None = None,
+) -> None:
+    print(
+        f"Onboarding for: {archive_name} from {provider} with org_id: {org_id}, creator_id: {creator_id}, "
+        f"workspace_id: {workspace_id} with presigned_url: {presigned_url}"
+    )
+    try:
+        codebase_id, version_id = run_codebase_onboarding.remote(
+            presigned_url,
+            archive_name,
+            org_id,
+            creator_id,
+            workspace_id,
+            provider,
+            version,
         )
-    finally:
-        print("Run id: ", run_id)
+        print(f"Onboarding complete for codebase: {codebase_id}, {version_id}")
+        print("Inspecting...")
+        inspect_db.remote(codebase_id, version_id, workspace_id)
+        print("Inspection complete")
+
+        set_codebase_status(
+            codebase_id, Enum_Derived_Content_Status.generation_complete
+        )
+
+    except Exception as e:
+        exception_type = type(e).__name__
+        exc_tb = e.__traceback__
+        filename = exc_tb.tb_frame.f_code.co_filename
+        line_number = exc_tb.tb_lineno
+        exception_details = (
+            f"Exception type: {exception_type}\nFile: {filename}\nLine: {line_number}"
+        )
+        send_exception_email.remote(exception_details)
+        # Since codebase could possibly be undefined in this clean up action, we don't care if it fails
+        with suppress(Exception):
+            set_codebase_status(
+                codebase_id, Enum_Derived_Content_Status.generation_error
+            )
+        raise e
 
 
-@app.local_entrypoint()
-def diff_flow() -> None:
-    codebase_id = "73fcda74-7c0b-4911-9ff8-9d09f1cac654"
-    existing_codebase_id = "43acca23-f561-46d6-8387-2e09a34d8b93"
-    run_id = "d947cc38-c20e-4c63-85cb-0f21c83e9d86"
+# @app.local_entrypoint()
+# def inspect_from_repo(public_repo_url: str, commit_sha: str) -> None:
+#     # Hardcoded to driver default for now
+#     workspace_id = UUID("32de9990-b63d-4e8e-9567-58e2a78292ec")
+#     codebase_id, version_id = run_codebase_onboarding.remote(
+#         public_repo_url, commit_sha, workspace_id
+#     )
+#     inspect_db.remote(codebase_id, version_id, workspace_id) # TODO: must put the path fix in before merge!!!!!!!!!
 
-    print("Onboarding complete for codebase: ", codebase_id)
-    inspect_db.remote(
-        existing_codebase_id,
-        run_id,
-        True,
-        None,
-        codebase_id,
-    )
-
-    print("Diff flow complete for codebase: ", codebase_id)
-
-
-def create_zip_from_commit(
-    repo_path: Path, commit: str, output_dir: Path, repo_name: str
-) -> Path:
-    zip_path = output_dir / f"{repo_name}_{commit}.zip"
-
-    # Use `git archive` to create the zip file directly from the commit
-    subprocess.run(
-        ["git", "archive", "-o", str(zip_path), commit], check=True, cwd=repo_path
-    )
-
-    return zip_path
-
-
-@app.local_entrypoint()
-def inspect_from_repo(public_repo_url: str, commit_sha: str) -> None:
-    # Hardcoded to driver default for now
-    workspace_id = UUID("32de9990-b63d-4e8e-9567-58e2a78292ec")
-    codebase_id, version_id = run_codebase_onboarding.remote(
-        public_repo_url, commit_sha, workspace_id
-    )
-    inspect_db.remote(codebase_id, version_id, workspace_id)
+# @app.local_entrypoint()
+# def main()

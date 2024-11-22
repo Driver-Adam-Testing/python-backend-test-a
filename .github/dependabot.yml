@@ -38,15 +38,6 @@ updates:
     commit-message:
       prefix: ⬆
   - package-ecosystem: "pip"
-    directory: "/content_services/onboarding"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-      time: "09:00"
-      timezone: "America/Los_Angeles"
-    commit-message:
-      prefix: ⬆
-  - package-ecosystem: "pip"
     directory: "/driver_db"
     schedule:
       interval: "weekly"

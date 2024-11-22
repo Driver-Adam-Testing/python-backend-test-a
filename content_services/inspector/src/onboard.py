@@ -15,7 +15,7 @@ from database.models_v1 import (
 )
 from onboarding.onboard_utils import (
     create_bucket_if_dne,
-    download_repo_zip,
+    download_file_from_presigned_url,
     get_source_content_type_uuid,
     is_on_blacklist,
     run_file_stats_and_reencode,
@@ -57,23 +57,42 @@ image = (
     concurrency_limit=5,
 )
 def run_codebase_onboarding(
-    repo_url: str, commit: str, workspace_id: UUID
+    presigned_url: str,
+    archive_name: str,
+    org_id: str,
+    creator_id: str,
+    workspace_id: UUID,
+    provider: str = "manual",
+    override_codebase_name: str | None = None,
+    version: str | None = None,
 ) -> tuple[str, str]:
     from database.db import (
         engine,  # We defer the import since we'll have the secrets set here
     )
-    # Make sure there is a codebase, a new version (associated with a prior version if the codebase exists),
-    # and a derived content record for the codebase.
-    # TODO move to function
 
-    # TODO this will need to be adjusted to support zip files from other sources again, but stay simple for now
-    repo_name, download_root = download_repo_zip(repo_url, commit)
+    if not version:
+        version = "Manual upload"
 
-    # We could defer extraction if we know the repo name as we do here.
-    extracted_path = unpack_archive(download_root, override_codebase_name=repo_name)
-    print(f"Extracted {repo_url} for repo {repo_name} to {extracted_path}")
-    # print(run_tree(extracted_path))
+    download_dest = Path(archive_name)
+    download_file_from_presigned_url(presigned_url, download_dest)
 
+    print(f"Downloaded {archive_name} from S3")
+
+    if provider == "github":
+        override_codebase_name = archive_name.rsplit(".", 1)[0]
+
+    # Override so unpack from github doesn't have hash in name.
+    extracted_path = unpack_archive(
+        download_dest, override_codebase_name=override_codebase_name
+    )
+    codebase_name = str(extracted_path)
+    print("Codebase name: ", codebase_name)
+    print("Unpacked archive to: ", extracted_path)
+
+    # TODO this code needs the bug fix for nodes that on develop
+
+    # TODO so if they uploaded a zip and we find the codebase, what do we do w.r.t versioning? Below, we disallow it
+    # and raise an exception. Namely, the previously onboarded zip won't have a version.
     with Session(engine) as session, session.begin():
         codebase_type_id = get_source_content_type_uuid("codebase")
         workspace = session.get(Workspace, workspace_id)
@@ -82,7 +101,7 @@ def run_codebase_onboarding(
         org_id = workspace.organization_id
         codebase = session.exec(
             select(Codebase).where(
-                Codebase.codebase_name == repo_name,
+                Codebase.codebase_name == codebase_name,
                 Codebase.workspace_id == workspace_id,
             )
         ).first()
@@ -118,8 +137,8 @@ def run_codebase_onboarding(
 
         version = InspectionVersion(
             id=uuid4(),
-            version=commit,
-            display_name=commit,
+            version=version,
+            display_name=version,
             previous_version_id=prior_version.id if prior_version else None,
         )
         session.add(version)
@@ -131,8 +150,8 @@ def run_codebase_onboarding(
         if not codebase:
             codebase = Codebase(
                 id=codebase_id,
-                codebase_name=repo_name,
-                creator_id=None,
+                codebase_name=codebase_name,
+                creator_id=creator_id,
                 description="",
                 storage_url=None,
                 workspace_id=workspace_id,
@@ -142,7 +161,7 @@ def run_codebase_onboarding(
 
         cb_sc = DerivedContent(
             codebase_id=codebase_id,
-            relative_path=repo_name,
+            relative_path=codebase_name,
             content_type_id=codebase_type_id,
             workspace_id=workspace_id,
             misc_metadata={},
@@ -212,14 +231,14 @@ def run_codebase_onboarding(
                 )
     if prior_version_name:
         print(
-            f"Codebase onboarding complete for codebase: {repo_name} (cb id: {codebase_id}). "
-            f"Version: {version_id} (for commit sha: {commit}). "
+            f"Codebase onboarding complete for codebase: {codebase_name} (cb id: {codebase_id}). "
+            f"Version: {version_id} (for commit sha: {version}). "
             f"Prior version commit sha: {prior_version_name}."
         )
     else:
         print(
-            f"Codebase onboarding complete for codebase: {repo_name} (cb id: {codebase_id}). "
-            f"Version: {version_id} (for commit sha: {commit})"
+            f"Codebase onboarding complete for codebase: {codebase_name} (cb id: {codebase_id}). "
+            f"Version: {version_id} (for commit sha: {version})"
         )
 
     return str(codebase_id), str(version_id)

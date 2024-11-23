@@ -8,7 +8,7 @@ from app.core.config import settings
 from app.utils.aws_s3 import generate_put_presigned_url
 
 
-async def exchange_code_for_token(code: str) -> Any:
+def exchange_code_for_token(code: str) -> dict:
     url = "https://github.com/login/oauth/access_token"
     payload = {
         "client_id": settings.GH_CLIENT_ID,
@@ -18,8 +18,8 @@ async def exchange_code_for_token(code: str) -> Any:
     }
     headers = {"Accept": "application/json"}
 
-    async with httpx.AsyncClient() as client:
-        response = await client.post(url, data=payload, headers=headers)
+    with httpx.Client() as client:
+        response = client.post(url, data=payload, headers=headers)
         response.raise_for_status()  # Raises an exception for 4XX/5XX responses
 
         token_data = response.json()

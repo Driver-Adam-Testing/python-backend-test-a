@@ -11,6 +11,7 @@ from pydantic import BaseModel
 from app.api.auth import ContentEditorPermission, UserToken
 from app.api.session import CurrentSession
 from app.core.config import settings
+from app.repositories.user_repository import UserRepository
 from app.repositories.workspace_repository import WorkspaceRepository
 from app.utils.aws_secrets_manager import format_secret_key, read_secret, write_secret
 from app.utils.gh_ops import download_and_upload_repo, exchange_code_for_token
@@ -26,6 +27,7 @@ class OkResponse(BaseModel):
 
 @router.get("/{provider}/callback", response_model=OkResponse)
 async def git_provider_callback(
+    session: CurrentSession,
     provider: str,
     code: str,
     state: str,
@@ -45,7 +47,7 @@ async def git_provider_callback(
     # TODO: validate state_dict
     org_id, user_id = state_dict["org_id"], state_dict["user_id"]
     secret_key = format_secret_key(org_id, user_id, provider)
-    token_data = await exchange_code_for_token(code)
+    token_data = exchange_code_for_token(code)
     # store access token in aws secret manager
     # token_data['installation_id'] = installation_id
     secret_value = json.dumps(token_data)
@@ -54,6 +56,11 @@ async def git_provider_callback(
     value = read_secret(secret_key)
     if value is not None:
         print("Secret stored successfully")
+
+    # If the user is already present in the database, update the installation_id (if, for example, they removed the
+    # app and reinstalled it)
+    UserRepository(session).create_or_update(user_id, org_id, installation_id)
+
     content = "<html><body><script>window.close();</script></body></html>"
     return Response(content=content, media_type="text/html")
 

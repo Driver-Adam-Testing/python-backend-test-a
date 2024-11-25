@@ -32,9 +32,9 @@ image = (
         ),
     ],
     secrets=[modal.Secret.from_name("aws-inspector-s3"), modal.Secret.from_name("db")],
-    # proxy=modal.Proxy.from_name("pg-proxy")
-    # if os.environ["MODAL_ENVIRONMENT"] != "staging"
-    # else None,
+    proxy=modal.Proxy.from_name("pg-proxy")
+    if os.environ["MODAL_ENVIRONMENT"] != "staging"
+    else None,
     timeout=60 * 60,
     region="us-east",
     concurrency_limit=5,
@@ -69,6 +69,7 @@ def run_codebase_onboarding(
         create_base_storage_url,
         create_bucket_if_dne,
         download_file_from_presigned_url,
+        get_org_id_from_workspace,
         get_source_content_type_uuid,
         is_on_blacklist,
         run_file_stats_and_reencode,
@@ -189,12 +190,12 @@ def run_codebase_onboarding(
             session_meta = UsageSessionMetadata(
                 content_type="codebase", content_id=str(codebase_id)
             )
-            with LLMUsageSession(
-                "org_s76pU1v8LAYhTOWB", creator_id, session_meta
-            ) as llm_session:
+            # need to get the real org id from the workspace since the org_id passed in is the hashed org_id
+            real_org_id = get_org_id_from_workspace(workspace_id)
+            with LLMUsageSession(real_org_id, creator_id, session_meta) as llm_session:
                 usage_metric = UsageMetric(
                     session_id=llm_session.session_id,
-                    organization_id="org_s76pU1v8LAYhTOWB",
+                    organization_id=real_org_id,
                     user_id=creator_id,
                     event_source="codebase_onboarding",
                     bytes_in=-codebase_size_in_bytes,
@@ -296,12 +297,12 @@ def onboard_and_inspect(
         )
         print("onboarding complete for codebase: ", codebase_id)
 
-        # inspect_db = modal.Function.lookup("inspector-v2", "inspect_db")
-        # run_id = uuid4()
-        # print("Inspecting...")
-        # print("Inspection ID: ", run_id)
-        # inspect_db.remote(codebase_id, run_id)
-        # print("Inspection complete")
+        inspect_db = modal.Function.lookup("inspector-v2", "inspect_db")
+        run_id = uuid4()
+        print("Inspecting...")
+        print("Inspection ID: ", run_id)
+        inspect_db.remote(codebase_id, run_id)
+        print("Inspection complete")
 
         set_codebase_status(
             codebase_id, Enum_Derived_Content_Status.generation_complete
@@ -314,7 +315,7 @@ def onboard_and_inspect(
         exception_details = (
             f"Exception type: {exception_type}\nFile: {filename}\nLine: {line_number}"
         )
-        # send_exception_email.remote(exception_details)
+        send_exception_email.remote(exception_details)
 
         # Since codebase could possibly be undefined in this clean up action, we don't care if it fails
         with suppress(Exception):

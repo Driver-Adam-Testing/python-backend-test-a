@@ -10,7 +10,7 @@ import requests
 from boto3 import resource
 from botocore.client import ClientError
 from database.db import engine
-from database.models_v1 import DerivedContentType
+from database.models_v1 import DerivedContentType, Workspace
 from sqlmodel import Session, select
 
 
@@ -28,7 +28,18 @@ def get_source_content_type_uuid(content_type_name: str) -> UUID:
     return sct_uuid
 
 
-def create_base_storage_url(org_id: str):
+@cache
+def get_org_id_from_workspace(workspace_id: UUID) -> str:
+    org_id = None
+    with Session(engine) as session:
+        sel_statement = select(Workspace).where(Workspace.id == workspace_id)
+        workspace = session.exec(sel_statement).first()
+        if workspace:
+            org_id = workspace.organization_id
+    return org_id
+
+
+def create_base_storage_url(org_id: str) -> str:
     return f"https://{org_id}.s3.amazonaws.com"
 
 
@@ -60,7 +71,9 @@ def download_file_from_s3(
         raise (e)
 
 
-def download_file_from_presigned_url(presigned_url: str, download_destination: Path):
+def download_file_from_presigned_url(
+    presigned_url: str, download_destination: Path
+) -> None:
     with requests.get(presigned_url, stream=True) as r:
         r.raise_for_status()
         with open(download_destination, "wb") as w_file:
@@ -118,7 +131,7 @@ def upload_file_to_s3(
     return s3_destination_path
 
 
-def evaluate_file_size_processable(filepath: Path):
+def evaluate_file_size_processable(filepath: Path) -> bool:
     is_proc = True
     file_size = os.path.getsize(filepath)
     min_size = 10

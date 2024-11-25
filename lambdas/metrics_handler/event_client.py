@@ -31,7 +31,7 @@ def send_event(
         event_type=UsageEventType.AGENT_PIPELINE_USAGE_DEBIT,
         session_id=llm_session.session_id,
         organization_id="org_s76pU1v8LAYhTOWB",
-        user_id="eric",
+        user_id="auth0|6650e02b9812cd674f78cf75",
         event_source="some/test/ing/endpoint",
         bytes_in=-25606,
         bytes_out=-2512,
@@ -101,7 +101,9 @@ def send_events(n: int, llm_session: LLMUsageSession) -> None:
 
 def main(n: int) -> None:
     meta = UsageSessionMetadata(content_type="codebase", content_id="some codebase id")
-    with LLMUsageSession("org_s76pU1v8LAYhTOWB", "eric", meta) as llm_session:
+    with LLMUsageSession(
+        "org_s76pU1v8LAYhTOWB", "auth0|6650e02b9812cd674f78cf75", meta
+    ) as llm_session:
         send_events_concurrently(n, llm_session)
         # send_events(n, llm_session)
 

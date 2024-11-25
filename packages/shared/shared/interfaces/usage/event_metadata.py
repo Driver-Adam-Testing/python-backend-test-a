@@ -13,6 +13,13 @@ class UsageSessionMetadata(BaseModel):
     run_id: str | None = None
 
 
+class UsageCreditSessionMetadata(BaseModel):
+    provider: str
+    message: str
+    event_kind: str
+    # {"stripe_webhook_event": "payment_succeeded"
+
+
 class UsageEventMetadata(BaseModel):
     model: str
     provider: str

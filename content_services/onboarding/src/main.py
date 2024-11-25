@@ -61,6 +61,8 @@ def run_codebase_onboarding(
         UsageMetric,
         UsageSessionMetadata,
     )
+
+    # from shared.usage.usage_service import UsageService
     from shared.usage.llm_session import LLMUsageSession, UsageEventSendError
     from sqlmodel import Session
     from utils import (
@@ -187,10 +189,12 @@ def run_codebase_onboarding(
             session_meta = UsageSessionMetadata(
                 content_type="codebase", content_id=str(codebase_id)
             )
-            with LLMUsageSession(org_id, creator_id, session_meta) as llm_session:
+            with LLMUsageSession(
+                "org_s76pU1v8LAYhTOWB", creator_id, session_meta
+            ) as llm_session:
                 usage_metric = UsageMetric(
                     session_id=llm_session.session_id,
-                    organization_id=org_id,
+                    organization_id="org_s76pU1v8LAYhTOWB",
                     user_id=creator_id,
                     event_source="codebase_onboarding",
                     bytes_in=-codebase_size_in_bytes,
@@ -349,13 +353,16 @@ def send_exception_email(exception_details: str) -> None:
 def main() -> None:
     from utils import generate_get_presigned_url
 
-    archive_name = "upload-test.zip"
+    archive_name = "eric-project-main.zip"
+    # archive_name = "upload-test.zip"
     org_id = "6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641"
+    # org_id = "org_s76pU1v8LAYhTOWB"
     creator_id = "auth0|6650e02b9812cd674f78cf75"
     workspace_id = UUID("32de9990-b63d-4e8e-9567-58e2a78292ec")
     presigned_url = generate_get_presigned_url(
         "development-codebase-dropzone",
-        "codebases/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/upload-test.zip",
+        "codebases/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/eric-project-main.zip",
+        # "codebases/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/upload-test.zip",
     )
 
     # if modal.is_local():

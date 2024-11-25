@@ -177,6 +177,7 @@ class Auth0Service:
             management_api = Auth0(self.auth0_mgmt_domain, mgmt_api_token)
             invitation_results = []
             for invitation in invitations.invitations:
+                print(invitation)
                 invitation_results.append(
                     management_api.organizations.create_organization_invitation(
                         id=user.organization_id,

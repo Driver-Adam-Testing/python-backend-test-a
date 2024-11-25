@@ -13,11 +13,10 @@ class UsageSessionMetadata(BaseModel):
     run_id: str | None = None
 
 
-class UsageCreditSessionMetadata(BaseModel):
+class UsagePaymentSessionMetadata(BaseModel):
     provider: str
     message: str
     event_kind: str
-    # {"stripe_webhook_event": "payment_succeeded"
 
 
 class UsageEventMetadata(BaseModel):
@@ -41,4 +40,4 @@ class UsageMetric(BaseModel):
     event_type: (
         UsageEventType  # Assuming UsageEventType is an Enum, you might use str or Enum
     )
-    event_metadata: UsageEventMetadata
+    event_metadata: UsageEventMetadata | None = None

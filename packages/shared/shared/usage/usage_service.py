@@ -6,14 +6,17 @@ from database.models_v1 import (
 )
 from sqlmodel import Session, select
 
-from shared.interfaces.usage.event_metadata import UsageCreditSessionMetadata
+from shared.interfaces.usage.event_metadata import (
+    UsageMetric,
+    UsagePaymentSessionMetadata,
+)
 from shared.interfaces.usage.usage_schema import (
     UsageBalance,
     UsageEventSummary,
     UsageMetricUnitType,
 )
 from shared.repositories.usage_event_repository import UsageEventRepository
-from shared.usage.usage_session import end_usage_session_sync, start_usage_session_sync
+from shared.usage.llm_session import LLMUsageSession
 
 
 def bytes_to_sloc(bytes: int) -> int:
@@ -35,36 +38,31 @@ class UsageService:
         user_id: str,
         event_type: UsageEventType,
         credit_amount: int,
-        event_metadata: dict,
     ) -> None:
-        usage_session_id = start_usage_session_sync(
-            organization_id,
-            user_id,
-            UsageCreditSessionMetadata(
-                provider="stripe",
-                message="payment_succeeded",
-                event_kind="stripe_webhook_event",
-            ).dict(),
+        session_meta = UsagePaymentSessionMetadata(
+            provider="stripe",
+            message="payment_succeeded",
+            event_kind="stripe_webhook_event",
         )
-        event = UsageEvent(
-            session_id=usage_session_id,
-            event_source="stripe_webhook",
-            event_type=event_type,
-            organization_id=organization_id,
-            user_id=user_id,
-            bytes_in=credit_amount,
-            bytes_out=0,
-            tokens_in=0,
-            tokens_out=0,
-            sloc=bytes_to_sloc(credit_amount),
-            timestamp=datetime.now(),
-            messages=f"Credit issued to {organization_id} for {credit_amount} bytes",
-            event_metadata=event_metadata,
-        )
-        event = self.usage_event_repository.create(event)
-        print(event)
-        end_usage_session_sync(usage_session_id)
-        print(f"Session ended: {usage_session_id}")
+        # need to get the real org id from the workspace since the org_id passed in is the hashed org_id
+        with LLMUsageSession(organization_id, user_id, session_meta) as llm_session:
+            print(f"Session started: {llm_session.session_id}")
+            usage_metric = UsageMetric(
+                session_id=llm_session.session_id,
+                organization_id=organization_id,
+                user_id=user_id,
+                event_source="api/v1/usage/webhook",
+                bytes_in=credit_amount,
+                bytes_out=0,
+                tokens_in=0,
+                tokens_out=0,
+                timestamp=datetime.now(),
+                event_type=event_type,
+                event_metadata=None,
+            )
+
+            llm_session.send_event(usage_metric)
+            print(f"Session ended: {llm_session.session_id}")
 
     def get_usage_events(self, organization_id: str) -> list[UsageEvent]:
         """

@@ -70,11 +70,7 @@ def usage_webhook(
     credit_amount = credit_usage_event.credit_amount
 
     usage_service.issue_usage_credits(
-        organization_id,
-        user_id,
-        event_type,
-        credit_amount,
-        {"stripe_webhook_event": "payment_succeeded"},
+        organization_id, user_id, event_type, credit_amount
     )
     return JSONResponse(
         status_code=status.HTTP_202_ACCEPTED, content={"message": "Accepted"}

@@ -29,14 +29,16 @@ database_url = (
     else settings.DATABASE_URL
 )
 
-# engine = None
-# def get_engine() -> Session:
-#     global engine
-#     if engine is None:
-#         engine = create_engine(database_url)
-#     return engine
+engine = None
 
-engine = create_engine(database_url)
+
+def get_engine() -> any:
+    global engine
+    if engine is None:
+        engine = create_engine(
+            database_url,
+        )
+    return engine
 
 
 # # Python lambdas have to be synchronous ¯\_(ツ)_/¯
@@ -46,13 +48,8 @@ def handler(event: dict, context: any) -> str:
     logger.info(context)
     event_data = event["detail"]
     logger.info(event_data)
-    with Session(engine) as session:
+    with Session(get_engine()) as session:
         session_id = event_data["session_id"]
-        # usage_session = session.get(UsageSession, session_id)
-        # if usage_session is None:
-        #     return "Session not found"
-        # raise Exception("Session not found")
-
         usage_event = UsageEvent(
             session_id=session_id,
             event_source=event_data["event_source"],
@@ -69,5 +66,4 @@ def handler(event: dict, context: any) -> str:
         session.add(usage_event)
         session.commit()
         session.refresh(usage_event)
-        print(usage_event)
     return str(usage_event.id)

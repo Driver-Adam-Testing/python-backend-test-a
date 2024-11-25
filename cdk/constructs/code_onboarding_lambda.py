@@ -58,8 +58,8 @@ class CodeOnboardingLambda(Construct):
             ),
             timeout=Duration.seconds(15),
         )
-        client_id_secret.grant_read(lambda_function)
         client_secret_secret.grant_read(lambda_function)
+        client_id_secret.grant_read(lambda_function)
         params.dropzone_bucket.grant_read(lambda_function)
 
         sns_topic = aws_sns.Topic(scope, "CodeOnboardingTopic")

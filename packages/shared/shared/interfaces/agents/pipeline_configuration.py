@@ -94,7 +94,7 @@ class PipelineInput(PromptWithContext):
             PipelineStepConfiguration(step_type=PipelineStepType.DEFAULT)
         ]
     )
-    scope: DataScope = DataScope(paths=[], organization_id=None)
+    scope: DataScope = DataScope(paths=[], organization_id=None, user_id=None)
 
 
 class PipelineStepResponse(BaseModel):

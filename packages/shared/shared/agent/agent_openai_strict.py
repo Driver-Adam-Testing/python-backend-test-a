@@ -1,6 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import openai
+from database.models_v1 import UsageEventType
 from openai import OpenAI
 
 from shared.agent.agent_base import AgentBase
@@ -46,6 +47,21 @@ class OpenAIStrictAgent(AgentBase):
             for future in as_completed(futures):
                 self.add_message(future.result())
 
+    def _generate_response(self, completion_kwargs: dict) -> openai.ChatCompletion:
+        response = self.client.beta.chat.completions.parse(**completion_kwargs)
+
+        if self.llm_session:
+            usage_metric = self.llm_session.compute_usage(
+                prompts=[str(completion_kwargs.get("messages", ""))],
+                response=response,
+                event_type=UsageEventType.AGENT_PIPELINE_USAGE_DEBIT,
+                model=self.model,
+                provider="OpenAI",
+            )
+            self.llm_session.send_event(usage_metric)
+
+        return response
+
     def _execute_iteration(self) -> str | None:
         completion_kwargs = {
             "model": self.model,
@@ -65,7 +81,7 @@ class OpenAIStrictAgent(AgentBase):
         if self.response_format:
             completion_kwargs["response_format"] = self.response_format
         try:
-            response = self.client.beta.chat.completions.parse(**completion_kwargs)
+            response = self._generate_response(completion_kwargs=completion_kwargs)
         except Exception as e:
             if self.iteration < self.max_iterations:
                 # NOTE: it's ok to list the error and return None if there are more iterations for the LLM to respond.

@@ -12,6 +12,7 @@ from shared.prompts.interface.iterations import (
     PROMPT_FIRST_ITERATION,
     PROMPT_MIDDLE_ITERATION,
 )
+from shared.usage.llm_session import LLMUsageSession
 from shared.utils.bcolors import print_dict
 
 
@@ -27,6 +28,7 @@ class AgentBase(ABC):
         response_format: type | None = None,
         log: bool = True,
         debug: bool = True,
+        llm_session: LLMUsageSession | None = None,
     ) -> None:
         # TODO: add ModelConfig (to get model metadata during execution)
         # TODO: Turn on logging
@@ -42,6 +44,8 @@ class AgentBase(ABC):
         self.messages = []
         self.search_results = []
         self.response_format = response_format
+        self.llm_session = llm_session
+
         if self.agent_id is not None:
             with get_session() as session:
                 agent_instance = session.get(RuntimeLogAgentInstance, self.agent_id)
@@ -101,6 +105,10 @@ class AgentBase(ABC):
             else:
                 self.add_message({"role": "user", "content": PROMPT_FINAL_ITERATION})
         return self.iteration <= self.max_iterations
+
+    @abstractmethod
+    def _generate_response(self, completion_kwargs: dict) -> any:
+        raise NotImplementedError()
 
     @abstractmethod
     def _execute_iteration(self) -> str | None:

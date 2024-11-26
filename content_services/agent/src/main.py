@@ -2,8 +2,6 @@
 This file exposes the modal (https://www.modal.com) interface for the comprehender package.
 """
 
-import os
-
 import modal
 
 app = modal.App("agent")
@@ -29,12 +27,13 @@ agent_model_config = {
     "secrets": [
         modal.Secret.from_name("open-ai"),
         modal.Secret.from_name("db"),
+        modal.Secret.from_name("aws-inspector-s3"),
     ],
     "concurrency_limit": 36,
 }
 
-if os.environ["MODAL_ENVIRONMENT"] != "staging":
-    agent_model_config["proxy"] = modal.Proxy.from_name("pg-proxy")
+# if os.environ["MODAL_ENVIRONMENT"] != "staging":
+#     agent_model_config["proxy"] = modal.Proxy.from_name("pg-proxy")
 
 
 @app.function(timeout=3600, **agent_model_config, keep_warm=10)

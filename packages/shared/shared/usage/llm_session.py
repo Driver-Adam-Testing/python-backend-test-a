@@ -22,6 +22,7 @@ from shared.interfaces.usage.event_metadata import (
     UsageMetric,
     UsageSessionMetadata,
 )
+from shared.usage.utils import bytes_to_sloc
 
 _LLMUsageSession = TypeVar("_LLMUsageSession", bound="LLMUsageSession")
 
@@ -137,6 +138,8 @@ class LLMUsageSession:
         prompts: list[str],
         response: openai.ChatCompletion,
         event_type: UsageEventType,
+        model: str = "gpt-4o-2024-08-06",
+        provider: str = "OpenAI",
     ) -> UsageMetric:
         bytes_in = sum([len(prompt.encode("utf-8")) for prompt in prompts if prompt])
 
@@ -152,14 +155,15 @@ class LLMUsageSession:
         outer = inspect.stack()[4].function
 
         event_metadata = UsageEventMetadata(
-            model=self.client.model,
-            provider=self.client.client.__class__.__name__,  # get the class name of the client OpenAI or Claude
+            model=model,
+            provider=provider,  # get the class name of the client OpenAI or Claude
             input={
                 "prompts": [prompt for prompt in prompts if prompt],
             },
             output=json.dumps(
                 response, default=str, indent=2
             ),  # TODO: long term we should store in s3
+            sloc=bytes_to_sloc(bytes_in + bytes_out),
         )
 
         usage_metric = UsageMetric(

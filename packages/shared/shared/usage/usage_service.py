@@ -19,14 +19,6 @@ from shared.repositories.usage_event_repository import UsageEventRepository
 from shared.usage.llm_session import LLMUsageSession
 
 
-def bytes_to_sloc(bytes: int) -> int:
-    return bytes // 50
-
-
-def sloc_to_bytes(sloc: int) -> int:
-    return sloc * 50
-
-
 class UsageService:
     def __init__(self, session: Session) -> None:
         self.session = session

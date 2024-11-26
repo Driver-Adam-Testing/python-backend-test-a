@@ -3,6 +3,7 @@ from enum import IntEnum
 from pathlib import Path
 from typing import Any, Self
 
+import modal
 import openai
 from pydantic import BaseModel, ValidationError
 from utils.dag import LiteNode
@@ -527,6 +528,12 @@ def comprehend_file_top_down(
                 )
             )
         except openai.BadRequestError as e:
+            email_func = modal.Function.lookup(
+                "codebase-onboarding", "send_exception_email"
+            )
+            exception_details = f"NON-BREAKING EXCEPTION:\nBadRequestError from OpenAI: {e.message}.\nCheck logs for additional details."
+            email_func.remote(exception_details)
+
             print("BadRequestError processing file: ", e)
             description = "Could not process file"
             success = False
@@ -572,6 +579,12 @@ def comprehend_file_top_down(
                 code=source_code,
             )
         except openai.BadRequestError as e:
+            email_func = modal.Function.lookup(
+                "codebase-onboarding", "send_exception_email"
+            )
+            exception_details = f"NON-BREAKING EXCEPTION:\nBadRequestError from OpenAI: {e.message}.\nCheck logs for additional details."
+            email_func.remote(exception_details)
+
             # TODO: this is a hack. Should rethink the tokenizing
             print("BadRequestError processing file: ", e)
             description = "Could not process file"

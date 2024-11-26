@@ -32,9 +32,9 @@ image = (
         ),
     ],
     secrets=[modal.Secret.from_name("aws-inspector-s3"), modal.Secret.from_name("db")],
-    # proxy=modal.Proxy.from_name("pg-proxy")
-    # if os.environ["MODAL_ENVIRONMENT"] != "staging"
-    # else None,
+    proxy=modal.Proxy.from_name("pg-proxy")
+    if os.environ["MODAL_ENVIRONMENT"] != "staging"
+    else None,
     timeout=60 * 60,
     region="us-east",
     concurrency_limit=5,
@@ -233,9 +233,9 @@ def run_codebase_onboarding(
         ),
     ],
     secrets=[modal.Secret.from_name("aws-inspector-s3"), modal.Secret.from_name("db")],
-    # proxy=modal.Proxy.from_name("pg-proxy")
-    # if os.environ["MODAL_ENVIRONMENT"] != "staging"
-    # else None,
+    proxy=modal.Proxy.from_name("pg-proxy")
+    if os.environ["MODAL_ENVIRONMENT"] != "staging"
+    else None,
     timeout=24 * 60 * 60,
     region="us-east",
     concurrency_limit=5,
@@ -297,12 +297,12 @@ def onboard_and_inspect(
         )
         print("onboarding complete for codebase: ", codebase_id)
 
-        # inspect_db = modal.Function.lookup("inspector-v2", "inspect_db")
-        # run_id = uuid4()
-        # print("Inspecting...")
-        # print("Inspection ID: ", run_id)
-        # inspect_db.remote(codebase_id, run_id)
-        # print("Inspection complete")
+        inspect_db = modal.Function.lookup("inspector-v2", "inspect_db")
+        run_id = uuid4()
+        print("Inspecting...")
+        print("Inspection ID: ", run_id)
+        inspect_db.remote(codebase_id, run_id)
+        print("Inspection complete")
 
         set_codebase_status(
             codebase_id, Enum_Derived_Content_Status.generation_complete

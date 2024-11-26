@@ -1,10 +1,8 @@
 from datetime import datetime
 
-from database.models_v1 import UsageEvent, UsageEventType
-from fastapi import APIRouter, Query, status
-from fastapi.responses import JSONResponse
+from database.models_v1 import UsageEvent
+from fastapi import APIRouter, Query
 from shared.interfaces.usage.usage_schema import (
-    CreditUsageEvent,
     UsageBalance,
     UsageEventSummary,
 )
@@ -55,23 +53,23 @@ def get_usage_events(session: CurrentSession, user: UserToken) -> list[UsageEven
     return usage_service.get_usage_events(organization_id)
 
 
-# POST /api/v1/usage/webhook
-@router.post(
-    "/webhook",
-    summary="Webhook for usage events",
-)
-def usage_webhook(
-    session: CurrentSession, user: UserToken, credit_usage_event: CreditUsageEvent
-) -> JSONResponse:
-    usage_service = UsageService(session)
-    organization_id = user.organization_id
-    user_id = user.user_id
-    event_type = UsageEventType.BASE_PLATFORM_USAGE_CREDIT
-    credit_amount = credit_usage_event.credit_amount
-
-    usage_service.issue_usage_credits(
-        organization_id, user_id, event_type, credit_amount
-    )
-    return JSONResponse(
-        status_code=status.HTTP_202_ACCEPTED, content={"message": "Accepted"}
-    )
+# # POST /api/v1/usage/webhook
+# @router.post(
+#     "/webhook",
+#     summary="Webhook for usage events",
+# )
+# def usage_webhook(
+#     session: CurrentSession, user: UserToken, credit_usage_event: CreditUsageEvent
+# ) -> JSONResponse:
+#     usage_service = UsageService(session)
+#     organization_id = user.organization_id
+#     user_id = user.user_id
+#     event_type = UsageEventType.BASE_PLATFORM_USAGE_CREDIT
+#     credit_amount = credit_usage_event.credit_amount
+#
+#     usage_service.issue_usage_credits(
+#         organization_id, user_id, event_type, credit_amount
+#     )
+#     return JSONResponse(
+#         status_code=status.HTTP_202_ACCEPTED, content={"message": "Accepted"}
+#     )

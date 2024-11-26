@@ -28,7 +28,7 @@ def get_source_content_type_uuid(content_type_name: str) -> UUID:
     return sct_uuid
 
 
-def create_base_storage_url(org_id: str):
+def create_base_storage_url(org_id: str) -> str:
     return f"https://{org_id}.s3.amazonaws.com"
 
 
@@ -60,7 +60,9 @@ def download_file_from_s3(
         raise (e)
 
 
-def download_file_from_presigned_url(presigned_url: str, download_destination: Path):
+def download_file_from_presigned_url(
+    presigned_url: str, download_destination: Path
+) -> None:
     with requests.get(presigned_url, stream=True) as r:
         r.raise_for_status()
         with open(download_destination, "wb") as w_file:
@@ -118,10 +120,10 @@ def upload_file_to_s3(
     return s3_destination_path
 
 
-def evaluate_file_size_processable(filepath: Path):
+def evaluate_file_size_processable(filepath: Path) -> bool:
     is_proc = True
     file_size = os.path.getsize(filepath)
-    min_size = 10
+    min_size = 0
     max_size = 1000000000  # TODO: what's a more sensible default?
 
     if file_size < min_size or file_size > max_size:
@@ -171,8 +173,8 @@ def evaluate_file_binary(filepath: Path) -> bool:
         b"\x06",
         b"\x07",
         b"\x08",
-        b"\x0E",
-        b"\x0F",
+        b"\x0e",
+        b"\x0f",
         b"\x10",
         b"\x11",
         b"\x12",
@@ -183,8 +185,8 @@ def evaluate_file_binary(filepath: Path) -> bool:
         b"\x17",
         b"\x18",
         b"\x19",
-        b"\x1A",
-        b"\x1B",
+        b"\x1a",
+        b"\x1b",
     ]
 
     with open(filepath, "rb") as r_file:
@@ -234,7 +236,7 @@ def evaluate_file_binary(filepath: Path) -> bool:
             else:
                 # Last effort - use chardet
                 file_encoding = get_non_ascii_file_encoding(file_bytes)
-                is_binary = True if file_encoding is None else False
+                is_binary = file_encoding is None
 
     return is_binary
 
@@ -298,7 +300,7 @@ def reencode_file(filepath: Path) -> None:
             else:
                 print(f"Chardet returned None for {filepath}")
 
-    if decoded_str:
+    if decoded_str is not None:
         with open(filepath, "w", encoding="utf-8") as w_file:
             w_file.write(decoded_str)
         print(f"Updated {filepath} to UTF-8")
@@ -306,9 +308,11 @@ def reencode_file(filepath: Path) -> None:
 
 def analyze_text_file(filepath: Path) -> dict:
     is_hex = evaluate_file_hex(filepath)
+    with open(filepath) as f:
+        sloc = sum(1 for _ in f)
     return {
         "size": os.path.getsize(filepath),
-        "sloc": sum(1 for _ in open(filepath)),
+        "sloc": sloc,
         "extension": filepath.suffix,
         "is_binary": False,
         "is_hex": is_hex,

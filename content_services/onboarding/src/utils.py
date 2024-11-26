@@ -38,7 +38,6 @@ def get_org_id_from_workspace(workspace_id: UUID) -> str:
             org_id = workspace.organization_id
     return org_id
 
-
 def create_base_storage_url(org_id: str) -> str:
     return f"https://{org_id}.s3.amazonaws.com"
 
@@ -134,7 +133,7 @@ def upload_file_to_s3(
 def evaluate_file_size_processable(filepath: Path) -> bool:
     is_proc = True
     file_size = os.path.getsize(filepath)
-    min_size = 10
+    min_size = 0
     max_size = 1000000000  # TODO: what's a more sensible default?
 
     if file_size < min_size or file_size > max_size:
@@ -247,7 +246,7 @@ def evaluate_file_binary(filepath: Path) -> bool:
             else:
                 # Last effort - use chardet
                 file_encoding = get_non_ascii_file_encoding(file_bytes)
-                is_binary = True if file_encoding is None else False
+                is_binary = file_encoding is None
 
     return is_binary
 
@@ -311,7 +310,7 @@ def reencode_file(filepath: Path) -> None:
             else:
                 print(f"Chardet returned None for {filepath}")
 
-    if decoded_str:
+    if decoded_str is not None:
         with open(filepath, "w", encoding="utf-8") as w_file:
             w_file.write(decoded_str)
         print(f"Updated {filepath} to UTF-8")
@@ -319,9 +318,11 @@ def reencode_file(filepath: Path) -> None:
 
 def analyze_text_file(filepath: Path) -> dict:
     is_hex = evaluate_file_hex(filepath)
+    with open(filepath) as f:
+        sloc = sum(1 for _ in f)
     return {
         "size": os.path.getsize(filepath),
-        "sloc": sum(1 for _ in open(filepath)),
+        "sloc": sloc,
         "extension": filepath.suffix,
         "is_binary": False,
         "is_hex": is_hex,

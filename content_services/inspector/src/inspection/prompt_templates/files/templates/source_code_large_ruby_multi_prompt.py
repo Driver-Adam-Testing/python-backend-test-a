@@ -5,10 +5,10 @@ from utils.lang_specialization.default_multi_context import (
 )
 from utils.lang_specialization.ruby import (
     SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_RUBY,
-    class_dict_from_llm_ruby_multi_prompt,
-    module_dict_from_llm_ruby_multi_prompt,
-    ruby_class_checker,
-    ruby_module_checker,
+    RubyClassCollection,
+    RubyClassRawSymbolCollection,
+    RubyModuleCollection,
+    RubyModuleRawSymbolCollection,
 )
 from utils.templates import S
 
@@ -21,7 +21,7 @@ SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_RUBY = [
         SOURCE_CODE_PURPOSE_FROM_CHUNKS,
     ),
     (
-        S.LLM_COND_JSON,
+        S.MULTI_LLM_COND_JSON,
         "# Imports and Dependencies",
         default_imports_checker_multi_prompt,
         lambda _llm, output, _code: output,
@@ -30,15 +30,15 @@ SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_RUBY = [
     (
         S.FN_COND_JSON,
         "# Modules",
-        ruby_module_checker,
-        module_dict_from_llm_ruby_multi_prompt,
+        RubyModuleRawSymbolCollection.from_static_analysis,
+        RubyModuleCollection.from_llm,
         None,
     ),
     (
         S.FN_COND_JSON,
         "# Classes",
-        ruby_class_checker,
-        class_dict_from_llm_ruby_multi_prompt,
+        RubyClassRawSymbolCollection.from_static_analysis,
+        RubyClassCollection.from_llm,
         None,
     ),
 ]

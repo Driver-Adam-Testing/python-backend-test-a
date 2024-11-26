@@ -11,7 +11,7 @@ def create_agent(
     max_iterations: int = 1,
     tools=None,
     response_type=None,
-    llm_session: LLMUsageSession = None,
+    llm_usage_session: LLMUsageSession = None,
 ):
     model_config = (
         ModelConfig.default() if model is None else ModelConfig.from_name(model)
@@ -24,7 +24,7 @@ def create_agent(
             tools=tools,
             scope=scope,
             response_format=response_type,
-            llm_session=llm_session,
+            llm_usage_session=llm_usage_session,
         )
     elif model_config.provider == ModelProvider.ANTHROPIC:
         return AnthropicStrictAgent(

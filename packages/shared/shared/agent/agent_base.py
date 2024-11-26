@@ -28,7 +28,7 @@ class AgentBase(ABC):
         response_format: type | None = None,
         log: bool = True,
         debug: bool = True,
-        llm_session: LLMUsageSession | None = None,
+        llm_usage_session: LLMUsageSession | None = None,
     ) -> None:
         # TODO: add ModelConfig (to get model metadata during execution)
         # TODO: Turn on logging
@@ -44,7 +44,7 @@ class AgentBase(ABC):
         self.messages = []
         self.search_results = []
         self.response_format = response_format
-        self.llm_session = llm_session
+        self.llm_usage_session = llm_usage_session
 
         if self.agent_id is not None:
             with get_session() as session:

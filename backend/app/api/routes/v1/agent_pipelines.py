@@ -10,7 +10,6 @@ from shared.interfaces.request import DriverModalBatchRequest
 from shared.interfaces.response import DriverModalResponse
 
 from app.api.auth import ContentEditorPermission, ContentReadonlyPermission, UserToken
-from app.core.config import settings
 
 router = APIRouter()
 
@@ -38,9 +37,7 @@ def execute_agent_sequence_modal_async(
 ) -> DriverModalResponse:
     input.scope.organization_id = user.organization_id
     input.scope.user_id = user.user_id
-    modal_function = Function.lookup(
-        "agent", "run", environment_name=settings.MODAL_ENVIRONMENT
-    )
+    modal_function = Function.lookup("agent", "run")
     instance = modal_function.spawn(input)
     return DriverModalResponse(call_id=instance.object_id)
 
@@ -99,8 +96,6 @@ def execute_agent_sequence_modal_sync(
     user: UserToken, input: PipelineInput
 ) -> PipelineResponse:
     input.scope.organization_id = user.organization_id
-    modal_function = Function.lookup(
-        "agent", "run", environment_name=settings.MODAL_ENVIRONMENT
-    )
+    modal_function = Function.lookup("agent", "run")
     result = modal_function.remote(input)
     return result

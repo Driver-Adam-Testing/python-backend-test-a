@@ -58,7 +58,7 @@ def execute_sequence(input: PipelineInput) -> PipelineResponse:
     )
     with LLMUsageSession(
         input.scope.organization_id, input.scope.user_id, session_meta
-    ) as llm_session:
+    ) as llm_usage_session:
         for step in input.steps:
             response: PipelineStepResponse = methods[step.step_type](
                 step.into_pipeline_step(
@@ -66,7 +66,7 @@ def execute_sequence(input: PipelineInput) -> PipelineResponse:
                     input_scope=input.scope,
                     working_response=working_response,
                 ),
-                llm_session,
+                llm_usage_session,
             )
             sequence_response.step_responses.append(response)
             if step.step_type == PipelineStepType.PROMPT_AUGMENTATION:

@@ -26,7 +26,7 @@ class OkResponse(BaseModel):
 
 
 @router.get("/{provider}/callback", response_model=OkResponse)
-async def git_provider_callback(
+def git_provider_callback(
     session: CurrentSession,
     provider: str,
     code: str,

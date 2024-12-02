@@ -7,8 +7,10 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env", env_ignore_empty=True, extra="ignore"
     )
-    ENVIRONMENT: Literal["local", "ops", "development"] = "local"
-    DATABASE_URL: str
+    ENVIRONMENT: Literal["local", "ops", "development", "staging", "production"] = (
+        "local"
+    )
+    DATABASE_URL: str | None = None
     DATABASE_URL_SECRET_NAME: str
 
 

@@ -23,10 +23,12 @@ class MetricsLambdaParams:
     def __init__(
         self,
         environment: str,
-        database_url: str,
+        database_url: str | None = None,
+        cloudwatch_alarm_arn: str | None = None,
     ) -> None:
         self.environment = environment
         self.database_url = database_url
+        self.cloudwatch_alarm_arn = cloudwatch_alarm_arn
 
 
 class MetricsLambda(Construct):
@@ -44,7 +46,7 @@ class MetricsLambda(Construct):
             environment={
                 "ENVIRONMENT": params.environment,
                 "LOG_LEVEL": "INFO",
-                "DATABASE_URL": params.database_url,
+                "DATABASE_URL": params.database_url or "",
                 "DATABASE_URL_SECRET_NAME": database_url_secret.secret_name,
             },
             bundling=aws_lambda_python_alpha.BundlingOptions(
@@ -85,29 +87,13 @@ class MetricsLambda(Construct):
                 comparison_operator=aws_cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
                 treat_missing_data=aws_cloudwatch.TreatMissingData.IGNORE,
             )
-            notification_topic_arn = None
-            if params.environment == "development":
-                notification_topic_arn = (
-                    "arn:aws:sns:us-east-1:550082761109:ErrorSupport"
-                )
-            elif params.environment == "staging":
-                notification_topic_arn = (
-                    "arn:aws:sns:us-east-1:794038236739:CloudwatchAlarms.fifo"
-                )
-            elif params.environment == "production":
-                notification_topic_arn = (
-                    "arn:aws:sns:us-east-1:896724907114:CloudwatchAlarms"
-                )
-            else:
-                raise LookupError(
-                    f"Unable to locate notification topic ARN for {params.environment}"
-                )
 
+        if params.cloudwatch_alarm_arn:
             self.metric_dlq_alarm.add_alarm_action(
                 aws_cloudwatch_actions.SnsAction(
                     aws_sns.Topic.from_topic_arn(
                         id="NotifySupportTopic",
-                        topic_arn=notification_topic_arn,
+                        topic_arn=params.cloudwatch_alarm_arn,
                         scope=self,
                     )
                 )

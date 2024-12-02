@@ -15,7 +15,7 @@ from cdk.constructs.metrics_lambda import MetricsLambda, MetricsLambdaParams
 
 
 class DevelopmentStack(Stack):
-    def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
+    def __init__(self, scope: Construct, construct_id: str, **kwargs: any) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
         cors_origins = "https://app.dev.driverai.com,https://labs.dev.driverai.com,https://app2.dev.driverai.com,http://localhost:3000,https://app.beta.driverai.com"
@@ -25,7 +25,7 @@ class DevelopmentStack(Stack):
             "MetricsLambda",
             MetricsLambdaParams(
                 environment="development",
-                database_url="",  # os.getenv("DATABASE_URL")
+                cloudwatch_alarm_arn="arn:aws:sns:us-east-1:550082761109:ErrorSupport",
             ),
         )
         self.backend = Backend(

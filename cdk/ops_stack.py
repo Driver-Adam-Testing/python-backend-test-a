@@ -1,8 +1,10 @@
+import os
+
 from aws_cdk import (
     Stack,
 )
 from constructs import Construct
-
+from cdk.constructs.metrics_lambda import MetricsLambda, MetricsLambdaParams
 from cdk.constructs.backend import Backend, BackendParams
 from cdk.constructs.code_onboarding_lambda import (
     CodeOnboardingLambda,
@@ -15,12 +17,13 @@ from cdk.constructs.document_onboarding_lambda import (
 from cdk.constructs.inspector import Inspector, InspectorParams
 
 
+
 class OpsStack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs: any) -> None:
         super().__init__(scope, construct_id, **kwargs)
-
+        print(kwargs)
         cors_origins = "https://app.dev.driverai.com,https://labs.dev.driverai.com,https://app2.dev.driverai.com,http://localhost:3000,https://app.beta.driverai.com"
-
+        
         self.backend = Backend(
             self,
             "ApiBackend",
@@ -55,4 +58,12 @@ class OpsStack(Stack):
         )
         self.inspector = Inspector(
             self, "Inspector", InspectorParams(environment="ops")
+        )
+        
+        self.metrics_lambda = MetricsLambda(
+            self,
+            "MetricsLambda",
+            MetricsLambdaParams(
+                environment=os.getenv("ENVIRONMENT","ops"), database_url=os.getenv("DATABASE_URL")
+            ),
         )

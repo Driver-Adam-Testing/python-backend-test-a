@@ -13,6 +13,7 @@ class DataScope(BaseModel):
     # TODO: this is where to add versions perhaps?
     paths: list[str] = []
     organization_id: str | None = [None]
+    user_id: str | None = [None]
 
     def authorize(self, paths: list[str] | str | None) -> bool:
         """

@@ -11,6 +11,7 @@ from shared.interfaces.agents.pipeline_configuration import (
     PipelineStepResponse,
 )
 from shared.interfaces.agents.prompt import PromptWithContext
+from shared.usage.llm_session import LLMUsageSession
 
 
 class CodeSnippets(BaseModel):
@@ -43,12 +44,15 @@ class CodeVerification(BaseModel):
     rationale: str
 
 
-def run_agent_find_code_snippets(input: PipelineStepConfiguration):
+def run_agent_find_code_snippets(
+    input: PipelineStepConfiguration, llm_usage_session: LLMUsageSession
+) -> PipelineStepResponse:
     agent = OpenAIStrictAgent(
         model=ModelConfig.default().model_id,
         paths=input.scope.paths,
         organization_id=input.scope.organization_id,
         response_format=CodeSnippets,
+        llm_usage_session=llm_usage_session,
     )
     agent.add_message(prompts.voice.software_engineer.MESSAGE)
     agent.add_message(prompts.task.code_snippet_extractor.MESSAGE)
@@ -59,7 +63,9 @@ def run_agent_find_code_snippets(input: PipelineStepConfiguration):
     )
 
 
-def run_agent_code_critic_verification(input: PipelineStepConfiguration):
+def run_agent_code_critic_verification(
+    input: PipelineStepConfiguration, llm_usage_session: LLMUsageSession
+):
     agent = OpenAIStrictAgent(
         model=ModelConfig.default().model_id,
         paths=input.scope.paths,
@@ -67,6 +73,7 @@ def run_agent_code_critic_verification(input: PipelineStepConfiguration):
         max_iterations=3,
         tools=[SearchTool, OpenFileTool],
         response_format=CodeVerification,
+        llm_usage_session=llm_usage_session,
     )
     agent.add_message(prompts.task.code_critic_verifier.MESSAGE)
 
@@ -79,9 +86,11 @@ def run_agent_code_critic_verification(input: PipelineStepConfiguration):
     )
 
 
-def run_agent_code_critic__extract_verify_correct(input: PipelineStepConfiguration):
+def run_agent_code_critic__extract_verify_correct(
+    input: PipelineStepConfiguration, llm_usage_session: LLMUsageSession
+) -> PipelineStepResponse:
     original_document = input.prompt.prompt
-    snippets = run_agent_find_code_snippets(input)
+    snippets = run_agent_find_code_snippets(input, llm_usage_session)
     verification_results = []
 
     with ThreadPoolExecutor() as executor:
@@ -91,6 +100,7 @@ def run_agent_code_critic__extract_verify_correct(input: PipelineStepConfigurati
                 PipelineStepConfiguration(
                     prompt=PromptWithContext(prompt=snippet), scope=input.scope
                 ),
+                llm_usage_session,
             )
             for snippet in snippets.agent_result.snippets
         ]

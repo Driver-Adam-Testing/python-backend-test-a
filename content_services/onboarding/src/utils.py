@@ -10,7 +10,7 @@ import requests
 from boto3 import resource
 from botocore.client import ClientError
 from database.db import engine
-from database.models_v1 import DerivedContentType
+from database.models_v1 import DerivedContentType, Workspace
 from sqlmodel import Session, select
 
 
@@ -27,6 +27,16 @@ def get_source_content_type_uuid(content_type_name: str) -> UUID:
             sct_uuid = res_sct.id
     return sct_uuid
 
+
+@cache
+def get_org_id_from_workspace(workspace_id: UUID) -> str:
+    org_id = None
+    with Session(engine) as session:
+        sel_statement = select(Workspace).where(Workspace.id == workspace_id)
+        workspace = session.exec(sel_statement).first()
+        if workspace:
+            org_id = workspace.organization_id
+    return org_id
 
 def create_base_storage_url(org_id: str) -> str:
     return f"https://{org_id}.s3.amazonaws.com"
@@ -355,3 +365,22 @@ def run_file_stats_and_reencode(
     file_stats["is_blacklisted"] = is_blacklisted
 
     return file_stats
+
+
+def generate_get_presigned_url(bucket: str, key: str, expires: int = 3600) -> str:
+    import boto3
+
+    s3_client = boto3.client(
+        "s3",
+        region_name="us-east-1",
+        aws_access_key_id=os.environ.get("AWS_ACCESS_KEY_ID"),
+        aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY"),
+    )
+    return s3_client.generate_presigned_url(
+        ClientMethod="get_object",
+        Params={
+            "Bucket": bucket,
+            "Key": key,
+        },
+        ExpiresIn=expires,
+    )

@@ -1,5 +1,6 @@
 import os
 from contextlib import suppress
+from datetime import datetime
 from pathlib import Path
 from urllib.parse import urljoin
 from uuid import UUID, uuid4
@@ -14,6 +15,7 @@ app = modal.App("codebase-onboarding")
 image = (
     modal.Image.debian_slim(python_version="3.12")
     .copy_local_dir("../../driver_db/", remote_path="/driver_db")
+    .copy_local_dir(local_path="../../packages/shared", remote_path="/packages/shared")
     .poetry_install_from_file("pyproject.toml")
 )
 
@@ -23,6 +25,7 @@ image = (
     mounts=[
         modal.Mount.from_local_python_packages("utils"),
         modal.Mount.from_local_python_packages("database"),
+        modal.Mount.from_local_python_packages("shared"),
         modal.Mount.from_local_dir(
             local_path="../../driver_db/certs/",
             remote_path="/root/data/",
@@ -51,12 +54,20 @@ def run_codebase_onboarding(
         DerivedContent,
         Enum_Codebase_Status,
         Enum_Derived_Content_Status,
+        UsageEventType,
     )
+    from shared.interfaces.usage.event_metadata import (
+        UsageEventMetadata,
+        UsageMetric,
+        UsageSessionMetadata,
+    )
+    from shared.usage.llm_session import LLMUsageSession
     from sqlmodel import Session
     from utils import (
         create_base_storage_url,
         create_bucket_if_dne,
         download_file_from_presigned_url,
+        get_org_id_from_workspace,
         get_source_content_type_uuid,
         is_on_blacklist,
         run_file_stats_and_reencode,
@@ -149,23 +160,57 @@ def run_codebase_onboarding(
                     )
                     session.add(dir_sc)
                     print(f"Created but not committed source content for: {directory}.")
-
+            codebase_sloc = 0
+            codebase_size_in_bytes = 0
             # Add file source contents
             for file_path in codebase_stats:
                 if not codebase_stats[file_path]["is_blacklisted"]:
                     file_sc_type = get_source_content_type_uuid("codebase-file")
+                    misc_metadata = codebase_stats[file_path]
+
                     file_sc = DerivedContent(
                         codebase_id=codebase_id,
                         relative_path=str(file_path),
                         content_type_id=file_sc_type,
                         workspace_id=workspace_id,
-                        misc_metadata=codebase_stats[file_path],
+                        misc_metadata=misc_metadata,
                     )
                     session.add(file_sc)
-
+                    # Only add to SLOC and size if the file is analyzable
+                    if codebase_stats[file_path]["is_analyzable"]:
+                        codebase_sloc += misc_metadata["sloc"]
+                        codebase_size_in_bytes += misc_metadata["size"]
                     print(
                         f"Created but not commited source content for: {file_path}. Processable: {codebase_stats[file_path]['is_analyzable']}. Stats: {codebase_stats[file_path]}"
                     )
+
+        session_meta = UsageSessionMetadata(
+            content_type="codebase", content_id=str(codebase_id)
+        )
+        # need to get the real org id from the workspace since the org_id passed in is the hashed org_id
+        real_org_id = get_org_id_from_workspace(workspace_id)
+        with LLMUsageSession(real_org_id, creator_id, session_meta) as llm_session:
+            usage_metric = UsageMetric(
+                session_id=llm_session.session_id,
+                organization_id=real_org_id,
+                user_id=creator_id,
+                event_source="codebase_onboarding",
+                bytes_in=-codebase_size_in_bytes,
+                bytes_out=0,
+                tokens_in=0,
+                tokens_out=0,
+                timestamp=datetime.now(),
+                event_type=UsageEventType.ONBOARDING_USAGE_DEBIT,
+                event_metadata=UsageEventMetadata(
+                    model="None",
+                    provider="None",
+                    input={},
+                    output="",
+                    sloc=codebase_sloc,
+                ),
+            )
+            llm_session.send_event(usage_metric)
+            # TODO: check usage balance guardrails here
 
     print("Codebase onboarding complete for codebase id: ", codebase_id)
     return codebase_id
@@ -175,6 +220,7 @@ def run_codebase_onboarding(
     image=image,
     mounts=[
         modal.Mount.from_local_python_packages("database"),
+        modal.Mount.from_local_python_packages("shared"),
         modal.Mount.from_local_python_packages("utils"),
         modal.Mount.from_local_dir(
             local_path="../../driver_db/certs/",
@@ -301,11 +347,19 @@ def send_exception_email(exception_details: str) -> None:
 
 @app.local_entrypoint()
 def main() -> None:
-    presigned_url = "https://development-codebase-dropzone.s3.us-east-1.amazonaws.com/codebases/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/test_onboard_2.zip?response-content-disposition=inline&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEKj%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIQCy%2BcuUgadGxgIyNRu7yB3mMTqPdUT%2BaWwLT5yvOsspKwIgLUcgyqrOIWoGA34Mzsr2XGcabwXBKA5v0NeJgZB2woUq2wMI4P%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARABGgw1NTAwODI3NjExMDkiDF2UQrIhMNo1BppfgCqvA0opT8xViWIq%2BdWJtQAcR66PPwnwoAvTaXiUm%2FcovDpqWNKuAwsk8FvykEA4ozcZpiD%2FEb2oquXrxnHP7oWle0aR0er0rJKvjYXZbECa1onsE5lJr1nig%2F8WE6A4Xdo93pg2lMiqDxSnVCPPBDk0xQU614%2BluKA8%2FvekzRg4rAUEs7guWueOjuEGqIEdX%2Fz5Mk3GZeBuB6Hq22ptSnAixb%2FWKmQIOvKYP%2F2Ira8AcltgBsVlt%2FvAahcex0FdnoIhUPwqVtPC6Jtt7Kt%2BmFK0FTmFaHFEHGwC7w37yhqDZMYzywOeb6RnDdCdq3lix5b2YmiP%2BEOE66K44qrbsyleQdEYP%2Fc0uIKd639gX0R3XynUj%2BFU%2FA951SXDWfCvGdW%2BBmPeEXb7qOnI%2Fl6eGfQSXe90VZW8XowbXgWK3%2FDGOQqwkQYcp7jq%2F7NQInZUOleNO%2Fn%2B3E2pb2BklNKvcf1nvmW6VsaTNKKYEBOPjoGTuMkFVzRj7DdSn1frXgo4fbShFHJgQEHdreJ1zcSKJNYvlrTgKY16z0iFxNMcHx%2BCukthkI5uY0BndJNoFT1nCT5wMLWOzbcGOpQCRcUhWXAOvl6cxtxbJHWG6VnUwx8wVF5IWdYX6A9YoFNhttNcK0erS%2BnsQFHpDr65HIpu%2BKaypxGBE9HsOCdYQYBpcjRiycoK4f23XoxjlUV%2BQ4uEZ%2FOqM56%2Bqlfr3BosAORFAzB2qSVOrDAe%2FBLdbS1J0c4LY3KZ8uQ%2FIGDawWY%2FePGpp8NC9%2BGMeg1LLzpkL7hTFpSQb7yN2faRV%2B1lVJimd65i0eG7PmOmVupRrXGoq6PvY%2FIdGZzVKAqeIYdUdeoJWEQu75%2Foyqsio7PS0ub%2FSAAWyRy0%2FlFwxm%2ByjrYbkliuZS4yLymwzCYjY9GQqBpSgoBee%2F81bIKtY4zptrA%2BIef7%2B0YF7Z7KLv3nFVYpdwKF&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20240924T233058Z&X-Amz-SignedHeaders=host&X-Amz-Expires=7200&X-Amz-Credential=ASIAYAE342GKZNXMYFBI%2F20240924%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Signature=184c9b03fca2d00606c508232b9e6389825ebf7e8c9e7252d5255fd6c49592d5"
-    archive_name = "test_onboard_2.zip"
+    from utils import generate_get_presigned_url
+
+    # archive_name = "eric-project-main.zip"
+    archive_name = "upload-test.zip"
     org_id = "6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641"
+    # org_id = "org_s76pU1v8LAYhTOWB"
     creator_id = "auth0|6650e02b9812cd674f78cf75"
     workspace_id = UUID("32de9990-b63d-4e8e-9567-58e2a78292ec")
+    presigned_url = generate_get_presigned_url(
+        "development-codebase-dropzone",
+        # "codebases/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/eric-project-main.zip",
+        "codebases/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/upload-test.zip",
+    )
 
     # if modal.is_local():
     #     from dotenv import load_dotenv
@@ -360,3 +414,5 @@ def diff_flow() -> None:
     # )
     #
     # print("Diff flow complete for codebase: ", codebase_id)
+
+    #

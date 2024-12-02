@@ -61,9 +61,7 @@ def run_codebase_onboarding(
         UsageMetric,
         UsageSessionMetadata,
     )
-
-    # from shared.usage.usage_service import UsageService
-    from shared.usage.llm_session import LLMUsageSession, UsageEventSendError
+    from shared.usage.llm_session import LLMUsageSession
     from sqlmodel import Session
     from utils import (
         create_base_storage_url,
@@ -186,36 +184,33 @@ def run_codebase_onboarding(
                         f"Created but not commited source content for: {file_path}. Processable: {codebase_stats[file_path]['is_analyzable']}. Stats: {codebase_stats[file_path]}"
                     )
 
-        try:
-            session_meta = UsageSessionMetadata(
-                content_type="codebase", content_id=str(codebase_id)
+        session_meta = UsageSessionMetadata(
+            content_type="codebase", content_id=str(codebase_id)
+        )
+        # need to get the real org id from the workspace since the org_id passed in is the hashed org_id
+        real_org_id = get_org_id_from_workspace(workspace_id)
+        with LLMUsageSession(real_org_id, creator_id, session_meta) as llm_session:
+            usage_metric = UsageMetric(
+                session_id=llm_session.session_id,
+                organization_id=real_org_id,
+                user_id=creator_id,
+                event_source="codebase_onboarding",
+                bytes_in=-codebase_size_in_bytes,
+                bytes_out=0,
+                tokens_in=0,
+                tokens_out=0,
+                timestamp=datetime.now(),
+                event_type=UsageEventType.ONBOARDING_USAGE_DEBIT,
+                event_metadata=UsageEventMetadata(
+                    model="None",
+                    provider="None",
+                    input={},
+                    output="",
+                    sloc=codebase_sloc,
+                ),
             )
-            # need to get the real org id from the workspace since the org_id passed in is the hashed org_id
-            real_org_id = get_org_id_from_workspace(workspace_id)
-            with LLMUsageSession(real_org_id, creator_id, session_meta) as llm_session:
-                usage_metric = UsageMetric(
-                    session_id=llm_session.session_id,
-                    organization_id=real_org_id,
-                    user_id=creator_id,
-                    event_source="codebase_onboarding",
-                    bytes_in=-codebase_size_in_bytes,
-                    bytes_out=0,
-                    tokens_in=0,
-                    tokens_out=0,
-                    timestamp=datetime.now(),
-                    event_type=UsageEventType.ONBOARDING_USAGE_DEBIT,
-                    event_metadata=UsageEventMetadata(
-                        model="None",
-                        provider="None",
-                        input={},
-                        output="",
-                        sloc=codebase_sloc,
-                    ),
-                )
-                llm_session.send_event(usage_metric)
-                # TODO: check usage balance guardrails here
-        except UsageEventSendError as e:
-            print(f"Error sending usage event: {e}")
+            llm_session.send_event(usage_metric)
+            # TODO: check usage balance guardrails here
 
     print("Codebase onboarding complete for codebase id: ", codebase_id)
     return codebase_id
@@ -354,16 +349,16 @@ def send_exception_email(exception_details: str) -> None:
 def main() -> None:
     from utils import generate_get_presigned_url
 
-    archive_name = "eric-project-main.zip"
-    # archive_name = "upload-test.zip"
+    # archive_name = "eric-project-main.zip"
+    archive_name = "upload-test.zip"
     org_id = "6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641"
     # org_id = "org_s76pU1v8LAYhTOWB"
     creator_id = "auth0|6650e02b9812cd674f78cf75"
     workspace_id = UUID("32de9990-b63d-4e8e-9567-58e2a78292ec")
     presigned_url = generate_get_presigned_url(
         "development-codebase-dropzone",
-        "codebases/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/eric-project-main.zip",
-        # "codebases/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/upload-test.zip",
+        # "codebases/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/eric-project-main.zip",
+        "codebases/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/upload-test.zip",
     )
 
     # if modal.is_local():

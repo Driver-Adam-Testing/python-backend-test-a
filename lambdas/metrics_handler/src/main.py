@@ -3,9 +3,10 @@ import os
 
 import botocore
 from aws_secretsmanager_caching import SecretCache, SecretCacheConfig
-from database.db import create_engine
+
+# from database.db import create_engine
 from database.models_v1 import UsageEvent
-from sqlmodel import Session
+from sqlmodel import Session, create_engine
 from src.utils.config import settings
 
 log_level = os.environ.get("LOG_LEVEL").upper() or logging.INFO
@@ -35,9 +36,7 @@ engine = None
 def get_engine() -> any:
     global engine
     if engine is None:
-        engine = create_engine(
-            database_url,
-        )
+        engine = create_engine(database_url, pool_size=1)
     return engine
 
 

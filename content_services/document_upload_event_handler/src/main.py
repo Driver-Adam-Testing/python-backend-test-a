@@ -90,14 +90,14 @@ def handler(event: dict, context: dict) -> any:
 
                 logger.info("key = " + real_object_key)
                 logger.info("bucket = " + bucket_name)
+                metadata = head_object(bucket=bucket_name, key=real_object_key)
+                source_content_id = metadata["Metadata"]["source_content_id"]
                 if has_no_threats_tag(bucket=bucket_name, key=real_object_key):
                     logger.info("No threats found, continuing document onboarding")
-                    metadata = head_object(bucket=bucket_name, key=real_object_key)
                     # Check if the destination bucket exists, and create it if it doesn't
                     bucket_exists = ensure_bucket_exists(
                         metadata["Metadata"]["org_bucket"], region="us-east-1"
                     )
-                    source_content_id = metadata["Metadata"]["source_content_id"]
                     logger.info(
                         f"Processing content created with ID:{source_content_id}"
                     )

@@ -58,10 +58,9 @@ class LLMUsageSession:
     session_id: UUID | None = None
     client: ChatOpenAI = None
     events_sent: int = 0
+    aws_client: boto3.client = None  # depending on where LLMUsageSession is called, we might need to pass in the aws_client
 
-    # session: Session = None
     def __post_init__(self) -> None:
-        # self.session = Session(engine)
         if self.session_id is None:
             self.session_id = self._start_session()
 
@@ -107,7 +106,7 @@ class LLMUsageSession:
             session.commit()
 
     def send_event(self, usage_metric: UsageMetric) -> dict:
-        client = get_aws_client()
+        client = get_aws_client() if not self.aws_client else self.aws_client
 
         entry = {
             "Time": datetime.now(),

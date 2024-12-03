@@ -1,5 +1,6 @@
 from datetime import datetime
 
+import boto3
 from database.models_v1 import (
     UsageEvent,
     UsageEventType,
@@ -20,9 +21,10 @@ from shared.usage.llm_session import LLMUsageSession
 
 
 class UsageService:
-    def __init__(self, session: Session) -> None:
+    def __init__(self, session: Session, aws_client: boto3.client = None) -> None:
         self.session = session
         self.usage_event_repository = UsageEventRepository(session)
+        self.aws_client = aws_client
 
     def issue_usage_credits(
         self,
@@ -36,8 +38,11 @@ class UsageService:
             message="payment_succeeded",
             event_kind="stripe_webhook_event",
         )
+
         # need to get the real org id from the workspace since the org_id passed in is the hashed org_id
-        with LLMUsageSession(organization_id, user_id, session_meta) as llm_session:
+        with LLMUsageSession(
+            organization_id, user_id, session_meta, aws_client=self.aws_client
+        ) as llm_session:
             print(f"Session started: {llm_session.session_id}")
             usage_metric = UsageMetric(
                 session_id=llm_session.session_id,

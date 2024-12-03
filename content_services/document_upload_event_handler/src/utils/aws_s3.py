@@ -52,7 +52,9 @@ def ensure_bucket_exists(bucket_name: str, region: str | None = None) -> bool:
         if error_code == "404":
             # Bucket doesn't exist, so create it
             try:
-                if region is None:
+                # https://stackoverflow.com/questions/51912072/invalidlocationconstraint-error-while-creating-s3-bucket-when-the-used-command-i
+                # us-east-1 is special
+                if region is None or region == "us-east-1":
                     s3_client.create_bucket(Bucket=bucket_name)
                 else:
                     location = {"LocationConstraint": region}

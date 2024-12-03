@@ -193,8 +193,11 @@ class IrData(BaseModel, abc.ABC):
             cls_instance = cls.default_instance()
         else:
             try:
+                system_prompt = cls.system_prompt()
+                if llm.model == "gpt-4o-mini":
+                    system_prompt += "\n\nWhen referencing any code entities (e.g. functions, classes, structures, variables, etc.), enclose the entity name in backticks (`)."
                 content_raw = llm.generate_response(
-                    system_prompt=cls.system_prompt(),
+                    system_prompt=system_prompt,
                     user_prompt=cls.user_prompt(symbol),
                     output_cfg=OutputConfig(
                         kind=OutputConfigKind.JSON_STRICT, payload=cls

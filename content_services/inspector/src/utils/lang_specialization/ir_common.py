@@ -16,6 +16,9 @@ from utils.lang_specialization.symbol_common import (
 from utils.models import ChatOpenAI, OutputConfig, OutputConfigKind
 from utils.threadpool import FastShutdownThreadPoolExecutor
 
+MAX_SYMBOLS_PER_WORKER = 50
+MAX_WORKERS_FOR_SYMBOLS = 10
+
 
 def snake_case_to_spaced_string(snake_case: str) -> str:
     split_str = snake_case.split("_")
@@ -210,7 +213,10 @@ class IrData(BaseModel, abc.ABC):
             cls_instance = cls.parse_raw(content_raw)
 
         if len(symbol.children) > 0:
-            max_workers = min(ceil(len(symbol.children) / 50), 10)
+            max_workers = min(
+                ceil(len(symbol.children) / MAX_SYMBOLS_PER_WORKER),
+                MAX_WORKERS_FOR_SYMBOLS,
+            )
             futures = {}
             llm_to_use = (
                 llm
@@ -243,11 +249,6 @@ class IrData(BaseModel, abc.ABC):
                     pbar.update(1)
                 for result in sorted(results, key=lambda tup: tup[0][0]):
                     cls_instance._children.append((result[0][1], result[1]))
-                    # child_content = (
-                    #     child_ir_cls.from_llm(llm, child_symbol) if child_ir_cls else None
-                    # )
-
-                    # cls_instance._children.append((child_symbol, child_content))
 
         return cls_instance
 
@@ -307,7 +308,10 @@ class IrCollection(BaseModel, abc.ABC):
     ) -> Self:
         symbols_dict = {}
         futures = {}
-        max_workers = min(ceil(len(symbols_list.data) / 50), 10)
+        max_workers = min(
+            ceil(len(symbols_list.data) / MAX_SYMBOLS_PER_WORKER),
+            MAX_WORKERS_FOR_SYMBOLS,
+        )
         print("Num workers: ", max_workers)
         llm_to_use = (
             llm
@@ -340,27 +344,6 @@ class IrCollection(BaseModel, abc.ABC):
                         print(f"Processed {idx}/{len(futures)} symbols")
                         symbols_dict[futures[future]].append(res)
                     pbar.update(1)
-            # if isinstance(s, list):
-            #     for item in s:
-            #         if item.name not in symbols_dict:
-            #             symbols_dict[item.name] = []
-            #         symbols_dict[item.name].append(
-            #             ir_data.from_llm(
-            #                 llm=llm,
-            #                 symbol=item,
-            #             )
-            #         )
-            # elif isinstance(s, RawSymbolData):
-            #     if s.name not in symbols_dict:
-            #         symbols_dict[s.name] = []
-            #     symbols_dict[s.name].append(
-            #         ir_data.from_llm(
-            #             llm=llm,
-            #             symbol=s,
-            #         )
-            #     )
-            # else:
-            #     raise ValueError("Unsupported type in RawSymbolCollection")
         return cls(data=symbols_dict)
 
     @classmethod

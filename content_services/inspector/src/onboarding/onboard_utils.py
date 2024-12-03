@@ -161,7 +161,7 @@ def upload_file_to_s3(
 def evaluate_file_size_processable(filepath: Path) -> bool:
     is_proc = True
     file_size = os.path.getsize(filepath)
-    min_size = 10
+    min_size = 0
     max_size = 1000000000  # TODO: what's a more sensible default?
 
     if file_size < min_size or file_size > max_size:
@@ -342,7 +342,7 @@ def reencode_file(filepath: Path) -> None:
             else:
                 print(f"Chardet returned None for {filepath}")
 
-    if decoded_str:
+    if decoded_str is not None:
         with open(filepath, "w", encoding="utf-8") as w_file:
             w_file.write(decoded_str)
         print(f"Updated {filepath} to UTF-8")

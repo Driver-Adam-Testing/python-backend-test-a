@@ -80,7 +80,7 @@ def handler(
                     presigned_url = generate_get_presigned_url(
                         bucket=bucket_name, key=real_object_key
                     )
-                    print(
+                    logger.info(
                         f"Triggering codebase onboarding for bucket = {bucket_name}, key = {object_key}"
                     )
                     onboarding_result = exec_onboarding_service(

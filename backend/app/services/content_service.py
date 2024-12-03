@@ -2,6 +2,7 @@ import functools
 import hashlib
 from uuid import UUID
 
+import pypandoc
 from botocore.exceptions import ClientError
 from database.derived_content_types import DerivedContentTypeNames
 from database.models_v1 import (
@@ -816,6 +817,14 @@ class ContentService:
         return ContentTagsResponse(
             tags=tag_results,
         )
+
+    def convert_markdown_to_rst(self, content: str) -> str:
+        logger.info("Converting markdown content to rst")
+        try:
+            rst_content = pypandoc.convert_text(content, "rst", format="markdown")
+            return rst_content
+        except RuntimeError:
+            raise HTTPException(status_code=500, detail="Conversion error")
 
 
 def delete_document_and_related_entities(

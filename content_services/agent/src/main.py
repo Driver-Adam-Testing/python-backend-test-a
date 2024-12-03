@@ -29,6 +29,7 @@ agent_model_config = {
     "secrets": [
         modal.Secret.from_name("open-ai"),
         modal.Secret.from_name("db"),
+        modal.Secret.from_name("aws-inspector-s3"),
     ],
     "concurrency_limit": 36,
 }

@@ -23,6 +23,7 @@ def execute_agent_sequence(user: UserToken, input: PipelineInput) -> PipelineRes
     from shared.pipelines.agents.execute import execute_sequence
 
     input.scope.organization_id = user.organization_id
+    input.scope.user_id = user.user_id
     return execute_sequence(input)
 
 
@@ -35,6 +36,7 @@ def execute_agent_sequence_modal_async(
     user: UserToken, input: PipelineInput
 ) -> DriverModalResponse:
     input.scope.organization_id = user.organization_id
+    input.scope.user_id = user.user_id
     modal_function = Function.lookup("agent", "run")
     instance = modal_function.spawn(input)
     return DriverModalResponse(call_id=instance.object_id)

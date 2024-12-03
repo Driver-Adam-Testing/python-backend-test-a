@@ -1,17 +1,25 @@
-from functools import partial
 from pathlib import Path
+from typing import Self
 
 from utils.codemap_ctags import extract_symbols_w_ctags
+from utils.models import ChatOpenAI
 
-from .common import (
-    class_dict_from_llm,
-    classes_dict_from_llm_multi_prompt,
-    data_structure_dict_from_llm,
-    data_structure_dict_from_llm_multi_prompt,
-    fn_dict_from_llm,
-    fn_dict_from_llm_multi_prompt,
-    variables_dict_from_llm,
-    variables_dict_from_llm_multi_prompt,
+from .ir_common import (
+    ClassData,
+    FnData,
+    IrCollection,
+    IrData,
+    VariableData,
+)
+from .symbol_common import (
+    ParserKind,
+    RawSymbolCollection,
+    RawSymbolData,
+    ScopeRelation,
+    SymbolKind,
+    code_requires_multi_prompt,
+    create_raw_symbol_via_ctags,
+    default_ctags_analysis,
 )
 
 C_OR_CPP_HEADER_DATA_STRUCTURES = {"enum", "union", "struct", "class", "typedef"}
@@ -79,9 +87,9 @@ Summarize the data structure in the code provided below.
 
 - A data structure is custom or compound type in a given programming language, such as structs, classes, or enums. Functions, methods, and variables are not data structures.
 - When describing an important data structure, provide detail that matches the complexity of the data structure. Large and complex data structures should get longer explanations, while small ones a single sentence.
-"""
 
-DATA_STRUCTURES_NONE_CONTENT = "\n---\nNo custom data structures defined in this file."
+Data structure to document:
+"""
 
 
 FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON = """
@@ -114,11 +122,10 @@ FUNCTIONS_FOUND_USER_PROMPT = """
 Summarize the function or method in the code provided below. Describe the inputs, control flow and logic, and output.
 
 - When describing a function, provide detail that matches the complexity of the function body. Large and complex functions should get longer explanations, while small ones much less.
+
+Function to document:
 """
 
-FUNCTIONS_NONE_CONTENT = (
-    "\n---\nNo functions or function prototypes defined in this file."
-)
 
 VARIABLES_FOUND_SYSTEM_PROMPT_JSON = """
 You are an expert systems programmer and a software engineering documentation expert. You write detailed documentation to explain C and C++ code, especially header files.
@@ -142,193 +149,305 @@ Summarize the variable in the code provided below.
 
 - A global variable is declared at the top level scope. Local variables declared and used inside of functions are not global variables. You will be describing a global variable.
 - When describing a variable, provide detail that matches the complexity of the variable. Large and complex global variables (e.g., containing large struct instances) should get longer explanations, while small ones (e.g., one line definitions) much less.
+
+Variable to document:
 """
 
-VARIABLES_NONE_CONTENT = "\n---\nNo global variables defined in this file."
+
+# Symbol extraction classes
+class HeaderDataStructureRawSymbolCollection(RawSymbolCollection):
+    data: dict[str, RawSymbolData | list[RawSymbolData]]
+
+    @classmethod
+    def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self:
+        is_multi_prompt = code_requires_multi_prompt(code)
+
+        symbols = extract_symbols_w_ctags(
+            root_rel_path=root_rel_path, file_content=code
+        )
+
+        global_method_counts = {}
+        class_raw_symbol_data = {}
+        for s in symbols:
+            if s["kind"] in C_OR_CPP_HEADER_FUNCTIONS and not s["name"].startswith(
+                "__anon"
+            ):
+                global_method_counts[s["name"]] = (
+                    global_method_counts.get(s["name"], 0) + 1
+                )
+            if s["kind"] in C_OR_CPP_HEADER_DATA_STRUCTURES and not s[
+                "name"
+            ].startswith("__anon"):
+                class_raw_symbol_data[s["name"]] = create_raw_symbol_via_ctags(
+                    ctags_symbol=s,
+                    root_rel_path=root_rel_path,
+                    code=code,
+                    symbol_kind=SymbolKind.DATA_STRUCTURE,
+                    scope_relation=None,
+                    delimiter="::",
+                    is_multi_prompt=is_multi_prompt,
+                )
+
+        for s in symbols:
+            if (
+                (s.get("scope"))
+                and not s["name"].startswith("__anon")
+                and (s["kind"] in C_OR_CPP_HEADER_FUNCTIONS)
+                and s["scopeKind"] in C_OR_CPP_HEADER_DATA_STRUCTURES
+            ):
+                if s["scope"].split("::")[-1] not in class_raw_symbol_data:
+                    # Case where class is defined elsewhere (e.g. header), but methods for the class are defined in file
+                    class_raw_symbol_data[s["scope"].split("::")[-1]] = RawSymbolData(
+                        parser_kind=ParserKind.UCTAGS,
+                        symbol_kind=SymbolKind.DATA_STRUCTURE,
+                        name=s["scope"].split("::")[-1],
+                        path=root_rel_path,
+                        scope=None,
+                        scope_relation=None,
+                        children=[],
+                        start_line=s["line"],
+                        end_line=s["end"],
+                        symbol_code=None,
+                        file_code=None,
+                        reference_code=None,
+                        delimiter="::",
+                    )
+
+                is_overloaded = global_method_counts[s["name"]] > 1
+                class_raw_symbol_data[s["scope"].split("::")[-1]].children.append(
+                    create_raw_symbol_via_ctags(
+                        ctags_symbol=s,
+                        root_rel_path=root_rel_path,
+                        code=code,
+                        symbol_kind=SymbolKind.CALLABLE,
+                        scope_relation=ScopeRelation.METHOD,
+                        delimiter="::",
+                        is_multi_prompt=is_multi_prompt,
+                        is_overloaded=is_overloaded,
+                    )
+                )
+            elif (
+                (s.get("scope"))
+                and not s["name"].startswith("__anon")
+                and (s["kind"] in C_OR_CPP_HEADER_DATA_STRUCTURES)
+                and (s["scopeKind"] in C_OR_CPP_HEADER_DATA_STRUCTURES)
+            ):
+                if s["scope"].split("::")[-1] in class_raw_symbol_data:
+                    class_raw_symbol_data[s["scope"].split("::")[-1]].children.append(
+                        create_raw_symbol_via_ctags(
+                            ctags_symbol=s,
+                            root_rel_path=root_rel_path,
+                            code=code,
+                            symbol_kind=SymbolKind.DATA_STRUCTURE,
+                            scope_relation=ScopeRelation.NESTED_CLASS,
+                            delimiter="::",
+                            is_multi_prompt=is_multi_prompt,
+                        )
+                    )
+        print(class_raw_symbol_data)
+        output = (
+            None if len(class_raw_symbol_data) == 0 else cls(data=class_raw_symbol_data)
+        )
+        return output
+
+    @classmethod
+    def from_llm(cls, code: str, root_rel_path: str) -> Self:
+        raise NotImplementedError("Static analysis should be used for header functions")
+
+    def to_dict(self) -> dict[str, RawSymbolData]:
+        return self.data
 
 
-def header_class_checker(
-    code: str, root_rel_path: Path, structured_output: bool = True
-) -> list[dict] | str | None:
-    symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-    classes_dict = {}
-    for s in symbols:
-        if s["kind"] in C_OR_CPP_HEADER_DATA_STRUCTURES and not s["name"].startswith(
-            "__anon"
-        ):
-            name = s["name"]
-            methods = []
-            nested_classes = []
-            for sub_s in symbols:
-                if (
-                    (sub_s.get("scope"))
-                    and (sub_s.get("scopeKind") in C_OR_CPP_HEADER_DATA_STRUCTURES)
-                    and (sub_s["scope"].split("::")[-1] == name)
-                    and (sub_s is not s)
-                ):
-                    # TODO: understand if methods can be overloaded?
-                    if sub_s["kind"] in C_OR_CPP_HEADER_FUNCTIONS:
-                        methods.append(sub_s)
-                    elif sub_s["kind"] in C_OR_CPP_HEADER_DATA_STRUCTURES:
-                        nested_classes.append(sub_s)
-            classes_dict[name] = {
-                "methods": methods,
-                "nested_classes": nested_classes,
-            }
-    if len(classes_dict) > 0:
-        if structured_output:
-            output = classes_dict
-        else:
-            output = "\nClasses to document in the code:\n\n"
-            for n in classes_dict:
-                output += f"- {n}\n"
-    else:
-        output = None
-    return output
+class HeaderFnRawSymbolCollection(RawSymbolCollection):
+    data: dict[str, RawSymbolData | list[RawSymbolData]]
 
+    @classmethod
+    def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self:
+        is_multi_prompt = code_requires_multi_prompt(code)
 
-def header_data_structure_checker(
-    code: str, root_rel_path: Path, structured_output: bool = True
-) -> list[str] | str | None:
-    symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-    ds_list = []
-    for s in symbols:
-        if s["kind"] in C_OR_CPP_HEADER_DATA_STRUCTURES and not s["name"].startswith(
-            "__anon"
-        ):
-            ds_list.append(s["name"])
-    if len(ds_list) > 0:
-        if structured_output:
-            output = ds_list
-        else:
-            output = "\nData Structures to document in the code:\n\n"
-            for ds in ds_list:
-                output += f"- {ds}\n"
-    else:
-        output = None
-    return output
+        symbols = extract_symbols_w_ctags(
+            root_rel_path=root_rel_path, file_content=code
+        )
 
+        all_fn_names = [
+            s["name"]
+            for s in symbols
+            if s["kind"] in C_OR_CPP_HEADER_FUNCTIONS
+            and not s["name"].startswith("__anon")
+        ]
 
-def header_function_checker(
-    code: str, root_rel_path: Path, structured_output: bool = True
-) -> list[str] | str | None:
-    symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-
-    fn_names = [
-        s["name"]
-        for s in symbols
-        if s["kind"] in C_OR_CPP_HEADER_FUNCTIONS and not s["name"].startswith("__anon")
-    ]
-    fn_list = []
-    for s in symbols:
-        if s["kind"] in C_OR_CPP_HEADER_FUNCTIONS and not s["name"].startswith(
-            "__anon"
-        ):
-            contained_in_class = False
-            for sub_s in symbols:
-                if (
-                    (s.get("scope"))
-                    and (sub_s["kind"] in C_OR_CPP_HEADER_DATA_STRUCTURES)
-                    and (s["scope"].split("::")[-1] == sub_s["name"])
-                    and (s.get("scopeKind") in C_OR_CPP_HEADER_DATA_STRUCTURES)
+        fn_raw_symbol_data = {}
+        for s in symbols:
+            if s["kind"] in C_OR_CPP_HEADER_FUNCTIONS and not s["name"].startswith(
+                "__anon"
+            ):
+                contained_in_class = False
+                if (s.get("scope")) and (
+                    s.get("scopeKind") in C_OR_CPP_HEADER_DATA_STRUCTURES
                 ):
                     contained_in_class = True
-                    break
 
-            fn_name = (
-                s["name"]
-                if s.get("scopeKind") not in C_OR_CPP_HEADER_DATA_STRUCTURES
-                else s["scope"].split("::")[-1] + "::" + s["name"]
-            )
-            if not contained_in_class and fn_names.count(s["name"]) == 1:
-                # Some classes are defined in a different file than the functions of that class
-                # so we append the class name to the function name to make that clearer in docs
-                fn_list.append(fn_name)
-            elif not contained_in_class and fn_names.count(s["name"]) > 1:
-                # if the function is overloaded we append the the symbol dict
-                # such that when we generate we can isolate the function lines
+                fn_name = (
+                    s["name"]
+                    if s.get("scopeKind") not in C_OR_CPP_HEADER_DATA_STRUCTURES
+                    else s["scope"].split("::")[-1] + "::" + s["name"]
+                )
                 s["name"] = fn_name
-                fn_list.append(s)
+                if not contained_in_class and all_fn_names.count(s["name"]) == 1:
+                    if fn_name not in fn_raw_symbol_data:
+                        fn_raw_symbol_data[fn_name] = []
+                    fn_raw_symbol_data[fn_name].append(
+                        create_raw_symbol_via_ctags(
+                            ctags_symbol=s,
+                            root_rel_path=root_rel_path,
+                            code=code,
+                            symbol_kind=SymbolKind.CALLABLE,
+                            scope_relation=None,
+                            delimiter="::",
+                            is_multi_prompt=is_multi_prompt,
+                            is_overloaded=False,
+                        )
+                    )
 
-    if len(fn_list) > 0:
-        if structured_output:
-            output = fn_list
-        else:
-            output = "\nFunctions to document in the code:\n\n"
-            for fn in fn_list:
-                output += f"- {fn}\n"
-    else:
-        output = None
-    return output
+                elif not contained_in_class and all_fn_names.count(s["name"]) > 1:
+                    if fn_name not in fn_raw_symbol_data:
+                        fn_raw_symbol_data[fn_name] = []
+                    fn_raw_symbol_data[fn_name].append(
+                        create_raw_symbol_via_ctags(
+                            ctags_symbol=s,
+                            root_rel_path=root_rel_path,
+                            code=code,
+                            symbol_kind=SymbolKind.CALLABLE,
+                            scope_relation=None,
+                            delimiter="::",
+                            is_multi_prompt=is_multi_prompt,
+                            is_overloaded=True,
+                        )
+                    )
+        output = None if len(fn_raw_symbol_data) == 0 else cls(data=fn_raw_symbol_data)
+        return output
+
+    @classmethod
+    def from_llm(cls, code: str, root_rel_path: str) -> Self:
+        raise NotImplementedError("Static analysis should be used for header functions")
+
+    def to_dict(self) -> dict[str, RawSymbolData]:
+        return self.data
 
 
-def header_variables_checker(
-    code: str, root_rel_path: Path, structured_output: bool = True
-) -> list[str] | str | None:
-    symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-    v_list = [s["name"] for s in symbols if s["kind"] in C_OR_CPP_HEADER_VARIABLES]
-    if len(v_list) > 0:
-        if structured_output:
-            output = v_list
-        else:
-            output = "\nVariables to document in the code:\n\n"
-            for v in v_list:
-                output += f"- {v}\n"
-    else:
-        output = None
-    return output
+class HeaderVariableRawSymbolCollection(RawSymbolCollection):
+    data: dict[str, RawSymbolData | list[RawSymbolData]]
+
+    @classmethod
+    def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
+        return default_ctags_analysis(
+            collection_cls=cls,
+            code=code,
+            root_rel_path=root_rel_path,
+            symbol_kind=SymbolKind.VARIABLE,
+            ctags_kinds=C_OR_CPP_HEADER_VARIABLES,
+            delimiter="::",
+            add_symbol_padding=True,
+        )
+
+    @classmethod
+    def from_llm(cls, code: str, root_rel_path: str) -> Self:
+        raise NotImplementedError("Static analysis should be used for header variables")
+
+    def to_dict(self) -> dict[str, RawSymbolData]:
+        return self.data
 
 
-variables_dict_from_llm_header = partial(
-    variables_dict_from_llm,
-    VARIABLES_FOUND_SYSTEM_PROMPT_JSON,
-    VARIABLES_FOUND_USER_PROMPT,
-)
+class HeaderDataStructureData(ClassData):
+    @classmethod
+    def system_prompt(cls) -> str:
+        return DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON
 
-data_structure_dict_from_llm_header = partial(
-    data_structure_dict_from_llm,
-    DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
-    DATA_STRUCTURES_FOUND_USER_PROMPT,
-)
+    @classmethod
+    def user_prompt(cls, symbol: RawSymbolData) -> str:
+        user_prompt = f"{DATA_STRUCTURES_FOUND_USER_PROMPT}{symbol.name}\n\nData Structure Code:\n\n{symbol.symbol_code}"
+        if symbol.file_code:
+            user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
+        return user_prompt
 
-fn_dict_from_llm_header = partial(
-    fn_dict_from_llm,
-    FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
-    FUNCTIONS_FOUND_USER_PROMPT,
-)
+    @classmethod
+    def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
+        mapping = {
+            SymbolKind.CALLABLE: HeaderFnData,
+            SymbolKind.DATA_STRUCTURE: None,  # for child classes and structs we just list them
+        }
+        return mapping.get(symbol.symbol_kind)
 
-class_dict_from_llm_header = partial(
-    class_dict_from_llm,
-    DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
-    DATA_STRUCTURES_FOUND_USER_PROMPT,
-    FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
-    FUNCTIONS_FOUND_USER_PROMPT,
-    "::",
-)
+    @classmethod
+    def child_to_field_name(cls, child: RawSymbolData) -> str:
+        mapping = {
+            SymbolKind.CALLABLE: "Methods",
+            SymbolKind.DATA_STRUCTURE: "Nested Classes",
+        }
+        return mapping.get(child.symbol_kind)
 
-variables_dict_from_llm_header_multi_prompt = partial(
-    variables_dict_from_llm_multi_prompt,
-    VARIABLES_FOUND_SYSTEM_PROMPT_JSON,
-    VARIABLES_FOUND_USER_PROMPT,
-)
 
-data_structure_dict_from_llm_header_multi_prompt = partial(
-    data_structure_dict_from_llm_multi_prompt,
-    DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
-    DATA_STRUCTURES_FOUND_USER_PROMPT,
-)
+class HeaderDataStructureCollection(IrCollection):
+    data: dict[str, HeaderDataStructureData | list[HeaderDataStructureData]]
 
-fn_dict_from_llm_header_multi_prompt = partial(
-    fn_dict_from_llm_multi_prompt,
-    FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
-    FUNCTIONS_FOUND_USER_PROMPT,
-)
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(HeaderDataStructureData, llm, symbols_list)
 
-classes_dict_from_llm_header_multi_prompt = partial(
-    classes_dict_from_llm_multi_prompt,
-    DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
-    DATA_STRUCTURES_FOUND_USER_PROMPT,
-    FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
-    FUNCTIONS_FOUND_USER_PROMPT,
-    "::",
-)
+
+class HeaderFnData(FnData):
+    @classmethod
+    def system_prompt(cls) -> str:
+        return FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON
+
+    @classmethod
+    def user_prompt(cls, symbol: RawSymbolData) -> str:
+        user_prompt = f"{FUNCTIONS_FOUND_USER_PROMPT}{symbol.name}\n\nFunction Code:\n\n{symbol.symbol_code}"
+        if symbol.file_code:
+            user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
+        return user_prompt
+
+    @classmethod
+    def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
+        raise NotImplementedError("Functions should not have children")
+
+    @classmethod
+    def child_to_field_name(cls, child: RawSymbolData) -> str:
+        raise NotImplementedError("Functions should not have children")
+
+
+class HeaderFnCollection(IrCollection):
+    data: dict[str, HeaderFnData | list[HeaderFnData]]
+
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(HeaderFnData, llm, symbols_list)
+
+
+class HeaderVariableData(VariableData):
+    @classmethod
+    def system_prompt(cls) -> str:
+        return VARIABLES_FOUND_SYSTEM_PROMPT_JSON
+
+    @classmethod
+    def user_prompt(cls, symbol: RawSymbolData) -> str:
+        user_prompt = f"{VARIABLES_FOUND_USER_PROMPT}{symbol.name}\n\nVariable Code:\n\n{symbol.symbol_code}"
+        if symbol.file_code:
+            user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
+        return user_prompt
+
+    @classmethod
+    def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
+        raise NotImplementedError("Variables should not have children")
+
+    @classmethod
+    def child_to_field_name(cls, child: RawSymbolData) -> str:
+        raise NotImplementedError("Variables should not have children")
+
+
+class HeaderVariableCollection(IrCollection):
+    data: dict[str, HeaderVariableData | list[HeaderVariableData]]
+
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(HeaderVariableData, llm, symbols_list)

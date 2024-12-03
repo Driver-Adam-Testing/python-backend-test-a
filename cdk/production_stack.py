@@ -11,14 +11,23 @@ from cdk.constructs.document_onboarding_lambda import (
     DocumentOnboardingLambdaParams,
 )
 from cdk.constructs.inspector import Inspector, InspectorParams
+from cdk.constructs.metrics_lambda import MetricsLambda, MetricsLambdaParams
 
 
 class ProductionStack(Stack):
-    def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
+    def __init__(self, scope: Construct, construct_id: str, **kwargs: any) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
         cors_origins = "https://app.driverai.com"
 
+        self.metrics_lambda = MetricsLambda(
+            self,
+            "MetricsLambda",
+            MetricsLambdaParams(
+                environment="production",
+                cloudwatch_alarm_arn="arn:aws:sns:us-east-1:896724907114:CloudwatchAlarms",
+            ),
+        )
         self.backend = Backend(
             self,
             "ApiBackend",
@@ -27,6 +36,7 @@ class ProductionStack(Stack):
                 cors_origins=cors_origins,
                 allowed_ips=[],  # All IPs currently allowed
                 use_legacy_dropzone=True,
+                metrics_bus=self.metrics_lambda.metrics_bus,
             ),
         )
         self.onboarding_lambda = CodeOnboardingLambda(

@@ -67,7 +67,7 @@ def run_codebase_onboarding(
     )
 
     if not version:
-        version = "Manual upload"  # TODO there will be no version on the first upload. change this
+        version = "Unversioned"
 
     download_dest = Path(archive_name)
     download_file_from_presigned_url(presigned_url, download_dest)

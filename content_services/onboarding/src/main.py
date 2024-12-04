@@ -66,6 +66,7 @@ def run_pre_codebase_analysis(
         "analyzable_files": 0,
         "total_bytes": 0,
         "total_files": 0,
+        "analyzable_files_by_extension": {},
     }
     for root, _, files in os.walk(extracted_path):
         for filename in files:
@@ -76,6 +77,16 @@ def run_pre_codebase_analysis(
             if file_stats["is_analyzable"] and not file_stats["is_blacklisted"]:
                 codebase_stats["analyzable_bytes"] += file_stats["size"]
                 codebase_stats["analyzable_files"] += 1
+                if (
+                    file_stats["extension"]
+                    not in codebase_stats["analyzable_files_by_extension"]
+                ):
+                    codebase_stats["analyzable_files_by_extension"][
+                        file_stats["extension"]
+                    ] = 0
+                codebase_stats["analyzable_files_by_extension"][
+                    file_stats["extension"]
+                ] += 1
                 codebase_stats["total_bytes"] += file_stats["size"]
                 codebase_stats["total_files"] += 1
             else:
@@ -425,7 +436,7 @@ def main() -> None:
     #     # "codebases/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/eric-project-main.zip",
     #     "codebases/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/upload-test.zip",
     # )
-    presigned_url = "https://development-codebase-dropzone.s3.us-east-1.amazonaws.com/codebases/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/upload-test.zip?response-content-disposition=inline&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEEsaCXVzLWVhc3QtMSJIMEYCIQCBoMWByhmTeKpRZTqyyXbKv2URkxR2UH5SMQjaQC%2FVAAIhANOPX3I1JFcAbTvG1ctCah3BZRbpG9%2BecVBn%2BOsClRusKr4ECPT%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEQARoMNTUwMDgyNzYxMTA5IgzdSZ972TDdb38UV64qkgQkvtm8mMLA%2FwNN5NLNYUmX6LS8Dx%2BtFpu62AnV5FXm4xN%2BacVVR%2FSO73hUeRPYAoBazh9cQQ6axKeuNK%2BolfjRLRx1GGshfLSS%2FqaZ6NZ96PUTxhMYdADHtoDJyrFcOIEwiqZchOXLFP6oOXUexmvCDjOGKumL%2F1Sq4gToVBqL674f47i5jrYaeqMutCZmJn6efdYIlTxEyooHoKTFc8TBtF8wCPRxojN7H47M4lJ6pKekM7r6k2tN0g62ozlTMHl5GZDCAyqzxrDbObJWWBCHedGX%2BkDPCZZXhQN2zKrjfd%2FNjktXQpwTE8z963SMNU4oF%2BvIwzDp6Qt5%2B6AzpT9bwsABO5vJfzOVuLzyaMa%2Fa%2F%2FPZbajjO2VnfDKURcBVO%2B77aDl0bLcUZcgUv7%2F%2F5q5J4sBg%2FVUQ0GnKcOSgEuwJmMDLtfTCNa3L45unf7aKmd3oba3zgzWa03SxLB8SNeJWO%2BEQUePqPP%2BNmSOG8RG8iVe2gzQ2%2BCRwSCJlbdFpcRb%2BHIx66uRVrjm%2BTcPJB7qRvokU7Uu7YMpA%2BcUsxp0A3qQYU%2BV7UZzdgI5RI3CNrUTxW3OVAxD4FmVLT%2BSTgJy2s0XdksefMNq3XF2R3s%2F4Wv%2Fy58rO%2F7QkxhSF3PaE%2BjhpcPJhPrvEQaFeuDYtKwwp3GfRVx89nQZlncbQO97udmoOC%2B%2F0g5iR7ndJsV2IcUyjzCgjsK6BjrEAqBj2GnELR57%2BTVRaMps%2BEczntpoky12oDVmwDshQ0YIqEPPPCf5y3Uqq5jC93WkaSLAbjvcHBIa7A4c%2BL4BkM5KB1uSX3Yi05HU1bq89YPu8FW3%2BIFOGiuAq7LVzaj75ZWDvvhSFox0P0xEz2n%2B%2BBfktcze9Qa7Fnhxm8m31LWs3iZ79cl0Q1z0uk7ToJzI754HLnTCpTVz6SpPqZyU8xxyF4plYljqivFqypq%2FjPqdMnh3qBmhZQQKbqFyxWcRoMtaBn5ilR1skpf1NxD%2FfUGxHJf6iY95W9eGjbOlw%2FKQgjT8GLxoOSWBMj1RjYTj0fppZRZ4bfPH1pea9ivjvgeQX6RNnY%2BXU%2FhFAPLeHrKyhYPMEuvoyStwFimNMbE21xECYrZ5ok3jPcb%2F6%2BsMuSFD5LLWKpv66hV7yDXQ8aluaTj%2F7g%3D%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAYAE342GKRH6C4PJK%2F20241204%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20241204T184005Z&X-Amz-Expires=1800&X-Amz-SignedHeaders=host&X-Amz-Signature=196f22c19a23fb84d69a9c41d412604bf61059a1a9c5ddd3d5cee144a890e349"
+    presigned_url = "https://development-codebase-dropzone.s3.us-east-1.amazonaws.com/codebases/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/terraform-examples.zip?response-content-disposition=inline&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEEsaCXVzLWVhc3QtMSJIMEYCIQC4TTlAt7WJGQxWzLL3Xs8zofzju8M65IVx2IwUPPP76QIhAOjFnXWuD0SWuX0S%2FNyt26eoIX1Oz3x01DT7GW4ooKStKr4ECPT%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEQARoMNTUwMDgyNzYxMTA5IgyppwSycWfduMehkS4qkgRdLAnxBJtGQVlIce30U6pweJs8L1xzfjhPDr9SnwOlAzf80tyCpBecC0fcR%2F80RHgPJtPc0XwVWeVFbUOOFXGweUh8orhPcMt2wZ0VS4mJoyKuhcSp3sQxLBFPEVC8kEkWmwEhlBbTxurZGxfZ2DTCMPLSTDJOwbbU6OHNaCtj3lpZ0PEyyHyXUt9XABUT8F5oSeQpQ8NsxV1P%2BR9UbP%2FuF%2F%2Bj7fAozWjc1eLTeFVI%2B8EAfRZhPHHJpbE8gJy8x2Co4UXce888c61QQRz10DWpzGEgVV0Omc8jA%2BcrD2ALjAyKvFnqRnsHMPF%2Fq1iVcaLAB7qUAseywRUd32hUR1RIOqhinHNUrR40s32tbhCM5F0FpG3QWn%2BsfFm4USuGFbP1Pi3emLy%2F70H3Xnl0nEEAYVotprBoVdQj6VyXFNUjDsU1XOZDYS2pSWp1sQMQTyau1ROTaKv7qEgTmNYRuKHdqmLizF%2FhAi3r%2FjQMoEc%2BMu7F6vYsjdfYgqNJdRVICFSz7EVzggbPJHnzQjTMXLQpRfAzbFYZqkItaz9SUdSzW2Qvb1m0PjrTinS11KHcFd2VQtaIBGzhtV482trSIU6o4TdDb34I7uPVSb0Z%2Bq%2BERTr0SxyTsho1hbtJnSYvpDwyyVMwoOEylcc5YNda8zUk3URyNSDspKLt%2Fdfo%2BetJVeKO73CeehtaNPKbhq3TMPSfVDCgjsK6BjrEAuls%2FiLvQbS5mk%2FD54Blvz2y8FLdEgPU%2BEC9kNC1fsXKeeAVWsDkZgOtWeNR0zkiE4fq9lhgUz8jM7aEaHaKzUzv9cRxqp3UvxHv1Z0%2FsxSYwMw745%2BkKJF%2BidDlXLZmlokJPkaq5qwz6cZI5xvKMlkz6OiexAHUJWphIR3s1cF%2Bp%2Bnd92EedzWRRyJxzu4j4tTAKZzftG61hXAPoqweKTue%2FiiiRYS6Rjm7Itkztcz56ZO9TorMDkCZV1nxqVSjAjuGOTJOKKEcdseKcEyQjk45L3%2BYp5bAb3HT8qDqDBfUwmes4XmTJHcHHHqHUKaZXmhV5PEoqEBuCKdMV%2BuSbRYe%2FBqPYXo6GflrvhXE7hfxwEZgEzrw0PNZBlWK0IZ0SrC%2FPwlNPDOOrV%2BwmjdBB05xNNgLSNXpzMs%2BgPnSY2gg29Uj8w%3D%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAYAE342GKZSHNEHTQ%2F20241204%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20241204T185612Z&X-Amz-Expires=1800&X-Amz-SignedHeaders=host&X-Amz-Signature=11a30ad48c0e442f314019ae17277838c1738343f8db4597ec3e6f43665884b3"
 
     # if modal.is_local():
     #     from dotenv import load_dotenv

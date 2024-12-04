@@ -1,3 +1,4 @@
+import json
 import os
 from contextlib import suppress
 from datetime import datetime
@@ -18,6 +19,70 @@ image = (
     .copy_local_dir(local_path="../../packages/shared", remote_path="/packages/shared")
     .poetry_install_from_file("pyproject.toml")
 )
+
+
+@app.function(
+    image=image,
+    mounts=[
+        modal.Mount.from_local_python_packages("database"),
+        modal.Mount.from_local_python_packages("utils"),
+        modal.Mount.from_local_dir(
+            local_path="../../driver_db/certs/",
+            remote_path="/root/data/",
+        ),
+    ],
+    secrets=[modal.Secret.from_name("aws-inspector-s3"), modal.Secret.from_name("db")],
+    proxy=modal.Proxy.from_name("pg-proxy")
+    if os.environ["MODAL_ENVIRONMENT"] != "staging"
+    else None,
+    timeout=60 * 60,
+    region="us-east",
+    concurrency_limit=5,
+    keep_warm=1,
+)
+def run_pre_codebase_analysis(
+    presigned_url: str,
+) -> str:
+    from utils import (
+        download_file_from_presigned_url,
+        run_file_stats_and_reencode,
+        unpack_archive,
+    )
+
+    temp_archive_name = "temp.zip"
+    download_dest = Path(temp_archive_name)
+    download_file_from_presigned_url(presigned_url, download_dest)
+
+    print(f"Downloaded {temp_archive_name} from S3")
+
+    # Override so unpack from github doesn't have hash in name.
+    extracted_path = unpack_archive(download_dest)
+    codebase_name = str(extracted_path)
+    print("Codebase name : ", codebase_name)
+    print("Unpacked archive to: ", extracted_path)
+
+    codebase_stats = {
+        "analyzable_bytes": 0,
+        "analyzable_files": 0,
+        "total_bytes": 0,
+        "total_files": 0,
+    }
+    for root, _, files in os.walk(extracted_path):
+        for filename in files:
+            local_path = Path(root) / filename
+            print(f"Analyzing {local_path}")
+            file_stats = run_file_stats_and_reencode(local_path)
+
+            if file_stats["is_analyzable"] and not file_stats["is_blacklisted"]:
+                codebase_stats["analyzable_bytes"] += file_stats["size"]
+                codebase_stats["analyzable_files"] += 1
+                codebase_stats["total_bytes"] += file_stats["size"]
+                codebase_stats["total_files"] += 1
+            else:
+                codebase_stats["total_bytes"] += file_stats["size"]
+                codebase_stats["total_files"] += 1
+
+    return json.dumps(codebase_stats)
 
 
 @app.function(
@@ -347,28 +412,31 @@ def send_exception_email(exception_details: str) -> None:
 
 @app.local_entrypoint()
 def main() -> None:
-    from utils import generate_get_presigned_url
+    # from utils import generate_get_presigned_url
 
     # archive_name = "eric-project-main.zip"
-    archive_name = "upload-test.zip"
-    org_id = "6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641"
-    # org_id = "org_s76pU1v8LAYhTOWB"
-    creator_id = "auth0|6650e02b9812cd674f78cf75"
-    workspace_id = UUID("32de9990-b63d-4e8e-9567-58e2a78292ec")
-    presigned_url = generate_get_presigned_url(
-        "development-codebase-dropzone",
-        # "codebases/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/eric-project-main.zip",
-        "codebases/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/upload-test.zip",
-    )
+    # archive_name = "upload-test.zip"
+    # org_id = "6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641"
+    # # org_id = "org_s76pU1v8LAYhTOWB"
+    # creator_id = "auth0|6650e02b9812cd674f78cf75"
+    # workspace_id = UUID("32de9990-b63d-4e8e-9567-58e2a78292ec")
+    # presigned_url = generate_get_presigned_url(
+    #     "development-codebase-dropzone",
+    #     # "codebases/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/eric-project-main.zip",
+    #     "codebases/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/upload-test.zip",
+    # )
+    presigned_url = "https://development-codebase-dropzone.s3.us-east-1.amazonaws.com/codebases/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/upload-test.zip?response-content-disposition=inline&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEEsaCXVzLWVhc3QtMSJIMEYCIQCBoMWByhmTeKpRZTqyyXbKv2URkxR2UH5SMQjaQC%2FVAAIhANOPX3I1JFcAbTvG1ctCah3BZRbpG9%2BecVBn%2BOsClRusKr4ECPT%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEQARoMNTUwMDgyNzYxMTA5IgzdSZ972TDdb38UV64qkgQkvtm8mMLA%2FwNN5NLNYUmX6LS8Dx%2BtFpu62AnV5FXm4xN%2BacVVR%2FSO73hUeRPYAoBazh9cQQ6axKeuNK%2BolfjRLRx1GGshfLSS%2FqaZ6NZ96PUTxhMYdADHtoDJyrFcOIEwiqZchOXLFP6oOXUexmvCDjOGKumL%2F1Sq4gToVBqL674f47i5jrYaeqMutCZmJn6efdYIlTxEyooHoKTFc8TBtF8wCPRxojN7H47M4lJ6pKekM7r6k2tN0g62ozlTMHl5GZDCAyqzxrDbObJWWBCHedGX%2BkDPCZZXhQN2zKrjfd%2FNjktXQpwTE8z963SMNU4oF%2BvIwzDp6Qt5%2B6AzpT9bwsABO5vJfzOVuLzyaMa%2Fa%2F%2FPZbajjO2VnfDKURcBVO%2B77aDl0bLcUZcgUv7%2F%2F5q5J4sBg%2FVUQ0GnKcOSgEuwJmMDLtfTCNa3L45unf7aKmd3oba3zgzWa03SxLB8SNeJWO%2BEQUePqPP%2BNmSOG8RG8iVe2gzQ2%2BCRwSCJlbdFpcRb%2BHIx66uRVrjm%2BTcPJB7qRvokU7Uu7YMpA%2BcUsxp0A3qQYU%2BV7UZzdgI5RI3CNrUTxW3OVAxD4FmVLT%2BSTgJy2s0XdksefMNq3XF2R3s%2F4Wv%2Fy58rO%2F7QkxhSF3PaE%2BjhpcPJhPrvEQaFeuDYtKwwp3GfRVx89nQZlncbQO97udmoOC%2B%2F0g5iR7ndJsV2IcUyjzCgjsK6BjrEAqBj2GnELR57%2BTVRaMps%2BEczntpoky12oDVmwDshQ0YIqEPPPCf5y3Uqq5jC93WkaSLAbjvcHBIa7A4c%2BL4BkM5KB1uSX3Yi05HU1bq89YPu8FW3%2BIFOGiuAq7LVzaj75ZWDvvhSFox0P0xEz2n%2B%2BBfktcze9Qa7Fnhxm8m31LWs3iZ79cl0Q1z0uk7ToJzI754HLnTCpTVz6SpPqZyU8xxyF4plYljqivFqypq%2FjPqdMnh3qBmhZQQKbqFyxWcRoMtaBn5ilR1skpf1NxD%2FfUGxHJf6iY95W9eGjbOlw%2FKQgjT8GLxoOSWBMj1RjYTj0fppZRZ4bfPH1pea9ivjvgeQX6RNnY%2BXU%2FhFAPLeHrKyhYPMEuvoyStwFimNMbE21xECYrZ5ok3jPcb%2F6%2BsMuSFD5LLWKpv66hV7yDXQ8aluaTj%2F7g%3D%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAYAE342GKRH6C4PJK%2F20241204%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20241204T184005Z&X-Amz-Expires=1800&X-Amz-SignedHeaders=host&X-Amz-Signature=196f22c19a23fb84d69a9c41d412604bf61059a1a9c5ddd3d5cee144a890e349"
 
     # if modal.is_local():
     #     from dotenv import load_dotenv
     #     load_dotenv()
     #     run_codebase_onboarding.local(s3_bucket_name, s3_prefix, archive_name, org_id, creator_id, workspace_id)
     # else:
-    onboard_and_inspect.remote(
-        presigned_url, archive_name, org_id, creator_id, workspace_id
-    )
+    # onboard_and_inspect.remote(
+    #     presigned_url, archive_name, org_id, creator_id, workspace_id
+    # )
+    file_stats = run_pre_codebase_analysis.remote(presigned_url)
+    print(file_stats)
 
 
 @app.local_entrypoint()

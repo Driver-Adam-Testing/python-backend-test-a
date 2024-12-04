@@ -433,7 +433,6 @@ def get_file_content(path: Path) -> str:
 
 
 # TODO resurrect rerun
-
 # @app.local_entrypoint()
 # def main(
 #     codebase_id: str, resume_from_id: str | None = None, rerun_paths: str | None = None
@@ -489,34 +488,6 @@ def send_exception_email(exception_details: str) -> None:
         print(f"Email sent: {response.status_code}")
     except Exception as e:
         print(f"Error sending email: {e}")
-
-
-# @app.function(
-#     image=modal.Image.debian_slim(python_version="3.12")
-#     .copy_local_dir(local_path="../../driver_db", remote_path="/driver_db")
-#     .copy_local_dir(local_path="../../packages/shared", remote_path="/shared_pkg")
-#     .pip_install(
-#         ["boto3", "openai>=1.40.2", "pydantic>=2.8.2", "tiktoken", "/shared_pkg"]
-#     ),
-#     secrets=[
-#         modal.Secret.from_name("db"),
-#         modal.Secret.from_name("aws-inspector-s3"),
-#         modal.Secret.from_name("open-ai"),
-#     ],
-#     mounts=[
-#         modal.Mount.from_local_dir(
-#             local_path="../../driver_db/certs",
-#             remote_path="/root/data/",
-#         ),
-#     ],
-#     proxy=modal.Proxy.from_name("pg-proxy")
-#     if os.environ["MODAL_ENVIRONMENT"] != "staging"
-#     else None,
-#     memory="2048",
-#     timeout=3600 * 8,
-#     region="us-east",
-#     concurrency_limit=5,
-# )
 
 
 onboarding_and_inspect_image = (

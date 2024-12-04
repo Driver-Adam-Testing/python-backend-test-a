@@ -8,19 +8,37 @@ from pathlib import Path
 from uuid import UUID
 
 import modal
-from common import app
-from database.models_v1 import Enum_Derived_Content_Status
-from onboard import run_codebase_onboarding
-from onboarding.onboard_utils import set_codebase_status
-from tasks import (
-    EmbeddingTask,
-    FileTechDocTask,
-    FolderTechDocTask,
-    SymbolsTask,
-    TopLevelDocsTask,
+from onboarding.onboard import run_codebase_onboarding
+
+inspection_image = (
+    modal.Image.debian_slim(python_version="3.12")
+    .copy_local_dir(local_path="../../driver_db", remote_path="/driver_db")
+    .copy_local_dir(local_path="../../packages/shared", remote_path="/shared_pkg")
+    .pip_install(
+        [
+            "boto3",
+            "requests",
+            "openai>=1.40.2",
+            "pydantic>=2.8.2",
+            "tiktoken",
+            "/shared_pkg",
+        ]
+    )
 )
-from utils.dag import FileTreeDag, Node, NodeKind, NodeStatus
-from utils.task import TaskManager
+
+from common import app  # noqa: E402
+from utils.dag import FileTreeDag, Node, NodeKind, NodeStatus  # noqa: E402
+
+with inspection_image.imports():
+    from database.models_v1 import Enum_Derived_Content_Status
+    from tasks import (
+        EmbeddingTask,
+        FileTechDocTask,
+        FolderTechDocTask,
+        SymbolsTask,
+        TopLevelDocsTask,
+    )
+    from utils.task import TaskManager
 
 # TODO considering using concurrent inputs when we're just calling open AI. This should
 # save some cost (though costs are negligible today)
@@ -34,12 +52,7 @@ class FileInfo:
 
 
 @app.function(
-    image=modal.Image.debian_slim(python_version="3.12")
-    .copy_local_dir(local_path="../../driver_db", remote_path="/driver_db")
-    .copy_local_dir(local_path="../../packages/shared", remote_path="/shared_pkg")
-    .pip_install(
-        ["boto3", "openai>=1.40.2", "pydantic>=2.8.2", "tiktoken", "/shared_pkg"]
-    ),
+    image=inspection_image,
     secrets=[
         modal.Secret.from_name("db"),
         modal.Secret.from_name("aws-inspector-s3"),
@@ -525,10 +538,17 @@ def send_exception_email(exception_details: str) -> None:
 # )
 
 
-@app.function(
-    image=modal.Image.debian_slim(python_version="3.12")
+onboarding_and_inspect_image = (
+    modal.Image.debian_slim(python_version="3.12")
     .copy_local_dir(local_path="../../driver_db", remote_path="/driver_db")
-    .pip_install("/driver_db"),
+    .pip_install("/driver_db")
+    .pip_install("requests")
+    .pip_install("boto3")
+)
+
+
+@app.function(
+    image=onboarding_and_inspect_image,
     secrets=[
         modal.Secret.from_name("db"),
     ],
@@ -537,6 +557,7 @@ def send_exception_email(exception_details: str) -> None:
             local_path="../../driver_db/certs",
             remote_path="/root/data/",
         ),
+        modal.Mount.from_local_python_packages("onboarding"),  # Why not automounted?
     ],
     proxy=modal.Proxy.from_name("pg-proxy")
     if os.environ["MODAL_ENVIRONMENT"] != "staging"
@@ -555,6 +576,8 @@ def onboard_and_inspect(
     provider: str = "manual",
     version: str | None = None,
 ) -> None:
+    from onboarding.onboard_utils import set_codebase_status
+
     print(
         f"Onboarding for: {archive_name} from {provider} with org_id: {org_id}, creator_id: {creator_id}, "
         f"workspace_id: {workspace_id} with presigned_url: {presigned_url}"

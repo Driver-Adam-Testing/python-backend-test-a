@@ -5,24 +5,6 @@ from uuid import UUID, uuid4
 
 import modal
 from common import app
-from database.models_v1 import (
-    Codebase,
-    DerivedContent,
-    Enum_Codebase_Status,
-    Enum_Derived_Content_Status,
-    InspectionVersion,
-    Workspace,
-)
-from onboarding.onboard_utils import (
-    create_bucket_if_dne,
-    download_file_from_presigned_url,
-    get_source_content_type_uuid,
-    is_on_blacklist,
-    run_file_stats_and_reencode,
-    unpack_archive,
-    upload_file_to_s3,
-)
-from sqlmodel import Session, select
 
 image = (
     modal.Image.debian_slim(python_version="3.12")
@@ -32,6 +14,9 @@ image = (
     .poetry_install_from_file(
         "pyproject.toml"
     )  # TODO clean this up since inspector doesn't use pyproject install
+    .pip_install(
+        "requests"
+    )  # TODO shouldn't be needed... in pyproject.toml RESOLVE THIS
 )
 
 
@@ -40,14 +25,6 @@ image = (
 
 @app.function(
     image=image,
-    # Doesn't seem like these are needed
-    mounts=[
-        # modal.Mount.from_local_python_packages("utils"),
-        # modal.Mount.from_local_dir(
-        #     local_path="../../driver_db/certs/",
-        #     remote_path="/root/data/",
-        # ),
-    ],
     secrets=[modal.Secret.from_name("aws-inspector-s3"), modal.Secret.from_name("db")],
     proxy=modal.Proxy.from_name("pg-proxy")
     if os.environ["MODAL_ENVIRONMENT"] != "staging"
@@ -69,9 +46,28 @@ def run_codebase_onboarding(
     from database.db import (
         engine,  # We defer the import since we'll have the secrets set here
     )
+    from database.models_v1 import (
+        Codebase,
+        DerivedContent,
+        Enum_Codebase_Status,
+        Enum_Derived_Content_Status,
+        InspectionVersion,
+        Workspace,
+    )
+    from sqlmodel import Session, select
+
+    from onboarding.onboard_utils import (
+        create_bucket_if_dne,
+        download_file_from_presigned_url,
+        get_source_content_type_uuid,
+        is_on_blacklist,
+        run_file_stats_and_reencode,
+        unpack_archive,
+        upload_file_to_s3,
+    )
 
     if not version:
-        version = "Manual upload"
+        version = "Manual upload"  # TODO there will be no version on the first upload. change this
 
     download_dest = Path(archive_name)
     download_file_from_presigned_url(presigned_url, download_dest)

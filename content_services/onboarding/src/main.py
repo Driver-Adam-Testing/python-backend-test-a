@@ -67,6 +67,7 @@ def run_pre_codebase_analysis(
         "total_bytes": 0,
         "total_files": 0,
         "analyzable_files_by_extension": {},
+        "analyzable_bytes_by_extension": {},
     }
     for root, _, files in os.walk(extracted_path):
         for filename in files:
@@ -84,9 +85,19 @@ def run_pre_codebase_analysis(
                     codebase_stats["analyzable_files_by_extension"][
                         file_stats["extension"]
                     ] = 0
+                if (
+                    file_stats["extension"]
+                    not in codebase_stats["analyzable_bytes_by_extension"]
+                ):
+                    codebase_stats["analyzable_bytes_by_extension"][
+                        file_stats["extension"]
+                    ] = 0
                 codebase_stats["analyzable_files_by_extension"][
                     file_stats["extension"]
                 ] += 1
+                codebase_stats["analyzable_bytes_by_extension"][
+                    file_stats["extension"]
+                ] += file_stats["size"]
                 codebase_stats["total_bytes"] += file_stats["size"]
                 codebase_stats["total_files"] += 1
             else:

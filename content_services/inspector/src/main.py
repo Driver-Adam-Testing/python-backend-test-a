@@ -158,24 +158,8 @@ async def inspect_db(
             file_paths.append(download_abs_path)
         print("Download complete")
 
-        def change_root_with_first_component(
-            original_root: Path | str, additional_path: Path | str
-        ) -> tuple[Path, str]:
-            original_root_path = Path(original_root)
-            additional_path_path = Path(additional_path)
-
-            relative_path = additional_path_path.relative_to(original_root_path)
-            first_component = relative_path.parts[0]
-            new_root = original_root_path / first_component
-
-            return new_root, first_component
-
-        # We must build the dags with the codebase name removed so dags can be properly diffed. (Codebase name changes with version right now)
-        codebase_root_with_cb_name_inc, _ = change_root_with_first_component(
-            download_root, file_paths[0]
-        )
         codebase_dag: FileTreeDag = build_dag(
-            root_path=codebase_root_with_cb_name_inc, file_paths=file_paths
+            root_path=download_root, file_paths=file_paths
         )
 
         print("======= Nodes from current codebase processed =======")
@@ -198,14 +182,8 @@ async def inspect_db(
                 previous_file_paths.append(download_abs_path)
             print("Download complete for new version of code")
 
-            (
-                previous_codebase_root_with_cb_name_inc,
-                _,
-            ) = change_root_with_first_component(
-                previous_download_root, previous_file_paths[0]
-            )
             previous_codebase_dag: FileTreeDag = build_dag(
-                root_path=previous_codebase_root_with_cb_name_inc,
+                root_path=previous_download_root,
                 file_paths=previous_file_paths,
             )
             print("======= Nodes from previous codebase =======")
@@ -239,11 +217,12 @@ async def inspect_db(
 
         print("======= Nodes being processed  =======")
         for node in sorted_nodes:
-            print(node.root_rel_path, node.status)
+            print(node.root_rel_path, node.status, node.kind)
 
         nodes_with_id: list[tuple[Node, uuid.UUID | None]] = [
-            (node, path_to_source_content_id[Path(codebase_name) / node.root_rel_path])
+            (node, path_to_source_content_id[node.root_rel_path])
             for node in sorted_nodes
+            if node.root_rel_path != Path(".")
         ]
 
         print("======= Nodes with source content id =======")
@@ -253,8 +232,9 @@ async def inspect_db(
         await inspect_files(
             sc_codebase_id=source_content_codebase_id,
             version_id=version_id,
-            codebase_root=codebase_root_with_cb_name_inc,
+            codebase_root=download_root,
             nodes_with_id=nodes_with_id,
+            root_node=sorted_nodes[-1],
             codebase_name=codebase_name,
             run_id=run_id,
             resume=resume,
@@ -285,6 +265,7 @@ async def inspect_files(
     version_id: uuid.UUID,
     codebase_root: Path,
     nodes_with_id: list[tuple[Node, uuid.UUID | None]],
+    root_node: Node,
     codebase_name: str,
     run_id: str,
     resume: bool,
@@ -387,8 +368,8 @@ async def inspect_files(
     # We never generate top level docs in a re-run scenario since we don't have the full task result graph
     # in order to update them.
     if not is_rerun:
-        # TODO when not rerrunning, we should always have the root node as the last. VERIFY!
-        root_node, _ = nodes_with_id[-1]
+        # # TODO when not rerrunning, we should always have the root node as the last. VERIFY!
+        # root_node, _ = nodes_with_id[-1]
 
         # If no changes propagated to the root node due to child changes/additions/deletions,
         # we can reuse the persisted result for the tasks

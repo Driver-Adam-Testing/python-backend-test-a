@@ -580,7 +580,7 @@ def onboard_and_inspect(
 
     print(
         f"Onboarding for: {archive_name} from {provider} with org_id: {org_id}, creator_id: {creator_id}, "
-        f"workspace_id: {workspace_id} with presigned_url: {presigned_url}"
+        f"workspace_id: {workspace_id} with presigned_url: {presigned_url}, version: {version}"
     )
     try:
         codebase_id, version_id = run_codebase_onboarding.remote(
@@ -590,7 +590,7 @@ def onboard_and_inspect(
             creator_id,
             workspace_id,
             provider,
-            version,
+            version=version,
         )
         print(f"Onboarding complete for codebase: {codebase_id}, {version_id}")
         print("Inspecting...")

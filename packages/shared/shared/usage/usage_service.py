@@ -107,9 +107,11 @@ class UsageService:
         debit_balance = sum(
             [event.bytes_in + event.bytes_out for event in usage_event_debit]
         )
-        return UsageBalance(
+        usage_balance = UsageBalance(
             credits=credit_balance, debits=debit_balance, unit=UsageMetricUnitType.BYTES
         )
+        usage_balance.convert_to(UsageMetricUnitType.SLOC)
+        return usage_balance
 
     def get_usage_summary(
         self,
@@ -130,9 +132,6 @@ class UsageService:
         onboarding_usage = sum(
             [event.bytes_in + event.bytes_out for event in onboarding_events]
         )
-        onboarding_session_count = len(
-            {event.session_id for event in onboarding_events}
-        )
 
         # get inspector events
         inspector_events = self.usage_event_repository.get_usage_events_by_types(
@@ -144,10 +143,20 @@ class UsageService:
             start_date,
             end_date,
         )
-        inspector_usage = sum(
-            [event.bytes_in + event.bytes_out for event in inspector_events]
+        tech_doc_usage = sum(
+            [
+                event.bytes_in + event.bytes_out
+                for event in inspector_events
+                if event.event_type == UsageEventType.INSPECTOR_TECH_DOC_USAGE_DEBIT
+            ]
         )
-        inspector_session_count = len({event.session_id for event in inspector_events})
+        code_diff_usage = sum(
+            [
+                event.bytes_in + event.bytes_out
+                for event in inspector_events
+                if event.event_type == UsageEventType.INSPECTOR_CODE_DIFF_USAGE_DEBIT
+            ]
+        )
 
         # get agent pipeline events
         agent_pipeline_events = self.usage_event_repository.get_usage_events_by_types(
@@ -158,9 +167,6 @@ class UsageService:
         )
         agent_pipeline_usage = sum(
             [event.bytes_in + event.bytes_out for event in agent_pipeline_events]
-        )
-        agent_pipeline_session_count = len(
-            {event.session_id for event in agent_pipeline_events}
         )
 
         # get pdf summarization events
@@ -175,18 +181,30 @@ class UsageService:
         pdf_summarization_usage = sum(
             [event.bytes_in + event.bytes_out for event in pdf_summarization_events]
         )
-        pdf_summarization_session_count = len(
-            {event.session_id for event in pdf_summarization_events}
+
+        platform_credit_events = self.usage_event_repository.get_usage_events_by_types(
+            organization_id,
+            [
+                UsageEventType.BASE_PLATFORM_USAGE_CREDIT,
+                UsageEventType.ADDITIONAL_PLATFORM_USAGE_CREDIT,
+            ],
+            start_date,
+            end_date,
         )
 
-        return UsageEventSummary(
+        platform_usage_credits = sum(
+            [event.bytes_in for event in platform_credit_events]
+        )
+
+        usage_event_summary = UsageEventSummary(
             onboarding_usage=onboarding_usage,
-            inspector_usage=inspector_usage,
+            tech_doc_usage=tech_doc_usage,
+            code_diff_usage=code_diff_usage,
             agent_pipeline_usage=agent_pipeline_usage,
             pdf_summarization_usage=pdf_summarization_usage,
-            onboarding_session_count=onboarding_session_count,
-            inspector_session_count=inspector_session_count,
-            agent_pipeline_session_count=agent_pipeline_session_count,
-            pdf_summarization_session_count=pdf_summarization_session_count,
+            platform_usage_credits=platform_usage_credits,
             unit=UsageMetricUnitType.BYTES,
+            user_seat_count=0,
         )
+        usage_event_summary.convert_to(UsageMetricUnitType.SLOC)
+        return usage_event_summary

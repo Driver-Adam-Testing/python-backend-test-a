@@ -36,10 +36,20 @@ def run_pre_codebase_analysis(
     presigned_url: str,
 ) -> str:
     from utils import (
+        delete_file_from_s3,
         download_file_from_presigned_url,
+        parse_presigned_url,
         run_file_stats_and_reencode,
         unpack_archive,
+        wait_for_guard_duty_tag,
     )
+
+    bucket, key = parse_presigned_url(presigned_url)
+    if not wait_for_guard_duty_tag(bucket, key):
+        print("GuardDuty found an issue with this codebase.")
+        print("Deleting file from s3...")
+        delete_file_from_s3(bucket, key)
+        raise Exception("GuardDuty found an issue with this codebase.")
 
     temp_archive_name = "temp.zip"
     download_dest = Path(temp_archive_name)
@@ -439,7 +449,9 @@ def main() -> None:
     #     # "codebases/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/eric-project-main.zip",
     #     "codebases/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/upload-test.zip",
     # )
+
     presigned_url = "https://development-codebase-dropzone.s3.us-east-1.amazonaws.com/codebases/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/upload-test.zip?response-content-disposition=inline&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEGMaCXVzLWVhc3QtMSJGMEQCIHL3%2FWrwFD8kyYZy0LfbBp9v6TrXIMRWyaHIricmidN2AiAZpAx0dUIezF8CdtZzGZ9iHPH32LGzRj9vPVcYNLb5vSq1BAgbEAEaDDU1MDA4Mjc2MTEwOSIMFjaiuxB%2FzKDjJQ2%2BKpIEM%2Fhzf6W99QmrGAkb24t6az8jaMeWJ2ZvnCAqPXaVce8jQNPGk5m9iUBE4c9uIkF%2Bv0U2fCMK%2BNTj0LGlUxSLkYk27tQX7VP9pjXT2kIcIA7Ns3NDprijSlJgfr6VoEx%2FLcBvL2OTGBoBoQbM9mBWkSszKU3r7WygJbOKAKF9oifspZblvBQa7NpW7gbMm8km13FH%2FU%2F0daMFcsOX2uPWLchNSBTDHqaxHGn5%2FNl%2BS%2F77JvndPaPn3FNWmrJqvYbYILGvzHKDON9HNOkyYHLllj4eipMCGTpgC0WfSH6NnEAU2BCnee3YHm3wlIpLnjtObRS10b0rfZpTcPLVxl%2BjYBmghtnSVEYbIlaHCv9Z1F03WwEXL%2FP9sQNtyWOMq1dg9kX1c99kdc6kVuuZACbfBKWwGSG20chaazC2nytwzB3Lva77tIkIlvfOH8yUDcXzPAASo0KObIouAcXYlbWbp5YAvaCEpufQnXMRCQMFhqTDtK9bjg053DpmzvKN8y9p8Nhtq6WqFZBk%2FiGOApBMhTgTSYtvF%2BVM2isy%2FjK3oBr8xY7shj1hlrdfAWolYnzazfSPQ5w3ykIfoRkUBKxwmqCK%2FAelxUVl%2FDsc4bLbG4R3aaaTfh1apRtMzjDjYn5KwGDVrpAe1iJ8gJQQHtwTiMJ1HQcb5jErF2qKoZtbumlg9YvaqFpQ%2BUKgKWFuPwr6jvMw3NjHugY6xgIqJGIXDd3Ew%2BcXlcanBSEOupcBNZh8gp51oQQkYZNOdxj4CwMqukYTM8jwRLQZ%2B8V8FFXnwR6zIIhgQzMczfW8dWH7gVkI7d5iqG24eCJFyjhV5b3devUkBacIFDwlcR4zfrWqKUkfPpu3SeFL7m1%2FnEIjzS9EvLNRem1rTzLRLOB9u1EXZPAY7svD8CtFVi2vJyYh4VM%2BRdYJRrKIQdOI0Ddq2HY0LycWdMIjWsEn6sFp0qiZc2ih3t2ey4PL6weBTWaRtC4bxi0NCzb04fJ6aJUBd2S4%2BgfVasDafggDKd69mCHG8CIRCFXlSPiZLnVf%2BLxvPxYMnAkW0CoooBXXYY6iE959J2yG8LbRxgPRJebKjZVb8RuFDfGS9LUgKhrmdeJXvGlw0RhT6S1qtes0Cqas75WU86XY%2FQ1zRXdazjuZzJNajg%3D%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAYAE342GK2VPWD3NN%2F20241205%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20241205T181045Z&X-Amz-Expires=1200&X-Amz-SignedHeaders=host&X-Amz-Signature=9b3abbcdd8d888d04e4b85d904d5a5a1dfe61c5b59d760c28f7deee1a8ecd8aa"
+
 
     # if modal.is_local():
     #     from dotenv import load_dotenv

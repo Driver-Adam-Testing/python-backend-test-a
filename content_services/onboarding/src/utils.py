@@ -1,5 +1,6 @@
 import os
 import re
+import time
 import zipfile
 from functools import cache
 from pathlib import Path
@@ -389,3 +390,99 @@ def generate_get_presigned_url(bucket: str, key: str, expires: int = 3600) -> st
         },
         ExpiresIn=expires,
     )
+
+
+def parse_presigned_url(url: str) -> tuple[str, str]:
+    from urllib.parse import unquote_plus, urlparse
+
+    parsed_url = urlparse(url)
+    host = parsed_url.netloc
+    path = parsed_url.path.lstrip("/")  # Remove leading slash
+
+    # Extract bucket from the domain
+    if ".s3." in host:  # Domain-style
+        bucket = host.split(".s3.")[0]
+    elif host.startswith("s3-") or host.startswith("s3."):  # Path-style
+        bucket = path.split("/")[0]
+        path = "/".join(path.split("/")[1:])
+    else:
+        raise ValueError("Invalid S3 URL format")
+    key = unquote_plus(path)
+    return bucket, key
+
+
+def has_guard_duty_tag(bucket: str, key: str) -> bool:
+    """
+    Check if the S3 object has the 'GuardDutyMalwareScanStatus' tag with value 'NO_THREATS_FOUND' or 'UNSUPPORTED'.
+    """
+    import boto3
+
+    s3_client = boto3.client(
+        "s3",
+        region_name="us-east-1",
+        aws_access_key_id=os.environ.get("AWS_ACCESS_KEY_ID"),
+        aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY"),
+    )
+    tags = s3_client.get_object_tagging(Bucket=bucket, Key=key)
+    """
+    supported_tags = ["NO_THREATS_FOUND", "UNSUPPORTED"]
+    the 'UNSUPPORTED' tag is a misnomer because GuardDuty tags file as UNSUPPORTED
+    if they have too many files ( > 1000) or file is too large but we can still process it.
+    """
+    # TODO: add support for UNSUPPORTED tag in GuardDuty
+    supported_tags = ["NO_THREATS_FOUND", "UNSUPPORTED"]
+    # supported_tags = ["NO_THREATS_FOUND"]
+    return (
+        len(
+            [
+                tag
+                for tag in tags["TagSet"]
+                if tag["Key"] == "GuardDutyMalwareScanStatus"
+                and tag["Value"] in supported_tags
+            ]
+        )
+        == 1
+    )
+
+
+def wait_for_guard_duty_tag(
+    bucket: str, key: str, timeout: int = 60, interval: int = 5
+) -> bool:
+    """
+    Polls the S3 object for the 'GuardDutyMalwareScanStatus' tag with value 'NO_THREATS_FOUND' or 'UNSUPPORTED'.
+    until the tag is found or the timeout is reached.
+    """
+    start_time = time.time()
+    print(
+        f"Starting to poll for 'NO_THREATS_FOUND' or 'UNSUPPORTED' tag on object '{key}' in bucket '{bucket}'."
+    )
+    print(f"Timeout set to {timeout} seconds, checking every {interval} seconds.")
+
+    while (time.time() - start_time) < timeout:
+        if has_guard_duty_tag(bucket, key):
+            print(
+                f"Tag 'NO_THREATS_FOUND' or 'UNSUPPORTED' found for object '{key}' in bucket '{bucket}'."
+            )
+            return True
+        print(f"Tag not found yet. Waiting {interval} seconds before retrying...")
+        time.sleep(interval)
+    print(
+        f"Timeout reached. Tag 'NO_THREATS_FOUND' or 'UNSUPPORTED' not found for object '{key}' in bucket '{bucket}'."
+    )
+    return False
+
+
+def delete_file_from_s3(bucket: str, key: str) -> None:
+    """
+    Delete a file from S3.
+    NOTE: this should be in shared but shared package does not have access to settings need to instantiate boto3 client
+    """
+    import boto3
+
+    s3_client = boto3.client(
+        "s3",
+        region_name="us-east-1",
+        aws_access_key_id=os.environ.get("AWS_ACCESS_KEY_ID"),
+        aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY"),
+    )
+    s3_client.delete_object(Bucket=bucket, Key=key)

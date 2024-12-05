@@ -25,13 +25,9 @@ class UploadPDFRequest(UploadRequestBase):
 
 class UploadResponse(BaseModel):
     upload_url: str
+    download_url: str
 
 
 class PDFUploadResponse(BaseModel):
     upload_url: str
     source_content_id: UUID
-
-
-class AnalyzeCodebaseUploadResponse(BaseModel):
-    upload_url: str
-    download_url: str

@@ -14,9 +14,13 @@ s3_client = boto3.client(
 )
 
 
+def org_id_to_hash(organization_id: str) -> str:
+    return hashlib.sha256(organization_id.encode()).hexdigest()[:63]
+
+
 def generate_put_presigned_url(
-    key, content_type, metadata: dict | None = None, expires=3600
-):
+    key: str, content_type: str, metadata: dict | None = None, expires: int = 3600
+) -> str:
     if metadata is None:
         metadata = {}
     bucket = (
@@ -36,7 +40,7 @@ def generate_put_presigned_url(
     )
 
 
-def generate_get_presigned_url(key, expires=3600):
+def generate_get_presigned_url(key: str, expires: int = 3600) -> str:
     bucket = (
         settings.DROPZONE_BUCKET_NAME
         if not settings.USE_LEGACY_DROPZONE
@@ -52,7 +56,9 @@ def generate_get_presigned_url(key, expires=3600):
     )
 
 
-def generate_org_get_presigned_url(organization_id, key, expires=600):
+def generate_org_get_presigned_url(
+    organization_id: str, key: str, expires: int = 600
+) -> str:
     bucket = hashlib.sha256(organization_id.encode()).hexdigest()[:63]
     return s3_client.generate_presigned_url(
         ClientMethod="get_object",
@@ -64,7 +70,7 @@ def generate_org_get_presigned_url(organization_id, key, expires=600):
     )
 
 
-def head_org_object(organization_id, key, expires=600) -> bool:
+def head_org_object(organization_id: str, key: str, expires: int = 600) -> bool:
     bucket = hashlib.sha256(organization_id.encode()).hexdigest()[:63]
     try:
         s3_client.head_object(

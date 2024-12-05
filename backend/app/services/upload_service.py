@@ -16,14 +16,15 @@ from app.repositories.derived_content_type_repository import (
 )
 from app.repositories.workspace_repository import WorkspaceRepository
 from app.schemas.upload_schema import (
-    AnalyzeCodebaseUploadResponse,
     PDFUploadResponse,
     UploadCodebaseRequest,
     UploadPDFRequest,
     UploadResponse,
 )
 from app.utils.aws_s3 import (
+    generate_get_presigned_url,
     generate_put_presigned_url,
+    org_id_to_hash,
 )
 
 
@@ -54,8 +55,8 @@ class UploadService:
         codebase_name = os.path.splitext(os.path.basename(file_path))[0]
 
         try:
-            org_id_hash = hashlib.sha256(organization_id.encode()).hexdigest()[:63]
-            upload_key = f"codebases/{org_id_hash}/{os.path.basename(file_path)}"
+            org_id_hash = org_id_to_hash(organization_id)
+            upload_key = f"analysis/{org_id_hash}/{os.path.basename(file_path)}"
 
             logger.info(f"Upload URL generated for {upload_key}")
             codebase_metadata = {
@@ -75,11 +76,14 @@ class UploadService:
                 content_type="application/zip",
                 metadata=codebase_metadata,
             )
+            download_url = generate_get_presigned_url(
+                key=upload_key,
+            )
         except Exception as e:
             logger.error(f"Error uploading codebase: {e}")
             raise HTTPException(status_code=500, detail="Error uploading codebase")
 
-        return UploadResponse(upload_url=upload_url)
+        return UploadResponse(upload_url=upload_url, download_url=download_url)
 
     def upload_pdf(
         self, user: UserToken, request: UploadPDFRequest
@@ -157,15 +161,3 @@ class UploadService:
         except Exception as e:
             logger.error(f"Error uploading PDF: {e}")
             raise HTTPException(status_code=500, detail="Error uploading PDF")
-
-    def upload_analyze_codebase(
-        self, user: UserToken, request: UploadCodebaseRequest
-    ) -> AnalyzeCodebaseUploadResponse:
-        """
-        1. Generate presigned put URL for the codebase
-        2. Generate presigned get URL for the codebase
-        3. return the presigned put and get URL
-        """
-        return AnalyzeCodebaseUploadResponse(
-            upload_url="upload_url", download_url="download_url"
-        )

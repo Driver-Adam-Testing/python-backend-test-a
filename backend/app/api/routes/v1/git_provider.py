@@ -4,6 +4,7 @@ import hmac
 import json
 from datetime import datetime
 
+from database.models_v1 import GithubAppInstallation
 from fastapi import APIRouter, HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -11,7 +12,6 @@ from pydantic import BaseModel
 from app.api.auth import ContentEditorPermission, UserToken
 from app.api.session import CurrentSession
 from app.core.config import settings
-from app.repositories.user_repository import UserRepository
 from app.repositories.workspace_repository import WorkspaceRepository
 from app.utils.aws_secrets_manager import format_secret_key, read_secret, write_secret
 from app.utils.gh_ops import download_and_upload_repo, exchange_code_for_token
@@ -34,7 +34,7 @@ def git_provider_callback(
     installation_id: str,
     request: Request,
     response: Response,
-):
+) -> OkResponse:
     if provider != "github":
         raise HTTPException(status_code=400, detail="Bad request")
 
@@ -57,9 +57,11 @@ def git_provider_callback(
     if value is not None:
         print("Secret stored successfully")
 
-    # If the user is already present in the database, update the installation_id (if, for example, they removed the
-    # app and reinstalled it)
-    UserRepository(session).create_or_update(user_id, org_id, installation_id)
+    gh_app_install = GithubAppInstallation(
+        organization_id=org_id, github_app_installation_id=installation_id
+    )
+    session.add(gh_app_install)
+    session.commit()
 
     content = "<html><body><script>window.close();</script></body></html>"
     return Response(content=content, media_type="text/html")
@@ -80,7 +82,7 @@ async def clone_repo(
     current_user: UserToken,
     provider: str,
     repo: GitRepository,
-):
+) -> JSONResponse:
     secret_key = format_secret_key(
         current_user.organization_id, current_user.user_id, provider
     )
@@ -120,7 +122,7 @@ async def clone_repo(
         )
 
 
-def verify_signature(payload_body, secret_token, signature_header):
+def verify_signature(payload_body, secret_token, signature_header) -> None:
     """Verify that the payload was sent from GitHub by validating SHA256.
 
     Raise and return 403 if not authorized.
@@ -143,7 +145,7 @@ def verify_signature(payload_body, secret_token, signature_header):
 
 
 @router.post("/{provider}/webhook")
-async def webhook(provider: str, request: Request):
+async def webhook(provider: str, request: Request) -> JSONResponse:
     # Ensure the request body is read as bytes for signature verification
     body_bytes = await request.body()  # Get the raw request body as bytes
     body = await request.json()  # Parse the JSON body for further processing

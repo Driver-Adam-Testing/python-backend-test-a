@@ -10,12 +10,6 @@ from botocore.exceptions import BotoCoreError, ClientError
 from modal.functions import FunctionCall
 from src.utils import delete_file_from_s3, parse_presigned_url
 
-"""
-1. generate_put_presigned_url and generate_get_presigned_url
-2. function to upload a zip to s3
-3. function extract bucket and key from the url
-
-"""
 
 AWS_ACCESS_KEY = os.environ.get("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY")
@@ -133,12 +127,21 @@ BUCKET_NAME = "development-codebase-dropzone"
 
 
 def main(file_path: str):
+    """
+    1. Extract file name from file path
+    2. Build object key
+    3. Generate presigned url
+    4. Upload file to s3
+    5. Run pre codebase analysis
+    6. Wait for modal to complete
+    7. Delete file from s3
+    """
     file_name = extract_file_name(file_path)
     object_key = build_object_key(org_id_to_hash(ORG_ID), file_name)
-
     download_url = generate_get_presigned_url(BUCKET_NAME, object_key)
 
     bucket, object_key = parse_presigned_url(download_url)
+
 
     upload_zip_to_s3(file_path, BUCKET_NAME, object_key)
 

@@ -43,20 +43,21 @@ image = (
 def run_pre_codebase_analysis(
     presigned_url: str,
 ) -> str:
-    print(presigned_url)
     from utils import (
+        delete_file_from_s3,
         download_file_from_presigned_url,
         parse_presigned_url,
         run_file_stats_and_reencode,
         unpack_archive,
-        wait_for_no_threats_tag,
+        wait_for_guard_duty_tag,
     )
 
     bucket, key = parse_presigned_url(presigned_url)
-    print(bucket, key)
-
-    if not wait_for_no_threats_tag(bucket, key):
-        raise Exception("Threats found in the file")
+    if not wait_for_guard_duty_tag(bucket, key):
+        print("GuardDuty found an issue with this codebase.")
+        print("Deleting file from s3...")
+        delete_file_from_s3(bucket, key)
+        raise Exception("GuardDuty found an issue with this codebase.")
 
     temp_archive_name = "temp.zip"
     download_dest = Path(temp_archive_name)

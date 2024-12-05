@@ -1,6 +1,6 @@
 from enum import Enum
 
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, Field, model_validator
 from shared.usage.utils import bytes_to_sloc, sloc_to_bytes
 
 
@@ -17,7 +17,7 @@ class CreditUsageEvent(BaseModel):
 class UsageBalance(BaseModel):
     credits: int
     debits: int
-    balance: int = 0  # Initialize with a default value, though it's computed
+    balance: int = Field(default=0, description="Computed balance")
     unit: UsageMetricUnitType
 
     @model_validator(mode="before")
@@ -28,23 +28,30 @@ class UsageBalance(BaseModel):
         values["balance"] = _credits + _debits if _credits > 0 else _debits
         return values
 
-    def convert_to(self, target_unit: UsageMetricUnitType) -> None:
+    def convert_to(self, target_unit: UsageMetricUnitType) -> "UsageBalance":
         """
         Convert credits, debits, and balance to the specified unit.
         """
         if self.unit == target_unit:
-            return
+            return self
 
-        if target_unit == UsageMetricUnitType.BYTES:
-            self.credits = sloc_to_bytes(self.credits)
-            self.debits = sloc_to_bytes(self.debits)
-            self.balance = sloc_to_bytes(self.balance)
-        elif target_unit == UsageMetricUnitType.SLOC:
-            self.credits = bytes_to_sloc(self.credits)
-            self.debits = bytes_to_sloc(self.debits)
-            self.balance = bytes_to_sloc(self.balance)
+        conversion_fn = (
+            sloc_to_bytes if target_unit == UsageMetricUnitType.BYTES else bytes_to_sloc
+        )
 
-        self.unit = target_unit
+        new_credits = conversion_fn(self.credits)
+        new_debits = conversion_fn(self.debits)
+        new_balance = conversion_fn(self.balance)
+
+        return UsageBalance(
+            credits=new_credits,
+            debits=new_debits,
+            balance=new_balance,
+            unit=target_unit,
+        )
+
+    class Config:
+        frozen = True
 
 
 # AGENT_PIPELINE_USAGE_DEBIT = 1
@@ -58,7 +65,7 @@ class UsageBalance(BaseModel):
 
 class UsageEventSummary(BaseModel):
     """
-    Usage Event Details
+    Usage Event Summary by usage type.
     """
 
     onboarding_usage: int
@@ -72,26 +79,34 @@ class UsageEventSummary(BaseModel):
 
     unit: UsageMetricUnitType
 
-    def convert_to(self, target_unit: UsageMetricUnitType) -> None:
+    def convert_to(self, target_unit: UsageMetricUnitType) -> "UsageEventSummary":
         """
-        Convert credits, debits, and balance to the specified unit.
+        Convert usage values to the specified unit.
         """
         if self.unit == target_unit:
-            return
+            return self
 
-        if target_unit == UsageMetricUnitType.BYTES:
-            self.onboarding_usage = sloc_to_bytes(self.onboarding_usage)
-            self.tech_doc_usage = sloc_to_bytes(self.tech_doc_usage)
-            self.code_diff_usage = sloc_to_bytes(self.code_diff_usage)
-            self.agent_pipeline_usage = sloc_to_bytes(self.agent_pipeline_usage)
-            self.pdf_summarization_usage = sloc_to_bytes(self.pdf_summarization_usage)
-            self.platform_usage_credits = sloc_to_bytes(self.platform_usage_credits)
-        elif target_unit == UsageMetricUnitType.SLOC:
-            self.onboarding_usage = bytes_to_sloc(self.onboarding_usage)
-            self.tech_doc_usage = bytes_to_sloc(self.tech_doc_usage)
-            self.code_diff_usage = bytes_to_sloc(self.code_diff_usage)
-            self.agent_pipeline_usage = bytes_to_sloc(self.agent_pipeline_usage)
-            self.pdf_summarization_usage = bytes_to_sloc(self.pdf_summarization_usage)
-            self.platform_usage_credits = bytes_to_sloc(self.platform_usage_credits)
+        conversion_fn = (
+            sloc_to_bytes if target_unit == UsageMetricUnitType.BYTES else bytes_to_sloc
+        )
 
-        self.unit = target_unit
+        new_onboarding_usage = conversion_fn(self.onboarding_usage)
+        new_tech_doc_usage = conversion_fn(self.tech_doc_usage)
+        new_code_diff_usage = conversion_fn(self.code_diff_usage)
+        new_agent_pipeline_usage = conversion_fn(self.agent_pipeline_usage)
+        new_pdf_summarization_usage = conversion_fn(self.pdf_summarization_usage)
+        new_platform_usage_credits = conversion_fn(self.platform_usage_credits)
+
+        return UsageEventSummary(
+            onboarding_usage=new_onboarding_usage,
+            tech_doc_usage=new_tech_doc_usage,
+            code_diff_usage=new_code_diff_usage,
+            agent_pipeline_usage=new_agent_pipeline_usage,
+            pdf_summarization_usage=new_pdf_summarization_usage,
+            platform_usage_credits=new_platform_usage_credits,
+            user_seat_count=self.user_seat_count,
+            unit=target_unit,
+        )
+
+    class Config:
+        frozen = True

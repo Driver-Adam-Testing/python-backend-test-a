@@ -110,8 +110,7 @@ class UsageService:
         usage_balance = UsageBalance(
             credits=credit_balance, debits=debit_balance, unit=UsageMetricUnitType.BYTES
         )
-        usage_balance.convert_to(UsageMetricUnitType.SLOC)
-        return usage_balance
+        return usage_balance.convert_to(UsageMetricUnitType.SLOC)
 
     def get_usage_summary(
         self,
@@ -206,5 +205,4 @@ class UsageService:
             unit=UsageMetricUnitType.BYTES,
             user_seat_count=0,
         )
-        usage_event_summary.convert_to(UsageMetricUnitType.SLOC)
-        return usage_event_summary
+        return usage_event_summary.convert_to(UsageMetricUnitType.SLOC)

@@ -24,17 +24,9 @@ image = (
 @app.function(
     image=image,
     mounts=[
-        modal.Mount.from_local_python_packages("database"),
         modal.Mount.from_local_python_packages("utils"),
-        modal.Mount.from_local_dir(
-            local_path="../../driver_db/certs/",
-            remote_path="/root/data/",
-        ),
     ],
-    secrets=[modal.Secret.from_name("aws-inspector-s3"), modal.Secret.from_name("db")],
-    proxy=modal.Proxy.from_name("pg-proxy")
-    if os.environ["MODAL_ENVIRONMENT"] != "staging"
-    else None,
+    secrets=[modal.Secret.from_name("aws-inspector-s3")],
     timeout=60 * 60,
     region="us-east",
     concurrency_limit=5,
@@ -447,7 +439,7 @@ def main() -> None:
     #     # "codebases/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/eric-project-main.zip",
     #     "codebases/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/upload-test.zip",
     # )
-    presigned_url = "https://development-codebase-dropzone.s3.us-east-1.amazonaws.com/codebases/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/terraform-examples.zip?response-content-disposition=inline&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEEsaCXVzLWVhc3QtMSJIMEYCIQC4TTlAt7WJGQxWzLL3Xs8zofzju8M65IVx2IwUPPP76QIhAOjFnXWuD0SWuX0S%2FNyt26eoIX1Oz3x01DT7GW4ooKStKr4ECPT%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEQARoMNTUwMDgyNzYxMTA5IgyppwSycWfduMehkS4qkgRdLAnxBJtGQVlIce30U6pweJs8L1xzfjhPDr9SnwOlAzf80tyCpBecC0fcR%2F80RHgPJtPc0XwVWeVFbUOOFXGweUh8orhPcMt2wZ0VS4mJoyKuhcSp3sQxLBFPEVC8kEkWmwEhlBbTxurZGxfZ2DTCMPLSTDJOwbbU6OHNaCtj3lpZ0PEyyHyXUt9XABUT8F5oSeQpQ8NsxV1P%2BR9UbP%2FuF%2F%2Bj7fAozWjc1eLTeFVI%2B8EAfRZhPHHJpbE8gJy8x2Co4UXce888c61QQRz10DWpzGEgVV0Omc8jA%2BcrD2ALjAyKvFnqRnsHMPF%2Fq1iVcaLAB7qUAseywRUd32hUR1RIOqhinHNUrR40s32tbhCM5F0FpG3QWn%2BsfFm4USuGFbP1Pi3emLy%2F70H3Xnl0nEEAYVotprBoVdQj6VyXFNUjDsU1XOZDYS2pSWp1sQMQTyau1ROTaKv7qEgTmNYRuKHdqmLizF%2FhAi3r%2FjQMoEc%2BMu7F6vYsjdfYgqNJdRVICFSz7EVzggbPJHnzQjTMXLQpRfAzbFYZqkItaz9SUdSzW2Qvb1m0PjrTinS11KHcFd2VQtaIBGzhtV482trSIU6o4TdDb34I7uPVSb0Z%2Bq%2BERTr0SxyTsho1hbtJnSYvpDwyyVMwoOEylcc5YNda8zUk3URyNSDspKLt%2Fdfo%2BetJVeKO73CeehtaNPKbhq3TMPSfVDCgjsK6BjrEAuls%2FiLvQbS5mk%2FD54Blvz2y8FLdEgPU%2BEC9kNC1fsXKeeAVWsDkZgOtWeNR0zkiE4fq9lhgUz8jM7aEaHaKzUzv9cRxqp3UvxHv1Z0%2FsxSYwMw745%2BkKJF%2BidDlXLZmlokJPkaq5qwz6cZI5xvKMlkz6OiexAHUJWphIR3s1cF%2Bp%2Bnd92EedzWRRyJxzu4j4tTAKZzftG61hXAPoqweKTue%2FiiiRYS6Rjm7Itkztcz56ZO9TorMDkCZV1nxqVSjAjuGOTJOKKEcdseKcEyQjk45L3%2BYp5bAb3HT8qDqDBfUwmes4XmTJHcHHHqHUKaZXmhV5PEoqEBuCKdMV%2BuSbRYe%2FBqPYXo6GflrvhXE7hfxwEZgEzrw0PNZBlWK0IZ0SrC%2FPwlNPDOOrV%2BwmjdBB05xNNgLSNXpzMs%2BgPnSY2gg29Uj8w%3D%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAYAE342GKZSHNEHTQ%2F20241204%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20241204T185612Z&X-Amz-Expires=1800&X-Amz-SignedHeaders=host&X-Amz-Signature=11a30ad48c0e442f314019ae17277838c1738343f8db4597ec3e6f43665884b3"
+    presigned_url = "https://development-codebase-dropzone.s3.us-east-1.amazonaws.com/codebases/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/upload-test.zip?response-content-disposition=inline&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEGMaCXVzLWVhc3QtMSJGMEQCIHL3%2FWrwFD8kyYZy0LfbBp9v6TrXIMRWyaHIricmidN2AiAZpAx0dUIezF8CdtZzGZ9iHPH32LGzRj9vPVcYNLb5vSq1BAgbEAEaDDU1MDA4Mjc2MTEwOSIMFjaiuxB%2FzKDjJQ2%2BKpIEM%2Fhzf6W99QmrGAkb24t6az8jaMeWJ2ZvnCAqPXaVce8jQNPGk5m9iUBE4c9uIkF%2Bv0U2fCMK%2BNTj0LGlUxSLkYk27tQX7VP9pjXT2kIcIA7Ns3NDprijSlJgfr6VoEx%2FLcBvL2OTGBoBoQbM9mBWkSszKU3r7WygJbOKAKF9oifspZblvBQa7NpW7gbMm8km13FH%2FU%2F0daMFcsOX2uPWLchNSBTDHqaxHGn5%2FNl%2BS%2F77JvndPaPn3FNWmrJqvYbYILGvzHKDON9HNOkyYHLllj4eipMCGTpgC0WfSH6NnEAU2BCnee3YHm3wlIpLnjtObRS10b0rfZpTcPLVxl%2BjYBmghtnSVEYbIlaHCv9Z1F03WwEXL%2FP9sQNtyWOMq1dg9kX1c99kdc6kVuuZACbfBKWwGSG20chaazC2nytwzB3Lva77tIkIlvfOH8yUDcXzPAASo0KObIouAcXYlbWbp5YAvaCEpufQnXMRCQMFhqTDtK9bjg053DpmzvKN8y9p8Nhtq6WqFZBk%2FiGOApBMhTgTSYtvF%2BVM2isy%2FjK3oBr8xY7shj1hlrdfAWolYnzazfSPQ5w3ykIfoRkUBKxwmqCK%2FAelxUVl%2FDsc4bLbG4R3aaaTfh1apRtMzjDjYn5KwGDVrpAe1iJ8gJQQHtwTiMJ1HQcb5jErF2qKoZtbumlg9YvaqFpQ%2BUKgKWFuPwr6jvMw3NjHugY6xgIqJGIXDd3Ew%2BcXlcanBSEOupcBNZh8gp51oQQkYZNOdxj4CwMqukYTM8jwRLQZ%2B8V8FFXnwR6zIIhgQzMczfW8dWH7gVkI7d5iqG24eCJFyjhV5b3devUkBacIFDwlcR4zfrWqKUkfPpu3SeFL7m1%2FnEIjzS9EvLNRem1rTzLRLOB9u1EXZPAY7svD8CtFVi2vJyYh4VM%2BRdYJRrKIQdOI0Ddq2HY0LycWdMIjWsEn6sFp0qiZc2ih3t2ey4PL6weBTWaRtC4bxi0NCzb04fJ6aJUBd2S4%2BgfVasDafggDKd69mCHG8CIRCFXlSPiZLnVf%2BLxvPxYMnAkW0CoooBXXYY6iE959J2yG8LbRxgPRJebKjZVb8RuFDfGS9LUgKhrmdeJXvGlw0RhT6S1qtes0Cqas75WU86XY%2FQ1zRXdazjuZzJNajg%3D%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAYAE342GK2VPWD3NN%2F20241205%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20241205T181045Z&X-Amz-Expires=1200&X-Amz-SignedHeaders=host&X-Amz-Signature=9b3abbcdd8d888d04e4b85d904d5a5a1dfe61c5b59d760c28f7deee1a8ecd8aa"
 
     # if modal.is_local():
     #     from dotenv import load_dotenv

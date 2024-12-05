@@ -9,14 +9,15 @@ import chardet
 import requests
 from boto3 import resource
 from botocore.client import ClientError
-from database.db import engine
-from database.models_v1 import DerivedContentType, Workspace
 from sqlmodel import Session, select
 
 
 # TODO dedup
 @cache
 def get_source_content_type_uuid(content_type_name: str) -> UUID:
+    from database.db import engine
+    from database.models_v1 import DerivedContentType
+
     sct_uuid = None
     with Session(engine) as session:
         sel_statement = select(DerivedContentType).where(
@@ -30,6 +31,9 @@ def get_source_content_type_uuid(content_type_name: str) -> UUID:
 
 @cache
 def get_org_id_from_workspace(workspace_id: UUID) -> str:
+    from database.db import engine
+    from database.models_v1 import Workspace
+
     org_id = None
     with Session(engine) as session:
         sel_statement = select(Workspace).where(Workspace.id == workspace_id)
@@ -37,6 +41,7 @@ def get_org_id_from_workspace(workspace_id: UUID) -> str:
         if workspace:
             org_id = workspace.organization_id
     return org_id
+
 
 def create_base_storage_url(org_id: str) -> str:
     return f"https://{org_id}.s3.amazonaws.com"

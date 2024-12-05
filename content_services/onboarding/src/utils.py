@@ -44,6 +44,46 @@ def get_org_id_from_workspace(workspace_id: UUID) -> str:
     return org_id
 
 
+@cache
+def load_extension_and_name_mapping() -> dict:
+    from collections import defaultdict
+
+    import yaml
+
+    with open("/linguist/languages.yml") as f:
+        language_dict = yaml.safe_load(f)
+    extension_map = defaultdict(list)
+    name_map = defaultdict(list)
+    for lang in language_dict:
+        if language_dict[lang].get("extensions"):
+            for ext in language_dict[lang]["extensions"]:
+                extension_map[ext].append(lang)
+        if language_dict[lang].get("filenames"):
+            for name in language_dict[lang]["filenames"]:
+                name_map[name].append(lang)
+    return extension_map, name_map
+
+
+def get_file_type_from_extension(extension: str) -> str:
+    extension_map = load_extension_and_name_mapping()[0]
+    file_type = extension_map.get(extension)
+
+    if extension == ".h":
+        return "Header"
+    elif file_type and len(file_type) == 1:
+        return file_type[0]
+    return None
+
+
+def get_file_type_from_filename(filename: str) -> str:
+    name_map = load_extension_and_name_mapping()[1]
+    file_type = name_map.get(filename)
+
+    if file_type and len(file_type) == 1:
+        return file_type[0]
+    return None
+
+
 def create_base_storage_url(org_id: str) -> str:
     return f"https://{org_id}.s3.amazonaws.com"
 
@@ -402,7 +442,7 @@ def parse_presigned_url(url: str) -> tuple[str, str]:
     # Extract bucket from the domain
     if ".s3." in host:  # Domain-style
         bucket = host.split(".s3.")[0]
-    elif host.startswith("s3-") or host.startswith("s3."):  # Path-style
+    elif host.startswith(("s3-", "s3.")):  # Path-style
         bucket = path.split("/")[0]
         path = "/".join(path.split("/")[1:])
     else:

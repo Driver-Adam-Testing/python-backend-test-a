@@ -25,6 +25,7 @@ image = (
     image=image,
     mounts=[
         modal.Mount.from_local_python_packages("utils"),
+        modal.Mount.from_local_file("src/languages.yml", "/linguist/languages.yml"),
     ],
     secrets=[modal.Secret.from_name("aws-inspector-s3")],
     timeout=60 * 60,
@@ -38,6 +39,8 @@ def run_pre_codebase_analysis(
     from utils import (
         delete_file_from_s3,
         download_file_from_presigned_url,
+        get_file_type_from_extension,
+        get_file_type_from_filename,
         parse_presigned_url,
         run_file_stats_and_reencode,
         unpack_archive,
@@ -70,6 +73,8 @@ def run_pre_codebase_analysis(
         "total_files": 0,
         "analyzable_files_by_extension": {},
         "analyzable_bytes_by_extension": {},
+        "analyzable_files_by_type": {},
+        "analyzable_bytes_by_type": {},
     }
     for root, _, files in os.walk(extracted_path):
         for filename in files:
@@ -78,8 +83,17 @@ def run_pre_codebase_analysis(
             file_stats = run_file_stats_and_reencode(local_path)
 
             if file_stats["is_analyzable"] and not file_stats["is_blacklisted"]:
+                file_type = get_file_type_from_extension(file_stats["extension"])
+                if not file_type:
+                    file_type = get_file_type_from_filename(filename)
+                if not file_type:
+                    file_type = "Other"
+
                 codebase_stats["analyzable_bytes"] += file_stats["size"]
                 codebase_stats["analyzable_files"] += 1
+                codebase_stats["total_bytes"] += file_stats["size"]
+                codebase_stats["total_files"] += 1
+
                 if (
                     file_stats["extension"]
                     not in codebase_stats["analyzable_files_by_extension"]
@@ -87,10 +101,7 @@ def run_pre_codebase_analysis(
                     codebase_stats["analyzable_files_by_extension"][
                         file_stats["extension"]
                     ] = 0
-                if (
-                    file_stats["extension"]
-                    not in codebase_stats["analyzable_bytes_by_extension"]
-                ):
+
                     codebase_stats["analyzable_bytes_by_extension"][
                         file_stats["extension"]
                     ] = 0
@@ -100,8 +111,14 @@ def run_pre_codebase_analysis(
                 codebase_stats["analyzable_bytes_by_extension"][
                     file_stats["extension"]
                 ] += file_stats["size"]
-                codebase_stats["total_bytes"] += file_stats["size"]
-                codebase_stats["total_files"] += 1
+
+                if file_type not in codebase_stats["analyzable_files_by_type"]:
+                    codebase_stats["analyzable_files_by_type"][file_type] = 0
+                    codebase_stats["analyzable_bytes_by_type"][file_type] = 0
+                codebase_stats["analyzable_files_by_type"][file_type] += 1
+                codebase_stats["analyzable_bytes_by_type"][file_type] += file_stats[
+                    "size"
+                ]
             else:
                 codebase_stats["total_bytes"] += file_stats["size"]
                 codebase_stats["total_files"] += 1
@@ -450,8 +467,7 @@ def main() -> None:
     #     "codebases/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/upload-test.zip",
     # )
 
-    presigned_url = "https://development-codebase-dropzone.s3.us-east-1.amazonaws.com/codebases/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/upload-test.zip?response-content-disposition=inline&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEGMaCXVzLWVhc3QtMSJGMEQCIHL3%2FWrwFD8kyYZy0LfbBp9v6TrXIMRWyaHIricmidN2AiAZpAx0dUIezF8CdtZzGZ9iHPH32LGzRj9vPVcYNLb5vSq1BAgbEAEaDDU1MDA4Mjc2MTEwOSIMFjaiuxB%2FzKDjJQ2%2BKpIEM%2Fhzf6W99QmrGAkb24t6az8jaMeWJ2ZvnCAqPXaVce8jQNPGk5m9iUBE4c9uIkF%2Bv0U2fCMK%2BNTj0LGlUxSLkYk27tQX7VP9pjXT2kIcIA7Ns3NDprijSlJgfr6VoEx%2FLcBvL2OTGBoBoQbM9mBWkSszKU3r7WygJbOKAKF9oifspZblvBQa7NpW7gbMm8km13FH%2FU%2F0daMFcsOX2uPWLchNSBTDHqaxHGn5%2FNl%2BS%2F77JvndPaPn3FNWmrJqvYbYILGvzHKDON9HNOkyYHLllj4eipMCGTpgC0WfSH6NnEAU2BCnee3YHm3wlIpLnjtObRS10b0rfZpTcPLVxl%2BjYBmghtnSVEYbIlaHCv9Z1F03WwEXL%2FP9sQNtyWOMq1dg9kX1c99kdc6kVuuZACbfBKWwGSG20chaazC2nytwzB3Lva77tIkIlvfOH8yUDcXzPAASo0KObIouAcXYlbWbp5YAvaCEpufQnXMRCQMFhqTDtK9bjg053DpmzvKN8y9p8Nhtq6WqFZBk%2FiGOApBMhTgTSYtvF%2BVM2isy%2FjK3oBr8xY7shj1hlrdfAWolYnzazfSPQ5w3ykIfoRkUBKxwmqCK%2FAelxUVl%2FDsc4bLbG4R3aaaTfh1apRtMzjDjYn5KwGDVrpAe1iJ8gJQQHtwTiMJ1HQcb5jErF2qKoZtbumlg9YvaqFpQ%2BUKgKWFuPwr6jvMw3NjHugY6xgIqJGIXDd3Ew%2BcXlcanBSEOupcBNZh8gp51oQQkYZNOdxj4CwMqukYTM8jwRLQZ%2B8V8FFXnwR6zIIhgQzMczfW8dWH7gVkI7d5iqG24eCJFyjhV5b3devUkBacIFDwlcR4zfrWqKUkfPpu3SeFL7m1%2FnEIjzS9EvLNRem1rTzLRLOB9u1EXZPAY7svD8CtFVi2vJyYh4VM%2BRdYJRrKIQdOI0Ddq2HY0LycWdMIjWsEn6sFp0qiZc2ih3t2ey4PL6weBTWaRtC4bxi0NCzb04fJ6aJUBd2S4%2BgfVasDafggDKd69mCHG8CIRCFXlSPiZLnVf%2BLxvPxYMnAkW0CoooBXXYY6iE959J2yG8LbRxgPRJebKjZVb8RuFDfGS9LUgKhrmdeJXvGlw0RhT6S1qtes0Cqas75WU86XY%2FQ1zRXdazjuZzJNajg%3D%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAYAE342GK2VPWD3NN%2F20241205%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20241205T181045Z&X-Amz-Expires=1200&X-Amz-SignedHeaders=host&X-Amz-Signature=9b3abbcdd8d888d04e4b85d904d5a5a1dfe61c5b59d760c28f7deee1a8ecd8aa"
-
+    presigned_url = "https://development-codebase-dropzone.s3.us-east-1.amazonaws.com/codebases/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/upload-test.zip?response-content-disposition=inline&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEGUaCXVzLWVhc3QtMSJHMEUCIFyqDA%2FZH7wEx3Pm%2Bd38M9cxUEON2GmAMlPsZ5v62Lc7AiEAzMT6ftgpPCGJMXAmmeUB9FRxzUDuLwg4wBopppuV3RYqtQQIHRABGgw1NTAwODI3NjExMDkiDOq5GEG%2FMsGSK0UxySqSBKJeGUQGYL8BaE9qtHmGLzpoffr4dCQ0ZS60EhJQ%2FTIX9v3%2B6xBIH4fHHAWAEPPNNlJh9Ho%2F51RrLRGqPd%2FIcn8dIM3mpjm5AnHxLk7C8N8jWDgYir%2BVnrsGIkOY4ix4cUU%2BupX4mXLD%2BVKi6yxK5gvZYzOh9Xfb%2BaF%2FQZW3krTOMIULlSZRxFI1SdKzRS4YHYfdyofgV%2FWVPZQzz6JsO3wcSBvjK3bjpIMHHYWHzWhp0J4B0xKiAO09iTZowN43AwxOCshJOaajSFKeJfxOCg3nf0KcAfLXiUsRWkQoIyyWkP4dui9GnxW%2Bqdc%2Bi2nXCYGMTRkHQtS3End9zuW%2BzeiC4fEuGtYXleZXJio2Rq%2F21KwyVKjx%2FJqrpvAEtuIh7KczkV8%2FeORR8a4mHqftsSKGZyD3jW1ht3b%2B8LcbEpbjcPHMlTemXo5qCQSPwomYgzPVyPurRxBL69iXMn8DKtItmqFcw2Xg6Oo3RADixKu2ByZkaefXn%2F3obVkkS%2Fd5X3AvK1wv9K3WyzR2Xi1MXvfZ81Ug8hyCPjrDRoWSCD3a2Q%2BoCzSlhklNUoXTRdQBhdtViDfvlOuWixJA5S3GBAieQiU%2Bbjhw4AGdF07tYuDK5vF%2FzqPokseX2lRJGXtAJceNlrJcHbNy2rYnAYOkPY3pH7ejnWhAS5M8VcoPzemEgQiiRgaeBBTOZ%2FVdpraM19DqMNaOyLoGOsUCMrF%2BI3ehzXNp8ggxBER%2BPNY%2Bt407nTj%2FNFkue9QWIisvcl8K3l33x9GJwCN25UH6HDxeYXqQ7blUccl8wqtlLpXw%2BNov7wATOVwpYp%2Blimc%2BMCe7%2FcAOq0FcLJQWW%2BDXr%2BvHfjH3cUn4YCw%2BZKPtZe8cTWUPK%2B1lPzqX5MK1OPRNkkXmLifwGrwc21YOuB6KG77RUuq%2BxqpjvqLayh3Q10Dr4hM5k1Nc0hMyzw6TyBwH9nEOLMPl9ih6pTcZiVi1DD0kZhChtz0EsE4gwvon4ANpAoJbjm7Q0uIEtokQqoYv2gIf0y3kHdphN10jJvIzkB5yTfsZTIvoL5mz89BEZ%2BVFEGMYaf22PB%2F82SzGONwdL8fXVBc6b841zv8U8J8TfdhhlhCwqfgR%2FmKzPOKQ8GWRM2MMZzW32XQIeV1yuOULE1AATQ%3D%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAYAE342GKZAZAWUYV%2F20241205%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20241205T202057Z&X-Amz-Expires=1800&X-Amz-SignedHeaders=host&X-Amz-Signature=7937b8a82b5bc4ec458862971a27b9ca679a6d277bb674a84ce1bf9575289add"
 
     # if modal.is_local():
     #     from dotenv import load_dotenv

@@ -32,9 +32,9 @@ image = (
         ),
     ],
     secrets=[modal.Secret.from_name("aws-inspector-s3"), modal.Secret.from_name("db")],
-    proxy=modal.Proxy.from_name("pg-proxy")
-    if os.environ["MODAL_ENVIRONMENT"] != "staging"
-    else None,
+    # proxy=modal.Proxy.from_name("pg-proxy")
+    # if os.environ["MODAL_ENVIRONMENT"] != "staging"
+    # else None,
     timeout=60 * 60,
     region="us-east",
     concurrency_limit=5,
@@ -43,11 +43,20 @@ image = (
 def run_pre_codebase_analysis(
     presigned_url: str,
 ) -> str:
+    print(presigned_url)
     from utils import (
         download_file_from_presigned_url,
+        parse_presigned_url,
         run_file_stats_and_reencode,
         unpack_archive,
+        wait_for_no_threats_tag,
     )
+
+    bucket, key = parse_presigned_url(presigned_url)
+    print(bucket, key)
+
+    if not wait_for_no_threats_tag(bucket, key):
+        raise Exception("Threats found in the file")
 
     temp_archive_name = "temp.zip"
     download_dest = Path(temp_archive_name)
@@ -119,9 +128,9 @@ def run_pre_codebase_analysis(
         ),
     ],
     secrets=[modal.Secret.from_name("aws-inspector-s3"), modal.Secret.from_name("db")],
-    proxy=modal.Proxy.from_name("pg-proxy")
-    if os.environ["MODAL_ENVIRONMENT"] != "staging"
-    else None,
+    # proxy=modal.Proxy.from_name("pg-proxy")
+    # if os.environ["MODAL_ENVIRONMENT"] != "staging"
+    # else None,
     timeout=60 * 60,
     region="us-east",
     concurrency_limit=5,
@@ -315,9 +324,9 @@ def run_codebase_onboarding(
         ),
     ],
     secrets=[modal.Secret.from_name("aws-inspector-s3"), modal.Secret.from_name("db")],
-    proxy=modal.Proxy.from_name("pg-proxy")
-    if os.environ["MODAL_ENVIRONMENT"] != "staging"
-    else None,
+    # proxy=modal.Proxy.from_name("pg-proxy")
+    # if os.environ["MODAL_ENVIRONMENT"] != "staging"
+    # else None,
     timeout=24 * 60 * 60,
     region="us-east",
     concurrency_limit=5,
@@ -447,7 +456,7 @@ def main() -> None:
     #     # "codebases/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/eric-project-main.zip",
     #     "codebases/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/upload-test.zip",
     # )
-    presigned_url = "https://development-codebase-dropzone.s3.us-east-1.amazonaws.com/codebases/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/terraform-examples.zip?response-content-disposition=inline&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEEsaCXVzLWVhc3QtMSJIMEYCIQC4TTlAt7WJGQxWzLL3Xs8zofzju8M65IVx2IwUPPP76QIhAOjFnXWuD0SWuX0S%2FNyt26eoIX1Oz3x01DT7GW4ooKStKr4ECPT%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEQARoMNTUwMDgyNzYxMTA5IgyppwSycWfduMehkS4qkgRdLAnxBJtGQVlIce30U6pweJs8L1xzfjhPDr9SnwOlAzf80tyCpBecC0fcR%2F80RHgPJtPc0XwVWeVFbUOOFXGweUh8orhPcMt2wZ0VS4mJoyKuhcSp3sQxLBFPEVC8kEkWmwEhlBbTxurZGxfZ2DTCMPLSTDJOwbbU6OHNaCtj3lpZ0PEyyHyXUt9XABUT8F5oSeQpQ8NsxV1P%2BR9UbP%2FuF%2F%2Bj7fAozWjc1eLTeFVI%2B8EAfRZhPHHJpbE8gJy8x2Co4UXce888c61QQRz10DWpzGEgVV0Omc8jA%2BcrD2ALjAyKvFnqRnsHMPF%2Fq1iVcaLAB7qUAseywRUd32hUR1RIOqhinHNUrR40s32tbhCM5F0FpG3QWn%2BsfFm4USuGFbP1Pi3emLy%2F70H3Xnl0nEEAYVotprBoVdQj6VyXFNUjDsU1XOZDYS2pSWp1sQMQTyau1ROTaKv7qEgTmNYRuKHdqmLizF%2FhAi3r%2FjQMoEc%2BMu7F6vYsjdfYgqNJdRVICFSz7EVzggbPJHnzQjTMXLQpRfAzbFYZqkItaz9SUdSzW2Qvb1m0PjrTinS11KHcFd2VQtaIBGzhtV482trSIU6o4TdDb34I7uPVSb0Z%2Bq%2BERTr0SxyTsho1hbtJnSYvpDwyyVMwoOEylcc5YNda8zUk3URyNSDspKLt%2Fdfo%2BetJVeKO73CeehtaNPKbhq3TMPSfVDCgjsK6BjrEAuls%2FiLvQbS5mk%2FD54Blvz2y8FLdEgPU%2BEC9kNC1fsXKeeAVWsDkZgOtWeNR0zkiE4fq9lhgUz8jM7aEaHaKzUzv9cRxqp3UvxHv1Z0%2FsxSYwMw745%2BkKJF%2BidDlXLZmlokJPkaq5qwz6cZI5xvKMlkz6OiexAHUJWphIR3s1cF%2Bp%2Bnd92EedzWRRyJxzu4j4tTAKZzftG61hXAPoqweKTue%2FiiiRYS6Rjm7Itkztcz56ZO9TorMDkCZV1nxqVSjAjuGOTJOKKEcdseKcEyQjk45L3%2BYp5bAb3HT8qDqDBfUwmes4XmTJHcHHHqHUKaZXmhV5PEoqEBuCKdMV%2BuSbRYe%2FBqPYXo6GflrvhXE7hfxwEZgEzrw0PNZBlWK0IZ0SrC%2FPwlNPDOOrV%2BwmjdBB05xNNgLSNXpzMs%2BgPnSY2gg29Uj8w%3D%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAYAE342GKZSHNEHTQ%2F20241204%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20241204T185612Z&X-Amz-Expires=1800&X-Amz-SignedHeaders=host&X-Amz-Signature=11a30ad48c0e442f314019ae17277838c1738343f8db4597ec3e6f43665884b3"
+    presigned_url = "https://development-codebase-dropzone.s3.us-east-1.amazonaws.com/analysis/mesa.zip?response-content-disposition=inline&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEFEaCXVzLWVhc3QtMSJHMEUCICk2Z%2FglmxWHWe1AqbXRyyz7FthUkuk0dG7NW4ANsW36AiEA9M%2BNmAvmZ58JJbliVW9afGlDr7c9W0Y1tjrfjR%2Fo5qIqugQI%2Bv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARABGgw1NTAwODI3NjExMDkiDE0AhEDK12XZ67u2IiqOBFSqrcgTMk5%2B8SIWknx0ePbLu0oQIKHvokI1KoQHD39KQQQU%2FDVvirg33ONMC64ZJDdKx%2BxNWDzBcGxIBn819eZ2aq%2FF7mPd4G3NRnhP0QwQ2pWcD9nIPKq157L7qdXBDraYtU%2FkJsSdfELCEXvTxpolAdJTJnBKYxa8AfF5pqm3wiwo4%2BXkuODusSAkMoaFRwuNEo7uoOJ76%2FlDdhjj81agw2xHGxlopF89vte3LiJSkBpv%2F4Bl8pF1gy9rkIGtPSQmJAPBwI0HPtohtvdf2Ds%2Fx74IkT%2FcECzAWZu40LWyyn3eS%2B1Ak0Xzgf4aq4ayEmNiDamSmSQ6vSvmjQjKXK9oLwfrQl9dn8B2ZY8XSFpZE5LQ%2BZAnTs33WikUcZ17U%2Fo%2BxZwSCnn4biWZccXvCpG8AIXzTXCoNgzWAm100mFG4jkM22TAQzoY4iNgyOuSthvzNiCpLCfRwXtJGRu6wEYhl2fCYGKP53nJX2b9RXkeqzum5mnFkWvBNsCMQEW8Fn4NHkk5VmxoxJxXe9G358lQONXVZjEBCpAOtcN40MoiDF10EYJoiHft7CZWDpXF66agZ1ypfSG4SG%2FI5rc0J7gT37ZU1DKIBiXkVboe4i9D%2BgmfDohrv1mQFpVywhp65er%2F%2FDllWET%2BHm1ukk8uX2FeS9qQf5FDJ%2B9bI5uGYIcNM8mV5w6W3BneMg0KBqgwpOvDugY6xQJ090HyJWg7IPVhMbxi%2FW61GHsHumPonwO2DmIlCTUjW5FnUmPjO%2F8xvA%2BAqTq0UGZGTObNCUUvferOvMnPOV3CuKTPX4RIO7zR6g2ifFCAWS4ENFWDSkEtc9qlayIQDaqnIWa%2FNmNxjtX9ccQTcJnUb%2BURM52ISzxTZPyHqZUOJUjHbNzwRIlbfJVORC8Z%2F%2B6t4%2FQETYYlavrOG16FTxOuOugJcT%2FZow9iVdAx4aTGHoZ4m80vWdr0s3qSqHSHF4%2FbeRDUXKih5E%2Fh4Nq7B60j2XZHrTvg9WeLyh%2Bb953LnHkq5r9MJKftMfXgZ3VmLVinjt8oictGJh6Uyn4WpCu35hhW1aIw8X7vQm%2BfEbxXhMKFq31vXMiesybtw1Cacf8R8Lv6uHKB0QnMAaN5aFugfgNqjbi9UWFQkGPHcXrAnSL4wXzA&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAYAE342GKQ2HDBVDS%2F20241205%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20241205T010340Z&X-Amz-Expires=7200&X-Amz-SignedHeaders=host&X-Amz-Signature=d8f5d7ffa304c48becdbc76edaf2e4e44ec1de3e337086994d98175ef4d2144d"
 
     # if modal.is_local():
     #     from dotenv import load_dotenv

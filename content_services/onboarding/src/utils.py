@@ -1,5 +1,6 @@
 import os
 import re
+import time
 import zipfile
 from functools import cache
 from pathlib import Path
@@ -37,6 +38,7 @@ def get_org_id_from_workspace(workspace_id: UUID) -> str:
         if workspace:
             org_id = workspace.organization_id
     return org_id
+
 
 def create_base_storage_url(org_id: str) -> str:
     return f"https://{org_id}.s3.amazonaws.com"
@@ -384,3 +386,95 @@ def generate_get_presigned_url(bucket: str, key: str, expires: int = 3600) -> st
         },
         ExpiresIn=expires,
     )
+
+
+def parse_presigned_url(url) -> tuple[str, str]:
+    from urllib.parse import urlparse
+
+    parsed_url = urlparse(url)
+    host = parsed_url.netloc
+    path = parsed_url.path.lstrip("/")  # Remove leading slash
+
+    # Extract bucket from the domain
+    if ".s3." in host:  # Domain-style
+        bucket = host.split(".s3.")[0]
+    elif host.startswith("s3-") or host.startswith("s3."):  # Path-style
+        bucket = path.split("/")[0]
+        path = "/".join(path.split("/")[1:])
+    else:
+        raise ValueError("Invalid S3 URL format")
+
+    return bucket, path
+
+
+def has_no_threats_tag(bucket: str, key: str) -> bool:
+    import boto3
+
+    s3_client = boto3.client(
+        "s3",
+        region_name="us-east-1",
+        aws_access_key_id=os.environ.get("AWS_ACCESS_KEY_ID"),
+        aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY"),
+    )
+    tags = s3_client.get_object_tagging(Bucket=bucket, Key=key)
+    return (
+        len(
+            [
+                tag
+                for tag in tags["TagSet"]
+                if tag["Key"] == "GuardDutyMalwareScanStatus"
+                and tag["Value"] == "NO_THREATS_FOUND"
+            ]
+        )
+        == 1
+    )
+
+
+def wait_for_no_threats_tag(
+    bucket: str, key: str, timeout: int = 60, interval: int = 5
+) -> bool:
+    """
+    Polls the S3 object for the 'GuardDutyMalwareScanStatus' tag with value 'NO_THREATS_FOUND'
+    until the tag is found or the timeout is reached.
+
+    :param bucket: Name of the S3 bucket.
+    :param key: Key of the S3 object.
+    :param timeout: Maximum time to wait (in seconds).
+    :param interval: Time between checks (in seconds).
+    :return: True if the tag is found within the timeout, False otherwise.
+    """
+    start_time = time.time()
+    print(
+        f"Starting to poll for 'NO_THREATS_FOUND' tag on object '{key}' in bucket '{bucket}'."
+    )
+    print(f"Timeout set to {timeout} seconds, checking every {interval} seconds.")
+
+    while (time.time() - start_time) < timeout:
+        if has_no_threats_tag(bucket, key):
+            print(
+                f"Tag 'NO_THREATS_FOUND' found for object '{key}' in bucket '{bucket}'."
+            )
+            return True
+        print(f"Tag not found yet. Waiting {interval} seconds before retrying...")
+        time.sleep(interval)
+    print(
+        f"Timeout reached. Tag 'NO_THREATS_FOUND' not found for object '{key}' in bucket '{bucket}'."
+    )
+    return False
+
+
+def delete_file_from_s3(key: str, bucket: str) -> None:
+    """
+    Delete a file from S3.
+    NOTE: this should be in shared but shared package does not have access to settings need to instantiate boto3 client
+    """
+    import boto3
+
+    s3_client = boto3.client(
+        "s3",
+        region_name="us-east-1",
+        aws_access_key_id=os.environ.get("AWS_ACCESS_KEY_ID"),
+        aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY"),
+    )
+    response = s3_client.delete_object(Bucket=bucket, Key=key)
+    # print(response)

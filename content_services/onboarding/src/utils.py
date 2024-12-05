@@ -1,5 +1,6 @@
 import os
 import re
+import time
 import zipfile
 from functools import cache
 from pathlib import Path
@@ -9,14 +10,15 @@ import chardet
 import requests
 from boto3 import resource
 from botocore.client import ClientError
-from database.db import engine
-from database.models_v1 import DerivedContentType, Workspace
 from sqlmodel import Session, select
 
 
 # TODO dedup
 @cache
 def get_source_content_type_uuid(content_type_name: str) -> UUID:
+    from database.db import engine
+    from database.models_v1 import DerivedContentType
+
     sct_uuid = None
     with Session(engine) as session:
         sel_statement = select(DerivedContentType).where(
@@ -30,6 +32,9 @@ def get_source_content_type_uuid(content_type_name: str) -> UUID:
 
 @cache
 def get_org_id_from_workspace(workspace_id: UUID) -> str:
+    from database.db import engine
+    from database.models_v1 import Workspace
+
     org_id = None
     with Session(engine) as session:
         sel_statement = select(Workspace).where(Workspace.id == workspace_id)
@@ -37,6 +42,47 @@ def get_org_id_from_workspace(workspace_id: UUID) -> str:
         if workspace:
             org_id = workspace.organization_id
     return org_id
+
+
+@cache
+def load_extension_and_name_mapping() -> dict:
+    from collections import defaultdict
+
+    import yaml
+
+    with open("/linguist/languages.yml") as f:
+        language_dict = yaml.safe_load(f)
+    extension_map = defaultdict(list)
+    name_map = defaultdict(list)
+    for lang in language_dict:
+        if language_dict[lang].get("extensions"):
+            for ext in language_dict[lang]["extensions"]:
+                extension_map[ext].append(lang)
+        if language_dict[lang].get("filenames"):
+            for name in language_dict[lang]["filenames"]:
+                name_map[name].append(lang)
+    return extension_map, name_map
+
+
+def get_file_type_from_extension(extension: str) -> str:
+    extension_map = load_extension_and_name_mapping()[0]
+    file_type = extension_map.get(extension)
+
+    if extension == ".h":
+        return "Header"
+    elif file_type and len(file_type) == 1:
+        return file_type[0]
+    return None
+
+
+def get_file_type_from_filename(filename: str) -> str:
+    name_map = load_extension_and_name_mapping()[1]
+    file_type = name_map.get(filename)
+
+    if file_type and len(file_type) == 1:
+        return file_type[0]
+    return None
+
 
 def create_base_storage_url(org_id: str) -> str:
     return f"https://{org_id}.s3.amazonaws.com"
@@ -384,3 +430,99 @@ def generate_get_presigned_url(bucket: str, key: str, expires: int = 3600) -> st
         },
         ExpiresIn=expires,
     )
+
+
+def parse_presigned_url(url: str) -> tuple[str, str]:
+    from urllib.parse import unquote_plus, urlparse
+
+    parsed_url = urlparse(url)
+    host = parsed_url.netloc
+    path = parsed_url.path.lstrip("/")  # Remove leading slash
+
+    # Extract bucket from the domain
+    if ".s3." in host:  # Domain-style
+        bucket = host.split(".s3.")[0]
+    elif host.startswith(("s3-", "s3.")):  # Path-style
+        bucket = path.split("/")[0]
+        path = "/".join(path.split("/")[1:])
+    else:
+        raise ValueError("Invalid S3 URL format")
+    key = unquote_plus(path)
+    return bucket, key
+
+
+def has_guard_duty_tag(bucket: str, key: str) -> bool:
+    """
+    Check if the S3 object has the 'GuardDutyMalwareScanStatus' tag with value 'NO_THREATS_FOUND' or 'UNSUPPORTED'.
+    """
+    import boto3
+
+    s3_client = boto3.client(
+        "s3",
+        region_name="us-east-1",
+        aws_access_key_id=os.environ.get("AWS_ACCESS_KEY_ID"),
+        aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY"),
+    )
+    tags = s3_client.get_object_tagging(Bucket=bucket, Key=key)
+    """
+    supported_tags = ["NO_THREATS_FOUND", "UNSUPPORTED"]
+    the 'UNSUPPORTED' tag is a misnomer because GuardDuty tags file as UNSUPPORTED
+    if they have too many files ( > 1000) or file is too large but we can still process it.
+    """
+    # TODO: add support for UNSUPPORTED tag in GuardDuty
+    supported_tags = ["NO_THREATS_FOUND", "UNSUPPORTED"]
+    # supported_tags = ["NO_THREATS_FOUND"]
+    return (
+        len(
+            [
+                tag
+                for tag in tags["TagSet"]
+                if tag["Key"] == "GuardDutyMalwareScanStatus"
+                and tag["Value"] in supported_tags
+            ]
+        )
+        == 1
+    )
+
+
+def wait_for_guard_duty_tag(
+    bucket: str, key: str, timeout: int = 60, interval: int = 5
+) -> bool:
+    """
+    Polls the S3 object for the 'GuardDutyMalwareScanStatus' tag with value 'NO_THREATS_FOUND' or 'UNSUPPORTED'.
+    until the tag is found or the timeout is reached.
+    """
+    start_time = time.time()
+    print(
+        f"Starting to poll for 'NO_THREATS_FOUND' or 'UNSUPPORTED' tag on object '{key}' in bucket '{bucket}'."
+    )
+    print(f"Timeout set to {timeout} seconds, checking every {interval} seconds.")
+
+    while (time.time() - start_time) < timeout:
+        if has_guard_duty_tag(bucket, key):
+            print(
+                f"Tag 'NO_THREATS_FOUND' or 'UNSUPPORTED' found for object '{key}' in bucket '{bucket}'."
+            )
+            return True
+        print(f"Tag not found yet. Waiting {interval} seconds before retrying...")
+        time.sleep(interval)
+    print(
+        f"Timeout reached. Tag 'NO_THREATS_FOUND' or 'UNSUPPORTED' not found for object '{key}' in bucket '{bucket}'."
+    )
+    return False
+
+
+def delete_file_from_s3(bucket: str, key: str) -> None:
+    """
+    Delete a file from S3.
+    NOTE: this should be in shared but shared package does not have access to settings need to instantiate boto3 client
+    """
+    import boto3
+
+    s3_client = boto3.client(
+        "s3",
+        region_name="us-east-1",
+        aws_access_key_id=os.environ.get("AWS_ACCESS_KEY_ID"),
+        aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY"),
+    )
+    s3_client.delete_object(Bucket=bucket, Key=key)

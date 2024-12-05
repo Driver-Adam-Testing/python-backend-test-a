@@ -6,12 +6,10 @@ from typing import Any
 
 from utils.dag import LiteNode, NodeKind
 from utils.io import get_prompt_template
-from utils.llm import num_tokens_from_messages_open_ai
 from utils.models import ChatOpenAI
 from utils.threadpool import FastShutdownThreadPoolExecutor
 
 PARENT_PATH = Path(__file__).parent
-MAX_TOKENS_FOR_PRIORITY_ORDERING = 10_000
 
 
 @dataclass(frozen=True)
@@ -21,19 +19,7 @@ class ContentDocs:
 
 class AggregationState(Enum):
     CHILD_LIST = auto()
-    SINGLE_CHUNK = auto()
     MANY_CHUNKS = auto()
-
-
-def folder_item_priority_ordering(
-    llm: ChatOpenAI,
-    raw_list_str: str,
-) -> str:
-    system_prompt = get_prompt_template(
-        PARENT_PATH / "prompt_templates/folders/item_priority_ordering.txt"
-    )
-    human_prompt = raw_list_str
-    return llm.generate_response(system_prompt, human_prompt)
 
 
 def folder_chunk_description(
@@ -168,7 +154,13 @@ def comprehend_folder_top_down(
     # Base all content generation on a list of all child single sentence descriptions.
     print(f"Aggregating child info for folder `{folder_name}`")
     child_single_sentence_descriptions = {
-        k: v["short"]["single_sentence"] for k, v in child_nodes_to_docs.items()
+        k: v["short"]["single_sentence"]
+        for k, v in dict(
+            sorted(
+                child_nodes_to_docs.items(),
+                key=lambda x: str(x[0].root_rel_path).lower(),
+            )
+        ).items()
     }
     child_folder_list = ""
     child_file_list = ""
@@ -179,28 +171,12 @@ def comprehend_folder_top_down(
             child_folder_list += f"- **{k.root_rel_path.name}**: {v}\n"
     if child_folder_list:
         folder_prefix = "## Folders\n"
-        folder_list_tokens = num_tokens_from_messages_open_ai(
-            [child_folder_list], llm.model
-        )
-        if folder_list_tokens < MAX_TOKENS_FOR_PRIORITY_ORDERING:
-            child_folder_list_finalized = folder_item_priority_ordering(
-                llm=llm, raw_list_str=f"{folder_prefix}{child_folder_list}"
-            )
-        else:
-            child_folder_list_finalized = f"{folder_prefix}{child_folder_list}"
+        child_folder_list_finalized = f"{folder_prefix}{child_folder_list}"
     else:
         child_folder_list_finalized = ""
     if child_file_list:
         file_prefix = "## Files\n"
-        file_list_tokens = num_tokens_from_messages_open_ai(
-            [child_file_list], llm.model
-        )
-        if file_list_tokens < MAX_TOKENS_FOR_PRIORITY_ORDERING:
-            child_file_list_finalized = folder_item_priority_ordering(
-                llm=llm, raw_list_str=f"{file_prefix}{child_file_list}"
-            )
-        else:
-            child_file_list_finalized = f"{file_prefix}{child_file_list}"
+        child_file_list_finalized = f"{file_prefix}{child_file_list}"
     else:
         child_file_list_finalized = ""
     completed_child_lists = (

@@ -16,6 +16,7 @@ from app.repositories.derived_content_type_repository import (
 )
 from app.repositories.workspace_repository import WorkspaceRepository
 from app.schemas.upload_schema import (
+    AnalyzeCodebaseUploadResponse,
     PDFUploadResponse,
     UploadCodebaseRequest,
     UploadPDFRequest,
@@ -27,7 +28,7 @@ from app.utils.aws_s3 import (
 
 
 class UploadService:
-    def __init__(self, session: CurrentSession):
+    def __init__(self, session: CurrentSession) -> None:
         self.session = session
         self.workspace_repository = WorkspaceRepository(session)
         self.content_repository = BaseRepository(session, DerivedContent)
@@ -156,3 +157,15 @@ class UploadService:
         except Exception as e:
             logger.error(f"Error uploading PDF: {e}")
             raise HTTPException(status_code=500, detail="Error uploading PDF")
+
+    def upload_analyze_codebase(
+        self, user: UserToken, request: UploadCodebaseRequest
+    ) -> AnalyzeCodebaseUploadResponse:
+        """
+        1. Generate presigned put URL for the codebase
+        2. Generate presigned get URL for the codebase
+        3. return the presigned put and get URL
+        """
+        return AnalyzeCodebaseUploadResponse(
+            upload_url="upload_url", download_url="download_url"
+        )

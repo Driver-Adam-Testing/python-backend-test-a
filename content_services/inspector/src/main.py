@@ -75,8 +75,8 @@ class FileInfo:
 async def inspect_db(
     codebase_id: uuid.UUID,
     version_id: uuid.UUID,
-    workspace_id: uuid.UUID,
-    resume: bool = False,  # TODO: think about resume functionality with previous versions
+    resume: bool = False,
+    is_rerun: bool = False,
     rerun_node_paths: list[str] | None = None,
 ) -> None:
     import tempfile
@@ -93,6 +93,10 @@ async def inspect_db(
         get_workspace_by_id,
     )
 
+    # TODO verify rerun_node_paths in the diff rerun case; it works for non diff case.
+
+    codebase = await get_codebase_by_id(codebase_id)
+    workspace_id = codebase.workspace_id
     workspace = await get_workspace_by_id(workspace_id)
     org_id = workspace.organization_id
     org_hashed_id = hashlib.sha256(org_id.encode()).hexdigest()[:63]
@@ -100,21 +104,33 @@ async def inspect_db(
     # Get the Version and check if it has previous_version_id
     version = await get_version_by_id(version_id)
     previous_version_id = version.previous_version_id
-    codebase = await get_codebase_by_id(codebase_id)
     codebase_name = codebase.codebase_name
+
+    assert not (resume and is_rerun), "Cannot resume and rerun at the same time"
+
+    if resume and previous_version_id:
+        raise ValueError(
+            "Cannot resume from diff case yet! Can only resume greenfield inspector run!"
+        )
 
     if previous_version_id:
         assert (
             rerun_node_paths is None
         ), "Cannot rerun specific nodes when doing diff update flow"
 
-    # Create the InspectorRun
+    # If we are resuming, we should get the latest run for the current version,
+    # (we don't support diff resumes yet!)
+    if resume:
+        previous_run_id = await get_latest_run_from_version_id(version_id)
+    else:
+        # In the case that we are doing a diff, we get the latest run for the *previous* version
+        previous_run_id = (
+            await get_latest_run_from_version_id(previous_version_id)
+            if previous_version_id
+            else None
+        )
+
     run_id = await create_inspector_run(version_id)
-    previous_run_id = (
-        await get_latest_run_from_version_id(previous_version_id)
-        if previous_version_id
-        else None
-    )
 
     # Get content records for version_id
     source_contents_files = await get_analyzable_source_contents_by_version_id(
@@ -129,7 +145,7 @@ async def inspect_db(
     assert len(source_content_codebase) == 1
     source_content_codebase_id = source_content_codebase[0].id
 
-    # Get content recrods for previous_version_id if available
+    # Get content records for previous_version_id if available
     if previous_version_id:
         previous_source_contents_files = (
             await get_analyzable_source_contents_by_version_id(
@@ -137,7 +153,7 @@ async def inspect_db(
             )
         )
 
-    # Download s3 for version_id (and previous if avaialble)
+    # Download s3 for version_id (and previous if available)
     s3_client = boto3.client("s3", endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL"))
     with (
         tempfile.TemporaryDirectory() as download_dir,
@@ -237,8 +253,7 @@ async def inspect_db(
             root_node=sorted_nodes[-1],
             codebase_name=codebase_name,
             run_id=run_id,
-            resume=resume,
-            is_rerun=bool(rerun_node_paths),
+            is_rerun=is_rerun,
             previous_run_id=previous_run_id,
         )
 
@@ -268,7 +283,6 @@ async def inspect_files(
     root_node: Node,
     codebase_name: str,
     run_id: str,
-    resume: bool,
     is_rerun: bool,
     previous_run_id: str | None = None,
 ) -> None:
@@ -403,9 +417,7 @@ async def inspect_files(
         bucket_name=os.environ["BUCKET_NAME"], tasks=tasks, serial_exe=False
     )
 
-    task_results = await task_manager.run_tasks(
-        run_id, resume=resume, previous_run_id=previous_run_id
-    )
+    task_results = await task_manager.run_tasks(run_id, previous_run_id=previous_run_id)
 
     print("\n---------- Task results ----------")
     pprinter = pprint.PrettyPrinter(indent=2)
@@ -432,37 +444,35 @@ def get_file_content(path: Path) -> str:
     return Path(path).read_text()
 
 
-# TODO resurrect rerun
-# @app.local_entrypoint()
-# def main(
-#     codebase_id: str, resume_from_id: str | None = None, rerun_paths: str | None = None
-# ) -> None:
-#     print("Processing codebase with id: ", codebase_id)
-#
-#     rerun_node_paths = (
-#         rerun_paths.split(",") if rerun_paths and rerun_paths.strip() else None
-#     )
-#     if rerun_node_paths:
-#         print("Rerunning nodes:")
-#         rerun_node_paths = [path.lstrip("/") for path in rerun_node_paths]
-#         for path in rerun_node_paths:
-#             print("--> ", path)
-#
-#     if resume_from_id:
-#         resume = True
-#         run_id = resume_from_id
-#     else:
-#         resume = False
-#         run_id = uuid.uuid4()  # When rerunning we would supply this. This is used to identify the run in the db
-#     try:
-#         inspect_db.remote(
-#             uuid.UUID(codebase_id),
-#             run_id,
-#             resume=resume,
-#             rerun_node_paths=rerun_node_paths,
-#         )
-#     finally:
-#         print("Run id: ", run_id)
+@app.local_entrypoint()
+def main(
+    codebase_id: str,
+    version_id: str,
+    resume: bool = False,
+    rerun: bool = False,
+    rerun_paths: str | None = None,
+) -> None:
+    """Resume or rerun inspector given a version"""
+    if resume and rerun:
+        raise ValueError("Cannot resume and rerun at the same time")
+
+    if not (resume or rerun):
+        raise ValueError("Must specify either resume or rerun")
+
+    if resume and rerun_paths:
+        raise ValueError(
+            "Cannot resume and with rerun paths specified! Resume and rerun are mutually exclusive"
+        )
+    rerun_node_paths = (
+        rerun_paths.split(",") if rerun_paths and rerun_paths.strip() else None
+    )
+    if rerun_node_paths:
+        print("Rerunning nodes:")
+        rerun_node_paths = [path.lstrip("/") for path in rerun_node_paths]
+        for path in rerun_node_paths:
+            print("--> ", path)
+
+    inspect_db.remote(codebase_id, version_id, resume, rerun, rerun_node_paths)
 
 
 @app.function(
@@ -546,7 +556,7 @@ def onboard_and_inspect(
         )
         print(f"Onboarding complete for codebase: {codebase_id}, {version_id}")
         print("Inspecting...")
-        inspect_db.remote(codebase_id, version_id, workspace_id)
+        inspect_db.remote(codebase_id, version_id)
         print("Inspection complete")
 
         set_codebase_status(
@@ -568,16 +578,3 @@ def onboard_and_inspect(
                 codebase_id, Enum_Derived_Content_Status.generation_error
             )
         raise e
-
-
-# @app.local_entrypoint()
-# def inspect_from_repo(public_repo_url: str, commit_sha: str) -> None:
-#     # Hardcoded to driver default for now
-#     workspace_id = UUID("32de9990-b63d-4e8e-9567-58e2a78292ec")
-#     codebase_id, version_id = run_codebase_onboarding.remote(
-#         public_repo_url, commit_sha, workspace_id
-#     )
-#     inspect_db.remote(codebase_id, version_id, workspace_id) # TODO: must put the path fix in before merge!!!!!!!!!
-
-# @app.local_entrypoint()
-# def main()

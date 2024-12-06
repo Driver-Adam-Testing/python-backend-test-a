@@ -274,12 +274,15 @@ class TaskManager:
         return cls(*args, persistence=S3TaskResultPersistence(bucket_name), **kwargs)
 
     async def run_tasks(
-        self, run_id: str, resume: bool = False, previous_run_id: str | None = None
+        self, run_id: str, previous_run_id: str | None = None
     ) -> dict[type[Task], TaskResult]:
-        # TODO: remove resume, just use previous-run-id
         if previous_run_id and self.persistence:
             # We can block the event loop with blocking IO when loading the state we aren't running
             # anything concurrent yet
+
+            # We always load from a previous run ID. If we are resuming in the greenfield case, we have a
+            # run ID from the previous run for the same version. If we are resuming in the diff flow case,
+            # we load results from the latest run for the previous version. See caller.
             self.load_persisted_results(previous_run_id)
         # return
 

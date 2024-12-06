@@ -10,6 +10,7 @@ class CodebaseAnalysisRequest(BaseModel):
 
 class CodebaseAnalysisResponse(BaseModel):
     call_id: str
+    codebase_object_key: str
 
 
 class ModalFunctionCallResponse(BaseModel):
@@ -76,3 +77,7 @@ class CodebaseAnalysisResult(BaseModel):
     status: str = Literal["pending", "running", "completed", "error", "expired"]
     result: CodebaseAnalysisMetrics | None = None
     error: str | None = None
+
+
+class CodebaseOnboardRequest(BaseModel):
+    codebase_object_key: str

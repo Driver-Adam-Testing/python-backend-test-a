@@ -6,11 +6,11 @@ from modal.functions import FunctionCall
 from app.core.config import settings
 from app.schemas.codebase_schema import (
     CodebaseAnalysisMetrics,
-    CodebaseAnalysisRequest,
     CodebaseAnalysisResponse,
     CodebaseAnalysisResult,
     ModalFunctionCallResponse,
 )
+from app.utils.aws_s3 import dropzone_bucket_name, org_id_to_hash, parse_presigned_url
 
 
 def execute_modal_function_call(call_id: str) -> ModalFunctionCallResponse:
@@ -33,17 +33,46 @@ def execute_modal_function_call(call_id: str) -> ModalFunctionCallResponse:
     return modal_response
 
 
+def validate_codebase_analysis_presigned_url(
+    url: str, object_key_prefix: str, org_id: str
+) -> bool:
+    """
+    Security check: Validate that the presigned URL is valid for codebase analysis.
+    1. Check the bucket and object key prefix.
+    2. Check that the org_id is part of the object key.
+    """
+    org_hash = org_id_to_hash(org_id)
+    valid_bucket = dropzone_bucket_name()
+    parsed_bucket, parsed_key = parse_presigned_url(url)
+    object_key_parts = parsed_key.split("/")[:2]
+    return parsed_bucket == valid_bucket and (
+        org_hash in object_key_parts and object_key_prefix in object_key_parts
+    )
+
+
+class CodebaseAnalysisException(Exception):
+    pass
+
+
 class CodebaseService:
     @staticmethod
     def execute_codebase_analysis(
-        request: CodebaseAnalysisRequest,
+        organization_id: str,
+        download_url: str,
     ) -> CodebaseAnalysisResponse:
+        if not validate_codebase_analysis_presigned_url(
+            download_url,
+            "analysis",
+            organization_id,
+        ):
+            raise CodebaseAnalysisException("Forbidden")
+
         modal_function = Function.lookup(
             "codebase-onboarding",
             "run_pre_codebase_analysis",
             environment_name=settings.MODAL_ENVIRONMENT,  # for some reason I get app not found without environment_name
         )
-        instance = modal_function.spawn(request.download_url)
+        instance = modal_function.spawn(download_url)
         return CodebaseAnalysisResponse(call_id=instance.object_id)
 
     @staticmethod

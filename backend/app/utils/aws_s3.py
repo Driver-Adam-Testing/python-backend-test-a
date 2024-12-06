@@ -1,4 +1,5 @@
 import hashlib
+from urllib.parse import unquote_plus, urlparse
 
 import boto3
 
@@ -16,6 +17,31 @@ s3_client = boto3.client(
 
 def org_id_to_hash(organization_id: str) -> str:
     return hashlib.sha256(organization_id.encode()).hexdigest()[:63]
+
+
+def dropzone_bucket_name() -> str:
+    return (
+        settings.DROPZONE_BUCKET_NAME
+        if not settings.USE_LEGACY_DROPZONE
+        else f"{settings.ENVIRONMENT}-{settings.AWS_S3_CODE_BUCKET_SUFFIX}"
+    )
+
+
+def parse_presigned_url(url: str) -> tuple[str, str]:
+    parsed_url = urlparse(url)
+    host = parsed_url.netloc
+    path = parsed_url.path.lstrip("/")  # Remove leading slash
+
+    # Extract bucket from the domain
+    if ".s3." in host:  # Domain-style
+        bucket = host.split(".s3.")[0]
+    elif host.startswith(("s3-", "s3.")):  # Path-style
+        bucket = path.split("/")[0]
+        path = "/".join(path.split("/")[1:])
+    else:
+        raise ValueError("Invalid S3 URL format")
+    key = unquote_plus(path)
+    return bucket, key
 
 
 def generate_put_presigned_url(

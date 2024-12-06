@@ -7,7 +7,7 @@ from database.models_v1 import (
     InspectionVersion,
     Workspace,
 )
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 from sqlmodel import func, select
 
@@ -18,7 +18,7 @@ from app.schemas.codebase_schema import (
     CodebaseAnalysisResponse,
     CodebaseAnalysisResult,
 )
-from app.services.codebase_service import CodebaseService
+from app.services.codebase_service import CodebaseAnalysisException, CodebaseService
 
 router = APIRouter()
 
@@ -102,9 +102,15 @@ def get_codebase_versions(
     dependencies=[ContentEditorPermission],
 )
 def exec_codebase_analysis(
+    user: UserToken,
     request: CodebaseAnalysisRequest,
 ) -> CodebaseAnalysisResponse:
-    return CodebaseService.execute_codebase_analysis(request)
+    try:
+        return CodebaseService.execute_codebase_analysis(
+            user.organization_id, request.download_url
+        )
+    except CodebaseAnalysisException as e:
+        raise HTTPException(status_code=403, detail=str(e))
 
 
 @router.get(

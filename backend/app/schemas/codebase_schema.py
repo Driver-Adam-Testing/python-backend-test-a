@@ -16,7 +16,7 @@ class ModalFunctionCallResponse(BaseModel):
     call_id: str
     status: str = Literal["pending", "running", "completed", "error", "expired"]
     response: dict | None = None
-    error: str = ""
+    error: str | None = None
 
 
 class CodebaseAnalysisMetrics(BaseModel):
@@ -75,4 +75,4 @@ class CodebaseAnalysisResult(BaseModel):
     call_id: str
     status: str = Literal["pending", "running", "completed", "error", "expired"]
     result: CodebaseAnalysisMetrics | None = None
-    error: str = ""
+    error: str | None = None

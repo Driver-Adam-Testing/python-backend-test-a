@@ -2,8 +2,10 @@ import hashlib
 from urllib.parse import unquote_plus, urlparse
 
 import boto3
+from botocore.exceptions import ClientError
 
 from app.core.config import settings
+from app.core.logger import logger
 
 # Initialize S3 client
 s3_client = boto3.client(
@@ -115,3 +117,23 @@ def delete_file_from_s3(key: str, bucket: str) -> None:
     """
     response = s3_client.delete_object(Bucket=bucket, Key=key)
     print(response)
+
+
+def copy_s3_object(
+    source_bucket: str, source_key: str, dest_bucket: str, dest_key: str
+) -> bool:
+    copy_source = {"Bucket": source_bucket, "Key": source_key}
+    try:
+        s3_client.copy_object(
+            CopySource=copy_source,
+            Bucket=dest_bucket,
+            Key=dest_key,
+            TaggingDirective="REPLACE",
+        )
+        logger.info(
+            f"Successfully copied object from {source_bucket}/{source_key} to {dest_bucket}/{dest_key}"
+        )
+        return True
+    except ClientError as e:
+        logger.error(f"Error copying object: {e}")
+        raise

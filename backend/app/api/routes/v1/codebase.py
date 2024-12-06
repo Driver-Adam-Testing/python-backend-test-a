@@ -13,6 +13,12 @@ from sqlmodel import func, select
 
 from app.api.auth import ContentReadonlyPermission, UserToken
 from app.api.session import CurrentSession
+from app.schemas.codebase_schema import (
+    CodebaseAnalysisRequest,
+    CodebaseAnalysisResponse,
+    CodebaseAnalysisResult,
+)
+from app.services.codebase_service import CodebaseService
 
 router = APIRouter()
 
@@ -88,3 +94,17 @@ def get_codebase_versions(
     return CodebaseVersionsResponse(
         versions=response_data, total_count=total_count, limit=limit, offset=offset
     )
+
+
+@router.post("/analysis", summary="Execute codebase analysis")
+def exec_codebase_analysis(
+    session: CurrentSession, user: UserToken, request: CodebaseAnalysisRequest
+) -> CodebaseAnalysisResponse:
+    return CodebaseService.execute_codebase_analysis(request)
+
+
+@router.get("/analysis/{call_id}", summary="Get codebase analysis results")
+def get_codebase_analysis(
+    session: CurrentSession, user: UserToken, call_id: str
+) -> CodebaseAnalysisResult:
+    return CodebaseService.get_codebase_analysis_results(call_id)

@@ -42,6 +42,7 @@ class CodebaseAnalysisMetrics(BaseModel):
         default={}, description="Computed analyzable sloc by type"
     )
 
+    # TODO: revisit this to use @computed_field
     @model_validator(mode="before")
     def compute_analyzable_sloc(cls, values: dict) -> dict:
         values["analyzable_sloc"] = bytes_to_sloc(values["analyzable_bytes"])

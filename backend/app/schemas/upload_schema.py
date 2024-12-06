@@ -18,7 +18,7 @@ class UploadCodebaseRequest(UploadRequestBase):
 
 class UploadPDFRequest(UploadRequestBase):
     @field_validator("file_path")
-    def must_be_zip(cls, v: Any) -> Any:  # noqa: ANN401
+    def must_be_pdf(cls, v: Any) -> Any:  # noqa: ANN401
         if not v.lower().endswith(".pdf"):
             raise ValueError("file_path must be a pdf file")
         return v

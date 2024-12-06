@@ -11,7 +11,7 @@ from fastapi import APIRouter, Query
 from pydantic import BaseModel
 from sqlmodel import func, select
 
-from app.api.auth import ContentReadonlyPermission, UserToken
+from app.api.auth import ContentEditorPermission, ContentReadonlyPermission, UserToken
 from app.api.session import CurrentSession
 from app.schemas.codebase_schema import (
     CodebaseAnalysisRequest,
@@ -96,15 +96,23 @@ def get_codebase_versions(
     )
 
 
-@router.post("/analysis", summary="Execute codebase analysis")
+@router.post(
+    "/analysis",
+    summary="Execute codebase analysis",
+    dependencies=[ContentEditorPermission],
+)
 def exec_codebase_analysis(
-    session: CurrentSession, user: UserToken, request: CodebaseAnalysisRequest
+    request: CodebaseAnalysisRequest,
 ) -> CodebaseAnalysisResponse:
     return CodebaseService.execute_codebase_analysis(request)
 
 
-@router.get("/analysis/{call_id}", summary="Get codebase analysis results")
+@router.get(
+    "/analysis/{call_id}",
+    summary="Get codebase analysis results",
+    dependencies=[ContentEditorPermission],
+)
 def get_codebase_analysis(
-    session: CurrentSession, user: UserToken, call_id: str
+    call_id: str,
 ) -> CodebaseAnalysisResult:
     return CodebaseService.get_codebase_analysis_results(call_id)

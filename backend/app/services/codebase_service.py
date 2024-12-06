@@ -1,6 +1,9 @@
+import json
+
 from modal import Function
 from modal.functions import FunctionCall
 
+from app.core.config import settings
 from app.schemas.codebase_schema import (
     CodebaseAnalysisMetrics,
     CodebaseAnalysisRequest,
@@ -20,7 +23,7 @@ def execute_modal_function_call(call_id: str) -> ModalFunctionCallResponse:
     print(modal_response)
     try:
         response = function_call.get(timeout=0)
-        modal_response.response = response
+        modal_response.response = json.loads(response)
         modal_response.status = "completed"
     except TimeoutError:
         modal_response.status = "running"
@@ -36,7 +39,9 @@ class CodebaseService:
         request: CodebaseAnalysisRequest,
     ) -> CodebaseAnalysisResponse:
         modal_function = Function.lookup(
-            "codebase-onboarding", "run_pre_codebase_analysis"
+            "codebase-onboarding",
+            "run_pre_codebase_analysis",
+            environment_name=settings.MODAL_ENVIRONMENT,  # for some reason I get app not found without environment_name
         )
         instance = modal_function.spawn(request.download_url)
         return CodebaseAnalysisResponse(call_id=instance.object_id)

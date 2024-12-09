@@ -13,6 +13,7 @@ from shared.interfaces.usage.event_metadata import (
 )
 from shared.interfaces.usage.usage_schema import (
     UsageBalance,
+    UsageEventRecord,
     UsageEventSummary,
     UsageMetricUnitType,
 )
@@ -61,24 +62,31 @@ class UsageService:
             llm_session.send_event(usage_metric)
             print(f"Session ended: {llm_session.session_id}")
 
-    def get_usage_events(self, organization_id: str) -> list[UsageEvent]:
-        """
-        get all debit and credit events for an organization
-        """
-        # get all usage events for an organization
-
+    def get_usage_events(self, organization_id: str) -> list[UsageEventRecord]:
         query = select(UsageEvent).where(
             UsageEvent.organization_id == organization_id,
         )
         usage_events = self.session.exec(query).all()
-        return usage_events
+        return [
+            UsageEventRecord(
+                id=event.id,
+                event_type=event.event_type,
+                event_type_name=str(UsageEventType(event.event_type)),
+                session_id=event.session_id,
+                organization_id=event.organization_id,
+                user_id=event.user_id,
+                event_source=event.event_source,
+                bytes_in=event.bytes_in,
+                bytes_out=event.bytes_out,
+                tokens_in=event.tokens_in,
+                tokens_out=event.tokens_out,
+                timestamp=event.timestamp,
+                event_metadata=event.event_metadata,
+            )
+            for event in usage_events
+        ]
 
     def get_usage_balance(self, organization_id: str) -> UsageBalance:
-        """
-        get all debit and credit events for an organization
-        """
-        # get all usage events for an organization
-
         credits_query = select(UsageEvent).where(
             UsageEvent.organization_id == organization_id,
             UsageEvent.event_type.in_(
@@ -118,10 +126,6 @@ class UsageService:
         start_date: datetime | None = None,
         end_date: datetime | None = None,
     ) -> UsageEventSummary:
-        """
-        Get all debit and credit events for an organization within a date range.
-        """
-        # get onboarding events
         onboarding_events = self.usage_event_repository.get_usage_events_by_types(
             organization_id,
             [UsageEventType.ONBOARDING_USAGE_DEBIT],

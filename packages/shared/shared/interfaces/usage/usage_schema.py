@@ -1,5 +1,8 @@
+from datetime import datetime
 from enum import Enum
+from uuid import UUID
 
+from database.models_v1 import UsageEventType
 from pydantic import BaseModel, Field, model_validator
 from shared.usage.utils import bytes_to_sloc, sloc_to_bytes
 
@@ -110,3 +113,19 @@ class UsageEventSummary(BaseModel):
 
     class Config:
         frozen = True
+
+
+class UsageEventRecord(BaseModel):
+    id: UUID
+    event_type: UsageEventType
+    event_type_name: str
+    session_id: UUID
+    organization_id: str
+    user_id: str
+    event_source: str
+    bytes_in: int
+    bytes_out: int
+    tokens_in: int
+    tokens_out: int
+    timestamp: datetime
+    event_metadata: dict | None = None

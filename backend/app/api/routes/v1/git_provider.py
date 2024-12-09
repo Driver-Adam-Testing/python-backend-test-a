@@ -2,6 +2,7 @@ import base64
 import hashlib
 import hmac
 import json
+import logging
 from datetime import datetime
 
 from database.models_v1 import GithubAppInstallation
@@ -13,8 +14,15 @@ from app.api.auth import ContentEditorPermission, UserToken
 from app.api.session import CurrentSession
 from app.core.config import settings
 from app.repositories.workspace_repository import WorkspaceRepository
-from app.utils.aws_secrets_manager import format_secret_key, read_secret, write_secret
-from app.utils.gh_ops import download_and_upload_repo, exchange_code_for_token
+from app.utils.aws_secrets_manager import format_secret_key, write_secret
+from app.utils.gh_ops import (
+    download_and_upload_repo,
+    exchange_code_for_token,
+    fetch_app_access_token,
+    verify_app_installation_access,
+)
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -48,14 +56,8 @@ def git_provider_callback(
     org_id, user_id = state_dict["org_id"], state_dict["user_id"]
     secret_key = format_secret_key(org_id, user_id, provider)
     token_data = exchange_code_for_token(code)
-    # store access token in aws secret manager
-    # token_data['installation_id'] = installation_id
     secret_value = json.dumps(token_data)
-    # secret_value = json.dumps({'token_data': token_data, 'installation_id': installation_id})
     write_secret(secret_key, secret_value)
-    value = read_secret(secret_key)
-    if value is not None:
-        print("Secret stored successfully")
 
     gh_app_install = GithubAppInstallation(
         organization_id=org_id, github_app_installation_id=installation_id
@@ -77,17 +79,15 @@ class GitRepository(BaseModel):
 
 # endpoint to clone repo and pipe to s3
 @router.post("/{provider}/clone-repo", dependencies=[ContentEditorPermission])
-async def clone_repo(
+def clone_repo(
     session: CurrentSession,
     current_user: UserToken,
     provider: str,
     repo: GitRepository,
 ) -> JSONResponse:
-    secret_key = format_secret_key(
-        current_user.organization_id, current_user.user_id, provider
-    )
-    value = read_secret(secret_key)
-    token = None
+    if provider != "github":
+        raise NotImplementedError()
+
     workspace_repo = WorkspaceRepository(session)
     default_workspace = workspace_repo.get_default_workspace(
         current_user.organization_id
@@ -95,21 +95,29 @@ async def clone_repo(
     if not default_workspace:
         raise HTTPException(status_code=400, detail="Default workspace not found")
 
+    if not verify_app_installation_access(
+        session, current_user.organization_id, repo.metadata["installation_id"]
+    ):
+        logger.error(
+            f"User is not authorized to access Github installation id = {repo.metadata["installation_id"]} in organization {current_user.organization_id}"
+        )
+        raise HTTPException(
+            status_code=403, detail="Unauthorized to access this installation ID."
+        )
+
     workspace_id = str(default_workspace.id)
     upload_complete = False
-    if value is not None:
-        s = value["SecretString"]
-        secret_sauce = json.loads(s)
-        token = secret_sauce["access_token"]
-        upload_complete = await download_and_upload_repo(
-            repo.org,
-            current_user.user_id,
-            current_user.organization_id,
-            workspace_id,
-            repo.repo_name,
-            token,
-            provider,
-        )
+
+    token = fetch_app_access_token(repo.metadata["installation_id"])
+    upload_complete = download_and_upload_repo(
+        repo.org,
+        current_user.user_id,
+        current_user.organization_id,
+        workspace_id,
+        repo.repo_name,
+        token,
+        provider,
+    )
 
     if upload_complete is True:
         return JSONResponse(
@@ -122,7 +130,9 @@ async def clone_repo(
         )
 
 
-def verify_signature(payload_body, secret_token, signature_header) -> None:
+def verify_signature(
+    payload_body: any, secret_token: str, signature_header: any
+) -> None:
     """Verify that the payload was sent from GitHub by validating SHA256.
 
     Raise and return 403 if not authorized.

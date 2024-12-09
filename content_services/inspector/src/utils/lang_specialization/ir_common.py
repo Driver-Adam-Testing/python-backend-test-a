@@ -7,7 +7,6 @@ from typing import Self
 
 import openai
 from pydantic import BaseModel, PrivateAttr
-from tqdm import tqdm
 from utils.lang_specialization.symbol_common import (
     RawSymbolCollection,
     RawSymbolData,
@@ -23,6 +22,13 @@ MAX_WORKERS_FOR_SYMBOLS = 10
 def snake_case_to_spaced_string(snake_case: str) -> str:
     split_str = snake_case.split("_")
     return " ".join(item.capitalize() for item in split_str)
+
+
+def compute_num_workers(num_symbols: int) -> int:
+    return min(
+        ceil(num_symbols / MAX_SYMBOLS_PER_WORKER),
+        MAX_WORKERS_FOR_SYMBOLS,
+    )
 
 
 class MdRenderable(BaseModel, abc.ABC):
@@ -213,18 +219,15 @@ class IrData(BaseModel, abc.ABC):
             cls_instance = cls.parse_raw(content_raw)
 
         if len(symbol.children) > 0:
-            max_workers = min(
-                ceil(len(symbol.children) / MAX_SYMBOLS_PER_WORKER),
-                MAX_WORKERS_FOR_SYMBOLS,
-            )
+            workers = compute_num_workers(len(symbol.children))
             futures = {}
             llm_to_use = (
                 llm
-                if max_workers == 1
+                if workers == 1
                 else ChatOpenAI(model="gpt-4o-mini", temperature=0, request_timeout=300)
             )
 
-            with FastShutdownThreadPoolExecutor(max_workers=max_workers) as executor:
+            with FastShutdownThreadPoolExecutor(max_workers=workers) as executor:
                 for idx, child_symbol in enumerate(symbol.children):
                     child_ir_cls = cls.child_to_ir(child_symbol)
                     if child_ir_cls is None:
@@ -236,17 +239,15 @@ class IrData(BaseModel, abc.ABC):
                             )
                         ] = [idx, child_symbol]
                 results = []
-                with tqdm(total=len(futures), colour="green") as pbar:
-                    for idx, future in enumerate(
-                        concurrent.futures.as_completed(futures.keys())
-                    ):
-                        res = future.result()
-                        if res is not None:
-                            print(
-                                f"Processed {idx} / {len(futures)} children for {symbol.name}"
-                            )
-                            results.append([futures[future], res])
-                    pbar.update(1)
+                for idx, future in enumerate(
+                    concurrent.futures.as_completed(futures.keys())
+                ):
+                    res = future.result()
+                    if res is not None:
+                        print(
+                            f"Processed {idx} / {len(futures)} children for {symbol.name}"
+                        )
+                        results.append([futures[future], res])
                 for result in sorted(results, key=lambda tup: tup[0][0]):
                     cls_instance._children.append((result[0][1], result[1]))
 
@@ -308,18 +309,15 @@ class IrCollection(BaseModel, abc.ABC):
     ) -> Self:
         symbols_dict = {}
         futures = {}
-        max_workers = min(
-            ceil(len(symbols_list.data) / MAX_SYMBOLS_PER_WORKER),
-            MAX_WORKERS_FOR_SYMBOLS,
-        )
-        print("Num workers: ", max_workers)
+        workers = compute_num_workers(len(symbols_list.data))
+        print("Num workers: ", workers)
         llm_to_use = (
             llm
-            if max_workers == 1
+            if workers == 1
             else ChatOpenAI(model="gpt-4o-mini", temperature=0, request_timeout=300)
         )
 
-        with FastShutdownThreadPoolExecutor(max_workers=max_workers) as executor:
+        with FastShutdownThreadPoolExecutor(max_workers=workers) as executor:
             for _, s in symbols_list.data.items():
                 if isinstance(s, list):
                     for item in s:
@@ -335,15 +333,13 @@ class IrCollection(BaseModel, abc.ABC):
                 else:
                     raise ValueError("Unsupport type in RawSymbolCollection")
 
-            with tqdm(total=len(futures), colour="green") as pbar:
-                for idx, future in enumerate(
-                    concurrent.futures.as_completed(futures.keys())
-                ):
-                    res = future.result()
-                    if res is not None:
-                        print(f"Processed {idx}/{len(futures)} symbols")
-                        symbols_dict[futures[future]].append(res)
-                    pbar.update(1)
+            for idx, future in enumerate(
+                concurrent.futures.as_completed(futures.keys())
+            ):
+                res = future.result()
+                if res is not None:
+                    print(f"Processed {idx}/{len(futures)} symbols")
+                    symbols_dict[futures[future]].append(res)
         return cls(data=symbols_dict)
 
     @classmethod

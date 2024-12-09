@@ -1,12 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from database.models_v1 import (
-    DerivedContent,
-    DerivedContentType,
-    InspectionVersion,
-    Workspace,
-)
+from database.models_v2 import PrimaryAssetRow, VersionRow
 from fastapi import APIRouter, Query
 from pydantic import BaseModel
 from sqlmodel import func, select
@@ -43,44 +38,46 @@ def get_codebase_versions(
     limit: int = Query(default=10, gt=0),
     offset: int = Query(default=0, ge=0),
 ) -> CodebaseVersionsResponse:
-    codebase_type = session.exec(
-        select(DerivedContentType).where(DerivedContentType.type_name == "codebase")
-    ).first()
-    codebase_type_id = codebase_type.id
-    statement = (
-        select(InspectionVersion)
-        .join(DerivedContent)
-        .join(Workspace)
-        .where(
-            DerivedContent.codebase_id == codebase_id,
-            Workspace.organization_id == user.organization_id,
-            DerivedContent.content_type_id == codebase_type_id,
-            InspectionVersion.version.isnot(None),
+    # Find the primary asset that represents the codebase
+    primary_asset = session.exec(
+        select(PrimaryAssetRow).where(
+            PrimaryAssetRow.id == codebase_id,
+            PrimaryAssetRow.organization_id == user.organization_id,
+            PrimaryAssetRow.primary_asset_type
+            == "CODEBASE",  # Ensuring it's a codebase
         )
-        .order_by(InspectionVersion.created_at.desc())
+    ).one_or_none()
+
+    if not primary_asset:
+        # If not found, raise an error
+        from fastapi import HTTPException
+
+        raise HTTPException(status_code=404, detail="Codebase not found")
+
+    # Query versions associated with this primary asset
+    statement = (
+        select(VersionRow)
+        .where(VersionRow.primary_asset_id == primary_asset.id)
+        .order_by(VersionRow.created_at.desc())
         .limit(limit)
         .offset(offset)
     )
     versions = session.exec(statement).all()
 
+    # Count total number of versions for pagination
     total_count = session.exec(
-        select(func.count(InspectionVersion.id))
-        .join(DerivedContent)
-        .join(Workspace)
-        .where(
-            DerivedContent.codebase_id == codebase_id,
-            Workspace.organization_id == user.organization_id,
-            DerivedContent.content_type_id == codebase_type_id,
-            InspectionVersion.version.isnot(None),
+        select(func.count(VersionRow.id)).where(
+            VersionRow.primary_asset_id == primary_asset.id
         )
     ).one()
 
     response_data = [
         VersionResponse(
             id=version.id,
-            version=version.version,
+            # Here we treat the version's display_name as the "version" string
+            version=version.display_name,
             display_name=version.display_name,
-            created_at=version.created_at,
+            created_at=version.created_at if version.created_at else datetime.now(),
         )
         for version in versions
     ]

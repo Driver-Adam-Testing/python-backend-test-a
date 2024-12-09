@@ -4,6 +4,7 @@ import pprint
 import uuid
 from contextlib import suppress
 from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path
 from uuid import UUID
 
@@ -44,6 +45,22 @@ with inspection_image.imports():
 # save some cost (though costs are negligible today)
 
 
+class InspectionMode(Enum):
+    NORMAL = "normal"
+    RESUME = "resume"
+    RERUN = "rerun"
+
+    @classmethod
+    def from_str(cls, mode_str: str) -> "InspectionMode":
+        try:
+            return cls(mode_str.lower())
+        except ValueError:
+            valid_modes = ", ".join([mode.value for mode in cls])
+            raise ValueError(
+                f"Invalid mode '{mode_str}'. Must be one of: {valid_modes}."
+            )
+
+
 # Unified structure for file paths and source content IDs
 @dataclass
 class FileInfo:
@@ -75,8 +92,7 @@ class FileInfo:
 async def inspect_db(
     codebase_id: uuid.UUID,
     version_id: uuid.UUID,
-    resume: bool = False,
-    is_rerun: bool = False,
+    inspection_mode: InspectionMode = InspectionMode.NORMAL,
     rerun_node_paths: list[str] | None = None,
 ) -> None:
     import tempfile
@@ -106,9 +122,7 @@ async def inspect_db(
     previous_version_id = version.previous_version_id
     codebase_name = codebase.codebase_name
 
-    assert not (resume and is_rerun), "Cannot resume and rerun at the same time"
-
-    if resume and previous_version_id:
+    if inspection_mode == InspectionMode.RESUME and previous_version_id:
         raise ValueError(
             "Cannot resume from diff case yet! Can only resume greenfield inspector run!"
         )
@@ -120,7 +134,7 @@ async def inspect_db(
 
     # If we are resuming, we should get the latest run for the current version,
     # (we don't support diff resumes yet!)
-    if resume:
+    if inspection_mode == InspectionMode.RESUME:
         previous_run_id = await get_latest_run_from_version_id(version_id)
     else:
         # In the case that we are doing a diff, we get the latest run for the *previous* version
@@ -253,7 +267,7 @@ async def inspect_db(
             root_node=sorted_nodes[-1],
             codebase_name=codebase_name,
             run_id=run_id,
-            is_rerun=is_rerun,
+            is_rerun=inspection_mode == InspectionMode.RERUN,
             previous_run_id=previous_run_id,
         )
 
@@ -448,31 +462,30 @@ def get_file_content(path: Path) -> str:
 def main(
     codebase_id: str,
     version_id: str,
-    resume: bool = False,
-    rerun: bool = False,
+    mode: str,
     rerun_paths: str | None = None,
 ) -> None:
     """Resume or rerun inspector given a version"""
-    if resume and rerun:
-        raise ValueError("Cannot resume and rerun at the same time")
+    inspection_mode = InspectionMode.from_str(mode)
 
-    if not (resume or rerun):
-        raise ValueError("Must specify either resume or rerun")
-
-    if resume and rerun_paths:
+    if inspection_mode == InspectionMode.RESUME and rerun_paths:
         raise ValueError(
-            "Cannot resume and with rerun paths specified! Resume and rerun are mutually exclusive"
+            "Cannot resume and specify rerun paths! Resume and rerun are mutually exclusive."
         )
-    rerun_node_paths = (
-        rerun_paths.split(",") if rerun_paths and rerun_paths.strip() else None
-    )
+
+    rerun_node_paths = rerun_paths.split(",") if rerun_paths is not None else None
     if rerun_node_paths:
         print("Rerunning nodes:")
         rerun_node_paths = [path.lstrip("/") for path in rerun_node_paths]
         for path in rerun_node_paths:
             print("--> ", path)
 
-    inspect_db.remote(codebase_id, version_id, resume, rerun, rerun_node_paths)
+    inspect_db.remote(
+        codebase_id,
+        version_id,
+        inspection_mode,
+        rerun_node_paths,
+    )
 
 
 @app.function(

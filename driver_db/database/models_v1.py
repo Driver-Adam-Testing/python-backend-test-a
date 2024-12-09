@@ -23,6 +23,7 @@ from sqlalchemy.dialects.postgresql import UUID as SaUuid
 from sqlmodel import JSON, Field, Relationship, SQLModel
 
 from .custom_types import TSVector
+from .models_v2 import FullNodeView, NodeRow
 
 
 # TODO remove in favor of derived content types once new embeddings created
@@ -133,8 +134,6 @@ class Workspace(SQLModel, table=True):  # type: ignore
             nullable=False,
         ),
     )
-    codebases: list["Codebase"] = Relationship(back_populates="workspace")
-    source_contents: list["DerivedContent"] = Relationship(back_populates="workspace")
 
 
 class Codebase(SQLModel, table=True):  # type: ignore
@@ -183,8 +182,6 @@ class Codebase(SQLModel, table=True):  # type: ignore
             nullable=False,
         ),
     )
-    workspace: Workspace = Relationship(back_populates="codebases")
-    source_contents: list["DerivedContent"] = Relationship(back_populates="codebase")
 
 
 class DerivedContentType(SQLModel, table=True):  # type: ignore
@@ -265,6 +262,12 @@ class DocumentSource(SQLModel, table=True):
 # TODO add indexes back
 class DerivedContent(SQLModel, table=True):  # type: ignore
     __tablename__ = "derived_contents"
+
+    # TODO:
+    # Point tags at node or primary asset
+    # remove derived_content_type
+    # remove workspace
+    # remove codebase
     id: UUID | None = Field(
         sa_column=Column(
             SaUuid(as_uuid=True),
@@ -276,20 +279,23 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
     content_type_id: UUID = Field(
         foreign_key="derived_content_types.id", nullable=False, index=True
     )
+
     content_type: DerivedContentType = Relationship(back_populates="contents")
-    # All content must be in a workspace
-    workspace_id: UUID = Field(foreign_key="workspaces.id", nullable=False, index=True)
+    content_type_slug: str = Field(
+        sa_column=Column(sqlalchemy.Text, nullable=False, index=True)
+    )
+
     source_content_id: UUID | None = Field(
         foreign_key="derived_contents.id", index=True, nullable=True, default=None
     )
     # Content doesn't need to be associated with a codebase in our flat asset design. But for now, we keep
     # all source contents and derived contents for a codebase associated with the codebase. PDFs and other docs,
     # however, won't have a codebase ID -- just a workspace ID, since we are keeping workspaces for now.
-    codebase_id: None | UUID = Field(
-        default=None, foreign_key="codebases.id", nullable=True, index=True
+
+    node_id: None | UUID = Field(
+        default=None, foreign_key="v2_node.id", nullable=True, index=True
     )
 
-    codebase: None | Codebase = Relationship(back_populates="source_contents")
     relative_path: str = Field(
         sa_column=Column(sqlalchemy.Text, nullable=False, index=True)
     )
@@ -336,7 +342,6 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
     order: int | None = Field(
         sa_column=Column(Integer, nullable=True, server_default=text("0"))
     )
-    workspace: Workspace = Relationship(back_populates="source_contents")
     document_links: list["DocumentSource"] = Relationship(
         back_populates="source",
         sa_relationship_kwargs={"foreign_keys": "DocumentSource.source_id"},
@@ -360,6 +365,17 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
     )
     inspection_version: Optional["InspectionVersion"] = Relationship(
         back_populates="contents"
+    )
+    node: NodeRow = Relationship(
+        back_populates="contents",
+        sa_relationship_kwargs={"foreign_keys": "DerivedContent.node_id"},
+    )
+    full_node: FullNodeView = Relationship(
+        sa_relationship_kwargs={
+            "primaryjoin": "DerivedContent.node_id == foreign(FullNodeView.node_id)",
+            "foreign_keys": "DerivedContent.node_id",
+            "viewonly": True,
+        }
     )
 
 
@@ -450,11 +466,7 @@ class ChunkAndEmbedding(SQLModel, table=True):  # type: ignore
         "__ts_vector__",
         TSVector(),
         Computed("to_tsvector('english', text)", persisted=True),
-    )
-    __table_args__ = (
-        Index(
-            "ix_chunkandembedding___ts_vector__", __ts_vector__, postgresql_using="gin"
-        ),
+        index=Index("ix_chunkandembedding___ts_vector__", postgresql_using="gin"),
     )
 
 

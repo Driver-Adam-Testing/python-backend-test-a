@@ -14,7 +14,6 @@ from app.repositories.github_app_installations_repository import (
     GithubAppInstallationsRepository,
 )
 from app.utils.aws_s3 import generate_put_presigned_url
-from app.utils.aws_secrets_manager import read_secret
 
 logger = logging.getLogger(__name__)
 
@@ -68,12 +67,7 @@ def generate_jwt() -> str:
         "exp": int(time.time()) + 600,
         "iss": settings.GH_CLIENT_ID,
     }
-    gh_pem = (
-        read_secret(settings.GH_CLIENT_PEM_SECRET)
-        if settings.ENVIRONMENT != "local"
-        else settings.GH_CLIENT_PEM_SECRET
-    )
-    decoded_pem = base64.b64decode(gh_pem)
+    decoded_pem = base64.b64decode(settings.GH_CLIENT_PEM_SECRET)
     return jwt.encode(payload, decoded_pem, algorithm="RS256")
 
 

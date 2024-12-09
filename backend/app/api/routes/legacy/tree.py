@@ -1,12 +1,8 @@
 # mypy: disable_error_code="call-arg"
+
 import strawberry
 from app.api.routes.legacy.scalars import ID
-from database.models_v1 import (
-    DerivedContent,
-    DerivedContentType,
-    InspectionVersion,
-    Workspace,
-)
+from database.models_v2 import NodeRow, PrimaryAssetRow, VersionRow
 from sqlmodel import Session, select
 
 
@@ -21,117 +17,94 @@ class NodeTypeEnum:
 class FlatNode:
     id: ID
     name: str | None
-    path: (
-        str | None
-    )  # TODO: relative_path is renamed path. There's a lot of transformation.
+    path: str | None  # relative_path renamed to path
     kind: str | None
     children: list[str] | None = strawberry.field(default_factory=list)
 
 
 def get_codebase_tree(
-    codebase_id: str,
+    codebase_id: str,  # codebase_id now corresponds to PrimaryAssetRow.id
     session: Session,
     organization_id: str,
     version_id: str | None = None,
 ) -> list[FlatNode]:
-    if version_id:
-        version = session.get(InspectionVersion, version_id)
-        if not version:
-            raise ValueError(f"Version with id {version_id} not found")
-    else:
-        # When no version id is provided, we look for a latest version.
-        # and return no version if there isn't one (fallback case to support existing)
-        codebase_type = session.exec(
-            select(DerivedContentType).where(DerivedContentType.type_name == "codebase")
+    # INSERT_YOUR_REWRITE_HERE
+    # Perform a single query to fetch all necessary data
+    if not version_id:
+        # Fetch the most recent version if version_id is not provided
+        most_recent_version = session.exec(
+            select(VersionRow.id)
+            .join(PrimaryAssetRow, VersionRow.primary_asset_id == PrimaryAssetRow.id)
+            .where(PrimaryAssetRow.id == codebase_id)
+            .where(PrimaryAssetRow.organization_id == organization_id)
+            .order_by(VersionRow.created_at.desc())
+            .limit(1)
         ).first()
-        codebase_type_id = codebase_type.id
-        statement = (
-            select(InspectionVersion)
-            .join(DerivedContent)
-            .join(Workspace)
-            .where(
-                DerivedContent.codebase_id == codebase_id,
-                Workspace.organization_id == organization_id,
-                DerivedContent.content_type_id == codebase_type_id,
-                InspectionVersion.version.isnot(None),
-            )
-            .order_by(InspectionVersion.created_at.desc())
-        )
-        version = session.exec(statement).first()
+        version_id = most_recent_version if most_recent_version else None
 
-    if not version:
-        statement = (
-            select(DerivedContent, DerivedContentType)
-            .join(Workspace)
-            .where(DerivedContent.codebase_id == codebase_id)
-            .where(DerivedContent.version_id == None)  # noqa: E711
-            .where(Workspace.id == DerivedContent.workspace_id)
-            .where(Workspace.organization_id == organization_id)
-            .where(
-                DerivedContentType.type_name.in_(
-                    ["codebase-directory", "codebase-file"]
-                )
-            )  # type: ignore
-            .where(DerivedContentType.id == DerivedContent.content_type_id)
-        )
-        source_contents = session.exec(statement).all()
-    else:
-        # If we did find a version...
-        statement = (
-            select(DerivedContent, DerivedContentType)
-            .join(Workspace)
-            .where(DerivedContent.codebase_id == codebase_id)
-            .where(DerivedContent.version_id == version.id)
-            .where(Workspace.id == DerivedContent.workspace_id)
-            .where(Workspace.organization_id == organization_id)
-            .where(
-                DerivedContentType.type_name.in_(
-                    ["codebase-directory", "codebase-file"]
-                )
-            )  # type: ignore
-            .where(DerivedContentType.id == DerivedContent.content_type_id)
-        )
-        source_contents = session.exec(statement).all()
+    nodes = session.exec(
+        select(NodeRow, VersionRow, PrimaryAssetRow)
+        .join(VersionRow, NodeRow.version_id == VersionRow.id)
+        .join(PrimaryAssetRow, VersionRow.primary_asset_id == PrimaryAssetRow.id)
+        .where(PrimaryAssetRow.id == codebase_id)
+        .where(PrimaryAssetRow.organization_id == organization_id)
+        .where((VersionRow.id == version_id) if version_id else True)
+    ).all()
 
+    # If no nodes found, return an empty list
+    if not nodes:
+        return []
+
+    # Construct the node tree
     directories_map = {}
     files = []
 
-    for content, source_content_type in source_contents:
-        path_parts = content.relative_path.rstrip("/").split("/")
-        name = path_parts[-1]
-        kind = (
-            NodeTypeEnum.Directory
-            if source_content_type.type_name == "codebase-directory"
-            else NodeTypeEnum.File
-        )
-        node = FlatNode(  # type: ignore
-            id=ID(content.id),
+    for node, _, _ in nodes:
+        # Determine if it's a directory or file
+        if node.relative_path.endswith("/"):
+            kind = NodeTypeEnum.Directory
+            name = (
+                node.relative_path.rstrip("/").split("/")[-1]
+                if node.relative_path
+                else ""
+            )
+        else:
+            kind = NodeTypeEnum.File
+            name = node.relative_path.split("/")[-1] if node.relative_path else ""
+
+        flat_node = FlatNode(
+            id=ID(str(node.id)),
             name=name,
-            path=content.relative_path,
+            path=node.relative_path,
             kind=kind,
             children=[],
         )
-        if kind == NodeTypeEnum.File:
-            files.append(node)
-        else:
-            directories_map[content.relative_path] = node
 
-    for file in files:
-        parent_path = file.path.rsplit("/", 1)[0]  # type: ignore
+        if kind == NodeTypeEnum.File:
+            files.append(flat_node)
+        else:
+            directories_map[node.relative_path] = flat_node
+
+    for file_node in files:
+        if file_node.path and "/" in file_node.path:
+            parent_path = file_node.path.rsplit("/", 1)[0] + "/"
+        else:
+            parent_path = ""
+
         if parent_path in directories_map:
             if directories_map[parent_path].children is None:
                 directories_map[parent_path].children = []
-            directories_map[parent_path].children.append(file.path)  # type: ignore
-        if file.path:
-            directories_map[file.path] = file
+            directories_map[parent_path].children.append(file_node.path)
+
+        directories_map[file_node.path] = file_node
 
     result = []
     for _, dir_node in directories_map.items():
         if dir_node.children is not None:
             dir_node.children = [
-                child
-                for child in dir_node.children
-                if child in directories_map  # type: ignore
+                child_path
+                for child_path in dir_node.children
+                if child_path in directories_map
             ]
         result.append(dir_node)
 

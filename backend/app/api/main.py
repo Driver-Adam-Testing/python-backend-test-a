@@ -15,6 +15,7 @@ from app.api.routes.v1 import (
     upload,
     user,
 )
+from app.api.routes.v2 import node
 from app.core.config import settings
 
 api_router = APIRouter()
@@ -42,6 +43,7 @@ api_router.include_router(user.router, prefix="/user", tags=["user"])
 api_router.include_router(
     organization.router, prefix="/organization", tags=["organization"]
 )
+api_router.include_router(node.router, prefix="/node", tags=["node"])
 
 if settings.ENVIRONMENT != "production":
     api_router.include_router(

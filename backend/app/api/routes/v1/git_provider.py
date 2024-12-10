@@ -113,13 +113,12 @@ def clone_repo(
 
     token = fetch_app_access_token(repo.metadata["installation_id"])
     upload_complete = download_and_upload_repo(
-        repo.org,
-        current_user.user_id,
-        current_user.organization_id,
-        workspace_id,
-        repo.repo_name,
-        token,
-        provider,
+        gh_org_name=repo.org,
+        owner=current_user.user_id,
+        org_id=current_user.organization_id,
+        workspace_id=workspace_id,
+        repo=repo.repo_name,
+        access_token=token,
     )
 
     if upload_complete is True:

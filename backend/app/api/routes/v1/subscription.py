@@ -1,16 +1,16 @@
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException
-
-from app.api.auth import OrgManagerPermission, UserToken
-from app.api.session import CurrentSession
-from app.core.logger import logger
-from app.schemas.subscription_schema import (
+from shared.billing.billing_service import BillingService
+from shared.interfaces.billing.subscription_schema import (
     CreateSubscriptionRequest,
     PlanRecord,
     SubscriptionRecord,
 )
-from app.services.billing_service import BillingService
+
+from app.api.auth import OrgManagerPermission, UserToken
+from app.api.session import CurrentSession
+from app.core.logger import logger
 
 router = APIRouter()
 

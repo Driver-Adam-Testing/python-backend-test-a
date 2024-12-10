@@ -3,7 +3,7 @@ from enum import Enum
 from uuid import UUID
 
 from database.models_v1 import UsageEventType
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, computed_field, model_validator
 from shared.usage.utils import bytes_to_sloc, sloc_to_bytes
 
 
@@ -129,3 +129,30 @@ class UsageEventRecord(BaseModel):
     tokens_out: int
     timestamp: datetime
     event_metadata: dict | None = None
+
+
+class UsageCharge(BaseModel):
+    asset_name: str
+
+    timestamp: datetime
+    bytes: int
+    event_type: UsageEventType
+
+    @computed_field
+    @property
+    def sloc(self) -> int:
+        return abs(bytes_to_sloc(self.bytes))
+
+    @computed_field
+    @property
+    def change_type(self) -> str:
+        _change_type = ""
+
+        if self.event_type == UsageEventType.ONBOARDING_USAGE_DEBIT:
+            _change_type = "new"
+        elif self.event_type == UsageEventType.INSPECTOR_CODE_DIFF_USAGE_DEBIT:
+            _change_type = "update"
+        else:
+            _change_type = "user_added"
+
+        return _change_type

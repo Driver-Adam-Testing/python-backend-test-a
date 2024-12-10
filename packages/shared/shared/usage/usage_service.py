@@ -1,10 +1,7 @@
 from datetime import datetime
 
 import boto3
-from database.models_v1 import (
-    UsageEvent,
-    UsageEventType,
-)
+from database.models_v1 import Codebase, UsageEvent, UsageEventType, UsageSession
 from sqlmodel import Session, select
 
 from shared.interfaces.usage.event_metadata import (
@@ -13,10 +10,12 @@ from shared.interfaces.usage.event_metadata import (
 )
 from shared.interfaces.usage.usage_schema import (
     UsageBalance,
+    UsageCharge,
     UsageEventRecord,
     UsageEventSummary,
     UsageMetricUnitType,
 )
+from shared.repositories.base_repository import BaseRepository
 from shared.repositories.usage_event_repository import UsageEventRepository
 from shared.usage.llm_session import LLMUsageSession
 
@@ -25,6 +24,8 @@ class UsageService:
     def __init__(self, session: Session, aws_client: boto3.client = None) -> None:
         self.session = session
         self.usage_event_repository = UsageEventRepository(session)
+        self.usage_session_repository = BaseRepository(session, UsageSession)
+        self.codebase_repository = BaseRepository(session, Codebase)
         self.aws_client = aws_client
 
     def issue_usage_credits(
@@ -62,10 +63,20 @@ class UsageService:
             llm_session.send_event(usage_metric)
             print(f"Session ended: {llm_session.session_id}")
 
-    def get_usage_events(self, organization_id: str) -> list[UsageEventRecord]:
-        query = select(UsageEvent).where(
-            UsageEvent.organization_id == organization_id,
-        )
+    def get_usage_events(
+        self,
+        organization_id: str,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+    ) -> list[UsageEventRecord]:
+        query = select(UsageEvent).where(UsageEvent.organization_id == organization_id)
+
+        if start_date:
+            query = query.where(UsageEvent.timestamp >= start_date)
+
+        if end_date:
+            query = query.where(UsageEvent.timestamp <= end_date)
+
         usage_events = self.session.exec(query).all()
         return [
             UsageEventRecord(
@@ -210,3 +221,73 @@ class UsageService:
             user_seat_count=0,
         )
         return usage_event_summary.convert_to(UsageMetricUnitType.SLOC)
+
+    def get_charges(
+        self,
+        organization_id: str,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+    ) -> list[UsageCharge]:
+        charges = []
+
+        # query = (
+        #     select(UsageEvent)
+        #     .distinct(UsageEvent.session_id)
+        #     .join(UsageSession)
+        #     .where(organization_id == UsageEvent.organization_id)
+        #     .where(UsageEvent.event_type.in_([
+        #         UsageEventType.ONBOARDING_USAGE_DEBIT,
+        #         UsageEventType.INSPECTOR_CODE_DIFF_USAGE_DEBIT
+        #         ]))
+        # )
+        # if start_date:
+        #     query = query.where(UsageEvent.timestamp >= start_date)
+        # if end_date:
+        #     query = query.where(UsageEvent.timestamp <= end_date)
+        #
+        # usage_events = self.session.exec(query).all()
+
+        onboarding_usage_events = self.usage_event_repository.get_usage_events_by_types(
+            organization_id,
+            [
+                UsageEventType.ONBOARDING_USAGE_DEBIT,
+                # UsageEventType.INSPECTOR_CODE_DIFF_USAGE_DEBIT,
+            ],
+            start_date,
+            end_date,
+        )
+
+        # get distinct session ids
+        onboarding_session_ids = {event.session_id for event in onboarding_usage_events}
+
+        onboarding_sessions = self.usage_session_repository.get_all(
+            conditions=[UsageSession.id.in_(onboarding_session_ids)]
+        )
+
+        for sesh in onboarding_sessions:
+            meta = sesh.session_metadata
+            print(meta)
+            codebase_id = meta.get("content_id")
+            onboarding_usage_event = {
+                event
+                for event in onboarding_usage_events
+                if event.session_id == sesh.id
+            }
+            codebase = self.codebase_repository.get(codebase_id)
+            # asset_name = ""
+            if not codebase:
+                print(f"Codebase not found for id: {codebase_id}")
+                asset_name = "Deleted Codebase"
+            else:
+                asset_name = codebase.codebase_name
+            print(codebase)
+            charges.append(
+                UsageCharge(
+                    asset_name=asset_name,
+                    event_type=UsageEventType.ONBOARDING_USAGE_DEBIT,
+                    timestamp=sesh.created_at,
+                    bytes=onboarding_usage_event.bytes_in,
+                )
+            )
+
+        return charges

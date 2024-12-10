@@ -14,9 +14,6 @@ class PlanRecord(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    # class Config:
-    #     orm_mode = True
-
 
 class SubscriptionRecord(BaseModel):
     id: UUID
@@ -29,9 +26,6 @@ class SubscriptionRecord(BaseModel):
     created_at: datetime
     updated_at: datetime
     plan: PlanRecord
-
-    # class Config:
-    #     orm_mode = True
 
 
 class CreateSubscriptionRequest(BaseModel):

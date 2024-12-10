@@ -3,6 +3,7 @@ from datetime import datetime
 from fastapi import APIRouter, Query
 from shared.interfaces.usage.usage_schema import (
     UsageBalance,
+    UsageCharge,
     UsageEventRecord,
     UsageEventSummary,
 )
@@ -55,6 +56,21 @@ def get_usage_events(
     return usage_service.get_usage_events(organization_id)
 
 
+@router.get(
+    "/charges",
+    summary="Get Recent Usage Charges",
+)
+def get_charges(
+    session: CurrentSession,
+    user: UserToken,
+    start_date: datetime | None = Query(None),
+    end_date: datetime | None = Query(None),
+) -> list[UsageCharge]:
+    usage_service = UsageService(session)
+    organization_id = user.organization_id
+    return usage_service.get_charges(organization_id, start_date, end_date)
+
+
 # # POST /api/v1/usage/webhook
 # @router.post(
 #     "/webhook",
@@ -63,7 +79,16 @@ def get_usage_events(
 # def usage_webhook(
 #     session: CurrentSession, user: UserToken, credit_usage_event: CreditUsageEvent
 # ) -> JSONResponse:
-#     usage_service = UsageService(session)
+#
+#     aws_client = boto3.client(
+#         "events",
+#         region_name="us-east-1",
+#         aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+#         aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY
+#     )
+#
+#
+#     usage_service = UsageService(session, aws_client)
 #     organization_id = user.organization_id
 #     user_id = user.user_id
 #     event_type = UsageEventType.BASE_PLATFORM_USAGE_CREDIT

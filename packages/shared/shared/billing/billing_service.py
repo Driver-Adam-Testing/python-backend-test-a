@@ -1,13 +1,13 @@
 from datetime import date
 from uuid import UUID
 
+from app.core.logger import logger
 from database.models_v1 import Plan, Subscription
 from dateutil.relativedelta import relativedelta
 from sqlmodel import Session
 
-from app.core.logger import logger
-from app.repositories.base_repository import BaseRepository
-from app.schemas.subscription_schema import PlanRecord, SubscriptionRecord
+from shared.interfaces.billing.subscription_schema import PlanRecord, SubscriptionRecord
+from shared.repositories.base_repository import BaseRepository
 
 
 class BillingService:

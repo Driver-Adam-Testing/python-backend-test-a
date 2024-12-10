@@ -268,7 +268,7 @@ def get_codebase_content_record(
             DerivedContent.relative_path == repo_name,
         )
     )
-    return session.exec(statement).one_or_none()
+    return session.exec(statement).first()
 
 
 def handle_ping_event() -> JSONResponse:

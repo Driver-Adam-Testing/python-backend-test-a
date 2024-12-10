@@ -630,10 +630,7 @@ class Plan(SQLModel, table=True):
     base_seat_price: float = Field(
         default=0.00, description="Base recurring price per user seat of the plan."
     )
-    billing_period: str = Field(
-        default="monthly",
-        description="Default billing cycle, e.g. monthly or annually.",
-    )
+    billing_frequency: str
     created_at: None | datetime = Field(
         sa_column=Column(
             DateTime(timezone=True), server_default=func.now(), nullable=False

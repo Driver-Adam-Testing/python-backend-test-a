@@ -26,7 +26,9 @@ def upgrade() -> None:
         sa.Column("description", sqlmodel.sql.sqltypes.AutoString(), nullable=True),
         sa.Column("base_usage_price", sa.Float(), nullable=False),
         sa.Column("base_seat_price", sa.Float(), nullable=False),
-        sa.Column("billing_period", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+        sa.Column(
+            "billing_frequency", sqlmodel.sql.sqltypes.AutoString(), nullable=False
+        ),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),

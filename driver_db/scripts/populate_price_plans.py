@@ -107,14 +107,14 @@ def core_plans() -> [Plan]:
             description="Core monthly plan for small teams",
             base_usage_price=m_usage_price,
             base_seat_price=m_seat_price,
-            billing_period="monthly",
+            billing_frequency="monthly",
         ),
         Plan(
             name="Core Plan (Annual)",
             description="Core annual plan for small teams",
             base_usage_price=a_usage_price,
             base_seat_price=a_seat_price,
-            billing_period="annual",
+            billing_frequency="annual",
         ),
     ]
 
@@ -130,14 +130,14 @@ def advanced_plans() -> [Plan]:
             description="Advanced monthly plan for medium teams",
             base_usage_price=m_usage_price,
             base_seat_price=m_seat_price,
-            billing_period="monthly",
+            billing_frequency="monthly",
         ),
         Plan(
             name="Advanced Plan (Annual)",
             description="Advanced annual plan for medium teams",
             base_usage_price=a_usage_price,
             base_seat_price=a_seat_price,
-            billing_period="annual",
+            billing_frequency="annual",
         ),
     ]
 
@@ -153,7 +153,7 @@ def enterprise_plans() -> [Plan]:
             description="Enterprise annual plan for large teams",
             base_usage_price=a_usage_price,
             base_seat_price=a_seat_price,
-            billing_period="annual",
+            billing_frequency="annual",
         )
     ]
 

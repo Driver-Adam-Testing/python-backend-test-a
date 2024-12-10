@@ -1,6 +1,6 @@
 import enum
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from typing import Optional
 from uuid import UUID
 
@@ -618,3 +618,78 @@ class GithubAppInstallation(SQLModel, table=True):
             name="uq_github_app_installation_id_organization_id",
         ),
     )
+
+
+class Plan(SQLModel, table=True):
+    id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    name: str = Field(index=True)
+    description: str | None = None
+    base_usage_price: float = Field(
+        default=0.00, description="Base consumption price of the plan."
+    )
+    base_seat_price: float = Field(
+        default=0.00, description="Base recurring price per user seat of the plan."
+    )
+    billing_period: str = Field(
+        default="monthly",
+        description="Default billing cycle, e.g. monthly or annually.",
+    )
+    created_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
+        default=None,
+    )
+    updated_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
+        ),
+    )
+    subscriptions: list["Subscription"] = Relationship(back_populates="plan")
+
+
+class SubscriptionStatus(str, enum.Enum):
+    ACTIVE = "active"
+    TRIAL = "trial"
+    PAST_DUE = "past_due"
+    CANCELED = "canceled"
+    SUSPENDED = "suspended"
+
+
+class Subscription(SQLModel, table=True):
+    id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    organization_id: str = Field(unique=True, index=True)
+    plan_id: UUID = Field(foreign_key="plan.id", index=True)
+    status: SubscriptionStatus = Field(
+        default=SubscriptionStatus.ACTIVE,
+        description="Current status of the subscription.",
+    )
+    start_date: date = Field(
+        default_factory=date.today, description="The date the subscription started."
+    )
+    end_date: date | None = Field(
+        default=None, description="The date the subscription ends or is set to renew."
+    )
+    billing_frequency: str | None = Field(
+        default=None,
+        description="The frequency of billing (e.g. monthly, annually). If not set, defaults to plan's billing_period.",
+    )
+    #     discount_code: Optional[str] = Field(default=None,description="Any coupon or discount code applied to this subscription.")
+    created_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
+        default=None,
+    )
+    updated_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
+        ),
+    )
+    plan: Optional["Plan"] = Relationship(back_populates="subscriptions")

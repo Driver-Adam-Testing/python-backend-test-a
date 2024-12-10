@@ -9,27 +9,23 @@ from sqlalchemy import engine_from_config, inspect, pool, text
 from sqlalchemy.engine import Connection
 from sqlmodel import SQLModel  # Import SQLModel
 
-# This is the Alembic Config object, which provides
-# access to the values within the .ini file in use.
 config = context.config
-
-# Interpret the config file for Python logging.
 fileConfig(str(config.config_file_name))
-
-# Import all your models to ensure their tables are registered
 
 print(V1)
 print(V2)
 
-# Use the combined metadata
 target_metadata = SQLModel.metadata
-
-# Other values from the config, defined by the needs of env.py,
-# can be acquired here, e.g., config.get_main_option("my_option")
 
 
 def get_url() -> str:
     return str(settings.SQLALCHEMY_DATABASE_URI)
+
+
+def include_object(
+    object: any, name: str, type_: str, reflected: any, compare_to: any
+) -> bool:
+    return not (type_ == "table" and name == "v2_full_node")
 
 
 def run_migrations_offline() -> None:
@@ -41,6 +37,7 @@ def run_migrations_offline() -> None:
         literal_binds=True,
         compare_type=True,
         dialect_opts={"paramstyle": "named"},
+        include_object=include_object,
     )
 
     with context.begin_transaction():
@@ -67,7 +64,7 @@ def run_migrations_online() -> None:
             connection=connection,
             target_metadata=target_metadata,
             compare_type=True,
-            # Add other options as needed
+            include_object=include_object,
         )
 
         with context.begin_transaction():
@@ -78,6 +75,7 @@ def run_migrations_online() -> None:
                 connection.execute(
                     text("LOCK TABLE alembic_version IN ACCESS EXCLUSIVE MODE")
                 )
+
             now = datetime.datetime.now()
             print("Running migrations at", now)
             context.run_migrations()

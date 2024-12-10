@@ -174,11 +174,11 @@ class FullNodeView(SQLModel, table=True):  # type: ignore
     primary_asset_created_at: None | datetime = Field(default=None)
     primary_asset_updated_at: None | datetime = Field(default=None)
     primary_asset_primary_asset_type: str | None = Field(default=None)
-    version_id: UUID | None = Field(default=None)
+    version_id: UUID | None = Field(default=None, primary_key=True)
     version_display_name: str | None = Field(default=None)
     version_created_at: None | datetime = Field(default=None)
     version_updated_at: None | datetime = Field(default=None)
-    node_id: UUID | None
+    node_id: UUID | None = Field(primary_key=True)
     node_relative_path: str | None = Field(default=None)
     node_created_at: None | datetime = Field(default=None)
     node_updated_at: None | datetime = Field(default=None)

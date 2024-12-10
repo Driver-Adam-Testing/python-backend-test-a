@@ -5,9 +5,15 @@ from uuid import UUID
 from app.api.auth import UserToken
 from app.api.session import CurrentSession
 from database.models_v1 import DerivedContent
-from database.models_v2 import FullNodeView, NodeRow, PrimaryAssetRow, VersionRow
-from fastapi import APIRouter, HTTPException, Request
-from pydantic import BaseModel
+from database.models_v2 import (
+    FullNodeView,
+    NodeRow,
+    PrimaryAssetRow,
+    PrimaryAssetTypeEnum,
+    VersionRow,
+)
+from fastapi import APIRouter, Body, HTTPException, Path, Request
+from pydantic import BaseModel, field_validator
 from sqlalchemy.orm import selectinload
 from sqlmodel import func, select
 
@@ -31,6 +37,7 @@ async def list_full_nodes(
     offset: int = 0,
     sort_by: str = "primary_asset_updated_at",
     sort_direction: str = "DESC",
+    root_nodes_only: bool = False,
 ) -> ListWithCount[FullNodeView]:
     query = select(FullNodeView).where(
         FullNodeView.primary_asset_organization_id == user.organization_id
@@ -46,6 +53,20 @@ async def list_full_nodes(
         if hasattr(FullNodeView, key):
             query = query.where(getattr(FullNodeView, key) == value)
 
+    if root_nodes_only:
+        query = query.where(
+            ~FullNodeView.node_relative_path.contains("/")
+            | (
+                FullNodeView.node_relative_path.endswith("/")
+                & (
+                    func.length(FullNodeView.node_relative_path)
+                    - func.length(
+                        func.replace(FullNodeView.node_relative_path, "/", "")
+                    )
+                    == 1
+                )
+            )
+        )
     if hasattr(FullNodeView, sort_by):
         if sort_direction.upper() == "ASC":
             query = query.order_by(getattr(FullNodeView, sort_by).asc())
@@ -327,3 +348,301 @@ async def list_contents(
     ]
 
     return ListWithCount(results=contents, total_count=total_count)
+
+
+class PrimaryAssetCreate(BaseModel):
+    display_name: str
+    primary_asset_type: str
+
+    @field_validator("primary_asset_type")
+    def validate_primary_asset_type(cls, v: str) -> str:
+        if v not in [e.value for e in PrimaryAssetTypeEnum]:
+            raise ValueError(
+                f"primary_asset_type must be one of {[e.value for e in PrimaryAssetTypeEnum]}"
+            )
+        return v
+
+
+class PrimaryAssetUpdate(BaseModel):
+    display_name: str | None = None
+    primary_asset_type: str | None = None
+
+    @field_validator("primary_asset_type")
+    def validate_primary_asset_type(cls, v: str | None) -> str | None:
+        if v is not None and v not in [e.value for e in PrimaryAssetTypeEnum]:
+            raise ValueError(
+                f"primary_asset_type must be one of {[e.value for e in PrimaryAssetTypeEnum]}"
+            )
+        return v
+
+
+@router.post("/primary_assets", response_model=PrimaryAssetRow)
+async def create_primary_asset(
+    session: CurrentSession,
+    user: UserToken,
+    payload: PrimaryAssetCreate = Body(...),
+) -> PrimaryAssetRow:
+    # Create a new PrimaryAssetRow
+    new_asset = PrimaryAssetRow(
+        display_name=payload.display_name,
+        organization_id=user.organization_id,
+        primary_asset_type=payload.primary_asset_type,
+    )
+    session.add(new_asset)
+    session.commit()
+    session.refresh(new_asset)
+    return new_asset
+
+
+@router.put("/primary_assets/{asset_id}", response_model=PrimaryAssetRow)
+async def update_primary_asset(
+    session: CurrentSession,
+    user: UserToken,
+    asset_id: UUID = Path(...),
+    payload: PrimaryAssetUpdate = Body(...),
+) -> PrimaryAssetRow:
+    # Fetch the asset to be updated
+    asset = session.exec(
+        select(PrimaryAssetRow)
+        .where(PrimaryAssetRow.id == asset_id)
+        .where(PrimaryAssetRow.organization_id == user.organization_id)
+    ).one_or_none()
+
+    if not asset:
+        raise HTTPException(status_code=404, detail="Primary asset not found")
+
+    # Update fields if provided
+    if payload.display_name is not None:
+        asset.display_name = payload.display_name
+    if payload.primary_asset_type is not None:
+        if payload.primary_asset_type not in [e.value for e in PrimaryAssetTypeEnum]:
+            raise HTTPException(status_code=400, detail="Invalid primary_asset_type")
+        asset.primary_asset_type = payload.primary_asset_type
+
+    session.add(asset)
+    session.commit()
+    session.refresh(asset)
+    return asset
+
+
+class VersionCreate(BaseModel):
+    primary_asset_id: UUID
+    display_name: str
+
+
+class VersionUpdate(BaseModel):
+    display_name: str | None = None
+
+
+@router.post("/versions", response_model=VersionRow)
+async def create_version(
+    session: CurrentSession,
+    user: UserToken,
+    payload: VersionCreate = Body(...),
+) -> VersionRow:
+    # Ensure that the primary asset belongs to the user's organization
+    primary_asset = session.exec(
+        select(PrimaryAssetRow)
+        .where(PrimaryAssetRow.id == payload.primary_asset_id)
+        .where(PrimaryAssetRow.organization_id == user.organization_id)
+    ).one_or_none()
+
+    if not primary_asset:
+        raise HTTPException(status_code=404, detail="Primary asset not found")
+
+    new_version = VersionRow(
+        primary_asset_id=payload.primary_asset_id,
+        display_name=payload.display_name,
+    )
+    session.add(new_version)
+    session.commit()
+    session.refresh(new_version)
+    return new_version
+
+
+@router.put("/versions/{version_id}", response_model=VersionRow)
+async def update_version(
+    session: CurrentSession,
+    user: UserToken,
+    version_id: UUID = Path(...),
+    payload: VersionUpdate = Body(...),
+) -> VersionRow:
+    version = session.exec(
+        select(VersionRow)
+        .join(PrimaryAssetRow)
+        .where(VersionRow.id == version_id)
+        .where(PrimaryAssetRow.organization_id == user.organization_id)
+    ).one_or_none()
+
+    if not version:
+        raise HTTPException(status_code=404, detail="Version not found")
+
+    if payload.display_name is not None:
+        version.display_name = payload.display_name
+
+    session.add(version)
+    session.commit()
+    session.refresh(version)
+    return version
+
+
+class NodeCreate(BaseModel):
+    version_id: UUID
+    relative_path: str
+
+
+class NodeUpdate(BaseModel):
+    relative_path: str | None = None
+
+
+@router.post("/nodes", response_model=NodeRow)
+async def create_node(
+    session: CurrentSession, user: UserToken, payload: NodeCreate = Body(...)
+) -> NodeRow:
+    # Verify version belongs to user's organization
+    version = session.exec(
+        select(VersionRow)
+        .join(PrimaryAssetRow)
+        .where(VersionRow.id == payload.version_id)
+        .where(PrimaryAssetRow.organization_id == user.organization_id)
+    ).one_or_none()
+
+    if not version:
+        raise HTTPException(
+            status_code=404, detail="Version not found or not authorized"
+        )
+
+    new_node = NodeRow(
+        version_id=payload.version_id,
+        relative_path=payload.relative_path,
+    )
+    session.add(new_node)
+    session.commit()
+    session.refresh(new_node)
+    return new_node
+
+
+@router.put("/nodes/{node_id}", response_model=NodeRow)
+async def update_node(
+    session: CurrentSession,
+    user: UserToken,
+    node_id: UUID = Path(...),
+    payload: NodeUpdate = Body(...),
+) -> NodeRow:
+    # Fetch the node and ensure it belongs to the user's organization
+    node = session.exec(
+        select(NodeRow)
+        .join(VersionRow)
+        .join(PrimaryAssetRow)
+        .where(NodeRow.id == node_id)
+        .where(PrimaryAssetRow.organization_id == user.organization_id)
+    ).one_or_none()
+
+    if not node:
+        raise HTTPException(status_code=404, detail="Node not found or not authorized")
+
+    if payload.relative_path is not None:
+        node.relative_path = payload.relative_path
+
+    session.add(node)
+    session.commit()
+    session.refresh(node)
+    return node
+
+
+class DerivedContentCreate(BaseModel):
+    node_id: UUID
+    content_type_id: UUID
+    relative_path: str
+    content: str | None = None
+    content_name: str | None = None
+    misc_metadata: dict | None = None
+    status: str | None = None
+    order: int | None = None
+    # For tags, you might want to create them separately or link existing tags.
+    # Here we assume tags are handled elsewhere or via another endpoint.
+
+
+class DerivedContentUpdate(BaseModel):
+    relative_path: str | None = None
+    content: str | None = None
+    content_name: str | None = None
+    misc_metadata: dict | None = None
+    status: str | None = None
+    order: int | None = None
+    # Similarly, tag updates could be handled separately or by including logic here.
+
+
+@router.post("/contents", response_model=DerivedContentResponse)
+async def create_derived_content(
+    session: CurrentSession, user: UserToken, payload: DerivedContentCreate = Body(...)
+) -> DerivedContentResponse:
+    # Verify node belongs to user's organization
+    node = session.exec(
+        select(NodeRow)
+        .join(VersionRow)
+        .join(PrimaryAssetRow)
+        .where(NodeRow.id == payload.node_id)
+        .where(PrimaryAssetRow.organization_id == user.organization_id)
+    ).one_or_none()
+
+    if not node:
+        raise HTTPException(status_code=404, detail="Node not found or not authorized")
+
+    new_content = DerivedContent(
+        node_id=payload.node_id,
+        content_type_id=payload.content_type_id,
+        relative_path=payload.relative_path,
+        content=payload.content,
+        content_name=payload.content_name,
+        misc_metadata=payload.misc_metadata,
+        status=payload.status,
+        order=payload.order,
+    )
+    session.add(new_content)
+    session.commit()
+    session.refresh(new_content)
+
+    return DerivedContentResponse.from_derived_content(new_content)
+
+
+@router.put("/contents/{content_id}", response_model=DerivedContentResponse)
+async def update_derived_content(
+    session: CurrentSession,
+    user: UserToken,
+    content_id: UUID = Path(...),
+    payload: DerivedContentUpdate = Body(...),
+) -> DerivedContentResponse:
+    # Fetch the derived content and ensure it belongs to the user's organization
+    derived_content = session.exec(
+        select(DerivedContent)
+        .join(NodeRow)
+        .join(VersionRow)
+        .join(PrimaryAssetRow)
+        .where(DerivedContent.id == content_id)
+        .where(PrimaryAssetRow.organization_id == user.organization_id)
+    ).one_or_none()
+
+    if not derived_content:
+        raise HTTPException(
+            status_code=404, detail="Content not found or not authorized"
+        )
+
+    if payload.relative_path is not None:
+        derived_content.relative_path = payload.relative_path
+    if payload.content is not None:
+        derived_content.content = payload.content
+    if payload.content_name is not None:
+        derived_content.content_name = payload.content_name
+    if payload.misc_metadata is not None:
+        derived_content.misc_metadata = payload.misc_metadata
+    if payload.status is not None:
+        derived_content.status = payload.status
+    if payload.order is not None:
+        derived_content.order = payload.order
+
+    session.add(derived_content)
+    session.commit()
+    session.refresh(derived_content)
+
+    return DerivedContentResponse.from_derived_content(derived_content)

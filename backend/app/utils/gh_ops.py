@@ -7,9 +7,8 @@ from typing import Any
 
 import httpx
 import jwt
-from sqlmodel import Session
 import requests
-
+from sqlmodel import Session
 
 from app.core.config import settings
 from app.repositories.github_app_installations_repository import (
@@ -233,7 +232,7 @@ def upload_to_s3(zip_content: bytes, metadata: dict, upload_key: str) -> bool:
 
 
 def download_and_upload_repo(
-    org_name: str,
+    gh_org_name: str,
     owner: str,
     org_id: str,
     workspace_id: str,
@@ -245,14 +244,14 @@ def download_and_upload_repo(
     # I'm not sure why this is done; it feels like we should raise an exception
     try:
         if not commit:
-            commit = fetch_default_branch_and_commit(org_name, repo, access_token)
+            commit = fetch_default_branch_and_commit(gh_org_name, repo, access_token)
 
         metadata = generate_codebase_metadata(
-            org_id, org_name, workspace_id, repo, owner, "github", commit
+            org_id, gh_org_name, workspace_id, repo, owner, "github", commit
         )
         upload_key = metadata["file_path"]
 
-        zip_content = download_github_repo_zip(org_name, repo, commit, access_token)
+        zip_content = download_github_repo_zip(gh_org_name, repo, commit, access_token)
         logger.info(
             "Repository downloaded successfully. Size: %d bytes", len(zip_content)
         )

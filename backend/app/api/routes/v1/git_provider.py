@@ -221,7 +221,7 @@ def handle_push_event(session: CurrentSession, body: dict) -> JSONResponse:
     )
 
     codebase_content_record = get_codebase_content_record(
-        session, default_workspace, repo_name
+        session, default_workspace.id, repo_name
     )
     if not codebase_content_record:
         logger.warning("Codebase content record not found for repo: %s", repo_name)
@@ -249,7 +249,9 @@ def handle_push_event(session: CurrentSession, body: dict) -> JSONResponse:
         )
     else:
         logger.error("Repository upload failed in webhook: %s", repo_name)
-        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content={"message": ""}
+        )
 
 
 def get_codebase_content_record(
@@ -296,6 +298,17 @@ def webhook(
         return handle_push_event(session, body)
     elif github_event == "ping":
         return handle_ping_event()
+    elif github_event == "installation":
+        if body["action"] == "deleted":
+            installation_record = session.exec(
+                select(GithubAppInstallation).where(
+                    GithubAppInstallation.github_app_installation_id
+                    == str(body["installation"]["id"])
+                )
+            ).first()
+            session.delete(installation_record)
+            session.commit()
+        return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content={"message": ""})
 
     logger.info("Unhandled event type: %s", github_event)
     return JSONResponse(

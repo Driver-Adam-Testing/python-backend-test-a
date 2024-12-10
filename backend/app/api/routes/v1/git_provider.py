@@ -9,6 +9,7 @@ from database.models_v1 import GithubAppInstallation
 from fastapi import APIRouter, HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from sqlmodel import select
 
 from app.api.auth import ContentEditorPermission, UserToken
 from app.api.session import CurrentSession
@@ -155,7 +156,11 @@ def verify_signature(
 
 
 @router.post("/{provider}/webhook")
-async def webhook(provider: str, request: Request) -> JSONResponse:
+async def webhook(
+    session: CurrentSession, provider: str, request: Request
+) -> JSONResponse:
+    if provider != "github":
+        raise NotImplementedError()
     # Ensure the request body is read as bytes for signature verification
     body_bytes = await request.body()  # Get the raw request body as bytes
     body = await request.json()  # Parse the JSON body for further processing
@@ -179,15 +184,27 @@ async def webhook(provider: str, request: Request) -> JSONResponse:
     if github_event == "issues":
         action = body.get("action", "")
         if action == "opened":
-            print(f"An issue was opened with this title: {body['issue']['title']}")
+            logger.debug(
+                f"An issue was opened with this title: {body['issue']['title']}"
+            )
         elif action == "closed":
-            print(f"An issue was closed by {body['issue']['user']['login']}")
+            logger.debug(f"An issue was closed by {body['issue']['user']['login']}")
         else:
-            print(f"Unhandled action for the issue event: {action}")
+            logger.debug(f"Unhandled action for the issue event: {action}")
     elif github_event == "ping":
-        print("GitHub sent the ping event")
+        logger.debug("GitHub sent the ping event")
+    elif github_event == "installation":
+        if body["action"] == "deleted":
+            installation_record = session.exec(
+                select(GithubAppInstallation).where(
+                    GithubAppInstallation.github_app_installation_id
+                    == str(body["installation"]["id"])
+                )
+            ).first()
+            session.delete(installation_record)
+            session.commit()
     else:
-        print(f"Unhandled event: {github_event}")
+        logger.debug(f"Unhandled event: {github_event}")
     return JSONResponse(
         status_code=status.HTTP_202_ACCEPTED, content={"message": "Accepted"}
     )

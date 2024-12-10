@@ -179,7 +179,7 @@ def handle_push_event(session: CurrentSession, body: dict) -> JSONResponse:
     repo_name = repository["name"]
     default_branch = repository["default_branch"]
     pushed_ref = body["ref"]
-    installation_id = body["installation"]["id"]
+    installation_id = str(body["installation"]["id"])
     commit_hash = body["after"]
 
     if pushed_ref != f"refs/heads/{default_branch}":
@@ -308,7 +308,9 @@ def webhook(
             ).first()
             session.delete(installation_record)
             session.commit()
-        return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content={"message": ""})
+        return JSONResponse(
+            status_code=status.HTTP_202_ACCEPTED, content={"message": ""}
+        )
 
     logger.info("Unhandled event type: %s", github_event)
     return JSONResponse(

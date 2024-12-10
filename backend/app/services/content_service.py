@@ -11,16 +11,16 @@ from database.models_v1 import (
     DerivedContentType,
     DocumentSource,
     Enum_Derived_Content_Status,
-    InspectionVersion,
     Tag,
     TagContent,
     Workspace,
 )
+from database.models_v2 import NodeRow, PrimaryAssetRow, VersionRow
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.selectable import Select
-from sqlmodel import Session, asc, desc, func, or_, select, text
+from sqlmodel import Session, and_, asc, desc, func, or_, select, text
 
 from app.core.logger import logger
 from app.repositories.base_repository import BaseRepository
@@ -71,15 +71,19 @@ class ContentService:
         logger.info(
             f"Associating {len(content_source_associations)} sources with content {content_id} for organization {organization_id}"
         )
+        primary_asset = self.session.exec(
+            select(PrimaryAssetRow)
+            .where(PrimaryAssetRow.id == content_id)
+            .where(PrimaryAssetRow.organization_id == organization_id)
+        ).first()
 
-        document = self.content_repository.get(content_id)
-
-        if not document or document.workspace.organization_id != organization_id:
+        if not primary_asset:
             logger.error(
-                f"Content {content_id} not found for organization {organization_id}"
+                f"Primary asset for content {content_id} not found or does not belong to organization {organization_id}."
             )
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Primary asset not found or does not belong to the organization",
             )
 
         existing_sources = self.session.exec(
@@ -131,16 +135,19 @@ class ContentService:
         logger.info(
             f"Disassociating source {source_content_id} from content {content_id} for organization {organization_id}"
         )
-        content = self.content_repository.get(content_id)
-
-        if not content or content.workspace.organization_id != organization_id:
-            logger.error(
-                f"Content {content_id} not found for organization {organization_id}"
-            )
+        content = self.session.exec(
+            select(DerivedContent)
+            .join(NodeRow, onclause=DerivedContent.node_id == NodeRow.id)
+            .join(VersionRow)
+            .join(PrimaryAssetRow)
+            .where(DerivedContent.id == content_id)
+            .where(PrimaryAssetRow.organization_id == organization_id)
+        ).first()
+        if not content:
+            logger.error(f"Content {content_id} not found")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
             )
-
         deleted_item = self.document_source_repository.delete_by_pk(
             document_id=content_id, source_id=source_content_id
         )
@@ -230,33 +237,61 @@ class ContentService:
             )
 
         content_results = []
-        for derived_content, version in results:
+        for node, derived_content, version, primary_asset in results:
+            # Infer content_type_name based on the rules
+            if derived_content:
+                content_type_name = derived_content.content_type_slug
+            else:
+                if primary_asset.primary_asset_type == "FILE":
+                    content_type_name = "supplemental-document"
+                if primary_asset.primary_asset_type == "PAGE":
+                    content_type_name = "application_note"
+                elif node.relative_path.endswith("/"):
+                    if (
+                        func.length(node.relative_path)
+                        - func.length(func.replace(node.relative_path, "/", ""))
+                        == 1
+                    ):
+                        content_type_name = "codebase"
+                    else:
+                        content_type_name = "codebase-directory"
+                else:
+                    content_type_name = "codebase-file"
+
             content_results.append(
                 ListContentResult(
-                    id=derived_content.id,
-                    organization_id=derived_content.workspace.organization_id,
-                    content_type_id=derived_content.content_type_id,
-                    content_type_name=derived_content.content_type.type_name,
-                    content_name=get_content_name(derived_content),
-                    workspace_id=derived_content.workspace_id,
-                    workspace_name=derived_content.workspace.display_name,
-                    source_content_id=derived_content.source_content_id,
-                    codebase_id=derived_content.codebase_id,
-                    codebase_name=derived_content.codebase.codebase_name
-                    if derived_content.codebase
+                    id=derived_content.id if derived_content else node.id,
+                    organization_id=primary_asset.organization_id,
+                    content_type_id=None,
+                    content_type_name=content_type_name,
+                    content_name=derived_content.content_name
+                    if derived_content
+                    else primary_asset.display_name,
+                    workspace_id=None,  # workspace_id is deprecated
+                    workspace_name=None,  # workspace_name is deprecated
+                    source_content_id=derived_content.source_content_id
+                    if derived_content
                     else None,
-                    relative_path=derived_content.relative_path,
-                    content=derived_content.content,
-                    misc_metadata=derived_content.misc_metadata,
-                    status=derived_content.status,
-                    created_at=derived_content.created_at,
-                    updated_at=derived_content.updated_at,
-                    source_content=derived_content.source_content,
-                    order=derived_content.order,
-                    tags=derived_content.tags,
-                    source_links=derived_content.source_links,
-                    version_id=derived_content.version_id,
-                    version=version,
+                    codebase_id=primary_asset.id,  # codebase_id is now the primary_asset id
+                    codebase_name=primary_asset.display_name,  # Assuming primary_asset has a name attribute
+                    relative_path=node.relative_path,
+                    content=derived_content.content if derived_content else None,
+                    misc_metadata=derived_content.misc_metadata
+                    if derived_content
+                    else None,
+                    status=derived_content.status if derived_content else None,
+                    created_at=derived_content.created_at if derived_content else None,
+                    updated_at=derived_content.updated_at if derived_content else None,
+                    source_content=derived_content.source_content
+                    if derived_content
+                    else None,
+                    order=derived_content.order if derived_content else None,
+                    tags=derived_content.tags if derived_content else None,
+                    source_links=derived_content.source_links
+                    if derived_content
+                    else None,
+                    version_id=derived_content.version_id if derived_content else None,
+                    version=version.display_name if version else None,
                 )
             )
         logger.info(
@@ -290,24 +325,30 @@ class ContentService:
         return results, total_count
 
     def _build_base_query(self: "ContentService", organization_id: str) -> Select:
+        """
+        Constructs the base SQL query for retrieving content-related data from the database.
+        It selects data from four tables: NodeRow, DerivedContent, VersionRow, and PrimaryAssetRow.
+        The function performs the following operations:
+        1. Selects columns from NodeRow, DerivedContent, VersionRow, and PrimaryAssetRow.
+        2. Joins the DerivedContent table with NodeRow using a left outer join on the node_id.
+           This ensures that all NodeRow entries are included, even if they don't have a
+           corresponding entry in DerivedContent.
+        3. Joins the VersionRow table with NodeRow on the version_id, ensuring that each
+           node is associated with its version.
+        4. Joins the PrimaryAssetRow table with VersionRow on the primary_asset_id, linking
+           each version to its primary asset.
+        5. Filters the results to include only those entries where the organization_id in
+           PrimaryAssetRow matches the provided organization_id parameter.
+
+        The resulting query is used as a foundational query for further filtering and
+        processing in other parts of the ContentService.
+        """
         return (
-            select(DerivedContent, InspectionVersion.version)
-            .distinct()
-            .join(DerivedContentType)
-            .join(Workspace)
-            .join(
-                InspectionVersion,
-                isouter=True,
-                onclause=DerivedContent.version_id == InspectionVersion.id,
-            )
-            .join(TagContent, isouter=True)
-            .join(Tag, isouter=True)
-            .join(
-                DocumentSource,
-                isouter=True,
-                onclause=DerivedContent.id == DocumentSource.document_id,
-            )
-            .where(organization_id == Workspace.organization_id)
+            select(NodeRow, DerivedContent, VersionRow, PrimaryAssetRow)
+            .join(DerivedContent, DerivedContent.node_id == NodeRow.id, isouter=True)
+            .join(VersionRow, VersionRow.id == NodeRow.version_id)
+            .join(PrimaryAssetRow, PrimaryAssetRow.id == VersionRow.primary_asset_id)
+            .where(PrimaryAssetRow.organization_id == organization_id)
         )
 
     def _build_base_count_query(
@@ -333,10 +374,15 @@ class ContentService:
             Consult Eric and Jesse for further details on the underlying issue.
             """
             return (
-                select(func.count(DerivedContent.id))
-                .join(DerivedContentType)
-                .join(Workspace)
-                .where(organization_id == Workspace.organization_id)
+                select(func.count(NodeRow.id))
+                .join(
+                    DerivedContent, DerivedContent.node_id == NodeRow.id, isouter=True
+                )
+                .join(VersionRow, VersionRow.id == NodeRow.version_id)
+                .join(
+                    PrimaryAssetRow, PrimaryAssetRow.id == VersionRow.primary_asset_id
+                )
+                .where(PrimaryAssetRow.organization_id == organization_id)
             )
 
     def _apply_sorting(
@@ -372,15 +418,17 @@ class ContentService:
     ) -> tuple[Select, Select]:
         if search_input.text:
             clauses = [
-                DerivedContent.relative_path.icontains(search_input.text),
-                DerivedContent.content_name.icontains(search_input.text),
+                NodeRow.relative_path.icontains(search_input.text),
+                PrimaryAssetRow.display_name.icontains(search_input.text),
             ]
             statement = statement.where(or_(*clauses))
             count_statement = count_statement.where(or_(*clauses))
 
         if search_input.source_content_id:
             clauses = [
-                DerivedContent.source_content_id.in_(search_input.source_content_id),
+                NodeRow.id.in_(search_input.source_content_id),
+                VersionRow.id.in_(search_input.source_content_id),
+                DerivedContent.id.in_(search_input.source_content_id),
             ]
             statement = statement.where(or_(*clauses))
             count_statement = count_statement.where(or_(*clauses))
@@ -392,106 +440,158 @@ class ContentService:
             statement = statement.where(or_(*clauses))
             count_statement = count_statement.where(or_(*clauses))
 
-        if search_input.status:
-            valid_statuses = [
-                content_status.value for content_status in Enum_Derived_Content_Status
-            ]
-            if search_input.status not in valid_statuses:
-                logger.error(f"Invalid status value: {search_input.status}")
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Invalid status value: {search_input.status}",
-                )
-            statement = statement.where(DerivedContent.status == search_input.status)
+        # if search_input.status:
+        #     valid_statuses = [
+        #         content_status.value for content_status in Enum_Derived_Content_Status
+        #     ]
+        #     if search_input.status not in valid_statuses:
+        #         logger.error(f"Invalid status value: {search_input.status}")
+        #         raise HTTPException(
+        #             status_code=status.HTTP_400_BAD_REQUEST,
+        #             detail=f"Invalid status value: {search_input.status}",
+        #         )
+        #     statement = statement.where(DerivedContent.status == search_input.status)
+        #     count_statement = count_statement.where(
+        #         DerivedContent.status == search_input.status
+        #     )
+
+        # if search_input.content_type_id:
+        #     statement = statement.where(
+        #         DerivedContent.content_type_id.in_(search_input.content_type_id)
+        #     )
+        #     count_statement = count_statement.where(
+        #         DerivedContent.content_type_id.in_(search_input.content_type_id)
+        #     )
+        if search_input.version_id:
+            statement = statement.where(VersionRow.id.in_(search_input.version_id))
             count_statement = count_statement.where(
-                DerivedContent.status == search_input.status
+                VersionRow.id.in_(search_input.version_id)
             )
 
-        if search_input.content_type_id:
-            statement = statement.where(
-                DerivedContent.content_type_id.in_(search_input.content_type_id)
-            )
-            count_statement = count_statement.where(
-                DerivedContent.content_type_id.in_(search_input.content_type_id)
-            )
-        if search_input.version_id:
-            statement = statement.where(
-                DerivedContent.version_id.in_(search_input.version_id)
-            )
-            count_statement = count_statement.where(
-                DerivedContent.version_id.in_(search_input.version_id)
-            )
         if search_input.content_type_name:
             logger.info(
                 f"Filtering by content_type_name: {search_input.content_type_name}"
             )
+            # Define content types that use primary_asset_type
+            primary_asset_types = {
+                "codebase": "CODEBASE",
+                "codebase-file": "CODEBASE",
+                "codebase-directory": "CODEBASE",
+                "application_note": "PAGE",
+                "supplemental-document": "FILE",
+            }
+            # Select the values of the primary_asset_types based on the content_type_name
+            primary_asset_content_types = [
+                primary_asset_types[name]
+                for name in search_input.content_type_name
+                if name in primary_asset_types
+            ]
+            # Separate content types into derived content types
+            derived_content_types = [
+                name
+                for name in search_input.content_type_name
+                if name not in primary_asset_types
+            ]
+
+            # Apply filters for derived content types or primary asset content types
+            if derived_content_types or primary_asset_content_types:
+                path_conditions = []
+                if "codebase-file" in search_input.content_type_name:
+                    path_conditions.append(~NodeRow.relative_path.endswith("/"))
+                if "codebase-directory" in search_input.content_type_name:
+                    path_conditions.append(NodeRow.relative_path.endswith("/"))
+                if "codebase" in search_input.content_type_name:
+                    path_conditions.append(
+                        and_(
+                            NodeRow.relative_path.endswith("/"),
+                            func.length(NodeRow.relative_path)
+                            - func.length(func.replace(NodeRow.relative_path, "/", ""))
+                            == 1,
+                        )
+                    )
+
+                statement = statement.where(
+                    or_(
+                        DerivedContent.content_type_slug.in_(derived_content_types),
+                        PrimaryAssetRow.primary_asset_type.in_(
+                            primary_asset_content_types
+                        ),
+                    ),
+                    *path_conditions,
+                )
+                count_statement = count_statement.where(
+                    or_(
+                        DerivedContent.content_type_slug.in_(derived_content_types),
+                        PrimaryAssetRow.primary_asset_type.in_(
+                            primary_asset_content_types
+                        ),
+                    ),
+                    *path_conditions,
+                )
+        if search_input.latest_version_only:
+            max_version_subquery = (
+                select(
+                    VersionRow.primary_asset_id,
+                    func.max(VersionRow.id).label("max_version_id"),
+                )
+                .group_by(VersionRow.primary_asset_id)
+                .subquery()
+            )
+
             statement = statement.where(
-                DerivedContentType.type_name.in_(search_input.content_type_name)
+                NodeRow.version_id.in_(select(max_version_subquery.c.max_version_id))
             )
             count_statement = count_statement.where(
-                DerivedContentType.type_name.in_(search_input.content_type_name)
-            )
-        if search_input.latest_version_only:
-            # Find the latest version for each codebase_id in DerivedContent
-            latest_versions_subquery = (
-                select(
-                    DerivedContent.codebase_id,
-                    func.max(InspectionVersion.created_at).label("latest_created_at"),
-                )
-                .join(
-                    InspectionVersion, DerivedContent.version_id == InspectionVersion.id
-                )
-                .group_by(DerivedContent.codebase_id)
-                .subquery()
+                NodeRow.version_id.in_(select(max_version_subquery.c.max_version_id))
             )
 
             # We do the inner join so we can get the null version cases and the latest version cases for the codebases
             # that have versions. This is important because many codebases will not have versions
             # (backwards compatibility).
-            statement = statement.outerjoin(
-                InspectionVersion, (DerivedContent.version_id == InspectionVersion.id)
-            ).where(
-                or_(
-                    DerivedContent.version_id.is_(None),
-                    InspectionVersion.created_at
-                    == latest_versions_subquery.c.latest_created_at,
-                )
-            )
+            # statement = statement.outerjoin(
+            #     InspectionVersion, (DerivedContent.version_id == InspectionVersion.id)
+            # ).where(
+            #     or_(
+            #         DerivedContent.version_id.is_(None),
+            #         InspectionVersion.created_at
+            #         == latest_versions_subquery.c.latest_created_at,
+            #     )
+            # )
 
             # For counting, we do an independent select, then filter the main count
             # query by those identities. This seems very inefficient, since the subquery result could be big...
-            latest_version_ids_subquery = (
-                select(DerivedContent.id)
-                .outerjoin(
-                    InspectionVersion, DerivedContent.version_id == InspectionVersion.id
-                )
-                .where(
-                    or_(
-                        DerivedContent.version_id.is_(None),
-                        InspectionVersion.created_at
-                        == latest_versions_subquery.c.latest_created_at,
-                    )
-                )
-                .distinct()
-            )
+            # latest_version_ids_subquery = (
+            #     select(DerivedContent.id)
+            #     .outerjoin(
+            #         InspectionVersion, DerivedContent.version_id == InspectionVersion.id
+            #     )
+            #     .where(
+            #         or_(
+            #             DerivedContent.version_id.is_(None),
+            #             InspectionVersion.created_at
+            #             == latest_versions_subquery.c.latest_created_at,
+            #         )
+            #     )
+            #     .distinct()
+            # )
 
-            count_statement = count_statement.where(
-                DerivedContent.id.in_(latest_version_ids_subquery)
-            )
+            # count_statement = count_statement.where(
+            #     DerivedContent.id.in_(latest_version_ids_subquery)
+            # )
 
-        if search_input.tags:
-            tag_clauses = [Tag.name.contains(tag) for tag in search_input.tags]
-            statement = statement.where(or_(*tag_clauses))
-            count_statement = count_statement.where(or_(*tag_clauses))
+        # if search_input.tags:
+        #     tag_clauses = [Tag.name.contains(tag) for tag in search_input.tags]
+        #     statement = statement.where(or_(*tag_clauses))
+        #     count_statement = count_statement.where(or_(*tag_clauses))
 
-        if search_input.tag_ids:
-            tag_id_clauses = [Tag.id == tag_id for tag_id in search_input.tag_ids]
-            tag_contents_clauses = [
-                TagContent.tag_id == tag_id for tag_id in search_input.tag_ids
-            ]
-            statement = statement.where(or_(*tag_id_clauses))
-            # tag_contents_clauses is used in the count statement to accurately count the content associated with the specified tag_ids
-            count_statement = count_statement.where(or_(*tag_contents_clauses))
+        # if search_input.tag_ids:
+        #     tag_id_clauses = [Tag.id == tag_id for tag_id in search_input.tag_ids]
+        #     tag_contents_clauses = [
+        #         TagContent.tag_id == tag_id for tag_id in search_input.tag_ids
+        #     ]
+        #     statement = statement.where(or_(*tag_id_clauses))
+        #     # tag_contents_clauses is used in the count statement to accurately count the content associated with the specified tag_ids
+        #     count_statement = count_statement.where(or_(*tag_contents_clauses))
 
         return statement, count_statement
 

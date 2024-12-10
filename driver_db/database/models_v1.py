@@ -430,6 +430,11 @@ class Tag(SQLModel, table=True):  # type: ignore
         sa_relationship_kwargs={"foreign_keys": "TagContent.tag_id"},
     )
 
+    # assets: list["PrimaryAssetRow"] = Relationship(
+    #     back_populates="tags",
+    #     link_model="PrimaryAssetTagRow"
+    # )
+
 
 class ChunkAndEmbedding(SQLModel, table=True):  # type: ignore
     id: UUID | None = Field(default_factory=uuid.uuid4, primary_key=True)

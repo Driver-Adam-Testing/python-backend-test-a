@@ -60,6 +60,9 @@ class PrimaryAssetRow(SQLModel, table=True):  # type: ignore
     )
 
     versions: list["VersionRow"] = Relationship(back_populates="primary_asset")
+    # tag_links: list["PrimaryAssetTagRow"] = Relationship(
+    #     back_populates="primary_asset"
+    # )
 
     @field_validator("primary_asset_type", mode="before")
     def validate_primary_asset_type(cls, value: str) -> str:
@@ -223,3 +226,23 @@ class FullNodeView(SQLModel, table=True):  # type: ignore
                     relative_path=self.node_relative_path,
                 )
                 session.add(node)
+
+
+# class PrimaryAssetTagRow(SQLModel, table=True):
+#     __tablename__ = "v2_primary_asset_tags"
+#     """Link table between Tags and Content models."""
+
+#     tag_id: None | UUID = Field(
+#         default=None, foreign_key="tags.id", primary_key=True
+#     )
+#     primary_asset_id: None | UUID = Field(
+#         default=None, foreign_key="v2_primary_asset.id", primary_key=True
+#     )
+#     tag: Optional["Tag"] = Relationship(
+#         back_populates="assets",
+#         sa_relationship_kwargs={"foreign_keys": [tag_id]},
+#     )
+#     primary_asset: "PrimaryAssetRow" = Relationship(
+#         back_populates="tag_links",
+#         sa_relationship_kwargs={"foreign_keys": [primary_asset_id]},
+#     )

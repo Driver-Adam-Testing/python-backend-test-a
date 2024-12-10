@@ -8,6 +8,7 @@ from database.models_v1 import DerivedContent
 from database.models_v2 import FullNodeView, NodeRow, PrimaryAssetRow, VersionRow
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
+from sqlalchemy.orm import selectinload
 from sqlmodel import func, select
 
 T = TypeVar("T")
@@ -176,6 +177,7 @@ async def list_nodes(
         .join(VersionRow)
         .join(PrimaryAssetRow)
         .where(PrimaryAssetRow.organization_id == user.organization_id)
+        .options(selectinload(NodeRow.version))
     )
 
     filters = dict(request.query_params)

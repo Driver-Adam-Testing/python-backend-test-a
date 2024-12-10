@@ -590,3 +590,31 @@ class UsageEvent(SQLModel, table=True):
     )
     # Relationships
     session: UsageSession | None = Relationship(back_populates="usage_events")
+
+
+class GithubAppInstallation(SQLModel, table=True):
+    id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    organization_id: str = Field(index=True)
+    github_app_installation_id: str = Field(index=True)
+    created_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
+        default=None,
+    )
+    updated_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
+        ),
+    )
+    __tablename__ = "github_app_installations"
+    __table_args__ = (
+        UniqueConstraint(
+            "github_app_installation_id",
+            "organization_id",
+            name="uq_github_app_installation_id_organization_id",
+        ),
+    )

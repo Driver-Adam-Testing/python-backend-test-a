@@ -203,6 +203,9 @@ class Backend(Construct):
             "GH_WEBHOOK_SECRET": aws_ecs.Secret.from_secrets_manager(
                 github_secret, "GH_WEBHOOK_SECRET"
             ),
+            "GH_CLIENT_PEM_SECRET": aws_ecs.Secret.from_secrets_manager(
+                github_secret, "GH_CLIENT_PEM_SECRET"
+            ),
             "OPENAI_API_KEY": aws_ecs.Secret.from_secrets_manager(
                 openai_secret, "OPENAI_API_KEY"
             ),

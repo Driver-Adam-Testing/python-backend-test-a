@@ -1,9 +1,9 @@
 from datetime import datetime
 
-from database.models_v1 import UsageEvent
 from fastapi import APIRouter, Query
 from shared.interfaces.usage.usage_schema import (
     UsageBalance,
+    UsageEventRecord,
     UsageEventSummary,
 )
 from shared.usage.usage_service import UsageService
@@ -47,7 +47,9 @@ def get_usage_summary(
     "/events",
     summary="Get Raw Usage Events",
 )
-def get_usage_events(session: CurrentSession, user: UserToken) -> list[UsageEvent]:
+def get_usage_events(
+    session: CurrentSession, user: UserToken
+) -> list[UsageEventRecord]:
     usage_service = UsageService(session)
     organization_id = user.organization_id
     return usage_service.get_usage_events(organization_id)

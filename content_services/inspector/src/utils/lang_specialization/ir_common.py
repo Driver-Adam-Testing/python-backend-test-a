@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import abc
+import concurrent.futures
+from math import ceil
 from typing import Self
 
 import openai
@@ -11,11 +13,22 @@ from utils.lang_specialization.symbol_common import (
     ScopeRelation,
 )
 from utils.models import ChatOpenAI, OutputConfig, OutputConfigKind
+from utils.threadpool import FastShutdownThreadPoolExecutor
+
+MAX_SYMBOLS_PER_WORKER = 50
+MAX_WORKERS_FOR_SYMBOLS = 10
 
 
 def snake_case_to_spaced_string(snake_case: str) -> str:
     split_str = snake_case.split("_")
     return " ".join(item.capitalize() for item in split_str)
+
+
+def compute_num_workers(num_symbols: int) -> int:
+    return min(
+        ceil(num_symbols / MAX_SYMBOLS_PER_WORKER),
+        MAX_WORKERS_FOR_SYMBOLS,
+    )
 
 
 class MdRenderable(BaseModel, abc.ABC):
@@ -189,8 +202,11 @@ class IrData(BaseModel, abc.ABC):
             cls_instance = cls.default_instance()
         else:
             try:
+                system_prompt = cls.system_prompt()
+                if llm.model == "gpt-4o-mini":
+                    system_prompt += "\n\nWhen referencing any code entities (e.g. functions, classes, structures, variables, etc.), enclose the entity name in backticks (`)."
                 content_raw = llm.generate_response(
-                    system_prompt=cls.system_prompt(),
+                    system_prompt=system_prompt,
                     user_prompt=cls.user_prompt(symbol),
                     output_cfg=OutputConfig(
                         kind=OutputConfigKind.JSON_STRICT, payload=cls
@@ -202,13 +218,38 @@ class IrData(BaseModel, abc.ABC):
                 # TODO: do something with this - switch to default_instance
             cls_instance = cls.parse_raw(content_raw)
 
-        for child_symbol in symbol.children:
-            child_ir_cls = cls.child_to_ir(child_symbol)
-            child_content = (
-                child_ir_cls.from_llm(llm, child_symbol) if child_ir_cls else None
+        if len(symbol.children) > 0:
+            workers = compute_num_workers(len(symbol.children))
+            futures = {}
+            llm_to_use = (
+                llm
+                if workers == 1
+                else ChatOpenAI(model="gpt-4o-mini", temperature=0, request_timeout=300)
             )
 
-            cls_instance._children.append((child_symbol, child_content))
+            with FastShutdownThreadPoolExecutor(max_workers=workers) as executor:
+                for idx, child_symbol in enumerate(symbol.children):
+                    child_ir_cls = cls.child_to_ir(child_symbol)
+                    if child_ir_cls is None:
+                        cls_instance._children.append((child_symbol, None))
+                    else:
+                        futures[
+                            executor.submit(
+                                child_ir_cls.from_llm, llm_to_use, child_symbol
+                            )
+                        ] = [idx, child_symbol]
+                results = []
+                for idx, future in enumerate(
+                    concurrent.futures.as_completed(futures.keys())
+                ):
+                    res = future.result()
+                    if res is not None:
+                        print(
+                            f"Processed {idx} / {len(futures)} children for {symbol.name}"
+                        )
+                        results.append([futures[future], res])
+                for result in sorted(results, key=lambda tup: tup[0][0]):
+                    cls_instance._children.append((result[0][1], result[1]))
 
         return cls_instance
 
@@ -267,28 +308,38 @@ class IrCollection(BaseModel, abc.ABC):
         symbols_list: RawSymbolCollection,
     ) -> Self:
         symbols_dict = {}
-        for _, s in symbols_list.data.items():
-            if isinstance(s, list):
-                for item in s:
-                    if item.name not in symbols_dict:
-                        symbols_dict[item.name] = []
-                    symbols_dict[item.name].append(
-                        ir_data.from_llm(
-                            llm=llm,
-                            symbol=item,
+        futures = {}
+        workers = compute_num_workers(len(symbols_list.data))
+        print("Num workers: ", workers)
+        llm_to_use = (
+            llm
+            if workers == 1
+            else ChatOpenAI(model="gpt-4o-mini", temperature=0, request_timeout=300)
+        )
+
+        with FastShutdownThreadPoolExecutor(max_workers=workers) as executor:
+            for _, s in symbols_list.data.items():
+                if isinstance(s, list):
+                    for item in s:
+                        if item.name not in symbols_dict:
+                            symbols_dict[item.name] = []
+                        futures[executor.submit(ir_data.from_llm, llm_to_use, item)] = (
+                            item.name
                         )
-                    )
-            elif isinstance(s, RawSymbolData):
-                if s.name not in symbols_dict:
-                    symbols_dict[s.name] = []
-                symbols_dict[s.name].append(
-                    ir_data.from_llm(
-                        llm=llm,
-                        symbol=s,
-                    )
-                )
-            else:
-                raise ValueError("Unsupported type in RawSymbolCollection")
+                elif isinstance(s, RawSymbolData):
+                    if s.name not in symbols_dict:
+                        symbols_dict[s.name] = []
+                    futures[executor.submit(ir_data.from_llm, llm_to_use, s)] = s.name
+                else:
+                    raise ValueError("Unsupport type in RawSymbolCollection")
+
+            for idx, future in enumerate(
+                concurrent.futures.as_completed(futures.keys())
+            ):
+                res = future.result()
+                if res is not None:
+                    print(f"Processed {idx}/{len(futures)} symbols")
+                    symbols_dict[futures[future]].append(res)
         return cls(data=symbols_dict)
 
     @classmethod

@@ -5,6 +5,7 @@ import json
 import logging
 from datetime import datetime
 
+from database.models_v1 import GithubAppInstallation
 from fastapi import APIRouter, HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -13,8 +14,13 @@ from app.api.auth import ContentEditorPermission, UserToken
 from app.api.session import CurrentSession
 from app.core.config import settings
 from app.repositories.workspace_repository import WorkspaceRepository
-from app.utils.aws_secrets_manager import format_secret_key, read_secret, write_secret
-from app.utils.gh_ops import download_and_upload_repo, exchange_code_for_token
+from app.utils.aws_secrets_manager import format_secret_key, write_secret
+from app.utils.gh_ops import (
+    download_and_upload_repo,
+    exchange_code_for_token,
+    fetch_app_access_token,
+    verify_app_installation_access,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -28,20 +34,15 @@ class OkResponse(BaseModel):
 
 
 @router.get("/{provider}/callback", response_model=OkResponse)
-async def git_provider_callback(
+def git_provider_callback(
+    session: CurrentSession,
     provider: str,
     code: str,
     state: str,
     installation_id: str,
     request: Request,
     response: Response,
-) -> Response:
-    """
-    Callback endpoint to handle the OAuth flow for GitHub.
-
-    Stores the access token in AWS Secrets Manager for the org/user for later use
-    in cloning the repo and uploading to S3, for example.
-    """
+) -> OkResponse:
     if provider != "github":
         raise HTTPException(status_code=400, detail="Bad request")
 
@@ -54,15 +55,16 @@ async def git_provider_callback(
     # TODO: validate state_dict
     org_id, user_id = state_dict["org_id"], state_dict["user_id"]
     secret_key = format_secret_key(org_id, user_id, provider)
-    token_data = await exchange_code_for_token(code)
-    # store access token in aws secret manager
-    # token_data['installation_id'] = installation_id
+    token_data = exchange_code_for_token(code)
     secret_value = json.dumps(token_data)
-    # secret_value = json.dumps({'token_data': token_data, 'installation_id': installation_id})
     write_secret(secret_key, secret_value)
-    value = read_secret(secret_key)
-    if value is not None:
-        print("Secret stored successfully")
+
+    gh_app_install = GithubAppInstallation(
+        organization_id=org_id, github_app_installation_id=installation_id
+    )
+    session.add(gh_app_install)
+    session.commit()
+
     content = "<html><body><script>window.close();</script></body></html>"
     return Response(content=content, media_type="text/html")
 
@@ -76,40 +78,36 @@ class GitRepository(BaseModel):
 
 
 @router.post("/{provider}/clone-repo", dependencies=[ContentEditorPermission])
-def clone_and_upload_repo_to_s3(
+def clone_repo(
     session: CurrentSession,
     current_user: UserToken,
     provider: str,
     repo: GitRepository,
 ) -> JSONResponse:
-    if provider not in ["github"]:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid provider"
-        )
-
-    secret_key = format_secret_key(
-        current_user.organization_id, current_user.user_id, provider
-    )
-    value = read_secret(secret_key)
-    if not value or "SecretString" not in value:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Authentication failed"
-        )
-
-    secret_sauce = json.loads(value["SecretString"])
-    token = secret_sauce.get("access_token")
-    if not token:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Authentication failed"
-        )
+    if provider != "github":
+        raise NotImplementedError()
 
     workspace_repo = WorkspaceRepository(session)
-    workspace_id = str(
-        workspace_repo.get_default_workspace(current_user.organization_id).id
+    default_workspace = workspace_repo.get_default_workspace(
+        current_user.organization_id
     )
+    if not default_workspace:
+        raise HTTPException(status_code=400, detail="Default workspace not found")
 
-    # I'm not sure why we are returning a boolean, but I left this unchanged.
-    # It seems the code within should just raise an appropriate exception.
+    if not verify_app_installation_access(
+        session, current_user.organization_id, repo.metadata["installation_id"]
+    ):
+        logger.error(
+            f"User is not authorized to access Github installation id = {repo.metadata["installation_id"]} in organization {current_user.organization_id}"
+        )
+        raise HTTPException(
+            status_code=403, detail="Unauthorized to access this installation ID."
+        )
+
+    workspace_id = str(default_workspace.id)
+    upload_complete = False
+
+    token = fetch_app_access_token(repo.metadata["installation_id"])
     upload_complete = download_and_upload_repo(
         repo.org,
         current_user.user_id,
@@ -117,18 +115,18 @@ def clone_and_upload_repo_to_s3(
         workspace_id,
         repo.repo_name,
         token,
+        provider,
     )
 
-    if upload_complete:
+    if upload_complete is True:
         return JSONResponse(
-            status_code=status.HTTP_202_ACCEPTED,
-            content={"message": "Upload complete"},
+            status_code=status.HTTP_202_ACCEPTED, content={"message": "Upload complete"}
         )
-
-    raise HTTPException(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        detail="Failed to process the request",
-    )
+    else:
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"message": "Upload failed"},
+        )
 
 
 def verify_signature(

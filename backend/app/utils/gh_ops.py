@@ -1,18 +1,26 @@
+import base64
 import hashlib
 import logging
 import re
+import time
 from typing import Any
 
 import httpx
+import jwt
+from sqlmodel import Session
 import requests
 
+
 from app.core.config import settings
+from app.repositories.github_app_installations_repository import (
+    GithubAppInstallationsRepository,
+)
 from app.utils.aws_s3 import generate_put_presigned_url
 
 logger = logging.getLogger(__name__)
 
 
-async def exchange_code_for_token(code: str) -> dict:
+def exchange_code_for_token(code: str) -> dict:
     url = "https://github.com/login/oauth/access_token"
     payload = {
         "client_id": settings.GH_CLIENT_ID,
@@ -22,8 +30,8 @@ async def exchange_code_for_token(code: str) -> dict:
     }
     headers = {"Accept": "application/json"}
 
-    async with httpx.AsyncClient() as client:
-        response = await client.post(url, data=payload, headers=headers)
+    with httpx.Client() as client:
+        response = client.post(url, data=payload, headers=headers)
         response.raise_for_status()  # Raises an exception for 4XX/5XX responses
 
         token_data = response.json()
@@ -33,15 +41,15 @@ async def exchange_code_for_token(code: str) -> dict:
         return token_data
 
 
-async def is_token_valid(token: str) -> bool:
+def is_token_valid(token: str) -> bool:
     url = "https://api.github.com/user"
     headers = {"Authorization": f"Bearer {token}"}
-    async with httpx.AsyncClient() as client:
-        response = await client.get(url, headers=headers)
+    with httpx.Client() as client:
+        response = client.get(url, headers=headers)
         return response.status_code == 200
 
 
-async def refresh_access_token(refresh_token: str) -> dict[str, Any]:
+def refresh_access_token(refresh_token: str) -> any:
     url = "https://github.com/login/oauth/access_token"
     data = {
         "grant_type": "refresh_token",
@@ -50,51 +58,105 @@ async def refresh_access_token(refresh_token: str) -> dict[str, Any]:
         "client_secret": settings.GH_CLIENT_SECRET,
     }
     headers = {"Accept": "application/json"}
-    async with httpx.AsyncClient() as client:
-        response = await client.post(url, data=data, headers=headers)
+    with httpx.Client() as client:
+        response = client.post(url, data=data, headers=headers)
         return response.json()  # This should contain the new 'access_token' and optionally a new 'refresh_token'
 
 
-# fetch user orgs
-async def fetch_repos(token: str) -> list[dict[str, Any]]:
+def generate_jwt() -> str:
+    payload = {
+        "iat": int(time.time()),
+        "exp": int(time.time()) + 600,
+        "iss": settings.GH_CLIENT_ID,
+    }
+    decoded_pem = base64.b64decode(settings.GH_CLIENT_PEM_SECRET)
+    return jwt.encode(payload, decoded_pem, algorithm="RS256")
+
+
+def fetch_app_access_token(installation_id: str) -> str:
+    url = f"https://api.github.com/app/installations/{installation_id}/access_tokens"
+    jwt = generate_jwt()
+    with httpx.Client() as client:
+        headers = {"Accept": "application/json", "Authorization": f"Bearer {jwt}"}
+        response = client.post(url, headers=headers)
+        response.raise_for_status()  # Raises an exception for 4XX/5XX responses
+        token_data = response.json()
+        if "token" not in token_data:
+            raise Exception("GitHub application access token not found.")
+        return token_data["token"]
+
+
+def verify_app_installation_access(
+    session: Session, organization_id: str, installation_id: str
+) -> bool:
+    """Checks that a given organization + installation ID exists. Added as a separate function to accommodate upcoming RBAC checks (if user is an admin, for instance) that have been discussed."""
+    gh_repository = GithubAppInstallationsRepository(session)
+    return gh_repository.exists(organization_id, installation_id)
+
+
+def fetch_repos(session: Session, organization_id: str) -> list[dict[str, Any]]:
     per_page = 100
     max_pages = 100
-    url = f"https://api.github.com/user/repos?per_page={per_page}"
-    headers = {"Authorization": f"token {token}"}
+
+    gh_repository = GithubAppInstallationsRepository(session)
+    github_installations = gh_repository.list_by_organization_id(organization_id)
 
     results = []
     try:
-        async with httpx.AsyncClient() as client:
-            page_count = 1
-            response = await client.get(url, headers=headers)
-            response.raise_for_status()  # Raises an exception for 4XX/5XX responses
-            results = results + response.json()
-            # The last page will end with rel="first". Example:
-            # <https://api.github.com/user/repos?per_page=5&page=5>; rel="prev", <https://api.github.com/user/repos?per_page=5&page=1>; rel="first"
-            while "link" in response.headers and response.headers.get("link").endswith(
-                'rel="last"'
-            ):
-                page_count = page_count + 1
-                if page_count > max_pages:
-                    # GH API has rate limits that will probably kick in before we get this far.
-                    # Protecting ourselves from infinite loops explicitly too.
-                    # We should implement exponential backoff and parse the
-                    # rate limit responses being returned by GH here.
-                    raise ValueError("Aborting GH API pagination at 10000 pages.")
-                parts = response.headers["link"].split(",")
-                match = re.search(r'<([^>]+)>; rel="([^"]+)"', parts[0].strip())
-                if match:
-                    next_url, rel = match.groups()
-                    response = await client.get(next_url, headers=headers)
-                    response.raise_for_status()
-                    results = results + response.json()
-                else:
-                    raise ValueError(
-                        "Unable to parse link header for GitHub pagination"
-                    )
+        with httpx.Client() as client:
+            for github_installation in github_installations:
+                url = f"https://api.github.com/installation/repositories?per_page={per_page}"
+                token = fetch_app_access_token(
+                    github_installation.github_app_installation_id
+                )
+                headers = {"Authorization": f"token {token}"}
+                page_count = 1
+                response = client.get(url, headers=headers)
+                # Continue on 404 required to deal with apps that have been uninstalled
+                # Better would be to handle the uninstallation events and delete row from DB
+                if (
+                    response.status_code == 200
+                    or response.status_code == 201
+                    or response.status_code == 404
+                ):
+                    for repo in response.json()["repositories"]:
+                        repo["installation_id"] = (
+                            github_installation.github_app_installation_id
+                        )
+                        results.append(repo)
+                    link_header: str = response.headers.get("link", None)
+                    while link_header:
+                        page_count = page_count + 1
+                        if page_count > max_pages:
+                            # GH API has rate limits that will probably kick in before we get this far.
+                            # Protecting ourselves from infinite loops explicitly too.
+                            # We should implement exponential backoff and parse the
+                            # rate limit responses being returned by GH here.
+                            raise ValueError(
+                                "Aborting GH API pagination at 10000 results."
+                            )
+                        parts = response.headers["link"].split(",")
+                        matches = [
+                            re.search(r'<([^>]+)>; rel="([^"]+)"', part.strip())
+                            for part in parts
+                        ]
+                        has_next = False
+                        for match in matches:
+                            url, rel = match.groups()
+                            if rel == "next" and url:
+                                has_next = True
+                                response = client.get(url, headers=headers)
+                                response.raise_for_status()
+                                results = results + response.json()["repositories"]
+
+                        if not has_next:
+                            logger.debug(
+                                "Does not have next url in link header, stopping."
+                            )
+                            break
         return results
     except Exception as e:
-        print(f"Failed to fetch repositories: {e}")
+        logger.error(f"Failed to fetch repositories: {e}")
         raise e
 
 

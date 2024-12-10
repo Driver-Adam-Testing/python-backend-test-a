@@ -1,6 +1,7 @@
 import hashlib
 import os
 import re
+import time
 import zipfile
 from functools import cache
 from pathlib import Path
@@ -61,6 +62,47 @@ def set_codebase_status(codebase_id: UUID, status: Enum_Derived_Content_Status) 
             raise Exception(
                 f"Codebase Source Content with ID: {codebase_id} not found."
             )
+
+
+
+@cache
+def load_extension_and_name_mapping() -> dict:
+    from collections import defaultdict
+
+    import yaml
+
+    with open("/linguist/languages.yml") as f:
+        language_dict = yaml.safe_load(f)
+    extension_map = defaultdict(list)
+    name_map = defaultdict(list)
+    for lang in language_dict:
+        if language_dict[lang].get("extensions"):
+            for ext in language_dict[lang]["extensions"]:
+                extension_map[ext].append(lang)
+        if language_dict[lang].get("filenames"):
+            for name in language_dict[lang]["filenames"]:
+                name_map[name].append(lang)
+    return extension_map, name_map
+
+
+def get_file_type_from_extension(extension: str) -> str:
+    extension_map = load_extension_and_name_mapping()[0]
+    file_type = extension_map.get(extension)
+
+    if extension == ".h":
+        return "Header"
+    elif file_type and len(file_type) == 1:
+        return file_type[0]
+    return None
+
+
+def get_file_type_from_filename(filename: str) -> str:
+    name_map = load_extension_and_name_mapping()[1]
+    file_type = name_map.get(filename)
+
+    if file_type and len(file_type) == 1:
+        return file_type[0]
+    return None
 
 
 def create_base_storage_url(org_id: str) -> str:
@@ -348,23 +390,10 @@ def reencode_file(filepath: Path) -> None:
         print(f"Updated {filepath} to UTF-8")
 
 
-# def analyze_text_file(filepath: Path) -> dict:
-#     is_hex = evaluate_file_hex(filepath)
-#     return {
-#         "size": os.path.getsize(filepath),
-#         "sloc": sum(1 for _ in open(filepath)),
-#         "extension": filepath.suffix,
-#         "is_binary": False,
-#         "is_hex": is_hex,
-#     }
-
-
 def analyze_text_file(filepath: Path) -> dict:
     is_hex = evaluate_file_hex(filepath)
-    with open(filepath) as file:
-        sloc = sum(
-            1 for line in file if line.strip()
-        )  # TODO is this correct? We count whitespace lines as SLOC?
+    with open(filepath) as f:
+        sloc = sum(1 for _ in f)
     return {
         "size": os.path.getsize(filepath),
         "sloc": sloc,
@@ -412,32 +441,116 @@ def run_file_stats_and_reencode(
     return file_stats
 
 
-# def run_tree(directory: Path, depth: int = 2) -> str:
-#     result = subprocess.run(
-#         ["tree", str(directory), "-L", str(depth)],
-#         stdout=subprocess.PIPE,
-#         stderr=subprocess.PIPE,
-#         text=True,
-#     )
-#     return result.stdout if result.returncode == 0 else result.stderr
+def generate_get_presigned_url(bucket: str, key: str, expires: int = 3600) -> str:
+    import boto3
+
+    s3_client = boto3.client(
+        "s3",
+        region_name="us-east-1",
+        aws_access_key_id=os.environ.get("AWS_ACCESS_KEY_ID"),
+        aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY"),
+    )
+    return s3_client.generate_presigned_url(
+        ClientMethod="get_object",
+        Params={
+            "Bucket": bucket,
+            "Key": key,
+        },
+        ExpiresIn=expires,
+    )
 
 
-def download_repo_zip(url: str, commit_sha: str) -> tuple[str, Path]:
+def parse_presigned_url(url: str) -> tuple[str, str]:
+    from urllib.parse import unquote_plus, urlparse
+
     parsed_url = urlparse(url)
-    path_parts = parsed_url.path.strip("/").split("/")
+    host = parsed_url.netloc
+    path = parsed_url.path.lstrip("/")  # Remove leading slash
 
-    if len(path_parts) < 2:
-        raise ValueError("URL must be in the format 'https://github.com/owner/repo'")
+    # Extract bucket from the domain
+    if ".s3." in host:  # Domain-style
+        bucket = host.split(".s3.")[0]
+    elif host.startswith(("s3-", "s3.")):  # Path-style
+        bucket = path.split("/")[0]
+        path = "/".join(path.split("/")[1:])
+    else:
+        raise ValueError("Invalid S3 URL format")
+    key = unquote_plus(path)
+    return bucket, key
 
-    owner, repo = path_parts[:2]
-    download_url = f"https://github.com/{owner}/{repo}/archive/{commit_sha}.zip"
-    dest_path = Path("/tmp") / f"{commit_sha}.zip"
 
-    response = requests.get(download_url, stream=True)
-    response.raise_for_status()
+def has_guard_duty_tag(bucket: str, key: str) -> bool:
+    """
+    Check if the S3 object has the 'GuardDutyMalwareScanStatus' tag with value 'NO_THREATS_FOUND' or 'UNSUPPORTED'.
+    """
+    import boto3
 
-    with dest_path.open("wb") as file:
-        for chunk in response.iter_content(chunk_size=8192):
-            file.write(chunk)
+    s3_client = boto3.client(
+        "s3",
+        region_name="us-east-1",
+        aws_access_key_id=os.environ.get("AWS_ACCESS_KEY_ID"),
+        aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY"),
+    )
+    tags = s3_client.get_object_tagging(Bucket=bucket, Key=key)
+    """
+    supported_tags = ["NO_THREATS_FOUND", "UNSUPPORTED"]
+    the 'UNSUPPORTED' tag is a misnomer because GuardDuty tags file as UNSUPPORTED
+    if they have too many files ( > 1000) or file is too large but we can still process it.
+    """
+    # TODO: add support for UNSUPPORTED tag in GuardDuty
+    supported_tags = ["NO_THREATS_FOUND", "UNSUPPORTED"]
+    # supported_tags = ["NO_THREATS_FOUND"]
+    return (
+        len(
+            [
+                tag
+                for tag in tags["TagSet"]
+                if tag["Key"] == "GuardDutyMalwareScanStatus"
+                and tag["Value"] in supported_tags
+            ]
+        )
+        == 1
+    )
 
-    return repo, dest_path
+
+def wait_for_guard_duty_tag(
+    bucket: str, key: str, timeout: int = 60, interval: int = 5
+) -> bool:
+    """
+    Polls the S3 object for the 'GuardDutyMalwareScanStatus' tag with value 'NO_THREATS_FOUND' or 'UNSUPPORTED'.
+    until the tag is found or the timeout is reached.
+    """
+    start_time = time.time()
+    print(
+        f"Starting to poll for 'NO_THREATS_FOUND' or 'UNSUPPORTED' tag on object '{key}' in bucket '{bucket}'."
+    )
+    print(f"Timeout set to {timeout} seconds, checking every {interval} seconds.")
+
+    while (time.time() - start_time) < timeout:
+        if has_guard_duty_tag(bucket, key):
+            print(
+                f"Tag 'NO_THREATS_FOUND' or 'UNSUPPORTED' found for object '{key}' in bucket '{bucket}'."
+            )
+            return True
+        print(f"Tag not found yet. Waiting {interval} seconds before retrying...")
+        time.sleep(interval)
+    print(
+        f"Timeout reached. Tag 'NO_THREATS_FOUND' or 'UNSUPPORTED' not found for object '{key}' in bucket '{bucket}'."
+    )
+    return False
+
+
+def delete_file_from_s3(bucket: str, key: str) -> None:
+    """
+    Delete a file from S3.
+    NOTE: this should be in shared but shared package does not have access to settings need to instantiate boto3 client
+    """
+    import boto3
+
+    s3_client = boto3.client(
+        "s3",
+        region_name="us-east-1",
+        aws_access_key_id=os.environ.get("AWS_ACCESS_KEY_ID"),
+        aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY"),
+    )
+    s3_client.delete_object(Bucket=bucket, Key=key)

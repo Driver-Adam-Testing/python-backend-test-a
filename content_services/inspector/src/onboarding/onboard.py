@@ -1,5 +1,7 @@
 import hashlib
+import json
 import os
+from datetime import datetime
 from pathlib import Path
 from uuid import UUID, uuid4
 
@@ -21,6 +23,115 @@ image = (
 
 
 # TODO detect if we already have a version for the docs.
+
+
+@app.function(
+    image=image,
+    mounts=[
+        modal.Mount.from_local_file(
+            "src/onboarding/languages.yml", "/linguist/languages.yml"
+        ),
+    ],
+    secrets=[modal.Secret.from_name("aws-inspector-s3"), modal.Secret.from_name("db")],
+    proxy=modal.Proxy.from_name("pg-proxy")
+    if os.environ["MODAL_ENVIRONMENT"] != "staging"
+    else None,
+    timeout=60 * 60,
+    region="us-east",
+    concurrency_limit=5,
+    keep_warm=1,
+)
+def run_pre_codebase_analysis(
+    presigned_url: str,
+) -> str:
+    from onboarding.onboard_utils import (
+        delete_file_from_s3,
+        download_file_from_presigned_url,
+        get_file_type_from_extension,
+        get_file_type_from_filename,
+        parse_presigned_url,
+        run_file_stats_and_reencode,
+        unpack_archive,
+        wait_for_guard_duty_tag,
+    )
+
+    bucket, key = parse_presigned_url(presigned_url)
+    if not wait_for_guard_duty_tag(bucket, key):
+        print("GuardDuty found an issue with this codebase.")
+        print("Deleting file from s3...")
+        delete_file_from_s3(bucket, key)
+        raise Exception("GuardDuty found an issue with this codebase.")
+
+    temp_archive_name = "temp.zip"
+    download_dest = Path(temp_archive_name)
+    download_file_from_presigned_url(presigned_url, download_dest)
+
+    print(f"Downloaded {temp_archive_name} from S3")
+
+    # Override so unpack from github doesn't have hash in name.
+    extracted_path = unpack_archive(download_dest)
+    codebase_name = str(extracted_path)
+    print("Codebase name : ", codebase_name)
+    print("Unpacked archive to: ", extracted_path)
+
+    codebase_stats = {
+        "analyzable_bytes": 0,
+        "analyzable_files": 0,
+        "total_bytes": 0,
+        "total_files": 0,
+        "analyzable_files_by_extension": {},
+        "analyzable_bytes_by_extension": {},
+        "analyzable_files_by_type": {},
+        "analyzable_bytes_by_type": {},
+    }
+    for root, _, files in os.walk(extracted_path):
+        for filename in files:
+            local_path = Path(root) / filename
+            print(f"Analyzing {local_path}")
+            file_stats = run_file_stats_and_reencode(local_path)
+
+            if file_stats["is_analyzable"] and not file_stats["is_blacklisted"]:
+                file_type = get_file_type_from_extension(file_stats["extension"])
+                if not file_type:
+                    file_type = get_file_type_from_filename(filename)
+                if not file_type:
+                    file_type = "Other"
+
+                codebase_stats["analyzable_bytes"] += file_stats["size"]
+                codebase_stats["analyzable_files"] += 1
+                codebase_stats["total_bytes"] += file_stats["size"]
+                codebase_stats["total_files"] += 1
+
+                if (
+                    file_stats["extension"]
+                    not in codebase_stats["analyzable_files_by_extension"]
+                ):
+                    codebase_stats["analyzable_files_by_extension"][
+                        file_stats["extension"]
+                    ] = 0
+
+                    codebase_stats["analyzable_bytes_by_extension"][
+                        file_stats["extension"]
+                    ] = 0
+                codebase_stats["analyzable_files_by_extension"][
+                    file_stats["extension"]
+                ] += 1
+                codebase_stats["analyzable_bytes_by_extension"][
+                    file_stats["extension"]
+                ] += file_stats["size"]
+
+                if file_type not in codebase_stats["analyzable_files_by_type"]:
+                    codebase_stats["analyzable_files_by_type"][file_type] = 0
+                    codebase_stats["analyzable_bytes_by_type"][file_type] = 0
+                codebase_stats["analyzable_files_by_type"][file_type] += 1
+                codebase_stats["analyzable_bytes_by_type"][file_type] += file_stats[
+                    "size"
+                ]
+            else:
+                codebase_stats["total_bytes"] += file_stats["size"]
+                codebase_stats["total_files"] += 1
+
+    return json.dumps(codebase_stats)
 
 
 @app.function(
@@ -52,19 +163,26 @@ def run_codebase_onboarding(
         Enum_Codebase_Status,
         Enum_Derived_Content_Status,
         InspectionVersion,
+        UsageEventType,
         Workspace,
     )
-    from sqlmodel import Session, select
-
     from onboarding.onboard_utils import (
         create_bucket_if_dne,
         download_file_from_presigned_url,
+        get_org_id_from_workspace,
         get_source_content_type_uuid,
         is_on_blacklist,
         run_file_stats_and_reencode,
         unpack_archive,
         upload_file_to_s3,
     )
+    from shared.interfaces.usage.event_metadata import (
+        UsageEventMetadata,
+        UsageMetric,
+        UsageSessionMetadata,
+    )
+    from shared.usage.llm_session import LLMUsageSession
+    from sqlmodel import Session, select
 
     if not version:
         version = "Unversioned"
@@ -208,6 +326,8 @@ def run_codebase_onboarding(
                 session.add(dir_sc)
                 print(f"Created but not committed source content for: {directory}.")
 
+        codebase_sloc = 0
+        codebase_size_in_bytes = 0
         # Add file source contents
         for file_path in codebase_stats:
             if not codebase_stats[file_path]["is_blacklisted"]:
@@ -221,6 +341,10 @@ def run_codebase_onboarding(
                     version_id=version_id,
                 )
                 session.add(file_sc)
+                # Only add to SLOC and size if the file is analyzable
+                if codebase_stats[file_path]["is_analyzable"]:
+                    codebase_sloc += codebase_stats[file_path]["sloc"]
+                    codebase_size_in_bytes += codebase_stats[file_path]["size"]
 
                 print(
                     f"Created but not committed source content for: {file_path}. Processable: {codebase_stats[file_path]['is_analyzable']}. Stats: {codebase_stats[file_path]}"
@@ -236,5 +360,32 @@ def run_codebase_onboarding(
             f"Codebase onboarding complete for codebase: {codebase_name} (cb id: {codebase_id}). "
             f"Version: {version_id} (for commit sha: {version})"
         )
+        session_meta = UsageSessionMetadata(
+            content_type="codebase", content_id=str(codebase_id)
+        )
+        # need to get the real org id from the workspace since the org_id passed in is the hashed org_id
+        real_org_id = get_org_id_from_workspace(workspace_id)
+        with LLMUsageSession(real_org_id, creator_id, session_meta) as llm_session:
+            usage_metric = UsageMetric(
+                session_id=llm_session.session_id,
+                organization_id=real_org_id,
+                user_id=creator_id,
+                event_source="codebase_onboarding",
+                bytes_in=-codebase_size_in_bytes,
+                bytes_out=0,
+                tokens_in=0,
+                tokens_out=0,
+                timestamp=datetime.now(),
+                event_type=UsageEventType.ONBOARDING_USAGE_DEBIT,
+                event_metadata=UsageEventMetadata(
+                    model="None",
+                    provider="None",
+                    input={},
+                    output="",
+                    sloc=codebase_sloc,
+                ),
+            )
+            llm_session.send_event(usage_metric)
+            # TODO: check usage balance guardrails here
 
     return str(codebase_id), str(version_id)

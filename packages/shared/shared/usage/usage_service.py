@@ -250,11 +250,11 @@ class UsageService:
         for sesh in onboarding_sessions:
             meta = sesh.session_metadata
             codebase_id = meta.get("content_id")
-            onboarding_usage_event = {
+            onboarding_usage_event = [
                 event
                 for event in onboarding_usage_events
                 if event.session_id == sesh.id
-            }
+            ][0]
             codebase = self.codebase_repository.get(codebase_id)
             if not codebase:
                 print(f"Codebase not found for id: {codebase_id}")

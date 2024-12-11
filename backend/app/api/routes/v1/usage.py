@@ -1,11 +1,14 @@
 from datetime import datetime
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query,HTTPException
+from pydantic import ValidationError
+from pydantic_core import ErrorDetails
+
 from shared.interfaces.usage.usage_schema import (
     UsageBalance,
     UsageCharge,
-    UsageEventRecord,
     UsageEventSummary,
+    UsageEventRange,
 )
 from shared.usage.usage_service import UsageService
 
@@ -43,19 +46,6 @@ def get_usage_summary(
     )
     return usage_summary
 
-
-@router.get(
-    "/events",
-    summary="Get Raw Usage Events",
-)
-def get_usage_events(
-    session: CurrentSession, user: UserToken
-) -> list[UsageEventRecord]:
-    usage_service = UsageService(session)
-    organization_id = user.organization_id
-    return usage_service.get_usage_events(organization_id)
-
-
 @router.get(
     "/charges",
     summary="Get Recent Usage Charges",
@@ -68,35 +58,10 @@ def get_charges(
 ) -> list[UsageCharge]:
     usage_service = UsageService(session)
     organization_id = user.organization_id
-    return usage_service.get_charges(organization_id, start_date, end_date)
+    try:
+        event_range = UsageEventRange(start_date=start_date, end_date=end_date)
+        return usage_service.get_charges(organization_id, event_range)
+    except ValidationError as e:
+        validation_errors:ErrorDetails = e.errors()[0]
+        raise HTTPException(400, validation_errors["msg"]) #
 
-
-# # POST /api/v1/usage/webhook
-# @router.post(
-#     "/webhook",
-#     summary="Webhook for usage events",
-# )
-# def usage_webhook(
-#     session: CurrentSession, user: UserToken, credit_usage_event: CreditUsageEvent
-# ) -> JSONResponse:
-#
-#     aws_client = boto3.client(
-#         "events",
-#         region_name="us-east-1",
-#         aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-#         aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY
-#     )
-#
-#
-#     usage_service = UsageService(session, aws_client)
-#     organization_id = user.organization_id
-#     user_id = user.user_id
-#     event_type = UsageEventType.BASE_PLATFORM_USAGE_CREDIT
-#     credit_amount = credit_usage_event.credit_amount
-#
-#     usage_service.issue_usage_credits(
-#         organization_id, user_id, event_type, credit_amount
-#     )
-#     return JSONResponse(
-#         status_code=status.HTTP_202_ACCEPTED, content={"message": "Accepted"}
-#     )

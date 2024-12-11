@@ -1,33 +1,25 @@
-from datetime import date, datetime
+from datetime import datetime
 from uuid import UUID
 
 from pydantic import BaseModel
-
-
-class PlanRecord(BaseModel):
-    id: UUID
-    name: str
-    description: str | None = None
-    billing_frequency: str
-    base_usage_price: float
-    base_seat_price: float
-    created_at: datetime
-    updated_at: datetime
+from database.models_v1 import (
+    PlanType,
+    SubscriptionStatus,
+    BillingFrequency
+)
 
 
 class SubscriptionRecord(BaseModel):
     id: UUID
     organization_id: str
-    plan_id: UUID
-    status: str
-    billing_frequency: str
-    start_date: date
-    end_date: date
+    plan_type: PlanType
+    status: SubscriptionStatus
+    billing_frequency: BillingFrequency
     created_at: datetime
     updated_at: datetime
-    plan: PlanRecord
 
 
 class CreateSubscriptionRequest(BaseModel):
-    plan_id: UUID
+    plan_type: PlanType
+    billing_frequency: BillingFrequency
     organization_id: str

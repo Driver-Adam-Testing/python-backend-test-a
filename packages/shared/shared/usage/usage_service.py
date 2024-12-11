@@ -11,9 +11,8 @@ from shared.interfaces.usage.event_metadata import (
 from shared.interfaces.usage.usage_schema import (
     UsageBalance,
     UsageCharge,
-    UsageEventRecord,
     UsageEventSummary,
-    UsageMetricUnitType,
+    UsageMetricUnitType, UsageEventRange,
 )
 from shared.repositories.base_repository import BaseRepository
 from shared.repositories.usage_event_repository import UsageEventRepository
@@ -63,39 +62,6 @@ class UsageService:
             llm_session.send_event(usage_metric)
             print(f"Session ended: {llm_session.session_id}")
 
-    def get_usage_events(
-        self,
-        organization_id: str,
-        start_date: datetime | None = None,
-        end_date: datetime | None = None,
-    ) -> list[UsageEventRecord]:
-        query = select(UsageEvent).where(UsageEvent.organization_id == organization_id)
-
-        if start_date:
-            query = query.where(UsageEvent.timestamp >= start_date)
-
-        if end_date:
-            query = query.where(UsageEvent.timestamp <= end_date)
-
-        usage_events = self.session.exec(query).all()
-        return [
-            UsageEventRecord(
-                id=event.id,
-                event_type=event.event_type,
-                event_type_name=str(UsageEventType(event.event_type)),
-                session_id=event.session_id,
-                organization_id=event.organization_id,
-                user_id=event.user_id,
-                event_source=event.event_source,
-                bytes_in=event.bytes_in,
-                bytes_out=event.bytes_out,
-                tokens_in=event.tokens_in,
-                tokens_out=event.tokens_out,
-                timestamp=event.timestamp,
-                event_metadata=event.event_metadata,
-            )
-            for event in usage_events
-        ]
 
     def get_usage_balance(self, organization_id: str) -> UsageBalance:
         credits_query = select(UsageEvent).where(
@@ -225,11 +191,11 @@ class UsageService:
     def get_charges(
         self,
         organization_id: str,
-        start_date: datetime | None = None,
-        end_date: datetime | None = None,
+        time_range: UsageEventRange,
     ) -> list[UsageCharge]:
         charges = []
-
+        start_date = time_range.start_date
+        end_date = time_range.end_date
         onboarding_usage_events = self.usage_event_repository.get_usage_events_by_types(
             organization_id,
             [

@@ -115,22 +115,6 @@ class UsageEventSummary(BaseModel):
         frozen = True
 
 
-class UsageEventRecord(BaseModel):
-    id: UUID
-    event_type: UsageEventType
-    event_type_name: str
-    session_id: UUID
-    organization_id: str
-    user_id: str
-    event_source: str
-    bytes_in: int
-    bytes_out: int
-    tokens_in: int
-    tokens_out: int
-    timestamp: datetime
-    event_metadata: dict | None = None
-
-
 class UsageCharge(BaseModel):
     asset_name: str
 
@@ -156,3 +140,25 @@ class UsageCharge(BaseModel):
             _change_type = "user_added"
 
         return _change_type
+
+class UsageEventRange(BaseModel):
+    start_date: datetime | None = None
+    end_date: datetime | None = None
+
+    @model_validator(mode="before")
+    def validate_start_date(cls, values: dict) -> dict:
+        start_date = values.get("start_date")
+        if start_date and start_date.tzinfo is None:
+            raise ValueError("start_date must be timezone-aware. Please use ISO 8601 format.")
+
+        return values
+
+    @model_validator(mode="before")
+    def validate_end_date(cls, values: dict) -> dict:
+        end_date = values.get("end_date")
+        if end_date and end_date.tzinfo is None:
+            raise ValueError("end_date must be timezone-aware. Please use ISO 8601 format.")
+
+        return values
+
+

@@ -230,23 +230,6 @@ class UsageService:
     ) -> list[UsageCharge]:
         charges = []
 
-        # query = (
-        #     select(UsageEvent)
-        #     .distinct(UsageEvent.session_id)
-        #     .join(UsageSession)
-        #     .where(organization_id == UsageEvent.organization_id)
-        #     .where(UsageEvent.event_type.in_([
-        #         UsageEventType.ONBOARDING_USAGE_DEBIT,
-        #         UsageEventType.INSPECTOR_CODE_DIFF_USAGE_DEBIT
-        #         ]))
-        # )
-        # if start_date:
-        #     query = query.where(UsageEvent.timestamp >= start_date)
-        # if end_date:
-        #     query = query.where(UsageEvent.timestamp <= end_date)
-        #
-        # usage_events = self.session.exec(query).all()
-
         onboarding_usage_events = self.usage_event_repository.get_usage_events_by_types(
             organization_id,
             [
@@ -266,7 +249,6 @@ class UsageService:
 
         for sesh in onboarding_sessions:
             meta = sesh.session_metadata
-            print(meta)
             codebase_id = meta.get("content_id")
             onboarding_usage_event = {
                 event
@@ -274,13 +256,11 @@ class UsageService:
                 if event.session_id == sesh.id
             }
             codebase = self.codebase_repository.get(codebase_id)
-            # asset_name = ""
             if not codebase:
                 print(f"Codebase not found for id: {codebase_id}")
                 asset_name = "Deleted Codebase"
             else:
                 asset_name = codebase.codebase_name
-            print(codebase)
             charges.append(
                 UsageCharge(
                     asset_name=asset_name,

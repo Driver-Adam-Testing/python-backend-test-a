@@ -20,6 +20,7 @@ class NodeRead(BaseModel):
 
 class NodeReadWithRelationships(NodeRead):
     parent_node: NodeRead | None
+    # child_nodes: list[NodeRead] | None
 
 
 class VersionRead(BaseModel):

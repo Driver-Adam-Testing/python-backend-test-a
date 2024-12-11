@@ -170,12 +170,23 @@ class NodeRow(SQLModel, table=True):  # type: ignore
     version: "VersionRow" = Relationship(back_populates="nodes")
     contents: list["DerivedContent"] = Relationship(back_populates="node")  # noqa: F821
 
-    # parent_node: Optional["NodeRow"] = Relationship(
+    parent_node: Optional["NodeRow"] = Relationship(
+        sa_relationship_kwargs={
+            "primaryjoin": "and_(NodeRow.version_id == foreign(NodeRow.version_id), NodeRow.version_id == remote(NodeRow.version_id), NodeRow.relative_path != remote(NodeRow.relative_path), NodeRow.relative_path.like(remote(NodeRow.relative_path) + '%'))",
+            "uselist": False,
+            "viewonly": True,
+            "lazy": "select",
+            "remote_side": "[NodeRow.version_id]",
+            "order_by": "desc(func.length(NodeRow.relative_path))",
+        }
+    )
+    # child_nodes: list["NodeRow"] = Relationship(
     #     sa_relationship_kwargs={
-    #         "primaryjoin": "and_(NodeRow.version_id == foreign(NodeRow.version_id), func.length(NodeRow.relative_path) - func.length(foreign(NodeRow.relative_path)) > 1)",
-    #         "order_by": "func.length(NodeRow.relative_path).desc()",
-    #         "uselist": False,
-    #         "remote_side": "[NodeRow.version_id, NodeRow.relative_path]"
+    #         "primaryjoin": "and_(NodeRow.version_id == foreign(NodeRow.version_id), NodeRow.version_id == remote(NodeRow.version_id), NodeRow.relative_path != remote(NodeRow.relative_path), remote(NodeRow.relative_path).like(NodeRow.relative_path + '%'))",
+    #         "viewonly": True,
+    #         "lazy": "select",
+    #         "remote_side": "[NodeRow.version_id]",
+    #         "order_by": "asc(func.length(NodeRow.relative_path))"
     #     }
     # )
 

@@ -1,5 +1,6 @@
 from datetime import datetime
 from enum import Enum
+from typing import Optional
 from uuid import UUID
 
 import sqlalchemy
@@ -60,9 +61,6 @@ class PrimaryAssetRow(SQLModel, table=True):  # type: ignore
     )
 
     versions: list["VersionRow"] = Relationship(back_populates="primary_asset")
-    # tag_links: list["PrimaryAssetTagRow"] = Relationship(
-    #     back_populates="primary_asset"
-    # )
 
     @field_validator("primary_asset_type", mode="before")
     def validate_primary_asset_type(cls, value: str) -> str:
@@ -118,6 +116,13 @@ class VersionRow(SQLModel, table=True):  # type: ignore
 
     primary_asset: "PrimaryAssetRow" = Relationship(back_populates="versions")
     nodes: list["NodeRow"] = Relationship(back_populates="version")
+    root_node: Optional["NodeRow"] = Relationship(
+        sa_relationship_kwargs={
+            "primaryjoin": "and_(VersionRow.id == NodeRow.version_id)",
+            "order_by": "func.length(NodeRow.relative_path)",
+            "uselist": False,
+        }
+    )
 
 
 class NodeRow(SQLModel, table=True):  # type: ignore
@@ -164,6 +169,15 @@ class NodeRow(SQLModel, table=True):  # type: ignore
 
     version: "VersionRow" = Relationship(back_populates="nodes")
     contents: list["DerivedContent"] = Relationship(back_populates="node")  # noqa: F821
+
+    # parent_node: Optional["NodeRow"] = Relationship(
+    #     sa_relationship_kwargs={
+    #         "primaryjoin": "and_(NodeRow.version_id == foreign(NodeRow.version_id), func.length(NodeRow.relative_path) - func.length(foreign(NodeRow.relative_path)) > 1)",
+    #         "order_by": "func.length(NodeRow.relative_path).desc()",
+    #         "uselist": False,
+    #         "remote_side": "[NodeRow.version_id, NodeRow.relative_path]"
+    #     }
+    # )
 
 
 class FullNodeView(SQLModel, table=True):  # type: ignore
@@ -226,23 +240,3 @@ class FullNodeView(SQLModel, table=True):  # type: ignore
                     relative_path=self.node_relative_path,
                 )
                 session.add(node)
-
-
-# class PrimaryAssetTagRow(SQLModel, table=True):
-#     __tablename__ = "v2_primary_asset_tags"
-#     """Link table between Tags and Content models."""
-
-#     tag_id: None | UUID = Field(
-#         default=None, foreign_key="tags.id", primary_key=True
-#     )
-#     primary_asset_id: None | UUID = Field(
-#         default=None, foreign_key="v2_primary_asset.id", primary_key=True
-#     )
-#     tag: Optional["Tag"] = Relationship(
-#         back_populates="assets",
-#         sa_relationship_kwargs={"foreign_keys": [tag_id]},
-#     )
-#     primary_asset: "PrimaryAssetRow" = Relationship(
-#         back_populates="tag_links",
-#         sa_relationship_kwargs={"foreign_keys": [primary_asset_id]},
-#     )

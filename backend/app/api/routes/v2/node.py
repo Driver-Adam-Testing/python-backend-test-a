@@ -3,6 +3,7 @@ from typing import Generic, TypeVar
 from uuid import UUID
 
 from app.api.auth import UserToken
+from app.api.routes.v2.node_schemas import NodeReadWithRelationships, PrimaryAssetRead
 from app.api.session import CurrentSession
 from database.models_v1 import DerivedContent
 from database.models_v2 import (
@@ -14,7 +15,6 @@ from database.models_v2 import (
 )
 from fastapi import APIRouter, Body, HTTPException, Path, Request
 from pydantic import BaseModel, field_validator
-from sqlalchemy.orm import selectinload
 from sqlmodel import func, select
 
 T = TypeVar("T")
@@ -90,7 +90,7 @@ async def list_full_nodes(
     return ListWithCount(results=full_nodes, total_count=total_count)
 
 
-@router.get("/primary_assets", response_model=ListWithCount[PrimaryAssetRow])
+@router.get("/primary_assets", response_model=ListWithCount[PrimaryAssetRead])
 async def list_primary_assets(
     request: Request,
     session: CurrentSession,
@@ -113,6 +113,23 @@ async def list_primary_assets(
     for key, value in filters.items():
         if hasattr(PrimaryAssetRow, key):
             query = query.where(getattr(PrimaryAssetRow, key) == value)
+        elif key.startswith("version.") and hasattr(VersionRow, key.split(".", 1)[1]):
+            version_key = key.split(".", 1)[1]
+            query = query.where(
+                select(VersionRow)
+                .where(getattr(VersionRow, version_key) == value)
+                .where(VersionRow.primary_asset_id == PrimaryAssetRow.id)
+                .exists()
+            )
+        elif key.startswith("node.") and hasattr(NodeRow, key.split(".", 1)[1]):
+            node_key = key.split(".", 1)[1]
+            query = query.where(
+                select(NodeRow)
+                .join(VersionRow)
+                .where(getattr(NodeRow, node_key) == value)
+                .where(VersionRow.primary_asset_id == PrimaryAssetRow.id)
+                .exists()
+            )
 
     if hasattr(PrimaryAssetRow, sort_by):
         if sort_direction.upper() == "ASC":
@@ -183,7 +200,7 @@ async def list_versions(
     return ListWithCount(results=versions, total_count=total_count)
 
 
-@router.get("/nodes", response_model=ListWithCount[NodeRow])
+@router.get("/nodes", response_model=ListWithCount[NodeReadWithRelationships])
 async def list_nodes(
     request: Request,
     session: CurrentSession,
@@ -198,7 +215,6 @@ async def list_nodes(
         .join(VersionRow)
         .join(PrimaryAssetRow)
         .where(PrimaryAssetRow.organization_id == user.organization_id)
-        .options(selectinload(NodeRow.version))
     )
 
     filters = dict(request.query_params)

@@ -351,13 +351,13 @@ def run_codebase_onboarding(
     if prior_version_name:
         print(
             f"Codebase onboarding complete for codebase: {codebase_name} (cb id: {codebase_id}). "
-            f"Version: {version_id} (for commit sha: {version.display_name}). "
+            f"Version ID: {version_id}. "
             f"Prior version commit sha: {prior_version_name}."
         )
     else:
         print(
             f"Codebase onboarding complete for codebase: {codebase_name} (cb id: {codebase_id}). "
-            f"Version: {version_id} (for commit sha: {version.display_name})"
+            f"Version ID: {version_id}. "
         )
         session_meta = UsageSessionMetadata(
             content_type="codebase", content_id=str(codebase_id)

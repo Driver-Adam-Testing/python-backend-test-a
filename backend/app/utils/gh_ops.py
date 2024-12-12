@@ -14,7 +14,7 @@ from app.core.config import settings
 from app.repositories.github_app_installations_repository import (
     GithubAppInstallationsRepository,
 )
-from app.utils.aws_s3 import generate_put_presigned_url
+from app.utils.aws_s3 import generate_get_presigned_url, generate_put_presigned_url
 
 logger = logging.getLogger(__name__)
 
@@ -184,7 +184,7 @@ def generate_codebase_metadata(
     commit: str,
 ) -> dict:
     org_id_hash = hashlib.sha256(org_id.encode()).hexdigest()[:63]
-    upload_key = f"codebases/{org_id_hash}/{repo}.zip"
+    upload_key = f"analysis/{org_id_hash}/{repo}.zip"
 
     return {
         "organization_id": org_id_hash,
@@ -237,7 +237,7 @@ def download_and_upload_repo(
     repo: str,
     access_token: str,
     commit: str | None = None,
-) -> bool:
+) -> tuple[bool, str]:
     # For parity with prior implementation, I return False on any error
     # I'm not sure why this is done; it feels like we should raise an exception
     try:
@@ -255,12 +255,16 @@ def download_and_upload_repo(
         )
 
         success = upload_to_s3(zip_content, metadata, upload_key)
+        analysis_download_url = generate_get_presigned_url(
+            key=upload_key
+        )  # This is the URL that will be used to download the codebase in modal for analysis
         if success:
             logger.info("Repository %s uploaded successfully to %s.", repo, upload_key)
-        return success
+
+        return success, analysis_download_url
     except requests.RequestException as e:
         logger.error("Request error: %s", e)
     except Exception as e:
         logger.error("Unexpected error: %s", e)
 
-    return False
+    return False, ""

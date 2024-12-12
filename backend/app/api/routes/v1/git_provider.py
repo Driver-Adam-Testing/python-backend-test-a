@@ -112,7 +112,7 @@ def clone_repo(
     workspace_id = str(default_workspace.id)
 
     token = fetch_app_access_token(repo.metadata["installation_id"])
-    upload_complete = download_and_upload_repo(
+    upload_complete, analysis_download_url = download_and_upload_repo(
         gh_org_name=repo.org,
         owner=current_user.user_id,
         org_id=current_user.organization_id,
@@ -123,7 +123,8 @@ def clone_repo(
 
     if upload_complete is True:
         return JSONResponse(
-            status_code=status.HTTP_202_ACCEPTED, content={"message": "Upload complete"}
+            status_code=status.HTTP_202_ACCEPTED,
+            content={"download_url": analysis_download_url},
         )
     else:
         return JSONResponse(

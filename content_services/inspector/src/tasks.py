@@ -40,6 +40,7 @@ class FolderTechDocTask(Task):
     def __init__(
         self,
         node: LiteNode,
+        version_id: uuid.UUID,
         task_name: str,
         child_docs_tasks: tuple[TechDocsTask],
         codebase_name: str,
@@ -49,6 +50,7 @@ class FolderTechDocTask(Task):
         self.child_docs_tasks = child_docs_tasks
         self.codebase_name = codebase_name
         self.source_content_id = source_content_id
+        self.version_id = version_id
         super().__init__(
             task_name=task_name,
             node=node,
@@ -113,6 +115,7 @@ class FolderTechDocTask(Task):
                 misc_metadata=None,
                 status=Enum_Derived_Content_Status.generation_complete,
                 order=0,
+                version_id=self.version_id,
             )
             # Short Single Paragraph
             short_para_dc = DerivedContent(
@@ -125,6 +128,7 @@ class FolderTechDocTask(Task):
                 misc_metadata=None,
                 status=Enum_Derived_Content_Status.generation_complete,
                 order=0,
+                version_id=self.version_id,
             )
             # Long File Description
             long_desc_dc = DerivedContent(
@@ -137,6 +141,7 @@ class FolderTechDocTask(Task):
                 misc_metadata=None,
                 status=Enum_Derived_Content_Status.generation_complete,
                 order=0,
+                version_id=self.version_id,
             )
 
             async with AsyncSession(async_engine) as session:
@@ -177,6 +182,7 @@ class FileTechDocTask(Task):
     def __init__(
         self,
         codebase_name: str,
+        version_id: uuid.UUID,
         source_code: str,
         node: LiteNode,
         task_name: str,
@@ -186,6 +192,7 @@ class FileTechDocTask(Task):
         self.codebase_name = codebase_name
         self.source_code = source_code
         self.source_content_id = source_content_id
+        self.version_id = version_id
         super().__init__(
             task_name=task_name,
             node=node,
@@ -249,6 +256,7 @@ class FileTechDocTask(Task):
                 misc_metadata=None,
                 status=Enum_Derived_Content_Status.generation_complete,
                 order=0,
+                version_id=self.version_id,
             )
             # Short Single Paragraph
             short_para_dc = DerivedContent(
@@ -261,6 +269,7 @@ class FileTechDocTask(Task):
                 misc_metadata=None,
                 status=Enum_Derived_Content_Status.generation_complete,
                 order=0,
+                version_id=self.version_id,
             )
             # Long File Description
             long_desc_dc = DerivedContent(
@@ -273,6 +282,7 @@ class FileTechDocTask(Task):
                 misc_metadata=None,
                 status=Enum_Derived_Content_Status.generation_complete,
                 order=0,
+                version_id=self.version_id,
             )
             # Chunk Descriptions
             chunks_dc = []
@@ -288,6 +298,7 @@ class FileTechDocTask(Task):
                         misc_metadata=None,
                         status=Enum_Derived_Content_Status.generation_complete,
                         order=0,
+                        version_id=self.version_id,
                     )
                     chunks_dc.append(chunk_dc)
 
@@ -335,6 +346,7 @@ class SymbolsTask(Task):
     def __init__(
         self,
         task_name: str,
+        version_id: uuid.UUID,
         node: LiteNode,
         source_code: str,
         tech_docs_task: FileTechDocTask,
@@ -344,6 +356,7 @@ class SymbolsTask(Task):
         self.source_code = source_code
         self.tech_docs_task = tech_docs_task
         self.source_content_id = source_content_id
+        self.version_id = version_id
         super().__init__(
             task_name=task_name,
             node=node,
@@ -407,6 +420,7 @@ class SymbolsTask(Task):
                     misc_metadata=symbol,
                     status=Enum_Derived_Content_Status.generation_complete,
                     order=idx,
+                    version_id=self.version_id,
                 )
                 symbol_dcs.append(symbol_dc)
 
@@ -443,6 +457,7 @@ class TopLevelDocsTask(Task):
     def __init__(
         self,
         node: LiteNode,
+        version_id: uuid.UUID,
         codebase_name: str,
         ordered_tech_docs_tasks: tuple[TechDocsTask],
         source_content_id: uuid.UUID,
@@ -450,6 +465,7 @@ class TopLevelDocsTask(Task):
     ) -> None:
         self.codebase_name = codebase_name
         self.source_content_id = source_content_id
+        self.version_id = version_id
         super().__init__(
             task_name=f"TopLevelTechDocsTask of {codebase_name}",
             node=node,
@@ -522,6 +538,7 @@ class TopLevelDocsTask(Task):
                     misc_metadata=None,
                     status=Enum_Derived_Content_Status.generation_complete,
                     order=0,
+                    version_id=self.version_id,
                 )
                 dc_contents.append(dc)
 

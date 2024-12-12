@@ -556,6 +556,8 @@ class UsageEventType(enum.IntEnum):
     SUMMARIZATION_USAGE_DEBIT = 5
     BASE_PLATFORM_USAGE_CREDIT = 6
     ADDITIONAL_PLATFORM_USAGE_CREDIT = 7
+    USER_SEAT_USAGE_DEBIT = 8
+    USER_SEAT_USAGE_CREDIT = 9
 
     def __str__(self) -> str:
         # This will return a more human-readable version of the enum name
@@ -616,5 +618,53 @@ class GithubAppInstallation(SQLModel, table=True):
             "github_app_installation_id",
             "organization_id",
             name="uq_github_app_installation_id_organization_id",
+        ),
+    )
+
+
+class PlanType(str, enum.Enum):
+    CORE = "core"
+    ADVANCED = "advanced"
+    ENTERPRISE = "enterprise"
+
+
+class BillingFrequency(str, enum.Enum):
+    MONTHLY = "monthly"
+    ANNUAL = "annual"
+
+
+class SubscriptionStatus(str, enum.Enum):
+    ACTIVE = "active"
+    CANCELED = "canceled"
+    SUSPENDED = "suspended"
+
+
+class Subscription(SQLModel, table=True):
+    id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    organization_id: str = Field(index=True)
+    plan_type: PlanType = Field(nullable=False, index=True)
+    status: SubscriptionStatus = Field(default=SubscriptionStatus.ACTIVE)
+    billing_frequency: BillingFrequency = Field(nullable=False)
+    created_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
+        default=None,
+    )
+    updated_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
+        ),
+    )
+    __table_args__ = (
+        # Create a partial unique index that enforces uniqueness for active subscriptions only.
+        Index(
+            "unique_active_subscription_per_org",
+            "organization_id",
+            unique=True,
+            postgresql_where=text("status = 'active'"),
         ),
     )

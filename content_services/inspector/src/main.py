@@ -2,23 +2,63 @@ import hashlib
 import os
 import pprint
 import uuid
+from contextlib import suppress
 from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path
+from uuid import UUID
 
 import modal
-from common import app
-from tasks import (
-    EmbeddingTask,
-    FileTechDocTask,
-    FolderTechDocTask,
-    SymbolsTask,
-    TopLevelDocsTask,
+from onboarding.onboard import run_codebase_onboarding
+
+inspection_image = (
+    modal.Image.debian_slim(python_version="3.12")
+    .copy_local_dir(local_path="../../driver_db", remote_path="/driver_db")
+    .copy_local_dir(local_path="../../packages/shared", remote_path="/shared_pkg")
+    .pip_install(
+        [
+            "boto3",
+            "requests",
+            "openai>=1.40.2",
+            "pydantic>=2.8.2",
+            "tiktoken",
+            "/shared_pkg",
+        ]
+    )
 )
-from utils.dag import FileTreeDag, Node, NodeKind, NodeStatus
-from utils.task import TaskManager
+
+from common import app  # noqa: E402
+from utils.dag import FileTreeDag, Node, NodeKind, NodeStatus  # noqa: E402
+
+with inspection_image.imports():
+    from database.models_v1 import Enum_Derived_Content_Status
+    from tasks import (
+        EmbeddingTask,
+        FileTechDocTask,
+        FolderTechDocTask,
+        SymbolsTask,
+        TopLevelDocsTask,
+    )
+    from utils.task import TaskManager
 
 # TODO considering using concurrent inputs when we're just calling open AI. This should
 # save some cost (though costs are negligible today)
+
+
+class InspectionMode(Enum):
+    NORMAL = "normal"
+    RESUME = "resume"
+    RERUN = "rerun"
+
+    @classmethod
+    def from_str(cls, mode_str: str) -> "InspectionMode":
+        try:
+            return cls(mode_str.lower())
+        except ValueError:
+            valid_modes = ", ".join([mode.value for mode in cls])
+            raise ValueError(
+                f"Invalid mode '{mode_str}'. Must be one of: {valid_modes}."
+            )
 
 
 # Unified structure for file paths and source content IDs
@@ -29,12 +69,7 @@ class FileInfo:
 
 
 @app.function(
-    image=modal.Image.debian_slim(python_version="3.12")
-    .copy_local_dir(local_path="../../driver_db", remote_path="/driver_db")
-    .copy_local_dir(local_path="../../packages/shared", remote_path="/shared_pkg")
-    .pip_install(
-        ["boto3", "openai>=1.40.2", "pydantic>=2.8.2", "tiktoken", "/shared_pkg"]
-    ),
+    image=inspection_image,
     secrets=[
         modal.Secret.from_name("db"),
         modal.Secret.from_name("aws-inspector-s3"),
@@ -56,132 +91,141 @@ class FileInfo:
 )
 async def inspect_db(
     codebase_id: uuid.UUID,
-    run_id: str,
-    resume: bool = False,
+    version_id: uuid.UUID,
+    inspection_mode: InspectionMode = InspectionMode.NORMAL,
     rerun_node_paths: list[str] | None = None,
-    new_codebase_id: uuid.UUID | None = None,
 ) -> None:
-    if new_codebase_id:
-        raise ValueError("No longer supported")
-    # if new_codebase_id:
-    #     assert (
-    #         rerun_node_paths is None
-    #     ), "Cannot rerun specific nodes when doing diff update flow"
-
     import tempfile
 
     import boto3
     from utils.db import (
         SourceContentTypeMap,
+        create_inspector_run,
         download_source_content_file,
-        get_analyzable_source_contents_by_codebase_id,
+        get_analyzable_source_contents_by_version_id,
         get_codebase_by_id,
+        get_latest_run_from_version_id,
+        get_version_by_id,
+        get_workspace_by_id,
     )
 
+    # TODO verify rerun_node_paths in the diff rerun case; it works for non diff case.
+
     codebase = await get_codebase_by_id(codebase_id)
-    source_contents_files = await get_analyzable_source_contents_by_codebase_id(
-        codebase_id, {SourceContentTypeMap.FILE}
+    workspace_id = codebase.workspace_id
+    workspace = await get_workspace_by_id(workspace_id)
+    org_id = workspace.organization_id
+    org_hashed_id = hashlib.sha256(org_id.encode()).hexdigest()[:63]
+
+    # Get the Version and check if it has previous_version_id
+    version = await get_version_by_id(version_id)
+    previous_version_id = version.previous_version_id
+    codebase_name = codebase.codebase_name
+
+    if inspection_mode == InspectionMode.RESUME and previous_version_id:
+        raise ValueError(
+            "Cannot resume from diff case yet! Can only resume greenfield inspector run!"
+        )
+
+    if previous_version_id:
+        assert (
+            rerun_node_paths is None
+        ), "Cannot rerun specific nodes when doing diff update flow"
+
+    # If we are resuming, we should get the latest run for the current version,
+    # (we don't support diff resumes yet!)
+    if inspection_mode == InspectionMode.RESUME:
+        previous_run_id = await get_latest_run_from_version_id(version_id)
+    else:
+        # In the case that we are doing a diff, we get the latest run for the *previous* version
+        previous_run_id = (
+            await get_latest_run_from_version_id(previous_version_id)
+            if previous_version_id
+            else None
+        )
+
+    run_id = await create_inspector_run(version_id)
+
+    # Get content records for version_id
+    source_contents_files = await get_analyzable_source_contents_by_version_id(
+        version_id, {SourceContentTypeMap.FILE}
     )
-    source_contents_all = await get_analyzable_source_contents_by_codebase_id(
-        codebase_id, {SourceContentTypeMap.FILE, SourceContentTypeMap.DIRECTORY}
+    source_contents_all = await get_analyzable_source_contents_by_version_id(
+        version_id, {SourceContentTypeMap.FILE, SourceContentTypeMap.DIRECTORY}
     )
-    source_content_codebase = await get_analyzable_source_contents_by_codebase_id(
-        codebase_id, {SourceContentTypeMap.CODEBASE_ROOT}
+    source_content_codebase = await get_analyzable_source_contents_by_version_id(
+        version_id, {SourceContentTypeMap.CODEBASE_ROOT}
     )
     assert len(source_content_codebase) == 1
     source_content_codebase_id = source_content_codebase[0].id
 
-    # # Get the new stuff if applicable
-    # if new_codebase_id:
-    #     new_codebase = await get_codebase_by_id(new_codebase_id)
-    #     new_source_contents_files = await get_analyzable_source_contents_by_codebase_id(
-    #         new_codebase_id, {SourceContentTypeMap.FILE}
-    #     )
-    #     new_source_contents_all = await get_analyzable_source_contents_by_codebase_id(
-    #         new_codebase_id, {SourceContentTypeMap.FILE, SourceContentTypeMap.DIRECTORY}
-    #     )
-    #     new_source_content_codebase = (
-    #         await get_analyzable_source_contents_by_codebase_id(
-    #             new_codebase_id, {SourceContentTypeMap.CODEBASE_ROOT}
-    #         )
-    #     )
-    #     assert len(new_source_content_codebase) == 1
-    #     new_source_content_codebase_id = new_source_content_codebase[0].id
+    # Get content records for previous_version_id if available
+    if previous_version_id:
+        previous_source_contents_files = (
+            await get_analyzable_source_contents_by_version_id(
+                previous_version_id, {SourceContentTypeMap.FILE}
+            )
+        )
 
-    # TODO handle the S3_ENDPOINT_URL gracefully
+    # Download s3 for version_id (and previous if available)
     s3_client = boto3.client("s3", endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL"))
-    with tempfile.TemporaryDirectory() as download_dir:
-        # tempfile.TemporaryDirectory() as new_download_dir,
+    with (
+        tempfile.TemporaryDirectory() as download_dir,
+        tempfile.TemporaryDirectory() as previous_download_dir,
+    ):
         download_root = Path(download_dir)
         file_paths = []
         print("Downloading all source files for codebase from s3...")
         for sc in source_contents_files:
             download_abs_path = download_source_content_file(
                 s3_client=s3_client,
-                codebase_storage_url=codebase.storage_url,
-                codebase_root=codebase.resource_root,
+                bucket_name=org_hashed_id,
+                codebase_id=codebase_id,
+                version_id=version_id,
                 source_content_rel_path=sc.relative_path,
                 download_root=download_root,
             )
             file_paths.append(download_abs_path)
         print("Download complete")
 
-        # def change_root_with_first_component(
-        #     original_root: Path | str, additional_path: Path | str
-        # ) -> tuple[Path, str]:
-        #     original_root_path = Path(original_root)
-        #     additional_path_path = Path(additional_path)
-        #
-        #     relative_path = additional_path_path.relative_to(original_root_path)
-        #     first_component = relative_path.parts[0]
-        #     #new_root = original_root_path / first_component
-        #     new_root = original_root_path
-        #     return new_root, first_component
-
-        # We must build the dags with the codebase name removed so dags can be properly diffed. (Codebase name changes with version right now)
-        # codebase_root_with_cb_name_inc, cb_name_old = change_root_with_first_component(
-        #     download_root, file_paths[0]
-        # )
         codebase_dag: FileTreeDag = build_dag(
             root_path=download_root, file_paths=file_paths
         )
 
-        print("======= Nodes from original codebase processed =======")
+        print("======= Nodes from current codebase processed =======")
         for node in codebase_dag.topological_sort():
             print(node.root_rel_path, node.status)
 
-        # if new_codebase_id:
-        #     new_download_root = Path(new_download_dir)
-        #     new_file_paths = []
-        #     print("Downloading all source files for new codebase from s3...")
-        #     for scn in new_source_contents_files:
-        #         download_abs_path = download_source_content_file(
-        #             s3_client=s3_client,
-        #             codebase_storage_url=new_codebase.storage_url,
-        #             codebase_root=new_codebase.resource_root,
-        #             source_content_rel_path=scn.relative_path,
-        #             download_root=new_download_root,
-        #         )
-        #         new_file_paths.append(download_abs_path)
-        #     print("Download complete for new version of code")
-        #
-        #     # (
-        #     #     new_codebase_root_with_cb_name_inc,
-        #     #     cb_name_new,
-        #     # ) = change_root_with_first_component(new_download_root, new_file_paths[0])
-        #     new_codebase_dag: FileTreeDag = build_dag(
-        #         root_path=new_download_root, file_paths=new_file_paths
-        #     )
-        #     print("======= Nodes from new codebase =======")
-        #     for node in new_codebase_dag.topological_sort():
-        #         print(node.root_rel_path, node.status)
-        #
-        #     diff_dag = new_codebase_dag.compute_diff(codebase_dag)
-        #     print("Diff dag computed")
-        #
-        #     print("======= Nodes from diff dag =======")
-        #     for node in diff_dag.topological_sort():
-        #         print(node.root_rel_path, node.status)
+        if previous_version_id:
+            previous_download_root = Path(previous_download_dir)
+            previous_file_paths = []
+            print("Downloading all source files for previous codebase from s3...")
+            for scn in previous_source_contents_files:
+                download_abs_path = download_source_content_file(
+                    s3_client=s3_client,
+                    bucket_name=org_hashed_id,
+                    codebase_id=codebase_id,
+                    version_id=previous_version_id,
+                    source_content_rel_path=scn.relative_path,
+                    download_root=previous_download_root,
+                )
+                previous_file_paths.append(download_abs_path)
+            print("Download complete for new version of code")
+
+            previous_codebase_dag: FileTreeDag = build_dag(
+                root_path=previous_download_root,
+                file_paths=previous_file_paths,
+            )
+            print("======= Nodes from previous codebase =======")
+            for node in previous_codebase_dag.topological_sort():
+                print(node.root_rel_path, node.status)
+
+            diff_dag = codebase_dag.compute_diff(previous_codebase_dag)
+            print("Diff dag computed")
+
+            print("======= Nodes from diff dag =======")
+            for node in diff_dag.topological_sort():
+                print(node.root_rel_path, node.status)
 
         if rerun_node_paths:
             for rerun_path in rerun_node_paths:
@@ -193,14 +237,10 @@ async def inspect_db(
         if rerun_node_paths:
             sorted_nodes = codebase_dag.topological_sort(changed_nodes_only=True)
         else:
-            # if new_codebase_id:
-            #     sorted_nodes = diff_dag.topological_sort()
-            #     path_to_source_content_id = {
-            #         Path(sc.relative_path): sc.id for sc in new_source_contents_all
-            #     }
-            #     cb_name = codebase.codebase_name
-            # else:
-            sorted_nodes = codebase_dag.topological_sort()
+            if previous_version_id:
+                sorted_nodes = diff_dag.topological_sort()
+            else:
+                sorted_nodes = codebase_dag.topological_sort()
         path_to_source_content_id = {
             Path(sc.relative_path): sc.id for sc in source_contents_all
         }
@@ -219,16 +259,16 @@ async def inspect_db(
         for node, sc_id in nodes_with_id:
             print(node.root_rel_path, sc_id)
 
-        # TODO resolve the old vs new.
         await inspect_files(
             sc_codebase_id=source_content_codebase_id,
+            version_id=version_id,
             codebase_root=download_root,
             nodes_with_id=nodes_with_id,
             root_node=sorted_nodes[-1],
-            codebase_name=codebase.codebase_name,  # We're passing in the old codebase name for consistency with old cb docs.
+            codebase_name=codebase_name,
             run_id=run_id,
-            resume=resume,
-            is_rerun=bool(rerun_node_paths),
+            is_rerun=inspection_mode == InspectionMode.RERUN,
+            previous_run_id=previous_run_id,
         )
 
 
@@ -251,13 +291,14 @@ def build_dag(root_path: Path, file_paths: list[Path]) -> FileTreeDag:
 
 async def inspect_files(
     sc_codebase_id: uuid.UUID,
+    version_id: uuid.UUID,
     codebase_root: Path,
     nodes_with_id: list[tuple[Node, uuid.UUID | None]],
     root_node: Node,
     codebase_name: str,
     run_id: str,
-    resume: bool,
     is_rerun: bool,
+    previous_run_id: str | None = None,
 ) -> None:
     print("---------- All nodes ----------")
     for node, _ in nodes_with_id:
@@ -284,6 +325,7 @@ async def inspect_files(
             )
             folder_tech_docs_task = FolderTechDocTask(
                 node=lite_node,
+                version_id=version_id,
                 task_name=f"FolderTechDoc {node.root_rel_path}",
                 child_docs_tasks=child_doc_tasks,
                 codebase_name=codebase_name,
@@ -309,6 +351,7 @@ async def inspect_files(
             )
             file_tech_docs_task = FileTechDocTask(
                 codebase_name=codebase_name,
+                version_id=version_id,
                 source_code=source_code,
                 node=lite_node,
                 task_name=f"TechDoc {node.root_rel_path}",
@@ -325,6 +368,7 @@ async def inspect_files(
             )
             symbols_task = SymbolsTask(
                 task_name=f"Symbols {node.root_rel_path}",
+                version_id=version_id,
                 node=lite_node,
                 source_code=source_code,
                 tech_docs_task=file_tech_docs_task,
@@ -352,7 +396,7 @@ async def inspect_files(
     # We never generate top level docs in a re-run scenario since we don't have the full task result graph
     # in order to update them.
     if not is_rerun:
-        # TODO when not rerrunning, we should always have the root node as the last. VERIFY!
+        # # TODO when not rerrunning, we should always have the root node as the last. VERIFY!
         # root_node, _ = nodes_with_id[-1]
 
         # If no changes propagated to the root node due to child changes/additions/deletions,
@@ -364,6 +408,7 @@ async def inspect_files(
         )
         top_level_tech_docs_task = TopLevelDocsTask(
             node=root_node,
+            version_id=version_id,
             codebase_name=codebase_name,
             ordered_tech_docs_tasks=all_tech_docs_tasks,  # TODO where does source content go here?
             source_content_id=sc_codebase_id,
@@ -386,7 +431,7 @@ async def inspect_files(
         bucket_name=os.environ["BUCKET_NAME"], tasks=tasks, serial_exe=False
     )
 
-    task_results = await task_manager.run_tasks(run_id, resume=resume)
+    task_results = await task_manager.run_tasks(run_id, previous_run_id=previous_run_id)
 
     print("\n---------- Task results ----------")
     pprinter = pprint.PrettyPrinter(indent=2)
@@ -415,49 +460,134 @@ def get_file_content(path: Path) -> str:
 
 @app.local_entrypoint()
 def main(
-    codebase_id: str, resume_from_id: str | None = None, rerun_paths: str | None = None
+    codebase_id: str,
+    version_id: str,
+    mode: str,
+    rerun_paths: str | None = None,
 ) -> None:
-    print("Processing codebase with id: ", codebase_id)
+    """Resume or rerun inspector given a version"""
+    inspection_mode = InspectionMode.from_str(mode)
 
-    rerun_node_paths = (
-        rerun_paths.split(",") if rerun_paths and rerun_paths.strip() else None
-    )
+    if inspection_mode == InspectionMode.RESUME and rerun_paths:
+        raise ValueError(
+            "Cannot resume and specify rerun paths! Resume and rerun are mutually exclusive."
+        )
+
+    rerun_node_paths = rerun_paths.split(",") if rerun_paths is not None else None
     if rerun_node_paths:
         print("Rerunning nodes:")
         rerun_node_paths = [path.lstrip("/") for path in rerun_node_paths]
         for path in rerun_node_paths:
             print("--> ", path)
 
-    if resume_from_id:
-        resume = True
-        run_id = resume_from_id
-    else:
-        resume = False
-        run_id = uuid.uuid4()  # When rerunning we would supply this. This is used to identify the run in the db
-    try:
-        inspect_db.remote(
-            uuid.UUID(codebase_id),
-            run_id,
-            resume=resume,
-            rerun_node_paths=rerun_node_paths,
-        )
-    finally:
-        print("Run id: ", run_id)
-
-
-@app.local_entrypoint()
-def diff_flow() -> None:
-    codebase_id = "73fcda74-7c0b-4911-9ff8-9d09f1cac654"
-    existing_codebase_id = "43acca23-f561-46d6-8387-2e09a34d8b93"
-    run_id = "d947cc38-c20e-4c63-85cb-0f21c83e9d86"
-
-    print("Onboarding complete for codebase: ", codebase_id)
     inspect_db.remote(
-        existing_codebase_id,
-        run_id,
-        True,
-        None,
         codebase_id,
+        version_id,
+        inspection_mode,
+        rerun_node_paths,
     )
 
-    print("Diff flow complete for codebase: ", codebase_id)
+
+@app.function(
+    image=modal.Image.debian_slim(python_version="3.12").pip_install("sendgrid"),
+    secrets=[modal.Secret.from_name("sendgrid"), modal.Secret.from_name("env-name")],
+)
+def send_exception_email(exception_details: str) -> None:
+    import sendgrid
+    from sendgrid.helpers.mail import Content, Email, Mail, To
+
+    env_name = os.environ.get("ENV_NAME")
+    sendgrid_api_key = os.environ.get("SENDGRID_API_KEY")
+
+    sg = sendgrid.SendGridAPIClient(api_key=sendgrid_api_key)
+    from_email = Email("support@driverai.com")  # Replace with your email
+    to_email = To("support@driverai.com")  # Replace with recipient's email
+    subject = f"MODAL {env_name}: Exception Occurred"
+    content = Content("text/plain", f"An exception occurred: {exception_details}")
+    mail = Mail(from_email, to_email, subject, content)
+
+    try:
+        response = sg.send(mail)
+        print(f"Email sent: {response.status_code}")
+    except Exception as e:
+        print(f"Error sending email: {e}")
+
+
+onboarding_and_inspect_image = (
+    modal.Image.debian_slim(python_version="3.12")
+    .copy_local_dir(local_path="../../driver_db", remote_path="/driver_db")
+    .pip_install("/driver_db")
+    .pip_install("requests")
+    .pip_install("boto3")
+)
+
+
+@app.function(
+    image=onboarding_and_inspect_image,
+    secrets=[
+        modal.Secret.from_name("db"),
+    ],
+    mounts=[
+        modal.Mount.from_local_dir(
+            local_path="../../driver_db/certs",
+            remote_path="/root/data/",
+        ),
+        modal.Mount.from_local_python_packages("onboarding"),  # Why not automounted?
+    ],
+    proxy=modal.Proxy.from_name("pg-proxy")
+    if os.environ["MODAL_ENVIRONMENT"] != "staging"
+    else None,
+    timeout=3600 * 8,
+    region="us-east",
+    concurrency_limit=5,
+    keep_warm=1,
+)
+def onboard_and_inspect(
+    presigned_url: str,
+    archive_name: str,
+    org_id: str,
+    creator_id: str,
+    workspace_id: UUID,
+    provider: str = "manual",
+    version: str | None = None,
+) -> None:
+    from onboarding.onboard_utils import set_codebase_status
+
+    print(
+        f"Onboarding for: {archive_name} from {provider} with org_id: {org_id}, creator_id: {creator_id}, "
+        f"workspace_id: {workspace_id} with presigned_url: {presigned_url}, version: {version}"
+    )
+    try:
+        codebase_id, version_id = run_codebase_onboarding.remote(
+            presigned_url,
+            archive_name,
+            org_id,
+            creator_id,
+            workspace_id,
+            provider,
+            version_str=version,
+        )
+        print(f"Onboarding complete for codebase: {codebase_id}, {version_id}")
+        print("Inspecting...")
+        inspect_db.remote(codebase_id, version_id)
+        print("Inspection complete")
+
+        set_codebase_status(
+            codebase_id, Enum_Derived_Content_Status.generation_complete
+        )
+
+    except Exception as e:
+        exception_type = type(e).__name__
+        exc_tb = e.__traceback__
+        filename = exc_tb.tb_frame.f_code.co_filename
+        line_number = exc_tb.tb_lineno
+        exception_details = (
+            f"Exception type: {exception_type}\nFile: {filename}\nLine: {line_number}"
+        )
+        send_exception_email.remote(exception_details)
+        # Since codebase could possibly be undefined in this clean up action, we don't care if it fails
+        with suppress(Exception):
+            set_codebase_status(
+                codebase_id, Enum_Derived_Content_Status.generation_error
+            )
+        raise e

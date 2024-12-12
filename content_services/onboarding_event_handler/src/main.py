@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+from typing import Any
 from urllib.parse import unquote_plus
 
 import botocore
@@ -23,7 +24,10 @@ logger.info(f"Log level set to {log_level}")
 
 # Python lambdas have to be synchronous ¯\_(ツ)_/¯
 # https://stackoverflow.com/questions/60455830/can-you-have-an-async-handler-in-lambda-python-3-6
-def handler(event: dict, context: dict) -> any:
+def handler(
+    event: dict,
+    context: Any,  # noqa: ANN401
+) -> str:
     # Parse the SNS message
     for record in event["Records"]:
         sns_message = json.loads(record["Sns"]["Message"])
@@ -89,6 +93,7 @@ def handler(event: dict, context: dict) -> any:
                             "filepath": metadata["Metadata"]["file_path"],
                             "codebase_name": metadata["Metadata"]["codebase_name"],
                             "provider": metadata["Metadata"]["provider"],
+                            "version": metadata["Metadata"].get("version"),
                         },
                         token_json["access_token"],
                     )
@@ -99,7 +104,7 @@ def handler(event: dict, context: dict) -> any:
         return onboarded
 
 
-def exec_onboarding_service(event: dict, token: str) -> any:
+def exec_onboarding_service(event: dict[str, Any], token: str) -> dict[str, Any]:
     with httpx.Client(base_url=settings.API_URL, follow_redirects=True) as driverClient:
         payload = {**event}
         logger.debug(payload)

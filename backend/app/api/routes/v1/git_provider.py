@@ -3,10 +3,11 @@ import hashlib
 import hmac
 import json
 import logging
+import uuid
 from datetime import datetime
 
-from database.models_v1 import GithubAppInstallation
-from fastapi import APIRouter, HTTPException, Request, Response, status
+from database.models_v1 import DerivedContent, DerivedContentType, GithubAppInstallation
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlmodel import select
@@ -14,6 +15,9 @@ from sqlmodel import select
 from app.api.auth import ContentEditorPermission, UserToken
 from app.api.session import CurrentSession
 from app.core.config import settings
+from app.repositories.github_app_installations_repository import (
+    GithubAppInstallationsRepository,
+)
 from app.repositories.workspace_repository import WorkspaceRepository
 from app.utils.aws_secrets_manager import format_secret_key, write_secret
 from app.utils.gh_ops import (
@@ -78,7 +82,6 @@ class GitRepository(BaseModel):
     metadata: dict
 
 
-# endpoint to clone repo and pipe to s3
 @router.post("/{provider}/clone-repo", dependencies=[ContentEditorPermission])
 def clone_repo(
     session: CurrentSession,
@@ -107,22 +110,21 @@ def clone_repo(
         )
 
     workspace_id = str(default_workspace.id)
-    upload_complete = False
 
     token = fetch_app_access_token(repo.metadata["installation_id"])
-    upload_complete = download_and_upload_repo(
-        repo.org,
-        current_user.user_id,
-        current_user.organization_id,
-        workspace_id,
-        repo.repo_name,
-        token,
-        provider,
+    upload_complete, analysis_download_url = download_and_upload_repo(
+        gh_org_name=repo.org,
+        owner=current_user.user_id,
+        org_id=current_user.organization_id,
+        workspace_id=workspace_id,
+        repo=repo.repo_name,
+        access_token=token,
     )
 
     if upload_complete is True:
         return JSONResponse(
-            status_code=status.HTTP_202_ACCEPTED, content={"message": "Upload complete"}
+            status_code=status.HTTP_202_ACCEPTED,
+            content={"download_url": analysis_download_url},
         )
     else:
         return JSONResponse(
@@ -132,7 +134,7 @@ def clone_repo(
 
 
 def verify_signature(
-    payload_body: any, secret_token: str, signature_header: any
+    payload_body: bytes, secret_token: str, signature_header: str
 ) -> None:
     """Verify that the payload was sent from GitHub by validating SHA256.
 
@@ -155,44 +157,147 @@ def verify_signature(
         raise HTTPException(status_code=403, detail="Request signatures didn't match!")
 
 
-@router.post("/{provider}/webhook")
-async def webhook(
-    session: CurrentSession, provider: str, request: Request
-) -> JSONResponse:
-    if provider != "github":
-        raise NotImplementedError()
-    # Ensure the request body is read as bytes for signature verification
-    body_bytes = await request.body()  # Get the raw request body as bytes
-    body = await request.json()  # Parse the JSON body for further processing
-    github_event = request.headers.get("x-github-event", "")
-    signature_header = request.headers.get("x-hub-signature-256", "")
+async def _extract_body_and_headers(request: Request) -> dict:
+    body_bytes = await request.body()
+    body_json = json.loads(body_bytes)
+    return {"raw_body": body_bytes, "json_body": body_json, "headers": request.headers}
 
-    # Verify the GitHub signature
-    secret_token = (
-        settings.GH_WEBHOOK_SECRET
-    )  # Ensure you have this configured in your settings or environment
+
+def verify_github_signature(
+    body_bytes: bytes, secret_token: str, signature_header: str
+) -> None:
     try:
         verify_signature(body_bytes, secret_token, signature_header)
     except HTTPException as e:
-        return JSONResponse(status_code=e.status_code, content={"detail": e.detail})
+        logger.warning("Signature verification failed")
+        raise e
 
-    # TODO handle install event
-    # TODO handle uninstall event
-    # TODO handle revoke event
 
-    # Respond to indicate that the delivery was successfully received
-    if github_event == "issues":
-        action = body.get("action", "")
-        if action == "opened":
-            logger.debug(
-                f"An issue was opened with this title: {body['issue']['title']}"
-            )
-        elif action == "closed":
-            logger.debug(f"An issue was closed by {body['issue']['user']['login']}")
-        else:
-            logger.debug(f"Unhandled action for the issue event: {action}")
+def handle_push_event(session: CurrentSession, body: dict) -> JSONResponse:
+    repository = body["repository"]
+    org_name = repository.get("owner", {}).get("login", "unknown")
+    repo_name = repository["name"]
+    default_branch = repository["default_branch"]
+    pushed_ref = body["ref"]
+    installation_id = str(body["installation"]["id"])
+    commit_hash = body["after"]
+
+    if pushed_ref != f"refs/heads/{default_branch}":
+        logger.info(
+            "Push event ignored: Not the default branch. Org: %s, Repo: %s, Ref: %s, Install ID: %s",
+            org_name,
+            repo_name,
+            pushed_ref,
+            installation_id,
+        )
+        return JSONResponse(
+            status_code=status.HTTP_202_ACCEPTED,
+            content={"message": "Push event ignored (not default branch)"},
+        )
+
+    logger.info(
+        "Push event on default branch. Org: %s, Repo: %s, Branch: %s, Install ID: %s",
+        org_name,
+        repo_name,
+        default_branch,
+        installation_id,
+    )
+
+    # We assume the installation ID is only into one org...
+    gh_app_install = GithubAppInstallationsRepository(session).list_by_installation_id(
+        installation_id
+    )[0]
+
+    if not gh_app_install:
+        logger.warning(
+            "Installation ID not found in the database; need a row for this app install"
+        )
+        return JSONResponse(
+            status_code=status.HTTP_202_ACCEPTED, content={"message": ""}
+        )
+
+    default_workspace = WorkspaceRepository(session).get_default_workspace(
+        gh_app_install.organization_id
+    )
+
+    codebase_content_record = get_codebase_content_record(
+        session, default_workspace.id, repo_name
+    )
+    if not codebase_content_record:
+        logger.warning("Codebase content record not found for repo: %s", repo_name)
+        return JSONResponse(
+            status_code=status.HTTP_202_ACCEPTED,
+            content={"message": ""},
+        )
+
+    token = fetch_app_access_token(installation_id)
+    upload_complete = download_and_upload_repo(
+        gh_org_name=org_name,
+        owner="",
+        org_id=gh_app_install.organization_id,
+        workspace_id=str(default_workspace.id),
+        repo=repo_name,
+        access_token=token,
+        commit=commit_hash,
+    )
+
+    if upload_complete:
+        logger.info("Repository push event successfully processed: %s", repo_name)
+        return JSONResponse(
+            status_code=status.HTTP_202_ACCEPTED,
+            content={"message": ""},
+        )
+    else:
+        logger.error("Repository upload failed in webhook: %s", repo_name)
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content={"message": ""}
+        )
+
+
+def get_codebase_content_record(
+    session: CurrentSession, default_workspace: uuid.UUID, repo_name: str
+) -> DerivedContent:
+    statement = (
+        select(DerivedContent)
+        .join(
+            DerivedContentType,
+            DerivedContent.content_type_id == DerivedContentType.id,
+        )
+        .where(
+            DerivedContentType.type_name == "codebase",
+            DerivedContent.workspace_id == default_workspace,
+            DerivedContent.relative_path == repo_name,
+        )
+    )
+    return session.exec(statement).first()
+
+
+def handle_ping_event() -> JSONResponse:
+    logger.info("Ping event received from GitHub.")
+    return JSONResponse(
+        status_code=status.HTTP_202_ACCEPTED, content={"message": "Ping received"}
+    )
+
+
+@router.post("/github/webhook")
+def webhook(
+    session: CurrentSession, body_data: dict = Depends(_extract_body_and_headers)
+) -> JSONResponse:
+    body_bytes = body_data["raw_body"]
+    body = body_data["json_body"]
+    headers = body_data["headers"]
+
+    github_event = headers.get("x-github-event", "")
+    signature_header = headers.get("x-hub-signature-256", "")
+
+    secret_token = settings.GH_WEBHOOK_SECRET
+
+    verify_github_signature(body_bytes, secret_token, signature_header)
+
+    if github_event == "push":
+        return handle_push_event(session, body)
     elif github_event == "ping":
-        logger.debug("GitHub sent the ping event")
+        return handle_ping_event()
     elif github_event == "installation":
         if body["action"] == "deleted":
             installation_record = session.exec(
@@ -203,8 +308,11 @@ async def webhook(
             ).first()
             session.delete(installation_record)
             session.commit()
-    else:
-        logger.debug(f"Unhandled event: {github_event}")
+        return JSONResponse(
+            status_code=status.HTTP_202_ACCEPTED, content={"message": ""}
+        )
+
+    logger.info("Unhandled event type: %s", github_event)
     return JSONResponse(
-        status_code=status.HTTP_202_ACCEPTED, content={"message": "Accepted"}
+        status_code=status.HTTP_202_ACCEPTED, content={"message": "Event ignored"}
     )

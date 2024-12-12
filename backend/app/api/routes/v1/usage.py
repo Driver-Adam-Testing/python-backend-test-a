@@ -3,7 +3,8 @@ from datetime import datetime
 from fastapi import APIRouter, Query
 from shared.interfaces.usage.usage_schema import (
     UsageBalance,
-    UsageEventRecord,
+    UsageCharge,
+    UsageEventRange,
     UsageEventSummary,
 )
 from shared.usage.usage_service import UsageService
@@ -44,34 +45,20 @@ def get_usage_summary(
 
 
 @router.get(
-    "/events",
-    summary="Get Raw Usage Events",
+    "/charges",
+    summary="Get Recent Usage Charges",
 )
-def get_usage_events(
-    session: CurrentSession, user: UserToken
-) -> list[UsageEventRecord]:
-    usage_service = UsageService(session)
-    organization_id = user.organization_id
-    return usage_service.get_usage_events(organization_id)
-
-
-# # POST /api/v1/usage/webhook
-# @router.post(
-#     "/webhook",
-#     summary="Webhook for usage events",
-# )
-# def usage_webhook(
-#     session: CurrentSession, user: UserToken, credit_usage_event: CreditUsageEvent
-# ) -> JSONResponse:
-#     usage_service = UsageService(session)
-#     organization_id = user.organization_id
-#     user_id = user.user_id
-#     event_type = UsageEventType.BASE_PLATFORM_USAGE_CREDIT
-#     credit_amount = credit_usage_event.credit_amount
-#
-#     usage_service.issue_usage_credits(
-#         organization_id, user_id, event_type, credit_amount
-#     )
-#     return JSONResponse(
-#         status_code=status.HTTP_202_ACCEPTED, content={"message": "Accepted"}
-#     )
+def get_charges(
+    session: CurrentSession,
+    user: UserToken,
+    start_date: datetime | None = Query(
+        None,
+        description="Start date for the range of charges. ISO 8601 format required",
+    ),
+    end_date: datetime | None = Query(
+        None, description="End date for the range of charges. ISO 8601 format required"
+    ),
+) -> list[UsageCharge]:
+    return UsageService(session).get_charges(
+        user.organization_id, UsageEventRange(start_date=start_date, end_date=end_date)
+    )

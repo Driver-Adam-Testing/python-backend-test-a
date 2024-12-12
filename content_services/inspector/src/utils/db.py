@@ -7,6 +7,9 @@ from database.models_v1 import (
     Codebase,
     DerivedContent,
     DerivedContentType,
+    InspectionVersion,
+    InspectorRun,
+    Workspace,
 )
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -18,6 +21,37 @@ async def get_codebase_by_id(codebase_id: uuid.UUID) -> Codebase:
     async with AsyncSession(async_engine) as session:
         statement = select(Codebase).where(Codebase.id == codebase_id)
         return (await session.exec(statement)).one()
+
+
+async def get_version_by_id(version_id: uuid.UUID) -> InspectionVersion:
+    from database.db import async_engine
+    from sqlmodel import select
+
+    async with AsyncSession(async_engine) as session:
+        statement = select(InspectionVersion).where(InspectionVersion.id == version_id)
+        return (await session.exec(statement)).one()
+
+
+async def get_workspace_by_id(workspace_id: uuid.UUID) -> Workspace:
+    from database.db import async_engine
+    from sqlmodel import select
+
+    async with AsyncSession(async_engine) as session:
+        statement = select(Workspace).where(Workspace.id == workspace_id)
+        return (await session.exec(statement)).one()
+
+
+async def create_inspector_run(version_id: uuid.UUID) -> uuid.UUID:
+    from database.db import async_engine
+
+    async with AsyncSession(async_engine) as session:
+        inspector_run = InspectorRun(inspection_version_id=version_id)
+        session.add(inspector_run)
+        await session.commit()
+        await session.refresh(inspector_run)
+        run_id = inspector_run.id
+
+    return run_id
 
 
 class SourceContentTypeMap(enum.Enum):
@@ -88,9 +122,23 @@ async def get_source_content_type_uuid(content_type: SourceContentTypeMap) -> UU
     return sct_uuid
 
 
+async def get_latest_run_from_version_id(version_id: uuid.UUID) -> uuid.UUID:
+    from database.db import async_engine
+    from sqlmodel import select
+
+    async with AsyncSession(async_engine) as session:
+        statement = (
+            select(InspectorRun)
+            .where(InspectorRun.inspection_version_id == version_id)
+            .order_by(InspectorRun.created_at.desc())
+        )
+        inspector_id = (await session.exec(statement)).first().id
+    return inspector_id
+
+
 # TODO this actually would get source and derived content if the incoming types weren't correct
-async def get_analyzable_source_contents_by_codebase_id(
-    codebase_id: uuid.UUID, content_types: set[SourceContentTypeMap]
+async def get_analyzable_source_contents_by_version_id(
+    version_id: uuid.UUID, content_types: set[SourceContentTypeMap]
 ) -> list[DerivedContent]:
     from database.db import async_engine
     from sqlmodel import select
@@ -106,7 +154,7 @@ async def get_analyzable_source_contents_by_codebase_id(
             )
             .where(
                 DerivedContentType.type_name.in_([ct.value for ct in content_types]),
-                DerivedContent.codebase_id == codebase_id,
+                DerivedContent.version_id == version_id,
                 # SourceContent.misc_metadata.op("->>")("is_analyzable") == 'true'
             )
         )
@@ -119,32 +167,24 @@ async def get_analyzable_source_contents_by_codebase_id(
         if (
             res.content_type_id == file_content_type_id
             and res.misc_metadata["is_analyzable"] is True
-        ):
-            res_list.append(res)
-        elif res.content_type_id != file_content_type_id:
+        ) or res.content_type_id != file_content_type_id:
             res_list.append(res)
 
     return res_list
 
 
+# TODO may need to change
 def download_source_content_file(
     s3_client: any,
-    codebase_storage_url: str,
-    codebase_root: str,
+    bucket_name: str,
+    codebase_id: str,
+    version_id: str,
     source_content_rel_path: str,
     download_root: Path,
 ) -> Path:
-    parsed_url = codebase_storage_url.replace("https://", "").split("/")
-    bucket_name = parsed_url[0].split(".")[
-        0
-    ]  # Extract the bucket name from the URL... fragile
-    s3_key = "/".join(parsed_url[1:]) + f"/source/{source_content_rel_path}"
+    s3_key = f"{codebase_id}/version/{version_id}/source/{source_content_rel_path}"
     local_download_path = download_root / source_content_rel_path
     local_download_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # print("Bucket name:", bucket_name)
-    # print("S3 key:", s3_key)
-    # print("Local download path:", local_download_path)
     s3_client.download_file(bucket_name, s3_key, str(local_download_path))
-    # print(f"File downloaded to {local_download_path}")
     return local_download_path

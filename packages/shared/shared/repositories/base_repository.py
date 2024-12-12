@@ -84,6 +84,11 @@ class BaseRepository(Generic[T]):
         self.session.refresh(obj_in)
         return obj_in
 
+    # TODO
+    # This assumes data is a fully-formed model instance (not partial updates).
+    # If data includes unrelated or null fields, these values will overwrite the instance,
+    # which can result in data loss. USE WITH CAUTION.
+    # If data was a dictionary of what to update on the instance, we could avoid this issue.
     def update(self: "BaseRepository", instance: T, data: T) -> T:
         for key, value in data.model_dump(exclude_unset=True).items():
             setattr(instance, key, value)

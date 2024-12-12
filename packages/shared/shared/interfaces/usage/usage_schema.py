@@ -1,6 +1,5 @@
 from datetime import datetime
 from enum import Enum
-from uuid import UUID
 
 from database.models_v1 import UsageEventType
 from pydantic import BaseModel, Field, computed_field, model_validator
@@ -119,8 +118,8 @@ class UsageCharge(BaseModel):
     asset_name: str
 
     timestamp: datetime
-    bytes: int
-    event_type: UsageEventType
+    bytes: int = Field(exclude=True)
+    event_type: UsageEventType = Field(exclude=True)
 
     @computed_field
     @property
@@ -130,16 +129,16 @@ class UsageCharge(BaseModel):
     @computed_field
     @property
     def change_type(self) -> str:
-        _change_type = ""
+        return {
+            UsageEventType.ONBOARDING_USAGE_DEBIT: "new",
+            UsageEventType.INSPECTOR_CODE_DIFF_USAGE_DEBIT: "update",
+            UsageEventType.INSPECTOR_TECH_DOC_USAGE_DEBIT: "new",
+            UsageEventType.AGENT_PIPELINE_USAGE_DEBIT: "new",
+            UsageEventType.SUMMARIZATION_USAGE_DEBIT: "new",
+            UsageEventType.BASE_PLATFORM_USAGE_CREDIT: "add",
+            UsageEventType.ADDITIONAL_PLATFORM_USAGE_CREDIT: "add",
+        }.get(self.event_type, "unknown")
 
-        if self.event_type == UsageEventType.ONBOARDING_USAGE_DEBIT:
-            _change_type = "new"
-        elif self.event_type == UsageEventType.INSPECTOR_CODE_DIFF_USAGE_DEBIT:
-            _change_type = "update"
-        else:
-            _change_type = "user_added"
-
-        return _change_type
 
 class UsageEventRange(BaseModel):
     start_date: datetime | None = None
@@ -149,7 +148,9 @@ class UsageEventRange(BaseModel):
     def validate_start_date(cls, values: dict) -> dict:
         start_date = values.get("start_date")
         if start_date and start_date.tzinfo is None:
-            raise ValueError("start_date must be timezone-aware. Please use ISO 8601 format.")
+            raise ValueError(
+                "start_date must be timezone-aware. Please use ISO 8601 format."
+            )
 
         return values
 
@@ -157,8 +158,8 @@ class UsageEventRange(BaseModel):
     def validate_end_date(cls, values: dict) -> dict:
         end_date = values.get("end_date")
         if end_date and end_date.tzinfo is None:
-            raise ValueError("end_date must be timezone-aware. Please use ISO 8601 format.")
+            raise ValueError(
+                "end_date must be timezone-aware. Please use ISO 8601 format."
+            )
 
         return values
-
-

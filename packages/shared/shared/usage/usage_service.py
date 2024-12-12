@@ -11,8 +11,9 @@ from shared.interfaces.usage.event_metadata import (
 from shared.interfaces.usage.usage_schema import (
     UsageBalance,
     UsageCharge,
+    UsageEventRange,
     UsageEventSummary,
-    UsageMetricUnitType, UsageEventRange,
+    UsageMetricUnitType,
 )
 from shared.repositories.base_repository import BaseRepository
 from shared.repositories.usage_event_repository import UsageEventRepository
@@ -61,7 +62,6 @@ class UsageService:
 
             llm_session.send_event(usage_metric)
             print(f"Session ended: {llm_session.session_id}")
-
 
     def get_usage_balance(self, organization_id: str) -> UsageBalance:
         credits_query = select(UsageEvent).where(
@@ -200,7 +200,6 @@ class UsageService:
             organization_id,
             [
                 UsageEventType.ONBOARDING_USAGE_DEBIT,
-                # UsageEventType.INSPECTOR_CODE_DIFF_USAGE_DEBIT,
             ],
             start_date,
             end_date,
@@ -216,11 +215,11 @@ class UsageService:
         for sesh in onboarding_sessions:
             meta = sesh.session_metadata
             codebase_id = meta.get("content_id")
-            onboarding_usage_event = [
+            onboarding_usage_event = next(
                 event
                 for event in onboarding_usage_events
                 if event.session_id == sesh.id
-            ][0]
+            )
             codebase = self.codebase_repository.get(codebase_id)
             if not codebase:
                 print(f"Codebase not found for id: {codebase_id}")

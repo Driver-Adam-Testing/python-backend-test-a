@@ -1,14 +1,11 @@
 from datetime import datetime
 
-from fastapi import APIRouter, Query,HTTPException
-from pydantic import ValidationError
-from pydantic_core import ErrorDetails
-
+from fastapi import APIRouter, Query
 from shared.interfaces.usage.usage_schema import (
     UsageBalance,
     UsageCharge,
-    UsageEventSummary,
     UsageEventRange,
+    UsageEventSummary,
 )
 from shared.usage.usage_service import UsageService
 
@@ -46,6 +43,7 @@ def get_usage_summary(
     )
     return usage_summary
 
+
 @router.get(
     "/charges",
     summary="Get Recent Usage Charges",
@@ -53,15 +51,14 @@ def get_usage_summary(
 def get_charges(
     session: CurrentSession,
     user: UserToken,
-    start_date: datetime | None = Query(None),
-    end_date: datetime | None = Query(None),
+    start_date: datetime | None = Query(
+        None,
+        description="Start date for the range of charges. ISO 8601 format required",
+    ),
+    end_date: datetime | None = Query(
+        None, description="End date for the range of charges. ISO 8601 format required"
+    ),
 ) -> list[UsageCharge]:
-    usage_service = UsageService(session)
-    organization_id = user.organization_id
-    try:
-        event_range = UsageEventRange(start_date=start_date, end_date=end_date)
-        return usage_service.get_charges(organization_id, event_range)
-    except ValidationError as e:
-        validation_errors:ErrorDetails = e.errors()[0]
-        raise HTTPException(400, validation_errors["msg"]) #
-
+    return UsageService(session).get_charges(
+        user.organization_id, UsageEventRange(start_date=start_date, end_date=end_date)
+    )

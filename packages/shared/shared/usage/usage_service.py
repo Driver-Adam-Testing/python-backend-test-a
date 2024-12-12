@@ -1,10 +1,7 @@
 from datetime import datetime
 
 import boto3
-from database.models_v1 import (
-    UsageEvent,
-    UsageEventType,
-)
+from database.models_v1 import Codebase, UsageEvent, UsageEventType, UsageSession
 from sqlmodel import Session, select
 
 from shared.interfaces.usage.event_metadata import (
@@ -13,10 +10,12 @@ from shared.interfaces.usage.event_metadata import (
 )
 from shared.interfaces.usage.usage_schema import (
     UsageBalance,
-    UsageEventRecord,
+    UsageCharge,
+    UsageEventRange,
     UsageEventSummary,
     UsageMetricUnitType,
 )
+from shared.repositories.base_repository import BaseRepository
 from shared.repositories.usage_event_repository import UsageEventRepository
 from shared.usage.llm_session import LLMUsageSession
 
@@ -25,6 +24,8 @@ class UsageService:
     def __init__(self, session: Session, aws_client: boto3.client = None) -> None:
         self.session = session
         self.usage_event_repository = UsageEventRepository(session)
+        self.usage_session_repository = BaseRepository(session, UsageSession)
+        self.codebase_repository = BaseRepository(session, Codebase)
         self.aws_client = aws_client
 
     def issue_usage_credits(
@@ -61,30 +62,6 @@ class UsageService:
 
             llm_session.send_event(usage_metric)
             print(f"Session ended: {llm_session.session_id}")
-
-    def get_usage_events(self, organization_id: str) -> list[UsageEventRecord]:
-        query = select(UsageEvent).where(
-            UsageEvent.organization_id == organization_id,
-        )
-        usage_events = self.session.exec(query).all()
-        return [
-            UsageEventRecord(
-                id=event.id,
-                event_type=event.event_type,
-                event_type_name=str(UsageEventType(event.event_type)),
-                session_id=event.session_id,
-                organization_id=event.organization_id,
-                user_id=event.user_id,
-                event_source=event.event_source,
-                bytes_in=event.bytes_in,
-                bytes_out=event.bytes_out,
-                tokens_in=event.tokens_in,
-                tokens_out=event.tokens_out,
-                timestamp=event.timestamp,
-                event_metadata=event.event_metadata,
-            )
-            for event in usage_events
-        ]
 
     def get_usage_balance(self, organization_id: str) -> UsageBalance:
         credits_query = select(UsageEvent).where(
@@ -210,3 +187,52 @@ class UsageService:
             user_seat_count=0,
         )
         return usage_event_summary.convert_to(UsageMetricUnitType.SLOC)
+
+    def get_charges(
+        self,
+        organization_id: str,
+        time_range: UsageEventRange,
+    ) -> list[UsageCharge]:
+        charges = []
+        start_date = time_range.start_date
+        end_date = time_range.end_date
+        onboarding_usage_events = self.usage_event_repository.get_usage_events_by_types(
+            organization_id,
+            [
+                UsageEventType.ONBOARDING_USAGE_DEBIT,
+            ],
+            start_date,
+            end_date,
+        )
+
+        # get distinct session ids
+        onboarding_session_ids = {event.session_id for event in onboarding_usage_events}
+
+        onboarding_sessions = self.usage_session_repository.get_all(
+            conditions=[UsageSession.id.in_(onboarding_session_ids)]
+        )
+
+        for sesh in onboarding_sessions:
+            meta = sesh.session_metadata
+            codebase_id = meta.get("content_id")
+            onboarding_usage_event = next(
+                event
+                for event in onboarding_usage_events
+                if event.session_id == sesh.id
+            )
+            codebase = self.codebase_repository.get(codebase_id)
+            if not codebase:
+                print(f"Codebase not found for id: {codebase_id}")
+                asset_name = "Deleted Codebase"
+            else:
+                asset_name = codebase.codebase_name
+            charges.append(
+                UsageCharge(
+                    asset_name=asset_name,
+                    event_type=UsageEventType.ONBOARDING_USAGE_DEBIT,
+                    timestamp=sesh.created_at,
+                    bytes=onboarding_usage_event.bytes_in,
+                )
+            )
+
+        return charges

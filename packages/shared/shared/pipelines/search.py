@@ -9,7 +9,7 @@ from database.models_v1 import (
     Workspace,
 )
 from rank_bm25 import BM25Okapi
-from sqlmodel import Session, asc, func, or_, select
+from sqlmodel import Session, asc, or_, select
 
 from shared.embedding.text_embedder import batch_embed_text
 from shared.interfaces.search import SearchInput, SearchResult, SearchResults
@@ -64,11 +64,11 @@ def overall_score(
 def build_base_statement(input: SearchInput, embedded_query: any) -> any:
     most_recent_inspector_versions = (
         select(InspectionVersion.id)
-        .join(InspectionVersion, DerivedContent.version_id == InspectionVersion.id)
         .where(
-            InspectionVersion.created_at
-            == func.max(InspectionVersion.created_at).over(
-                partition_by=DerivedContent.codebase_id
+            ~InspectionVersion.id.in_(
+                select(InspectionVersion.previous_version_id).where(
+                    InspectionVersion.previous_version_id.isnot(None)
+                )
             )
         )
         .subquery()
@@ -81,14 +81,16 @@ def build_base_statement(input: SearchInput, embedded_query: any) -> any:
                 "score"
             ),
         )
-        .join(Workspace)
-        .join(DerivedContentType)
-        .where(DerivedContent.id == ChunkAndEmbedding.content_id)
-        .where(DerivedContentType.id == DerivedContent.content_type_id)
+        .select_from(DerivedContent)
+        .join(ChunkAndEmbedding, DerivedContent.id == ChunkAndEmbedding.content_id)
+        .join(Workspace, Workspace.id == DerivedContent.workspace_id)
+        .join(
+            DerivedContentType, DerivedContentType.id == DerivedContent.content_type_id
+        )
         .where(
             or_(
-                DerivedContent.version_id.is_(None),
                 DerivedContent.version_id.in_(most_recent_inspector_versions),
+                DerivedContent.version_id.is_(None),
             )
         )
     )

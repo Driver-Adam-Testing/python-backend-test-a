@@ -481,7 +481,7 @@ class InspectionVersion(SQLModel, table=True):
         ),
     )
     previous_version_id: UUID | None = Field(
-        foreign_key="inspection_versions.id", nullable=True
+        foreign_key="inspection_versions.id", nullable=True, index=True
     )  # Points to the previous version for chain tracking
     contents: list["DerivedContent"] = Relationship(back_populates="inspection_version")
     inspector_runs: list["InspectorRun"] = Relationship(

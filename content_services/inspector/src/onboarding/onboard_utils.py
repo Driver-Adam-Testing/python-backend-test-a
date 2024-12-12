@@ -5,6 +5,7 @@ import time
 import zipfile
 from functools import cache
 from pathlib import Path
+from shutil import rmtree
 from urllib.parse import urlparse
 from uuid import UUID
 
@@ -19,6 +20,10 @@ from database.models_v1 import (
     Workspace,
 )
 from sqlmodel import Session, select
+
+
+class RunInProgressError(Exception):
+    pass
 
 
 # TODO dedup; already exists for inspector
@@ -49,6 +54,23 @@ def get_org_id_from_workspace(workspace_id: UUID) -> str:
         if workspace:
             org_id = workspace.organization_id
     return org_id
+
+
+def get_codebase_content_record_status_for(
+    codebase_id: UUID, version_id: UUID
+) -> tuple[Enum_Derived_Content_Status, UUID]:
+    from database.db import engine
+    from sqlmodel import Session, select
+
+    with Session(engine) as session:
+        cb_sc_uuid = get_source_content_type_uuid("codebase")
+        sel_statement = select(DerivedContent).where(
+            DerivedContent.codebase_id == codebase_id,
+            DerivedContent.content_type_id == cb_sc_uuid,
+            DerivedContent.version_id == version_id,
+        )
+        codebase_dc = session.exec(sel_statement).one()
+    return codebase_dc.status, codebase_dc.id
 
 
 def set_codebase_status(codebase_id: UUID, status: Enum_Derived_Content_Status) -> None:
@@ -193,6 +215,10 @@ def unpack_archive(
     stripped_extracted_path = Path(re.sub(r"/\.[^/.]+$/", "", str(extracted_path)))
     if override_codebase_name:
         stripped_extracted_path = Path(override_codebase_name)
+
+    # The container may already have this path unpacked in some instances.
+    if stripped_extracted_path.exists():
+        rmtree(stripped_extracted_path)
 
     os.rename(extracted_path, stripped_extracted_path)
 

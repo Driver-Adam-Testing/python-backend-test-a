@@ -551,22 +551,29 @@ def onboard_and_inspect(
     provider: str = "manual",
     version: str | None = None,
 ) -> None:
-    from onboarding.onboard_utils import set_codebase_status
+    from onboarding.onboard_utils import RunInProgressError, set_codebase_status
 
     print(
         f"Onboarding for: {archive_name} from {provider} with org_id: {org_id}, creator_id: {creator_id}, "
         f"workspace_id: {workspace_id} with presigned_url: {presigned_url}, version: {version}"
     )
     try:
-        codebase_id, version_id = run_codebase_onboarding.remote(
-            presigned_url,
-            archive_name,
-            org_id,
-            creator_id,
-            workspace_id,
-            provider,
-            version_str=version,
-        )
+        try:
+            codebase_id, version_id = run_codebase_onboarding.remote(
+                presigned_url,
+                archive_name,
+                org_id,
+                creator_id,
+                workspace_id,
+                provider,
+                version_str=version,
+            )
+        except RunInProgressError:
+            print(
+                "Halted during onboarding because a previous version was in progress."
+            )
+            return
+
         print(f"Onboarding complete for codebase: {codebase_id}, {version_id}")
         print("Inspecting...")
         inspect_db.remote(codebase_id, version_id)

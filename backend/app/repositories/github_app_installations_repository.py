@@ -19,6 +19,16 @@ class GithubAppInstallationsRepository(BaseRepository[GithubAppInstallation]):
             )
         ).all()
 
+    def list_by_installation_id(
+        self, installation_id: str
+    ) -> list[GithubAppInstallation]:
+        logger.debug(f"Fetching GithubAppInstallations for: {installation_id}")
+        return self.session.exec(
+            select(GithubAppInstallation).where(
+                GithubAppInstallation.github_app_installation_id == installation_id
+            )
+        ).all()
+
     def exists(self, organization_id: str, installation_id: str) -> bool:
         logger.info(
             f"Checking if GH app installation ID = {installation_id} already exists in {organization_id}"

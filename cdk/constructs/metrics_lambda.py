@@ -87,17 +87,27 @@ class MetricsLambda(Construct):
                 comparison_operator=aws_cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
                 treat_missing_data=aws_cloudwatch.TreatMissingData.IGNORE,
             )
+            self.metric_message_age_alarm = aws_cloudwatch.Alarm(
+                self,
+                "MetricMessageAgeAlarm",
+                alarm_description=f"[{params.environment}] Metrics DLQ Message Age > 2 hours Alarm",
+                metric=self.metrics_dlq.metric_approximate_age_of_oldest_message(),
+                threshold=7200,  # Seconds, = 2 hours
+                evaluation_periods=1,
+                comparison_operator=aws_cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+                treat_missing_data=aws_cloudwatch.TreatMissingData.IGNORE,
+            )
 
         if params.cloudwatch_alarm_arn:
-            self.metric_dlq_alarm.add_alarm_action(
-                aws_cloudwatch_actions.SnsAction(
-                    aws_sns.Topic.from_topic_arn(
-                        id="NotifySupportTopic",
-                        topic_arn=params.cloudwatch_alarm_arn,
-                        scope=self,
-                    )
+            notification_action = aws_cloudwatch_actions.SnsAction(
+                aws_sns.Topic.from_topic_arn(
+                    id="NotifySupportTopic",
+                    topic_arn=params.cloudwatch_alarm_arn,
+                    scope=self,
                 )
             )
+            self.metric_dlq_alarm.add_alarm_action(notification_action)
+            self.metric_message_age_alarm.add_alarm_action(notification_action)
         else:
             print(
                 f"*** NO CW DLQ ALARM CONFIGURED FOR MetricAlarm in {params.environment} ***"

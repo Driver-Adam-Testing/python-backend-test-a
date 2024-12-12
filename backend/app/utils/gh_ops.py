@@ -7,9 +7,8 @@ from typing import Any
 
 import httpx
 import jwt
-from sqlmodel import Session
 import requests
-
+from sqlmodel import Session
 
 from app.core.config import settings
 from app.repositories.github_app_installations_repository import (
@@ -106,54 +105,52 @@ def fetch_repos(session: Session, organization_id: str) -> list[dict[str, Any]]:
         with httpx.Client() as client:
             for github_installation in github_installations:
                 url = f"https://api.github.com/installation/repositories?per_page={per_page}"
-                token = fetch_app_access_token(
-                    github_installation.github_app_installation_id
-                )
+                try:
+                    token = fetch_app_access_token(
+                        github_installation.github_app_installation_id
+                    )
+                except httpx.HTTPStatusError as ex:
+                    # 404s occur when fetching an access ID for an installation
+                    # if that installation is uninstalled in Github but not our DB.
+                    # Assume this was the case and continue.
+                    if ex.response.status_code == 404:
+                        continue
+                    logger.error(ex)
+                    raise ex
                 headers = {"Authorization": f"token {token}"}
                 page_count = 1
                 response = client.get(url, headers=headers)
-                # Continue on 404 required to deal with apps that have been uninstalled
-                # Better would be to handle the uninstallation events and delete row from DB
-                if (
-                    response.status_code == 200
-                    or response.status_code == 201
-                    or response.status_code == 404
-                ):
-                    for repo in response.json()["repositories"]:
-                        repo["installation_id"] = (
-                            github_installation.github_app_installation_id
-                        )
-                        results.append(repo)
-                    link_header: str = response.headers.get("link", None)
-                    while link_header:
-                        page_count = page_count + 1
-                        if page_count > max_pages:
-                            # GH API has rate limits that will probably kick in before we get this far.
-                            # Protecting ourselves from infinite loops explicitly too.
-                            # We should implement exponential backoff and parse the
-                            # rate limit responses being returned by GH here.
-                            raise ValueError(
-                                "Aborting GH API pagination at 10000 results."
-                            )
-                        parts = response.headers["link"].split(",")
-                        matches = [
-                            re.search(r'<([^>]+)>; rel="([^"]+)"', part.strip())
-                            for part in parts
-                        ]
-                        has_next = False
-                        for match in matches:
-                            url, rel = match.groups()
-                            if rel == "next" and url:
-                                has_next = True
-                                response = client.get(url, headers=headers)
-                                response.raise_for_status()
-                                results = results + response.json()["repositories"]
+                for repo in response.json()["repositories"]:
+                    repo["installation_id"] = (
+                        github_installation.github_app_installation_id
+                    )
+                    results.append(repo)
+                link_header: str = response.headers.get("link", None)
+                while link_header:
+                    page_count = page_count + 1
+                    if page_count > max_pages:
+                        # GH API has rate limits that will probably kick in before we get this far.
+                        # Protecting ourselves from infinite loops explicitly too.
+                        # We should implement exponential backoff and parse the
+                        # rate limit responses being returned by GH here.
+                        raise ValueError("Aborting GH API pagination at 10000 results.")
+                    parts = response.headers["link"].split(",")
+                    matches = [
+                        re.search(r'<([^>]+)>; rel="([^"]+)"', part.strip())
+                        for part in parts
+                    ]
+                    has_next = False
+                    for match in matches:
+                        url, rel = match.groups()
+                        if rel == "next" and url:
+                            has_next = True
+                            response = client.get(url, headers=headers)
+                            response.raise_for_status()
+                            results = results + response.json()["repositories"]
 
-                        if not has_next:
-                            logger.debug(
-                                "Does not have next url in link header, stopping."
-                            )
-                            break
+                    if not has_next:
+                        logger.debug("Does not have next url in link header, stopping.")
+                        break
         return results
     except Exception as e:
         logger.error(f"Failed to fetch repositories: {e}")
@@ -233,7 +230,7 @@ def upload_to_s3(zip_content: bytes, metadata: dict, upload_key: str) -> bool:
 
 
 def download_and_upload_repo(
-    org_name: str,
+    gh_org_name: str,
     owner: str,
     org_id: str,
     workspace_id: str,
@@ -245,14 +242,14 @@ def download_and_upload_repo(
     # I'm not sure why this is done; it feels like we should raise an exception
     try:
         if not commit:
-            commit = fetch_default_branch_and_commit(org_name, repo, access_token)
+            commit = fetch_default_branch_and_commit(gh_org_name, repo, access_token)
 
         metadata = generate_codebase_metadata(
-            org_id, org_name, workspace_id, repo, owner, "github", commit
+            org_id, gh_org_name, workspace_id, repo, owner, "github", commit
         )
         upload_key = metadata["file_path"]
 
-        zip_content = download_github_repo_zip(org_name, repo, commit, access_token)
+        zip_content = download_github_repo_zip(gh_org_name, repo, commit, access_token)
         logger.info(
             "Repository downloaded successfully. Size: %d bytes", len(zip_content)
         )

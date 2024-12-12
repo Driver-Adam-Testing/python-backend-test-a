@@ -14,9 +14,9 @@ from botocore.client import ClientError
 from database.models_v1 import (
     Codebase,
     DerivedContent,
-    DerivedContentType,
     Enum_Codebase_Status,
     Enum_Derived_Content_Status,
+    Workspace,
 )
 from sqlmodel import Session, select
 
@@ -25,6 +25,7 @@ from sqlmodel import Session, select
 @cache
 def get_source_content_type_uuid(content_type_name: str) -> UUID:
     from database.db import engine
+    from database.models_v1 import DerivedContentType
 
     sct_uuid = None
     with Session(engine) as session:
@@ -35,6 +36,19 @@ def get_source_content_type_uuid(content_type_name: str) -> UUID:
         if res_sct:
             sct_uuid = res_sct.id
     return sct_uuid
+
+
+@cache
+def get_org_id_from_workspace(workspace_id: UUID) -> str:
+    from database.db import engine
+
+    org_id = None
+    with Session(engine) as session:
+        sel_statement = select(Workspace).where(Workspace.id == workspace_id)
+        workspace = session.exec(sel_statement).first()
+        if workspace:
+            org_id = workspace.organization_id
+    return org_id
 
 
 def set_codebase_status(codebase_id: UUID, status: Enum_Derived_Content_Status) -> None:
@@ -62,7 +76,6 @@ def set_codebase_status(codebase_id: UUID, status: Enum_Derived_Content_Status) 
             raise Exception(
                 f"Codebase Source Content with ID: {codebase_id} not found."
             )
-
 
 
 @cache
@@ -461,7 +474,7 @@ def generate_get_presigned_url(bucket: str, key: str, expires: int = 3600) -> st
 
 
 def parse_presigned_url(url: str) -> tuple[str, str]:
-    from urllib.parse import unquote_plus, urlparse
+    from urllib.parse import unquote_plus
 
     parsed_url = urlparse(url)
     host = parsed_url.netloc

@@ -565,7 +565,7 @@ def onboard_and_inspect(
             creator_id,
             workspace_id,
             provider,
-            version=version,
+            version_str=version,
         )
         print(f"Onboarding complete for codebase: {codebase_id}, {version_id}")
         print("Inspecting...")

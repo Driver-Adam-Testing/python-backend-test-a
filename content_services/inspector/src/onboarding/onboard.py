@@ -152,7 +152,7 @@ def run_codebase_onboarding(
     workspace_id: UUID,
     provider: str = "manual",
     override_codebase_name: str | None = None,
-    version: str | None = None,
+    version_str: str | None = None,
 ) -> tuple[str, str]:
     from database.db import (
         engine,  # We defer the import since we'll have the secrets set here
@@ -166,6 +166,14 @@ def run_codebase_onboarding(
         UsageEventType,
         Workspace,
     )
+    from shared.interfaces.usage.event_metadata import (
+        UsageEventMetadata,
+        UsageMetric,
+        UsageSessionMetadata,
+    )
+    from shared.usage.llm_session import LLMUsageSession
+    from sqlmodel import Session, select
+
     from onboarding.onboard_utils import (
         create_bucket_if_dne,
         download_file_from_presigned_url,
@@ -176,16 +184,9 @@ def run_codebase_onboarding(
         unpack_archive,
         upload_file_to_s3,
     )
-    from shared.interfaces.usage.event_metadata import (
-        UsageEventMetadata,
-        UsageMetric,
-        UsageSessionMetadata,
-    )
-    from shared.usage.llm_session import LLMUsageSession
-    from sqlmodel import Session, select
 
-    if not version:
-        version = "Unversioned"
+    if not version_str:
+        version_str = "Unversioned"
 
     download_dest = Path(archive_name)
     download_file_from_presigned_url(presigned_url, download_dest)
@@ -202,8 +203,6 @@ def run_codebase_onboarding(
     codebase_name = str(extracted_path)
     print("Codebase name: ", codebase_name)
     print("Unpacked archive to: ", extracted_path)
-
-    # TODO this code needs the bug fix for nodes that on develop
 
     # TODO so if they uploaded a zip and we find the codebase, what do we do w.r.t versioning? Below, we disallow it
     # and raise an exception. Namely, the previously onboarded zip won't have a version.
@@ -251,8 +250,8 @@ def run_codebase_onboarding(
 
         version = InspectionVersion(
             id=uuid4(),
-            version=version,
-            display_name=version,
+            version=version_str,
+            display_name=version_str,
             previous_version_id=prior_version.id if prior_version else None,
         )
         session.add(version)
@@ -352,13 +351,13 @@ def run_codebase_onboarding(
     if prior_version_name:
         print(
             f"Codebase onboarding complete for codebase: {codebase_name} (cb id: {codebase_id}). "
-            f"Version: {version_id} (for commit sha: {version}). "
+            f"Version: {version_id} (for commit sha: {version.display_name}). "
             f"Prior version commit sha: {prior_version_name}."
         )
     else:
         print(
             f"Codebase onboarding complete for codebase: {codebase_name} (cb id: {codebase_id}). "
-            f"Version: {version_id} (for commit sha: {version})"
+            f"Version: {version_id} (for commit sha: {version.display_name})"
         )
         session_meta = UsageSessionMetadata(
             content_type="codebase", content_id=str(codebase_id)

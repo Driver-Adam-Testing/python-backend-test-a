@@ -1,6 +1,6 @@
 import enum
 import uuid
-from datetime import date, datetime
+from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
@@ -11,7 +11,6 @@ from sqlalchemy import (
     Column,
     Computed,
     DateTime,
-    Date,
     Enum,
     Index,
     Integer,
@@ -557,6 +556,8 @@ class UsageEventType(enum.IntEnum):
     SUMMARIZATION_USAGE_DEBIT = 5
     BASE_PLATFORM_USAGE_CREDIT = 6
     ADDITIONAL_PLATFORM_USAGE_CREDIT = 7
+    USER_SEAT_USAGE_DEBIT = 8
+    USER_SEAT_USAGE_CREDIT = 9
 
     def __str__(self) -> str:
         # This will return a more human-readable version of the enum name
@@ -641,7 +642,7 @@ class SubscriptionStatus(str, enum.Enum):
 class Subscription(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     organization_id: str = Field(index=True)
-    plan_type: PlanType = Field(nullable=False,index=True)
+    plan_type: PlanType = Field(nullable=False, index=True)
     status: SubscriptionStatus = Field(default=SubscriptionStatus.ACTIVE)
     billing_frequency: BillingFrequency = Field(nullable=False)
     created_at: None | datetime = Field(
@@ -664,6 +665,6 @@ class Subscription(SQLModel, table=True):
             "unique_active_subscription_per_org",
             "organization_id",
             unique=True,
-            postgresql_where=text("status = 'active'")
+            postgresql_where=text("status = 'active'"),
         ),
     )

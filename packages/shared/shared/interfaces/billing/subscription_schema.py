@@ -1,12 +1,9 @@
-from datetime import datetime
+from datetime import date, datetime
 from uuid import UUID
 
-from pydantic import BaseModel
-from database.models_v1 import (
-    PlanType,
-    SubscriptionStatus,
-    BillingFrequency
-)
+from database.models_v1 import BillingFrequency, PlanType, SubscriptionStatus
+from dateutil.relativedelta import relativedelta
+from pydantic import BaseModel, computed_field
 
 
 class SubscriptionRecord(BaseModel):
@@ -17,6 +14,22 @@ class SubscriptionRecord(BaseModel):
     billing_frequency: BillingFrequency
     created_at: datetime
     updated_at: datetime
+
+    @computed_field
+    @property
+    def start_date(self) -> date:
+        return self.created_at.date()
+
+    @computed_field
+    @property
+    def end_date(self) -> date:
+        start_date = self.start_date
+        end_date = (
+            start_date + relativedelta(months=1)
+            if self.billing_frequency == BillingFrequency.MONTHLY
+            else start_date + relativedelta(years=1)
+        )
+        return end_date
 
 
 class CreateSubscriptionRequest(BaseModel):

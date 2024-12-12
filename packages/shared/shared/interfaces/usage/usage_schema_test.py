@@ -1,10 +1,14 @@
+from datetime import datetime
+
 import pytest
+from pydantic import ValidationError
+from dateutil import parser
 from shared.usage.utils import bytes_to_sloc, sloc_to_bytes
 
 from packages.shared.shared.interfaces.usage.usage_schema import (
     UsageBalance,
     UsageEventSummary,
-    UsageMetricUnitType,
+    UsageMetricUnitType, UsageEventRange,
 )
 
 
@@ -174,3 +178,14 @@ def test_event_summary_convert_to_sloc(
     assert converted.onboarding_usage == 100
     assert converted.tech_doc_usage == 200
     assert converted.code_diff_usage == 300
+
+
+
+def test_usage_event_range() -> None:
+    st = parser.parse("2024-12-02T00:00:00Z")
+    et = parser.parse("2024-12-31T23:59:59Z")
+    event_range = UsageEventRange(start_date=st, end_date=et)
+    assert event_range.start_date.tzinfo is not None
+    assert event_range.end_date.tzinfo is not None
+    with pytest.raises(ValidationError):
+        UsageEventRange(start_date=datetime(2021, 1, 1), end_date=datetime(2020, 1, 31))

@@ -11,6 +11,7 @@ from app.api.routes.v1 import (
     onboarding,
     organization,
     search,
+    subscription,
     tags,
     upload,
     usage,
@@ -49,3 +50,7 @@ if settings.ENVIRONMENT != "production":
     api_router.include_router(
         sandbox_router, prefix="/sandbox", tags=["legacy-sandbox"]
     )
+
+api_router.include_router(
+    subscription.router, prefix="/subscription", tags=["subscription"]
+)

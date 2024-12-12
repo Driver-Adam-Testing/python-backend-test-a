@@ -373,7 +373,7 @@ def run_codebase_onboarding(
     else:
         print(
             f"Codebase onboarding complete for codebase: {codebase_name} (cb id: {codebase_id}). "
-            f"Version ID: {version_id})"
+            f"Version ID: {version_id}."
         )
         session_meta = UsageSessionMetadata(
             content_type="codebase", content_id=str(codebase_id)

@@ -5,10 +5,11 @@ from database.models_v1 import (
     ChunkAndEmbedding,
     DerivedContent,
     DerivedContentType,
+    InspectionVersion,
     Workspace,
 )
 from rank_bm25 import BM25Okapi
-from sqlmodel import Session, asc, or_, select
+from sqlmodel import Session, asc, func, or_, select
 
 from shared.embedding.text_embedder import batch_embed_text
 from shared.interfaces.search import SearchInput, SearchResult, SearchResults
@@ -61,6 +62,17 @@ def overall_score(
 
 
 def build_base_statement(input: SearchInput, embedded_query: any) -> any:
+    most_recent_inspector_versions = (
+        select(InspectionVersion.id)
+        .join(InspectionVersion, DerivedContent.version_id == InspectionVersion.id)
+        .where(
+            InspectionVersion.created_at
+            == func.max(InspectionVersion.created_at).over(
+                partition_by=DerivedContent.codebase_id
+            )
+        )
+        .subquery()
+    )
     statement = (
         select(
             ChunkAndEmbedding,
@@ -73,6 +85,12 @@ def build_base_statement(input: SearchInput, embedded_query: any) -> any:
         .join(DerivedContentType)
         .where(DerivedContent.id == ChunkAndEmbedding.content_id)
         .where(DerivedContentType.id == DerivedContent.content_type_id)
+        .where(
+            or_(
+                DerivedContent.version_id.is_(None),
+                DerivedContent.version_id.in_(most_recent_inspector_versions),
+            )
+        )
     )
     statement = statement.where(Workspace.organization_id == input.organization_id)
 

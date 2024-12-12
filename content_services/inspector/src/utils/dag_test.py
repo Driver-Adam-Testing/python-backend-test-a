@@ -1,4 +1,3 @@
-import subprocess
 from collections.abc import Iterator
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -125,17 +124,6 @@ def create_file_tree_dag(
         path.touch()
         dag.add_file(path, change_status=False, file_hash=file_hash)
     return dag
-
-
-def run_tree_command(directory: Path) -> None:
-    result = subprocess.run(
-        ["tree", str(directory)],
-        capture_output=True,
-        text=True,
-        check=True,
-    )
-
-    print(result.stdout)
 
 
 class TestFileTreeDag:

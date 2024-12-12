@@ -7,6 +7,7 @@ from typing import Any
 
 import httpx
 import jwt
+import requests
 from sqlmodel import Session
 
 from app.core.config import settings
@@ -156,20 +157,36 @@ def fetch_repos(session: Session, organization_id: str) -> list[dict[str, Any]]:
         raise e
 
 
-def download_and_upload_repo(
-    org_name: str,
-    owner: str,
+def get_github_repo_url(org_name: str, repo: str) -> str:
+    return f"https://api.github.com/repos/{org_name}/{repo}"
+
+
+def fetch_default_branch_and_commit(org_name: str, repo: str, access_token: str) -> str:
+    headers = {"Authorization": f"token {access_token}"}
+    repo_url = get_github_repo_url(org_name, repo)
+
+    repo_data = requests.get(repo_url, headers=headers).json()
+    default_branch = repo_data["default_branch"]
+
+    branch_url = f"{repo_url}/branches/{default_branch}"
+    branch_data = requests.get(branch_url, headers=headers).json()
+
+    return branch_data["commit"]["sha"]
+
+
+def generate_codebase_metadata(
     org_id: str,
+    org_name: str,
     workspace_id: str,
     repo: str,
-    access_token: str,
-    provider: str = "github",
-) -> bool:
-    github_url = f"https://api.github.com/repos/{org_name}/{repo}/zipball"
+    owner: str,
+    provider: str,
+    commit: str,
+) -> dict:
     org_id_hash = hashlib.sha256(org_id.encode()).hexdigest()[:63]
     upload_key = f"codebases/{org_id_hash}/{repo}.zip"
 
-    codebase_metadata = {
+    return {
         "organization_id": org_id_hash,
         "org_bucket": org_id_hash,
         "org_name": org_name,
@@ -179,39 +196,71 @@ def download_and_upload_repo(
         "codebase_name": repo,
         "content_type": "codebase",
         "provider": provider,
+        "version": commit,
     }
+
+
+def download_github_repo_zip(
+    org_name: str, repo: str, commit: str, access_token: str
+) -> bytes:
+    headers = {"Authorization": f"token {access_token}"}
+    zip_url = f"https://api.github.com/repos/{org_name}/{repo}/zipball/{commit}"
+    response = requests.get(zip_url, headers=headers, timeout=120, allow_redirects=True)
+    response.raise_for_status()
+    return response.content
+
+
+def upload_to_s3(zip_content: bytes, metadata: dict, upload_key: str) -> bool:
+    s3_url = generate_put_presigned_url(
+        key=upload_key,
+        content_type="application/zip",
+        metadata=metadata,
+    )
+    if not s3_url:
+        logger.error("Failed to generate S3 pre-signed URL.")
+        return False
+
+    headers = {
+        "Content-Type": "application/zip",
+        "Content-Length": str(len(zip_content)),
+    }
+    response = requests.put(s3_url, data=zip_content, headers=headers, timeout=120)
+    response.raise_for_status()
+    return response.status_code == 200
+
+
+def download_and_upload_repo(
+    gh_org_name: str,
+    owner: str,
+    org_id: str,
+    workspace_id: str,
+    repo: str,
+    access_token: str,
+    commit: str | None = None,
+) -> bool:
+    # For parity with prior implementation, I return False on any error
+    # I'm not sure why this is done; it feels like we should raise an exception
     try:
-        s3_url = generate_put_presigned_url(
-            key=upload_key, content_type="application/zip", metadata=codebase_metadata
+        if not commit:
+            commit = fetch_default_branch_and_commit(gh_org_name, repo, access_token)
+
+        metadata = generate_codebase_metadata(
+            org_id, gh_org_name, workspace_id, repo, owner, "github", commit
         )
-        print(s3_url)
-        with httpx.Client(follow_redirects=True, timeout=None) as client:
-            # Download repository ZIP from GitHub
-            response = client.get(
-                github_url,
-                headers={"Authorization": f"token {access_token}"},
-                timeout=None,
-            )
-            logger.info(response.status_code)
-            response.raise_for_status()
-            # print(str(len(response.content)))
-            # Upload the ZIP to S3 using the pre-signed URL
-            upload_response = client.put(
-                s3_url,
-                content=response.content,
-                headers={
-                    "Content-Type": "application/zip",
-                    "Content-Length": str(len(response.content)),
-                },
-            )
-            upload_response.raise_for_status()
-            print(f"Repository {repo} uploaded successfully to {upload_key}.")
-            return upload_response.status_code == 200
-    except httpx.RequestError as e:
-        print(e)
-        print(f"Failed to download repository: {e}")
+        upload_key = metadata["file_path"]
+
+        zip_content = download_github_repo_zip(gh_org_name, repo, commit, access_token)
+        logger.info(
+            "Repository downloaded successfully. Size: %d bytes", len(zip_content)
+        )
+
+        success = upload_to_s3(zip_content, metadata, upload_key)
+        if success:
+            logger.info("Repository %s uploaded successfully to %s.", repo, upload_key)
+        return success
+    except requests.RequestException as e:
+        logger.error("Request error: %s", e)
     except Exception as e:
-        print(e)
-        print(f"Failed to upload repository: {e}")
+        logger.error("Unexpected error: %s", e)
 
     return False

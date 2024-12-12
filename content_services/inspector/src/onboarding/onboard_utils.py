@@ -1,19 +1,27 @@
+import hashlib
 import os
 import re
 import time
 import zipfile
 from functools import cache
 from pathlib import Path
+from urllib.parse import urlparse
 from uuid import UUID
 
-import chardet
 import requests
 from boto3 import resource
 from botocore.client import ClientError
+from database.models_v1 import (
+    Codebase,
+    DerivedContent,
+    Enum_Codebase_Status,
+    Enum_Derived_Content_Status,
+    Workspace,
+)
 from sqlmodel import Session, select
 
 
-# TODO dedup
+# TODO dedup; already exists for inspector
 @cache
 def get_source_content_type_uuid(content_type_name: str) -> UUID:
     from database.db import engine
@@ -33,7 +41,6 @@ def get_source_content_type_uuid(content_type_name: str) -> UUID:
 @cache
 def get_org_id_from_workspace(workspace_id: UUID) -> str:
     from database.db import engine
-    from database.models_v1 import Workspace
 
     org_id = None
     with Session(engine) as session:
@@ -42,6 +49,33 @@ def get_org_id_from_workspace(workspace_id: UUID) -> str:
         if workspace:
             org_id = workspace.organization_id
     return org_id
+
+
+def set_codebase_status(codebase_id: UUID, status: Enum_Derived_Content_Status) -> None:
+    from database.db import engine
+    from sqlmodel import Session, select
+
+    with Session(engine) as session, session.begin():
+        codebase = session.get(Codebase, codebase_id)
+        if codebase:
+            codebase.status = Enum_Codebase_Status.processing_complete
+            session.add(codebase)
+        else:
+            raise Exception(f"Codebase with ID: {codebase_id} not found.")
+
+        cb_sc_uuid = get_source_content_type_uuid("codebase")
+        sel_statement = select(DerivedContent).where(
+            DerivedContent.codebase_id == codebase_id,
+            DerivedContent.content_type_id == cb_sc_uuid,
+        )
+        codebase_dc = session.exec(sel_statement).first()
+        if codebase_dc:
+            codebase_dc.status = status
+            session.add(codebase_dc)
+        else:
+            raise Exception(
+                f"Codebase Source Content with ID: {codebase_id} not found."
+            )
 
 
 @cache
@@ -85,7 +119,8 @@ def get_file_type_from_filename(filename: str) -> str:
 
 
 def create_base_storage_url(org_id: str) -> str:
-    return f"https://{org_id}.s3.amazonaws.com"
+    hashed_org_id = hashlib.sha256(org_id.encode()).hexdigest()[:63]
+    return f"https://{hashed_org_id}.s3.amazonaws.com"
 
 
 def create_bucket_if_dne(bucket_name: str) -> None:
@@ -113,7 +148,7 @@ def download_file_from_s3(
     try:
         s3_bucket.download_file(str(s3_path_to_file), download_destination)
     except Exception as e:
-        raise (e)
+        raise e
 
 
 def download_file_from_presigned_url(
@@ -161,11 +196,13 @@ def unpack_archive(
 
     os.rename(extracted_path, stripped_extracted_path)
 
+    assert stripped_extracted_path.exists()
+
     return stripped_extracted_path
 
 
 def upload_file_to_s3(
-    bucket_name: str, destination_root: str, local_path: Path
+    bucket_name: str, destination_root: Path, local_path: Path
 ) -> Path:
     s3_resource = resource("s3", endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL"))
     # TODO: if S3 is reorged, bucket is consistent?
@@ -189,6 +226,8 @@ def evaluate_file_size_processable(filepath: Path) -> bool:
 
 
 def get_non_ascii_file_encoding(file_bytes: bytes) -> str:
+    import chardet
+
     chunk_size = 2500
     num_chunks = 40
     min_confidence = 0.7
@@ -214,6 +253,8 @@ def get_non_ascii_file_encoding(file_bytes: bytes) -> str:
 
 
 def evaluate_file_binary(filepath: Path) -> bool:
+    import chardet
+
     is_binary = False
     chunk_size = 2500
     min_confidence = 0.7
@@ -433,7 +474,7 @@ def generate_get_presigned_url(bucket: str, key: str, expires: int = 3600) -> st
 
 
 def parse_presigned_url(url: str) -> tuple[str, str]:
-    from urllib.parse import unquote_plus, urlparse
+    from urllib.parse import unquote_plus
 
     parsed_url = urlparse(url)
     host = parsed_url.netloc

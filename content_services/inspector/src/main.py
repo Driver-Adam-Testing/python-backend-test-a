@@ -580,7 +580,7 @@ def onboard_and_inspect(
         print("Inspection complete")
 
         set_codebase_status(
-            codebase_id, Enum_Derived_Content_Status.generation_complete
+            codebase_id, version_id, Enum_Derived_Content_Status.generation_complete
         )
 
     except Exception as e:
@@ -592,9 +592,9 @@ def onboard_and_inspect(
             f"Exception type: {exception_type}\nFile: {filename}\nLine: {line_number}"
         )
         send_exception_email.remote(exception_details)
-        # Since codebase could possibly be undefined in this clean up action, we don't care if it fails
+        # Since codebase and version could possibly be undefined in this clean up action, we don't care if it fails
         with suppress(Exception):
             set_codebase_status(
-                codebase_id, Enum_Derived_Content_Status.generation_error
+                codebase_id, version_id, Enum_Derived_Content_Status.generation_error
             )
         raise e

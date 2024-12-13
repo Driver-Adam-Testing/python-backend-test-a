@@ -73,7 +73,9 @@ def get_codebase_content_record_status_for(
     return codebase_dc.status, codebase_dc.id
 
 
-def set_codebase_status(codebase_id: UUID, status: Enum_Derived_Content_Status) -> None:
+def set_codebase_status(
+    codebase_id: UUID, version_id: UUID, status: Enum_Derived_Content_Status
+) -> None:
     from database.db import engine
     from sqlmodel import Session, select
 
@@ -89,6 +91,7 @@ def set_codebase_status(codebase_id: UUID, status: Enum_Derived_Content_Status) 
         sel_statement = select(DerivedContent).where(
             DerivedContent.codebase_id == codebase_id,
             DerivedContent.content_type_id == cb_sc_uuid,
+            DerivedContent.version_id == version_id,
         )
         codebase_dc = session.exec(sel_statement).first()
         if codebase_dc:
@@ -96,7 +99,7 @@ def set_codebase_status(codebase_id: UUID, status: Enum_Derived_Content_Status) 
             session.add(codebase_dc)
         else:
             raise Exception(
-                f"Codebase Source Content with ID: {codebase_id} not found."
+                f"Codebase Content Record for (codebase id {codebase_id}, version id {version_id}) not found."
             )
 
 
@@ -120,7 +123,7 @@ def load_extension_and_name_mapping() -> dict:
     return extension_map, name_map
 
 
-def get_file_type_from_extension(extension: str) -> str:
+def get_file_type_from_extension(extension: str) -> str | None:
     extension_map = load_extension_and_name_mapping()[0]
     file_type = extension_map.get(extension)
 
@@ -131,7 +134,7 @@ def get_file_type_from_extension(extension: str) -> str:
     return None
 
 
-def get_file_type_from_filename(filename: str) -> str:
+def get_file_type_from_filename(filename: str) -> str | None:
     name_map = load_extension_and_name_mapping()[1]
     file_type = name_map.get(filename)
 

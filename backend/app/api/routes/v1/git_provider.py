@@ -238,7 +238,7 @@ def handle_push_event(session: CurrentSession, body: dict) -> JSONResponse:
         f"codebases/{org_id_to_hash(gh_app_install.organization_id)}/{repo_name}.zip"
     )
     token = fetch_app_access_token(installation_id)
-    upload_complete = download_and_upload_repo(
+    upload_complete, _ = download_and_upload_repo(
         gh_org_name=org_name,
         owner="",
         org_id=gh_app_install.organization_id,

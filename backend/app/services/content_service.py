@@ -221,7 +221,6 @@ class ContentService:
             f"Getting list of content for organization {organization_id} with input {search_input}"
         )
         try:
-            # We now perform the query in a single helper function call
             results, total_count = self._get_list_content(organization_id, search_input)
         except ValueError:
             logger.exception(
@@ -287,7 +286,6 @@ class ContentService:
         ).one()
         query = self._apply_sorting(query, search_input)
 
-        # Add selectinloads for related entities to avoid multiple joins
         query = query.options(
             selectinload(DerivedContent.workspace),
             selectinload(DerivedContent.content_type),
@@ -297,7 +295,6 @@ class ContentService:
             selectinload(DerivedContent.inspection_version),
         )
 
-        # Execute the main query with offset and limit
         results = self.session.exec(
             query.offset(search_input.offset).limit(search_input.limit)
         ).all()
@@ -305,8 +302,6 @@ class ContentService:
         return results, total_count
 
     def _build_base_query(self: "ContentService", organization_id: str) -> Select:
-        # Start with a basic select of DerivedContent only.
-        # We no longer do joins explicitly for data retrieval since we use selectinload.
         return (
             select(DerivedContent)
             .where(DerivedContent.workspace_id == Workspace.id)

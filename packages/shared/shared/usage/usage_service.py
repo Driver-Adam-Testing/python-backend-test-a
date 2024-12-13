@@ -66,25 +66,14 @@ class UsageService:
     def get_usage_balance(self, organization_id: str) -> UsageBalance:
         credits_query = select(UsageEvent).where(
             UsageEvent.organization_id == organization_id,
-            UsageEvent.event_type.in_(
-                [
-                    UsageEventType.BASE_PLATFORM_USAGE_CREDIT,
-                    UsageEventType.ADDITIONAL_PLATFORM_USAGE_CREDIT,
-                ]
-            ),
+            UsageEvent.event_type.in_(UsageEventRepository.credit_usage_event_types()),
         )
         usage_event_credit = self.session.exec(credits_query).all()
 
         debits_query = select(UsageEvent).where(
             UsageEvent.organization_id == organization_id,
             UsageEvent.event_type.in_(
-                [
-                    UsageEventType.AGENT_PIPELINE_USAGE_DEBIT,
-                    UsageEventType.INSPECTOR_TECH_DOC_USAGE_DEBIT,
-                    UsageEventType.INSPECTOR_CODE_DIFF_USAGE_DEBIT,
-                    UsageEventType.ONBOARDING_USAGE_DEBIT,
-                    UsageEventType.SUMMARIZATION_USAGE_DEBIT,
-                ]
+                UsageEventRepository.billable_usage_event_types()
             ),
         )
         usage_event_debit = self.session.exec(debits_query).all()
@@ -175,6 +164,14 @@ class UsageService:
         platform_usage_credits = sum(
             [event.bytes_in for event in platform_credit_events]
         )
+        # get user seat usage
+        user_seat_usage_events = self.usage_event_repository.get_usage_events_by_types(
+            organization_id,
+            [UsageEventType.USER_SEAT_USAGE_DEBIT],
+            start_date,
+            end_date,
+        )
+        user_seat_count = len(user_seat_usage_events)
 
         usage_event_summary = UsageEventSummary(
             onboarding_usage=onboarding_usage,
@@ -184,7 +181,7 @@ class UsageService:
             pdf_summarization_usage=pdf_summarization_usage,
             platform_usage_credits=platform_usage_credits,
             unit=UsageMetricUnitType.BYTES,
-            user_seat_count=0,
+            user_seat_count=user_seat_count,
         )
         return usage_event_summary.convert_to(UsageMetricUnitType.SLOC)
 

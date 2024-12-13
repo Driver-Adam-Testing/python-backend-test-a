@@ -19,6 +19,7 @@ from app.repositories.github_app_installations_repository import (
     GithubAppInstallationsRepository,
 )
 from app.repositories.workspace_repository import WorkspaceRepository
+from app.utils.aws_s3 import org_id_to_hash
 from app.utils.aws_secrets_manager import format_secret_key, write_secret
 from app.utils.gh_ops import (
     download_and_upload_repo,
@@ -112,6 +113,9 @@ def clone_repo(
     workspace_id = str(default_workspace.id)
 
     token = fetch_app_access_token(repo.metadata["installation_id"])
+    upload_key = (
+        f"analysis/{org_id_to_hash(current_user.organization_id)}/{repo.repo_name}.zip"
+    )
     upload_complete, analysis_download_url = download_and_upload_repo(
         gh_org_name=repo.org,
         owner=current_user.user_id,
@@ -119,6 +123,7 @@ def clone_repo(
         workspace_id=workspace_id,
         repo=repo.repo_name,
         access_token=token,
+        upload_key=upload_key,
     )
 
     if upload_complete is True:
@@ -229,9 +234,11 @@ def handle_push_event(session: CurrentSession, body: dict) -> JSONResponse:
             status_code=status.HTTP_202_ACCEPTED,
             content={"message": ""},
         )
-
+    upload_key = (
+        f"codebases/{org_id_to_hash(gh_app_install.organization_id)}/{repo_name}.zip"
+    )
     token = fetch_app_access_token(installation_id)
-    upload_complete = download_and_upload_repo(
+    upload_complete, _ = download_and_upload_repo(
         gh_org_name=org_name,
         owner="",
         org_id=gh_app_install.organization_id,
@@ -239,6 +246,7 @@ def handle_push_event(session: CurrentSession, body: dict) -> JSONResponse:
         repo=repo_name,
         access_token=token,
         commit=commit_hash,
+        upload_key=upload_key,
     )
 
     if upload_complete:

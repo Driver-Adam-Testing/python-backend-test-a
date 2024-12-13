@@ -217,7 +217,7 @@ def unpack_archive(
         stripped_extracted_path = Path(override_codebase_name)
 
     # The container may already have this path unpacked in some instances.
-    if stripped_extracted_path.exists():
+    if stripped_extracted_path.exists() and stripped_extracted_path != extracted_path:
         rmtree(stripped_extracted_path)
 
     os.rename(extracted_path, stripped_extracted_path)

@@ -1,7 +1,7 @@
 """add previous_version_id index
 
 Revision ID: 1475962b9869
-Revises: 86ed58d5305f
+Revises: 3605f4802da1
 Create Date: 2024-12-12 13:49:27.361046
 
 """
@@ -10,7 +10,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "1475962b9869"
-down_revision = "86ed58d5305f"
+down_revision = "3605f4802da1"
 branch_labels = None
 depends_on = None
 

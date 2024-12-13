@@ -1,5 +1,4 @@
 import base64
-import hashlib
 import logging
 import re
 import time
@@ -14,7 +13,11 @@ from app.core.config import settings
 from app.repositories.github_app_installations_repository import (
     GithubAppInstallationsRepository,
 )
-from app.utils.aws_s3 import generate_get_presigned_url, generate_put_presigned_url
+from app.utils.aws_s3 import (
+    generate_get_presigned_url,
+    generate_put_presigned_url,
+    org_id_to_hash,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -182,9 +185,9 @@ def generate_codebase_metadata(
     owner: str,
     provider: str,
     commit: str,
+    upload_key: str,
 ) -> dict:
-    org_id_hash = hashlib.sha256(org_id.encode()).hexdigest()[:63]
-    upload_key = f"analysis/{org_id_hash}/{repo}.zip"
+    org_id_hash = org_id_to_hash(org_id)
 
     return {
         "organization_id": org_id_hash,
@@ -236,6 +239,7 @@ def download_and_upload_repo(
     workspace_id: str,
     repo: str,
     access_token: str,
+    upload_key: str,
     commit: str | None = None,
 ) -> tuple[bool, str]:
     # For parity with prior implementation, I return False on any error
@@ -245,9 +249,8 @@ def download_and_upload_repo(
             commit = fetch_default_branch_and_commit(gh_org_name, repo, access_token)
 
         metadata = generate_codebase_metadata(
-            org_id, gh_org_name, workspace_id, repo, owner, "github", commit
+            org_id, gh_org_name, workspace_id, repo, owner, "github", commit, upload_key
         )
-        upload_key = metadata["file_path"]
 
         zip_content = download_github_repo_zip(gh_org_name, repo, commit, access_token)
         logger.info(

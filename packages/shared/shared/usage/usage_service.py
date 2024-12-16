@@ -212,6 +212,7 @@ class UsageService:
         for sesh in onboarding_sessions:
             meta = sesh.session_metadata
             codebase_id = meta.get("content_id")
+            content_name = meta.get("content_name")
             onboarding_usage_event = next(
                 event
                 for event in onboarding_usage_events
@@ -220,7 +221,11 @@ class UsageService:
             codebase = self.codebase_repository.get(codebase_id)
             if not codebase:
                 print(f"Codebase not found for id: {codebase_id}")
-                asset_name = "Deleted Codebase"
+                asset_name = (
+                    f"{content_name} (deleted)"
+                    if content_name
+                    else "(Deleted Codebase)"
+                )
             else:
                 asset_name = codebase.codebase_name
             charges.append(

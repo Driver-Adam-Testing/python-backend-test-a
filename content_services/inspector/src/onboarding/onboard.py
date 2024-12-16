@@ -177,7 +177,6 @@ def run_codebase_onboarding(
     )
     from onboarding.onboard_utils import (
         RunInProgressError,
-        add_default_content_for_ignored,
         create_bucket_if_dne,
         download_file_from_presigned_url,
         get_codebase_content_record_status_for,
@@ -341,7 +340,7 @@ def run_codebase_onboarding(
         dir_sc_uuid = get_source_content_type_uuid("codebase-directory")
         for directory in all_directories:
             is_ignored = driverignore(directory) if driverignore is not None else False
-            if not is_on_blacklist(Path(directory)):
+            if not is_on_blacklist(Path(directory)) and not is_ignored:
                 # TODO: analysis metadata for directories?
                 # TODO: this is fragile - consider using DAG logic here
                 dir_sc = DerivedContent(
@@ -349,27 +348,20 @@ def run_codebase_onboarding(
                     relative_path=directory,
                     content_type_id=dir_sc_uuid,
                     workspace_id=workspace_id,
-                    misc_metadata={"is_ignored": is_ignored},
+                    misc_metadata={},
                     version_id=version_id,
                 )
                 session.add(dir_sc)
                 print(f"Created but not committed source content for: {directory}.")
-                if is_ignored:
-                    session.flush()
-                    add_default_content_for_ignored(
-                        session=session,
-                        source_content_id=dir_sc.id,
-                        workspace_id=workspace_id,
-                        codebase_id=codebase_id,
-                        relative_path=directory,
-                        version_id=version_id,
-                    )
 
         codebase_sloc = 0
         codebase_size_in_bytes = 0
         # Add file source contents
         for file_path in codebase_stats:
-            if not codebase_stats[file_path]["is_blacklisted"]:
+            if (
+                not codebase_stats[file_path]["is_blacklisted"]
+                and not codebase_stats[file_path]["is_ignored"]
+            ):
                 file_sc_type = get_source_content_type_uuid("codebase-file")
                 file_sc = DerivedContent(
                     codebase_id=codebase_id,
@@ -388,19 +380,6 @@ def run_codebase_onboarding(
                 print(
                     f"Created but not committed source content for: {file_path}. Processable: {codebase_stats[file_path]['is_analyzable']}. Stats: {codebase_stats[file_path]}"
                 )
-                if (
-                    codebase_stats[file_path]["is_ignored"]
-                    and codebase_stats[file_path]["is_analyzable"]
-                ):
-                    session.flush()
-                    add_default_content_for_ignored(
-                        session=session,
-                        source_content_id=file_sc.id,
-                        workspace_id=workspace_id,
-                        codebase_id=codebase_id,
-                        relative_path=str(file_path),
-                        version_id=version_id,
-                    )
     if prior_version_name:
         print(
             f"Codebase onboarding complete for codebase: {codebase_name} (cb id: {codebase_id}). "

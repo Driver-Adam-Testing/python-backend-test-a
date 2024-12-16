@@ -125,59 +125,6 @@ def load_extension_and_name_mapping() -> dict:
     return extension_map, name_map
 
 
-def add_default_content_for_ignored(
-    session: Session,
-    source_content_id: str,
-    workspace_id: str,
-    codebase_id: str,
-    relative_path: str,
-    version_id: str,
-) -> None:
-    from database.models_v1 import DerivedContent, Enum_Derived_Content_Status
-
-    short_sentence_type = get_source_content_type_uuid("short_sentence_description")
-    short_paragraph_type = get_source_content_type_uuid("short_paragraph_description")
-    long_type = get_source_content_type_uuid("long_description")
-    short_sent_dc = DerivedContent(
-        content_type_id=short_sentence_type,
-        source_content_id=source_content_id,
-        workspace_id=workspace_id,
-        codebase_id=codebase_id,
-        relative_path=relative_path,
-        content="Ignored during analysis via `.driverignore`. To update this, modify the .driverignore file and commit to your codebase",
-        misc_metadata=None,
-        status=Enum_Derived_Content_Status.generation_complete,
-        order=0,
-        version_id=version_id,
-    )
-    short_para_dc = DerivedContent(
-        content_type_id=short_paragraph_type,
-        source_content_id=source_content_id,
-        workspace_id=workspace_id,
-        codebase_id=codebase_id,
-        relative_path=relative_path,
-        content=" ",
-        misc_metadata=None,
-        status=Enum_Derived_Content_Status.generation_complete,
-        order=0,
-        version_id=version_id,
-    )
-    long_dc = DerivedContent(
-        content_type_id=long_type,
-        source_content_id=source_content_id,
-        workspace_id=workspace_id,
-        codebase_id=codebase_id,
-        relative_path=relative_path,
-        content=" ",
-        misc_metadata=None,
-        status=Enum_Derived_Content_Status.generation_complete,
-        order=0,
-        version_id=version_id,
-    )
-    dc_records = [short_sent_dc, short_para_dc, long_dc]
-    session.add_all(dc_records)
-
-
 def get_file_type_from_extension(extension: str) -> str | None:
     extension_map = load_extension_and_name_mapping()[0]
     file_type = extension_map.get(extension)

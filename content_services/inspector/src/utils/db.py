@@ -167,11 +167,7 @@ async def get_analyzable_source_contents_by_version_id(
         if (
             res.content_type_id == file_content_type_id
             and res.misc_metadata["is_analyzable"] is True
-            and res.misc_metadata.get("is_ignored", False) is False
-        ) or (
-            res.content_type_id != file_content_type_id
-            and res.misc_metadata.get("is_ignored", False) is False
-        ):
+        ) or res.content_type_id != file_content_type_id:
             res_list.append(res)
 
     return res_list

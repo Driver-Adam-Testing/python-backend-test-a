@@ -124,7 +124,7 @@ class UsageCharge(BaseModel):
     @computed_field
     @property
     def sloc(self) -> int:
-        return abs(bytes_to_sloc(self.bytes))
+        return bytes_to_sloc(self.bytes)
 
     @computed_field
     @property

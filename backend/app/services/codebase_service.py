@@ -112,7 +112,7 @@ class CodebaseService:
             codebase_analysis_metrics = CodebaseAnalysisMetrics(
                 **modal_response.response
             )
-            print(codebase_analysis_metrics)
+            # print(codebase_analysis_metrics)
             codebase_analysis_results.result = codebase_analysis_metrics
 
         return codebase_analysis_results

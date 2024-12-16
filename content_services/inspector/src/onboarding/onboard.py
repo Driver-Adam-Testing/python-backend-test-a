@@ -175,8 +175,10 @@ def run_codebase_onboarding(
     from sqlmodel import Session, select
 
     from onboarding.onboard_utils import (
+        RunInProgressError,
         create_bucket_if_dne,
         download_file_from_presigned_url,
+        get_codebase_content_record_status_for,
         get_org_id_from_workspace,
         get_source_content_type_uuid,
         is_on_blacklist,
@@ -240,6 +242,20 @@ def run_codebase_onboarding(
                     f"Codebase {codebase.codebase_name} has no prior version."
                 )
             prior_version_name = prior_version.version
+
+            prior_version_status, prior_version_id = (
+                get_codebase_content_record_status_for(
+                    codebase_id=codebase_id, version_id=prior_version.id
+                )
+            )
+            if prior_version_status == Enum_Derived_Content_Status.generating:
+                print(
+                    f"Codebase {codebase.codebase_name} has a prior version name: {prior_version_name}"
+                    f" id: {prior_version_id}"
+                    f" that is still being processed or failed."
+                )
+                raise RunInProgressError()
+
         else:
             prior_version = None
             prior_version_name = None
@@ -357,7 +373,7 @@ def run_codebase_onboarding(
     else:
         print(
             f"Codebase onboarding complete for codebase: {codebase_name} (cb id: {codebase_id}). "
-            f"Version ID: {version_id}. "
+            f"Version ID: {version_id}."
         )
         session_meta = UsageSessionMetadata(
             content_type="codebase", content_id=str(codebase_id)

@@ -6124,7 +6124,6 @@ Ren'Py:
 RenderScript:
   type: programming
   extensions:
-  - ".rs"
   - ".rsh"
   tm_scope: none
   ace_mode: text
@@ -8047,7 +8046,6 @@ XML:
   - ".rdf"
   - ".res"
   - ".resx"
-  - ".rs"
   - ".rss"
   - ".sch"
   - ".scxml"

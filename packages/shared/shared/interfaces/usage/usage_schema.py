@@ -12,8 +12,9 @@ class UsageMetricUnitType(str, Enum):
 
 
 class CreditUsageEvent(BaseModel):
-    credit_amount: int
-    unit: UsageMetricUnitType
+    sloc_credit_amount: int
+    organization_id: str
+    user_id: str | None = None
 
 
 class UsageBalance(BaseModel):

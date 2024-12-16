@@ -17,6 +17,7 @@ ALGORITHMS = ["RS256"]
 ORG_MANAGER = "organization:management"
 CONTENT_EDITOR = "content:editor"
 CONTENT_READONLY = "content:readonly"
+USAGE_CREDITOR = "usage_credit:management"
 
 
 def get_jwks() -> dict:
@@ -167,3 +168,4 @@ M2MToken = Annotated[M2M, Depends(get_current_m2m)]
 ContentEditorPermission = Depends(require_permission(CONTENT_EDITOR))
 ContentReadonlyPermission = Depends(require_permission(CONTENT_READONLY))
 OrgManagerPermission = Depends(require_permission(ORG_MANAGER))
+UsageCreditPermission = Depends(require_permission(USAGE_CREDITOR))

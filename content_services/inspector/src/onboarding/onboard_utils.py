@@ -3,6 +3,7 @@ import os
 import re
 import time
 import zipfile
+from collections.abc import Callable
 from functools import cache
 from pathlib import Path
 from shutil import rmtree
@@ -19,6 +20,7 @@ from database.models_v1 import (
     Enum_Derived_Content_Status,
     Workspace,
 )
+from gitignore_parser import parse_gitignore
 from sqlmodel import Session, select
 
 
@@ -388,6 +390,10 @@ def is_on_blacklist(filepath: Path) -> bool:
     blacklist_file_exts = [
         ".svg",
     ]
+    blacklist_file_names = [
+        ".DS_Store",
+        ".driverignore",
+    ]
     is_blacklisted = False
 
     if any(dir in filepath.parts for dir in blacklist_dirs):
@@ -396,7 +402,18 @@ def is_on_blacklist(filepath: Path) -> bool:
     if filepath.is_file() and filepath.suffix in blacklist_file_exts:
         is_blacklisted = True
 
+    if filepath.is_file() and filepath.name in blacklist_file_names:
+        is_blacklisted = True
+
     return is_blacklisted
+
+
+def load_driverignore(codebase_root: Path) -> Callable | None:
+    file_list = os.listdir(codebase_root)
+    if ".driverignore" in file_list:
+        driverignore = parse_gitignore(Path(codebase_root) / ".driverignore")
+        return driverignore
+    return None
 
 
 def reencode_file(filepath: Path) -> None:
@@ -456,13 +473,14 @@ def analyze_binary_file(filepath: Path) -> dict:
 
 
 def run_file_stats_and_reencode(
-    local_path: Path,
+    local_path: Path, driverignore: Callable | None
 ) -> dict:
     # Evaluate file-processability before reencoding
     # due to file encoding nastiness w/ binary files
     file_size_processable = evaluate_file_size_processable(local_path)
     is_binary = evaluate_file_binary(local_path)
     is_blacklisted = is_on_blacklist(local_path)
+    is_ignored = driverignore(local_path) if driverignore is not None else False
 
     file_stats = {}
 
@@ -479,6 +497,7 @@ def run_file_stats_and_reencode(
         file_stats = analyze_binary_file(local_path)
         file_stats["is_analyzable"] = False
     file_stats["is_blacklisted"] = is_blacklisted
+    file_stats["is_ignored"] = is_ignored
 
     return file_stats
 

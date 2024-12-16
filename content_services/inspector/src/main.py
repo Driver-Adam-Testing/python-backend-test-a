@@ -519,6 +519,7 @@ onboarding_and_inspect_image = (
     .pip_install("/driver_db")
     .pip_install("requests")
     .pip_install("boto3")
+    .pip_install("gitignore-parser")
 )
 
 

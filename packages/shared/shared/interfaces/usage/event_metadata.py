@@ -11,6 +11,7 @@ class UsageSessionMetadata(BaseModel):
     content_id: str
     events_sent: int = 0
     run_id: str | None = None
+    content_name: str | None = None
 
 
 class UsagePaymentSessionMetadata(BaseModel):

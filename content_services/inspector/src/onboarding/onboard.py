@@ -392,7 +392,9 @@ def run_codebase_onboarding(
             f"Version ID: {version_id}."
         )
         session_meta = UsageSessionMetadata(
-            content_type="codebase", content_id=str(codebase_id)
+            content_type="codebase",
+            content_id=str(codebase_id),
+            content_name=codebase_name,
         )
         # need to get the real org id from the workspace since the org_id passed in is the hashed org_id
         real_org_id = get_org_id_from_workspace(workspace_id)

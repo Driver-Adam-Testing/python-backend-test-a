@@ -122,7 +122,7 @@ async def get_source_content_type_uuid(content_type: SourceContentTypeMap) -> UU
     return sct_uuid
 
 
-async def get_latest_run_from_version_id(version_id: uuid.UUID) -> uuid.UUID:
+async def get_latest_run_from_version_id(version_id: uuid.UUID) -> uuid.UUID | None:
     from database.db import async_engine
     from sqlmodel import select
 
@@ -132,8 +132,13 @@ async def get_latest_run_from_version_id(version_id: uuid.UUID) -> uuid.UUID:
             .where(InspectorRun.inspection_version_id == version_id)
             .order_by(InspectorRun.created_at.desc())
         )
-        inspector_id = (await session.exec(statement)).first().id
-    return inspector_id
+        result = (await session.exec(statement)).first()
+        # It is possible, though uncommon, that a version won't have a run
+        # This happens, for example, for codebases that were created before runs/versions were introduced, but versions
+        # were created during a migration for those codebases
+        if result is None:
+            return None
+        return result.id
 
 
 # TODO this actually would get source and derived content if the incoming types weren't correct

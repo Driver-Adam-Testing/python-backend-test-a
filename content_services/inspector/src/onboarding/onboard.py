@@ -362,6 +362,7 @@ def run_codebase_onboarding(
                         workspace_id=workspace_id,
                         codebase_id=codebase_id,
                         relative_path=directory,
+                        version_id=version_id,
                     )
 
         codebase_sloc = 0
@@ -398,6 +399,7 @@ def run_codebase_onboarding(
                         workspace_id=workspace_id,
                         codebase_id=codebase_id,
                         relative_path=str(file_path),
+                        version_id=version_id,
                     )
     if prior_version_name:
         print(

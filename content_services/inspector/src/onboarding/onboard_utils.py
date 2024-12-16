@@ -131,6 +131,7 @@ def add_default_content_for_ignored(
     workspace_id: str,
     codebase_id: str,
     relative_path: str,
+    version_id: str,
 ) -> None:
     from database.models_v1 import DerivedContent, Enum_Derived_Content_Status
 
@@ -147,6 +148,7 @@ def add_default_content_for_ignored(
         misc_metadata=None,
         status=Enum_Derived_Content_Status.generation_complete,
         order=0,
+        version_id=version_id,
     )
     short_para_dc = DerivedContent(
         content_type_id=short_paragraph_type,
@@ -158,6 +160,7 @@ def add_default_content_for_ignored(
         misc_metadata=None,
         status=Enum_Derived_Content_Status.generation_complete,
         order=0,
+        version_id=version_id,
     )
     long_dc = DerivedContent(
         content_type_id=long_type,
@@ -169,6 +172,7 @@ def add_default_content_for_ignored(
         misc_metadata=None,
         status=Enum_Derived_Content_Status.generation_complete,
         order=0,
+        version_id=version_id,
     )
     dc_records = [short_sent_dc, short_para_dc, long_dc]
     session.add_all(dc_records)

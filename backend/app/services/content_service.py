@@ -279,6 +279,8 @@ class ContentService:
     def _get_list_content(
         self: "ContentService", organization_id: str, search_input: ListContentInput
     ) -> tuple[list[DerivedContent], int]:
+        # we pre-fetch related entities so that when we access attributes of those entities we do not incur additional queries.
+        # This is helpful when the list endpoint builds the results to return, and nested attributes are requested on each result
         query = self._build_base_query(organization_id)
         query = self._apply_filters(query, search_input)
         total_count = self.session.exec(
@@ -419,7 +421,7 @@ class ContentService:
                 TagContent, TagContent.content_id == DerivedContent.id, isouter=True
             )
             statement = statement.join(Tag, Tag.id == TagContent.tag_id, isouter=True)
-            if search_input.tag_ids:
+            if search_input.tags:
                 tag_clauses = [Tag.name.contains(tag) for tag in search_input.tags]
                 statement = statement.where(or_(*tag_clauses))
 

@@ -393,6 +393,8 @@ class ContentService:
             )
 
         if search_input.latest_version_only:
+            # COMMENT: This gets all InspectionVersion IDs that are NOT a previous_version.
+            # Hence, this is a list of all the most recent version Ids.
             most_recent_versions_subquery = (
                 select(InspectionVersion.id)
                 .where(

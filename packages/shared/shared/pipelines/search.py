@@ -62,6 +62,8 @@ def overall_score(
 
 
 def build_base_statement(input: SearchInput, embedded_query: any) -> any:
+    # COMMENT: This gets all InspectionVersion IDs that are NOT a previous_version.
+    # Hence, this is a list of all the most recent version Ids.
     most_recent_inspector_versions = (
         select(InspectionVersion.id)
         .where(

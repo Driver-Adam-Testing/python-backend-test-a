@@ -25,6 +25,8 @@ class CodebaseFolderSummaryTool(ToolStrict):
         agent.scope.authorize(self.codebase_directory_path)
 
         with get_session() as session:
+            # COMMENT: This gets all InspectionVersion IDs that are NOT a previous_version.
+            # Hence, this is a list of all the most recent version Ids.
             most_recent_versions_subquery = (
                 select(InspectionVersion.id)
                 .where(

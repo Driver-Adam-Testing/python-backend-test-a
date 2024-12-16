@@ -88,7 +88,7 @@ class CodebaseService:
         )  # validate the presigned URL before spawning the modal function to prevent unauthorized access
 
         modal_function = Function.lookup(
-            "codebase-onboarding",
+            "inspector-v2",
             "run_pre_codebase_analysis",
             environment_name=settings.MODAL_ENVIRONMENT,  # for some reason I get app not found without environment_name
         )

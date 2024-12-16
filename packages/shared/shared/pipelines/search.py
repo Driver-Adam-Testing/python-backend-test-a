@@ -5,6 +5,7 @@ from database.models_v1 import (
     ChunkAndEmbedding,
     DerivedContent,
     DerivedContentType,
+    InspectionVersion,
     Workspace,
 )
 from rank_bm25 import BM25Okapi
@@ -61,6 +62,19 @@ def overall_score(
 
 
 def build_base_statement(input: SearchInput, embedded_query: any) -> any:
+    # COMMENT: This gets all InspectionVersion IDs that are NOT a previous_version.
+    # Hence, this is a list of all the most recent version Ids.
+    most_recent_inspector_versions = (
+        select(InspectionVersion.id)
+        .where(
+            ~InspectionVersion.id.in_(
+                select(InspectionVersion.previous_version_id).where(
+                    InspectionVersion.previous_version_id.isnot(None)
+                )
+            )
+        )
+        .subquery()
+    )
     statement = (
         select(
             ChunkAndEmbedding,
@@ -69,10 +83,18 @@ def build_base_statement(input: SearchInput, embedded_query: any) -> any:
                 "score"
             ),
         )
-        .join(Workspace)
-        .join(DerivedContentType)
-        .where(DerivedContent.id == ChunkAndEmbedding.content_id)
-        .where(DerivedContentType.id == DerivedContent.content_type_id)
+        .select_from(DerivedContent)
+        .join(ChunkAndEmbedding, DerivedContent.id == ChunkAndEmbedding.content_id)
+        .join(Workspace, Workspace.id == DerivedContent.workspace_id)
+        .join(
+            DerivedContentType, DerivedContentType.id == DerivedContent.content_type_id
+        )
+        .where(
+            or_(
+                DerivedContent.version_id.in_(most_recent_inspector_versions),
+                DerivedContent.version_id.is_(None),
+            )
+        )
     )
     statement = statement.where(Workspace.organization_id == input.organization_id)
 

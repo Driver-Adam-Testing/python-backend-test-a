@@ -52,10 +52,8 @@ class CodebaseFolderSummaryTool(ToolStrict):
                         organization_id=agent.scope.organization_id
                     ),
                     (
-                        DerivedContent.inspection_version_id.in_(
-                            most_recent_versions_subquery
-                        )
-                        | DerivedContent.inspection_version_id.is_(None)
+                        DerivedContent.version_id.in_(most_recent_versions_subquery)
+                        | DerivedContent.version_id.is_(None)
                     ),
                 )
                 .options(selectinload(DerivedContent.workspace))

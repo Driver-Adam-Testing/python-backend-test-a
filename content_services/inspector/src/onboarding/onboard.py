@@ -49,6 +49,7 @@ def run_pre_codebase_analysis(
         download_file_from_presigned_url,
         get_file_type_from_extension,
         get_file_type_from_filename,
+        load_driverignore,
         parse_presigned_url,
         run_file_stats_and_reencode,
         unpack_archive,
@@ -74,6 +75,8 @@ def run_pre_codebase_analysis(
     print("Codebase name : ", codebase_name)
     print("Unpacked archive to: ", extracted_path)
 
+    driverignore = load_driverignore(codebase_root=extracted_path)
+
     codebase_stats = {
         "analyzable_bytes": 0,
         "analyzable_files": 0,
@@ -88,9 +91,15 @@ def run_pre_codebase_analysis(
         for filename in files:
             local_path = Path(root) / filename
             print(f"Analyzing {local_path}")
-            file_stats = run_file_stats_and_reencode(local_path)
+            file_stats = run_file_stats_and_reencode(
+                local_path, driverignore=driverignore
+            )
 
-            if file_stats["is_analyzable"] and not file_stats["is_blacklisted"]:
+            if (
+                file_stats["is_analyzable"]
+                and not file_stats["is_blacklisted"]
+                and not file_stats["is_ignored"]
+            ):
                 file_type = get_file_type_from_extension(file_stats["extension"])
                 if not file_type:
                     file_type = get_file_type_from_filename(filename)
@@ -166,6 +175,20 @@ def run_codebase_onboarding(
         UsageEventType,
         Workspace,
     )
+    from onboarding.onboard_utils import (
+        RunInProgressError,
+        add_default_content_for_ignored,
+        create_bucket_if_dne,
+        download_file_from_presigned_url,
+        get_codebase_content_record_status_for,
+        get_org_id_from_workspace,
+        get_source_content_type_uuid,
+        is_on_blacklist,
+        load_driverignore,
+        run_file_stats_and_reencode,
+        unpack_archive,
+        upload_file_to_s3,
+    )
     from shared.interfaces.usage.event_metadata import (
         UsageEventMetadata,
         UsageMetric,
@@ -173,19 +196,6 @@ def run_codebase_onboarding(
     )
     from shared.usage.llm_session import LLMUsageSession
     from sqlmodel import Session, select
-
-    from onboarding.onboard_utils import (
-        RunInProgressError,
-        create_bucket_if_dne,
-        download_file_from_presigned_url,
-        get_codebase_content_record_status_for,
-        get_org_id_from_workspace,
-        get_source_content_type_uuid,
-        is_on_blacklist,
-        run_file_stats_and_reencode,
-        unpack_archive,
-        upload_file_to_s3,
-    )
 
     if not version_str:
         version_str = "Unversioned"
@@ -205,6 +215,8 @@ def run_codebase_onboarding(
     codebase_name = str(extracted_path)
     print("Codebase name: ", codebase_name)
     print("Unpacked archive to: ", extracted_path)
+
+    driverignore = load_driverignore(codebase_root=extracted_path)
 
     # TODO so if they uploaded a zip and we find the codebase, what do we do w.r.t versioning? Below, we disallow it
     # and raise an exception. Namely, the previously onboarded zip won't have a version.
@@ -314,7 +326,8 @@ def run_codebase_onboarding(
             local_path = Path(root) / filename
 
             file_stats = run_file_stats_and_reencode(
-                local_path,
+                local_path=local_path,
+                driverignore=driverignore,
             )
             codebase_stats[local_path] = file_stats
             if not codebase_stats[local_path]["is_blacklisted"]:
@@ -327,6 +340,7 @@ def run_codebase_onboarding(
         # Add directories source contents
         dir_sc_uuid = get_source_content_type_uuid("codebase-directory")
         for directory in all_directories:
+            is_ignored = driverignore(directory) if driverignore is not None else False
             if not is_on_blacklist(Path(directory)):
                 # TODO: analysis metadata for directories?
                 # TODO: this is fragile - consider using DAG logic here
@@ -335,11 +349,20 @@ def run_codebase_onboarding(
                     relative_path=directory,
                     content_type_id=dir_sc_uuid,
                     workspace_id=workspace_id,
-                    misc_metadata={},
+                    misc_metadata={"is_ignored": is_ignored},
                     version_id=version_id,
                 )
                 session.add(dir_sc)
                 print(f"Created but not committed source content for: {directory}.")
+                if is_ignored:
+                    session.flush()
+                    add_default_content_for_ignored(
+                        session=session,
+                        source_content_id=dir_sc.id,
+                        workspace_id=workspace_id,
+                        codebase_id=codebase_id,
+                        relative_path=directory,
+                    )
 
         codebase_sloc = 0
         codebase_size_in_bytes = 0
@@ -364,6 +387,18 @@ def run_codebase_onboarding(
                 print(
                     f"Created but not committed source content for: {file_path}. Processable: {codebase_stats[file_path]['is_analyzable']}. Stats: {codebase_stats[file_path]}"
                 )
+                if (
+                    codebase_stats[file_path]["is_ignored"]
+                    and codebase_stats[file_path]["is_analyzable"]
+                ):
+                    session.flush()
+                    add_default_content_for_ignored(
+                        session=session,
+                        source_content_id=file_sc.id,
+                        workspace_id=workspace_id,
+                        codebase_id=codebase_id,
+                        relative_path=str(file_path),
+                    )
     if prior_version_name:
         print(
             f"Codebase onboarding complete for codebase: {codebase_name} (cb id: {codebase_id}). "

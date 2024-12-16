@@ -105,13 +105,15 @@ class Template(BaseModel):
                     output_cfg = OutputConfig(kind=OutputConfigKind.JSON_STRICT)
                     section_title, system_prompt, user_prompt, llm_gen_fn = args
                     content = llm_gen_fn(llm, system_prompt, user_prompt, code)
-                    output += f"{section_title}\n{str(content)}\n"
+                    output += f"{section_title}\n{content!s}\n"
                 case (
                     S.LLM_COND_TEXT
                     | S.LLM_COND_JSON
                 ):  # Conditional construct using an LLM
                     section_title, conditional_llm_fn, true_action, false_action = args
-                    llm_fn_output: list[str] | None = conditional_llm_fn(llm, code)
+                    llm_fn_output: list[str] | None = conditional_llm_fn(
+                        llm, code, root_rel_path
+                    )
                     action = false_action if llm_fn_output is None else true_action
                     if action is None:
                         pass
@@ -120,6 +122,8 @@ class Template(BaseModel):
                             match _arity(action):
                                 case 0:
                                     content = action()
+                                case 2:
+                                    content = action(llm, llm_fn_output)
                                 case 3:
                                     content = action(llm, llm_fn_output, code)
                                 case _:
@@ -130,7 +134,7 @@ class Template(BaseModel):
                             raise TemplateError(
                                 "`LLM_COND` expects branch string or callable with arity 0 or 3"
                             )
-                        output += f"{section_title}\n{str(content)}\n"  # Call `str` to render data structure
+                        output += f"{section_title}\n{content!s}\n"  # Call `str` to render data structure
                 case (
                     S.FN_COND_TEXT
                     | S.FN_COND_JSON
@@ -149,6 +153,8 @@ class Template(BaseModel):
                             match _arity(action):
                                 case 0:
                                     content = action()
+                                case 2:
+                                    content = action(llm, fn_output)
                                 case 3:
                                     content = action(llm, fn_output, code)
                                 case 4:
@@ -163,7 +169,7 @@ class Template(BaseModel):
                             raise TemplateError(
                                 "`FN_COND` expects branch string or callable with arity 0 or 3"
                             )
-                        output += f"{section_title}\n{str(content)}\n"  # Call `str` to render data structure
+                        output += f"{section_title}\n{content!s}\n"  # Call `str` to render data structure
                 case S.MULTI_PROMPT_TEXT:  # Simple section, but requires multiple prompts due to context limits
                     (
                         section_title,
@@ -192,12 +198,12 @@ class Template(BaseModel):
                     content = llm_gen_fn(
                         llm, system_prompt, user_prompt, code_chunks[0]
                     )
-                    output += f"{section_title}\n{str(content)}\n"
+                    output += f"{section_title}\n{content!s}\n"
                 case S.MULTI_LLM_COND_JSON:
                     # TODO: could possibly generalize by passing all code as a list of chunks even if len(chunks) == 1
                     section_title, conditional_llm_fn, true_action, false_action = args
                     llm_fn_output: list[str] | None = conditional_llm_fn(
-                        llm, code_chunks
+                        llm, code, root_rel_path
                     )
                     action = false_action if llm_fn_output is None else true_action
                     if action is None:
@@ -207,6 +213,8 @@ class Template(BaseModel):
                             match _arity(action):
                                 case 0:
                                     content = action()
+                                case 2:
+                                    content = action(llm, llm_fn_output)
                                 case 3:
                                     content = action(llm, llm_fn_output, code_chunks)
                                 case _:
@@ -217,7 +225,7 @@ class Template(BaseModel):
                             raise TemplateError(
                                 "`LLM_COND` expects branch string or callable with arity 0 or 3"
                             )
-                        output += f"{section_title}\n{str(content)}\n"  # Call `str` to render data structure
+                        output += f"{section_title}\n{content!s}\n"  # Call `str` to render data structure
 
                 case _:
                     raise TemplateError(

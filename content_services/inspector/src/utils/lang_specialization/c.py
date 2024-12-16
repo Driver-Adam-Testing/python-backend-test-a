@@ -1,15 +1,22 @@
-from functools import partial
 from pathlib import Path
+from typing import Self
 
 from utils.codemap_ctags import extract_symbols_w_ctags
+from utils.models import ChatOpenAI
 
-from .common import (
-    data_structure_dict_from_llm,
-    data_structure_dict_from_llm_multi_prompt,
-    fn_dict_from_llm,
-    fn_dict_from_llm_multi_prompt,
-    variables_dict_from_llm,
-    variables_dict_from_llm_multi_prompt,
+from .ir_common import (
+    DataStructureData,
+    FnData,
+    IrCollection,
+    IrData,
+    VariableData,
+)
+from .symbol_common import (
+    RawSymbolCollection,
+    RawSymbolData,
+    SymbolKind,
+    code_requires_multi_prompt,
+    create_raw_symbol_via_ctags,
 )
 
 C_DATA_STRUCTURES = {"enum", "union", "struct", "typedef"}
@@ -84,6 +91,8 @@ Summarize the data structure in the code provided below.
 
 - A data structure is custom or compound type in a given programming language, such as structs, classes, or enums. Functions, methods, and variables are not data structures.
 - When describing an important data structure, provide detail that matches the complexity of the data structure. Large and complex data structures should get longer explanations, while small ones a single sentence.
+
+Data structure to document:
 """
 
 DATA_STRUCTURES_NONE_CONTENT = "\n---\nNo custom data structures defined in this file."
@@ -119,6 +128,8 @@ FUNCTIONS_FOUND_USER_PROMPT = """
 Summarize the function in the code provided below. Describe the inputs, control flow and logic, and output.
 
 - When describing a function, provide detail that matches the complexity of the function body. Large and complex functions should get longer explanations, while small ones much less.
+
+Function to document:
 """
 
 FUNCTIONS_NONE_CONTENT = (
@@ -147,100 +158,217 @@ Summarize the variable in the code provided below.
 
 - A global variable is declared at the top level scope. Local variables declared and used inside of functions are not global variables. You will be describing a global variable.
 - When describing a variable, provide detail that matches the complexity of the variable. Large and complex global variables (e.g., containing large struct instances) should get longer explanations, while small ones (e.g., one line definitions) much less.
+
+Variable to document:
 """
 
 VARIABLES_NONE_CONTENT = "\n---\nNo global variables defined in this file."
 
 
-def c_data_structure_checker(
-    code: str, root_rel_path: Path, structured_output: bool = True
-) -> list[str] | str | None:
-    symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-    ds_list = []
-    for s in symbols:
-        if s["kind"] in C_DATA_STRUCTURES and not s["name"].startswith("__anon"):
-            ds_list.append(s["name"])
-    if len(ds_list) > 0:
-        if structured_output:
-            output = ds_list
-        else:
-            output = "\nData Structures to document in the code:\n\n"
-            for ds in ds_list:
-                output += f"- {ds}\n"
-    else:
-        output = None
-    return output
+class CDataStructureData(DataStructureData):
+    @classmethod
+    def system_prompt(cls) -> str:
+        return DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON
+
+    @classmethod
+    def user_prompt(cls, symbol: RawSymbolData) -> str:
+        user_prompt = f"{DATA_STRUCTURES_FOUND_USER_PROMPT}{symbol.name}\n\nData structure code:\n\n{symbol.symbol_code}"
+        if symbol.file_code:
+            user_prompt += f"\n\nFull File code:\n\n{symbol.file_code}"
+        return user_prompt
+
+    @classmethod
+    def child_to_ir(cls, symbol: RawSymbolData) -> IrData | None:
+        raise NotImplementedError("C data structures should not have children")
+
+    @classmethod
+    def child_to_field_name(cls, symbol: RawSymbolData) -> str:
+        raise NotImplementedError("C data structures should not have children")
 
 
-def c_function_checker(
-    code: str, root_rel_path: Path, structured_output: bool = True
-) -> list[str] | str | None:
-    symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-    fn_list = []
-    for s in symbols:
-        if s["kind"] in C_FUNCTIONS and not s["name"].startswith("__anon"):
-            fn_list.append(s["name"])
-    if len(fn_list) > 0:
-        if structured_output:
-            output = fn_list
-        else:
-            output = "\nFunctions to document in the code:\n\n"
-            for fn in fn_list:
-                output += f"- {fn}\n"
-    else:
-        output = None
-    return output
+class CDataStructureCollection(IrCollection):
+    data: dict[str, CDataStructureData | list[CDataStructureData]]
+
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(CDataStructureData, llm, symbols_list)
 
 
-def c_variables_checker(
-    code: str, root_rel_path: Path, structured_output: bool = True
-) -> list[str] | str | None:
-    symbols = extract_symbols_w_ctags(root_rel_path=root_rel_path, file_content=code)
-    v_list = [s["name"] for s in symbols if s["kind"] in C_VARIABLES]
-    if len(v_list) > 0:
-        if structured_output:
-            output = v_list
-        else:
-            output = "\nVariables to document in the code:\n\n"
-            for v in v_list:
-                output += f"- {v}\n"
-    else:
-        output = None
-    return output
+class CFnData(FnData):
+    @classmethod
+    def system_prompt(cls) -> str:
+        return FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON
+
+    @classmethod
+    def user_prompt(cls, symbol: RawSymbolData) -> str:
+        user_prompt = f"{FUNCTIONS_FOUND_USER_PROMPT}{symbol.name}\n\nFunction code:\n\n{symbol.symbol_code}"
+        if symbol.file_code:
+            user_prompt += f"\n\nFull File code:\n\n{symbol.file_code}"
+        return user_prompt
+
+    @classmethod
+    def child_to_ir(cls, symbol: RawSymbolData) -> IrData | None:
+        raise NotImplementedError("C functions should not have children")
+
+    @classmethod
+    def child_to_field_name(cls, symbol: RawSymbolData) -> str:
+        raise NotImplementedError("C functions should not have children")
 
 
-variables_dict_from_llm_c = partial(
-    variables_dict_from_llm,
-    VARIABLES_FOUND_SYSTEM_PROMPT_JSON,
-    VARIABLES_FOUND_USER_PROMPT,
-)
+class CFunctionCollection(IrCollection):
+    data: dict[str, CFnData | list[CFnData]]
 
-data_structure_dict_from_llm_c = partial(
-    data_structure_dict_from_llm,
-    DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
-    DATA_STRUCTURES_FOUND_USER_PROMPT,
-)
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(CFnData, llm, symbols_list)
 
-fn_dict_from_llm_c = partial(
-    fn_dict_from_llm,
-    FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
-    FUNCTIONS_FOUND_USER_PROMPT,
-)
 
-variables_dict_from_llm_c_multi_prompt = partial(
-    variables_dict_from_llm_multi_prompt,
-    VARIABLES_FOUND_SYSTEM_PROMPT_JSON,
-    VARIABLES_FOUND_USER_PROMPT,
-)
+class CVariableData(VariableData):
+    @classmethod
+    def system_prompt(cls) -> str:
+        return VARIABLES_FOUND_SYSTEM_PROMPT_JSON
 
-data_structure_dict_from_llm_c_multi_prompt = partial(
-    data_structure_dict_from_llm_multi_prompt,
-    DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON,
-    DATA_STRUCTURES_FOUND_USER_PROMPT,
-)
+    @classmethod
+    def user_prompt(cls, symbol: RawSymbolData) -> str:
+        user_prompt = f"{VARIABLES_FOUND_USER_PROMPT}{symbol.name}\n\nVariable code:\n\n{symbol.symbol_code}"
+        if symbol.file_code:
+            user_prompt += f"\n\nFull File code:\n\n{symbol.file_code}"
+        return user_prompt
 
-fn_dict_from_llm_c_multi_prompt = partial(
-    fn_dict_from_llm_multi_prompt,
-    FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON,
-    FUNCTIONS_FOUND_USER_PROMPT,
-)
+    @classmethod
+    def child_to_ir(cls, symbol: RawSymbolData) -> IrData | None:
+        raise NotImplementedError("C variables should not have children")
+
+    @classmethod
+    def child_to_field_name(cls, symbol: RawSymbolData) -> str:
+        raise NotImplementedError("C variables should not have children")
+
+
+class CVariableCollection(IrCollection):
+    data: dict[str, CVariableData | list[CVariableData]]
+
+    @classmethod
+    def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
+        return cls.from_llm_with_ir_data(CVariableData, llm, symbols_list)
+
+
+class CDataStructureRawSymbolCollection(RawSymbolCollection):
+    data: dict[str, RawSymbolData]
+
+    @classmethod
+    def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
+        is_multi_prompt = code_requires_multi_prompt(code)
+
+        symbols = extract_symbols_w_ctags(
+            root_rel_path=root_rel_path,
+            file_content=code,
+        )
+
+        data_structure_raw_symbol_data = {}
+        for s in symbols:
+            if s["kind"] in C_DATA_STRUCTURES and not s["name"].startswith("__anon"):
+                data_structure_raw_symbol_data[s["name"]] = create_raw_symbol_via_ctags(
+                    ctags_symbol=s,
+                    root_rel_path=root_rel_path,
+                    code=code,
+                    symbol_kind=SymbolKind.DATA_STRUCTURE,
+                    scope_relation=None,
+                    delimiter=None,
+                    is_multi_prompt=is_multi_prompt,
+                )
+
+        output = (
+            None
+            if len(data_structure_raw_symbol_data) == 0
+            else cls(data=data_structure_raw_symbol_data)
+        )
+        return output
+
+    @classmethod
+    def from_llm(cls, code: str, root_rel_path: str) -> Self:
+        raise NotImplementedError(
+            "Static analysis should be used for C data structures"
+        )
+
+    def to_dict(self) -> dict[str, RawSymbolData]:
+        return self.data
+
+
+class CFunctionRawSymbolCollection(RawSymbolCollection):
+    data: dict[str, RawSymbolData]
+
+    @classmethod
+    def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
+        is_multi_prompt = code_requires_multi_prompt(code)
+
+        symbols = extract_symbols_w_ctags(
+            root_rel_path=root_rel_path,
+            file_content=code,
+        )
+
+        function_raw_symbol_data = {}
+        for s in symbols:
+            if s["kind"] in C_FUNCTIONS and not s["name"].startswith("__anon"):
+                function_raw_symbol_data[s["name"]] = create_raw_symbol_via_ctags(
+                    ctags_symbol=s,
+                    root_rel_path=root_rel_path,
+                    code=code,
+                    symbol_kind=SymbolKind.CALLABLE,
+                    scope_relation=None,
+                    delimiter=None,
+                    is_multi_prompt=is_multi_prompt,
+                )
+
+        output = (
+            None
+            if len(function_raw_symbol_data) == 0
+            else cls(data=function_raw_symbol_data)
+        )
+        return output
+
+    @classmethod
+    def from_llm(cls, code: str, root_rel_path: str) -> Self:
+        pass
+
+    def to_dict(self) -> dict[str, RawSymbolData]:
+        return self.data
+
+
+class CVariableRawSymbolCollection(RawSymbolCollection):
+    data: dict[str, RawSymbolData]
+
+    @classmethod
+    def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
+        is_multi_prompt = code_requires_multi_prompt(code)
+
+        symbols = extract_symbols_w_ctags(
+            root_rel_path=root_rel_path,
+            file_content=code,
+        )
+
+        variable_raw_symbol_data = {}
+        for s in symbols:
+            if s["kind"] in C_VARIABLES:
+                variable_raw_symbol_data[s["name"]] = create_raw_symbol_via_ctags(
+                    ctags_symbol=s,
+                    root_rel_path=root_rel_path,
+                    code=code,
+                    symbol_kind=SymbolKind.VARIABLE,
+                    scope_relation=None,
+                    delimiter=None,
+                    is_multi_prompt=is_multi_prompt,
+                )
+
+        output = (
+            None
+            if len(variable_raw_symbol_data) == 0
+            else cls(data=variable_raw_symbol_data)
+        )
+        return output
+
+    @classmethod
+    def from_llm(cls, code: str, root_rel_path: str) -> Self:
+        pass
+
+    def to_dict(self) -> dict[str, RawSymbolData]:
+        return self.data

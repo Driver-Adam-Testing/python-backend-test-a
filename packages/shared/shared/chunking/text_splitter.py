@@ -26,7 +26,7 @@ def split_text(
     chunks = []
     if split_on == TOKEN:
         encoder = tiktoken.encoding_for_model(model)
-        tokens = list(encoder.encode(text))
+        tokens = list(encoder.encode(text, disallowed_special=()))
         line_number = 0
         token_number = 0
         for i in range(0, len(tokens), chunk_size - chunk_overlap):

@@ -1,5 +1,5 @@
 from database.db import get_session
-from database.models_v1 import DerivedContent
+from database.models_v1 import DerivedContent, InspectionVersion
 from sqlalchemy.orm import selectinload
 from sqlmodel import select
 
@@ -25,6 +25,20 @@ class CodebaseFolderSummaryTool(ToolStrict):
         agent.scope.authorize(self.codebase_directory_path)
 
         with get_session() as session:
+            # COMMENT: This gets all InspectionVersion IDs that are NOT a previous_version.
+            # Hence, this is a list of all the most recent version Ids.
+            most_recent_versions_subquery = (
+                select(InspectionVersion.id)
+                .where(
+                    ~InspectionVersion.id.in_(
+                        select(InspectionVersion.previous_version_id).where(
+                            InspectionVersion.previous_version_id.isnot(None)
+                        )
+                    )
+                )
+                .subquery()
+            )
+
             derived_content = session.exec(
                 select(DerivedContent)
                 .where(
@@ -36,6 +50,12 @@ class CodebaseFolderSummaryTool(ToolStrict):
                     DerivedContent.content_type.has(type_name="long_description"),
                     DerivedContent.workspace.has(
                         organization_id=agent.scope.organization_id
+                    ),
+                    (
+                        DerivedContent.inspection_version_id.in_(
+                            most_recent_versions_subquery
+                        )
+                        | DerivedContent.inspection_version_id.is_(None)
                     ),
                 )
                 .options(selectinload(DerivedContent.workspace))

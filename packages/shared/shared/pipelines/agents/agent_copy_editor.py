@@ -4,18 +4,24 @@ from shared.interfaces.agents.pipeline_configuration import (
     PipelineStepConfiguration,
     PipelineStepResponse,
 )
+from shared.usage.llm_session import LLMUsageSession
 
 
-def run_agent_copy_editor(input: PipelineStepConfiguration) -> PipelineStepResponse:
+def run_agent_copy_editor(
+    input: PipelineStepConfiguration, llm_usage_session: LLMUsageSession
+) -> PipelineStepResponse:
     agent = create_agent(
         scope=input.scope,
         model=input.model,
         max_iterations=input.iterations,
         tools=input.tools,
+        llm_usage_session=llm_usage_session,
     )
     for system_prompt in input.create_system_prompts():
         agent.add_message(system_prompt)
-    if "```mermaid" in str(input.prompt):
+    # TODO: Make this a branch based on a parsed LLM response, rather than a string comparison.
+    # The next version of pipelines should consider branching logic based on response_formats.
+    if "```mermaid" in str(input.prompt) or "diagram" in str(input.prompt).lower():
         agent.add_message(prompts.task.codeblock_syntax_mermaid.MESSAGE)
     agent.add_message(prompts.voice.copy_editor.MESSAGE)
     response = agent.invoke(str(input.prompt))

@@ -1,12 +1,12 @@
 from utils.lang_specialization.c import (
     SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT,
     SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_C,
-    c_data_structure_checker,
-    c_function_checker,
-    c_variables_checker,
-    data_structure_dict_from_llm_c,
-    fn_dict_from_llm_c,
-    variables_dict_from_llm_c,
+    CDataStructureCollection,
+    CDataStructureRawSymbolCollection,
+    CFunctionCollection,
+    CFunctionRawSymbolCollection,
+    CVariableCollection,
+    CVariableRawSymbolCollection,
 )
 from utils.lang_specialization.default import (
     default_imports_checker,
@@ -30,22 +30,22 @@ SOURCE_CODE_LARGE_TEMPLATE_C = [
     (
         S.FN_COND_JSON,
         "# Global Variables",
-        c_variables_checker,
-        variables_dict_from_llm_c,
+        CVariableRawSymbolCollection.from_static_analysis,
+        CVariableCollection.from_llm,
         None,
     ),
     (
         S.FN_COND_JSON,
         "# Data Structures",
-        c_data_structure_checker,
-        data_structure_dict_from_llm_c,
+        CDataStructureRawSymbolCollection.from_static_analysis,
+        CDataStructureCollection.from_llm,
         None,
     ),
     (
         S.FN_COND_JSON,
         "# Functions",
-        c_function_checker,
-        fn_dict_from_llm_c,
+        CFunctionRawSymbolCollection.from_static_analysis,
+        CFunctionCollection.from_llm,
         None,
     ),
 ]

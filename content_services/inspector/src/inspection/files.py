@@ -3,13 +3,14 @@ from enum import IntEnum
 from pathlib import Path
 from typing import Any, Self
 
+import modal
 import openai
 from pydantic import BaseModel, ValidationError
 from utils.dag import LiteNode
 from utils.io import (
     get_prompt_template,
 )
-from utils.lang_specialization.common import Lang
+from utils.lang_specialization.symbol_common import Lang
 from utils.models import ChatOpenAI
 from utils.templates import Template
 
@@ -28,6 +29,9 @@ from inspection.prompt_templates.files.templates.metadata_small_default import (
 from inspection.prompt_templates.files.templates.source_code_large_assembly import (
     SOURCE_CODE_LARGE_TEMPLATE_ASSEMBLY,
 )
+from inspection.prompt_templates.files.templates.source_code_large_assembly_multi_prompt import (
+    SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_ASSEMBLY,
+)
 from inspection.prompt_templates.files.templates.source_code_large_c import (
     SOURCE_CODE_LARGE_TEMPLATE_C,
 )
@@ -39,6 +43,12 @@ from inspection.prompt_templates.files.templates.source_code_large_cpp import (
 )
 from inspection.prompt_templates.files.templates.source_code_large_cpp_multi_prompt import (
     SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CPP,
+)
+from inspection.prompt_templates.files.templates.source_code_large_cs import (
+    SOURCE_CODE_LARGE_TEMPLATE_CS,
+)
+from inspection.prompt_templates.files.templates.source_code_large_cs_multi_prompt import (
+    SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CS,
 )
 from inspection.prompt_templates.files.templates.source_code_large_default import (
     SOURCE_CODE_LARGE_TEMPLATE_DEFAULT,
@@ -76,6 +86,9 @@ from inspection.prompt_templates.files.templates.source_code_large_rust_multi_pr
 from inspection.prompt_templates.files.templates.source_code_large_verilog import (
     SOURCE_CODE_LARGE_TEMPLATE_VERILOG,
 )
+from inspection.prompt_templates.files.templates.source_code_large_verilog_multi_prompt import (
+    SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_VERILOG,
+)
 from inspection.prompt_templates.files.templates.source_code_multi_context_default import (
     SOURCE_CODE_MULTI_CONTEXT_TEMPLATE_DEFAULT,
 )
@@ -87,6 +100,9 @@ from inspection.prompt_templates.files.templates.source_code_small_c import (
 )
 from inspection.prompt_templates.files.templates.source_code_small_cpp import (
     SOURCE_CODE_SMALL_TEMPLATE_CPP,
+)
+from inspection.prompt_templates.files.templates.source_code_small_cs import (
+    SOURCE_CODE_SMALL_TEMPLATE_CS,
 )
 from inspection.prompt_templates.files.templates.source_code_small_default import (
     SOURCE_CODE_SMALL_TEMPLATE_DEFAULT,
@@ -198,6 +214,7 @@ SOURCE_CODE_LARGE_BY_LANG = {
     Lang.ASSEMBLY: SOURCE_CODE_LARGE_TEMPLATE_ASSEMBLY,
     Lang.JAVA: SOURCE_CODE_LARGE_TEMPLATE_JAVA,
     Lang.RUBY: SOURCE_CODE_LARGE_TEMPLATE_RUBY,
+    Lang.C_SHARP: SOURCE_CODE_LARGE_TEMPLATE_CS,
 }
 SOURCE_CODE_SMALL_BY_LANG = {
     Lang.DEFAULT: SOURCE_CODE_SMALL_TEMPLATE_DEFAULT,
@@ -210,6 +227,7 @@ SOURCE_CODE_SMALL_BY_LANG = {
     Lang.ASSEMBLY: SOURCE_CODE_SMALL_TEMPLATE_ASSEMBLY,
     Lang.JAVA: SOURCE_CODE_SMALL_TEMPLATE_JAVA,
     Lang.RUBY: SOURCE_CODE_SMALL_TEMPLATE_RUBY,
+    Lang.C_SHARP: SOURCE_CODE_SMALL_TEMPLATE_CS,
 }
 METADATA_SMALL_BY_LANG = {
     Lang.DEFAULT: METADATA_SMALL_TEMPLATE,
@@ -222,6 +240,7 @@ METADATA_SMALL_BY_LANG = {
     Lang.ASSEMBLY: METADATA_SMALL_TEMPLATE,
     Lang.JAVA: METADATA_SMALL_TEMPLATE,
     Lang.RUBY: METADATA_SMALL_TEMPLATE,
+    Lang.C_SHARP: METADATA_SMALL_TEMPLATE,
 }
 METADATA_MEDIUM_BY_LANG = {
     Lang.DEFAULT: METADATA_MEDIUM_TEMPLATE,
@@ -234,6 +253,7 @@ METADATA_MEDIUM_BY_LANG = {
     Lang.ASSEMBLY: METADATA_MEDIUM_TEMPLATE,
     Lang.JAVA: METADATA_MEDIUM_TEMPLATE,
     Lang.RUBY: METADATA_MEDIUM_TEMPLATE,
+    Lang.C_SHARP: METADATA_MEDIUM_TEMPLATE,
 }
 METADATA_LARGE_BY_LANG = {
     Lang.DEFAULT: METADATA_LARGE_TEMPLATE,
@@ -246,6 +266,7 @@ METADATA_LARGE_BY_LANG = {
     Lang.ASSEMBLY: METADATA_LARGE_TEMPLATE,
     Lang.JAVA: METADATA_LARGE_TEMPLATE,
     Lang.RUBY: METADATA_LARGE_TEMPLATE,
+    Lang.C_SHARP: METADATA_LARGE_TEMPLATE,
 }
 TEMPLATE_DATA = {
     FileEnum.SOURCE_CODE_LARGE: SOURCE_CODE_LARGE_BY_LANG,
@@ -426,77 +447,101 @@ def comprehend_file_top_down(
 
         logging.info(f"Processing {len(chunks)} chunks for `{node.root_rel_path}`")
         print(f"Processing {len(chunks)} chunks for `{node.root_rel_path}` ...")
-        file_kind = FileKind.from_llm(
-            llm=llm, file_name=node.root_rel_path.name, code=chunk_texts[0]
-        )
-
-        match file_kind.kind:
-            case (
-                FileEnum.METADATA_SMALL
-                | FileEnum.METADATA_MEDIUM
-                | FileEnum.METADATA_LARGE
-            ):
-                template = METADATA_MULTI_CONTEXT_TEMPLATE
-                long_template = Template(template=template)
-                file_description_long = long_template.run_with_code(
-                    llm=llm,
-                    root_rel_path=node.root_rel_path,
-                    code=source_code,
-                    code_chunks=chunk_texts,
-                )
-            case _:
-                language = Lang.from_ext_and_source(
-                    ext=node.root_rel_path.suffix, source=chunk_texts[0]
-                )
-                match language:
-                    case Lang.C:
-                        template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_C
-                    case Lang.CPP:
-                        template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CPP
-                    case Lang.HEADER:
-                        template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_HEADER
-                    case Lang.PYTHON:
-                        template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_PY
-                    case Lang.RUST:
-                        template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_RUST
-                    case Lang.JAVA:
-                        template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_JAVA
-                    case Lang.RUBY:
-                        template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_RUBY
-                    case _:
-                        template = SOURCE_CODE_MULTI_CONTEXT_TEMPLATE_DEFAULT
-                long_template = Template(template=template)
-                file_description_long = long_template.run_with_code(
-                    llm=llm,
-                    root_rel_path=node.root_rel_path,
-                    code=source_code,
-                    code_chunks=chunk_texts,
-                )
-        # Now ready to generate final documentation content.
-        description_chunks = split_text(
-            text=file_description_long,
-            chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap,
-        )
-        if len(description_chunks) > 1:
-            chunks = [description_chunks[0].text]
-        else:
-            chunks = [file_description_long]
-        chunk_detailed_descriptions = [file_description_long]
-        file_description_single_sentence = file_single_sentence_from_chunk_descriptions(
-            llm=llm,
-            chunks=chunks,
-            file_name=node.root_rel_path.name,
-            codebase_name=codebase_name,
-        )
-        file_description_single_paragraph = (
-            file_single_paragraph_from_chunk_descriptions(
-                llm=llm,
-                chunks=chunks,
-                file_name=node.root_rel_path.name,
-                codebase_name=codebase_name,
+        try:
+            file_kind = FileKind.from_llm(
+                llm=llm, file_name=node.root_rel_path.name, code=chunk_texts[0]
             )
-        )
+
+            match file_kind.kind:
+                case (
+                    FileEnum.METADATA_SMALL
+                    | FileEnum.METADATA_MEDIUM
+                    | FileEnum.METADATA_LARGE
+                ):
+                    template = METADATA_MULTI_CONTEXT_TEMPLATE
+                    long_template = Template(template=template)
+                    file_description_long = long_template.run_with_code(
+                        llm=llm,
+                        root_rel_path=node.root_rel_path,
+                        code=source_code,
+                        code_chunks=chunk_texts,
+                    )
+                case _:
+                    language = Lang.from_ext_and_source(
+                        ext=node.root_rel_path.suffix, source=chunk_texts[0]
+                    )
+                    match language:
+                        case Lang.C:
+                            template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_C
+                        case Lang.CPP:
+                            template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CPP
+                        case Lang.HEADER:
+                            template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_HEADER
+                        case Lang.PYTHON:
+                            template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_PY
+                        case Lang.RUST:
+                            template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_RUST
+                        case Lang.JAVA:
+                            template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_JAVA
+                        case Lang.RUBY:
+                            template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_RUBY
+                        case Lang.ASSEMBLY:
+                            template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_ASSEMBLY
+                        case Lang.VERILOG:
+                            template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_VERILOG
+                        case Lang.C_SHARP:
+                            template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CS
+                        case _:
+                            template = SOURCE_CODE_MULTI_CONTEXT_TEMPLATE_DEFAULT
+                    long_template = Template(template=template)
+                    file_description_long = long_template.run_with_code(
+                        llm=llm,
+                        root_rel_path=node.root_rel_path,
+                        code=source_code,
+                        code_chunks=chunk_texts,
+                    )
+            # Now ready to generate final documentation content.
+            description_chunks = split_text(
+                text=file_description_long,
+                chunk_size=chunk_size,
+                chunk_overlap=chunk_overlap,
+            )
+            if len(description_chunks) > 1:
+                chunks = [description_chunks[0].text]
+            else:
+                chunks = [file_description_long]
+            chunk_detailed_descriptions = [file_description_long]
+            file_description_single_sentence = (
+                file_single_sentence_from_chunk_descriptions(
+                    llm=llm,
+                    chunks=chunks,
+                    file_name=node.root_rel_path.name,
+                    codebase_name=codebase_name,
+                )
+            )
+            file_description_single_paragraph = (
+                file_single_paragraph_from_chunk_descriptions(
+                    llm=llm,
+                    chunks=chunks,
+                    file_name=node.root_rel_path.name,
+                    codebase_name=codebase_name,
+                )
+            )
+        except openai.BadRequestError as e:
+            email_func = modal.Function.lookup(
+                "codebase-onboarding", "send_exception_email"
+            )
+            exception_details = f"NON-BREAKING EXCEPTION:\nBadRequestError from OpenAI: {e.message}.\nCheck logs for additional details."
+            email_func.remote(exception_details)
+
+            print("BadRequestError processing file: ", e)
+            description = "Could not process file"
+            success = False
+            results = _return_with_simple_message(
+                message=description,
+            )
+            return success, results
+
     # TODO: Vulnerable to edge case with code map + source code is over the context window length.
     else:
         try:
@@ -533,8 +578,15 @@ def comprehend_file_top_down(
                 path=node.root_rel_path,
                 code=source_code,
             )
-        except openai.BadRequestError:
+        except openai.BadRequestError as e:
+            email_func = modal.Function.lookup(
+                "codebase-onboarding", "send_exception_email"
+            )
+            exception_details = f"NON-BREAKING EXCEPTION:\nBadRequestError from OpenAI: {e.message}.\nCheck logs for additional details."
+            email_func.remote(exception_details)
+
             # TODO: this is a hack. Should rethink the tokenizing
+            print("BadRequestError processing file: ", e)
             description = "Could not process file"
             success = False
             results = _return_with_simple_message(

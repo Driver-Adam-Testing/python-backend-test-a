@@ -481,7 +481,7 @@ class InspectionVersion(SQLModel, table=True):
         ),
     )
     previous_version_id: UUID | None = Field(
-        foreign_key="inspection_versions.id", nullable=True
+        foreign_key="inspection_versions.id", nullable=True, index=True
     )  # Points to the previous version for chain tracking
     contents: list["DerivedContent"] = Relationship(back_populates="inspection_version")
     inspector_runs: list["InspectorRun"] = Relationship(
@@ -509,5 +509,162 @@ class InspectorRun(SQLModel, table=True):
             server_default=func.now(),
             onupdate=func.now(),
             nullable=False,
+        ),
+    )
+
+
+class UsageSessionStatus(str, enum.Enum):
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+class UsageSession(SQLModel, table=True):
+    __tablename__ = "usage_sessions"
+    id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    status: UsageSessionStatus = Field(default=UsageSessionStatus.RUNNING, index=True)
+    organization_id: str
+    user_id: str
+    session_metadata: dict | None = Field(
+        sa_column=Column("metadata", JSONB, nullable=True), default=None
+    )
+    created_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
+        default=None,
+    )
+    updated_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
+        ),
+    )
+
+    usage_events: list["UsageEvent"] = Relationship(
+        back_populates="session", cascade_delete=True
+    )
+
+
+class UsageEventType(enum.IntEnum):
+    AGENT_PIPELINE_USAGE_DEBIT = 1
+    INSPECTOR_TECH_DOC_USAGE_DEBIT = 2
+    INSPECTOR_CODE_DIFF_USAGE_DEBIT = 3
+    ONBOARDING_USAGE_DEBIT = 4
+    SUMMARIZATION_USAGE_DEBIT = 5
+    BASE_PLATFORM_USAGE_CREDIT = 6
+    ADDITIONAL_PLATFORM_USAGE_CREDIT = 7
+    USER_SEAT_USAGE_DEBIT = 8
+    USER_SEAT_USAGE_CREDIT = 9
+
+    def __str__(self) -> str:
+        # This will return a more human-readable version of the enum name
+        return self.name.replace("_", " ").title()
+
+
+class UsageEvent(SQLModel, table=True):
+    __tablename__ = "usage_events"
+    id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    event_type: UsageEventType = Field(sa_column=Column(Integer, nullable=False))
+    session_id: UUID = Field(
+        foreign_key="usage_sessions.id",
+        nullable=False,
+        ondelete="CASCADE",
+        index=True,
+    )
+    organization_id: str
+    user_id: str
+    event_source: str
+    bytes_in: int = Field(default=0, nullable=False)
+    bytes_out: int = Field(default=0, nullable=False)
+    tokens_in: int = Field(default=0, nullable=False)
+    tokens_out: int = Field(default=0, nullable=False)
+    timestamp: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
+        default=None,
+    )
+    event_metadata: dict | None = Field(
+        sa_column=Column("metadata", JSONB, nullable=True), default=None
+    )
+    # Relationships
+    session: UsageSession | None = Relationship(back_populates="usage_events")
+
+
+class GithubAppInstallation(SQLModel, table=True):
+    id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    organization_id: str = Field(index=True)
+    github_app_installation_id: str = Field(index=True)
+    created_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
+        default=None,
+    )
+    updated_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
+        ),
+    )
+    __tablename__ = "github_app_installations"
+    __table_args__ = (
+        UniqueConstraint(
+            "github_app_installation_id",
+            "organization_id",
+            name="uq_github_app_installation_id_organization_id",
+        ),
+    )
+
+
+class PlanType(str, enum.Enum):
+    CORE = "core"
+    ADVANCED = "advanced"
+    ENTERPRISE = "enterprise"
+
+
+class BillingFrequency(str, enum.Enum):
+    MONTHLY = "monthly"
+    ANNUAL = "annual"
+
+
+class SubscriptionStatus(str, enum.Enum):
+    ACTIVE = "active"
+    CANCELED = "canceled"
+    SUSPENDED = "suspended"
+
+
+class Subscription(SQLModel, table=True):
+    id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    organization_id: str = Field(index=True)
+    plan_type: PlanType = Field(nullable=False, index=True)
+    status: SubscriptionStatus = Field(default=SubscriptionStatus.ACTIVE)
+    billing_frequency: BillingFrequency = Field(nullable=False)
+    created_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
+        default=None,
+    )
+    updated_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
+        ),
+    )
+    __table_args__ = (
+        # Create a partial unique index that enforces uniqueness for active subscriptions only.
+        Index(
+            "unique_active_subscription_per_org",
+            "organization_id",
+            unique=True,
+            postgresql_where=text("status = 'active'"),
         ),
     )

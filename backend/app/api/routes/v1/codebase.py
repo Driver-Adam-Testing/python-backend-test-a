@@ -7,12 +7,20 @@ from database.models_v1 import (
     InspectionVersion,
     Workspace,
 )
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, status
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlmodel import func, select
 
-from app.api.auth import ContentReadonlyPermission, UserToken
+from app.api.auth import ContentEditorPermission, ContentReadonlyPermission, UserToken
 from app.api.session import CurrentSession
+from app.schemas.codebase_schema import (
+    CodebaseAnalysisRequest,
+    CodebaseAnalysisResponse,
+    CodebaseAnalysisResult,
+    CodebaseOnboardRequest,
+)
+from app.services.codebase_service import CodebaseService
 
 router = APIRouter()
 
@@ -87,4 +95,46 @@ def get_codebase_versions(
 
     return CodebaseVersionsResponse(
         versions=response_data, total_count=total_count, limit=limit, offset=offset
+    )
+
+
+@router.post(
+    "/analysis",
+    summary="Execute codebase analysis",
+    dependencies=[ContentEditorPermission],
+)
+def exec_codebase_analysis(
+    user: UserToken,
+    request: CodebaseAnalysisRequest,
+) -> CodebaseAnalysisResponse:
+    return CodebaseService.execute_codebase_analysis(
+        user.organization_id, request.download_url
+    )
+
+
+@router.get(
+    "/analysis/{call_id}",
+    summary="Get codebase analysis results",
+    dependencies=[ContentEditorPermission],
+)
+def get_codebase_analysis(
+    call_id: str,
+) -> CodebaseAnalysisResult:
+    return CodebaseService.get_codebase_analysis_results(call_id)
+
+
+@router.post(
+    "/onboard",
+    summary="Trigger codebase onboarding",
+    dependencies=[ContentEditorPermission],
+)
+def trigger_codebase_onboarding(
+    user: UserToken,
+    request: CodebaseOnboardRequest,
+) -> JSONResponse:
+    CodebaseService.trigger_codebase_onboarding(
+        user.organization_id, request.codebase_object_key
+    )
+    return JSONResponse(
+        status_code=status.HTTP_202_ACCEPTED, content={"message": "Accepted"}
     )

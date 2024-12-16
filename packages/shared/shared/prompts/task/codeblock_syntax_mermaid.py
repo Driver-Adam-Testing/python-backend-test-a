@@ -1,5 +1,5 @@
-PROMPT = """Please review the mermaid code block in this document and correct any errors preventing it from rendering properly.
-Ensure the syntax and formatting comply with Mermaid's guidelines so the diagram displays as intended.
+PROMPT = """You are a mermaidjs expert. Review any mermaid code blocks in this document.
+correct any errors preventing mermaid code blocks from rendering properly.
 Ensure there are no forbidden characters such as "(" or ")" or double hyphen "--" in the element labels to avoid rendering errors.
 
 Ensure that any conains lists in the mermaid block use the correct syntax for example:

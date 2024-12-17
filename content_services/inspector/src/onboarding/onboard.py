@@ -195,6 +195,8 @@ def run_codebase_onboarding(
         UsageSessionMetadata,
     )
     from shared.usage.llm_session import LLMUsageSession
+    from shared.usage.usage_service import UsageService
+    from shared.usage.utils import bytes_to_sloc
     from sqlmodel import Session, select
 
     if not version_str:
@@ -215,7 +217,7 @@ def run_codebase_onboarding(
     codebase_name = str(extracted_path)
     print("Codebase name: ", codebase_name)
     print("Unpacked archive to: ", extracted_path)
-
+    real_org_id = get_org_id_from_workspace(workspace_id)
     driverignore = load_driverignore(codebase_root=extracted_path)
 
     # TODO so if they uploaded a zip and we find the codebase, what do we do w.r.t versioning? Below, we disallow it
@@ -314,7 +316,7 @@ def run_codebase_onboarding(
             version_id=version_id,
         )
         session.add(cb_sc)
-
+        usage_balance = UsageService(session).get_usage_balance(real_org_id)
     org_id_bucket = hashlib.sha256(org_id.encode()).hexdigest()[:63]
     create_bucket_if_dne(org_id_bucket)
 
@@ -360,7 +362,7 @@ def run_codebase_onboarding(
                 print(f"Created but not committed source content for: {directory}.")
 
         codebase_sloc = 0
-        codebase_size_in_bytes = 0
+        codebase_size_in_bytes = 0  # TODO:  rename to cumulative_codebase_size_in_bytes
         # Add file source contents
         for file_path in codebase_stats:
             if (
@@ -381,6 +383,12 @@ def run_codebase_onboarding(
                 if codebase_stats[file_path]["is_analyzable"]:
                     codebase_sloc += codebase_stats[file_path]["sloc"]
                     codebase_size_in_bytes += codebase_stats[file_path]["size"]
+                    if usage_balance.balance < bytes_to_sloc(codebase_size_in_bytes):
+                        raise ValueError(
+                            f"Insufficient balance to onboard codebase. "
+                            f"Codebase size: {codebase_size_in_bytes}. "
+                            f"Balance: {usage_balance.balance}"
+                        )
 
                 print(
                     f"Created but not committed source content for: {file_path}. Processable: {codebase_stats[file_path]['is_analyzable']}. Stats: {codebase_stats[file_path]}"
@@ -403,7 +411,7 @@ def run_codebase_onboarding(
             version_id=str(version_id),
         )
         # need to get the real org id from the workspace since the org_id passed in is the hashed org_id
-        real_org_id = get_org_id_from_workspace(workspace_id)
+
         with LLMUsageSession(real_org_id, creator_id, session_meta) as llm_session:
             usage_metric = UsageMetric(
                 session_id=llm_session.session_id,

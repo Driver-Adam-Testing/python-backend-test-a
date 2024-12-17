@@ -13,6 +13,7 @@ from database.models_v1 import (
     DocumentSource,
     Enum_Derived_Content_Status,
     InspectionVersion,
+    InspectorRun,
     Tag,
     TagContent,
     Workspace,
@@ -840,6 +841,20 @@ def delete_codebase_and_related_entities(
         irs = [dc for dc in derived_contents if dc.source_content_id is not None]
         source_content = [dc for dc in derived_contents if dc.source_content_id is None]
 
+        version_ids_to_delete = {
+            dc.version_id for dc in derived_contents if dc.version_id is not None
+        }
+
+        if version_ids_to_delete:
+            session.query(InspectorRun).filter(
+                InspectorRun.inspection_version_id.in_(version_ids_to_delete)
+            ).delete(synchronize_session="fetch")
+
+        if version_ids_to_delete:
+            session.query(InspectionVersion).filter(
+                InspectionVersion.id.in_(version_ids_to_delete)
+            ).delete(synchronize_session="fetch")
+
         session.query(DocumentSource).filter(
             DocumentSource.source_id.in_([source.id for source in source_content])
         ).delete(synchronize_session="fetch")
@@ -848,12 +863,10 @@ def delete_codebase_and_related_entities(
             TagContent.content_id.in_([source.id for source in source_content])
         ).delete(synchronize_session="fetch")
 
-        # Batch delete derived contents with source_content_id
         session.query(DerivedContent).filter(
             DerivedContent.id.in_([ir.id for ir in irs])
         ).delete(synchronize_session="fetch")
 
-        # Now delete the source content
         session.query(DerivedContent).filter(
             DerivedContent.id.in_([source.id for source in source_content])
         ).delete(synchronize_session="fetch")
@@ -866,19 +879,18 @@ def delete_codebase_and_related_entities(
             == DerivedContentTypeNames.CODEBASE_FILE.value
         )
 
-        # Delete the codebase record
+        # TODO delete task results from s3 as well
+
         codebase = session.exec(
             select(Codebase).where(Codebase.id == codebase_id)
         ).first()
         session.delete(codebase)
 
-        # raise Exception("Test rollback") rollback works
-
         session.commit()  # Commit if everything is successful
 
-    except Exception as e:
+    except Exception:
         logger.exception(
-            f"Error deleting codebase_id {content_id} and related entities: {e!s}"
+            f"Error deleting codebase_id {content_id} and related entities."
         )
         session.rollback()  # Rollback on any exception
         raise

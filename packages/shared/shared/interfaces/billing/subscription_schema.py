@@ -36,3 +36,4 @@ class CreateSubscriptionRequest(BaseModel):
     plan_type: PlanType
     billing_frequency: BillingFrequency
     organization_id: str
+    start_date: datetime | None = None

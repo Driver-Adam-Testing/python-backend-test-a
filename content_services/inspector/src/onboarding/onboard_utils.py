@@ -480,7 +480,15 @@ def run_file_stats_and_reencode(
     file_size_processable = evaluate_file_size_processable(local_path)
     is_binary = evaluate_file_binary(local_path)
     is_blacklisted = is_on_blacklist(local_path)
-    is_ignored = driverignore(local_path) if driverignore is not None else False
+    is_ignored = False
+    if driverignore is not None:
+        file_ignored = driverignore(local_path)
+        # Bug in gitignore_parser where it doesn't ignore children of directories with a leading slash
+        dir_ignored = driverignore(local_path.parent)
+        if file_ignored or dir_ignored:
+            is_ignored = True
+
+    print(local_path, is_ignored)
 
     file_stats = {}
 

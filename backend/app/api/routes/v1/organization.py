@@ -94,7 +94,10 @@ def list_invitations(  # noqa: ANN201 disable to proxy Auth0 any typed responses
     except PermissionError:
         raise HTTPException(403, "Insufficient permissions.")
     except Exception as e:
-        logger.error(f"An error occurred listing invitations to an organization: {e}")
+        logger.error(
+            f"An error occurred listing invitations to an organization: {e}",
+            exc_info=True,
+        )
         raise HTTPException(500, "Unable to list organization invitations.")
 
 

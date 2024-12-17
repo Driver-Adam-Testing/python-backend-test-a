@@ -290,8 +290,9 @@ def run_codebase_onboarding(
 
         # TODO: this storage URL on codebase is WRONG. It can't be tied to a version!
         # but it seems we don't use storage url now anyways?
-
+        is_new_codebase = False
         if not codebase:
+            is_new_codebase = True
             codebase = Codebase(
                 id=codebase_id,
                 codebase_name=codebase_name,
@@ -383,7 +384,12 @@ def run_codebase_onboarding(
                 if codebase_stats[file_path]["is_analyzable"]:
                     codebase_sloc += codebase_stats[file_path]["sloc"]
                     codebase_size_in_bytes += codebase_stats[file_path]["size"]
-                    if usage_balance.balance < bytes_to_sloc(codebase_size_in_bytes):
+
+                    if (
+                        is_new_codebase is True
+                        and usage_balance.balance
+                        < bytes_to_sloc(codebase_size_in_bytes)
+                    ):
                         raise ValueError(
                             f"Insufficient balance to onboard codebase. "
                             f"Codebase size: {codebase_size_in_bytes}. "

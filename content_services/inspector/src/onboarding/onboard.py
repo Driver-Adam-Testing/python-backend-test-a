@@ -216,7 +216,7 @@ def run_codebase_onboarding(
     codebase_name = str(extracted_path)
     print("Codebase name: ", codebase_name)
     print("Unpacked archive to: ", extracted_path)
-
+    real_org_id = get_org_id_from_workspace(workspace_id)
     driverignore = load_driverignore(codebase_root=extracted_path)
 
     # TODO so if they uploaded a zip and we find the codebase, what do we do w.r.t versioning? Below, we disallow it
@@ -311,7 +311,7 @@ def run_codebase_onboarding(
             version_id=version_id,
         )
         session.add(cb_sc)
-        usage_balance = UsageService(session).get_usage_balance(org_id)
+        usage_balance = UsageService(session).get_usage_balance(real_org_id)
     org_id_bucket = hashlib.sha256(org_id.encode()).hexdigest()[:63]
     create_bucket_if_dne(org_id_bucket)
 
@@ -406,7 +406,7 @@ def run_codebase_onboarding(
             version_id=str(version_id),
         )
         # need to get the real org id from the workspace since the org_id passed in is the hashed org_id
-        real_org_id = get_org_id_from_workspace(workspace_id)
+
         with LLMUsageSession(real_org_id, creator_id, session_meta) as llm_session:
             usage_metric = UsageMetric(
                 session_id=llm_session.session_id,

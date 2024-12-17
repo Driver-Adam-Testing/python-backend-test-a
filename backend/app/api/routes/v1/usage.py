@@ -1,15 +1,22 @@
 from datetime import datetime
 
-from database.models_v1 import UsageEvent
-from fastapi import APIRouter, Query
+import boto3
+from database.models_v1 import UsageEventType
+from fastapi import APIRouter, HTTPException, Query, status
+from fastapi.responses import JSONResponse
 from shared.interfaces.usage.usage_schema import (
+    CreditUsageEvent,
     UsageBalance,
+    UsageCharge,
+    UsageEventRange,
     UsageEventSummary,
 )
 from shared.usage.usage_service import UsageService
+from shared.usage.utils import sloc_to_bytes
 
-from app.api.auth import UserToken
+from app.api.auth import M2MToken, UsageCreditPermission, UserToken
 from app.api.session import CurrentSession
+from app.core.config import settings
 
 router = APIRouter()
 
@@ -44,32 +51,55 @@ def get_usage_summary(
 
 
 @router.get(
-    "/events",
-    summary="Get Raw Usage Events",
+    "/charges",
+    summary="Get Recent Usage Charges",
 )
-def get_usage_events(session: CurrentSession, user: UserToken) -> list[UsageEvent]:
-    usage_service = UsageService(session)
-    organization_id = user.organization_id
-    return usage_service.get_usage_events(organization_id)
+def get_charges(
+    session: CurrentSession,
+    user: UserToken,
+    start_date: datetime | None = Query(
+        None,
+        description="Start date for the range of charges. ISO 8601 format required",
+    ),
+    end_date: datetime | None = Query(
+        None, description="End date for the range of charges. ISO 8601 format required"
+    ),
+) -> list[UsageCharge]:
+    return UsageService(session).get_charges(
+        user.organization_id, UsageEventRange(start_date=start_date, end_date=end_date)
+    )
 
 
-# # POST /api/v1/usage/webhook
-# @router.post(
-#     "/webhook",
-#     summary="Webhook for usage events",
-# )
-# def usage_webhook(
-#     session: CurrentSession, user: UserToken, credit_usage_event: CreditUsageEvent
-# ) -> JSONResponse:
-#     usage_service = UsageService(session)
-#     organization_id = user.organization_id
-#     user_id = user.user_id
-#     event_type = UsageEventType.BASE_PLATFORM_USAGE_CREDIT
-#     credit_amount = credit_usage_event.credit_amount
-#
-#     usage_service.issue_usage_credits(
-#         organization_id, user_id, event_type, credit_amount
-#     )
-#     return JSONResponse(
-#         status_code=status.HTTP_202_ACCEPTED, content={"message": "Accepted"}
-#     )
+@router.post(
+    "/credit",
+    summary="Issue Usage Credits",
+    dependencies=[UsageCreditPermission],
+)
+def credit_usage(
+    session: CurrentSession,
+    current_token: M2MToken,
+    credit_usage_event: CreditUsageEvent,
+) -> JSONResponse:
+    if current_token is None:
+        raise HTTPException(403, "Forbidden")
+
+    aws_client = boto3.client(
+        "events",
+        region_name="us-east-1",
+        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+    )
+
+    organization_id = credit_usage_event.organization_id
+    user_id = (
+        "SYSTEM" if credit_usage_event.user_id is None else credit_usage_event.user_id
+    )
+    event_type = UsageEventType.BASE_PLATFORM_USAGE_CREDIT
+    credit_amount = sloc_to_bytes(credit_usage_event.sloc_credit_amount)
+
+    UsageService(session, aws_client).issue_usage_credits(
+        organization_id, user_id, event_type, credit_amount
+    )
+    return JSONResponse(
+        status_code=status.HTTP_202_ACCEPTED, content={"message": "Accepted"}
+    )

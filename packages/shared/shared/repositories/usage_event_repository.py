@@ -25,3 +25,17 @@ class UsageEventRepository(BaseRepository[UsageEvent]):
         if end_date:
             query = query.where(UsageEvent.timestamp <= end_date)
         return self.session.exec(query).all()
+
+    @staticmethod
+    def billable_usage_event_types() -> list[UsageEventType]:
+        return [
+            UsageEventType.INSPECTOR_CODE_DIFF_USAGE_DEBIT,
+            UsageEventType.ONBOARDING_USAGE_DEBIT,
+        ]
+
+    @staticmethod
+    def credit_usage_event_types() -> list[UsageEventType]:
+        return [
+            UsageEventType.BASE_PLATFORM_USAGE_CREDIT,
+            UsageEventType.ADDITIONAL_PLATFORM_USAGE_CREDIT,
+        ]

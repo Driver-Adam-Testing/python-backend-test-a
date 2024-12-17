@@ -1,6 +1,9 @@
+CONVERSION_FACTOR = 50
+
+
 def bytes_to_sloc(bytes: int) -> int:
-    return bytes // 50
+    return abs(bytes) // CONVERSION_FACTOR
 
 
 def sloc_to_bytes(sloc: int) -> int:
-    return sloc * 50
+    return sloc * CONVERSION_FACTOR

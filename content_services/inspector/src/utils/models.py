@@ -62,10 +62,10 @@ class ChatOpenAI:
         output_cfg: OutputConfig = OutputConfig.default(),
     ):
         # TODO: relax when `gpt-4o` or similar defaults support JSON strict mode.
-        if (
-            output_cfg.kind == OutputConfigKind.JSON_STRICT
-            and not self.model == "gpt-4o-2024-08-06"
-        ):
+        if output_cfg.kind == OutputConfigKind.JSON_STRICT and self.model not in [
+            "gpt-4o-2024-08-06",
+            "gpt-4o-mini",
+        ]:
             raise ValueError(f"Model ({self.model}) does not support JSON strict mode")
         if output_cfg.kind == OutputConfigKind.JSON_STRICT:
             response = self.client.beta.chat.completions.parse(

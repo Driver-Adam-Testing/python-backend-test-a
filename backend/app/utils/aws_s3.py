@@ -1,8 +1,10 @@
 import hashlib
+from urllib.parse import unquote_plus, urlparse
 
 import boto3
 
 from app.core.config import settings
+from app.core.logger import logger
 
 # Initialize S3 client
 s3_client = boto3.client(
@@ -14,9 +16,38 @@ s3_client = boto3.client(
 )
 
 
+def org_id_to_hash(organization_id: str) -> str:
+    return hashlib.sha256(organization_id.encode()).hexdigest()[:63]
+
+
+def dropzone_bucket_name() -> str:
+    return (
+        settings.DROPZONE_BUCKET_NAME
+        if not settings.USE_LEGACY_DROPZONE
+        else f"{settings.ENVIRONMENT}-{settings.AWS_S3_CODE_BUCKET_SUFFIX}"
+    )
+
+
+def parse_presigned_url(url: str) -> tuple[str, str]:
+    parsed_url = urlparse(url)
+    host = parsed_url.netloc
+    path = parsed_url.path.lstrip("/")  # Remove leading slash
+
+    # Extract bucket from the domain
+    if ".s3." in host:  # Domain-style
+        bucket = host.split(".s3.")[0]
+    elif host.startswith(("s3-", "s3.")):  # Path-style
+        bucket = path.split("/")[0]
+        path = "/".join(path.split("/")[1:])
+    else:
+        raise ValueError("Invalid S3 URL format")
+    key = unquote_plus(path)
+    return bucket, key
+
+
 def generate_put_presigned_url(
-    key, content_type, metadata: dict | None = None, expires=3600
-):
+    key: str, content_type: str, metadata: dict | None = None, expires: int = 3600
+) -> str:
     if metadata is None:
         metadata = {}
     bucket = (
@@ -36,7 +67,7 @@ def generate_put_presigned_url(
     )
 
 
-def generate_get_presigned_url(key, expires=3600):
+def generate_get_presigned_url(key: str, expires: int = 3600) -> str:
     bucket = (
         settings.DROPZONE_BUCKET_NAME
         if not settings.USE_LEGACY_DROPZONE
@@ -52,7 +83,9 @@ def generate_get_presigned_url(key, expires=3600):
     )
 
 
-def generate_org_get_presigned_url(organization_id, key, expires=600):
+def generate_org_get_presigned_url(
+    organization_id: str, key: str, expires: int = 600
+) -> str:
     bucket = hashlib.sha256(organization_id.encode()).hexdigest()[:63]
     return s3_client.generate_presigned_url(
         ClientMethod="get_object",
@@ -64,7 +97,7 @@ def generate_org_get_presigned_url(organization_id, key, expires=600):
     )
 
 
-def head_org_object(organization_id, key, expires=600) -> bool:
+def head_org_object(organization_id: str, key: str, expires: int = 600) -> bool:
     bucket = hashlib.sha256(organization_id.encode()).hexdigest()[:63]
     try:
         s3_client.head_object(
@@ -83,3 +116,18 @@ def delete_file_from_s3(key: str, bucket: str) -> None:
     """
     response = s3_client.delete_object(Bucket=bucket, Key=key)
     print(response)
+
+
+def copy_s3_object(
+    source_bucket: str, source_key: str, dest_bucket: str, dest_key: str
+) -> None:
+    copy_source = {"Bucket": source_bucket, "Key": source_key}
+    s3_client.copy_object(
+        CopySource=copy_source,
+        Bucket=dest_bucket,
+        Key=dest_key,
+        TaggingDirective="REPLACE",
+    )
+    logger.info(
+        f"Successfully copied object from {source_bucket}/{source_key} to {dest_bucket}/{dest_key}"
+    )

@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+from typing import Any
 from urllib.parse import unquote_plus
 
 import botocore
@@ -23,7 +24,10 @@ logger.info(f"Log level set to {log_level}")
 
 # Python lambdas have to be synchronous ¯\_(ツ)_/¯
 # https://stackoverflow.com/questions/60455830/can-you-have-an-async-handler-in-lambda-python-3-6
-def handler(event: dict, context: dict) -> any:
+def handler(
+    event: dict,
+    context: Any,  # noqa: ANN401
+) -> str:
     # Parse the SNS message
     for record in event["Records"]:
         sns_message = json.loads(record["Sns"]["Message"])
@@ -79,17 +83,23 @@ def handler(event: dict, context: dict) -> any:
                     logger.info(
                         f"Triggering codebase onboarding for bucket = {bucket_name}, key = {object_key}"
                     )
+                    request_body = {
+                        "download_url": presigned_url,
+                        "object_key": object_key,
+                        "org_id": metadata["Metadata"]["organization_id"],
+                        "creator_id": metadata["Metadata"]["creator_id"],
+                        "workspace_id": metadata["Metadata"]["workspace_id"],
+                        "filepath": metadata["Metadata"]["file_path"],
+                        "codebase_name": metadata["Metadata"]["codebase_name"],
+                        "provider": metadata["Metadata"]["provider"],
+                        "version": metadata["Metadata"].get("version"),
+                    }
+                    if "repository_id" in metadata["Metadata"]:
+                        request_body["repository_id"] = metadata["Metadata"][
+                            "repository_id"
+                        ]
                     onboarding_result = exec_onboarding_service(
-                        {
-                            "download_url": presigned_url,
-                            "object_key": object_key,
-                            "org_id": metadata["Metadata"]["organization_id"],
-                            "creator_id": metadata["Metadata"]["creator_id"],
-                            "workspace_id": metadata["Metadata"]["workspace_id"],
-                            "filepath": metadata["Metadata"]["file_path"],
-                            "codebase_name": metadata["Metadata"]["codebase_name"],
-                            "provider": metadata["Metadata"]["provider"],
-                        },
+                        request_body,
                         token_json["access_token"],
                     )
                     onboarded.append(onboarding_result)
@@ -99,7 +109,7 @@ def handler(event: dict, context: dict) -> any:
         return onboarded
 
 
-def exec_onboarding_service(event: dict, token: str) -> any:
+def exec_onboarding_service(event: dict[str, Any], token: str) -> dict[str, Any]:
     with httpx.Client(base_url=settings.API_URL, follow_redirects=True) as driverClient:
         payload = {**event}
         logger.debug(payload)

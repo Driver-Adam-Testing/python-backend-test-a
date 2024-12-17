@@ -11,6 +11,8 @@ class UsageSessionMetadata(BaseModel):
     content_id: str
     events_sent: int = 0
     run_id: str | None = None
+    content_name: str | None = None
+    version_id: str | None = None
 
 
 class UsagePaymentSessionMetadata(BaseModel):
@@ -37,7 +39,5 @@ class UsageMetric(BaseModel):
     tokens_in: int
     tokens_out: int
     timestamp: datetime
-    event_type: (
-        UsageEventType  # Assuming UsageEventType is an Enum, you might use str or Enum
-    )
+    event_type: UsageEventType
     event_metadata: UsageEventMetadata | None = None

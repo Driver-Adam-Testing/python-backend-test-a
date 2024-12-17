@@ -357,7 +357,7 @@ def run_codebase_onboarding(
                 print(f"Created but not committed source content for: {directory}.")
 
         codebase_sloc = 0
-        codebase_size_in_bytes = 0
+        codebase_size_in_bytes = 0  # TODO:  rename to cumulative_codebase_size_in_bytes
         # Add file source contents
         for file_path in codebase_stats:
             if (

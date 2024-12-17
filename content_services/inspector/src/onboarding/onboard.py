@@ -395,6 +395,7 @@ def run_codebase_onboarding(
             content_type="codebase",
             content_id=str(codebase_id),
             content_name=codebase_name,
+            version_id=str(version_id),
         )
         # need to get the real org id from the workspace since the org_id passed in is the hashed org_id
         real_org_id = get_org_id_from_workspace(workspace_id)

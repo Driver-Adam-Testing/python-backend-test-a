@@ -12,6 +12,7 @@ class UsageSessionMetadata(BaseModel):
     events_sent: int = 0
     run_id: str | None = None
     content_name: str | None = None
+    version_id: str | None = None
 
 
 class UsagePaymentSessionMetadata(BaseModel):

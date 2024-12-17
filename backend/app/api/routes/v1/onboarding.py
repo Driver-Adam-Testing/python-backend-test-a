@@ -25,6 +25,7 @@ class OnboardingRequestBody(BaseModel):
     workspace_id: str | None = None
     download_url: str
     object_key: str
+    repository_id: str | None = None
     provider: str | None = None
     version: str | None = None
 

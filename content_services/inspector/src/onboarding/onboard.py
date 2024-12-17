@@ -162,6 +162,7 @@ def run_codebase_onboarding(
     provider: str = "manual",
     override_codebase_name: str | None = None,
     version_str: str | None = None,
+    repository_id: str | None = None,
 ) -> tuple[str, str]:
     from database.db import (
         engine,  # We defer the import since we'll have the secrets set here
@@ -254,10 +255,11 @@ def run_codebase_onboarding(
                 )
             prior_version_name = prior_version.version
 
-            prior_version_status, prior_version_id = (
-                get_codebase_content_record_status_for(
-                    codebase_id=codebase_id, version_id=prior_version.id
-                )
+            (
+                prior_version_status,
+                prior_version_id,
+            ) = get_codebase_content_record_status_for(
+                codebase_id=codebase_id, version_id=prior_version.id
             )
             if prior_version_status == Enum_Derived_Content_Status.generating:
                 print(
@@ -299,12 +301,15 @@ def run_codebase_onboarding(
             )
             session.add(codebase)
 
+        metadata = (
+            {} if repository_id is None else {"github_repository_id": repository_id}
+        )
         cb_sc = DerivedContent(
             codebase_id=codebase_id,
             relative_path=codebase_name,
             content_type_id=codebase_type_id,
             workspace_id=workspace_id,
-            misc_metadata={},
+            misc_metadata=metadata,
             status=Enum_Derived_Content_Status.generating,
             version_id=version_id,
         )

@@ -122,6 +122,7 @@ def clone_repo(
         org_id=current_user.organization_id,
         workspace_id=workspace_id,
         repo=repo.repo_name,
+        repo_id=str(repo.metadata["id"]),
         access_token=token,
         upload_key=upload_key,
     )

@@ -182,6 +182,7 @@ def generate_codebase_metadata(
     org_name: str,
     workspace_id: str,
     repo: str,
+    repo_id: str,
     owner: str,
     provider: str,
     commit: str,
@@ -200,6 +201,7 @@ def generate_codebase_metadata(
         "content_type": "codebase",
         "provider": provider,
         "version": commit,
+        "repository_id": repo_id,
     }
 
 
@@ -238,6 +240,7 @@ def download_and_upload_repo(
     org_id: str,
     workspace_id: str,
     repo: str,
+    repo_id: str,
     access_token: str,
     upload_key: str,
     commit: str | None = None,
@@ -249,7 +252,15 @@ def download_and_upload_repo(
             commit = fetch_default_branch_and_commit(gh_org_name, repo, access_token)
 
         metadata = generate_codebase_metadata(
-            org_id, gh_org_name, workspace_id, repo, owner, "github", commit, upload_key
+            org_id,
+            gh_org_name,
+            workspace_id,
+            repo,
+            repo_id,
+            owner,
+            "github",
+            commit,
+            upload_key,
         )
 
         zip_content = download_github_repo_zip(gh_org_name, repo, commit, access_token)

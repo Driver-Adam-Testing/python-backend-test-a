@@ -83,18 +83,23 @@ def handler(
                     logger.info(
                         f"Triggering codebase onboarding for bucket = {bucket_name}, key = {object_key}"
                     )
+                    request_body = {
+                        "download_url": presigned_url,
+                        "object_key": object_key,
+                        "org_id": metadata["Metadata"]["organization_id"],
+                        "creator_id": metadata["Metadata"]["creator_id"],
+                        "workspace_id": metadata["Metadata"]["workspace_id"],
+                        "filepath": metadata["Metadata"]["file_path"],
+                        "codebase_name": metadata["Metadata"]["codebase_name"],
+                        "provider": metadata["Metadata"]["provider"],
+                        "version": metadata["Metadata"].get("version"),
+                    }
+                    if "repository_id" in metadata["Metadata"]:
+                        request_body["repository_id"] = metadata["Metadata"][
+                            "repository_id"
+                        ]
                     onboarding_result = exec_onboarding_service(
-                        {
-                            "download_url": presigned_url,
-                            "object_key": object_key,
-                            "org_id": metadata["Metadata"]["organization_id"],
-                            "creator_id": metadata["Metadata"]["creator_id"],
-                            "workspace_id": metadata["Metadata"]["workspace_id"],
-                            "filepath": metadata["Metadata"]["file_path"],
-                            "codebase_name": metadata["Metadata"]["codebase_name"],
-                            "provider": metadata["Metadata"]["provider"],
-                            "version": metadata["Metadata"].get("version"),
-                        },
+                        request_body,
                         token_json["access_token"],
                     )
                     onboarded.append(onboarding_result)

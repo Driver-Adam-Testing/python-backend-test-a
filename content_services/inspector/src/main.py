@@ -551,6 +551,7 @@ def onboard_and_inspect(
     workspace_id: UUID,
     provider: str = "manual",
     version: str | None = None,
+    repository_id: str | None = None,
 ) -> None:
     from onboarding.onboard_utils import RunInProgressError, set_codebase_status
 
@@ -568,6 +569,7 @@ def onboard_and_inspect(
                 workspace_id,
                 provider,
                 version_str=version,
+                repository_id=repository_id,
             )
         except RunInProgressError:
             print(

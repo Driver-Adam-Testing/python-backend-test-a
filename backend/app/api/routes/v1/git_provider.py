@@ -194,7 +194,7 @@ def handle_push_event(session: CurrentSession, body: dict) -> JSONResponse:
     repository = body["repository"]
     org_name = repository.get("owner", {}).get("login", "unknown")
     repo_name = repository["name"]
-    repo_id = repository["id"]
+    repo_id = str(repository["id"])
     default_branch = repository["default_branch"]
     pushed_ref = body["ref"]
     installation_id = str(body["installation"]["id"])

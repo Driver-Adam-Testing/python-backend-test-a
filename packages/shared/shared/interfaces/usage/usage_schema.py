@@ -20,16 +20,8 @@ class CreditUsageEvent(BaseModel):
 class UsageBalance(BaseModel):
     credits: int
     debits: int
-    # balance: int = Field(default=0, description="Computed balance")
     unit: UsageMetricUnitType
 
-    # @model_validator(mode="before")
-    # def compute_balance(cls, values: dict) -> dict:
-    #     _credits = values.get("credits", 0)
-    #     _debits = values.get("debits", 0)
-    #     print(f"credits: {_credits}, debits: {_debits}")
-    #     values["balance"] = _credits + _debits if _credits > 0 else _debits
-    #     return values
     @computed_field
     @property
     def balance(self) -> int:
@@ -48,12 +40,10 @@ class UsageBalance(BaseModel):
 
         new_credits = conversion_fn(self.credits)
         new_debits = conversion_fn(self.debits)
-        # new_balance = conversion_fn(self.balance)
 
         return UsageBalance(
             credits=new_credits,
             debits=new_debits,
-            # balance=selfbalance,
             unit=target_unit,
         )
 

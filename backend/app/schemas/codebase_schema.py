@@ -67,3 +67,4 @@ class CodebaseAnalysisResult(BaseModel):
 
 class CodebaseOnboardRequest(BaseModel):
     codebase_object_key: str
+    call_id: str

@@ -7,9 +7,10 @@ from database.models_v1 import (
     InspectionVersion,
     Workspace,
 )
-from fastapi import APIRouter, Query, status
+from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from shared.usage.usage_service import UsageService
 from sqlmodel import func, select
 
 from app.api.auth import ContentEditorPermission, ContentReadonlyPermission, UserToken
@@ -120,7 +121,13 @@ def exec_codebase_analysis(
 def get_codebase_analysis(
     call_id: str,
 ) -> CodebaseAnalysisResult:
-    return CodebaseService.get_codebase_analysis_results(call_id)
+    analysis_response = CodebaseService.get_codebase_analysis_results(call_id)
+    if analysis_response.status in ["error", "expired"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Bad Request"
+        )
+
+    return analysis_response
 
 
 @router.post(
@@ -129,9 +136,26 @@ def get_codebase_analysis(
     dependencies=[ContentEditorPermission],
 )
 def trigger_codebase_onboarding(
+    session: CurrentSession,
     user: UserToken,
     request: CodebaseOnboardRequest,
 ) -> JSONResponse:
+    analysis = CodebaseService.get_codebase_analysis_results(request.call_id)
+
+    if analysis.status != "completed":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Bad Request"
+        )
+
+    analyzable_sloc = analysis.result.analyzable_sloc
+
+    available_usage = UsageService(session).get_usage_balance(user.organization_id)
+
+    if analyzable_sloc > available_usage.balance:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Bad Request"
+        )
+
     CodebaseService.trigger_codebase_onboarding(
         user.organization_id, request.codebase_object_key
     )

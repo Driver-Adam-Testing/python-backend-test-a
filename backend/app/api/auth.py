@@ -18,6 +18,7 @@ ORG_MANAGER = "organization:management"
 CONTENT_EDITOR = "content:editor"
 CONTENT_READONLY = "content:readonly"
 USAGE_CREDITOR = "usage_credit:management"
+SUBSCRIPTION_MANAGER = "subscription:management"
 
 
 def get_jwks() -> dict:
@@ -169,3 +170,4 @@ ContentEditorPermission = Depends(require_permission(CONTENT_EDITOR))
 ContentReadonlyPermission = Depends(require_permission(CONTENT_READONLY))
 OrgManagerPermission = Depends(require_permission(ORG_MANAGER))
 UsageCreditPermission = Depends(require_permission(USAGE_CREDITOR))
+SubscriptionManagerPermission = Depends(require_permission(SUBSCRIPTION_MANAGER))

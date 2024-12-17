@@ -1,3 +1,5 @@
+from datetime import UTC, datetime
+
 from app.core.logger import logger
 from database.models_v1 import (
     BillingFrequency,
@@ -40,6 +42,7 @@ class BillingService:
         organization_id: str,
         plan_type: PlanType,
         billing_frequency: BillingFrequency,
+        start_date: datetime | None = None,
     ) -> SubscriptionRecord:
         subscription = self.get_active_subscription_by_org(organization_id)
         if subscription:
@@ -54,6 +57,7 @@ class BillingService:
             organization_id=organization_id,
             plan_type=plan_type,
             billing_frequency=billing_frequency,
+            created_at=start_date if start_date else datetime.now(tz=UTC),
         )
         self.session.add(subscription)
         self.session.commit()

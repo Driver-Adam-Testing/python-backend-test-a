@@ -5,7 +5,12 @@ from shared.interfaces.billing.subscription_schema import (
     SubscriptionRecord,
 )
 
-from app.api.auth import OrgManagerPermission, UserToken
+from app.api.auth import (
+    M2MToken,
+    OrgManagerPermission,
+    SubscriptionManagerPermission,
+    UserToken,
+)
 from app.api.session import CurrentSession
 
 router = APIRouter()
@@ -27,13 +32,18 @@ def get_active_subscription(
     return subscription
 
 
-@router.post("", summary="Create a subscription", dependencies=[OrgManagerPermission])
+@router.post(
+    "", summary="Create a subscription", dependencies=[SubscriptionManagerPermission]
+)
 def create_subscription(
-    session: CurrentSession, user: UserToken, request: CreateSubscriptionRequest
+    session: CurrentSession, current_token: M2MToken, request: CreateSubscriptionRequest
 ) -> SubscriptionRecord:
-    if user.organization_id != request.organization_id:
-        raise HTTPException(403, "Bad request.")
+    if current_token is None:
+        raise HTTPException(403, "Forbidden")
 
     return BillingService(session).create_subscription(
-        user.organization_id, request.plan_type, request.billing_frequency
+        request.organization_id,
+        request.plan_type,
+        request.billing_frequency,
+        request.start_date,
     )

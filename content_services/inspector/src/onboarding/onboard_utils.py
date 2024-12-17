@@ -483,12 +483,10 @@ def run_file_stats_and_reencode(
     is_ignored = False
     if driverignore is not None:
         file_ignored = driverignore(local_path)
-        # Bug in gitignore_parser where it doesn't ignore children of directories with a leading slash
+        # Bug in gitignore_parser where it doesn't ignore children of directories with no trailing slash
         dir_ignored = driverignore(local_path.parent)
         if file_ignored or dir_ignored:
             is_ignored = True
-
-    print(local_path, is_ignored)
 
     file_stats = {}
 

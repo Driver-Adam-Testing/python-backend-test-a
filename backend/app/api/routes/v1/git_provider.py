@@ -65,11 +65,22 @@ def git_provider_callback(
     secret_value = json.dumps(token_data)
     write_secret(secret_key, secret_value)
 
-    gh_app_install = GithubAppInstallation(
-        organization_id=org_id, github_app_installation_id=installation_id
-    )
-    session.add(gh_app_install)
-    session.commit()
+    existing_installation = session.exec(
+        select(GithubAppInstallation).where(
+            GithubAppInstallation.organization_id == org_id,
+            GithubAppInstallation.github_app_installation_id == installation_id,
+        )
+    ).first()
+
+    if existing_installation is None:
+        logging.info(
+            f"Creating github app installation for org = {org_id}, installation = {installation_id}"
+        )
+        gh_app_install = GithubAppInstallation(
+            organization_id=org_id, github_app_installation_id=installation_id
+        )
+        session.add(gh_app_install)
+        session.commit()
 
     content = "<html><body><script>window.close();</script></body></html>"
     return Response(content=content, media_type="text/html")
@@ -183,6 +194,7 @@ def handle_push_event(session: CurrentSession, body: dict) -> JSONResponse:
     repository = body["repository"]
     org_name = repository.get("owner", {}).get("login", "unknown")
     repo_name = repository["name"]
+    repo_id = str(repository["id"])
     default_branch = repository["default_branch"]
     pushed_ref = body["ref"]
     installation_id = str(body["installation"]["id"])
@@ -245,6 +257,7 @@ def handle_push_event(session: CurrentSession, body: dict) -> JSONResponse:
         org_id=gh_app_install.organization_id,
         workspace_id=str(default_workspace.id),
         repo=repo_name,
+        repo_id=repo_id,
         access_token=token,
         commit=commit_hash,
         upload_key=upload_key,

@@ -100,6 +100,7 @@ async def list_primary_assets(
     offset: int = 0,
     sort_by: str = "updated_at",
     sort_direction: str = "DESC",
+    primary_asset_type: str | list[str] | None = None,
 ) -> ListWithCount[PrimaryAssetRow]:
     query = select(PrimaryAssetRow).where(
         PrimaryAssetRow.organization_id == user.organization_id
@@ -110,6 +111,17 @@ async def list_primary_assets(
     filters.pop("offset", None)
     filters.pop("sort_by", None)
     filters.pop("sort_direction", None)
+    filters.pop("primary_asset_type", None)
+
+    if primary_asset_type:
+        if isinstance(primary_asset_type, list):
+            query = query.where(
+                PrimaryAssetRow.primary_asset_type.in_(primary_asset_type)
+            )
+        else:
+            query = query.where(
+                PrimaryAssetRow.primary_asset_type == primary_asset_type
+            )
 
     for key, value in filters.items():
         if hasattr(PrimaryAssetRow, key):

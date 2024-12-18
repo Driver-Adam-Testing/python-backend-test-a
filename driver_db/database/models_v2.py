@@ -20,6 +20,7 @@ class PrimaryAssetTypeEnum(str, Enum):
     CODEBASE = "CODEBASE"
     FILE = "FILE"
     PAGE = "PAGE"
+    PAGE_TEMPLATE = "PAGE_TEMPLATE"
 
 
 class PrimaryAssetRow(SQLModel, table=True):  # type: ignore

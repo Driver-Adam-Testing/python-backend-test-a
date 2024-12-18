@@ -382,6 +382,70 @@ def upgrade() -> None:
         """
     )
 
+    # MIGRATE PAGE TEMPLATES
+
+    print("Executing: PAGE TEMPLATES -> PRIMARY ASSET")
+    op.execute(
+        """
+        -- PAGE TEMPLATES -> PRIMARY ASSET
+        --
+        -- PRIMARY_ASSET.ID = TEMPLATE ID
+        --
+        INSERT INTO v2_primary_asset (id, display_name, primary_asset_type, organization_id, created_at, updated_at)
+        SELECT dc.id,
+            CASE
+                WHEN ROW_NUMBER() OVER (PARTITION BY w.organization_id, dc.content_name ORDER BY dc.created_at) > 1
+                THEN dc.content_name || '-' || (ROW_NUMBER() OVER (PARTITION BY w.organization_id, dc.content_name ORDER BY dc.created_at) - 1)::text
+                ELSE dc.content_name
+            END AS display_name,
+            'PAGE_TEMPLATE',
+            w.organization_id,
+            dc.created_at,
+            dc.updated_at
+        FROM derived_contents dc
+        JOIN derived_content_types dct on dc.content_type_id = dct.id
+        JOIN workspaces w on w.id = dc.workspace_id
+        WHERE dct.type_name = 'template'
+        AND dc.content_name is not NULL;
+        """
+    )
+
+    print("Executing: PAGE TEMPLATES -> VERSION")
+    op.execute(
+        """
+        -- PAGE TEMPLATES -> VERSION
+        --
+        -- VERSION.ID = CONTENT (PAGE TEMPLATE) ID
+        --
+        INSERT INTO v2_version (id, primary_asset_id, display_name, created_at, updated_at)
+        SELECT dc.id, pa.id,
+            '0.0.0',
+            dc.created_at, dc.updated_at
+        FROM derived_contents dc
+        JOIN workspaces w ON w.id = dc.workspace_id
+        JOIN v2_primary_asset pa ON pa.organization_id = w.organization_id
+        JOIN derived_content_types dct on dct.id = dc.content_type_id
+        WHERE dct.type_name = 'template'
+        AND dc.id = pa.id;
+        """
+    )
+
+    print("Executing: SOURCE CONTENT [PAGE TEMPLATES] -> NODE")
+    op.execute(
+        """
+        -- SOURCE CONTENT [PAGE TEMPLATES] -> NODE
+        --
+        -- NODE.ID = SOURCE CONTENT [PAGE TEMPLATES].ID
+        --
+        INSERT INTO v2_node (id, version_id, relative_path, created_at, updated_at)
+        SELECT DISTINCT dc.id, v.id, dc.relative_path, dc.created_at, dc.updated_at
+        FROM derived_contents dc
+        JOIN derived_content_types dc_type ON dc.content_type_id = dc_type.id
+        JOIN v2_version v ON v.id = dc.id
+        where dc_type.type_name = 'template'
+        """
+    )
+
     print("Executing: Update derived_contents with content_type_slug")
     op.execute(
         """

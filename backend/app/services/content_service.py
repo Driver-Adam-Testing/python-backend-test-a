@@ -845,16 +845,6 @@ def delete_codebase_and_related_entities(
             dc.version_id for dc in derived_contents if dc.version_id is not None
         }
 
-        if version_ids_to_delete:
-            session.query(InspectorRun).filter(
-                InspectorRun.inspection_version_id.in_(version_ids_to_delete)
-            ).delete(synchronize_session="fetch")
-
-        if version_ids_to_delete:
-            session.query(InspectionVersion).filter(
-                InspectionVersion.id.in_(version_ids_to_delete)
-            ).delete(synchronize_session="fetch")
-
         session.query(DocumentSource).filter(
             DocumentSource.source_id.in_([source.id for source in source_content])
         ).delete(synchronize_session="fetch")
@@ -870,6 +860,15 @@ def delete_codebase_and_related_entities(
         session.query(DerivedContent).filter(
             DerivedContent.id.in_([source.id for source in source_content])
         ).delete(synchronize_session="fetch")
+        if version_ids_to_delete:
+            session.query(InspectorRun).filter(
+                InspectorRun.inspection_version_id.in_(version_ids_to_delete)
+            ).delete(synchronize_session="fetch")
+
+        if version_ids_to_delete:
+            session.query(InspectionVersion).filter(
+                InspectionVersion.id.in_(version_ids_to_delete)
+            ).delete(synchronize_session="fetch")
 
         # Collect records for S3 deletion
         records_to_delete_in_s3.extend(

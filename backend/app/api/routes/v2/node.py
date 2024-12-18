@@ -299,6 +299,7 @@ class DerivedContentResponse(BaseModel):
                 "primary_asset_id": derived_content.full_node.primary_asset_id,
                 "primary_asset_display_name": derived_content.full_node.primary_asset_display_name,
                 "primary_asset_organization_id": derived_content.full_node.primary_asset_organization_id,
+                "primary_asset_primary_asset_type": derived_content.full_node.primary_asset_primary_asset_type,
                 "version_id": derived_content.full_node.version_id,
                 "version_display_name": derived_content.full_node.version_display_name,
                 "node_id": derived_content.full_node.node_id,
@@ -673,19 +674,11 @@ async def update_derived_content(
     return Response(status_code=202)
 
 
+## ALERT: THIS IS A CONVENIENCE METHOD
+
+
 @router.post("/contents/new_page", response_model=DerivedContentResponse)
 async def new_page(session: CurrentSession, user: UserToken) -> DerivedContentResponse:
-    """
-    Create a new page content.
-
-    Parameters:
-    - session: Current session object
-    - user: Current user object
-
-    Returns:
-    - DerivedContentResponse: Created content details
-    """
-
     # Find all PrimaryAssetRows with the name "Untitled Page X" where X is any number for the user's organization
     existing_assets = session.exec(
         select(PrimaryAssetRow).where(
@@ -727,6 +720,63 @@ async def new_page(session: CurrentSession, user: UserToken) -> DerivedContentRe
         content_type_slug="application_note",
         node_id=new_node.id,
         relative_path="/page",
+        content="",
+        content_name=new_display_name,
+        misc_metadata={},
+        status="generation-complete",
+        version_id=None,
+    )
+    session.add(new_derived_content)
+    session.commit()
+    return DerivedContentResponse.from_derived_content(new_derived_content)
+
+
+@router.post("/new_template", response_model=DerivedContentResponse)
+async def new_template(
+    session: CurrentSession,
+    user: UserToken,
+) -> DerivedContentResponse:
+    # Query existing assets with similar names
+    existing_assets = session.exec(
+        select(PrimaryAssetRow).where(
+            PrimaryAssetRow.display_name.like("Untitled Template %"),
+            PrimaryAssetRow.organization_id == user.organization_id,
+        )
+    ).all()
+
+    # Extract numbers from the existing asset names and find the maximum
+    max_number = 0
+    for asset in existing_assets:
+        try:
+            number = int(asset.display_name.split(" ")[-1])
+            if number > max_number:
+                max_number = number
+        except ValueError:
+            continue
+
+    # Create a new PrimaryAssetRow with the incremented number
+    new_display_name = f"Untitled Template {max_number + 1}"
+    new_primary_asset = PrimaryAssetRow(
+        display_name=new_display_name,
+        organization_id=user.organization_id,
+        primary_asset_type="PAGE_TEMPLATE",
+    )
+    session.add(new_primary_asset)
+    session.commit()
+
+    new_version = VersionRow(primary_asset_id=new_primary_asset.id, display_name="0")
+    session.add(new_version)
+    session.commit()
+
+    new_node = NodeRow(version_id=new_version.id, relative_path="/template")
+    session.add(new_node)
+    session.commit()
+
+    new_derived_content = DerivedContent(
+        content_type_id=None,
+        content_type_slug="template",
+        node_id=new_node.id,
+        relative_path="/template",
         content="",
         content_name=new_display_name,
         misc_metadata={},

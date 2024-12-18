@@ -4,12 +4,14 @@ from aws_cdk import (
     Duration,
     aws_cloudwatch,
     aws_cloudwatch_actions,
+    aws_ec2,
     aws_events,
     aws_lambda,
     aws_lambda_python_alpha,
     aws_secretsmanager,
     aws_sns,
     aws_sqs,
+    aws_ssm,
 )
 from aws_cdk import (
     aws_events_targets as targets,
@@ -36,13 +38,22 @@ class MetricsLambda(Construct):
         super().__init__(scope, id)
 
         database_url_secret = aws_secretsmanager.Secret(self, "MetricsLambdaDBSecret")
+        vpc_id = aws_ssm.StringParameter.value_from_lookup(
+            scope, parameter_name="/baseline/infra/v2/vpc/id"
+        )
+        vpc = aws_ec2.Vpc.from_lookup(self, id="BaselineVPC_DRV_24", vpc_id=vpc_id)
         driver_db_path = os.path.abspath("driver_db")
+
         self.lambda_function = aws_lambda_python_alpha.PythonFunction(
             scope,
             "MetricsLambdaPy",
             entry="lambdas/metrics_handler",
             runtime=aws_lambda.Runtime.PYTHON_3_12,
             index="src/main.py",
+            vpc=vpc,
+            vpc_subnets=aws_ec2.SubnetSelection(
+                subnet_type=aws_ec2.SubnetType("PRIVATE")
+            ),
             environment={
                 "ENVIRONMENT": params.environment,
                 "LOG_LEVEL": "INFO",

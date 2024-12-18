@@ -1,7 +1,7 @@
 """add nodes
 
 Revision ID: 911af6a98754
-Revises: 78084f9c296b
+Revises: 1475962b9869
 Create Date: 2024-12-03 16:05:08.438880
 
 """
@@ -12,7 +12,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "911af6a98754"
-down_revision = "78084f9c296b"
+down_revision = "1475962b9869"
 branch_labels = None
 depends_on = None
 

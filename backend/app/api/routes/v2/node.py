@@ -106,30 +106,27 @@ async def list_primary_assets(
     offset: int = 0,
     sort_by: str = "updated_at",
     sort_direction: str = "DESC",
-    primary_asset_type: str | list[str] | None = None,
 ) -> ListWithCount[PrimaryAssetRow]:
     query = select(PrimaryAssetRow).where(
         PrimaryAssetRow.organization_id == user.organization_id
     )
-
     filters = dict(request.query_params)
     filters.pop("limit", None)
     filters.pop("offset", None)
     filters.pop("sort_by", None)
     filters.pop("sort_direction", None)
-    filters.pop("primary_asset_type", None)
+    primary_asset_type = filters.pop("primary_asset_type", None)
 
     if primary_asset_type:
+        if isinstance(primary_asset_type, str):
+            primary_asset_type = primary_asset_type.split(",")
         if isinstance(primary_asset_type, list):
             query = query.where(
                 PrimaryAssetRow.primary_asset_type.in_(primary_asset_type)
             )
-        else:
-            query = query.where(
-                PrimaryAssetRow.primary_asset_type == primary_asset_type
-            )
 
     for key, value in filters.items():
+        print(key, value)
         if hasattr(PrimaryAssetRow, key):
             query = query.where(getattr(PrimaryAssetRow, key) == value)
         elif key.startswith("version.") and hasattr(VersionRow, key.split(".", 1)[1]):

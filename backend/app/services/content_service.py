@@ -243,21 +243,17 @@ class ContentService:
             content_results.append(
                 ListContentResult(
                     id=derived_content.id,
-                    organization_id=derived_content.workspace.organization_id,
+                    organization_id=organization_id,
                     content_type_id=derived_content.content_type_id,
                     content_type_name=derived_content.content_type.type_name
                     if derived_content.content_type
                     else None,
                     content_name=get_content_name(derived_content),
-                    workspace_id=derived_content.workspace_id,
-                    workspace_name=derived_content.workspace.display_name
-                    if derived_content.workspace
-                    else None,
+                    workspace_id=None,
+                    workspace_name=None,
                     source_content_id=derived_content.source_content_id,
-                    codebase_id=derived_content.codebase_id,
-                    codebase_name=derived_content.codebase.codebase_name
-                    if derived_content.codebase
-                    else None,
+                    codebase_id=None,
+                    codebase_name=None,
                     relative_path=derived_content.relative_path,
                     content=derived_content.content,
                     misc_metadata=derived_content.misc_metadata,
@@ -297,9 +293,8 @@ class ContentService:
         query = self._apply_sorting(query, search_input)
 
         query = query.options(
-            selectinload(DerivedContent.workspace),
+            selectinload(DerivedContent.node),
             selectinload(DerivedContent.content_type),
-            selectinload(DerivedContent.codebase),
             selectinload(DerivedContent.source_content),
             selectinload(DerivedContent.tags),
             selectinload(DerivedContent.inspection_version),
@@ -332,10 +327,10 @@ class ContentService:
         """
         return (
             select(DerivedContent)
-            .where(DerivedContent.workspace_id == Workspace.id)
-            .where(Workspace.organization_id == organization_id)
-            # Ensure Workspace is known:
-            .join(Workspace, DerivedContent.workspace_id == Workspace.id)
+            .join(NodeRow)
+            .join(VersionRow)
+            .join(PrimaryAssetRow)
+            .where(PrimaryAssetRow.organization_id == organization_id)
         )
 
     def _apply_sorting(
@@ -500,25 +495,25 @@ class ContentService:
                 select(Codebase).where(Codebase.id == codebase_id)
             ).first()
 
-        codebase_file_id = self.derived_content_type_repository.get_by_type_name(
-            "codebase-file"
-        ).id
-        codebase_directory_id = self.derived_content_type_repository.get_by_type_name(
-            "codebase-directory"
-        ).id
+        # codebase_file_id = self.derived_content_type_repository.get_by_type_name(
+        #     "codebase-file"
+        # ).id
+        # codebase_directory_id = self.derived_content_type_repository.get_by_type_name(
+        #     "codebase-directory"
+        # ).id
 
-        # Apply the codebase status to the file and folder DC statuses. This is required for the frontend
-        # to know if a source can be used for search/agents.
-        for source in sources:
-            if source.codebase_id and source.content_type_id in {
-                codebase_file_id,
-                codebase_directory_id,
-            }:
-                codebase = get_codebase(source.codebase_id)
-                derived_content_status: Enum_Derived_Content_Status = (
-                    codebase.status.into_dc_status()
-                )
-                source.status = derived_content_status
+        # # Apply the codebase status to the file and folder DC statuses. This is required for the frontend
+        # # to know if a source can be used for search/agents.
+        # for source in sources:
+        #     if source.codebase_id and source.content_type_id in {
+        #         codebase_file_id,
+        #         codebase_directory_id,
+        #     }:
+        #         codebase = get_codebase(source.codebase_id)
+        #         derived_content_status: Enum_Derived_Content_Status = (
+        #             codebase.status.into_dc_status()
+        #         )
+        #         source.status = derived_content_status
 
         # If the source is associated with a codebase, get the codebase status and propagate to children
 
@@ -533,10 +528,8 @@ class ContentService:
                 workspace_id=source.workspace_id,
                 workspace_name=source.workspace.display_name,
                 source_content_id=source.source_content_id,
-                codebase_id=source.codebase_id,
-                codebase_name=source.codebase.codebase_name
-                if source.codebase
-                else None,
+                codebase_id=None,
+                codebase_name=None,
                 relative_path=source.relative_path,
                 content=source.content,
                 misc_metadata=source.misc_metadata,

@@ -124,9 +124,6 @@ def fetch_repos(session: Session, organization_id: str) -> list[dict[str, Any]]:
                 page_count = 1
                 response = client.get(url, headers=headers)
                 for repo in response.json()["repositories"]:
-                    repo["installation_id"] = (
-                        github_installation.github_app_installation_id
-                    )
                     results.append(repo)
                 link_header: str = response.headers.get("link", None)
                 while link_header:
@@ -154,6 +151,11 @@ def fetch_repos(session: Session, organization_id: str) -> list[dict[str, Any]]:
                     if not has_next:
                         logger.debug("Does not have next url in link header, stopping.")
                         break
+
+                for result in results:
+                    result["installation_id"] = (
+                        github_installation.github_app_installation_id
+                    )
         return results
     except Exception as e:
         logger.error(f"Failed to fetch repositories: {e}")

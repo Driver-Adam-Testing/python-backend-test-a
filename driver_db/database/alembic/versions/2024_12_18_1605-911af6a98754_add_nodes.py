@@ -148,7 +148,15 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(["primary_asset_id"], ["v2_primary_asset.id"]),
         sa.PrimaryKeyConstraint("tag_id", "primary_asset_id"),
     )
-
+    op.alter_column(
+        "derived_contents", "content_type_id", existing_type=sa.Uuid(), nullable=True
+    )
+    op.alter_column(
+        "derived_contents", "workspace_id", existing_type=sa.Uuid(), nullable=True
+    )
+    op.alter_column(
+        "derived_contents", "codebase_id", existing_type=sa.Uuid(), nullable=True
+    )
     op.execute("""
             CREATE VIEW v2_full_node AS
             SELECT

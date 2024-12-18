@@ -277,7 +277,7 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
         default=None,
     )
     content_type_id: UUID = Field(
-        foreign_key="derived_content_types.id", nullable=False, index=True
+        foreign_key="derived_content_types.id", nullable=True, index=True
     )
 
     content_type: DerivedContentType = Relationship(back_populates="contents")

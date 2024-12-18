@@ -13,7 +13,7 @@ from database.models_v2 import (
     PrimaryAssetTypeEnum,
     VersionRow,
 )
-from fastapi import APIRouter, Body, HTTPException, Path, Request
+from fastapi import APIRouter, Body, HTTPException, Path, Request, Response
 from pydantic import BaseModel, field_validator
 from sqlalchemy.orm import selectinload
 from sqlmodel import func, select
@@ -253,18 +253,12 @@ async def list_nodes(
 
 class DerivedContentResponse(BaseModel):
     id: UUID | None
-    content_type_id: UUID
-    source_content_id: UUID | None
     node_id: UUID | None
-    relative_path: str
     content: str | None
-    content_name: str | None
     misc_metadata: dict | None
     status: str | None
     created_at: datetime | None
     updated_at: datetime | None
-    order: int | None
-    version_id: UUID | None
     tags: list[dict] = []  # Include entire tag objects
     full_node: dict | None = None  # Include full node details
 
@@ -582,13 +576,8 @@ class DerivedContentCreate(BaseModel):
 
 
 class DerivedContentUpdate(BaseModel):
-    relative_path: str | None = None
     content: str | None = None
     content_name: str | None = None
-    misc_metadata: dict | None = None
-    status: str | None = None
-    order: int | None = None
-    # Similarly, tag updates could be handled separately or by including logic here.
 
 
 @router.post("/contents", response_model=DerivedContentResponse)
@@ -630,7 +619,7 @@ async def update_derived_content(
     user: UserToken,
     content_id: UUID = Path(...),
     payload: DerivedContentUpdate = Body(...),
-) -> DerivedContentResponse:
+) -> Response:
     # Fetch the derived content and ensure it belongs to the user's organization
     derived_content = session.exec(
         select(DerivedContent)
@@ -646,21 +635,92 @@ async def update_derived_content(
             status_code=404, detail="Content not found or not authorized"
         )
 
-    if payload.relative_path is not None:
-        derived_content.relative_path = payload.relative_path
     if payload.content is not None:
         derived_content.content = payload.content
     if payload.content_name is not None:
         derived_content.content_name = payload.content_name
-    if payload.misc_metadata is not None:
-        derived_content.misc_metadata = payload.misc_metadata
-    if payload.status is not None:
-        derived_content.status = payload.status
-    if payload.order is not None:
-        derived_content.order = payload.order
+        # Update the primary asset's display name if it is a page
+        primary_asset = session.exec(
+            select(PrimaryAssetRow)
+            .join(VersionRow)
+            .join(NodeRow)
+            .where(NodeRow.id == derived_content.node_id)
+        ).one_or_none()
+
+        if primary_asset and primary_asset.primary_asset_type in [
+            "PAGE",
+            "PAGE_TEMPLATE",
+        ]:
+            primary_asset.display_name = payload.content_name
+            session.add(primary_asset)  # Save the primary asset
 
     session.add(derived_content)
     session.commit()
     session.refresh(derived_content)
 
-    return DerivedContentResponse.from_derived_content(derived_content)
+    return Response(status_code=202)
+
+
+@router.post("/contents/new_page", response_model=DerivedContentResponse)
+async def new_page(session: CurrentSession, user: UserToken) -> DerivedContentResponse:
+    """
+    Create a new page content.
+
+    Parameters:
+    - session: Current session object
+    - user: Current user object
+
+    Returns:
+    - DerivedContentResponse: Created content details
+    """
+
+    # Find all PrimaryAssetRows with the name "Untitled Page X" where X is any number for the user's organization
+    existing_assets = session.exec(
+        select(PrimaryAssetRow).where(
+            PrimaryAssetRow.display_name.like("Untitled Page %"),
+            PrimaryAssetRow.organization_id == user.organization_id,
+        )
+    ).all()
+
+    # Extract numbers from the existing asset names and find the maximum
+    max_number = 0
+    for asset in existing_assets:
+        try:
+            number = int(asset.display_name.split(" ")[-1])
+            if number > max_number:
+                max_number = number
+        except ValueError:
+            continue
+
+    # Create a new PrimaryAssetRow with the incremented number
+    new_display_name = f"Untitled Page {max_number + 1}"
+    new_primary_asset = PrimaryAssetRow(
+        display_name=new_display_name,
+        organization_id=user.organization_id,
+        primary_asset_type="PAGE",
+    )
+    session.add(new_primary_asset)
+    session.commit()
+
+    new_version = VersionRow(primary_asset_id=new_primary_asset.id, display_name="0")
+    session.add(new_version)
+    session.commit()
+
+    new_node = NodeRow(version_id=new_version.id, relative_path="/page")
+    session.add(new_node)
+    session.commit()
+
+    new_derived_content = DerivedContent(
+        content_type_id=None,
+        content_type_slug="application_note",
+        node_id=new_node.id,
+        relative_path="/page",
+        content="",
+        content_name=new_display_name,
+        misc_metadata={},
+        status="generation-complete",
+        version_id=None,
+    )
+    session.add(new_derived_content)
+    session.commit()
+    return DerivedContentResponse.from_derived_content(new_derived_content)

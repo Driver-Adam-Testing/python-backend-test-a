@@ -1,22 +1,39 @@
+import hashlib
 import os
 import re
+import time
 import zipfile
+from collections.abc import Callable
 from functools import cache
 from pathlib import Path
+from shutil import rmtree
+from urllib.parse import urlparse
 from uuid import UUID
 
-import chardet
 import requests
 from boto3 import resource
 from botocore.client import ClientError
-from database.db import engine
-from database.models_v1 import DerivedContentType
+from database.models_v1 import (
+    Codebase,
+    DerivedContent,
+    Enum_Codebase_Status,
+    Enum_Derived_Content_Status,
+    Workspace,
+)
+from gitignore_parser import parse_gitignore
 from sqlmodel import Session, select
 
 
-# TODO dedup
+class RunInProgressError(Exception):
+    pass
+
+
+# TODO dedup; already exists for inspector
 @cache
 def get_source_content_type_uuid(content_type_name: str) -> UUID:
+    from database.db import engine
+    from database.models_v1 import DerivedContentType
+
     sct_uuid = None
     with Session(engine) as session:
         sel_statement = select(DerivedContentType).where(
@@ -28,8 +45,109 @@ def get_source_content_type_uuid(content_type_name: str) -> UUID:
     return sct_uuid
 
 
-def create_base_storage_url(org_id: str):
-    return f"https://{org_id}.s3.amazonaws.com"
+@cache
+def get_org_id_from_workspace(workspace_id: UUID) -> str:
+    from database.db import engine
+
+    org_id = None
+    with Session(engine) as session:
+        sel_statement = select(Workspace).where(Workspace.id == workspace_id)
+        workspace = session.exec(sel_statement).first()
+        if workspace:
+            org_id = workspace.organization_id
+    return org_id
+
+
+def get_codebase_content_record_status_for(
+    codebase_id: UUID, version_id: UUID
+) -> tuple[Enum_Derived_Content_Status, UUID]:
+    from database.db import engine
+    from sqlmodel import Session, select
+
+    with Session(engine) as session:
+        cb_sc_uuid = get_source_content_type_uuid("codebase")
+        sel_statement = select(DerivedContent).where(
+            DerivedContent.codebase_id == codebase_id,
+            DerivedContent.content_type_id == cb_sc_uuid,
+            DerivedContent.version_id == version_id,
+        )
+        codebase_dc = session.exec(sel_statement).one()
+    return codebase_dc.status, codebase_dc.id
+
+
+def set_codebase_status(
+    codebase_id: UUID, version_id: UUID, status: Enum_Derived_Content_Status
+) -> None:
+    from database.db import engine
+    from sqlmodel import Session, select
+
+    with Session(engine) as session, session.begin():
+        codebase = session.get(Codebase, codebase_id)
+        if codebase:
+            codebase.status = Enum_Codebase_Status.processing_complete
+            session.add(codebase)
+        else:
+            raise Exception(f"Codebase with ID: {codebase_id} not found.")
+
+        cb_sc_uuid = get_source_content_type_uuid("codebase")
+        sel_statement = select(DerivedContent).where(
+            DerivedContent.codebase_id == codebase_id,
+            DerivedContent.content_type_id == cb_sc_uuid,
+            DerivedContent.version_id == version_id,
+        )
+        codebase_dc = session.exec(sel_statement).first()
+        if codebase_dc:
+            codebase_dc.status = status
+            session.add(codebase_dc)
+        else:
+            raise Exception(
+                f"Codebase Content Record for (codebase id {codebase_id}, version id {version_id}) not found."
+            )
+
+
+@cache
+def load_extension_and_name_mapping() -> dict:
+    from collections import defaultdict
+
+    import yaml
+
+    with open("/linguist/languages.yml") as f:
+        language_dict = yaml.safe_load(f)
+    extension_map = defaultdict(list)
+    name_map = defaultdict(list)
+    for lang in language_dict:
+        if language_dict[lang].get("extensions"):
+            for ext in language_dict[lang]["extensions"]:
+                extension_map[ext].append(lang)
+        if language_dict[lang].get("filenames"):
+            for name in language_dict[lang]["filenames"]:
+                name_map[name].append(lang)
+    return extension_map, name_map
+
+
+def get_file_type_from_extension(extension: str) -> str | None:
+    extension_map = load_extension_and_name_mapping()[0]
+    file_type = extension_map.get(extension)
+
+    if extension == ".h":
+        return "Header"
+    elif file_type and len(file_type) == 1:
+        return file_type[0]
+    return None
+
+
+def get_file_type_from_filename(filename: str) -> str | None:
+    name_map = load_extension_and_name_mapping()[1]
+    file_type = name_map.get(filename)
+
+    if file_type and len(file_type) == 1:
+        return file_type[0]
+    return None
+
+
+def create_base_storage_url(org_id: str) -> str:
+    hashed_org_id = hashlib.sha256(org_id.encode()).hexdigest()[:63]
+    return f"https://{hashed_org_id}.s3.amazonaws.com"
 
 
 def create_bucket_if_dne(bucket_name: str) -> None:
@@ -57,10 +175,12 @@ def download_file_from_s3(
     try:
         s3_bucket.download_file(str(s3_path_to_file), download_destination)
     except Exception as e:
-        raise (e)
+        raise e
 
 
-def download_file_from_presigned_url(presigned_url: str, download_destination: Path):
+def download_file_from_presigned_url(
+    presigned_url: str, download_destination: Path
+) -> None:
     with requests.get(presigned_url, stream=True) as r:
         r.raise_for_status()
         with open(download_destination, "wb") as w_file:
@@ -101,13 +221,19 @@ def unpack_archive(
     if override_codebase_name:
         stripped_extracted_path = Path(override_codebase_name)
 
+    # The container may already have this path unpacked in some instances.
+    if stripped_extracted_path.exists() and stripped_extracted_path != extracted_path:
+        rmtree(stripped_extracted_path)
+
     os.rename(extracted_path, stripped_extracted_path)
+
+    assert stripped_extracted_path.exists()
 
     return stripped_extracted_path
 
 
 def upload_file_to_s3(
-    bucket_name: str, destination_root: str, local_path: Path
+    bucket_name: str, destination_root: Path, local_path: Path
 ) -> Path:
     s3_resource = resource("s3", endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL"))
     # TODO: if S3 is reorged, bucket is consistent?
@@ -118,10 +244,10 @@ def upload_file_to_s3(
     return s3_destination_path
 
 
-def evaluate_file_size_processable(filepath: Path):
+def evaluate_file_size_processable(filepath: Path) -> bool:
     is_proc = True
     file_size = os.path.getsize(filepath)
-    min_size = 10
+    min_size = 0
     max_size = 1000000000  # TODO: what's a more sensible default?
 
     if file_size < min_size or file_size > max_size:
@@ -131,6 +257,8 @@ def evaluate_file_size_processable(filepath: Path):
 
 
 def get_non_ascii_file_encoding(file_bytes: bytes) -> str:
+    import chardet
+
     chunk_size = 2500
     num_chunks = 40
     min_confidence = 0.7
@@ -156,6 +284,8 @@ def get_non_ascii_file_encoding(file_bytes: bytes) -> str:
 
 
 def evaluate_file_binary(filepath: Path) -> bool:
+    import chardet
+
     is_binary = False
     chunk_size = 2500
     min_confidence = 0.7
@@ -171,8 +301,8 @@ def evaluate_file_binary(filepath: Path) -> bool:
         b"\x06",
         b"\x07",
         b"\x08",
-        b"\x0E",
-        b"\x0F",
+        b"\x0e",
+        b"\x0f",
         b"\x10",
         b"\x11",
         b"\x12",
@@ -183,8 +313,8 @@ def evaluate_file_binary(filepath: Path) -> bool:
         b"\x17",
         b"\x18",
         b"\x19",
-        b"\x1A",
-        b"\x1B",
+        b"\x1a",
+        b"\x1b",
     ]
 
     with open(filepath, "rb") as r_file:
@@ -234,7 +364,7 @@ def evaluate_file_binary(filepath: Path) -> bool:
             else:
                 # Last effort - use chardet
                 file_encoding = get_non_ascii_file_encoding(file_bytes)
-                is_binary = True if file_encoding is None else False
+                is_binary = file_encoding is None
 
     return is_binary
 
@@ -260,6 +390,10 @@ def is_on_blacklist(filepath: Path) -> bool:
     blacklist_file_exts = [
         ".svg",
     ]
+    blacklist_file_names = [
+        ".DS_Store",
+        ".driverignore",
+    ]
     is_blacklisted = False
 
     if any(dir in filepath.parts for dir in blacklist_dirs):
@@ -268,7 +402,18 @@ def is_on_blacklist(filepath: Path) -> bool:
     if filepath.is_file() and filepath.suffix in blacklist_file_exts:
         is_blacklisted = True
 
+    if filepath.is_file() and filepath.name in blacklist_file_names:
+        is_blacklisted = True
+
     return is_blacklisted
+
+
+def load_driverignore(codebase_root: Path) -> Callable | None:
+    file_list = os.listdir(codebase_root)
+    if ".driverignore" in file_list:
+        driverignore = parse_gitignore(Path(codebase_root) / ".driverignore")
+        return driverignore
+    return None
 
 
 def reencode_file(filepath: Path) -> None:
@@ -298,7 +443,7 @@ def reencode_file(filepath: Path) -> None:
             else:
                 print(f"Chardet returned None for {filepath}")
 
-    if decoded_str:
+    if decoded_str is not None:
         with open(filepath, "w", encoding="utf-8") as w_file:
             w_file.write(decoded_str)
         print(f"Updated {filepath} to UTF-8")
@@ -306,9 +451,11 @@ def reencode_file(filepath: Path) -> None:
 
 def analyze_text_file(filepath: Path) -> dict:
     is_hex = evaluate_file_hex(filepath)
+    with open(filepath) as f:
+        sloc = sum(1 for _ in f)
     return {
         "size": os.path.getsize(filepath),
-        "sloc": sum(1 for _ in open(filepath)),
+        "sloc": sloc,
         "extension": filepath.suffix,
         "is_binary": False,
         "is_hex": is_hex,
@@ -326,13 +473,20 @@ def analyze_binary_file(filepath: Path) -> dict:
 
 
 def run_file_stats_and_reencode(
-    local_path: Path,
+    local_path: Path, driverignore: Callable | None
 ) -> dict:
     # Evaluate file-processability before reencoding
     # due to file encoding nastiness w/ binary files
     file_size_processable = evaluate_file_size_processable(local_path)
     is_binary = evaluate_file_binary(local_path)
     is_blacklisted = is_on_blacklist(local_path)
+    is_ignored = False
+    if driverignore is not None:
+        file_ignored = driverignore(local_path)
+        # Bug in gitignore_parser where it doesn't ignore children of directories with no trailing slash
+        dir_ignored = driverignore(local_path.parent)
+        if file_ignored or dir_ignored:
+            is_ignored = True
 
     file_stats = {}
 
@@ -349,5 +503,121 @@ def run_file_stats_and_reencode(
         file_stats = analyze_binary_file(local_path)
         file_stats["is_analyzable"] = False
     file_stats["is_blacklisted"] = is_blacklisted
+    file_stats["is_ignored"] = is_ignored
 
     return file_stats
+
+
+def generate_get_presigned_url(bucket: str, key: str, expires: int = 3600) -> str:
+    import boto3
+
+    s3_client = boto3.client(
+        "s3",
+        region_name="us-east-1",
+        aws_access_key_id=os.environ.get("AWS_ACCESS_KEY_ID"),
+        aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY"),
+    )
+    return s3_client.generate_presigned_url(
+        ClientMethod="get_object",
+        Params={
+            "Bucket": bucket,
+            "Key": key,
+        },
+        ExpiresIn=expires,
+    )
+
+
+def parse_presigned_url(url: str) -> tuple[str, str]:
+    from urllib.parse import unquote_plus
+
+    parsed_url = urlparse(url)
+    host = parsed_url.netloc
+    path = parsed_url.path.lstrip("/")  # Remove leading slash
+
+    # Extract bucket from the domain
+    if ".s3." in host:  # Domain-style
+        bucket = host.split(".s3.")[0]
+    elif host.startswith(("s3-", "s3.")):  # Path-style
+        bucket = path.split("/")[0]
+        path = "/".join(path.split("/")[1:])
+    else:
+        raise ValueError("Invalid S3 URL format")
+    key = unquote_plus(path)
+    return bucket, key
+
+
+def has_guard_duty_tag(bucket: str, key: str) -> bool:
+    """
+    Check if the S3 object has the 'GuardDutyMalwareScanStatus' tag with value 'NO_THREATS_FOUND' or 'UNSUPPORTED'.
+    """
+    import boto3
+
+    s3_client = boto3.client(
+        "s3",
+        region_name="us-east-1",
+        aws_access_key_id=os.environ.get("AWS_ACCESS_KEY_ID"),
+        aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY"),
+    )
+    tags = s3_client.get_object_tagging(Bucket=bucket, Key=key)
+    """
+    supported_tags = ["NO_THREATS_FOUND", "UNSUPPORTED"]
+    the 'UNSUPPORTED' tag is a misnomer because GuardDuty tags file as UNSUPPORTED
+    if they have too many files ( > 1000) or file is too large but we can still process it.
+    """
+    # TODO: add support for UNSUPPORTED tag in GuardDuty
+    supported_tags = ["NO_THREATS_FOUND", "UNSUPPORTED"]
+    # supported_tags = ["NO_THREATS_FOUND"]
+    return (
+        len(
+            [
+                tag
+                for tag in tags["TagSet"]
+                if tag["Key"] == "GuardDutyMalwareScanStatus"
+                and tag["Value"] in supported_tags
+            ]
+        )
+        == 1
+    )
+
+
+def wait_for_guard_duty_tag(
+    bucket: str, key: str, timeout: int = 60, interval: int = 5
+) -> bool:
+    """
+    Polls the S3 object for the 'GuardDutyMalwareScanStatus' tag with value 'NO_THREATS_FOUND' or 'UNSUPPORTED'.
+    until the tag is found or the timeout is reached.
+    """
+    start_time = time.time()
+    print(
+        f"Starting to poll for 'NO_THREATS_FOUND' or 'UNSUPPORTED' tag on object '{key}' in bucket '{bucket}'."
+    )
+    print(f"Timeout set to {timeout} seconds, checking every {interval} seconds.")
+
+    while (time.time() - start_time) < timeout:
+        if has_guard_duty_tag(bucket, key):
+            print(
+                f"Tag 'NO_THREATS_FOUND' or 'UNSUPPORTED' found for object '{key}' in bucket '{bucket}'."
+            )
+            return True
+        print(f"Tag not found yet. Waiting {interval} seconds before retrying...")
+        time.sleep(interval)
+    print(
+        f"Timeout reached. Tag 'NO_THREATS_FOUND' or 'UNSUPPORTED' not found for object '{key}' in bucket '{bucket}'."
+    )
+    return False
+
+
+def delete_file_from_s3(bucket: str, key: str) -> None:
+    """
+    Delete a file from S3.
+    NOTE: this should be in shared but shared package does not have access to settings need to instantiate boto3 client
+    """
+    import boto3
+
+    s3_client = boto3.client(
+        "s3",
+        region_name="us-east-1",
+        aws_access_key_id=os.environ.get("AWS_ACCESS_KEY_ID"),
+        aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY"),
+    )
+    s3_client.delete_object(Bucket=bucket, Key=key)

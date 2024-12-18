@@ -11,8 +11,10 @@ from app.api.routes.v1 import (
     onboarding,
     organization,
     search,
+    subscription,
     tags,
     upload,
+    usage,
     user,
 )
 from app.api.routes.v2 import node
@@ -39,6 +41,7 @@ api_router.include_router(upload.router, prefix="/upload", tags=["upload"])
 api_router.include_router(
     agent_pipelines.router, prefix="/agent_pipelines", tags=["agent_pipelines"]
 )
+api_router.include_router(usage.router, prefix="/usage", tags=["usage"])
 api_router.include_router(user.router, prefix="/user", tags=["user"])
 api_router.include_router(
     organization.router, prefix="/organization", tags=["organization"]
@@ -49,3 +52,7 @@ if settings.ENVIRONMENT != "production":
     api_router.include_router(
         sandbox_router, prefix="/sandbox", tags=["legacy-sandbox"]
     )
+
+api_router.include_router(
+    subscription.router, prefix="/subscription", tags=["subscription"]
+)

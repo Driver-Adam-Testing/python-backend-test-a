@@ -1,5 +1,4 @@
 # mypy: disable_error_code="call-arg"
-import json
 import logging
 from datetime import datetime
 
@@ -23,12 +22,15 @@ from app.api.routes.legacy.orm_ops import (
 )
 from app.api.routes.legacy.scalars import ID, NodeType
 from app.api.routes.legacy.tree import FlatNode, get_codebase_tree
-from app.utils.aws_secrets_manager import format_secret_key, read_secret, write_secret
-from app.utils.gh_ops import fetch_repos, is_token_valid, refresh_access_token
+from app.repositories.github_app_installations_repository import (
+    GithubAppInstallationsRepository,
+)
+from app.utils.gh_ops import fetch_repos
 from database.models_v1 import Workspace
 from graphql import GraphQLError
 from sqlmodel import select
 from strawberry.types import Info
+from strawberry.types.nodes import Selection
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +38,23 @@ logger = logging.getLogger(__name__)
 @strawberry.type
 class MeResponse:
     id: ID
+
+
+def is_code_content_requested(info: Info) -> bool:
+    """Recursively check if 'content' field under 'code' is requested in the query."""
+
+    def has_content_field(fields: list[Selection]) -> bool:
+        for field in fields:
+            if field.name == "code" and any(
+                subfield.name == "content" for subfield in field.selections
+            ):
+                return True
+            # Recursively check nested fields in case of deeply nested selections
+            if field.selections and has_content_field(field.selections):
+                return True
+        return False
+
+    return has_content_field(info.selected_fields)
 
 
 @strawberry.type
@@ -100,6 +119,9 @@ class Query:
             primary_asset_id=str(codebaseId),
         ):
             raise GraphQLError("Access denied", extensions={"code": "NOT_FOUND"})
+
+        fetch_code_content = is_code_content_requested(info)
+        logger.info("Is code content requested: %s", fetch_code_content)
         return get_document_set(
             nodeKind,
             path,
@@ -107,6 +129,7 @@ class Query:
             str(codebaseId),
             info.context.user.organization_id,
             session,
+            fetch_code_content,
             versionId,
         )
 
@@ -176,62 +199,39 @@ class Query:
 
     @strawberry.field
     def connectedGitProviders(self, info: Info) -> list[GitProvider]:
+        """This endpoint lists which git providers (ie Github, Gitlab, etc)that a user/org has configured. It is polled by the UI."""
         providers = []
         user = info.context.user
-        for provider in ["github"]:
-            secret_key = format_secret_key(
-                user_id=user.user_id, org_id=user.organization_id, provider=provider
-            )
-            value = read_secret(secret_key)
-            if value is not None:
-                providers.append(
-                    GitProvider(
-                        display_name="GitHub",
-                        name="github",
-                        logo_url="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
-                    )
+        gh_repository = GithubAppInstallationsRepository(info.context.session)
+        if len(gh_repository.list_by_organization_id(user.organization_id)) > 0:
+            providers.append(
+                GitProvider(
+                    display_name="GitHub",
+                    name="github",
+                    logo_url="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
                 )
+            )
         return providers
 
     @strawberry.field
-    async def reposByGitProvider(
-        self, info: Info, provider: str
-    ) -> list[GitRepository]:
+    def reposByGitProvider(self, info: Info, provider: str) -> list[GitRepository]:
         repos = []
         user = info.context.user
+        session = info.context.session
 
-        secret_key = format_secret_key(
-            user_id=user.user_id, org_id=user.organization_id, provider=provider
-        )
-        value = read_secret(secret_key)
-        if value is not None:
-            # Assuming the value is stored as a dictionary
-            s = value["SecretString"]
-            secret_sauce = json.loads(s)
-            token = secret_sauce["access_token"]
-            refresh_token = secret_sauce["refresh_token"]
+        if provider != "github":
+            raise NotImplementedError()
 
-            # Check if the token is valid (pseudo-code, replace with actual validation)
-            if not await is_token_valid(token):
-                # Refresh the token using the refresh token
-                # TODO: Handle the case where the refresh token is expired
-                new_tokens = await refresh_access_token(refresh_token)
-                token = new_tokens["access_token"]
-                # Update the stored secret with new tokens
-                secret_value = json.dumps(new_tokens)
-                write_secret(secret_key, secret_value)
-
-            # Fetch repos using the token
-            git_repos = await fetch_repos(token)
-            repos = [
-                GitRepository(
-                    provider_name=provider,
-                    repo_name=repo["name"],
-                    org=repo["owner"]["login"],
-                    last_updated=datetime.fromisoformat(repo["updated_at"]),
-                    metadata=repo,
-                )
-                for repo in git_repos
-            ]
-            # Assuming the response from fetch_repos is a list of dictionaries
+        git_repos = fetch_repos(session, user.organization_id)
+        repos = [
+            GitRepository(
+                provider_name=provider,
+                repo_name=repo["name"],
+                org=repo["owner"]["login"],
+                last_updated=datetime.fromisoformat(repo["updated_at"]),
+                metadata=repo,
+            )
+            for repo in git_repos
+        ]
+        # Assuming the response from fetch_repos is a list of dictionaries
         return repos

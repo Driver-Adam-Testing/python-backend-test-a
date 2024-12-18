@@ -2,12 +2,12 @@ from utils.lang_specialization.default import default_imports_checker
 from utils.lang_specialization.python import (
     SOURCE_CODE_SMALL_PURPOSE_USER_PROMPT,
     SOURCE_CODE_SMALL_SYSTEM_PROMPT_GENERAL_PY,
-    class_dict_from_llm_py,
-    fn_dict_from_llm_py,
-    py_class_checker,
-    py_function_checker,
-    py_variables_checker,
-    variables_dict_from_llm_py,
+    PyClassCollection,
+    PyClassRawSymbolCollection,
+    PyFnCollection,
+    PyFnRawSymbolCollection,
+    PyVariableCollection,
+    PyVariableRawSymbolCollection,
 )
 from utils.templates import S
 
@@ -28,22 +28,22 @@ SOURCE_CODE_SMALL_TEMPLATE_PY = [
     (
         S.FN_COND_JSON,
         "# Global Variables",
-        py_variables_checker,
-        variables_dict_from_llm_py,
+        PyVariableRawSymbolCollection.from_static_analysis,
+        PyVariableCollection.from_llm,
         None,
     ),
     (
         S.FN_COND_JSON,
-        "# Data Structures",
-        py_class_checker,
-        class_dict_from_llm_py,
+        "# Classes",
+        PyClassRawSymbolCollection.from_static_analysis,
+        PyClassCollection.from_llm,
         None,
     ),
     (
         S.FN_COND_JSON,
         "# Functions",
-        py_function_checker,
-        fn_dict_from_llm_py,
+        PyFnRawSymbolCollection.from_static_analysis,
+        PyFnCollection.from_llm,
         None,
     ),
 ]

@@ -22,12 +22,14 @@ from app.schemas.upload_schema import (
     UploadResponse,
 )
 from app.utils.aws_s3 import (
+    generate_get_presigned_url,
     generate_put_presigned_url,
+    org_id_to_hash,
 )
 
 
 class UploadService:
-    def __init__(self, session: CurrentSession):
+    def __init__(self, session: CurrentSession) -> None:
         self.session = session
         self.workspace_repository = WorkspaceRepository(session)
         self.content_repository = BaseRepository(session, DerivedContent)
@@ -53,8 +55,8 @@ class UploadService:
         codebase_name = os.path.splitext(os.path.basename(file_path))[0]
 
         try:
-            org_id_hash = hashlib.sha256(organization_id.encode()).hexdigest()[:63]
-            upload_key = f"codebases/{org_id_hash}/{os.path.basename(file_path)}"
+            org_id_hash = org_id_to_hash(organization_id)
+            upload_key = f"analysis/{org_id_hash}/{os.path.basename(file_path)}"
 
             logger.info(f"Upload URL generated for {upload_key}")
             codebase_metadata = {
@@ -74,11 +76,14 @@ class UploadService:
                 content_type="application/zip",
                 metadata=codebase_metadata,
             )
+            download_url = generate_get_presigned_url(
+                key=upload_key,
+            )
         except Exception as e:
             logger.error(f"Error uploading codebase: {e}")
             raise HTTPException(status_code=500, detail="Error uploading codebase")
 
-        return UploadResponse(upload_url=upload_url)
+        return UploadResponse(upload_url=upload_url, download_url=download_url)
 
     def upload_pdf(
         self, user: UserToken, request: UploadPDFRequest

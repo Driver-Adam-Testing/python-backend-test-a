@@ -1,11 +1,11 @@
 from utils.lang_specialization.cpp import (
     SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_CPP,
-    classes_dict_from_llm_cpp_multi_prompt,
-    cpp_class_checker,
-    cpp_function_checker,
-    cpp_variables_checker,
-    fn_dict_from_llm_cpp_multi_prompt,
-    variables_dict_from_llm_cpp_multi_prompt,
+    CppClassCollection,
+    CppClassRawSymbolCollection,
+    CppFnCollection,
+    CppFreeFnRawSymbolCollection,
+    CppVariableCollection,
+    CppVariableRawSymbolCollection,
 )
 from utils.lang_specialization.default_multi_context import (
     SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT_MULTI_CONTEXT,
@@ -33,22 +33,22 @@ SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CPP = [
     (
         S.FN_COND_JSON,
         "# Global Variables",
-        cpp_variables_checker,
-        variables_dict_from_llm_cpp_multi_prompt,
+        CppVariableRawSymbolCollection.from_static_analysis,
+        CppVariableCollection.from_llm,
         None,
     ),
     (
         S.FN_COND_JSON,
         "# Data Structures",
-        cpp_class_checker,
-        classes_dict_from_llm_cpp_multi_prompt,
+        CppClassRawSymbolCollection.from_static_analysis,
+        CppClassCollection.from_llm,
         None,
     ),
     (
         S.FN_COND_JSON,
         "# Functions",
-        cpp_function_checker,
-        fn_dict_from_llm_cpp_multi_prompt,
+        CppFreeFnRawSymbolCollection.from_static_analysis,
+        CppFnCollection.from_llm,
         None,
     ),
 ]

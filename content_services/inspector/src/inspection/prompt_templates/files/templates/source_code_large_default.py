@@ -1,13 +1,13 @@
 from utils.lang_specialization.default import (
     SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT,
     SOURCE_CODE_SYSTEM_PROMPT_GENERAL_DEFAULT,
-    data_structure_dict_from_llm_default,
-    default_data_structure_checker,
-    default_function_checker,
+    DefaultDataStructureCollection,
+    DefaultDataStructureRawSymbolCollection,
+    DefaultFnCollection,
+    DefaultFnRawSymbolCollection,
+    DefaultVariableCollection,
+    DefaultVariableRawSymbolCollection,
     default_imports_checker,
-    default_variable_checker,
-    fn_dict_from_llm_default,
-    variables_dict_from_llm_default,
 )
 from utils.templates import S
 
@@ -26,24 +26,24 @@ SOURCE_CODE_LARGE_TEMPLATE_DEFAULT = [
         None,
     ),
     (
-        S.LLM_COND_JSON,
+        S.MULTI_LLM_COND_JSON,
         "# Global Variables",
-        default_variable_checker,
-        variables_dict_from_llm_default,
+        DefaultVariableRawSymbolCollection.from_llm,
+        DefaultVariableCollection.from_llm,
         None,
     ),
     (
-        S.LLM_COND_JSON,
+        S.MULTI_LLM_COND_JSON,
         "# Data Structures",
-        default_data_structure_checker,
-        data_structure_dict_from_llm_default,
+        DefaultDataStructureRawSymbolCollection.from_llm,
+        DefaultDataStructureCollection.from_llm,
         None,
     ),
     (
-        S.LLM_COND_JSON,
+        S.MULTI_LLM_COND_JSON,
         "# Functions",
-        default_function_checker,
-        fn_dict_from_llm_default,
+        DefaultFnRawSymbolCollection.from_llm,
+        DefaultFnCollection.from_llm,
         None,
     ),
 ]

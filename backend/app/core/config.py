@@ -52,6 +52,7 @@ class Settings(BaseSettings):
     GH_CLIENT_SECRET: str | None = None
     GH_REDIRECT_URI: str | None = None
     GH_WEBHOOK_SECRET: str | None = None
+    GH_CLIENT_PEM_SECRET: str | None = None
 
     OPENAI_API_KEY: str | None = None
     ANTHROPIC_API_KEY: str | None = None

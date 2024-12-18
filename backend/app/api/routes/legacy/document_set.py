@@ -6,7 +6,7 @@ from uuid import UUID
 import strawberry
 from app.api.routes.legacy.s3 import S3BucketAccess
 from app.core.logger import logger
-from database.models_v1 import DerivedContent
+from database.models_v1 import DerivedContent, DerivedContentType
 from database.models_v2 import (
     NodeRow,
     PrimaryAssetRow,
@@ -117,6 +117,42 @@ def node_kind_map(node_kind: str) -> str:
         raise ValueError(f"Invalid node kind: {node_kind}")
 
 
+def content_types_map(db: Session) -> dict[str, str]:
+    types = db.exec(select(DerivedContentType)).all()
+    return {type.type_name: str(type.id) for type in types}
+
+
+def content_type_id_map(kind: str, db: Session) -> dict[str, any]:
+    content_types = content_types_map(db)
+    kind_translation = node_kind_map(kind)
+    return {"typeName": kind_translation, "id": content_types[kind_translation]}
+
+
+def fetch_code_metadata(content: DerivedContent) -> CodeMetadata | None:
+    if not content.misc_metadata:
+        return None
+    return CodeMetadata(
+        size=content.misc_metadata.get("size"),
+        sloc=content.misc_metadata.get("sloc"),
+        extension=content.misc_metadata.get("extension"),
+        is_binary=content.misc_metadata.get("is_binary"),
+        is_hex=content.misc_metadata.get("is_hex"),
+        is_analyzable=content.misc_metadata.get("is_analyzable"),
+        is_blacklisted=content.misc_metadata.get("is_blacklisted"),
+    )
+
+
+def fetch_code_content_from_s3(
+    relative_path: str, organization_id: str, codebase_id: str, version_id: str
+) -> str:
+    s3_access = S3BucketAccess(
+        organization_id=organization_id,
+        codebase_id=codebase_id,
+        version_id=version_id,
+    )
+    return s3_access.get_file_content(relative_path=relative_path)
+
+
 def get_document_set(
     node_kind: str,
     path: str,
@@ -124,6 +160,7 @@ def get_document_set(
     codebase_id: str,
     organization_id: str,
     session: Session,
+    fetch_code_content: bool,
     version_id: str | None = None,
 ) -> DocumentSet:
     # Find the primary asset
@@ -256,36 +293,25 @@ def get_document_set(
             except json.JSONDecodeError as e:
                 logger.warning(f"[ParseError]: {doc.id} - {e!s}")
         else:
-            logger.warning(f"No match for content_type_slug: {doc_type}")
-
-    # TODO: make a root, dir, file node type??
-    if (
-        primary_asset.primary_asset_type == "CODEBASE"
-        and node.relative_path
-        and not node.relative_path.endswith("/")
-    ):
-        s3_access = S3BucketAccess(
-            organization_id=primary_asset.organization_id,
-            codebase_id=str(primary_asset.id),
-            version_id=str(version.id) if version else None,
-        )
-        code_content = s3_access.get_file_content(relative_path=node.relative_path)
-        file_name = node.relative_path.split("/")[-1]
-        extension = file_name.split(".")[-1] if "." in file_name else ""
-        document_set.code = Code(
-            file_name=file_name,
-            extension=extension,
-            content=code_content,
-            metadata=None,
-            # CodeMetadata(
-            #     size=content.misc_metadata.get("size") if content.misc_metadata else None,
-            #     sloc=content.misc_metadata.get("sloc") if content.misc_metadata else None,
-            #     extension=content.misc_metadata.get("extension") if content.misc_metadata else None,
-            #     is_binary=content.misc_metadata.get("is_binary") if content.misc_metadata else None,
-            #     is_hex=content.misc_metadata.get("is_hex") if content.misc_metadata else None,
-            #     is_analyzable=content.misc_metadata.get("is_analyzable", True) if content.misc_metadata else True,
-            #     is_blacklisted=content.misc_metadata.get("is_blacklisted", False) if content.misc_metadata else False,
-            # ),
-        )
+            logger.warning(
+                "no DerivedContentTypes documentSet match for "  # TODO: Merge Messup
+            )
+    # TODO: Something got messed up in the merge
+    # if content_type["typeName"] == "codebase-file":
+    #     code_metadata = fetch_code_metadata(content)
+    #     code_content = None
+    #     if fetch_code_content:
+    #         code_content = fetch_code_content_from_s3(
+    #             relative_path=content.relative_path,
+    #             organization_id=organization_id,
+    #             codebase_id=codebase_id if codebase_id else str(content.codebase_id),
+    #             version_id=version_id,
+    #         )
+    #     document_set.code = Code(  # type: ignore
+    #         file_name=content.relative_path.split("/")[-1],
+    #         extension=content.relative_path.split(".")[-1],
+    #         content=code_content,
+    #         metadata=code_metadata,
+    #     )
 
     return document_set

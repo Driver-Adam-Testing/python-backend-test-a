@@ -10,6 +10,8 @@ from typing import Any
 
 RET_TYPE = typing.TypeVar("RET_TYPE")
 
+logger = logging.getLogger(__name__)
+
 
 def expiring_cache(duration_sec: int) -> Callable:
     """
@@ -27,6 +29,7 @@ def expiring_cache(duration_sec: int) -> Callable:
 
             with lock:
                 if cache["expires_at"] < current_time:
+                    logger.info(f"Cache expired, calling function {func.__name__}")
                     cache["value"] = func(*args, **kwargs)
                     cache["expires_at"] = current_time + duration_sec
                 return cache["value"]

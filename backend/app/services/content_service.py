@@ -24,6 +24,7 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.selectable import Select
 from sqlmodel import Session, asc, desc, func, or_, select, text
 
+from app.api.routes.legacy.s3 import S3BucketAccess
 from app.core.logger import logger
 from app.repositories.base_repository import BaseRepository
 from app.repositories.derived_content_type_repository import (
@@ -905,16 +906,20 @@ def organization_bucket_from_organization_id(organization_id: str) -> str:
 
 
 def delete_from_remote_storage(content: DerivedContent, organization_id: str) -> None:
-    organization_bucket = organization_bucket_from_organization_id(organization_id)
     if content.content_type.type_name == DerivedContentTypeNames.CODEBASE_FILE.value:
-        key = f"{content.codebase_id}/source/{content.relative_path}"
+        S3BucketAccess(
+            organization_id=organization_id,
+            codebase_id=str(content.codebase_id),
+            version_id=content.version_id,
+        ).delete_file(content.relative_path)
     else:
+        organization_bucket = organization_bucket_from_organization_id(organization_id)
         key = (
             content.relative_path
             if content.relative_path.startswith("documents/")
             else f"documents/{content.relative_path}"
         )
-    logger.info(
-        f"Deleting content {key} from s3 storage in bucket {organization_bucket}"
-    )
-    delete_file_from_s3(key=key, bucket=organization_bucket)
+        logger.info(
+            f"Deleting content {key} from s3 storage in bucket {organization_bucket}"
+        )
+        delete_file_from_s3(key=key, bucket=organization_bucket)

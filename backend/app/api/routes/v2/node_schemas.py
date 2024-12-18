@@ -35,6 +35,21 @@ class VersionRead(BaseModel):
         orm_mode = True
 
 
+class TagRead(BaseModel):
+    id: UUID
+    name: str
+    hex_color: str
+    organization_id: str
+    type: str
+    created_at: datetime | None
+    created_by: str
+    updated_at: datetime | None
+    updated_by: str
+
+    class Config:
+        orm_mode = True
+
+
 class PrimaryAssetRead(BaseModel):
     id: UUID
     organization_id: str
@@ -43,6 +58,7 @@ class PrimaryAssetRead(BaseModel):
     created_at: datetime | None
     updated_at: datetime | None
     versions: list[VersionRead] | None = None
+    tags: list[TagRead] | None = None
 
     class Config:
         orm_mode = True

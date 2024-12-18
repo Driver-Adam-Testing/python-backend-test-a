@@ -421,6 +421,7 @@ class Tag(SQLModel, table=True):  # type: ignore
             onupdate=func.now(),
             nullable=False,
         ),
+        default=None,
     )
     updated_by: str = Field(
         sa_column=sqlalchemy.Column(sqlalchemy.String(128), nullable=False),
@@ -429,11 +430,10 @@ class Tag(SQLModel, table=True):  # type: ignore
         back_populates="tag",
         sa_relationship_kwargs={"foreign_keys": "TagContent.tag_id"},
     )
-
-    # assets: list["PrimaryAssetRow"] = Relationship(
-    #     back_populates="tags",
-    #     link_model="PrimaryAssetTagRow"
-    # )
+    primary_assets: list["PrimaryAssetRow"] = Relationship(  # noqa: F821
+        back_populates="tags",
+        sa_relationship_kwargs={"secondary": "v2_primary_asset_tag"},
+    )
 
 
 class ChunkAndEmbedding(SQLModel, table=True):  # type: ignore

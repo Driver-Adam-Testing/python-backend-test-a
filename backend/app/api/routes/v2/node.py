@@ -15,6 +15,7 @@ from database.models_v2 import (
 )
 from fastapi import APIRouter, Body, HTTPException, Path, Request
 from pydantic import BaseModel, field_validator
+from sqlalchemy.orm import selectinload
 from sqlmodel import func, select
 
 T = TypeVar("T")
@@ -318,6 +319,7 @@ async def list_contents(
         .select_from(DerivedContent)
         .join(FullNodeView, DerivedContent.node_id == FullNodeView.node_id)
         .where(FullNodeView.primary_asset_organization_id == user.organization_id)
+        .options(selectinload(DerivedContent.full_node))  # Eager load full_node
     )
 
     if content_type_names:

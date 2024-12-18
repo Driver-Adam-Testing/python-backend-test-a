@@ -41,7 +41,7 @@ class MetricsLambda(Construct):
         vpc_id = aws_ssm.StringParameter.value_from_lookup(
             scope, parameter_name="/baseline/infra/v2/vpc/id"
         )
-        vpc = aws_ec2.Vpc.from_lookup(self, id="BaselineVPC", vpc_id=vpc_id)
+        vpc = aws_ec2.Vpc.from_lookup(self, id="BaselineVPC_DRV_24", vpc_id=vpc_id)
         driver_db_path = os.path.abspath("driver_db")
 
         self.lambda_function = aws_lambda_python_alpha.PythonFunction(

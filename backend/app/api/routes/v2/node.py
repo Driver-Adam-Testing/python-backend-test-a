@@ -115,6 +115,7 @@ async def list_primary_assets(
     filters.pop("offset", None)
     filters.pop("sort_by", None)
     filters.pop("sort_direction", None)
+    tag_ids = filters.pop("tag_ids", None)
     primary_asset_type = filters.pop("primary_asset_type", None)
 
     if primary_asset_type:
@@ -124,6 +125,11 @@ async def list_primary_assets(
             query = query.where(
                 PrimaryAssetRow.primary_asset_type.in_(primary_asset_type)
             )
+
+    if tag_ids:
+        query = query.join(
+            PrimaryAssetTag, PrimaryAssetTag.primary_asset_id == PrimaryAssetRow.id
+        ).where(PrimaryAssetTag.tag_id.in_(tag_ids.split(",")))
 
     for key, value in filters.items():
         print(key, value)

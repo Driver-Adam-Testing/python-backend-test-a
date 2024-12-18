@@ -5,6 +5,7 @@ from shared.interfaces.agents.pipeline_configuration import (
     PipelineStepConfiguration,
     PipelineStepResponse,
 )
+from shared.usage.llm_session import LLMUsageSession
 
 
 class PromptAugmentationLLMResponse(BaseModel):
@@ -21,7 +22,7 @@ class PromptAugmentationLLMResponse(BaseModel):
 
 
 def run_agent_prompt_augmentation(
-    input: PipelineStepConfiguration,
+    input: PipelineStepConfiguration, llm_usage_session: LLMUsageSession
 ) -> PipelineStepResponse:
     prompt_text = input.prompt.prompt
 
@@ -37,6 +38,7 @@ def run_agent_prompt_augmentation(
         max_iterations=input.iterations,
         tools=input.tools,
         response_type=PromptAugmentationLLMResponse,
+        llm_usage_session=llm_usage_session,
     )
 
     agent.add_message(prompts.voice.software_engineer.MESSAGE)

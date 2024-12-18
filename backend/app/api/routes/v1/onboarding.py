@@ -25,7 +25,9 @@ class OnboardingRequestBody(BaseModel):
     workspace_id: str | None = None
     download_url: str
     object_key: str
+    repository_id: str | None = None
     provider: str | None = None
+    version: str | None = None
 
 
 @router.post(
@@ -47,9 +49,7 @@ def trigger_onboarding(
     logging.info(
         f"Triggering codebase onboarding for org = {trigger_body.org_id} and archive = {archive_name}, provider = {trigger_body.provider}"
     )
-    onboard_and_inspect = modal.Function.lookup(
-        "codebase-onboarding", "onboard_and_inspect"
-    )
+    onboard_and_inspect = modal.Function.lookup("inspector-v2", "onboard_and_inspect")
 
     call = onboard_and_inspect.spawn(
         trigger_body.download_url,
@@ -58,6 +58,7 @@ def trigger_onboarding(
         trigger_body.creator_id,
         UUID(trigger_body.workspace_id),
         trigger_body.provider,
+        trigger_body.version,
     )
 
     return Onboarding(status="OK", call_id=call.object_id)

@@ -2,6 +2,7 @@ import functools
 import hashlib
 from uuid import UUID
 
+import pypandoc
 from botocore.exceptions import ClientError
 from database.derived_content_types import DerivedContentTypeNames
 from database.models_v1 import (
@@ -230,16 +231,20 @@ class ContentService:
             )
 
         content_results = []
-        for derived_content, version in results:
+        for derived_content in results:
             content_results.append(
                 ListContentResult(
                     id=derived_content.id,
                     organization_id=derived_content.workspace.organization_id,
                     content_type_id=derived_content.content_type_id,
-                    content_type_name=derived_content.content_type.type_name,
+                    content_type_name=derived_content.content_type.type_name
+                    if derived_content.content_type
+                    else None,
                     content_name=get_content_name(derived_content),
                     workspace_id=derived_content.workspace_id,
-                    workspace_name=derived_content.workspace.display_name,
+                    workspace_name=derived_content.workspace.display_name
+                    if derived_content.workspace
+                    else None,
                     source_content_id=derived_content.source_content_id,
                     codebase_id=derived_content.codebase_id,
                     codebase_name=derived_content.codebase.codebase_name
@@ -256,7 +261,9 @@ class ContentService:
                     tags=derived_content.tags,
                     source_links=derived_content.source_links,
                     version_id=derived_content.version_id,
-                    version=version,
+                    version=derived_content.inspection_version.version
+                    if derived_content.inspection_version
+                    else None,
                 )
             )
         logger.info(
@@ -271,80 +278,45 @@ class ContentService:
 
     def _get_list_content(
         self: "ContentService", organization_id: str, search_input: ListContentInput
-    ) -> tuple[list[tuple[DerivedContent, str]], int]:
-        statement = self._build_base_query(organization_id)
-        count_statement = self._build_base_count_query(organization_id, search_input)
+    ) -> tuple[list[DerivedContent], int]:
+        # we pre-fetch related entities so that when we access attributes of those entities we do not incur additional queries.
+        # This is helpful when the list endpoint builds the results to return, and nested attributes are requested on each result
+        query = self._build_base_query(organization_id)
+        query = self._apply_filters(query, search_input)
+        total_count = self.session.exec(
+            select(func.count()).select_from(query.subquery())
+        ).one()
+        query = self._apply_sorting(query, search_input)
 
-        statement, count_statement = self._apply_filters(
-            statement, count_statement, search_input
-        )
-        statement, count_statement = self._apply_sorting(
-            statement, count_statement, search_input
+        query = query.options(
+            selectinload(DerivedContent.workspace),
+            selectinload(DerivedContent.content_type),
+            selectinload(DerivedContent.codebase),
+            selectinload(DerivedContent.source_content),
+            selectinload(DerivedContent.tags),
+            selectinload(DerivedContent.inspection_version),
         )
 
-        total_count = self.session.exec(count_statement).one()
         results = self.session.exec(
-            statement.offset(search_input.offset).limit(search_input.limit)
+            query.offset(search_input.offset).limit(search_input.limit)
         ).all()
 
         return results, total_count
 
     def _build_base_query(self: "ContentService", organization_id: str) -> Select:
         return (
-            select(DerivedContent, InspectionVersion.version)
-            .distinct()
-            .join(DerivedContentType)
-            .join(Workspace)
-            .join(
-                InspectionVersion,
-                isouter=True,
-                onclause=DerivedContent.version_id == InspectionVersion.id,
-            )
-            .join(TagContent, isouter=True)
-            .join(Tag, isouter=True)
-            .join(
-                DocumentSource,
-                isouter=True,
-                onclause=DerivedContent.id == DocumentSource.document_id,
-            )
-            .where(organization_id == Workspace.organization_id)
+            select(DerivedContent)
+            .where(DerivedContent.workspace_id == Workspace.id)
+            .where(Workspace.organization_id == organization_id)
+            # Ensure Workspace is known:
+            .join(Workspace, DerivedContent.workspace_id == Workspace.id)
         )
-
-    def _build_base_count_query(
-        self: "ContentService", organization_id: str, search_input: ListContentInput
-    ) -> Select:
-        if search_input.tag_ids:
-            """
-            When tag_ids are provided, a join with Tag and TagContent is required
-            to accurately count the content associated with the specified tag_ids.
-            """
-            return (
-                select(func.count(DerivedContent.id))
-                .join(DerivedContentType)
-                .join(Workspace)
-                .join(TagContent, isouter=True)
-                .join(Tag, isouter=True)
-                .where(organization_id == Workspace.organization_id)
-            )
-        else:
-            """
-             If no tag_ids are provided, skip the join with TagContent and Tag.
-             Performing the join without tag_ids affects the count due to the nature of the LEFT OUTER JOIN.
-            Consult Eric and Jesse for further details on the underlying issue.
-            """
-            return (
-                select(func.count(DerivedContent.id))
-                .join(DerivedContentType)
-                .join(Workspace)
-                .where(organization_id == Workspace.organization_id)
-            )
 
     def _apply_sorting(
         self: "ContentService",
         statement: Select,
-        count_statement: Select,
         search_input: ListContentInput,
-    ) -> tuple[Select, Select]:
+    ) -> Select:
         if search_input.sort_by:
             if not hasattr(self.content_repository.model, search_input.sort_by):
                 raise ValueError(
@@ -362,35 +334,31 @@ class ContentService:
                 raise ValueError(
                     "Invalid sort direction provided. Options are ASC or DESC"
                 )
-        return statement, count_statement
+        return statement
 
     def _apply_filters(
         self: "ContentService",
         statement: Select,
-        count_statement: Select,
         search_input: ListContentInput,
-    ) -> tuple[Select, Select]:
+    ) -> Select:
         if search_input.text:
             clauses = [
                 DerivedContent.relative_path.icontains(search_input.text),
                 DerivedContent.content_name.icontains(search_input.text),
             ]
             statement = statement.where(or_(*clauses))
-            count_statement = count_statement.where(or_(*clauses))
 
         if search_input.source_content_id:
             clauses = [
                 DerivedContent.source_content_id.in_(search_input.source_content_id),
             ]
             statement = statement.where(or_(*clauses))
-            count_statement = count_statement.where(or_(*clauses))
 
         if search_input.order:
             clauses = [
                 DerivedContent.order == search_input.order,
             ]
             statement = statement.where(or_(*clauses))
-            count_statement = count_statement.where(or_(*clauses))
 
         if search_input.status:
             valid_statuses = [
@@ -403,97 +371,65 @@ class ContentService:
                     detail=f"Invalid status value: {search_input.status}",
                 )
             statement = statement.where(DerivedContent.status == search_input.status)
-            count_statement = count_statement.where(
-                DerivedContent.status == search_input.status
-            )
 
         if search_input.content_type_id:
             statement = statement.where(
                 DerivedContent.content_type_id.in_(search_input.content_type_id)
             )
-            count_statement = count_statement.where(
-                DerivedContent.content_type_id.in_(search_input.content_type_id)
-            )
+
         if search_input.version_id:
             statement = statement.where(
                 DerivedContent.version_id.in_(search_input.version_id)
             )
-            count_statement = count_statement.where(
-                DerivedContent.version_id.in_(search_input.version_id)
-            )
+
         if search_input.content_type_name:
             logger.info(
                 f"Filtering by content_type_name: {search_input.content_type_name}"
             )
+            statement = statement.join(
+                DerivedContentType,
+                DerivedContent.content_type_id == DerivedContentType.id,
+            )
             statement = statement.where(
                 DerivedContentType.type_name.in_(search_input.content_type_name)
             )
-            count_statement = count_statement.where(
-                DerivedContentType.type_name.in_(search_input.content_type_name)
-            )
+
         if search_input.latest_version_only:
-            # Find the latest version for each codebase_id in DerivedContent
-            latest_versions_subquery = (
-                select(
-                    DerivedContent.codebase_id,
-                    func.max(InspectionVersion.created_at).label("latest_created_at"),
-                )
-                .join(
-                    InspectionVersion, DerivedContent.version_id == InspectionVersion.id
-                )
-                .group_by(DerivedContent.codebase_id)
-                .subquery()
-            )
-
-            # We do the inner join so we can get the null version cases and the latest version cases for the codebases
-            # that have versions. This is important because many codebases will not have versions
-            # (backwards compatibility).
-            statement = statement.outerjoin(
-                InspectionVersion, (DerivedContent.version_id == InspectionVersion.id)
-            ).where(
-                or_(
-                    DerivedContent.version_id.is_(None),
-                    InspectionVersion.created_at
-                    == latest_versions_subquery.c.latest_created_at,
-                )
-            )
-
-            # For counting, we do an independent select, then filter the main count
-            # query by those identities. This seems very inefficient, since the subquery result could be big...
-            latest_version_ids_subquery = (
-                select(DerivedContent.id)
-                .outerjoin(
-                    InspectionVersion, DerivedContent.version_id == InspectionVersion.id
-                )
+            # COMMENT: This gets all InspectionVersion IDs that are NOT a previous_version.
+            # Hence, this is a list of all the most recent version Ids.
+            most_recent_versions_subquery = (
+                select(InspectionVersion.id)
                 .where(
-                    or_(
-                        DerivedContent.version_id.is_(None),
-                        InspectionVersion.created_at
-                        == latest_versions_subquery.c.latest_created_at,
+                    ~InspectionVersion.id.in_(
+                        select(InspectionVersion.previous_version_id).where(
+                            InspectionVersion.previous_version_id.isnot(None)
+                        )
                     )
                 )
-                .distinct()
+                .subquery()
+            )
+            statement = statement.where(
+                or_(
+                    DerivedContent.version_id.is_(None),
+                    DerivedContent.version_id.in_(most_recent_versions_subquery),
+                )
             )
 
-            count_statement = count_statement.where(
-                DerivedContent.id.in_(latest_version_ids_subquery)
+        if search_input.tags or search_input.tag_ids:
+            # For tags filtering we need to join Tag if not done.
+            statement = statement.join(
+                TagContent, TagContent.content_id == DerivedContent.id, isouter=True
             )
+            statement = statement.join(Tag, Tag.id == TagContent.tag_id, isouter=True)
+            if search_input.tags:
+                tag_clauses = [Tag.name.contains(tag) for tag in search_input.tags]
+                statement = statement.where(or_(*tag_clauses))
 
-        if search_input.tags:
-            tag_clauses = [Tag.name.contains(tag) for tag in search_input.tags]
-            statement = statement.where(or_(*tag_clauses))
-            count_statement = count_statement.where(or_(*tag_clauses))
+            if search_input.tag_ids:
+                tag_id_clauses = [Tag.id == tag_id for tag_id in search_input.tag_ids]
+                statement = statement.where(or_(*tag_id_clauses))
 
-        if search_input.tag_ids:
-            tag_id_clauses = [Tag.id == tag_id for tag_id in search_input.tag_ids]
-            tag_contents_clauses = [
-                TagContent.tag_id == tag_id for tag_id in search_input.tag_ids
-            ]
-            statement = statement.where(or_(*tag_id_clauses))
-            # tag_contents_clauses is used in the count statement to accurately count the content associated with the specified tag_ids
-            count_statement = count_statement.where(or_(*tag_contents_clauses))
-
-        return statement, count_statement
+        return statement
 
     def get_list_content_types(
         self: "ContentService", lct_inputs: ListContentTypesInput
@@ -816,6 +752,14 @@ class ContentService:
         return ContentTagsResponse(
             tags=tag_results,
         )
+
+    def convert_markdown_to_rst(self, content: str) -> str:
+        logger.info("Converting markdown content to rst")
+        try:
+            rst_content = pypandoc.convert_text(content, "rst", format="markdown")
+            return rst_content
+        except RuntimeError:
+            raise HTTPException(status_code=500, detail="Conversion error")
 
 
 def delete_document_and_related_entities(

@@ -34,6 +34,7 @@ class OpenFileTool(ToolStrict):
                 )
                 .options(selectinload(DerivedContent.chunks_and_embeds))
                 .options(selectinload(DerivedContent.workspace))
+                .order_by(DerivedContent.updated_at.desc())
             ).first()
 
             if not derived_content:

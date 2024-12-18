@@ -9,7 +9,7 @@ s3_client = boto3.client(
 )
 
 
-def generate_get_presigned_url(bucket, key, expires=3600):
+def generate_get_presigned_url(bucket: str, key: str, expires: int = 3600) -> str:
     return s3_client.generate_presigned_url(
         ClientMethod="get_object",
         Params={
@@ -20,5 +20,20 @@ def generate_get_presigned_url(bucket, key, expires=3600):
     )
 
 
-def head_object(bucket, key):
+def head_object(bucket: str, key: str) -> dict:
     return s3_client.head_object(Bucket=bucket, Key=key)
+
+
+def has_no_threats_tag(bucket: str, key: str) -> bool:
+    tags = s3_client.get_object_tagging(Bucket=bucket, Key=key)
+    return (
+        len(
+            [
+                tag
+                for tag in tags["TagSet"]
+                if tag["Key"] == "GuardDutyMalwareScanStatus"
+                and tag["Value"] == "NO_THREATS_FOUND"
+            ]
+        )
+        == 1
+    )

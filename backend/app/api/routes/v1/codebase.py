@@ -7,12 +7,21 @@ from database.models_v1 import (
     InspectionVersion,
     Workspace,
 )
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query, status
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from shared.usage.usage_service import UsageService
 from sqlmodel import func, select
 
-from app.api.auth import ContentReadonlyPermission, UserToken
+from app.api.auth import ContentEditorPermission, ContentReadonlyPermission, UserToken
 from app.api.session import CurrentSession
+from app.schemas.codebase_schema import (
+    CodebaseAnalysisRequest,
+    CodebaseAnalysisResponse,
+    CodebaseAnalysisResult,
+    CodebaseOnboardRequest,
+)
+from app.services.codebase_service import CodebaseService
 
 router = APIRouter()
 
@@ -87,4 +96,69 @@ def get_codebase_versions(
 
     return CodebaseVersionsResponse(
         versions=response_data, total_count=total_count, limit=limit, offset=offset
+    )
+
+
+@router.post(
+    "/analysis",
+    summary="Execute codebase analysis",
+    dependencies=[ContentEditorPermission],
+)
+def exec_codebase_analysis(
+    user: UserToken,
+    request: CodebaseAnalysisRequest,
+) -> CodebaseAnalysisResponse:
+    return CodebaseService.execute_codebase_analysis(
+        user.organization_id, request.download_url
+    )
+
+
+@router.get(
+    "/analysis/{call_id}",
+    summary="Get codebase analysis results",
+    dependencies=[ContentEditorPermission],
+)
+def get_codebase_analysis(
+    call_id: str,
+) -> CodebaseAnalysisResult:
+    analysis_response = CodebaseService.get_codebase_analysis_results(call_id)
+    if analysis_response.status in ["error", "expired"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Bad Request"
+        )
+
+    return analysis_response
+
+
+@router.post(
+    "/onboard",
+    summary="Trigger codebase onboarding",
+    dependencies=[ContentEditorPermission],
+)
+def trigger_codebase_onboarding(
+    session: CurrentSession,
+    user: UserToken,
+    request: CodebaseOnboardRequest,
+) -> JSONResponse:
+    analysis = CodebaseService.get_codebase_analysis_results(request.call_id)
+
+    if analysis.status != "completed":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Bad Request"
+        )
+
+    analyzable_sloc = analysis.result.analyzable_sloc
+
+    available_usage = UsageService(session).get_usage_balance(user.organization_id)
+
+    if analyzable_sloc > available_usage.balance:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Bad Request"
+        )
+
+    CodebaseService.trigger_codebase_onboarding(
+        user.organization_id, request.codebase_object_key
+    )
+    return JSONResponse(
+        status_code=status.HTTP_202_ACCEPTED, content={"message": "Accepted"}
     )

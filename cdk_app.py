@@ -7,6 +7,7 @@ from cdk.development_stack import DevelopmentStack
 from cdk.ops_stack import OpsStack
 from cdk.production_stack import ProductionStack
 from cdk.staging_stack import StagingStack
+from cdk.test_in_dev_stack import TestInDevStack
 
 app = cdk.App()
 
@@ -26,6 +27,12 @@ elif deployment_environment == "ops":
         app,
         "DriverApiStack",
         env=cdk.Environment(account="058264523856", region="us-east-1"),
+    )
+elif deployment_environment == "test-in-dev":
+    TestInDevStack(
+        app,
+        "TempTestInDevStack",
+        env=cdk.Environment(account="550082761109", region="us-east-1"),
     )
 elif deployment_environment == "development":
     DevelopmentStack(

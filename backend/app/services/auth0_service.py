@@ -175,22 +175,30 @@ class Auth0Service:
             userinfo = users.userinfo(access_token)
             mgmt_api_token = self.get_mgmt_api_token()
             management_api = Auth0(self.auth0_mgmt_domain, mgmt_api_token)
+
+            organization_info = management_api.organizations.get_organization(
+                user.organization_id
+            )
+
             invitation_results = []
             for invitation in invitations.invitations:
+                payload = {
+                    "inviter": {"name": userinfo.get("name")},
+                    "invitee": invitation.invitee,
+                    "roles": invitation.roles,
+                    "client_id": settings.AUTH0_CLIENT_ID,
+                }
+                if (
+                    "metadata" in organization_info
+                    and "sso_connection_id" in organization_info["metadata"]
+                ):
+                    payload["connection_id"] = organization_info["metadata"][
+                        "sso_connection_id"
+                    ]
                 invitation_results.append(
                     management_api.organizations.create_organization_invitation(
                         id=user.organization_id,
-                        body=jsonable_encoder(
-                            # The Auth0 API lets you set whatever name you want - hide that detail
-                            # here in our API and always set it to Driver Support. **invitation
-                            # doesn't work on a basemodel
-                            {
-                                "inviter": {"name": userinfo.get("name")},
-                                "invitee": invitation.invitee,
-                                "roles": invitation.roles,
-                                "client_id": settings.AUTH0_CLIENT_ID,
-                            }
-                        ),
+                        body=jsonable_encoder(payload),
                     )
                 )
             return invitation_results

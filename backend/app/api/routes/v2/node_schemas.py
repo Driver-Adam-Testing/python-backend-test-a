@@ -50,6 +50,14 @@ class TagRead(BaseModel):
         orm_mode = True
 
 
+class PrimaryAssetTagRead(BaseModel):
+    tag_id: UUID
+    primary_asset_id: UUID
+
+    class Config:
+        orm_mode = True
+
+
 class PrimaryAssetRead(BaseModel):
     id: UUID
     organization_id: str
@@ -93,3 +101,12 @@ class NodeCreate(BaseModel):
 
 class NodeUpdate(BaseModel):
     relative_path: str | None = None
+
+
+class TagCreate(BaseModel):
+    name: str
+    hex_color: str
+    type: str
+
+    class Config:
+        orm_mode = True

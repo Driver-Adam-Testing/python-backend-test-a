@@ -3,13 +3,19 @@ from typing import Generic, TypeVar
 from uuid import UUID
 
 from app.api.auth import UserToken
-from app.api.routes.v2.node_schemas import NodeReadWithRelationships, PrimaryAssetRead
+from app.api.routes.v2.node_schemas import (
+    NodeReadWithRelationships,
+    PrimaryAssetRead,
+    TagCreate,
+    TagRead,
+)
 from app.api.session import CurrentSession
-from database.models_v1 import DerivedContent
+from database.models_v1 import DerivedContent, Tag
 from database.models_v2 import (
     FullNodeView,
     NodeRow,
     PrimaryAssetRow,
+    PrimaryAssetTag,
     PrimaryAssetTypeEnum,
     VersionRow,
 )
@@ -677,7 +683,7 @@ async def update_derived_content(
 ## ALERT: THIS IS A CONVENIENCE METHOD
 
 
-@router.post("/contents/new_page", response_model=DerivedContentResponse)
+@router.post("/new_page", response_model=DerivedContentResponse)
 async def new_page(session: CurrentSession, user: UserToken) -> DerivedContentResponse:
     # Find all PrimaryAssetRows with the name "Untitled Page X" where X is any number for the user's organization
     existing_assets = session.exec(
@@ -786,3 +792,143 @@ async def new_template(
     session.add(new_derived_content)
     session.commit()
     return DerivedContentResponse.from_derived_content(new_derived_content)
+
+
+@router.get("/tags", response_model=ListWithCount[TagRead])
+async def list_tags(
+    request: Request,
+    session: CurrentSession,
+    user: UserToken,
+    limit: int = 10,
+    offset: int = 0,
+    sort_by: str = "created_at",
+    sort_direction: str = "DESC",
+) -> ListWithCount[TagRead]:
+    query = select(Tag).where(Tag.organization_id == user.organization_id)
+
+    filters = dict(request.query_params)
+    filters.pop("limit", None)
+    filters.pop("offset", None)
+    filters.pop("sort_by", None)
+    filters.pop("sort_direction", None)
+
+    for key, value in filters.items():
+        if hasattr(Tag, key):
+            query = query.where(getattr(Tag, key) == value)
+
+    if hasattr(Tag, sort_by):
+        if sort_direction.upper() == "ASC":
+            query = query.order_by(getattr(Tag, sort_by).asc())
+        elif sort_direction.upper() == "DESC":
+            query = query.order_by(getattr(Tag, sort_by).desc())
+        else:
+            raise HTTPException(status_code=400, detail="Invalid sort direction")
+    else:
+        raise HTTPException(status_code=400, detail="Invalid sort field")
+
+    count_query = select(func.count()).select_from(query.subquery())
+    total_count = session.exec(count_query).one()
+
+    query = query.limit(limit).offset(offset)
+    result = session.exec(query)
+    tags = result.all()
+
+    if not tags:
+        raise HTTPException(status_code=404, detail="No tags found")
+
+    return ListWithCount(results=tags, total_count=total_count)
+
+
+@router.post("/tags", response_model=TagRead)
+async def create_tag(
+    session: CurrentSession,
+    user: UserToken,
+    payload: TagCreate = Body(...),
+) -> TagRead:
+    # Create a new Tag
+    new_tag = Tag(
+        name=payload.name,
+        organization_id=user.organization_id,
+        hex_color=payload.hex_color,
+        type="tag",
+        created_by=user.user_id,
+        updated_by=user.user_id,
+    )
+    session.add(new_tag)
+    session.commit()
+    session.refresh(new_tag)
+    return new_tag
+
+
+@router.put("/tags/{tag_id}", response_model=TagRead)
+async def update_tag(
+    session: CurrentSession,
+    user: UserToken,
+    tag_id: UUID = Path(...),
+    payload: TagCreate = Body(...),
+) -> TagRead:
+    tag = session.exec(
+        select(Tag)
+        .where(Tag.id == tag_id)
+        .where(Tag.organization_id == user.organization_id)
+    ).one_or_none()
+
+    if not tag:
+        raise HTTPException(status_code=404, detail="Tag not found")
+
+    if payload.name is not None:
+        tag.name = payload.name
+    if payload.hex_color is not None:
+        tag.hex_color = payload.hex_color
+    if payload.type is not None:
+        tag.type = payload.type
+
+    tag.updated_by = user.user_id
+
+    session.add(tag)
+    session.commit()
+    session.refresh(tag)
+    return tag
+
+
+@router.post("/primary_asset_tags", response_model=PrimaryAssetTag)
+async def create_primary_asset_tag(
+    session: CurrentSession,
+    user: UserToken,
+    payload: PrimaryAssetTag = Body(...),
+) -> PrimaryAssetTag:
+    # Create a new PrimaryAssetTag
+    new_primary_asset_tag = PrimaryAssetTag(
+        tag_id=payload.tag_id,
+        primary_asset_id=payload.primary_asset_id,
+    )
+    session.add(new_primary_asset_tag)
+    session.commit()
+    session.refresh(new_primary_asset_tag)
+    return new_primary_asset_tag
+
+
+@router.delete("/primary_asset_tags/{tag_id}/{primary_asset_id}", response_model=None)
+async def delete_primary_asset_tag(
+    session: CurrentSession,
+    user: UserToken,
+    tag_id: UUID = Path(...),
+    primary_asset_id: UUID = Path(...),
+) -> Response:
+    # Fetch the PrimaryAssetTag and ensure it belongs to the user's organization
+    primary_asset_tag = session.exec(
+        select(PrimaryAssetTag)
+        .join(PrimaryAssetRow)
+        .where(PrimaryAssetTag.tag_id == tag_id)
+        .where(PrimaryAssetTag.primary_asset_id == primary_asset_id)
+        .where(PrimaryAssetRow.organization_id == user.organization_id)
+    ).one_or_none()
+
+    if not primary_asset_tag:
+        raise HTTPException(
+            status_code=404, detail="PrimaryAssetTag not found or not authorized"
+        )
+
+    session.delete(primary_asset_tag)
+    session.commit()
+    return Response(status_code=204)

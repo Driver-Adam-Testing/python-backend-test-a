@@ -52,7 +52,7 @@ class MetricsLambda(Construct):
             index="src/main.py",
             vpc=vpc,
             vpc_subnets=aws_ec2.SubnetSelection(
-                subnet_type=aws_ec2.SubnetType("PRIVATE")
+                subnet_type=aws_ec2.SubnetType.PRIVATE_WITH_EGRESS
             ),
             environment={
                 "ENVIRONMENT": params.environment,

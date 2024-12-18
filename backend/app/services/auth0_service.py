@@ -188,7 +188,10 @@ class Auth0Service:
                     "roles": invitation.roles,
                     "client_id": settings.AUTH0_CLIENT_ID,
                 }
-                if "sso_connection_id" in organization_info["metadata"]:
+                if (
+                    "metadata" in organization_info
+                    and "sso_connection_id" in organization_info["metadata"]
+                ):
                     payload["connection_id"] = organization_info["metadata"][
                         "sso_connection_id"
                     ]

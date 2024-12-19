@@ -3,7 +3,7 @@ import json
 import os
 from datetime import datetime
 from pathlib import Path
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 import modal
 from common import app
@@ -158,7 +158,6 @@ def run_codebase_onboarding(
     archive_name: str,
     org_id: str,
     creator_id: str,
-    workspace_id: UUID,
     provider: str = "manual",
     override_codebase_name: str | None = None,
     version_str: str | None = None,
@@ -181,7 +180,6 @@ def run_codebase_onboarding(
         create_bucket_if_dne,
         download_file_from_presigned_url,
         get_codebase_content_record_status_for,
-        get_org_id_from_workspace,
         get_source_content_type_uuid,
         is_on_blacklist,
         load_driverignore,
@@ -217,17 +215,13 @@ def run_codebase_onboarding(
     codebase_name = str(extracted_path)
     print("Codebase name: ", codebase_name)
     print("Unpacked archive to: ", extracted_path)
-    real_org_id = get_org_id_from_workspace(workspace_id)
     driverignore = load_driverignore(codebase_root=extracted_path)
 
     # TODO so if they uploaded a zip and we find the codebase, what do we do w.r.t versioning? Below, we disallow it
     # and raise an exception. Namely, the previously onboarded zip won't have a version.
     with Session(engine) as session, session.begin():
         codebase_type_id = get_source_content_type_uuid("codebase")
-        workspace = session.get(Workspace, workspace_id)
-        if not workspace:
-            raise ValueError(f"Workspace with id {workspace_id} not found")
-        org_id = workspace.organization_id
+        # TODO: look up the primary asset
         codebase = session.exec(
             select(Codebase).where(
                 Codebase.codebase_name == codebase_name,
@@ -236,6 +230,7 @@ def run_codebase_onboarding(
         ).first()
         if codebase:
             # Get prior version; there should be one if the codebase exists and was onboarded since we added code diffs
+            # TODO: VersionRow look up ONLY to check the status of the previous version is complete.
             codebase_id = codebase.id
             statement = (
                 select(InspectionVersion)
@@ -279,6 +274,7 @@ def run_codebase_onboarding(
         # TODO think about what happens when the file analysis fails. What do we do with the version record and uploaded content?
         # We can't just delete the whole codebase anymore since we have code diffs.
 
+        # TODO: switch to VersionRow, no longer using previous_version, but have attached status to version
         version = InspectionVersion(
             id=uuid4(),
             version=version_str,
@@ -288,10 +284,9 @@ def run_codebase_onboarding(
         session.add(version)
         version_id = version.id
 
-        # TODO: this storage URL on codebase is WRONG. It can't be tied to a version!
-        # but it seems we don't use storage url now anyways?
         is_new_codebase = False
         if not codebase:
+            # TODO: create the primary asset. Need to move this before the creation of the Version
             is_new_codebase = True
             codebase = Codebase(
                 id=codebase_id,
@@ -304,9 +299,11 @@ def run_codebase_onboarding(
             )
             session.add(codebase)
 
+        # TODO: repository id will be moved to primary asset as a column
         metadata = (
             {} if repository_id is None else {"github_repository_id": repository_id}
         )
+        # TODO: this is no longer necessary to create
         cb_sc = DerivedContent(
             codebase_id=codebase_id,
             relative_path=codebase_name,
@@ -317,11 +314,12 @@ def run_codebase_onboarding(
             version_id=version_id,
         )
         session.add(cb_sc)
-        usage_balance = UsageService(session).get_usage_balance(real_org_id)
+        usage_balance = UsageService(session).get_usage_balance(org_id)
     org_id_bucket = hashlib.sha256(org_id.encode()).hexdigest()[:63]
     create_bucket_if_dne(org_id_bucket)
 
     # TODO need to handle dropzone location changes upstream of this. Not pertinent yet.
+    # TODO: this will be priamry asset id
     version_fragment = f"{codebase_id}/version/{version_id}"
     s3_dest_root = Path(version_fragment) / "source"
 
@@ -346,6 +344,8 @@ def run_codebase_onboarding(
     with Session(engine) as session, session.begin():
         # Add directories source contents
         dir_sc_uuid = get_source_content_type_uuid("codebase-directory")
+
+        # TODO: create nodes for directories
         for directory in all_directories:
             is_ignored = driverignore(directory) if driverignore is not None else False
             if not is_on_blacklist(Path(directory)) and not is_ignored:
@@ -365,6 +365,7 @@ def run_codebase_onboarding(
         codebase_sloc = 0
         codebase_size_in_bytes = 0  # TODO:  rename to cumulative_codebase_size_in_bytes
         # Add file source contents
+        # TODO: creation of nodes for files
         for file_path in codebase_stats:
             if (
                 not codebase_stats[file_path]["is_blacklisted"]
@@ -379,6 +380,8 @@ def run_codebase_onboarding(
                     misc_metadata=codebase_stats[file_path],
                     version_id=version_id,
                 )
+                # TODO: create a populated/unpopulated (decision pending) DerivedContent for the "source-code" kind that
+                # is attached to the node
                 session.add(file_sc)
                 # Only add to SLOC and size if the file is analyzable
                 if codebase_stats[file_path]["is_analyzable"]:
@@ -418,10 +421,10 @@ def run_codebase_onboarding(
         )
         # need to get the real org id from the workspace since the org_id passed in is the hashed org_id
 
-        with LLMUsageSession(real_org_id, creator_id, session_meta) as llm_session:
+        with LLMUsageSession(org_id, creator_id, session_meta) as llm_session:
             usage_metric = UsageMetric(
                 session_id=llm_session.session_id,
-                organization_id=real_org_id,
+                organization_id=org_id,
                 user_id=creator_id,
                 event_source="codebase_onboarding",
                 bytes_in=-codebase_size_in_bytes,
@@ -441,4 +444,4 @@ def run_codebase_onboarding(
             llm_session.send_event(usage_metric)
             # TODO: check usage balance guardrails here
 
-    return str(codebase_id), str(version_id)
+    return str(version_id)

@@ -6,7 +6,6 @@ from contextlib import suppress
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from uuid import UUID
 
 import modal
 from onboarding.onboard import run_codebase_onboarding
@@ -90,7 +89,6 @@ class FileInfo:
     concurrency_limit=5,
 )
 async def inspect_db(
-    codebase_id: uuid.UUID,
     version_id: uuid.UUID,
     inspection_mode: InspectionMode = InspectionMode.NORMAL,
     rerun_node_paths: list[str] | None = None,
@@ -111,15 +109,22 @@ async def inspect_db(
 
     # TODO verify rerun_node_paths in the diff rerun case; it works for non diff case.
 
+    # TODO: this is unneeded, just get version
     codebase = await get_codebase_by_id(codebase_id)
     workspace_id = codebase.workspace_id
     workspace = await get_workspace_by_id(workspace_id)
+
+    # TODO: look up VersionRow from id
+    # TODO: get org_id from the version
     org_id = workspace.organization_id
     org_hashed_id = hashlib.sha256(org_id.encode()).hexdigest()[:63]
 
     # Get the Version and check if it has previous_version_id
     version = await get_version_by_id(version_id)
+
+    # TODO: version no longer have previous_version_id, must do another query to get it (sort by created_at)
     previous_version_id = version.previous_version_id
+    # TODO: this is primary asset display_name
     codebase_name = codebase.codebase_name
 
     if inspection_mode == InspectionMode.RESUME and previous_version_id:
@@ -135,6 +140,7 @@ async def inspect_db(
     # If we are resuming, we should get the latest run for the current version,
     # (we don't support diff resumes yet!)
     if inspection_mode == InspectionMode.RESUME:
+        # TODO: need InspectionRun model
         previous_run_id = await get_latest_run_from_version_id(version_id)
     else:
         # In the case that we are doing a diff, we get the latest run for the *previous* version
@@ -144,15 +150,18 @@ async def inspect_db(
             else None
         )
 
+    # TODO: need the InspectionRun model
     run_id = await create_inspector_run(version_id)
 
     # Get content records for version_id
+    # TODO: nodes don't currently have a kind, so will need a way to differentiate files and directories
     source_contents_files = await get_analyzable_source_contents_by_version_id(
         version_id, {SourceContentTypeMap.FILE}
     )
     source_contents_all = await get_analyzable_source_contents_by_version_id(
         version_id, {SourceContentTypeMap.FILE, SourceContentTypeMap.DIRECTORY}
     )
+    # TODO: the root doesn't exist in this context anymore - its just a directory
     source_content_codebase = await get_analyzable_source_contents_by_version_id(
         version_id, {SourceContentTypeMap.CODEBASE_ROOT}
     )
@@ -177,6 +186,8 @@ async def inspect_db(
         file_paths = []
         print("Downloading all source files for codebase from s3...")
         for sc in source_contents_files:
+            # TODO: relative_path from node
+            # TODO: codebase_id -> primary_asset_id
             download_abs_path = download_source_content_file(
                 s3_client=s3_client,
                 bucket_name=org_hashed_id,
@@ -200,6 +211,8 @@ async def inspect_db(
             previous_download_root = Path(previous_download_dir)
             previous_file_paths = []
             print("Downloading all source files for previous codebase from s3...")
+            # TODO: relative_path from node
+            # TODO: codebase_id -> primary_asset_id
             for scn in previous_source_contents_files:
                 download_abs_path = download_source_content_file(
                     s3_client=s3_client,
@@ -241,6 +254,7 @@ async def inspect_db(
                 sorted_nodes = diff_dag.topological_sort()
             else:
                 sorted_nodes = codebase_dag.topological_sort()
+        # TODO: this will use node.relative_path instead of sc.relative_path
         path_to_source_content_id = {
             Path(sc.relative_path): sc.id for sc in source_contents_all
         }
@@ -548,16 +562,16 @@ def onboard_and_inspect(
     archive_name: str,
     org_id: str,
     creator_id: str,
-    workspace_id: UUID,
     provider: str = "manual",
-    version: str | None = None,
+    version: str | None = None,  # this is the version string NOT the ID from our db
     repository_id: str | None = None,
 ) -> None:
+    # TODO: workspace is gone
     from onboarding.onboard_utils import RunInProgressError, set_codebase_status
 
     print(
         f"Onboarding for: {archive_name} from {provider} with org_id: {org_id}, creator_id: {creator_id}, "
-        f"workspace_id: {workspace_id} with presigned_url: {presigned_url}, version: {version}"
+        f"with presigned_url: {presigned_url}, version: {version}"
     )
     try:
         try:
@@ -566,7 +580,6 @@ def onboard_and_inspect(
                 archive_name,
                 org_id,
                 creator_id,
-                workspace_id,
                 provider,
                 version_str=version,
                 repository_id=repository_id,
@@ -579,9 +592,12 @@ def onboard_and_inspect(
 
         print(f"Onboarding complete for codebase: {codebase_id}, {version_id}")
         print("Inspecting...")
-        inspect_db.remote(codebase_id, version_id)
+        inspect_db.remote(
+            codebase_id, version_id
+        )  # TODO: we only need the version_id here
         print("Inspection complete")
 
+        # TODO: set the version status
         set_codebase_status(
             codebase_id, version_id, Enum_Derived_Content_Status.generation_complete
         )
@@ -597,6 +613,7 @@ def onboard_and_inspect(
         send_exception_email.remote(exception_details)
         # Since codebase and version could possibly be undefined in this clean up action, we don't care if it fails
         with suppress(Exception):
+            # TODO: set the version status
             set_codebase_status(
                 codebase_id, version_id, Enum_Derived_Content_Status.generation_error
             )

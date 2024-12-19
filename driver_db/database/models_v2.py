@@ -12,6 +12,7 @@ from sqlalchemy import (
     Index,
     func,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as SaUuid
 from sqlmodel import Field, Relationship, Session, SQLModel, select, text
 
@@ -23,6 +24,7 @@ class PrimaryAssetTypeEnum(str, Enum):
     PAGE_TEMPLATE = "PAGE_TEMPLATE"
 
 
+# TODO: primary_asset_type should be primary_asset_kind
 class PrimaryAssetRow(SQLModel, table=True):  # type: ignore
     __tablename__ = "v2_primary_asset"
     __table_args__ = (
@@ -61,6 +63,7 @@ class PrimaryAssetRow(SQLModel, table=True):  # type: ignore
         default=None,
     )
     versions: list["VersionRow"] = Relationship(back_populates="primary_asset")
+    repository_id: str | None
     tags: list["Tag"] = Relationship(  # noqa: F821
         back_populates="primary_assets",
         sa_relationship_kwargs={"secondary": "v2_primary_asset_tag"},
@@ -117,6 +120,7 @@ class VersionRow(SQLModel, table=True):  # type: ignore
         ),
         default=None,
     )
+    status: str  # TODO: add a field_validator
 
     primary_asset: "PrimaryAssetRow" = Relationship(back_populates="versions")
     nodes: list["NodeRow"] = Relationship(back_populates="version")
@@ -129,6 +133,7 @@ class VersionRow(SQLModel, table=True):  # type: ignore
     )
 
 
+# TODO: consider kind on NodeRow. Maybe a bool or enum?
 class NodeRow(SQLModel, table=True):  # type: ignore
     __tablename__ = "v2_node"
     __table_args__ = (
@@ -169,6 +174,10 @@ class NodeRow(SQLModel, table=True):  # type: ignore
             nullable=False,
         ),
         default=None,
+    )
+    # TODO: enforce data structure with field_validator when misc_metadata is populated
+    misc_metadata: dict | None = Field(  # type: ignore
+        sa_column=Column(JSONB, nullable=True), default=None
     )
 
     version: "VersionRow" = Relationship(back_populates="nodes")

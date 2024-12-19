@@ -40,17 +40,17 @@ class FolderTechDocTask(Task):
     def __init__(
         self,
         node: LiteNode,
-        version_id: uuid.UUID,
+        # version_id: uuid.UUID, #TODO: don't need this since it's on the node
         task_name: str,
         child_docs_tasks: tuple[TechDocsTask],
         codebase_name: str,
-        source_content_id: uuid.UUID,
+        source_content_id: uuid.UUID,  # TODO: this needs to be node_id
         load_persisted_results: bool,
     ) -> None:
         self.child_docs_tasks = child_docs_tasks
         self.codebase_name = codebase_name
         self.source_content_id = source_content_id
-        self.version_id = version_id
+        # self.version_id = version_id
         super().__init__(
             task_name=task_name,
             node=node,
@@ -87,6 +87,7 @@ class FolderTechDocTask(Task):
         docs = task_result.result["docs"]
 
         async with database_sem:
+            # TODO: content_type is now just a string, inserted as content_type_kind on DerivedContent
             short_single_sentence_dc_id = await get_derived_content_type_uuid(
                 DerivedContentTypeMap.SHORT_SENTENCE_DESCRIPTION
             )
@@ -96,15 +97,10 @@ class FolderTechDocTask(Task):
             long_descrip_dc_id = await get_derived_content_type_uuid(
                 DerivedContentTypeMap.LONG_DESCRIPTION
             )
-            (
-                _,
-                workspace_id,
-                codebase_id,
-            ) = await get_rel_path_workspace_id_codebase_id_from_source_content_id(
-                self.source_content_id
-            )
 
             # Short Single Sentence
+            # TODO: DerivedContent now just has node_id, no source_content_id, workspace_id, codebase_id
+            # TODO: get rid of status, will just be on the version now
             short_sent_dc = DerivedContent(
                 content_type_id=short_single_sentence_dc_id,
                 source_content_id=self.source_content_id,
@@ -145,6 +141,7 @@ class FolderTechDocTask(Task):
             )
 
             async with AsyncSession(async_engine) as session:
+                # TODO: query against node_id now with the set of types
                 dc_query = select(DerivedContent).where(
                     DerivedContent.source_content_id == self.source_content_id,
                     DerivedContent.content_type_id.in_(
@@ -224,6 +221,7 @@ class FileTechDocTask(Task):
 
         docs = task_result.result["docs"]
         async with database_sem:
+            # TODO: content_type is now just a string, inserted as content_type_kind on DerivedContent
             short_single_sentence_dc_id = await get_derived_content_type_uuid(
                 DerivedContentTypeMap.SHORT_SENTENCE_DESCRIPTION
             )
@@ -237,14 +235,8 @@ class FileTechDocTask(Task):
                 DerivedContentTypeMap.CHUNK_DESCRIPTIONS
             )
 
-            (
-                _,
-                workspace_id,
-                codebase_id,
-            ) = await get_rel_path_workspace_id_codebase_id_from_source_content_id(
-                self.source_content_id
-            )
-
+            # TODO: DerivedContent now just has node_id, no source_content_id, workspace_id, codebase_id
+            # TODO: get rid of status, will just be on the version now
             # Short Single Sentence
             short_sent_dc = DerivedContent(
                 content_type_id=short_single_sentence_dc_id,
@@ -303,8 +295,7 @@ class FileTechDocTask(Task):
                     chunks_dc.append(chunk_dc)
 
             async with AsyncSession(async_engine) as session:
-                # TODO: we aren't deleting here. When we create embeddings, we'll want to cascade
-                # delete everything related to old derived content
+                # TODO: query against node_id now with the set of types
 
                 dc_query = select(DerivedContent).where(
                     DerivedContent.source_content_id == self.source_content_id,
@@ -396,20 +387,15 @@ class SymbolsTask(Task):
         symbols = task_result.result["symbols"]
 
         async with database_sem:
+            # TODO: content_type is now just a string, inserted as content_type_kind on DerivedContent
             symbol_derived_content_id = await get_derived_content_type_uuid(
                 DerivedContentTypeMap.SYMBOL
             )
 
-            (
-                _,
-                workspace_id,
-                codebase_id,
-            ) = await get_rel_path_workspace_id_codebase_id_from_source_content_id(
-                self.source_content_id
-            )
-
             symbol_dcs = []
             for idx, symbol in enumerate(symbols):
+                # TODO: DerivedContent now just has node_id, no source_content_id, workspace_id, codebase_id
+                # TODO: get rid of status, will just be on the version now
                 symbol_dc = DerivedContent(
                     content_type_id=symbol_derived_content_id,
                     source_content_id=self.source_content_id,
@@ -498,6 +484,8 @@ class TopLevelDocsTask(Task):
         docs = task_result.result["docs"]
 
         async with database_sem:
+            # TODO: add types for top level sentence/paragraph/etc.
+            # TODO: content_type is now just a string, inserted as content_type_kind on DerivedContent
             short_single_sentence_dc_id = await get_derived_content_type_uuid(
                 DerivedContentTypeMap.SHORT_SENTENCE_DESCRIPTION
             )
@@ -528,6 +516,7 @@ class TopLevelDocsTask(Task):
 
             dc_contents = []
             for dc_type_id, dc_docs in top_level_tups:
+                # TODO: DerivedContent now just has node_id, no source_content_id, workspace_id, codebase_id
                 dc = DerivedContent(
                     content_type_id=dc_type_id,
                     source_content_id=self.source_content_id,
@@ -622,6 +611,7 @@ class EmbeddingTask(Task):
             "long_description",
             "symbol",
         ]
+        # TODO: type names are just strings now
 
         for task, dr in dependent_io_results.items():
             content_ids_to_embed = [
@@ -629,6 +619,7 @@ class EmbeddingTask(Task):
             ]  # TODO may not be needed
 
             async with database_sem, AsyncSession(async_engine) as session:
+                # TODO: modify for (content_type) kind
                 contents_query = (
                     select(DerivedContent)
                     .join(
@@ -655,6 +646,7 @@ class EmbeddingTask(Task):
             print(f"Chunking {len(contents)} contents for {task.task_name}")
 
             # Chunk, embed, and write the chunks based on source content ids
+            # TODO: modify type_names for kinds
             chunks = await self.chunk_embed_and_prep_for_db(
                 list(contents), list(ids), list(type_names), list(metadata)
             )
@@ -677,6 +669,8 @@ class EmbeddingTask(Task):
         # in the future. We will have separate tasks for loading source code and creating the source content.
         if self.source_code:
             # Chunk, embed, and write source code
+            # TODO: this is node_id
+            # TODO: chunkandembedding needs to point at a piece of content, but we don't store the source code on the database
             sc_chunks = await self.chunk_embed_and_prep_for_db(
                 [self.source_code],
                 [self.source_code_sc_id],
@@ -702,7 +696,7 @@ class EmbeddingTask(Task):
     async def chunk_embed_and_prep_for_db(
         contents: list[str],
         content_ids: list[uuid.UUID],
-        content_types: list[str],
+        content_types: list[str],  # TODO: content_types will be kind
         metadatas: list[dict[str, any]],
     ) -> list[ChunkAndEmbedding]:
         from database.models_v1 import ChunkAndEmbedding

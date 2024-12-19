@@ -142,6 +142,7 @@ async def get_latest_run_from_version_id(version_id: uuid.UUID) -> uuid.UUID | N
 
 
 # TODO this actually would get source and derived content if the incoming types weren't correct
+# TODO : get analyable nodes by version_id
 async def get_analyzable_source_contents_by_version_id(
     version_id: uuid.UUID, content_types: set[SourceContentTypeMap]
 ) -> list[DerivedContent]:

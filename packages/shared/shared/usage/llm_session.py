@@ -28,10 +28,6 @@ _LLMUsageSession = TypeVar("_LLMUsageSession", bound="LLMUsageSession")
 
 aws_client = None
 
-MAX_EVENT_SIZE = 240 * 1024  # 240KB to leave some buffer
-MAX_INPUT_SIZE = 160 * 1024  # 160KB for input
-MAX_OUTPUT_SIZE = 40 * 1024  # 40KB for output
-
 
 def get_aws_client() -> boto3.client:
     global aws_client
@@ -108,15 +104,6 @@ class LLMUsageSession:
             session.add(usage_session)
             session.commit()
 
-    def _truncate_string(self, s: str, max_size: int) -> str:
-        """Truncate string to max_size bytes, adding ellipsis if truncated."""
-        encoded = s.encode("utf-8")
-        if len(encoded) <= max_size:
-            return s
-        print(f"Truncating string from {len(encoded)} bytes to {max_size} bytes")
-        truncated = encoded[:max_size].decode("utf-8", "ignore")
-        return truncated[:-3] + "..."
-
     def send_event(self, usage_metric: UsageMetric) -> dict:
         """
         Send an event to the metrics event bus
@@ -126,23 +113,8 @@ class LLMUsageSession:
 
         # Create a copy of the usage metric to avoid modifying the original
         event_detail = usage_metric.model_dump()
-
-        # Truncate large input/output in event metadata
-        if event_detail.get("event_metadata"):
-            metadata = event_detail["event_metadata"]
-            if metadata.get("input", {}).get("prompts"):
-                truncated_prompts = [
-                    self._truncate_string(p, MAX_INPUT_SIZE)
-                    for p in metadata["input"]["prompts"]
-                ]
-                metadata["input"]["prompts"] = truncated_prompts
-
-            if metadata.get("output"):
-                metadata["output"] = self._truncate_string(
-                    metadata["output"], MAX_OUTPUT_SIZE
-                )
+        event_detail["event_metadata"] = {}
         event_detail = json.dumps(event_detail, default=str)
-        print(f"Sending event: {len(event_detail.encode('utf-8'))} bytes")
         entry = {
             "Time": datetime.now(),
             "Source": "metrics.client",

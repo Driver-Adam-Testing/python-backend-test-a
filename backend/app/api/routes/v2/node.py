@@ -686,6 +686,55 @@ async def update_derived_content(
     return Response(status_code=202)
 
 
+# TODO: I want this to be explicitly operating on a CONCEPTUAL entity of a PAGE, rather than an explicit entity in the DB
+@router.put("/edit_page/{node_id}", response_model=DerivedContentResponse)
+async def edit_page_CONVENIENCE_METHOD(
+    session: CurrentSession,
+    user: UserToken,
+    node_id: UUID = Path(...),
+    payload: DerivedContentUpdate = Body(...),
+) -> Response:
+    # Fetch the derived content and ensure it belongs to the user's organization
+    derived_content = session.exec(
+        select(DerivedContent)
+        .join(NodeRow)
+        .join(VersionRow)
+        .join(PrimaryAssetRow)
+        .where(NodeRow.id == node_id)
+        .where(PrimaryAssetRow.organization_id == user.organization_id)
+    ).one_or_none()
+
+    if not derived_content:
+        raise HTTPException(
+            status_code=404, detail="Content not found or not authorized"
+        )
+
+    if payload.content is not None:
+        derived_content.content = payload.content
+    if payload.content_name is not None:
+        derived_content.content_name = payload.content_name
+        # Update the primary asset's display name if it is a page
+        primary_asset = session.exec(
+            select(PrimaryAssetRow)
+            .join(VersionRow)
+            .join(NodeRow)
+            .where(NodeRow.id == derived_content.node_id)
+        ).one_or_none()
+
+        if primary_asset and primary_asset.primary_asset_type in [
+            "PAGE",
+            "PAGE_TEMPLATE",
+        ]:
+            primary_asset.display_name = payload.content_name
+            session.add(primary_asset)  # Save the primary asset
+
+    session.add(derived_content)
+    session.commit()
+    session.refresh(derived_content)
+
+    return Response(status_code=202)
+
+
 ## ALERT: THIS IS A CONVENIENCE METHOD
 
 

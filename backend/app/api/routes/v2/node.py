@@ -903,7 +903,6 @@ async def create_primary_asset_tag(
     user: UserToken,
     payload: PrimaryAssetTag = Body(...),
 ) -> PrimaryAssetTag:
-    # Create a new PrimaryAssetTag
     new_primary_asset_tag = PrimaryAssetTag(
         tag_id=payload.tag_id,
         primary_asset_id=payload.primary_asset_id,
@@ -914,7 +913,7 @@ async def create_primary_asset_tag(
     return new_primary_asset_tag
 
 
-@router.delete("/primary_asset_tags/{tag_id}/{primary_asset_id}", response_model=None)
+@router.delete("/primary_asset_tags/{primary_asset_id}/{tag_id}", response_model=None)
 async def delete_primary_asset_tag(
     session: CurrentSession,
     user: UserToken,

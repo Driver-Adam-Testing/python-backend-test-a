@@ -174,8 +174,12 @@ def fetch_default_branch_and_commit(org_name: str, repo: str, access_token: str)
     default_branch = repo_data["default_branch"]
 
     branch_url = f"{repo_url}/branches/{default_branch}"
-    branch_data = requests.get(branch_url, headers=headers).json()
-
+    branch_response = requests.get(branch_url, headers=headers)
+    branch_data = branch_response.json()
+    logger.info(f"Default branch for {repo} in {org_name} is {default_branch}")
+    logger.info(
+        f"Branch data retrieved from github API (status code {branch_response.status_code}): {branch_data}"
+    )
     return branch_data["commit"]["sha"]
 
 
@@ -278,9 +282,7 @@ def download_and_upload_repo(
             logger.info("Repository %s uploaded successfully to %s.", repo, upload_key)
 
         return success, analysis_download_url
-    except requests.RequestException as e:
-        logger.error("Request error: %s", e)
-    except Exception as e:
-        logger.error("Unexpected error: %s", e)
+    except Exception:
+        logger.exception("Unexpected error downloading/uploading repo.")
 
     return False, ""

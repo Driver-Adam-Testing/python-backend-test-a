@@ -3,9 +3,45 @@ import random
 import time
 import traceback
 import typing
+from collections.abc import Callable
 from functools import wraps
+from threading import Lock
+from typing import Any
 
 RET_TYPE = typing.TypeVar("RET_TYPE")
+
+logger = logging.getLogger(__name__)
+
+
+def expiring_cache(duration_sec: int) -> Callable:
+    """
+    Cache the result of a function with a specified cache invalidation time
+    Thread-safe implementation using a Lock.
+    """
+
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+        cache: dict[str, Any] = {"value": None, "expires_at": 0}
+        lock = Lock()
+
+        def wrapped(*args: object, **kwargs: object) -> Any:  # noqa: ANN401
+            nonlocal cache
+            current_time = time.time()
+
+            with lock:
+                if cache["expires_at"] < current_time:
+                    logger.info(f"Cache expired, calling function {func.__name__}")
+                    cache["value"] = func(*args, **kwargs)
+                    cache["expires_at"] = current_time + duration_sec
+                return cache["value"]
+
+        def clear_cache() -> None:
+            with lock:
+                cache.update({"value": None, "expires_at": 0})
+
+        wrapped.clear_cache = clear_cache
+        return wrapped
+
+    return decorator
 
 
 def suppress_logging(func: typing.Callable[..., RET_TYPE]) -> typing.Callable:

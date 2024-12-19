@@ -921,7 +921,6 @@ async def delete_primary_asset_tag(
     tag_id: UUID = Path(...),
     primary_asset_id: UUID = Path(...),
 ) -> Response:
-    # Fetch the PrimaryAssetTag and ensure it belongs to the user's organization
     primary_asset_tag = session.exec(
         select(PrimaryAssetTag)
         .join(PrimaryAssetRow)

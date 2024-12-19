@@ -9,6 +9,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import jwt
 from jose.exceptions import JWTError
 from pydantic import BaseModel, Field
+from shared.utils.decorators import expiring_cache
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.core.config import settings
@@ -21,7 +22,12 @@ USAGE_CREDITOR = "usage_credit:management"
 SUBSCRIPTION_MANAGER = "subscription:management"
 
 
+@expiring_cache(3600)
 def get_jwks() -> dict:
+    """
+    We cache this for an hour so we don't have to hit the Auth0 API for every request.
+    The keys will rotate, so we don't want to cache indefinitely for security reasons.
+    """
     jwks_url = f"https://{settings.AUTH0_DOMAIN}/.well-known/jwks.json"
     response = urlopen(jwks_url)
     return json.loads(response.read())

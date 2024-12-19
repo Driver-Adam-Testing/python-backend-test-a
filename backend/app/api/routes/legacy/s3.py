@@ -57,3 +57,10 @@ class S3BucketAccess:
                 f"The file at {file_path} does not exist in the bucket {self.organization_id_hashed}."
             )
             return ""
+
+    def delete_file(self, relative_path: str) -> None:
+        file_path = self.get_file_path(relative_path)
+        self.s3_client.delete_object(Bucket=self.organization_id_hashed, Key=file_path)
+        logger.info(
+            f"Deleted file {file_path} from bucket {self.organization_id_hashed}."
+        )

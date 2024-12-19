@@ -1,15 +1,15 @@
 from datetime import datetime
 
 import pytest
-from pydantic import ValidationError
 from dateutil import parser
-from shared.usage.utils import bytes_to_sloc, sloc_to_bytes
-
-from packages.shared.shared.interfaces.usage.usage_schema import (
+from pydantic import ValidationError
+from shared.interfaces.usage.usage_schema import (
     UsageBalance,
+    UsageEventRange,
     UsageEventSummary,
-    UsageMetricUnitType, UsageEventRange,
+    UsageMetricUnitType,
 )
+from shared.usage.utils import bytes_to_sloc, sloc_to_bytes
 
 
 @pytest.fixture
@@ -178,7 +178,6 @@ def test_event_summary_convert_to_sloc(
     assert converted.onboarding_usage == 100
     assert converted.tech_doc_usage == 200
     assert converted.code_diff_usage == 300
-
 
 
 def test_usage_event_range() -> None:

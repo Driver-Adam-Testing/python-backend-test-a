@@ -31,6 +31,7 @@ from database.models_v1 import Workspace
 from graphql import GraphQLError
 from sqlmodel import select
 from strawberry.types import Info
+from strawberry.types.nodes import Selection
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +39,23 @@ logger = logging.getLogger(__name__)
 @strawberry.type
 class MeResponse:
     id: ID
+
+
+def is_code_content_requested(info: Info) -> bool:
+    """Recursively check if 'content' field under 'code' is requested in the query."""
+
+    def has_content_field(fields: list[Selection]) -> bool:
+        for field in fields:
+            if field.name == "code" and any(
+                subfield.name == "content" for subfield in field.selections
+            ):
+                return True
+            # Recursively check nested fields in case of deeply nested selections
+            if field.selections and has_content_field(field.selections):
+                return True
+        return False
+
+    return has_content_field(info.selected_fields)
 
 
 @strawberry.type
@@ -103,6 +121,9 @@ class Query:
             codebase_id=str(codebaseId),
         ):
             raise GraphQLError("Access denied", extensions={"code": "NOT_FOUND"})
+
+        fetch_code_content = is_code_content_requested(info)
+        logger.info("Is code content requested: %s", fetch_code_content)
         return get_document_set(
             nodeKind,
             path,
@@ -110,6 +131,7 @@ class Query:
             str(codebaseId),
             info.context.user.organization_id,
             session,
+            fetch_code_content,
             versionId,
         )
 

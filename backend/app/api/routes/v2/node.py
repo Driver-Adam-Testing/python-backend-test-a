@@ -127,9 +127,12 @@ async def list_primary_assets(
             )
 
     if tag_ids:
-        query = query.join(
-            PrimaryAssetTag, PrimaryAssetTag.primary_asset_id == PrimaryAssetRow.id
-        ).where(PrimaryAssetTag.tag_id.in_(tag_ids.split(",")))
+        query = query.where(
+            select(PrimaryAssetTag)
+            .where(PrimaryAssetTag.primary_asset_id == PrimaryAssetRow.id)
+            .where(PrimaryAssetTag.tag_id.in_(tag_ids.split(",")))
+            .exists()
+        )
 
     for key, value in filters.items():
         print(key, value)

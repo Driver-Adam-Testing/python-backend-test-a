@@ -134,6 +134,31 @@ def content_type_id_map(kind: str, db: Session) -> dict[str, Any]:
     return {"typeName": kind_translation, "id": content_types[kind_translation]}
 
 
+def fetch_code_metadata(content: DerivedContent) -> CodeMetadata | None:
+    if not content.misc_metadata:
+        return None
+    return CodeMetadata(
+        size=content.misc_metadata.get("size"),
+        sloc=content.misc_metadata.get("sloc"),
+        extension=content.misc_metadata.get("extension"),
+        is_binary=content.misc_metadata.get("is_binary"),
+        is_hex=content.misc_metadata.get("is_hex"),
+        is_analyzable=content.misc_metadata.get("is_analyzable"),
+        is_blacklisted=content.misc_metadata.get("is_blacklisted"),
+    )
+
+
+def fetch_code_content_from_s3(
+    relative_path: str, organization_id: str, codebase_id: str, version_id: str
+) -> str:
+    s3_access = S3BucketAccess(
+        organization_id=organization_id,
+        codebase_id=codebase_id,
+        version_id=version_id,
+    )
+    return s3_access.get_file_content(relative_path=relative_path)
+
+
 def get_document_set(
     node_kind: str,
     path: str,
@@ -141,6 +166,7 @@ def get_document_set(
     codebase_id: str,
     organization_id: str,
     session: Session,
+    fetch_code_content: bool,
     version_id: str | None = None,
 ) -> DocumentSet:
     relative_path = path
@@ -303,27 +329,20 @@ def get_document_set(
                 f"no DerivedContentTypes documentSet match for {derived_content_type}"
             )
     if content_type["typeName"] == "codebase-file":
-        s3_access = S3BucketAccess(
-            organization_id=organization_id,
-            codebase_id=codebase_id if codebase_id else str(content.codebase_id),
-            version_id=version_id,
-        )
-        code_content = s3_access.get_file_content(relative_path=content.relative_path)
+        code_metadata = fetch_code_metadata(content)
+        code_content = None
+        if fetch_code_content:
+            code_content = fetch_code_content_from_s3(
+                relative_path=content.relative_path,
+                organization_id=organization_id,
+                codebase_id=codebase_id if codebase_id else str(content.codebase_id),
+                version_id=version_id,
+            )
         document_set.code = Code(  # type: ignore
             file_name=content.relative_path.split("/")[-1],
             extension=content.relative_path.split(".")[-1],
             content=code_content,
-            metadata=CodeMetadata(
-                size=content.misc_metadata.get("size"),
-                sloc=content.misc_metadata.get("sloc"),
-                extension=content.misc_metadata.get("extension"),
-                is_binary=content.misc_metadata.get("is_binary"),
-                is_hex=content.misc_metadata.get("is_hex"),
-                is_analyzable=content.misc_metadata["is_analyzable"],
-                is_blacklisted=content.misc_metadata["is_blacklisted"],
-            )
-            if content.misc_metadata
-            else None,
+            metadata=code_metadata,
         )
 
     return document_set

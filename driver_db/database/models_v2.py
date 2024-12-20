@@ -46,7 +46,7 @@ class PrimaryAssetRow(SQLModel, table=True):  # type: ignore
     )
     display_name: str
     organization_id: str
-    primary_asset_type: str
+    primary_asset_kind: str # TODO enum!
     created_at: None | datetime = Field(
         sa_column=Column(
             DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -78,6 +78,7 @@ class PrimaryAssetRow(SQLModel, table=True):  # type: ignore
         return value
 
 
+# TODO: add back previous version pointer. It's handy and less error prone for some use cases
 class VersionRow(SQLModel, table=True):  # type: ignore
     __tablename__ = "v2_version"
     __table_args__ = (
@@ -133,7 +134,6 @@ class VersionRow(SQLModel, table=True):  # type: ignore
     )
 
 
-# TODO: consider kind on NodeRow. Maybe a bool or enum?
 class NodeRow(SQLModel, table=True):  # type: ignore
     __tablename__ = "v2_node"
     __table_args__ = (
@@ -158,8 +158,9 @@ class NodeRow(SQLModel, table=True):  # type: ignore
         ),
     )
     relative_path: str = Field(
-        sa_column=Column(sqlalchemy.Text, nullable=False, index=True)
+        sa_column=Column(sqlalchemy.Text, nullable=False, index=True) # TODO don't need sa_column
     )
+    kind: str # TODO make enum with FILE, DIRECTORY, OTHER
     created_at: None | datetime = Field(
         sa_column=Column(
             DateTime(timezone=True), server_default=func.now(), nullable=False

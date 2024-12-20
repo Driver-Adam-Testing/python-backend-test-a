@@ -281,7 +281,21 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
     )
 
     content_type: DerivedContentType = Relationship(back_populates="contents")
-    content_type_slug: str = Field(
+    
+    # SHORT_SENTENCE_DESCRIPTION
+    # SHORT_PARAGRAPH_DESCRIPTION
+    # LONG_DESCRIPTION
+    # CHUNK_DESCRIPTION
+    # SYMBOL
+    # top_level_short_sentence
+    # top_level_short_paragraph
+    # top_level_terse_sentence
+    # top_level_long_description
+
+    # And for the content types currently associated with the codebase root (codebase derived content records), we actually need to migrate the types
+    # to be on the top level directory node, with the "top_level" prefix in the enum fields
+
+    content_type_slug: str = Field( # TODO enum content_type_kind
         sa_column=Column(sqlalchemy.Text, nullable=False, index=True)
     )
 
@@ -297,7 +311,7 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
     )
 
     relative_path: str = Field(
-        sa_column=Column(sqlalchemy.Text, nullable=False, index=True)
+        sa_column=Column(sqlalchemy.Text, nullable=False, index=True) # TODO eventually remove; at least make nullable
     )
     content: None | str = Field(
         sa_column=Column(sqlalchemy.Text, nullable=True), default=None
@@ -317,7 +331,7 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
             nullable=True,
         ),
         default=None,
-    )
+    ) # TODO remove
     created_at: None | datetime = Field(
         sa_column=Column(
             DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -506,6 +520,7 @@ class InspectionVersion(SQLModel, table=True):
     )
 
 
+# TODO fk needs to be to VersionRow
 class InspectorRun(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     inspection_version_id: UUID = Field(

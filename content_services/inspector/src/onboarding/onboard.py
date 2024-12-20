@@ -175,6 +175,11 @@ def run_codebase_onboarding(
         UsageEventType,
         Workspace,
     )
+    from database.models_v2 import (
+        NodeRow,
+        PrimaryAssetRow,
+        VersionRow,
+    )
     from onboarding.onboard_utils import (
         RunInProgressError,
         create_bucket_if_dne,
@@ -220,107 +225,67 @@ def run_codebase_onboarding(
     # TODO so if they uploaded a zip and we find the codebase, what do we do w.r.t versioning? Below, we disallow it
     # and raise an exception. Namely, the previously onboarded zip won't have a version.
     with Session(engine) as session, session.begin():
-        codebase_type_id = get_source_content_type_uuid("codebase")
-        # TODO: look up the primary asset
-        codebase = session.exec(
-            select(Codebase).where(
-                Codebase.codebase_name == codebase_name,
-                Codebase.workspace_id == workspace_id,
+        primary_asset = session.exec(
+            select(PrimaryAssetRow).where(
+                PrimaryAssetRow.display_name == codebase_name,
+                PrimaryAssetRow.organization_id == org_id,
             )
         ).first()
-        if codebase:
+        if primary_asset:
             # Get prior version; there should be one if the codebase exists and was onboarded since we added code diffs
             # TODO: VersionRow look up ONLY to check the status of the previous version is complete.
-            codebase_id = codebase.id
+            primary_asset_id = primary_asset.id
             statement = (
-                select(InspectionVersion)
-                .join(DerivedContent)
-                .join(Workspace)
+                select(VersionRow)
                 .where(
-                    DerivedContent.codebase_id == codebase_id,
-                    Workspace.organization_id == org_id,
-                    DerivedContent.content_type_id == codebase_type_id,
-                    InspectionVersion.version.isnot(None),
+                    PrimaryAssetRow.id == primary_asset_id,
                 )
-                # .distinct(InspectionVersion.id)
-                .order_by(InspectionVersion.created_at.desc())
+                .order_by(VersionRow.created_at.desc())
             )
             prior_version = session.exec(statement).first()
-            if not prior_version:
-                raise ValueError(
-                    f"Codebase {codebase.codebase_name} has no prior version."
-                )
-            prior_version_name = prior_version.version
-
-            (
-                prior_version_status,
-                prior_version_id,
-            ) = get_codebase_content_record_status_for(
-                codebase_id=codebase_id, version_id=prior_version.id
-            )
-            if prior_version_status == Enum_Derived_Content_Status.generating:
+            assert prior_version is not None, "Prior version should always be present"
+            # TODO: check the provider - for manual providers we should not create a new version
+            # if provider == "manual" and prior_version: raise
+            prior_version_name = prior_version.display_name
+            if prior_version.status == "generating": # TODO use enum!
                 print(
-                    f"Codebase {codebase.codebase_name} has a prior version name: {prior_version_name}"
-                    f" id: {prior_version_id}"
-                    f" that is still being processed or failed."
+                    f"Codebase {primary_asset.display_name} has a prior version name: {prior_version_name}"
+                    f" id: {prior_version.id}"
+                    f" that is still being processed."
                 )
                 raise RunInProgressError()
 
         else:
             prior_version = None
             prior_version_name = None
-            codebase_id = uuid4()
+            primary_asset_id = uuid4()
 
-        # TODO think about what happens when the file analysis fails. What do we do with the version record and uploaded content?
-        # We can't just delete the whole codebase anymore since we have code diffs.
-
-        # TODO: switch to VersionRow, no longer using previous_version, but have attached status to version
-        version = InspectionVersion(
+        version = VersionRow(
             id=uuid4(),
-            version=version_str,
+            primary_asset_id=primary_asset_id,
             display_name=version_str,
-            previous_version_id=prior_version.id if prior_version else None,
+            status="generating",
         )
         session.add(version)
         version_id = version.id
 
-        is_new_codebase = False
-        if not codebase:
-            # TODO: create the primary asset. Need to move this before the creation of the Version
-            is_new_codebase = True
-            codebase = Codebase(
-                id=codebase_id,
-                codebase_name=codebase_name,
-                creator_id=creator_id,
-                description="",
-                storage_url=None,
-                workspace_id=workspace_id,
-                status=Enum_Codebase_Status.processing,
+        is_new_primary_asset = False
+        if primary_asset is not None:
+            is_new_primary_asset = True
+            primary_asset = PrimaryAssetRow(
+                id=primary_asset_id,
+                display_name=codebase_name,
+                organization_id=org_id,
+                primary_asset_kind="codebase",
+                repository_id=repository_id,
             )
-            session.add(codebase)
+            session.add(primary_asset)
 
-        # TODO: repository id will be moved to primary asset as a column
-        metadata = (
-            {} if repository_id is None else {"github_repository_id": repository_id}
-        )
-        # TODO: this is no longer necessary to create
-        cb_sc = DerivedContent(
-            codebase_id=codebase_id,
-            relative_path=codebase_name,
-            content_type_id=codebase_type_id,
-            workspace_id=workspace_id,
-            misc_metadata=metadata,
-            status=Enum_Derived_Content_Status.generating,
-            version_id=version_id,
-        )
-        session.add(cb_sc)
         usage_balance = UsageService(session).get_usage_balance(org_id)
     org_id_bucket = hashlib.sha256(org_id.encode()).hexdigest()[:63]
     create_bucket_if_dne(org_id_bucket)
 
-    # TODO need to handle dropzone location changes upstream of this. Not pertinent yet.
-    # TODO: this will be priamry asset id
-    version_fragment = f"{codebase_id}/version/{version_id}"
+    version_fragment = f"{primary_asset_id}/version/{version_id}"
     s3_dest_root = Path(version_fragment) / "source"
 
     all_directories = []
@@ -343,53 +308,56 @@ def run_codebase_onboarding(
 
     with Session(engine) as session, session.begin():
         # Add directories source contents
-        dir_sc_uuid = get_source_content_type_uuid("codebase-directory")
-
         # TODO: create nodes for directories
         for directory in all_directories:
             is_ignored = driverignore(directory) if driverignore is not None else False
             if not is_on_blacklist(Path(directory)) and not is_ignored:
                 # TODO: analysis metadata for directories?
                 # TODO: this is fragile - consider using DAG logic here
-                dir_sc = DerivedContent(
-                    codebase_id=codebase_id,
-                    relative_path=directory,
-                    content_type_id=dir_sc_uuid,
-                    workspace_id=workspace_id,
-                    misc_metadata={},
+                dir_node = NodeRow(
                     version_id=version_id,
+                    relative_path=directory,
+                    kind="directory",
+                    misc_metadata={},
                 )
-                session.add(dir_sc)
+                session.add(dir_node)
                 print(f"Created but not committed source content for: {directory}.")
 
         codebase_sloc = 0
         codebase_size_in_bytes = 0  # TODO:  rename to cumulative_codebase_size_in_bytes
         # Add file source contents
-        # TODO: creation of nodes for files
         for file_path in codebase_stats:
             if (
                 not codebase_stats[file_path]["is_blacklisted"]
                 and not codebase_stats[file_path]["is_ignored"]
             ):
-                file_sc_type = get_source_content_type_uuid("codebase-file")
-                file_sc = DerivedContent(
-                    codebase_id=codebase_id,
-                    relative_path=str(file_path),
-                    content_type_id=file_sc_type,
-                    workspace_id=workspace_id,
-                    misc_metadata=codebase_stats[file_path],
+                node_id = uuid4()
+                file_node = NodeRow(
+                    id=node_id,
                     version_id=version_id,
+                    relative_path=str(file_path),
+                    kind="source-code",
+                    misc_metadata=codebase_stats[file_path],
                 )
-                # TODO: create a populated/unpopulated (decision pending) DerivedContent for the "source-code" kind that
-                # is attached to the node
-                session.add(file_sc)
+                file_dc = DerivedContent(
+                    content_type_id=None,
+                    content_type_slug="source-code",
+                    node_id=node_id,
+                    relative_path=str(file_path), # TODO: this should be removed from the model
+                    content=None,
+                    content_name=None,
+                    misc_metadata=None,
+                    status=None,
+                )
+                session.add(file_node)
+                session.add(file_dc)
                 # Only add to SLOC and size if the file is analyzable
                 if codebase_stats[file_path]["is_analyzable"]:
                     codebase_sloc += codebase_stats[file_path]["sloc"]
                     codebase_size_in_bytes += codebase_stats[file_path]["size"]
 
                     if (
-                        is_new_codebase is True
+                        is_new_primary_asset is True
                         and usage_balance.balance
                         < bytes_to_sloc(codebase_size_in_bytes)
                     ):
@@ -404,18 +372,19 @@ def run_codebase_onboarding(
                 )
     if prior_version_name:
         print(
-            f"Codebase onboarding complete for codebase: {codebase_name} (cb id: {codebase_id}). "
+            f"Codebase onboarding complete for codebase: {codebase_name} (cb id: {primary_asset_id}). "
             f"Version ID: {version_id}. "
             f"Prior version commit sha: {prior_version_name}."
         )
     else:
         print(
-            f"Codebase onboarding complete for codebase: {codebase_name} (cb id: {codebase_id}). "
+            f"Codebase onboarding complete for codebase: {codebase_name} (cb id: {primary_asset_id}). "
             f"Version ID: {version_id}."
         )
+        # TODO: do this inside the same transaction as creating the primary asset
         session_meta = UsageSessionMetadata(
-            content_type="codebase",
-            content_id=str(codebase_id),
+            content_type="codebase", # TODO enum
+            content_id=str(primary_asset_id),
             content_name=codebase_name,
             version_id=str(version_id),
         )
@@ -426,12 +395,12 @@ def run_codebase_onboarding(
                 session_id=llm_session.session_id,
                 organization_id=org_id,
                 user_id=creator_id,
-                event_source="codebase_onboarding",
+                event_source="codebase_onboarding", # TODO make enum
                 bytes_in=-codebase_size_in_bytes,
                 bytes_out=0,
                 tokens_in=0,
                 tokens_out=0,
-                timestamp=datetime.now(),
+                timestamp=datetime.now(), #TODO: enforce timezone aware datetime objects, always
                 event_type=UsageEventType.ONBOARDING_USAGE_DEBIT,
                 event_metadata=UsageEventMetadata(
                     model="None",

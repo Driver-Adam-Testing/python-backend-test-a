@@ -20,6 +20,7 @@ from database.models_v1 import (
     Enum_Derived_Content_Status,
     Workspace,
 )
+from database.models_v2 import VersionRow
 from gitignore_parser import parse_gitignore
 from sqlmodel import Session, select
 
@@ -76,33 +77,14 @@ def get_codebase_content_record_status_for(
 
 
 def set_codebase_status(
-    codebase_id: UUID, version_id: UUID, status: Enum_Derived_Content_Status
+    version_id: UUID, status: str
 ) -> None:
     from database.db import engine
-    from sqlmodel import Session, select
 
     with Session(engine) as session, session.begin():
-        codebase = session.get(Codebase, codebase_id)
-        if codebase:
-            codebase.status = Enum_Codebase_Status.processing_complete
-            session.add(codebase)
-        else:
-            raise Exception(f"Codebase with ID: {codebase_id} not found.")
-
-        cb_sc_uuid = get_source_content_type_uuid("codebase")
-        sel_statement = select(DerivedContent).where(
-            DerivedContent.codebase_id == codebase_id,
-            DerivedContent.content_type_id == cb_sc_uuid,
-            DerivedContent.version_id == version_id,
-        )
-        codebase_dc = session.exec(sel_statement).first()
-        if codebase_dc:
-            codebase_dc.status = status
-            session.add(codebase_dc)
-        else:
-            raise Exception(
-                f"Codebase Content Record for (codebase id {codebase_id}, version id {version_id}) not found."
-            )
+        version = session.get(VersionRow, version_id)
+        version.status = status
+        session.add(version)
 
 
 @cache

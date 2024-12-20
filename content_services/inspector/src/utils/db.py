@@ -11,6 +11,7 @@ from database.models_v1 import (
     InspectorRun,
     Workspace,
 )
+from database.models_v2 import NodeRow, VersionRow
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 
@@ -23,13 +24,26 @@ async def get_codebase_by_id(codebase_id: uuid.UUID) -> Codebase:
         return (await session.exec(statement)).one()
 
 
-async def get_version_by_id(version_id: uuid.UUID) -> InspectionVersion:
+async def get_version_by_id(version_id: uuid.UUID) -> VersionRow:
     from database.db import async_engine
     from sqlmodel import select
 
     async with AsyncSession(async_engine) as session:
-        statement = select(InspectionVersion).where(InspectionVersion.id == version_id)
+        statement = select(VersionRow).where(VersionRow.id == version_id)
         return (await session.exec(statement)).one()
+
+async def get_prev_version(version_id: uuid.UUID) -> None|VersionRow:
+    from database.db import async_engine
+    from sqlmodel import select
+
+    async with AsyncSession(async_engine) as session:
+        stmt = select(VersionRow).where(VersionRow.id == version_id)
+        version = (await session.exec(stmt)).one()
+        primary_asset = version.primary_asset
+
+        stmt = select(VersionRow).where(VersionRow.primary_asset_id == primary_asset.id).where(VersionRow.created_at < version.created_at).order_by(VersionRow.created_at.desc()).limit(1)
+        previous_version = (await session.exec(stmt)).first()
+        return previous_version
 
 
 async def get_workspace_by_id(workspace_id: uuid.UUID) -> Workspace:
@@ -45,7 +59,7 @@ async def create_inspector_run(version_id: uuid.UUID) -> uuid.UUID:
     from database.db import async_engine
 
     async with AsyncSession(async_engine) as session:
-        inspector_run = InspectorRun(inspection_version_id=version_id)
+        inspector_run = InspectorRun(inspection_version_id=version_id) # TODO this fk name will probably be version_id once updated
         session.add(inspector_run)
         await session.commit()
         await session.refresh(inspector_run)
@@ -129,7 +143,7 @@ async def get_latest_run_from_version_id(version_id: uuid.UUID) -> uuid.UUID | N
     async with AsyncSession(async_engine) as session:
         statement = (
             select(InspectorRun)
-            .where(InspectorRun.inspection_version_id == version_id)
+            .where(InspectorRun.inspection_version_id == version_id) # TODO this fk name will probably be version_id once updated
             .order_by(InspectorRun.created_at.desc())
         )
         result = (await session.exec(statement)).first()
@@ -143,8 +157,8 @@ async def get_latest_run_from_version_id(version_id: uuid.UUID) -> uuid.UUID | N
 
 # TODO this actually would get source and derived content if the incoming types weren't correct
 # TODO : get analyable nodes by version_id
-async def get_analyzable_source_contents_by_version_id(
-    version_id: uuid.UUID, content_types: set[SourceContentTypeMap]
+async def get_analyzable_nodes_by_version_id(
+    version_id: uuid.UUID, content_types: set[str]
 ) -> list[DerivedContent]:
     from database.db import async_engine
     from sqlmodel import select
@@ -153,43 +167,47 @@ async def get_analyzable_source_contents_by_version_id(
     # down to what has been configured.
     async with AsyncSession(async_engine) as session:
         statement = (
-            select(DerivedContent)
-            .join(
-                DerivedContentType,
-                DerivedContent.content_type_id == DerivedContentType.id,
-            )
+            select(NodeRow)
             .where(
-                DerivedContentType.type_name.in_([ct.value for ct in content_types]),
-                DerivedContent.version_id == version_id,
-                # SourceContent.misc_metadata.op("->>")("is_analyzable") == 'true'
+                NodeRow.version_id == version_id,
+                NodeRow.kind.in_(content_types),
             )
         )
         results = await session.exec(statement)
 
-    file_content_type_id = await get_source_content_type_uuid(SourceContentTypeMap.FILE)
-
     res_list = []
     for res in results.all():
-        if (
-            res.content_type_id == file_content_type_id
-            and res.misc_metadata["is_analyzable"] is True
-        ) or res.content_type_id != file_content_type_id:
+        is_analyzable_file = res.kind == "file" and res.misc_metadata["is_analyzable"] is True
+        if is_analyzable_file or res.kind == "directory":
             res_list.append(res)
 
     return res_list
 
 
+async def get_source_code_derived_content(
+    node_id: uuid.UUID
+) -> DerivedContent:
+    from database.db import async_engine
+    from sqlmodel import select
+
+    async with AsyncSession(async_engine) as session:
+        statement = select(DerivedContent).where(
+            DerivedContent.node_id == node_id,
+            DerivedContent.content_type_slug == "source-code"
+        )
+        return (await session.exec(statement)).one()
+
 # TODO may need to change
-def download_source_content_file(
+def download_source_file(
     s3_client: any,
     bucket_name: str,
-    codebase_id: str,
+    primary_asset_id: str,
     version_id: str,
-    source_content_rel_path: str,
+    node_rel_path: str,
     download_root: Path,
 ) -> Path:
-    s3_key = f"{codebase_id}/version/{version_id}/source/{source_content_rel_path}"
-    local_download_path = download_root / source_content_rel_path
+    s3_key = f"{primary_asset_id}/version/{version_id}/source/{node_rel_path}"
+    local_download_path = download_root / node_rel_path
     local_download_path.parent.mkdir(parents=True, exist_ok=True)
 
     s3_client.download_file(bucket_name, s3_key, str(local_download_path))

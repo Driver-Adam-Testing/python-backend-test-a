@@ -56,7 +56,7 @@ def trigger_onboarding(
         archive_name,
         trigger_body.org_id,
         trigger_body.creator_id,
-        UUID(trigger_body.workspace_id),
+        # UUID(trigger_body.workspace_id),
         trigger_body.provider,
         trigger_body.version,
     )

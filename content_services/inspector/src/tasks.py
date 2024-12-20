@@ -21,6 +21,7 @@ from utils.db import (
     DerivedContentTypeMap,
     get_derived_content_type_uuid,
     get_rel_path_workspace_id_codebase_id_from_source_content_id,
+    get_source_code_derived_content, 
 )
 from utils.task import Task, TaskResult, TaskResultKind
 
@@ -40,17 +41,15 @@ class FolderTechDocTask(Task):
     def __init__(
         self,
         node: LiteNode,
-        # version_id: uuid.UUID, #TODO: don't need this since it's on the node
         task_name: str,
         child_docs_tasks: tuple[TechDocsTask],
         codebase_name: str,
-        source_content_id: uuid.UUID,  # TODO: this needs to be node_id
+        db_node_id: uuid.UUID,  # TODO: this needs to be node_id
         load_persisted_results: bool,
     ) -> None:
         self.child_docs_tasks = child_docs_tasks
         self.codebase_name = codebase_name
-        self.source_content_id = source_content_id
-        # self.version_id = version_id
+        self.db_node_id = db_node_id
         super().__init__(
             task_name=task_name,
             node=node,
@@ -87,75 +86,46 @@ class FolderTechDocTask(Task):
         docs = task_result.result["docs"]
 
         async with database_sem:
-            # TODO: content_type is now just a string, inserted as content_type_kind on DerivedContent
-            short_single_sentence_dc_id = await get_derived_content_type_uuid(
-                DerivedContentTypeMap.SHORT_SENTENCE_DESCRIPTION
-            )
-            short_single_paragraph_dc_id = await get_derived_content_type_uuid(
-                DerivedContentTypeMap.SHORT_PARAGRAPH_DESCRIPTION
-            )
-            long_descrip_dc_id = await get_derived_content_type_uuid(
-                DerivedContentTypeMap.LONG_DESCRIPTION
-            )
-
             # Short Single Sentence
-            # TODO: DerivedContent now just has node_id, no source_content_id, workspace_id, codebase_id
-            # TODO: get rid of status, will just be on the version now
             short_sent_dc = DerivedContent(
-                content_type_id=short_single_sentence_dc_id,
-                source_content_id=self.source_content_id,
-                workspace_id=workspace_id,
-                codebase_id=codebase_id,
+                content_type_id=None,
+                content_type_slug="short_sentence_description",
+                node_id=self.db_node_id,
                 relative_path=str(self.node.root_rel_path),
                 content=docs["short"]["single_sentence"],
                 misc_metadata=None,
-                status=Enum_Derived_Content_Status.generation_complete,
-                order=0,
-                version_id=self.version_id,
             )
             # Short Single Paragraph
             short_para_dc = DerivedContent(
-                content_type_id=short_single_paragraph_dc_id,
-                source_content_id=self.source_content_id,
-                workspace_id=workspace_id,
-                codebase_id=codebase_id,
+                content_type_id=None,
+                content_type_slug="short_paragraph_description",
+                node_id=self.db_node_id,
                 relative_path=str(self.node.root_rel_path),
                 content=docs["short"]["single_paragraph"],
                 misc_metadata=None,
-                status=Enum_Derived_Content_Status.generation_complete,
-                order=0,
-                version_id=self.version_id,
             )
             # Long File Description
             long_desc_dc = DerivedContent(
-                content_type_id=long_descrip_dc_id,
-                source_content_id=self.source_content_id,
-                workspace_id=workspace_id,
-                codebase_id=codebase_id,
+                content_type_id=None,
+                content_type_slug="long_description",
+                node_id=self.db_node_id,
                 relative_path=str(self.node.root_rel_path),
                 content=docs["long"],
                 misc_metadata=None,
-                status=Enum_Derived_Content_Status.generation_complete,
-                order=0,
-                version_id=self.version_id,
             )
 
             async with AsyncSession(async_engine) as session:
-                # TODO: query against node_id now with the set of types
-                dc_query = select(DerivedContent).where(
-                    DerivedContent.source_content_id == self.source_content_id,
-                    DerivedContent.content_type_id.in_(
+                dc_delete_query = delete(DerivedContent).where(
+                    DerivedContent.node_id == self.db_node_id,
+                    DerivedContent.content_type_slug.in_(
                         [
-                            short_single_paragraph_dc_id,
-                            short_single_sentence_dc_id,
-                            long_descrip_dc_id,
+                            "short_sentence_description",
+                            "short_paragraph_description",
+                            "long_description",
                         ]
                     ),
                 )
-                result = await session.exec(dc_query)
-                dc_rows = result.all()
-                for dc_row in dc_rows:
-                    await session.delete(dc_row)
+                await session.exec(dc_delete_query)
                 await session.commit()
 
                 dc_records = [short_sent_dc, short_para_dc, long_desc_dc]
@@ -179,17 +149,15 @@ class FileTechDocTask(Task):
     def __init__(
         self,
         codebase_name: str,
-        version_id: uuid.UUID,
         source_code: str,
         node: LiteNode,
         task_name: str,
-        source_content_id: uuid.UUID,
+        db_node_id: uuid.UUID,
         load_persisted_results: bool,
     ) -> None:
         self.codebase_name = codebase_name
         self.source_code = source_code
-        self.source_content_id = source_content_id
-        self.version_id = version_id
+        self.db_node_id = db_node_id
         super().__init__(
             task_name=task_name,
             node=node,
@@ -221,97 +189,61 @@ class FileTechDocTask(Task):
 
         docs = task_result.result["docs"]
         async with database_sem:
-            # TODO: content_type is now just a string, inserted as content_type_kind on DerivedContent
-            short_single_sentence_dc_id = await get_derived_content_type_uuid(
-                DerivedContentTypeMap.SHORT_SENTENCE_DESCRIPTION
-            )
-            short_single_paragraph_dc_id = await get_derived_content_type_uuid(
-                DerivedContentTypeMap.SHORT_PARAGRAPH_DESCRIPTION
-            )
-            long_descrip_dc_id = await get_derived_content_type_uuid(
-                DerivedContentTypeMap.LONG_DESCRIPTION
-            )
-            chunk_dc_id = await get_derived_content_type_uuid(
-                DerivedContentTypeMap.CHUNK_DESCRIPTIONS
-            )
-
-            # TODO: DerivedContent now just has node_id, no source_content_id, workspace_id, codebase_id
-            # TODO: get rid of status, will just be on the version now
             # Short Single Sentence
             short_sent_dc = DerivedContent(
-                content_type_id=short_single_sentence_dc_id,
-                source_content_id=self.source_content_id,
-                workspace_id=workspace_id,
-                codebase_id=codebase_id,
+                content_type_id=None,
+                content_type_slug="short_sentence_description",
+                node_id=self.db_node_id,
                 relative_path=str(self.node.root_rel_path),
                 content=docs["short"]["single_sentence"],
                 misc_metadata=None,
-                status=Enum_Derived_Content_Status.generation_complete,
-                order=0,
-                version_id=self.version_id,
             )
             # Short Single Paragraph
             short_para_dc = DerivedContent(
-                content_type_id=short_single_paragraph_dc_id,
-                source_content_id=self.source_content_id,
-                workspace_id=workspace_id,
-                codebase_id=codebase_id,
+                content_type_id=None,
+                content_type_slug="short_paragraph_description",
+                node_id=self.db_node_id,
                 relative_path=str(self.node.root_rel_path),
                 content=docs["short"]["single_paragraph"],
                 misc_metadata=None,
-                status=Enum_Derived_Content_Status.generation_complete,
-                order=0,
-                version_id=self.version_id,
             )
             # Long File Description
             long_desc_dc = DerivedContent(
-                content_type_id=long_descrip_dc_id,
-                source_content_id=self.source_content_id,
-                workspace_id=workspace_id,
-                codebase_id=codebase_id,
+                content_type_id=None,
+                content_type_slug="long_description",
+                node_id=self.db_node_id,
                 relative_path=str(self.node.root_rel_path),
                 content=docs["long"],
                 misc_metadata=None,
-                status=Enum_Derived_Content_Status.generation_complete,
-                order=0,
-                version_id=self.version_id,
             )
             # Chunk Descriptions
             chunks_dc = []
             if len(docs["chunk_descriptions"]) > 1:
-                for chunk in docs["chunk_descriptions"]:
+                for i, chunk in enumerate(docs["chunk_descriptions"]):
                     chunk_dc = DerivedContent(
-                        content_type_id=chunk_dc_id,
-                        source_content_id=self.source_content_id,
-                        workspace_id=workspace_id,
-                        codebase_id=codebase_id,
+                        content_type_id=None,
+                        content_type_slug="chunk_description",
+                        node_id=self.db_node_id,
                         relative_path=str(self.node.root_rel_path),
                         content=chunk,
                         misc_metadata=None,
-                        status=Enum_Derived_Content_Status.generation_complete,
-                        order=0,
-                        version_id=self.version_id,
+                        order=i,
                     )
                     chunks_dc.append(chunk_dc)
 
             async with AsyncSession(async_engine) as session:
-                # TODO: query against node_id now with the set of types
-
-                dc_query = select(DerivedContent).where(
-                    DerivedContent.source_content_id == self.source_content_id,
-                    DerivedContent.content_type_id.in_(
+                dc_delete_query = delete(DerivedContent).where(
+                    DerivedContent.node_id == self.db_node_id,
+                    DerivedContent.content_type_slug.in_(
                         [
-                            chunk_dc_id,
-                            short_single_paragraph_dc_id,
-                            short_single_sentence_dc_id,
-                            long_descrip_dc_id,
+                            "chunk_description",
+                            "short_sentence_description",
+                            "short_paragraph_description",
+                            "long_description",
                         ]
                     ),
                 )
-                result = await session.exec(dc_query)
-                dc_rows = result.all()
-                for dc_row in dc_rows:
-                    await session.delete(dc_row)
+                await session.exec(dc_delete_query)
                 await session.commit()
 
                 dc_records = [short_sent_dc, short_para_dc, long_desc_dc]
@@ -325,7 +257,7 @@ class FileTechDocTask(Task):
                     content_ids.append(record.id)
                 content_ids = [
                     str(cid)
-                    for cid in content_ids  # TODO no longer needed?
+                    for cid in content_ids
                 ]  # Make json serializable for result writer by converting to string... TODO
         return {"content_ids": content_ids}
 
@@ -337,17 +269,15 @@ class SymbolsTask(Task):
     def __init__(
         self,
         task_name: str,
-        version_id: uuid.UUID,
         node: LiteNode,
         source_code: str,
         tech_docs_task: FileTechDocTask,
-        source_content_id: uuid.UUID,
+        db_node_id: uuid.UUID,
         load_persisted_results: bool,
     ) -> None:
         self.source_code = source_code
         self.tech_docs_task = tech_docs_task
-        self.source_content_id = source_content_id
-        self.version_id = version_id
+        self.db_node_id = db_node_id
         super().__init__(
             task_name=task_name,
             node=node,
@@ -387,39 +317,26 @@ class SymbolsTask(Task):
         symbols = task_result.result["symbols"]
 
         async with database_sem:
-            # TODO: content_type is now just a string, inserted as content_type_kind on DerivedContent
-            symbol_derived_content_id = await get_derived_content_type_uuid(
-                DerivedContentTypeMap.SYMBOL
-            )
-
             symbol_dcs = []
             for idx, symbol in enumerate(symbols):
-                # TODO: DerivedContent now just has node_id, no source_content_id, workspace_id, codebase_id
-                # TODO: get rid of status, will just be on the version now
                 symbol_dc = DerivedContent(
-                    content_type_id=symbol_derived_content_id,
-                    source_content_id=self.source_content_id,
-                    workspace_id=workspace_id,
-                    codebase_id=codebase_id,
+                    content_type_id=None,
+                    content_type_slug="symbol",
+                    node_id=self.db_node_id,
                     relative_path=str(self.node.root_rel_path),
                     content=None,
                     misc_metadata=symbol,
-                    status=Enum_Derived_Content_Status.generation_complete,
                     order=idx,
-                    version_id=self.version_id,
                 )
                 symbol_dcs.append(symbol_dc)
 
             async with AsyncSession(async_engine) as session:
-                dc_query = (
-                    select(DerivedContent)
-                    .where(DerivedContent.source_content_id == self.source_content_id)
-                    .where(DerivedContent.content_type_id == symbol_derived_content_id)
+                dc_delete_query = (
+                    delete(DerivedContent)
+                    .where(DerivedContent.node_id == self.db_node_id)
+                    .where(DerivedContent.content_type_slug == "symbol")
                 )
-                result = await session.exec(dc_query)
-                dc_rows = result.all()
-                for dc_row in dc_rows:
-                    await session.delete(dc_row)
+                await session.exec(dc_delete_query)
                 await session.commit()
 
                 for i in range(0, len(symbol_dcs), session_chunk_size):
@@ -443,15 +360,13 @@ class TopLevelDocsTask(Task):
     def __init__(
         self,
         node: LiteNode,
-        version_id: uuid.UUID,
         codebase_name: str,
         ordered_tech_docs_tasks: tuple[TechDocsTask],
-        source_content_id: uuid.UUID,
+        db_node_id: uuid.UUID,
         load_persisted_results: bool,
     ) -> None:
         self.codebase_name = codebase_name
-        self.source_content_id = source_content_id
-        self.version_id = version_id
+        self.db_node_id = db_node_id
         super().__init__(
             task_name=f"TopLevelTechDocsTask of {codebase_name}",
             node=node,
@@ -486,24 +401,24 @@ class TopLevelDocsTask(Task):
         async with database_sem:
             # TODO: add types for top level sentence/paragraph/etc.
             # TODO: content_type is now just a string, inserted as content_type_kind on DerivedContent
-            short_single_sentence_dc_id = await get_derived_content_type_uuid(
-                DerivedContentTypeMap.SHORT_SENTENCE_DESCRIPTION
-            )
-            short_single_paragraph_dc_id = await get_derived_content_type_uuid(
-                DerivedContentTypeMap.SHORT_PARAGRAPH_DESCRIPTION
-            )
-            terse_sentence_dc_id = await get_derived_content_type_uuid(
-                DerivedContentTypeMap.TERSE_SENTENCE_DESCRIPTION
-            )
-            long_descrip_dc_id = await get_derived_content_type_uuid(
-                DerivedContentTypeMap.LONG_DESCRIPTION
-            )
+            # short_single_sentence_dc_id = await get_derived_content_type_uuid(
+            #     DerivedContentTypeMap.SHORT_SENTENCE_DESCRIPTION
+            # )
+            # short_single_paragraph_dc_id = await get_derived_content_type_uuid(
+            #     DerivedContentTypeMap.SHORT_PARAGRAPH_DESCRIPTION
+            # )
+            # terse_sentence_dc_id = await get_derived_content_type_uuid(
+            #     DerivedContentTypeMap.TERSE_SENTENCE_DESCRIPTION
+            # )
+            # long_descrip_dc_id = await get_derived_content_type_uuid(
+            #     DerivedContentTypeMap.LONG_DESCRIPTION
+            # )
 
             top_level_tups = [
-                (short_single_sentence_dc_id, docs["short"]["single_sentence"]),
-                (short_single_paragraph_dc_id, docs["short"]["single_paragraph"]),
-                (terse_sentence_dc_id, docs["short"]["terse_sentence"]),
-                (long_descrip_dc_id, docs["long"]),
+                ("top_level_short_sentence", docs["short"]["single_sentence"]),
+                ("top_level_short_paragraph", docs["short"]["single_paragraph"]),
+                ("top_level_terse_sentence", docs["short"]["terse_sentence"]),
+                ("top_level_long_description", docs["long"]),
             ]
 
             (
@@ -511,23 +426,18 @@ class TopLevelDocsTask(Task):
                 workspace_id,
                 codebase_id,
             ) = await get_rel_path_workspace_id_codebase_id_from_source_content_id(
-                self.source_content_id
+                self.db_node_id
             )
 
             dc_contents = []
-            for dc_type_id, dc_docs in top_level_tups:
-                # TODO: DerivedContent now just has node_id, no source_content_id, workspace_id, codebase_id
+            for dc_type_slug, dc_docs in top_level_tups:
                 dc = DerivedContent(
-                    content_type_id=dc_type_id,
-                    source_content_id=self.source_content_id,
-                    workspace_id=workspace_id,
-                    codebase_id=codebase_id,
-                    relative_path=relative_path,
+                    content_type_id=None,
+                    content_type_slug=dc_type_slug,
+                    node_id=self.db_node_id,
+                    relative_path=str(self.node.root_rel_path),
                     content=dc_docs,
                     misc_metadata=None,
-                    status=Enum_Derived_Content_Status.generation_complete,
-                    order=0,
-                    version_id=self.version_id,
                 )
                 dc_contents.append(dc)
 
@@ -535,16 +445,13 @@ class TopLevelDocsTask(Task):
             from sqlmodel.ext.asyncio.session import AsyncSession
 
             async with AsyncSession(async_engine) as session:
-                dc_query = select(DerivedContent).where(
-                    DerivedContent.source_content_id == self.source_content_id,
+                dc_delete_query = delete(DerivedContent).where(
+                    DerivedContent.node_id == self.db_node_id,
                     DerivedContent.content_type_id.in_(
-                        [dc_id for dc_id, _ in top_level_tups]
+                        [dc_slug for dc_slug, _ in top_level_tups]
                     ),
                 )
-                result = await session.exec(dc_query)
-                dc_rows = result.all()
-                for dc_row in dc_rows:
-                    await session.delete(dc_row)
+                await session.exec(dc_delete_query)
                 await session.commit()
 
                 session.add_all(dc_contents)
@@ -570,16 +477,20 @@ class EmbeddingTask(Task):
         task_name: str,
         load_persisted_results: bool,
         source_code: str | None = None,
-        source_content_id: uuid.UUID | None = None,
+        db_node_id: uuid.UUID | None = None,
         dependent_tasks: list[Task] | None = None,
     ) -> None:
-        if source_code and not all([source_code, source_content_id]):
+        if source_code and not all([source_code, db_node_id]):
             raise ValueError(
                 "If source_code is provided, source_content_id must also be provided"
             )
 
         self.source_code = source_code
-        self.source_code_sc_id = source_content_id
+        if db_node_id:
+            source_code_derived_content = get_source_code_derived_content(db_node_id)
+            self.source_code_dc_id = source_code_derived_content.id
+        else:
+            self.source_code_dc_id = None
 
         dependent_tasks = dependent_tasks or []
         deduped_tasks = tuple(set(dependent_tasks))
@@ -622,15 +533,10 @@ class EmbeddingTask(Task):
                 # TODO: modify for (content_type) kind
                 contents_query = (
                     select(DerivedContent)
-                    .join(
-                        DerivedContentType,
-                        DerivedContent.content_type_id == DerivedContentType.id,
-                    )
                     .where(
                         DerivedContent.id.in_(content_ids_to_embed),
-                        DerivedContentType.type_name.in_(type_names_to_embed),
+                        DerivedContent.content_type_slug.in_(type_names_to_embed),
                     )
-                    .options(selectinload(DerivedContent.content_type))
                 )
                 print(f"Querying '{task.task_name}' content to embed")
                 result = await session.exec(contents_query)
@@ -639,7 +545,7 @@ class EmbeddingTask(Task):
                 if not content_rows:
                     continue
                 body = [
-                    (c.content, c.id, c.content_type.type_name, c.misc_metadata)
+                    (c.content, c.id, c.content_type_slug, c.misc_metadata)
                     for c in content_rows
                 ]
                 contents, ids, type_names, metadata = zip(*body, strict=False)
@@ -673,8 +579,8 @@ class EmbeddingTask(Task):
             # TODO: chunkandembedding needs to point at a piece of content, but we don't store the source code on the database
             sc_chunks = await self.chunk_embed_and_prep_for_db(
                 [self.source_code],
-                [self.source_code_sc_id],
-                ["source-file"],
+                [self.source_code_dc_id],
+                ["source-code"],
                 [{}],
             )
 

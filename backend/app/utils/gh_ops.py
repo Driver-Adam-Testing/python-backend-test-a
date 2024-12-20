@@ -170,7 +170,11 @@ def fetch_default_branch_and_commit(org_name: str, repo: str, access_token: str)
     headers = {"Authorization": f"token {access_token}"}
     repo_url = get_github_repo_url(org_name, repo)
 
-    repo_data = requests.get(repo_url, headers=headers).json()
+    repo = requests.get(repo_url, headers=headers)
+    repo_data = repo.json()
+    logger.info(
+        f"Repo information retrieved from github API (status code {repo.status_code}): {repo_data}"
+    )
     default_branch = repo_data["default_branch"]
 
     branch_url = f"{repo_url}/branches/{default_branch}"

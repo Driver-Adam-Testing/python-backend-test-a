@@ -217,7 +217,7 @@ class DerivedContentType(SQLModel, table=True):  # type: ignore
             nullable=False,
         ),
     )
-    contents: list["DerivedContent"] = Relationship(back_populates="content_type")
+    # contents: list["DerivedContent"] = Relationship(back_populates="content_type")
 
 
 # TODO: DELETE THIS TABLE
@@ -340,9 +340,9 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
     #     back_populates="derived_contents",
     #     sa_relationship_kwargs={"remote_side": "DerivedContent.id"},
     # )
-    derived_contents: list["DerivedContent"] = Relationship(
-        back_populates="source_content"
-    )
+    # derived_contents: list["DerivedContent"] = Relationship(
+    #     back_populates="source_content"
+    # )
     order: int | None = Field(
         sa_column=Column(Integer, nullable=True, server_default=text("0"))
     )
@@ -359,11 +359,11 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
         back_populates="content", cascade_delete=True
     )
 
-    tag_links: list["TagContent"] = Relationship(back_populates="content")
-    tags: list["Tag"] = Relationship(
-        back_populates=None,
-        sa_relationship_kwargs={"secondary": "tags_contents", "viewonly": True},
-    )
+    # tag_links: list["TagContent"] = Relationship(back_populates="content")
+    # tags: list["Tag"] = Relationship(
+    #     back_populates=None,
+    #     sa_relationship_kwargs={"secondary": "tags_contents", "viewonly": True},
+    # )
     # version_id: None | UUID = Field(
     #     foreign_key="v2_version.id", nullable=True, index=True, default=None
     # )
@@ -430,10 +430,10 @@ class Tag(SQLModel, table=True):  # type: ignore
     updated_by: str = Field(
         sa_column=sqlalchemy.Column(sqlalchemy.String(128), nullable=False),
     )
-    content_links: list["TagContent"] = Relationship(
-        back_populates="tag",
-        sa_relationship_kwargs={"foreign_keys": "TagContent.tag_id"},
-    )
+    # content_links: list["TagContent"] = Relationship(
+    #     back_populates="tag",
+    #     sa_relationship_kwargs={"foreign_keys": "TagContent.tag_id"},
+    # )
     primary_assets: list["PrimaryAssetRow"] = Relationship(  # noqa: F821
         back_populates="tags",
         sa_relationship_kwargs={"secondary": "v2_primary_asset_tag"},

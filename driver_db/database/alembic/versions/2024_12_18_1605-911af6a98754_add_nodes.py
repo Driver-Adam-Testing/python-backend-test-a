@@ -9,6 +9,25 @@ Create Date: 2024-12-03 16:05:08.438880
 import sqlalchemy as sa
 import sqlmodel.sql.sqltypes
 from alembic import op
+from database.nodes_data_migration_sql import (
+    CODEBASE_TO_PRIMARY_ASSET_SQL,
+    CODEBASE_TO_VERSION_SQL,
+    DIRECTORIES_TO_NODE_SQL,
+    FILES_TO_NODE_SQL,
+    PAGE_TEMPLATES_TO_NODE_SQL,
+    PAGE_TEMPLATES_TO_PRIMARY_ASSET_SQL,
+    PAGE_TEMPLATES_TO_VERSION_SQL,
+    PAGES_TO_NODE_SQL,
+    PAGES_TO_PRIMARY_ASSET_SQL,
+    PAGES_TO_VERSION_SQL,
+    PDF_TO_NODE_SQL,
+    PDF_TO_PRIMARY_ASSET_SQL,
+    PDF_TO_VERSION_SQL,
+    UPDATE_CONTENT_TYPE_SLUG_SQL,
+    UPDATE_NODE_ID_APPLICATION_NOTE_SQL,
+    UPDATE_NODE_ID_CODEBASE_SQL,
+    UPDATE_NODE_ID_NON_STANDARD_SQL,
+)
 
 # revision identifiers, used by Alembic.
 revision = "911af6a98754"
@@ -35,6 +54,7 @@ def upgrade() -> None:
         sa.Column(
             "primary_asset_type", sqlmodel.sql.sqltypes.AutoString(), nullable=False
         ),
+        sa.Column("repository_id", sqlmodel.sql.sqltypes.AutoString(), nullable=True),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),
@@ -65,6 +85,7 @@ def upgrade() -> None:
         ),
         sa.Column("primary_asset_id", sa.UUID(), nullable=False),
         sa.Column("display_name", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+        sa.Column("status", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),
@@ -109,6 +130,11 @@ def upgrade() -> None:
             sa.DateTime(timezone=True),
             server_default=sa.text("now()"),
             nullable=False,
+        ),
+        sa.Column(
+            "misc_metadata",
+            sa.JSON(),
+            nullable=True,
         ),
         sa.ForeignKeyConstraint(["version_id"], ["v2_version.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
@@ -181,328 +207,66 @@ def upgrade() -> None:
             LEFT JOIN
                 v2_node n ON v.id = n.version_id
                """)
+
+    print("Executing: Update derived_contents with content_type_slug")
+    op.execute(UPDATE_CONTENT_TYPE_SLUG_SQL)
+
     # MIGRATE CODEBASES
 
-    op.execute(
-        """
-        -- CODEBASE -> PRIMARY ASSET
-        --
-        -- PRIMARY_ASSET.ID = EARLIEST CODEBASE ID
-        --
-        INSERT INTO v2_primary_asset (id, display_name, primary_asset_type, organization_id, created_at, updated_at)
-        SELECT DISTINCT ON (c.codebase_name, w.organization_id) c.id, c.codebase_name, 'CODEBASE', w.organization_id, c.created_at, c.updated_at
-        FROM codebases c
-        JOIN workspaces w on w.id = c.workspace_id
-        ORDER BY c.codebase_name, w.organization_id, c.created_at;
-        """
-    )
+    op.execute(CODEBASE_TO_PRIMARY_ASSET_SQL)
 
-    op.execute(
-        """
-        -- CODEBASE -> VERSION
-        --
-        -- VERSION.ID [Grouped by CODEBASE NAME] = CODEBASE ID
-        --
-        INSERT INTO v2_version (id, primary_asset_id, display_name, created_at, updated_at)
-        SELECT c.id, pa.id,
-            '0.0.' || ROW_NUMBER() OVER (PARTITION BY w.organization_id, c.codebase_name ORDER BY c.created_at ASC) - 1,
-            c.created_at, c.updated_at
-        FROM codebases c
-        JOIN workspaces w ON w.id = c.workspace_id
-        JOIN v2_primary_asset pa ON pa.organization_id = w.organization_id
-        WHERE pa.display_name = c.codebase_name;
-        """
-    )
+    op.execute(CODEBASE_TO_VERSION_SQL)
 
     # NOTE: The root node is the lowest level directory, which exists with the same relative path as the codebase currently.
-    # op.execute(
-    #     """
-    #     -- SOURCE CONTENT [Codebase] -> ROOT NODE
-    #     --
-    #     -- NODE.ID = SOURCE CONTENT [Files and Directories].ID
-    #     --
-    #     INSERT INTO v2_node (id, version_id, relative_path, created_at, updated_at)
-    #     SELECT DISTINCT ON (dc.relative_path, v.id) dc.id, v.id, '', dc.created_at, dc.updated_at
-    #     FROM derived_contents dc
-    #     JOIN derived_content_types dc_type ON dc.content_type_id = dc_type.id
-    #     JOIN v2_version v ON v.id = dc.codebase_id
-    #     WHERE dc_type.type_name in ('codebase')
-    #     """
-    # )
-    #
+    # op.execute(DIRECTORIES_TO_NODE_SQL)
 
     print("Executing: SOURCE CONTENT [Directories] -> NODE")
-    op.execute(
-        """
-        -- SOURCE CONTENT [Directories] -> NODE
-        --
-        -- NODE.ID = CONTENT.ID
-        --
-        INSERT INTO v2_node (id, version_id, relative_path, created_at, updated_at)
-        SELECT DISTINCT ON (dc.relative_path, v.id) dc.id, v.id,
-            CASE
-                WHEN RIGHT(dc.relative_path, 1) = '/' THEN dc.relative_path
-                ELSE dc.relative_path || '/'
-            END AS relative_path,
-            dc.created_at, dc.updated_at
-        FROM derived_contents dc
-        JOIN derived_content_types dc_type ON dc.content_type_id = dc_type.id
-        JOIN v2_version v ON v.id = dc.codebase_id
-        WHERE dc_type.type_name = 'codebase-directory'
-        """
-    )
+    op.execute(DIRECTORIES_TO_NODE_SQL)
 
     print("Executing: SOURCE CONTENT [Files] -> NODE")
-    op.execute(
-        """
-        -- SOURCE CONTENT [Files] -> NODE
-        --
-        -- NODE.ID = CONTENT.ID
-        --
-        INSERT INTO v2_node (id, version_id, relative_path, created_at, updated_at)
-        SELECT DISTINCT ON (dc.relative_path, v.id) dc.id, v.id, dc.relative_path, dc.created_at, dc.updated_at
-        FROM derived_contents dc
-        JOIN derived_content_types dc_type ON dc.content_type_id = dc_type.id
-        JOIN v2_version v ON v.id = dc.codebase_id
-        WHERE dc_type.type_name = 'codebase-file'
-        """
-    )
+    op.execute(FILES_TO_NODE_SQL)
 
     # MIGRATE PDFs
 
     print("Executing: PDF -> PRIMARY ASSET")
-    op.execute(
-        """
-        -- PDF -> PRIMARY ASSET
-        --
-        -- PRIMARY_ASSET.ID = EARLIEST SOURCE CONTENT (PDF) ID
-        --
-        INSERT INTO v2_primary_asset (id, display_name, primary_asset_type, organization_id, created_at, updated_at)
-        SELECT DISTINCT ON (dc.relative_path, w.organization_id) dc.id, dc.content_name, 'FILE', w.organization_id, dc.created_at, dc.updated_at
-        FROM derived_contents dc
-        JOIN derived_content_types dct on dc.content_type_id = dct.id
-        JOIN workspaces w on w.id = dc.workspace_id
-        WHERE dct.type_name = 'supplemental-document'
-        AND dc.source_content_id is NULL
-        ORDER BY dc.relative_path, w.organization_id, dc.created_at;
-        """
-    )
+    op.execute(PDF_TO_PRIMARY_ASSET_SQL)
 
     print("Executing: PDF -> VERSION")
-    op.execute(
-        """
-        -- PDF -> VERSION
-        --
-        -- VERSION.ID = SOURCE CONTENT (PDF) ID
-        --
-        INSERT INTO v2_version (id, primary_asset_id, display_name, created_at, updated_at)
-        SELECT dc.id, pa.id,
-            '0.0.' || ROW_NUMBER() OVER (PARTITION BY w.organization_id, dc.content_name ORDER BY dc.created_at ASC) - 1,
-            dc.created_at, dc.updated_at
-        FROM derived_contents dc
-        JOIN workspaces w ON w.id = dc.workspace_id
-        JOIN v2_primary_asset pa ON pa.organization_id = w.organization_id
-        JOIN derived_content_types dct on dct.id = dc.content_type_id
-        WHERE dc.source_content_id IS NULL
-        AND dct.type_name = 'supplemental-document'
-        AND pa.display_name = dc.content_name;
-
-        """
-    )
+    op.execute(PDF_TO_VERSION_SQL)
 
     print("Executing: SOURCE CONTENT [PDF] -> NODE")
-    op.execute(
-        """
-        -- SOURCE CONTENT [PDF] -> NODE
-        --
-        -- NODE.ID = SOURCE CONTENT [PDF].ID
-        --
-        INSERT INTO v2_node (id, version_id, relative_path, created_at, updated_at)
-        SELECT dc.id, v.id, dc.relative_path, dc.created_at, dc.updated_at
-        FROM derived_contents dc
-        JOIN derived_content_types dc_type ON dc.content_type_id = dc_type.id
-        JOIN v2_version v ON v.id = dc.id
-        WHERE dc_type.type_name = 'supplemental-document';
-        """
-    )
+    op.execute(PDF_TO_NODE_SQL)
 
     # MIGRATE PAGES
 
     print("Executing: PAGES -> PRIMARY ASSET")
-    op.execute(
-        """
-        -- PAGES -> PRIMARY ASSET
-        --
-        -- PRIMARY_ASSET.ID = APPLICATION NOTE ID
-        --
-        INSERT INTO v2_primary_asset (id, display_name, primary_asset_type, organization_id, created_at, updated_at)
-        SELECT dc.id,
-            CASE
-                WHEN ROW_NUMBER() OVER (PARTITION BY w.organization_id, dc.content_name ORDER BY dc.created_at) > 1
-                THEN dc.content_name || '-' || (ROW_NUMBER() OVER (PARTITION BY w.organization_id, dc.content_name ORDER BY dc.created_at) - 1)::text
-                ELSE dc.content_name
-            END AS display_name,
-            'PAGE',
-            w.organization_id,
-            dc.created_at,
-            dc.updated_at
-        FROM derived_contents dc
-        JOIN derived_content_types dct on dc.content_type_id = dct.id
-        JOIN workspaces w on w.id = dc.workspace_id
-        WHERE dct.type_name = 'application_note'
-        AND dc.content_name is not NULL;
-        """
-    )
+    op.execute(PAGES_TO_PRIMARY_ASSET_SQL)
 
     print("Executing: PAGES -> VERSION")
-    op.execute(
-        """
-        -- PAGES -> VERSION
-        --
-        -- VERSION.ID = CONTENT (PAGE) ID
-        --
-        INSERT INTO v2_version (id, primary_asset_id, display_name, created_at, updated_at)
-        SELECT dc.id, pa.id,
-            '0.0.0',
-            dc.created_at, dc.updated_at
-        FROM derived_contents dc
-        JOIN workspaces w ON w.id = dc.workspace_id
-        JOIN v2_primary_asset pa ON pa.organization_id = w.organization_id
-        JOIN derived_content_types dct on dct.id = dc.content_type_id
-        WHERE dct.type_name = 'application_note'
-        AND dc.id = pa.id;
-        """
-    )
+    op.execute(PAGES_TO_VERSION_SQL)
 
     print("Executing: SOURCE CONTENT [PAGES] -> NODE")
-    op.execute(
-        """
-        -- SOURCE CONTENT [PAGES] -> NODE
-        --
-        -- NODE.ID = SOURCE CONTENT [PAGES].ID
-        --
-        INSERT INTO v2_node (id, version_id, relative_path, created_at, updated_at)
-        SELECT DISTINCT dc.id, v.id, dc.relative_path, dc.created_at, dc.updated_at
-        FROM derived_contents dc
-        JOIN derived_content_types dc_type ON dc.content_type_id = dc_type.id
-        JOIN v2_version v ON v.id = dc.id
-        where dc_type.type_name = 'application_note'
-        """
-    )
+    op.execute(PAGES_TO_NODE_SQL)
 
     # MIGRATE PAGE TEMPLATES
 
     print("Executing: PAGE TEMPLATES -> PRIMARY ASSET")
-    op.execute(
-        """
-        -- PAGE TEMPLATES -> PRIMARY ASSET
-        --
-        -- PRIMARY_ASSET.ID = TEMPLATE ID
-        --
-        INSERT INTO v2_primary_asset (id, display_name, primary_asset_type, organization_id, created_at, updated_at)
-        SELECT dc.id,
-            CASE
-                WHEN ROW_NUMBER() OVER (PARTITION BY w.organization_id, dc.content_name ORDER BY dc.created_at) > 1
-                THEN dc.content_name || '-' || (ROW_NUMBER() OVER (PARTITION BY w.organization_id, dc.content_name ORDER BY dc.created_at) - 1)::text
-                ELSE dc.content_name
-            END AS display_name,
-            'PAGE_TEMPLATE',
-            w.organization_id,
-            dc.created_at,
-            dc.updated_at
-        FROM derived_contents dc
-        JOIN derived_content_types dct on dc.content_type_id = dct.id
-        JOIN workspaces w on w.id = dc.workspace_id
-        WHERE dct.type_name = 'template'
-        AND dc.content_name is not NULL;
-        """
-    )
+    op.execute(PAGE_TEMPLATES_TO_PRIMARY_ASSET_SQL)
 
     print("Executing: PAGE TEMPLATES -> VERSION")
-    op.execute(
-        """
-        -- PAGE TEMPLATES -> VERSION
-        --
-        -- VERSION.ID = CONTENT (PAGE TEMPLATE) ID
-        --
-        INSERT INTO v2_version (id, primary_asset_id, display_name, created_at, updated_at)
-        SELECT dc.id, pa.id,
-            '0.0.0',
-            dc.created_at, dc.updated_at
-        FROM derived_contents dc
-        JOIN workspaces w ON w.id = dc.workspace_id
-        JOIN v2_primary_asset pa ON pa.organization_id = w.organization_id
-        JOIN derived_content_types dct on dct.id = dc.content_type_id
-        WHERE dct.type_name = 'template'
-        AND dc.id = pa.id;
-        """
-    )
+    op.execute(PAGE_TEMPLATES_TO_VERSION_SQL)
 
     print("Executing: SOURCE CONTENT [PAGE TEMPLATES] -> NODE")
-    op.execute(
-        """
-        -- SOURCE CONTENT [PAGE TEMPLATES] -> NODE
-        --
-        -- NODE.ID = SOURCE CONTENT [PAGE TEMPLATES].ID
-        --
-        INSERT INTO v2_node (id, version_id, relative_path, created_at, updated_at)
-        SELECT DISTINCT dc.id, v.id, dc.relative_path, dc.created_at, dc.updated_at
-        FROM derived_contents dc
-        JOIN derived_content_types dc_type ON dc.content_type_id = dc_type.id
-        JOIN v2_version v ON v.id = dc.id
-        where dc_type.type_name = 'template'
-        """
-    )
-
-    print("Executing: Update derived_contents with content_type_slug")
-    op.execute(
-        """
-        UPDATE derived_contents
-        SET content_type_slug = dc_type.type_name
-        FROM derived_content_types dc_type
-        WHERE derived_contents.content_type_id = dc_type.id;
-        """
-    )
+    op.execute(PAGE_TEMPLATES_TO_NODE_SQL)
 
     print("Executing: Update derived_contents with node_id for non-standard types")
-    op.execute(
-        """
-        UPDATE derived_contents
-        SET node_id = v2_node.id
-        FROM v2_node
-        WHERE content_type_slug NOT IN ('codebase', 'codebase-directory', 'codebase-file', 'application_note', 'supplemental-document')
-        AND v2_node.id = source_content_id
-        AND derived_contents.node_id is NULL;
-        """
-    )
+    op.execute(UPDATE_NODE_ID_NON_STANDARD_SQL)
 
     print("Executing: Update derived_contents with node_id for application_note")
-    op.execute(
-        """
-        UPDATE derived_contents
-        SET node_id = v2_node.id
-        FROM v2_node
-        WHERE v2_node.id = derived_contents.id
-        AND derived_contents.content_type_slug = 'application_note'
-        AND derived_contents.node_id is NULL;
-        """
-    )
+    op.execute(UPDATE_NODE_ID_APPLICATION_NOTE_SQL)
 
     print("Executing: Update derived_contents with node_id for codebase")
-    op.execute(
-        """
-        UPDATE derived_contents
-        SET node_id = n.id
-        FROM v2_node n
-        JOIN v2_version v on n.version_id = v.id
-        JOIN derived_contents sc on sc.content_type_slug = 'codebase'
-        WHERE sc.codebase_id = derived_contents.codebase_id
-        AND v.id = derived_contents.codebase_id
-        AND sc.id = derived_contents.source_content_id
-        AND (n.relative_path = derived_contents.relative_path OR n.relative_path = derived_contents.relative_path || '/')
-        AND derived_contents.node_id is NULL;
-        """
-    )
+    op.execute(UPDATE_NODE_ID_CODEBASE_SQL)
     # ### end Alembic commands ###
 
 

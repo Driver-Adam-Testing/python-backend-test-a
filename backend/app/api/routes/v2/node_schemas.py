@@ -30,6 +30,7 @@ class VersionRead(BaseModel):
     created_at: datetime | None
     updated_at: datetime | None
     root_node: NodeRead | None
+    status: str | None
 
     class Config:
         orm_mode = True

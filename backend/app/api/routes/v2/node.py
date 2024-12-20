@@ -283,7 +283,6 @@ class DerivedContentResponse(BaseModel):
     status: str | None
     created_at: datetime | None
     updated_at: datetime | None
-    tags: list[dict] = []  # Include entire tag objects
     full_node: dict | None = None  # Include full node details
 
     @classmethod
@@ -292,21 +291,19 @@ class DerivedContentResponse(BaseModel):
     ) -> "DerivedContentResponse":
         return cls(
             id=derived_content.id,
-            content_type_id=derived_content.content_type_id,
-            source_content_id=derived_content.source_content_id,
             node_id=derived_content.node_id,
             relative_path=derived_content.relative_path,
             content=derived_content.content,
             content_name=derived_content.content_name,
             misc_metadata=derived_content.misc_metadata,
-            status=derived_content.status.value if derived_content.status else None,
             created_at=derived_content.created_at,
             updated_at=derived_content.updated_at,
             order=derived_content.order,
-            version_id=derived_content.version_id,
+            version_id=derived_content.full_node.version_id,
             tags=[
-                {"id": tag.id, "name": tag.name} for tag in derived_content.tags
+                # {"id": tag.id, "name": tag.name} for tag in derived_content.tags
             ],  # Extract entire tag objects
+            status="generation-complete",  # TODO: populate full_nodes
             full_node={
                 "primary_asset_id": derived_content.full_node.primary_asset_id,
                 "primary_asset_display_name": derived_content.full_node.primary_asset_display_name,

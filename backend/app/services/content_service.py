@@ -9,10 +9,8 @@ from database.models_v1 import (
     ChunkAndEmbedding,
     Codebase,
     DerivedContent,
-    DerivedContentType,
     DocumentSource,
     Enum_Derived_Content_Status,
-    InspectionVersion,
     Tag,
     TagContent,
     Workspace,
@@ -26,9 +24,6 @@ from sqlmodel import Session, asc, desc, func, or_, select, text
 
 from app.core.logger import logger
 from app.repositories.base_repository import BaseRepository
-from app.repositories.derived_content_type_repository import (
-    DerivedContentTypeRepository,
-)
 from app.repositories.workspace_repository import WorkspaceRepository
 from app.schemas.content_schema import (
     BatchContentSourceAssociationResponse,
@@ -60,7 +55,6 @@ class ContentService:
         self.session = session
         self.content_repository = BaseRepository(session, DerivedContent)
         self.workspace_repository = WorkspaceRepository(session)
-        self.derived_content_type_repository = DerivedContentTypeRepository(session)
         self.document_source_repository = BaseRepository(session, DocumentSource)
         self.tag_content_repository = BaseRepository(session, TagContent)
 
@@ -194,15 +188,6 @@ class ContentService:
                 detail="Default workspace not found",
             )
 
-        content_type = self.derived_content_type_repository.get_by_type_name(
-            request.content_type
-        )
-
-        if not content_type:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Content type not found"
-            )
-
         content_name = (
             "Untitled"
             if request.content_type == DerivedContentTypeNames.APPLICATION_NOTE.value
@@ -211,7 +196,7 @@ class ContentService:
 
         new_content = self.content_repository.create(
             DerivedContent(
-                content_type_id=content_type.id,
+                content_type_slug=request.content_type,
                 workspace_id=default_workspace.id,
                 relative_path="",
                 content="",
@@ -244,14 +229,10 @@ class ContentService:
                 ListContentResult(
                     id=derived_content.id,
                     organization_id=organization_id,
-                    content_type_id=derived_content.content_type_id,
-                    content_type_name=derived_content.content_type.type_name
-                    if derived_content.content_type
-                    else None,
-                    content_name=get_content_name(derived_content),
+                    content_name=derived_content.content_type_slug,
                     workspace_id=None,
                     workspace_name=None,
-                    source_content_id=derived_content.source_content_id,
+                    source_content_id=None,
                     codebase_id=None,
                     codebase_name=None,
                     relative_path=derived_content.relative_path,
@@ -260,14 +241,12 @@ class ContentService:
                     status=derived_content.status,
                     created_at=derived_content.created_at,
                     updated_at=derived_content.updated_at,
-                    source_content=derived_content.source_content,
+                    source_content=None,
                     order=derived_content.order,
-                    tags=derived_content.tags,
+                    tags=[],
                     source_links=derived_content.source_links,
-                    version_id=derived_content.version_id,
-                    version=derived_content.inspection_version.version
-                    if derived_content.inspection_version
-                    else None,
+                    version_id=None,
+                    version=None,
                 )
             )
         logger.info(
@@ -294,10 +273,6 @@ class ContentService:
 
         query = query.options(
             selectinload(DerivedContent.node),
-            selectinload(DerivedContent.content_type),
-            selectinload(DerivedContent.source_content),
-            selectinload(DerivedContent.tags),
-            selectinload(DerivedContent.inspection_version),
         )
 
         results = self.session.exec(
@@ -396,6 +371,7 @@ class ContentService:
             statement = statement.where(DerivedContent.status == search_input.status)
 
         if search_input.content_type_id:
+            logger.warning("Filtering by content_type_id is deprecated.")
             statement = statement.where(
                 DerivedContent.content_type_id.in_(search_input.content_type_id)
             )
@@ -409,47 +385,42 @@ class ContentService:
             logger.info(
                 f"Filtering by content_type_name: {search_input.content_type_name}"
             )
-            statement = statement.join(
-                DerivedContentType,
-                DerivedContent.content_type_id == DerivedContentType.id,
-            )
             statement = statement.where(
-                DerivedContentType.type_name.in_(search_input.content_type_name)
+                DerivedContent.content_type_slug.in_(search_input.content_type_name)
             )
 
         if search_input.latest_version_only:
-            # COMMENT: This gets all InspectionVersion IDs that are NOT a previous_version.
-            # Hence, this is a list of all the most recent version Ids.
-            most_recent_versions_subquery = (
-                select(InspectionVersion.id)
-                .where(
-                    ~InspectionVersion.id.in_(
-                        select(InspectionVersion.previous_version_id).where(
-                            InspectionVersion.previous_version_id.isnot(None)
-                        )
-                    )
-                )
-                .subquery()
-            )
-            statement = statement.where(
-                or_(
-                    DerivedContent.version_id.is_(None),
-                    DerivedContent.version_id.in_(most_recent_versions_subquery),
-                )
-            )
+            # subquery = (
+            #     select(VersionRow.primary_asset_id, func.max(VersionRow.updated_at).label('max_updated_at'))
+            #     .group_by(VersionRow.primary_asset_id)
+            #     .subquery()
+            # )
+            # latest_versions = (
+            #     select(VersionRow.id)
+            #     .join(subquery, (VersionRow.primary_asset_id == subquery.c.primary_asset_id) & (VersionRow.updated_at == subquery.c.max_updated_at))
+            #     .subquery()
+            # )
+            # statement = statement.where(VersionRow.id.in_(latest_versions))
+            pass
 
-        if search_input.tags or search_input.tag_ids:
+        if (search_input.tags and any(search_input.tags)) or (
+            search_input.tag_ids and any(search_input.tag_ids)
+        ):
             # For tags filtering we need to join Tag if not done.
             statement = statement.join(
                 TagContent, TagContent.content_id == DerivedContent.id, isouter=True
             )
             statement = statement.join(Tag, Tag.id == TagContent.tag_id, isouter=True)
-            if search_input.tags:
-                tag_clauses = [Tag.name.contains(tag) for tag in search_input.tags]
+            if search_input.tags and any(search_input.tags):
+                tag_clauses = [
+                    Tag.name.contains(tag) for tag in search_input.tags if tag
+                ]
                 statement = statement.where(or_(*tag_clauses))
 
-            if search_input.tag_ids:
-                tag_id_clauses = [Tag.id == tag_id for tag_id in search_input.tag_ids]
+            if search_input.tag_ids and any(search_input.tag_ids):
+                tag_id_clauses = [
+                    Tag.id == tag_id for tag_id in search_input.tag_ids if tag_id
+                ]
                 statement = statement.where(or_(*tag_id_clauses))
 
         return statement
@@ -459,7 +430,7 @@ class ContentService:
     ) -> ListContentTypesResults:
         logger.info(f"Getting list of content types with input {lct_inputs}")
         try:
-            results = self.derived_content_type_repository.get_all(
+            results = self.content_repository.get_all(
                 lct_inputs.limit,
                 lct_inputs.offset,
                 lct_inputs.sort_by,
@@ -495,26 +466,6 @@ class ContentService:
                 select(Codebase).where(Codebase.id == codebase_id)
             ).first()
 
-        # codebase_file_id = self.derived_content_type_repository.get_by_type_name(
-        #     "codebase-file"
-        # ).id
-        # codebase_directory_id = self.derived_content_type_repository.get_by_type_name(
-        #     "codebase-directory"
-        # ).id
-
-        # # Apply the codebase status to the file and folder DC statuses. This is required for the frontend
-        # # to know if a source can be used for search/agents.
-        # for source in sources:
-        #     if source.codebase_id and source.content_type_id in {
-        #         codebase_file_id,
-        #         codebase_directory_id,
-        #     }:
-        #         codebase = get_codebase(source.codebase_id)
-        #         derived_content_status: Enum_Derived_Content_Status = (
-        #             codebase.status.into_dc_status()
-        #         )
-        #         source.status = derived_content_status
-
         # If the source is associated with a codebase, get the codebase status and propagate to children
 
         logger.info(f"Content sources resolved for content {content_id}")
@@ -522,8 +473,7 @@ class ContentService:
             ListContentResult(
                 id=source.id,
                 organization_id=source.workspace.organization_id,
-                content_type_id=source.content_type_id,
-                content_type_name=source.content_type.type_name,
+                content_type_slug=source.content_type_slug,
                 content_name=get_content_name(source),
                 workspace_id=source.workspace_id,
                 workspace_name=source.workspace.display_name,
@@ -583,9 +533,8 @@ class ContentService:
 
         parent = self.session.exec(
             select(DerivedContent)
-            .join(DerivedContentType)
             .where(DerivedContent.codebase_id == content.codebase_id)
-            .where(DerivedContentType.type_name == "codebase")
+            .where(DerivedContent.content_type_slug == "codebase")
         ).first()
 
         return parent
@@ -612,9 +561,8 @@ class ContentService:
             )
 
         if (
-            content.content_type.type_name
-            != DerivedContentTypeNames.APPLICATION_NOTE.value
-            and content.content_type.type_name != DerivedContentTypeNames.TEMPLATE.value
+            content.content_type_slug != DerivedContentTypeNames.APPLICATION_NOTE.value
+            and content.content_type_slug != DerivedContentTypeNames.TEMPLATE.value
         ):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid content type"
@@ -640,10 +588,10 @@ class ContentService:
             [
                 Workspace.organization_id == organization_id,
                 DerivedContent.id == content_id,
-                DerivedContentType.type_name
+                DerivedContent.content_type_slug
                 == DerivedContentTypeNames.SUPPLEMENTAL_DOCUMENT.value,
             ],
-            [Workspace, DerivedContentType],
+            [Workspace],
         )
 
         if not content or content.workspace.organization_id != organization_id:
@@ -698,12 +646,12 @@ class ContentService:
             DerivedContentTypeNames.CODEBASE.value,
         }
 
-        if content.content_type.type_name not in valid_content_types:
+        if content.content_type_slug not in valid_content_types:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid content type"
             )
 
-        if content.content_type.type_name == DerivedContentTypeNames.CODEBASE.value:
+        if content.content_type_slug == DerivedContentTypeNames.CODEBASE.value:
             records_to_delete_in_s3 = delete_codebase_and_related_entities(
                 self.session, self, content_id
             )
@@ -733,7 +681,7 @@ class ContentService:
                 logger.exception(f"Error deleting content {content_id}")
                 raise HTTPException(status_code=400, detail="Error deleting content")
 
-            if content.content_type.type_name == "supplemental-document":
+            if content.content_type_slug == "supplemental-document":
                 # delete remote content
                 delete_from_remote_storage(content, organization_id)
 
@@ -883,8 +831,7 @@ def delete_codebase_and_related_entities(
         records_to_delete_in_s3.extend(
             source
             for source in source_content
-            if source.content_type.type_name
-            == DerivedContentTypeNames.CODEBASE_FILE.value
+            if source.content_type_slug == DerivedContentTypeNames.CODEBASE_FILE.value
         )
 
         # Delete the codebase record
@@ -916,7 +863,7 @@ def organization_bucket_from_organization_id(organization_id: str) -> str:
 
 def delete_from_remote_storage(content: DerivedContent, organization_id: str) -> None:
     organization_bucket = organization_bucket_from_organization_id(organization_id)
-    if content.content_type.type_name == DerivedContentTypeNames.CODEBASE_FILE.value:
+    if content.content_type_slug == DerivedContentTypeNames.CODEBASE_FILE.value:
         key = f"{content.codebase_id}/source/{content.relative_path}"
     else:
         key = (

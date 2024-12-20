@@ -1,7 +1,6 @@
 import enum
 import uuid
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
 
 import sqlalchemy.dialects.postgresql
@@ -25,16 +24,15 @@ from sqlmodel import JSON, Field, Relationship, SQLModel
 from .custom_types import TSVector
 from .models_v2 import FullNodeView, NodeRow
 
-
-# TODO remove in favor of derived content types once new embeddings created
-class ContentType(str, enum.Enum):
-    SOURCE_CODE = "SOURCE_CODE"
-    AUXILIARY_DOCUMENTATION = "AUXILIARY_DOCUMENTATION"
-    FILE_SUMMARY = "FILE_SUMMARY"
-    FOLDER_SUMMARY = "FOLDER_SUMMARY"
-    CODE_SYMBOL = "CODE_SYMBOL"
-    PDF_SUMMARY = "PDF_SUMMARY"
-    UNKNOWN = "UNKNOWN"
+# # TODO remove in favor of derived content types once new embeddings created
+# class ContentType(str, enum.Enum):
+#     SOURCE_CODE = "SOURCE_CODE"
+#     AUXILIARY_DOCUMENTATION = "AUXILIARY_DOCUMENTATION"
+#     FILE_SUMMARY = "FILE_SUMMARY"
+#     FOLDER_SUMMARY = "FOLDER_SUMMARY"
+#     CODE_SYMBOL = "CODE_SYMBOL"
+#     PDF_SUMMARY = "PDF_SUMMARY"
+#     UNKNOWN = "UNKNOWN"
 
 
 class RuntimeLogAgentInstance(SQLModel, table=True):  # type: ignore
@@ -78,6 +76,7 @@ class RuntimeLogAgentMessage(SQLModel, table=True):  # type: ignore
     agent_instance: RuntimeLogAgentInstance = Relationship(back_populates="messages")
 
 
+# TODO: DELETE THIS TABLE
 @strawberry.enum
 class Enum_Derived_Content_Status(str, enum.Enum):
     generating = "generating"
@@ -85,6 +84,7 @@ class Enum_Derived_Content_Status(str, enum.Enum):
     generation_error = "generation-error"
 
 
+# TODO: DELETE THIS TABLE
 @strawberry.enum
 class Enum_Codebase_Status(str, enum.Enum):
     processing = "processing"
@@ -104,6 +104,7 @@ class Enum_Codebase_Status(str, enum.Enum):
                 raise ValueError(f"No valid mapping for status: {self}")
 
 
+# TODO: DELETE THIS TABLE
 class Workspace(SQLModel, table=True):  # type: ignore
     __tablename__ = "workspaces"
     id: UUID | None = Field(
@@ -136,6 +137,7 @@ class Workspace(SQLModel, table=True):  # type: ignore
     )
 
 
+# TODO: DELETE THIS TABLE
 class Codebase(SQLModel, table=True):  # type: ignore
     __tablename__ = "codebases"
     __table_args__ = (
@@ -184,6 +186,7 @@ class Codebase(SQLModel, table=True):  # type: ignore
     )
 
 
+# TODO: DELETE THIS TABLE
 class DerivedContentType(SQLModel, table=True):  # type: ignore
     __tablename__ = "derived_content_types"
     id: UUID | None = Field(
@@ -217,6 +220,7 @@ class DerivedContentType(SQLModel, table=True):  # type: ignore
     contents: list["DerivedContent"] = Relationship(back_populates="content_type")
 
 
+# TODO: DELETE THIS TABLE
 class TagContent(SQLModel, table=True):
     __tablename__ = "tags_contents"
     """Link table between Tags and Content models."""
@@ -228,14 +232,14 @@ class TagContent(SQLModel, table=True):
     content_id: None | uuid.UUID = Field(
         default=None, foreign_key="derived_contents.id", primary_key=True
     )
-    tag: Optional["Tag"] = Relationship(
-        back_populates="content_links",
-        sa_relationship_kwargs={"foreign_keys": "TagContent.tag_id"},
-    )
-    content: Optional["DerivedContent"] = Relationship(
-        back_populates="tag_links",
-        sa_relationship_kwargs={"foreign_keys": "TagContent.content_id"},
-    )
+    # tag: Optional["Tag"] = Relationship(
+    #     back_populates="content_links",
+    #     sa_relationship_kwargs={"foreign_keys": "TagContent.tag_id"},
+    # )
+    # content: Optional["DerivedContent"] = Relationship(
+    #     back_populates="tag_links",
+    #     sa_relationship_kwargs={"foreign_keys": "TagContent.content_id"},
+    # )
 
 
 class DocumentSource(SQLModel, table=True):
@@ -276,18 +280,18 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
         ),
         default=None,
     )
-    content_type_id: UUID = Field(
-        foreign_key="derived_content_types.id", nullable=True, index=True
-    )
+    # content_type_id: UUID = Field(
+    #     foreign_key="derived_content_types.id", nullable=True, index=True
+    # )
 
-    content_type: DerivedContentType = Relationship(back_populates="contents")
+    # content_type: DerivedContentType = Relationship(back_populates="contents")
     content_type_slug: str = Field(
         sa_column=Column(sqlalchemy.Text, nullable=False, index=True)
     )
 
-    source_content_id: UUID | None = Field(
-        foreign_key="derived_contents.id", index=True, nullable=True, default=None
-    )
+    # source_content_id: UUID | None = Field(
+    #     foreign_key="derived_contents.id", index=True, nullable=True, default=None
+    # )
     # Content doesn't need to be associated with a codebase in our flat asset design. But for now, we keep
     # all source contents and derived contents for a codebase associated with the codebase. PDFs and other docs,
     # however, won't have a codebase ID -- just a workspace ID, since we are keeping workspaces for now.
@@ -332,10 +336,10 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
             nullable=False,
         ),
     )
-    source_content: Optional["DerivedContent"] = Relationship(
-        back_populates="derived_contents",
-        sa_relationship_kwargs={"remote_side": "DerivedContent.id"},
-    )
+    # source_content: Optional["DerivedContent"] = Relationship(
+    #     back_populates="derived_contents",
+    #     sa_relationship_kwargs={"remote_side": "DerivedContent.id"},
+    # )
     derived_contents: list["DerivedContent"] = Relationship(
         back_populates="source_content"
     )
@@ -360,12 +364,12 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
         back_populates=None,
         sa_relationship_kwargs={"secondary": "tags_contents", "viewonly": True},
     )
-    version_id: None | UUID = Field(
-        foreign_key="inspection_versions.id", nullable=True, index=True, default=None
-    )
-    inspection_version: Optional["InspectionVersion"] = Relationship(
-        back_populates="contents"
-    )
+    # version_id: None | UUID = Field(
+    #     foreign_key="v2_version.id", nullable=True, index=True, default=None
+    # )
+    # inspection_version: Optional["InspectionVersion"] = Relationship(
+    #     back_populates="contents"
+    # )
     node: NodeRow = Relationship(
         back_populates="contents",
         sa_relationship_kwargs={"foreign_keys": "DerivedContent.node_id"},
@@ -475,6 +479,7 @@ class ChunkAndEmbedding(SQLModel, table=True):  # type: ignore
     )
 
 
+# TODO: DELETE THIS TABLE
 class InspectionVersion(SQLModel, table=True):
     __tablename__ = "inspection_versions"
 
@@ -483,27 +488,29 @@ class InspectionVersion(SQLModel, table=True):
     display_name: str | None = (
         None  # User-defined name; could default to Git tags if available
     )
-    created_at: None | datetime = Field(
-        sa_column=Column(
-            DateTime(timezone=True), server_default=func.now(), nullable=False
-        ),
-        default=None,
-    )
-    updated_at: None | datetime = Field(
-        sa_column=Column(
-            DateTime(timezone=True),
-            server_default=func.now(),
-            onupdate=func.now(),
-            nullable=False,
-        ),
-    )
-    previous_version_id: UUID | None = Field(
-        foreign_key="inspection_versions.id", nullable=True, index=True
-    )  # Points to the previous version for chain tracking
-    contents: list["DerivedContent"] = Relationship(back_populates="inspection_version")
-    inspector_runs: list["InspectorRun"] = Relationship(
-        back_populates="inspection_version"
-    )
+
+
+#     created_at: None | datetime = Field(
+#         sa_column=Column(
+#             DateTime(timezone=True), server_default=func.now(), nullable=False
+#         ),
+#         default=None,
+#     )
+#     updated_at: None | datetime = Field(
+#         sa_column=Column(
+#             DateTime(timezone=True),
+#             server_default=func.now(),
+#             onupdate=func.now(),
+#             nullable=False,
+#         ),
+#     )
+#     previous_version_id: UUID | None = Field(
+#         foreign_key="inspection_versions.id", nullable=True, index=True
+#     )  # Points to the previous version for chain tracking
+#     contents: list["DerivedContent"] = Relationship(back_populates="inspection_version")
+#     inspector_runs: list["InspectorRun"] = Relationship(
+#         back_populates="inspection_version"
+#     )
 
 
 class InspectorRun(SQLModel, table=True):
@@ -511,9 +518,9 @@ class InspectorRun(SQLModel, table=True):
     inspection_version_id: UUID = Field(
         foreign_key="inspection_versions.id", nullable=False
     )
-    inspection_version: "InspectionVersion" = Relationship(
-        back_populates="inspector_runs"
-    )
+    # inspection_version: "InspectionVersion" = Relationship(
+    #     back_populates="inspector_runs"
+    # )
     created_at: None | datetime = Field(
         sa_column=Column(
             DateTime(timezone=True), server_default=func.now(), nullable=False

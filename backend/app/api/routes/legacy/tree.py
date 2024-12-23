@@ -2,7 +2,7 @@
 
 import strawberry
 from app.api.routes.legacy.scalars import ID
-from database.models_v2 import NodeRow, PrimaryAssetRow, VersionRow
+from database.models_v2 import Node, PrimaryAsset, Version
 from sqlmodel import Session, select
 
 
@@ -33,22 +33,22 @@ def get_codebase_tree(
     if not version_id:
         # Fetch the most recent version if version_id is not provided
         most_recent_version = session.exec(
-            select(VersionRow.id)
-            .join(PrimaryAssetRow, VersionRow.primary_asset_id == PrimaryAssetRow.id)
-            .where(PrimaryAssetRow.id == codebase_id)
-            .where(PrimaryAssetRow.organization_id == organization_id)
-            .order_by(VersionRow.created_at.desc())
+            select(Version.id)
+            .join(PrimaryAsset, Version.primary_asset_id == PrimaryAsset.id)
+            .where(PrimaryAsset.id == codebase_id)
+            .where(PrimaryAsset.organization_id == organization_id)
+            .order_by(Version.created_at.desc())
             .limit(1)
         ).first()
         version_id = most_recent_version if most_recent_version else None
 
     nodes = session.exec(
-        select(NodeRow, VersionRow, PrimaryAssetRow)
-        .join(VersionRow, NodeRow.version_id == VersionRow.id)
-        .join(PrimaryAssetRow, VersionRow.primary_asset_id == PrimaryAssetRow.id)
-        .where(PrimaryAssetRow.id == codebase_id)
-        .where(PrimaryAssetRow.organization_id == organization_id)
-        .where((VersionRow.id == version_id) if version_id else True)
+        select(Node, Version, PrimaryAsset)
+        .join(Version, Node.version_id == Version.id)
+        .join(PrimaryAsset, Version.primary_asset_id == PrimaryAsset.id)
+        .where(PrimaryAsset.id == codebase_id)
+        .where(PrimaryAsset.organization_id == organization_id)
+        .where((Version.id == version_id) if version_id else True)
     ).all()
 
     # If no nodes found, return an empty list

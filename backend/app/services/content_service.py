@@ -15,7 +15,7 @@ from database.models_v1 import (
     TagContent,
     Workspace,
 )
-from database.models_v2 import NodeRow, PrimaryAssetRow, VersionRow
+from database.models_v2 import Node, PrimaryAsset, Version
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
@@ -68,9 +68,9 @@ class ContentService:
             f"Associating {len(content_source_associations)} sources with content {content_id} for organization {organization_id}"
         )
         primary_asset = self.session.exec(
-            select(PrimaryAssetRow)
-            .where(PrimaryAssetRow.id == content_id)
-            .where(PrimaryAssetRow.organization_id == organization_id)
+            select(PrimaryAsset)
+            .where(PrimaryAsset.id == content_id)
+            .where(PrimaryAsset.organization_id == organization_id)
         ).first()
 
         if not primary_asset:
@@ -133,11 +133,11 @@ class ContentService:
         )
         content = self.session.exec(
             select(DerivedContent)
-            .join(NodeRow, onclause=DerivedContent.node_id == NodeRow.id)
-            .join(VersionRow)
-            .join(PrimaryAssetRow)
+            .join(Node, onclause=DerivedContent.node_id == Node.id)
+            .join(Version)
+            .join(PrimaryAsset)
             .where(DerivedContent.id == content_id)
-            .where(PrimaryAssetRow.organization_id == organization_id)
+            .where(PrimaryAsset.organization_id == organization_id)
         ).first()
         if not content:
             logger.error(f"Content {content_id} not found")
@@ -196,7 +196,7 @@ class ContentService:
 
         new_content = self.content_repository.create(
             DerivedContent(
-                content_type_slug=request.content_type,
+                content_kind=request.content_type,
                 workspace_id=default_workspace.id,
                 relative_path="",
                 content="",
@@ -229,7 +229,7 @@ class ContentService:
                 ListContentResult(
                     id=derived_content.id,
                     organization_id=organization_id,
-                    content_name=derived_content.content_type_slug,
+                    content_name=derived_content.content_kind,
                     workspace_id=None,
                     workspace_name=None,
                     source_content_id=None,
@@ -302,10 +302,10 @@ class ContentService:
         """
         return (
             select(DerivedContent)
-            .join(NodeRow)
-            .join(VersionRow)
-            .join(PrimaryAssetRow)
-            .where(PrimaryAssetRow.organization_id == organization_id)
+            .join(Node)
+            .join(Version)
+            .join(PrimaryAsset)
+            .where(PrimaryAsset.organization_id == organization_id)
         )
 
     def _apply_sorting(
@@ -339,15 +339,15 @@ class ContentService:
     ) -> Select:
         if search_input.text:
             clauses = [
-                NodeRow.relative_path.icontains(search_input.text),
-                PrimaryAssetRow.display_name.icontains(search_input.text),
+                Node.relative_path.icontains(search_input.text),
+                PrimaryAsset.display_name.icontains(search_input.text),
             ]
             statement = statement.where(or_(*clauses))
 
         if search_input.source_content_id:
             clauses = [
-                NodeRow.id.in_(search_input.source_content_id),
-                VersionRow.id.in_(search_input.source_content_id),
+                Node.id.in_(search_input.source_content_id),
+                Version.id.in_(search_input.source_content_id),
                 DerivedContent.id.in_(search_input.source_content_id),
             ]
             statement = statement.where(or_(*clauses))
@@ -386,7 +386,7 @@ class ContentService:
                 f"Filtering by content_type_name: {search_input.content_type_name}"
             )
             statement = statement.where(
-                DerivedContent.content_type_slug.in_(search_input.content_type_name)
+                DerivedContent.content_kind.in_(search_input.content_type_name)
             )
 
         if search_input.latest_version_only:
@@ -473,7 +473,7 @@ class ContentService:
             ListContentResult(
                 id=source.id,
                 organization_id=source.workspace.organization_id,
-                content_type_slug=source.content_type_slug,
+                content_kind=source.content_kind,
                 content_name=get_content_name(source),
                 workspace_id=source.workspace_id,
                 workspace_name=source.workspace.display_name,
@@ -534,7 +534,7 @@ class ContentService:
         parent = self.session.exec(
             select(DerivedContent)
             .where(DerivedContent.codebase_id == content.codebase_id)
-            .where(DerivedContent.content_type_slug == "codebase")
+            .where(DerivedContent.content_kind == "codebase")
         ).first()
 
         return parent
@@ -561,8 +561,8 @@ class ContentService:
             )
 
         if (
-            content.content_type_slug != DerivedContentTypeNames.APPLICATION_NOTE.value
-            and content.content_type_slug != DerivedContentTypeNames.TEMPLATE.value
+            content.content_kind != DerivedContentTypeNames.APPLICATION_NOTE.value
+            and content.content_kind != DerivedContentTypeNames.TEMPLATE.value
         ):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid content type"
@@ -588,7 +588,7 @@ class ContentService:
             [
                 Workspace.organization_id == organization_id,
                 DerivedContent.id == content_id,
-                DerivedContent.content_type_slug
+                DerivedContent.content_kind
                 == DerivedContentTypeNames.SUPPLEMENTAL_DOCUMENT.value,
             ],
             [Workspace],
@@ -646,12 +646,12 @@ class ContentService:
             DerivedContentTypeNames.CODEBASE.value,
         }
 
-        if content.content_type_slug not in valid_content_types:
+        if content.content_kind not in valid_content_types:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid content type"
             )
 
-        if content.content_type_slug == DerivedContentTypeNames.CODEBASE.value:
+        if content.content_kind == DerivedContentTypeNames.CODEBASE.value:
             records_to_delete_in_s3 = delete_codebase_and_related_entities(
                 self.session, self, content_id
             )
@@ -681,7 +681,7 @@ class ContentService:
                 logger.exception(f"Error deleting content {content_id}")
                 raise HTTPException(status_code=400, detail="Error deleting content")
 
-            if content.content_type_slug == "supplemental-document":
+            if content.content_kind == "supplemental-document":
                 # delete remote content
                 delete_from_remote_storage(content, organization_id)
 
@@ -831,7 +831,7 @@ def delete_codebase_and_related_entities(
         records_to_delete_in_s3.extend(
             source
             for source in source_content
-            if source.content_type_slug == DerivedContentTypeNames.CODEBASE_FILE.value
+            if source.content_kind == DerivedContentTypeNames.CODEBASE_FILE.value
         )
 
         # Delete the codebase record
@@ -863,7 +863,7 @@ def organization_bucket_from_organization_id(organization_id: str) -> str:
 
 def delete_from_remote_storage(content: DerivedContent, organization_id: str) -> None:
     organization_bucket = organization_bucket_from_organization_id(organization_id)
-    if content.content_type_slug == DerivedContentTypeNames.CODEBASE_FILE.value:
+    if content.content_kind == DerivedContentTypeNames.CODEBASE_FILE.value:
         key = f"{content.codebase_id}/source/{content.relative_path}"
     else:
         key = (

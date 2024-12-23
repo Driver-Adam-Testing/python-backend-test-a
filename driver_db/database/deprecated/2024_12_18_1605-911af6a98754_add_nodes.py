@@ -23,10 +23,10 @@ from database.nodes_data_migration_sql import (
     PDF_TO_NODE_SQL,
     PDF_TO_PRIMARY_ASSET_SQL,
     PDF_TO_VERSION_SQL,
-    UPDATE_CONTENT_TYPE_SLUG_SQL,
     UPDATE_NODE_ID_APPLICATION_NOTE_SQL,
     UPDATE_NODE_ID_CODEBASE_SQL,
     UPDATE_NODE_ID_NON_STANDARD_SQL,
+    UPDATE_content_kind_SQL,
 )
 
 # revision identifiers, used by Alembic.
@@ -156,14 +156,12 @@ def upgrade() -> None:
     op.create_foreign_key(None, "derived_contents", "v2_node", ["node_id"], ["id"])
     op.add_column(
         "derived_contents",
-        sa.Column(
-            "content_type_slug", sqlmodel.sql.sqltypes.AutoString(), nullable=True
-        ),
+        sa.Column("content_kind", sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     )
     op.create_index(
-        op.f("ix_derived_contents_content_type_slug"),
+        op.f("ix_derived_contents_content_kind"),
         "derived_contents",
-        ["content_type_slug"],
+        ["content_kind"],
         unique=False,
     )
     op.create_table(
@@ -208,8 +206,8 @@ def upgrade() -> None:
                 v2_node n ON v.id = n.version_id
                """)
 
-    print("Executing: Update derived_contents with content_type_slug")
-    op.execute(UPDATE_CONTENT_TYPE_SLUG_SQL)
+    print("Executing: Update derived_contents with content_kind")
+    op.execute(UPDATE_content_kind_SQL)
 
     # MIGRATE CODEBASES
 
@@ -280,15 +278,13 @@ def downgrade() -> None:
     print("Executing: DROP INDEX ix_derived_contents_node_id on derived_contents")
     op.drop_index(op.f("ix_derived_contents_node_id"), table_name="derived_contents")
 
-    print(
-        "Executing: DROP INDEX ix_derived_contents_content_type_slug on derived_contents"
-    )
+    print("Executing: DROP INDEX ix_derived_contents_content_kind on derived_contents")
     op.drop_index(
-        op.f("ix_derived_contents_content_type_slug"), table_name="derived_contents"
+        op.f("ix_derived_contents_content_kind"), table_name="derived_contents"
     )
 
-    print("Executing: DROP COLUMN content_type_slug from derived_contents")
-    op.drop_column("derived_contents", "content_type_slug")
+    print("Executing: DROP COLUMN content_kind from derived_contents")
+    op.drop_column("derived_contents", "content_kind")
 
     print("Executing: DROP COLUMN node_id from derived_contents")
     op.drop_column("derived_contents", "node_id")

@@ -3,7 +3,7 @@ from database.models_v1 import (
     DerivedContent,
     Workspace,
 )
-from database.models_v2 import NodeRow, PrimaryAssetRow, VersionRow
+from database.models_v2 import Node, PrimaryAsset, Version
 from sqlmodel import Session, delete, select
 
 
@@ -62,7 +62,7 @@ def check_access(
 
     if codebase_id:
         primary_asset = session.exec(
-            select(PrimaryAssetRow).where(PrimaryAssetRow.id == codebase_id)
+            select(PrimaryAsset).where(PrimaryAsset.id == codebase_id)
         ).first()
         access_checks.append(
             primary_asset and primary_asset.organization_id == organization_id
@@ -71,11 +71,11 @@ def check_access(
     if derived_content_id:
         derived_content = session.exec(
             select(DerivedContent)
-            .join(NodeRow, DerivedContent.node_id == NodeRow.id)
-            .join(VersionRow, NodeRow.version_id == VersionRow.id)
-            .join(PrimaryAssetRow, VersionRow.primary_asset_id == PrimaryAssetRow.id)
+            .join(Node, DerivedContent.node_id == Node.id)
+            .join(Version, Node.version_id == Version.id)
+            .join(PrimaryAsset, Version.primary_asset_id == PrimaryAsset.id)
             .where(DerivedContent.id == derived_content_id)
-            .where(PrimaryAssetRow.organization_id == organization_id)
+            .where(PrimaryAsset.organization_id == organization_id)
         ).first()
         access_checks.append(
             derived_content
@@ -83,22 +83,20 @@ def check_access(
         )
 
     if node_id:
-        node = session.exec(select(NodeRow).where(NodeRow.id == node_id)).first()
+        node = session.exec(select(Node).where(Node.id == node_id)).first()
         access_checks.append(
             node and node.version.primary_asset.organization_id == organization_id
         )
 
     if version_id:
-        version = session.exec(
-            select(VersionRow).where(VersionRow.id == version_id)
-        ).first()
+        version = session.exec(select(Version).where(Version.id == version_id)).first()
         access_checks.append(
             version and version.primary_asset.organization_id == organization_id
         )
 
     if primary_asset_id:
         primary_asset = session.exec(
-            select(PrimaryAssetRow).where(PrimaryAssetRow.id == primary_asset_id)
+            select(PrimaryAsset).where(PrimaryAsset.id == primary_asset_id)
         ).first()
         access_checks.append(
             primary_asset and primary_asset.organization_id == organization_id

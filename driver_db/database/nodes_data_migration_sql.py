@@ -1,9 +1,9 @@
 # Constants for data migration SQL scripts
 
-# Update derived_contents with content_type_slug
-UPDATE_CONTENT_TYPE_SLUG_SQL = """
+# Update derived_contents with content_kind
+UPDATE_content_kind_SQL = """
 UPDATE derived_contents
-SET content_type_slug = dc_type.type_name
+SET content_kind = dc_type.type_name
 FROM derived_content_types dc_type
 WHERE derived_contents.content_type_id = dc_type.id;
 """
@@ -41,7 +41,7 @@ SELECT DISTINCT ON (dc.relative_path, v.id) dc.id, v.id,
     dc.created_at, dc.updated_at
 FROM derived_contents dc
 JOIN v2_version v ON v.id = dc.codebase_id
-WHERE dc.content_type_slug = 'codebase-directory'
+WHERE dc.content_kind = 'codebase-directory'
 """
 
 # SOURCE CONTENT [Files] -> NODE
@@ -50,7 +50,7 @@ INSERT INTO v2_node (id, version_id, relative_path, created_at, updated_at)
 SELECT DISTINCT ON (dc.relative_path, v.id) dc.id, v.id, dc.relative_path, dc.created_at, dc.updated_at
 FROM derived_contents dc
 JOIN v2_version v ON v.id = dc.codebase_id
-WHERE dc.content_type_slug = 'codebase-file'
+WHERE dc.content_kind = 'codebase-file'
 """
 
 # PDF -> PRIMARY ASSET
@@ -59,7 +59,7 @@ INSERT INTO v2_primary_asset (id, display_name, primary_asset_type, organization
 SELECT DISTINCT ON (dc.relative_path, w.organization_id) dc.id, dc.content_name, 'FILE', w.organization_id, dc.created_at, dc.updated_at
 FROM derived_contents dc
 JOIN workspaces w on w.id = dc.workspace_id
-WHERE dc.content_type_slug = 'supplemental-document'
+WHERE dc.content_kind = 'supplemental-document'
 AND dc.source_content_id is NULL
 ORDER BY dc.relative_path, w.organization_id, dc.created_at;
 """
@@ -69,12 +69,12 @@ PDF_TO_VERSION_SQL = """
 INSERT INTO v2_version (id, primary_asset_id, display_name, created_at, updated_at, status)
 SELECT dc.id, pa.id,
     '0.0.' || ROW_NUMBER() OVER (PARTITION BY w.organization_id, dc.content_name ORDER BY dc.created_at ASC) - 1,
-    dc.created_at, dc.updated_at, 'generation-complete'
+    dc.created_at, dc.updated_at, 'GENERATION-COMPLETE'
 FROM derived_contents dc
 JOIN workspaces w ON w.id = dc.workspace_id
 JOIN v2_primary_asset pa ON pa.organization_id = w.organization_id
 WHERE dc.source_content_id IS NULL
-AND dc.content_type_slug = 'supplemental-document'
+AND dc.content_kind = 'supplemental-document'
 AND pa.display_name = dc.content_name;
 """
 
@@ -84,7 +84,7 @@ INSERT INTO v2_node (id, version_id, relative_path, created_at, updated_at)
 SELECT dc.id, v.id, dc.relative_path, dc.created_at, dc.updated_at
 FROM derived_contents dc
 JOIN v2_version v ON v.id = dc.id
-WHERE dc.content_type_slug = 'supplemental-document';
+WHERE dc.content_kind = 'supplemental-document';
 """
 
 # PAGES -> PRIMARY ASSET
@@ -112,10 +112,10 @@ PAGES_TO_VERSION_SQL = """
 INSERT INTO v2_version (id, primary_asset_id, display_name, created_at, updated_at, status)
 SELECT dc.id, pa.id,
     '0.0.0',
-    dc.created_at, dc.updated_at, 'generation-complete'
+    dc.created_at, dc.updated_at, 'GENERATION-COMPLETE'
 FROM derived_contents dc
 JOIN v2_primary_asset pa ON dc.id = pa.id
-WHERE dc.content_type_slug = 'application_note';
+WHERE dc.content_kind = 'application_note';
 """
 
 # SOURCE CONTENT [PAGES] -> NODE
@@ -124,7 +124,7 @@ INSERT INTO v2_node (id, version_id, relative_path, created_at, updated_at)
 SELECT DISTINCT dc.id, v.id, dc.relative_path, dc.created_at, dc.updated_at
 FROM derived_contents dc
 JOIN v2_version v ON v.id = dc.id
-where dc.content_type_slug = 'application_note'
+where dc.content_kind = 'application_note'
 """
 
 # PAGE TEMPLATES -> PRIMARY ASSET
@@ -142,7 +142,7 @@ SELECT dc.id,
     dc.updated_at
 FROM derived_contents dc
 JOIN workspaces w on w.id = dc.workspace_id
-WHERE dc.content_type_slug = 'template'
+WHERE dc.content_kind = 'template'
 AND dc.content_name is not NULL;
 """
 
@@ -151,11 +151,11 @@ PAGE_TEMPLATES_TO_VERSION_SQL = """
 INSERT INTO v2_version (id, primary_asset_id, display_name, created_at, updated_at, status)
 SELECT dc.id, pa.id,
     '0.0.0',
-    dc.created_at, dc.updated_at, 'generation-complete'
+    dc.created_at, dc.updated_at, 'GENERATION-COMPLETE'
 FROM derived_contents dc
 JOIN workspaces w ON w.id = dc.workspace_id
 JOIN v2_primary_asset pa ON pa.organization_id = w.organization_id
-WHERE dc.content_type_slug = 'template'
+WHERE dc.content_kind = 'template'
 AND dc.id = pa.id;
 """
 
@@ -165,7 +165,7 @@ INSERT INTO v2_node (id, version_id, relative_path, created_at, updated_at)
 SELECT DISTINCT dc.id, v.id, dc.relative_path, dc.created_at, dc.updated_at
 FROM derived_contents dc
 JOIN v2_version v ON v.id = dc.id
-WHERE dc.content_type_slug = 'template'
+WHERE dc.content_kind = 'template'
 """
 
 # Update derived_contents with node_id for non-standard types
@@ -174,7 +174,7 @@ UPDATE derived_contents
 SET node_id = n.id
 FROM v2_node n
 JOIN v2_version v on n.version_id = v.id
-WHERE derived_contents.content_type_slug NOT IN ('codebase', 'codebase-directory', 'codebase-file', 'application_note', 'supplemental-document')
+WHERE derived_contents.content_kind NOT IN ('codebase', 'codebase-directory', 'codebase-file', 'application_note', 'supplemental-document')
 AND derived_contents.node_id is NULL
 AND v.id = derived_contents.codebase_id
 AND n.relative_path = derived_contents.relative_path;
@@ -185,7 +185,7 @@ UPDATE_NODE_ID_APPLICATION_NOTE_SQL = """
 UPDATE derived_contents
 SET node_id = v2_node.id
 FROM v2_node
-WHERE derived_contents.content_type_slug NOT IN ('codebase', 'codebase-directory', 'codebase-file', 'supplemental-document')
+WHERE derived_contents.content_kind NOT IN ('codebase', 'codebase-directory', 'codebase-file', 'supplemental-document')
 AND v2_node.id = derived_contents.id
 AND derived_contents.node_id is NULL;
 """
@@ -196,7 +196,7 @@ UPDATE derived_contents
 SET node_id = n.id
 FROM v2_node n
 JOIN v2_version v on n.version_id = v.id
-JOIN derived_contents sc on sc.content_type_slug = 'codebase'
+JOIN derived_contents sc on sc.content_kind = 'codebase'
 WHERE sc.codebase_id = derived_contents.codebase_id
 AND v.id = derived_contents.codebase_id
 AND sc.id = derived_contents.source_content_id

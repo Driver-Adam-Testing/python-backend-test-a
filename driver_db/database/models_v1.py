@@ -6,6 +6,7 @@ from uuid import UUID
 import sqlalchemy.dialects.postgresql
 import strawberry
 from pgvector.sqlalchemy import Vector
+from pydantic import field_validator
 from sqlalchemy import (
     Column,
     Computed,
@@ -22,17 +23,8 @@ from sqlalchemy.dialects.postgresql import UUID as SaUuid
 from sqlmodel import JSON, Field, Relationship, SQLModel
 
 from .custom_types import TSVector
-from .models_v2 import FullNodeView, NodeRow
-
-# # TODO remove in favor of derived content types once new embeddings created
-# class ContentType(str, enum.Enum):
-#     SOURCE_CODE = "SOURCE_CODE"
-#     AUXILIARY_DOCUMENTATION = "AUXILIARY_DOCUMENTATION"
-#     FILE_SUMMARY = "FILE_SUMMARY"
-#     FOLDER_SUMMARY = "FOLDER_SUMMARY"
-#     CODE_SYMBOL = "CODE_SYMBOL"
-#     PDF_SUMMARY = "PDF_SUMMARY"
-#     UNKNOWN = "UNKNOWN"
+from .models_v2 import FullNodeView, Node
+from .models_v2_enums import ContentKind
 
 
 class RuntimeLogAgentInstance(SQLModel, table=True):  # type: ignore
@@ -280,18 +272,24 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
         ),
         default=None,
     )
-    # content_type_id: UUID = Field(
-    #     foreign_key="derived_content_types.id", nullable=True, index=True
-    # )
 
-    # content_type: DerivedContentType = Relationship(back_populates="contents")
-    content_type_slug: str = Field(
-        sa_column=Column(sqlalchemy.Text, nullable=False, index=True)
+    # Removing FKs from the following:
+    codebase_id: UUID | None
+    workspace_id: UUID | None
+    content_type_id: UUID | None
+    version_id: None | UUID
+
+    content_kind: str = Field(
+        sa_column=Column(sqlalchemy.Text, nullable=True, index=True)
     )
 
-    # source_content_id: UUID | None = Field(
-    #     foreign_key="derived_contents.id", index=True, nullable=True, default=None
-    # )
+    @field_validator("content_kind")
+    def validate_content_kind(cls, value: str) -> str:
+        if value is not None and value not in ContentKind.__members__:
+            raise ValueError("content_kind must be a member of ContentKind or None")
+        return value
+
+    source_content_id: UUID | None
     # Content doesn't need to be associated with a codebase in our flat asset design. But for now, we keep
     # all source contents and derived contents for a codebase associated with the codebase. PDFs and other docs,
     # however, won't have a codebase ID -- just a workspace ID, since we are keeping workspaces for now.
@@ -359,18 +357,7 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
         back_populates="content", cascade_delete=True
     )
 
-    # tag_links: list["TagContent"] = Relationship(back_populates="content")
-    # tags: list["Tag"] = Relationship(
-    #     back_populates=None,
-    #     sa_relationship_kwargs={"secondary": "tags_contents", "viewonly": True},
-    # )
-    # version_id: None | UUID = Field(
-    #     foreign_key="v2_version.id", nullable=True, index=True, default=None
-    # )
-    # inspection_version: Optional["InspectionVersion"] = Relationship(
-    #     back_populates="contents"
-    # )
-    node: NodeRow = Relationship(
+    node: Node = Relationship(
         back_populates="contents",
         sa_relationship_kwargs={"foreign_keys": "DerivedContent.node_id"},
     )
@@ -489,24 +476,23 @@ class InspectionVersion(SQLModel, table=True):
         None  # User-defined name; could default to Git tags if available
     )
 
+    created_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
+        default=None,
+    )
+    updated_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
+        ),
+    )
+    previous_version_id: UUID | None
 
-#     created_at: None | datetime = Field(
-#         sa_column=Column(
-#             DateTime(timezone=True), server_default=func.now(), nullable=False
-#         ),
-#         default=None,
-#     )
-#     updated_at: None | datetime = Field(
-#         sa_column=Column(
-#             DateTime(timezone=True),
-#             server_default=func.now(),
-#             onupdate=func.now(),
-#             nullable=False,
-#         ),
-#     )
-#     previous_version_id: UUID | None = Field(
-#         foreign_key="inspection_versions.id", nullable=True, index=True
-#     )  # Points to the previous version for chain tracking
+
 #     contents: list["DerivedContent"] = Relationship(back_populates="inspection_version")
 #     inspector_runs: list["InspectorRun"] = Relationship(
 #         back_populates="inspection_version"

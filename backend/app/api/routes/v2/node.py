@@ -13,11 +13,11 @@ from app.api.session import CurrentSession
 from database.models_v1 import DerivedContent, Tag
 from database.models_v2 import (
     FullNodeView,
-    NodeRow,
-    PrimaryAssetRow,
+    Node,
+    PrimaryAsset,
+    PrimaryAssetKind,
     PrimaryAssetTag,
-    PrimaryAssetTypeEnum,
-    VersionRow,
+    Version,
 )
 from fastapi import APIRouter, Body, HTTPException, Path, Request, Response
 from pydantic import BaseModel, field_validator
@@ -106,9 +106,9 @@ async def list_primary_assets(
     offset: int = 0,
     sort_by: str = "updated_at",
     sort_direction: str = "DESC",
-) -> ListWithCount[PrimaryAssetRow]:
-    query = select(PrimaryAssetRow).where(
-        PrimaryAssetRow.organization_id == user.organization_id
+) -> ListWithCount[PrimaryAsset]:
+    query = select(PrimaryAsset).where(
+        PrimaryAsset.organization_id == user.organization_id
     )
     filters = dict(request.query_params)
     filters.pop("limit", None)
@@ -122,45 +122,43 @@ async def list_primary_assets(
         if isinstance(primary_asset_type, str):
             primary_asset_type = primary_asset_type.split(",")
         if isinstance(primary_asset_type, list):
-            query = query.where(
-                PrimaryAssetRow.primary_asset_type.in_(primary_asset_type)
-            )
+            query = query.where(PrimaryAsset.kind.in_(primary_asset_type))
 
     if tag_ids:
         query = query.where(
             select(PrimaryAssetTag)
-            .where(PrimaryAssetTag.primary_asset_id == PrimaryAssetRow.id)
+            .where(PrimaryAssetTag.primary_asset_id == PrimaryAsset.id)
             .where(PrimaryAssetTag.tag_id.in_(tag_ids.split(",")))
             .exists()
         )
 
     for key, value in filters.items():
         print(key, value)
-        if hasattr(PrimaryAssetRow, key):
-            query = query.where(getattr(PrimaryAssetRow, key) == value)
-        elif key.startswith("version.") and hasattr(VersionRow, key.split(".", 1)[1]):
+        if hasattr(PrimaryAsset, key):
+            query = query.where(getattr(PrimaryAsset, key) == value)
+        elif key.startswith("version.") and hasattr(Version, key.split(".", 1)[1]):
             version_key = key.split(".", 1)[1]
             query = query.where(
-                select(VersionRow)
-                .where(getattr(VersionRow, version_key) == value)
-                .where(VersionRow.primary_asset_id == PrimaryAssetRow.id)
+                select(Version)
+                .where(getattr(Version, version_key) == value)
+                .where(Version.primary_asset_id == PrimaryAsset.id)
                 .exists()
             )
-        elif key.startswith("node.") and hasattr(NodeRow, key.split(".", 1)[1]):
+        elif key.startswith("node.") and hasattr(Node, key.split(".", 1)[1]):
             node_key = key.split(".", 1)[1]
             query = query.where(
-                select(NodeRow)
-                .join(VersionRow)
-                .where(getattr(NodeRow, node_key) == value)
-                .where(VersionRow.primary_asset_id == PrimaryAssetRow.id)
+                select(Node)
+                .join(Version)
+                .where(getattr(Node, node_key) == value)
+                .where(Version.primary_asset_id == PrimaryAsset.id)
                 .exists()
             )
 
-    if hasattr(PrimaryAssetRow, sort_by):
+    if hasattr(PrimaryAsset, sort_by):
         if sort_direction.upper() == "ASC":
-            query = query.order_by(getattr(PrimaryAssetRow, sort_by).asc())
+            query = query.order_by(getattr(PrimaryAsset, sort_by).asc())
         elif sort_direction.upper() == "DESC":
-            query = query.order_by(getattr(PrimaryAssetRow, sort_by).desc())
+            query = query.order_by(getattr(PrimaryAsset, sort_by).desc())
         else:
             raise HTTPException(status_code=400, detail="Invalid sort direction")
     else:
@@ -176,7 +174,7 @@ async def list_primary_assets(
     return ListWithCount(results=primary_assets, total_count=total_count)
 
 
-@router.get("/versions", response_model=ListWithCount[VersionRow])
+@router.get("/versions", response_model=ListWithCount[Version])
 async def list_versions(
     request: Request,
     session: CurrentSession,
@@ -185,11 +183,11 @@ async def list_versions(
     offset: int = 0,
     sort_by: str = "updated_at",
     sort_direction: str = "DESC",
-) -> ListWithCount[VersionRow]:
+) -> ListWithCount[Version]:
     query = (
-        select(VersionRow)
-        .join(PrimaryAssetRow)
-        .where(PrimaryAssetRow.organization_id == user.organization_id)
+        select(Version)
+        .join(PrimaryAsset)
+        .where(PrimaryAsset.organization_id == user.organization_id)
     )
 
     filters = dict(request.query_params)
@@ -199,14 +197,14 @@ async def list_versions(
     filters.pop("sort_direction", None)
 
     for key, value in filters.items():
-        if hasattr(VersionRow, key):
-            query = query.where(getattr(VersionRow, key) == value)
+        if hasattr(Version, key):
+            query = query.where(getattr(Version, key) == value)
 
-    if hasattr(VersionRow, sort_by):
+    if hasattr(Version, sort_by):
         if sort_direction.upper() == "ASC":
-            query = query.order_by(getattr(VersionRow, sort_by).asc())
+            query = query.order_by(getattr(Version, sort_by).asc())
         elif sort_direction.upper() == "DESC":
-            query = query.order_by(getattr(VersionRow, sort_by).desc())
+            query = query.order_by(getattr(Version, sort_by).desc())
         else:
             raise HTTPException(status_code=400, detail="Invalid sort direction")
     else:
@@ -234,12 +232,12 @@ async def list_nodes(
     offset: int = 0,
     sort_by: str = "updated_at",
     sort_direction: str = "DESC",
-) -> ListWithCount[NodeRow]:
+) -> ListWithCount[Node]:
     query = (
-        select(NodeRow)
-        .join(VersionRow)
-        .join(PrimaryAssetRow)
-        .where(PrimaryAssetRow.organization_id == user.organization_id)
+        select(Node)
+        .join(Version)
+        .join(PrimaryAsset)
+        .where(PrimaryAsset.organization_id == user.organization_id)
     )
 
     filters = dict(request.query_params)
@@ -249,14 +247,14 @@ async def list_nodes(
     filters.pop("sort_direction", None)
 
     for key, value in filters.items():
-        if hasattr(NodeRow, key):
-            query = query.where(getattr(NodeRow, key) == value)
+        if hasattr(Node, key):
+            query = query.where(getattr(Node, key) == value)
 
-    if hasattr(NodeRow, sort_by):
+    if hasattr(Node, sort_by):
         if sort_direction.upper() == "ASC":
-            query = query.order_by(getattr(NodeRow, sort_by).asc())
+            query = query.order_by(getattr(Node, sort_by).asc())
         elif sort_direction.upper() == "DESC":
-            query = query.order_by(getattr(NodeRow, sort_by).desc())
+            query = query.order_by(getattr(Node, sort_by).desc())
         else:
             raise HTTPException(status_code=400, detail="Invalid sort direction")
     else:
@@ -341,7 +339,7 @@ async def list_contents(
     if content_type_names:
         if isinstance(content_type_names, str):
             content_type_names = [content_type_names]
-        query = query.where(DerivedContent.content_type_slug.in_(content_type_names))
+        query = query.where(DerivedContent.content_kind.in_(content_type_names))
 
     filters = dict(request.query_params)
     filters.pop("limit", None)
@@ -390,9 +388,9 @@ class PrimaryAssetCreate(BaseModel):
 
     @field_validator("primary_asset_type")
     def validate_primary_asset_type(cls, v: str) -> str:
-        if v not in [e.value for e in PrimaryAssetTypeEnum]:
+        if v not in [e.value for e in PrimaryAssetKind]:
             raise ValueError(
-                f"primary_asset_type must be one of {[e.value for e in PrimaryAssetTypeEnum]}"
+                f"primary_asset_type must be one of {[e.value for e in PrimaryAssetKind]}"
             )
         return v
 
@@ -403,24 +401,24 @@ class PrimaryAssetUpdate(BaseModel):
 
     @field_validator("primary_asset_type")
     def validate_primary_asset_type(cls, v: str | None) -> str | None:
-        if v is not None and v not in [e.value for e in PrimaryAssetTypeEnum]:
+        if v is not None and v not in [e.value for e in PrimaryAssetKind]:
             raise ValueError(
-                f"primary_asset_type must be one of {[e.value for e in PrimaryAssetTypeEnum]}"
+                f"primary_asset_type must be one of {[e.value for e in PrimaryAssetKind]}"
             )
         return v
 
 
-@router.post("/primary_assets", response_model=PrimaryAssetRow)
+@router.post("/primary_assets", response_model=PrimaryAsset)
 async def create_primary_asset(
     session: CurrentSession,
     user: UserToken,
     payload: PrimaryAssetCreate = Body(...),
-) -> PrimaryAssetRow:
+) -> PrimaryAsset:
     # Create a new PrimaryAssetRow
-    new_asset = PrimaryAssetRow(
+    new_asset = PrimaryAsset(
         display_name=payload.display_name,
         organization_id=user.organization_id,
-        primary_asset_type=payload.primary_asset_type,
+        kind=payload.primary_asset_type,
     )
     session.add(new_asset)
     session.commit()
@@ -428,18 +426,18 @@ async def create_primary_asset(
     return new_asset
 
 
-@router.put("/primary_assets/{asset_id}", response_model=PrimaryAssetRow)
+@router.put("/primary_assets/{asset_id}", response_model=PrimaryAsset)
 async def update_primary_asset(
     session: CurrentSession,
     user: UserToken,
     asset_id: UUID = Path(...),
     payload: PrimaryAssetUpdate = Body(...),
-) -> PrimaryAssetRow:
+) -> PrimaryAsset:
     # Fetch the asset to be updated
     asset = session.exec(
-        select(PrimaryAssetRow)
-        .where(PrimaryAssetRow.id == asset_id)
-        .where(PrimaryAssetRow.organization_id == user.organization_id)
+        select(PrimaryAsset)
+        .where(PrimaryAsset.id == asset_id)
+        .where(PrimaryAsset.organization_id == user.organization_id)
     ).one_or_none()
 
     if not asset:
@@ -449,9 +447,9 @@ async def update_primary_asset(
     if payload.display_name is not None:
         asset.display_name = payload.display_name
     if payload.primary_asset_type is not None:
-        if payload.primary_asset_type not in [e.value for e in PrimaryAssetTypeEnum]:
+        if payload.primary_asset_type not in [e.value for e in PrimaryAssetKind]:
             raise HTTPException(status_code=400, detail="Invalid primary_asset_type")
-        asset.primary_asset_type = payload.primary_asset_type
+        asset.kind = payload.primary_asset_type
 
     session.add(asset)
     session.commit()
@@ -468,23 +466,23 @@ class VersionUpdate(BaseModel):
     display_name: str | None = None
 
 
-@router.post("/versions", response_model=VersionRow)
+@router.post("/versions", response_model=Version)
 async def create_version(
     session: CurrentSession,
     user: UserToken,
     payload: VersionCreate = Body(...),
-) -> VersionRow:
+) -> Version:
     # Ensure that the primary asset belongs to the user's organization
     primary_asset = session.exec(
-        select(PrimaryAssetRow)
-        .where(PrimaryAssetRow.id == payload.primary_asset_id)
-        .where(PrimaryAssetRow.organization_id == user.organization_id)
+        select(PrimaryAsset)
+        .where(PrimaryAsset.id == payload.primary_asset_id)
+        .where(PrimaryAsset.organization_id == user.organization_id)
     ).one_or_none()
 
     if not primary_asset:
         raise HTTPException(status_code=404, detail="Primary asset not found")
 
-    new_version = VersionRow(
+    new_version = Version(
         primary_asset_id=payload.primary_asset_id,
         display_name=payload.display_name,
     )
@@ -494,18 +492,18 @@ async def create_version(
     return new_version
 
 
-@router.put("/versions/{version_id}", response_model=VersionRow)
+@router.put("/versions/{version_id}", response_model=Version)
 async def update_version(
     session: CurrentSession,
     user: UserToken,
     version_id: UUID = Path(...),
     payload: VersionUpdate = Body(...),
-) -> VersionRow:
+) -> Version:
     version = session.exec(
-        select(VersionRow)
-        .join(PrimaryAssetRow)
-        .where(VersionRow.id == version_id)
-        .where(PrimaryAssetRow.organization_id == user.organization_id)
+        select(Version)
+        .join(PrimaryAsset)
+        .where(Version.id == version_id)
+        .where(PrimaryAsset.organization_id == user.organization_id)
     ).one_or_none()
 
     if not version:
@@ -529,16 +527,16 @@ class NodeUpdate(BaseModel):
     relative_path: str | None = None
 
 
-@router.post("/nodes", response_model=NodeRow)
+@router.post("/nodes", response_model=Node)
 async def create_node(
     session: CurrentSession, user: UserToken, payload: NodeCreate = Body(...)
-) -> NodeRow:
+) -> Node:
     # Verify version belongs to user's organization
     version = session.exec(
-        select(VersionRow)
-        .join(PrimaryAssetRow)
-        .where(VersionRow.id == payload.version_id)
-        .where(PrimaryAssetRow.organization_id == user.organization_id)
+        select(Version)
+        .join(PrimaryAsset)
+        .where(Version.id == payload.version_id)
+        .where(PrimaryAsset.organization_id == user.organization_id)
     ).one_or_none()
 
     if not version:
@@ -546,7 +544,7 @@ async def create_node(
             status_code=404, detail="Version not found or not authorized"
         )
 
-    new_node = NodeRow(
+    new_node = Node(
         version_id=payload.version_id,
         relative_path=payload.relative_path,
     )
@@ -556,20 +554,20 @@ async def create_node(
     return new_node
 
 
-@router.put("/nodes/{node_id}", response_model=NodeRow)
+@router.put("/nodes/{node_id}", response_model=Node)
 async def update_node(
     session: CurrentSession,
     user: UserToken,
     node_id: UUID = Path(...),
     payload: NodeUpdate = Body(...),
-) -> NodeRow:
+) -> Node:
     # Fetch the node and ensure it belongs to the user's organization
     node = session.exec(
-        select(NodeRow)
-        .join(VersionRow)
-        .join(PrimaryAssetRow)
-        .where(NodeRow.id == node_id)
-        .where(PrimaryAssetRow.organization_id == user.organization_id)
+        select(Node)
+        .join(Version)
+        .join(PrimaryAsset)
+        .where(Node.id == node_id)
+        .where(PrimaryAsset.organization_id == user.organization_id)
     ).one_or_none()
 
     if not node:
@@ -608,11 +606,11 @@ async def create_derived_content(
 ) -> DerivedContentResponse:
     # Verify node belongs to user's organization
     node = session.exec(
-        select(NodeRow)
-        .join(VersionRow)
-        .join(PrimaryAssetRow)
-        .where(NodeRow.id == payload.node_id)
-        .where(PrimaryAssetRow.organization_id == user.organization_id)
+        select(Node)
+        .join(Version)
+        .join(PrimaryAsset)
+        .where(Node.id == payload.node_id)
+        .where(PrimaryAsset.organization_id == user.organization_id)
     ).one_or_none()
 
     if not node:
@@ -646,11 +644,11 @@ async def edit_page_CONVENIENCE_METHOD(
     # Fetch the derived content and ensure it belongs to the user's organization
     derived_content = session.exec(
         select(DerivedContent)
-        .join(NodeRow)
-        .join(VersionRow)
-        .join(PrimaryAssetRow)
-        .where(NodeRow.id == node_id)
-        .where(PrimaryAssetRow.organization_id == user.organization_id)
+        .join(Node)
+        .join(Version)
+        .join(PrimaryAsset)
+        .where(Node.id == node_id)
+        .where(PrimaryAsset.organization_id == user.organization_id)
     ).one_or_none()
 
     if not derived_content:
@@ -663,13 +661,13 @@ async def edit_page_CONVENIENCE_METHOD(
     if payload.content_name is not None:
         derived_content.content_name = payload.content_name
         primary_asset = session.exec(
-            select(PrimaryAssetRow)
-            .join(VersionRow)
-            .join(NodeRow)
-            .where(NodeRow.id == derived_content.node_id)
+            select(PrimaryAsset)
+            .join(Version)
+            .join(Node)
+            .where(Node.id == derived_content.node_id)
             .where(
-                PrimaryAssetRow.primary_asset_type.in_(
-                    PrimaryAssetTypeEnum.PAGE, PrimaryAssetTypeEnum.PAGE_TEMPLATE
+                PrimaryAsset.kind.in_(
+                    PrimaryAssetKind.PAGE, PrimaryAssetKind.PAGE_TEMPLATE
                 )
             )
         ).one_or_none()
@@ -692,9 +690,9 @@ async def edit_page_CONVENIENCE_METHOD(
 async def new_page(session: CurrentSession, user: UserToken) -> DerivedContentResponse:
     # Find all PrimaryAssetRows with the name "Untitled Page X" where X is any number for the user's organization
     existing_assets = session.exec(
-        select(PrimaryAssetRow).where(
-            PrimaryAssetRow.display_name.like("Untitled Page %"),
-            PrimaryAssetRow.organization_id == user.organization_id,
+        select(PrimaryAsset).where(
+            PrimaryAsset.display_name.like("Untitled Page %"),
+            PrimaryAsset.organization_id == user.organization_id,
         )
     ).all()
 
@@ -710,25 +708,27 @@ async def new_page(session: CurrentSession, user: UserToken) -> DerivedContentRe
 
     # Create a new PrimaryAssetRow with the incremented number
     new_display_name = f"Untitled Page {max_number + 1}"
-    new_primary_asset = PrimaryAssetRow(
+    new_primary_asset = PrimaryAsset(
         display_name=new_display_name,
         organization_id=user.organization_id,
-        primary_asset_type="PAGE",
+        kind="PAGE",
     )
     session.add(new_primary_asset)
     session.commit()
 
-    new_version = VersionRow(primary_asset_id=new_primary_asset.id, display_name="0")
+    new_version = Version(
+        primary_asset_id=new_primary_asset.id, display_name="0", status="user-data"
+    )
     session.add(new_version)
     session.commit()
 
-    new_node = NodeRow(version_id=new_version.id, relative_path="/page")
+    new_node = Node(version_id=new_version.id, relative_path="/page")
     session.add(new_node)
     session.commit()
 
     new_derived_content = DerivedContent(
         content_type_id=None,
-        content_type_slug="application_note",
+        content_kind="application_note",
         node_id=new_node.id,
         relative_path="/page",
         content="",
@@ -749,9 +749,9 @@ async def new_template(
 ) -> DerivedContentResponse:
     # Query existing assets with similar names
     existing_assets = session.exec(
-        select(PrimaryAssetRow).where(
-            PrimaryAssetRow.display_name.like("Untitled Template %"),
-            PrimaryAssetRow.organization_id == user.organization_id,
+        select(PrimaryAsset).where(
+            PrimaryAsset.display_name.like("Untitled Template %"),
+            PrimaryAsset.organization_id == user.organization_id,
         )
     ).all()
 
@@ -767,25 +767,25 @@ async def new_template(
 
     # Create a new PrimaryAssetRow with the incremented number
     new_display_name = f"Untitled Template {max_number + 1}"
-    new_primary_asset = PrimaryAssetRow(
+    new_primary_asset = PrimaryAsset(
         display_name=new_display_name,
         organization_id=user.organization_id,
-        primary_asset_type="PAGE_TEMPLATE",
+        kind="PAGE_TEMPLATE",
     )
     session.add(new_primary_asset)
     session.commit()
 
-    new_version = VersionRow(primary_asset_id=new_primary_asset.id, display_name="0")
+    new_version = Version(primary_asset_id=new_primary_asset.id, display_name="0")
     session.add(new_version)
     session.commit()
 
-    new_node = NodeRow(version_id=new_version.id, relative_path="/template")
+    new_node = Node(version_id=new_version.id, relative_path="/template")
     session.add(new_node)
     session.commit()
 
     new_derived_content = DerivedContent(
         content_type_id=None,
-        content_type_slug="template",
+        content_kind="template",
         node_id=new_node.id,
         relative_path="/template",
         content="",
@@ -921,10 +921,10 @@ async def delete_primary_asset_tag(
 ) -> Response:
     primary_asset_tag = session.exec(
         select(PrimaryAssetTag)
-        .join(PrimaryAssetRow)
+        .join(PrimaryAsset)
         .where(PrimaryAssetTag.tag_id == tag_id)
         .where(PrimaryAssetTag.primary_asset_id == primary_asset_id)
-        .where(PrimaryAssetRow.organization_id == user.organization_id)
+        .where(PrimaryAsset.organization_id == user.organization_id)
     ).one_or_none()
 
     if not primary_asset_tag:

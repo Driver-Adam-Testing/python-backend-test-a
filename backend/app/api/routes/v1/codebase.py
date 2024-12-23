@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from database.models_v2 import PrimaryAssetRow, VersionRow
+from database.models_v2 import PrimaryAsset, Version
 from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -49,11 +49,10 @@ def get_codebase_versions(
 ) -> CodebaseVersionsResponse:
     # Find the primary asset that represents the codebase
     primary_asset = session.exec(
-        select(PrimaryAssetRow).where(
-            PrimaryAssetRow.id == codebase_id,
-            PrimaryAssetRow.organization_id == user.organization_id,
-            PrimaryAssetRow.primary_asset_type
-            == "CODEBASE",  # Ensuring it's a codebase
+        select(PrimaryAsset).where(
+            PrimaryAsset.id == codebase_id,
+            PrimaryAsset.organization_id == user.organization_id,
+            PrimaryAsset.kind == "CODEBASE",  # Ensuring it's a codebase
         )
     ).one_or_none()
 
@@ -65,9 +64,9 @@ def get_codebase_versions(
 
     # Query versions associated with this primary asset
     statement = (
-        select(VersionRow)
-        .where(VersionRow.primary_asset_id == primary_asset.id)
-        .order_by(VersionRow.created_at.desc())
+        select(Version)
+        .where(Version.primary_asset_id == primary_asset.id)
+        .order_by(Version.created_at.desc())
         .limit(limit)
         .offset(offset)
     )
@@ -75,8 +74,8 @@ def get_codebase_versions(
 
     # Count total number of versions for pagination
     total_count = session.exec(
-        select(func.count(VersionRow.id)).where(
-            VersionRow.primary_asset_id == primary_asset.id
+        select(func.count(Version.id)).where(
+            Version.primary_asset_id == primary_asset.id
         )
     ).one()
 

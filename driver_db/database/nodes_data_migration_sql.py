@@ -18,6 +18,37 @@ JOIN workspaces w on w.id = c.workspace_id
 ORDER BY c.codebase_name, w.organization_id, c.created_at;
 """
 
+# PDF -> PRIMARY ASSET
+PDF_TO_PRIMARY_ASSET_SQL = """
+INSERT INTO v2_primary_asset (id, display_name, primary_asset_type, organization_id, created_at, updated_at)
+SELECT DISTINCT ON (dc.relative_path, w.organization_id) dc.id, dc.content_name, 'FILE', w.organization_id, dc.created_at, dc.updated_at
+FROM derived_contents dc
+JOIN workspaces w on w.id = dc.workspace_id
+WHERE dc.content_kind = 'supplemental-document'
+AND dc.source_content_id is NULL
+ORDER BY dc.relative_path, w.organization_id, dc.created_at;
+"""
+
+
+# PAGE TEMPLATES -> PRIMARY ASSET
+PAGE_TEMPLATES_TO_PRIMARY_ASSET_SQL = """
+INSERT INTO v2_primary_asset (id, display_name, primary_asset_type, organization_id, created_at, updated_at)
+SELECT dc.id,
+    CASE
+        WHEN ROW_NUMBER() OVER (PARTITION BY w.organization_id, dc.content_name ORDER BY dc.created_at) > 1
+        THEN dc.content_name || '-' || (ROW_NUMBER() OVER (PARTITION BY w.organization_id, dc.content_name ORDER BY dc.created_at) - 1)::text
+        ELSE dc.content_name
+    END AS display_name,
+    'PAGE_TEMPLATE',
+    w.organization_id,
+    dc.created_at,
+    dc.updated_at
+FROM derived_contents dc
+JOIN workspaces w on w.id = dc.workspace_id
+WHERE dc.content_kind = 'template'
+AND dc.content_name is not NULL;
+"""
+
 # CODEBASE -> VERSION
 CODEBASE_TO_VERSION_SQL = """
 INSERT INTO v2_version (id, primary_asset_id, display_name, created_at, updated_at, status)
@@ -29,6 +60,22 @@ JOIN workspaces w ON w.id = c.workspace_id
 JOIN v2_primary_asset pa ON pa.organization_id = w.organization_id
 WHERE pa.display_name = c.codebase_name;
 """
+
+
+# PDF -> VERSION
+PDF_TO_VERSION_SQL = """
+INSERT INTO v2_version (id, primary_asset_id, display_name, created_at, updated_at, status)
+SELECT dc.id, pa.id,
+    '0.0.' || ROW_NUMBER() OVER (PARTITION BY w.organization_id, dc.content_name ORDER BY dc.created_at ASC) - 1,
+    dc.created_at, dc.updated_at, 'GENERATION-COMPLETE'
+FROM derived_contents dc
+JOIN workspaces w ON w.id = dc.workspace_id
+JOIN v2_primary_asset pa ON pa.organization_id = w.organization_id
+WHERE dc.source_content_id IS NULL
+AND dc.content_kind = 'supplemental-document'
+AND pa.display_name = dc.content_name;
+"""
+
 
 # SOURCE CONTENT [Directories] -> NODE
 DIRECTORIES_TO_NODE_SQL = """
@@ -53,30 +100,6 @@ JOIN v2_version v ON v.id = dc.codebase_id
 WHERE dc.content_kind = 'codebase-file'
 """
 
-# PDF -> PRIMARY ASSET
-PDF_TO_PRIMARY_ASSET_SQL = """
-INSERT INTO v2_primary_asset (id, display_name, primary_asset_type, organization_id, created_at, updated_at)
-SELECT DISTINCT ON (dc.relative_path, w.organization_id) dc.id, dc.content_name, 'FILE', w.organization_id, dc.created_at, dc.updated_at
-FROM derived_contents dc
-JOIN workspaces w on w.id = dc.workspace_id
-WHERE dc.content_kind = 'supplemental-document'
-AND dc.source_content_id is NULL
-ORDER BY dc.relative_path, w.organization_id, dc.created_at;
-"""
-
-# PDF -> VERSION
-PDF_TO_VERSION_SQL = """
-INSERT INTO v2_version (id, primary_asset_id, display_name, created_at, updated_at, status)
-SELECT dc.id, pa.id,
-    '0.0.' || ROW_NUMBER() OVER (PARTITION BY w.organization_id, dc.content_name ORDER BY dc.created_at ASC) - 1,
-    dc.created_at, dc.updated_at, 'GENERATION-COMPLETE'
-FROM derived_contents dc
-JOIN workspaces w ON w.id = dc.workspace_id
-JOIN v2_primary_asset pa ON pa.organization_id = w.organization_id
-WHERE dc.source_content_id IS NULL
-AND dc.content_kind = 'supplemental-document'
-AND pa.display_name = dc.content_name;
-"""
 
 # SOURCE CONTENT [PDF] -> NODE
 PDF_TO_NODE_SQL = """
@@ -87,77 +110,6 @@ JOIN v2_version v ON v.id = dc.id
 WHERE dc.content_kind = 'supplemental-document';
 """
 
-# PAGES -> PRIMARY ASSET
-PAGES_TO_PRIMARY_ASSET_SQL = """
-INSERT INTO v2_primary_asset (id, display_name, primary_asset_type, organization_id, created_at, updated_at)
-SELECT dc.id,
-    CASE
-        WHEN ROW_NUMBER() OVER (PARTITION BY w.organization_id, dc.content_name ORDER BY dc.created_at) > 1
-        THEN dc.content_name || '-' || (ROW_NUMBER() OVER (PARTITION BY w.organization_id, dc.content_name ORDER BY dc.created_at) - 1)::text
-        ELSE dc.content_name
-    END AS display_name,
-    'PAGE',
-    w.organization_id,
-    dc.created_at,
-    dc.updated_at
-FROM derived_contents dc
-JOIN derived_content_types dct on dc.content_type_id = dct.id
-JOIN workspaces w on w.id = dc.workspace_id
-WHERE dct.type_name = 'application_note'
-AND dc.content_name is not NULL;
-"""
-
-# PAGES -> VERSION
-PAGES_TO_VERSION_SQL = """
-INSERT INTO v2_version (id, primary_asset_id, display_name, created_at, updated_at, status)
-SELECT dc.id, pa.id,
-    '0.0.0',
-    dc.created_at, dc.updated_at, 'GENERATION-COMPLETE'
-FROM derived_contents dc
-JOIN v2_primary_asset pa ON dc.id = pa.id
-WHERE dc.content_kind = 'application_note';
-"""
-
-# SOURCE CONTENT [PAGES] -> NODE
-PAGES_TO_NODE_SQL = """
-INSERT INTO v2_node (id, version_id, relative_path, created_at, updated_at)
-SELECT DISTINCT dc.id, v.id, dc.relative_path, dc.created_at, dc.updated_at
-FROM derived_contents dc
-JOIN v2_version v ON v.id = dc.id
-where dc.content_kind = 'application_note'
-"""
-
-# PAGE TEMPLATES -> PRIMARY ASSET
-PAGE_TEMPLATES_TO_PRIMARY_ASSET_SQL = """
-INSERT INTO v2_primary_asset (id, display_name, primary_asset_type, organization_id, created_at, updated_at)
-SELECT dc.id,
-    CASE
-        WHEN ROW_NUMBER() OVER (PARTITION BY w.organization_id, dc.content_name ORDER BY dc.created_at) > 1
-        THEN dc.content_name || '-' || (ROW_NUMBER() OVER (PARTITION BY w.organization_id, dc.content_name ORDER BY dc.created_at) - 1)::text
-        ELSE dc.content_name
-    END AS display_name,
-    'PAGE_TEMPLATE',
-    w.organization_id,
-    dc.created_at,
-    dc.updated_at
-FROM derived_contents dc
-JOIN workspaces w on w.id = dc.workspace_id
-WHERE dc.content_kind = 'template'
-AND dc.content_name is not NULL;
-"""
-
-# PAGE TEMPLATES -> VERSION
-PAGE_TEMPLATES_TO_VERSION_SQL = """
-INSERT INTO v2_version (id, primary_asset_id, display_name, created_at, updated_at, status)
-SELECT dc.id, pa.id,
-    '0.0.0',
-    dc.created_at, dc.updated_at, 'GENERATION-COMPLETE'
-FROM derived_contents dc
-JOIN workspaces w ON w.id = dc.workspace_id
-JOIN v2_primary_asset pa ON pa.organization_id = w.organization_id
-WHERE dc.content_kind = 'template'
-AND dc.id = pa.id;
-"""
 
 # SOURCE CONTENT [PAGE TEMPLATES] -> NODE
 PAGE_TEMPLATES_TO_NODE_SQL = """
@@ -202,4 +154,44 @@ AND v.id = derived_contents.codebase_id
 AND sc.id = derived_contents.source_content_id
 AND (n.relative_path = derived_contents.relative_path OR n.relative_path = derived_contents.relative_path || '/')
 AND derived_contents.node_id is NULL;
+"""
+
+
+# PAGES -> PRIMARY ASSET
+PRIMARY_ASSET__PAGE__PAGE_TEMPLATE = """
+INSERT INTO v2_primary_asset (id, display_name, primary_asset_type, organization_id, created_at, updated_at)
+SELECT dc.version_id,
+    CASE
+        WHEN ROW_NUMBER() OVER (PARTITION BY w.organization_id, dc.content_name ORDER BY dc.created_at) > 1
+        THEN dc.content_name || '-' || (ROW_NUMBER() OVER (PARTITION BY w.organization_id, dc.content_name ORDER BY dc.created_at) - 1)::text
+        ELSE dc.content_name
+    END AS display_name,
+    'PAGE',
+    w.organization_id,
+    dc.created_at,
+    dc.updated_at
+FROM derived_contents dc
+JOIN workspaces w on w.id = dc.workspace_id
+WHERE dct.content_kind in('application_note', 'template')
+AND dc.content_name is not NULL;
+"""
+
+# PAGES -> VERSION
+PAGES_TO_VERSION_SQL = """
+INSERT INTO v2_version (id, primary_asset_id, display_name, created_at, updated_at, status)
+SELECT dc.id, pa.id,
+    '0.0.0',
+    dc.created_at, dc.updated_at, 'GENERATION-COMPLETE'
+FROM derived_contents dc
+JOIN v2_primary_asset pa ON dc.id = pa.id
+WHERE dc.content_kind = 'application_note';
+"""
+
+# SOURCE CONTENT [PAGES] -> NODE
+PAGES_TO_NODE_SQL = """
+INSERT INTO v2_node (id, version_id, relative_path, created_at, updated_at)
+SELECT DISTINCT dc.id, v.id, dc.relative_path, dc.created_at, dc.updated_at
+FROM derived_contents dc
+JOIN v2_version v ON v.id = dc.id
+where dc.content_kind = 'application_note'
 """

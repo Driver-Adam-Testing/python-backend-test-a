@@ -11,7 +11,7 @@ WHERE derived_contents.content_type_id = dc_type.id;
 
 # CODEBASE -> PRIMARY ASSET
 CODEBASE_TO_PRIMARY_ASSET_SQL = """
-INSERT INTO v2_primary_asset (id, display_name, primary_asset_type, organization_id, created_at, updated_at)
+INSERT INTO v2_primary_asset (id, display_name, kind, organization_id, created_at, updated_at)
 SELECT DISTINCT ON (c.codebase_name, w.organization_id) c.id, c.codebase_name, 'CODEBASE', w.organization_id, c.created_at, c.updated_at
 FROM codebases c
 JOIN workspaces w on w.id = c.workspace_id
@@ -20,7 +20,7 @@ ORDER BY c.codebase_name, w.organization_id, c.created_at;
 
 # PDF -> PRIMARY ASSET
 PDF_TO_PRIMARY_ASSET_SQL = """
-INSERT INTO v2_primary_asset (id, display_name, primary_asset_type, organization_id, created_at, updated_at)
+INSERT INTO v2_primary_asset (id, display_name, kind, organization_id, created_at, updated_at)
 SELECT DISTINCT ON (dc.relative_path, w.organization_id) dc.id, dc.content_name, 'FILE', w.organization_id, dc.created_at, dc.updated_at
 FROM derived_contents dc
 JOIN workspaces w on w.id = dc.workspace_id
@@ -32,7 +32,7 @@ ORDER BY dc.relative_path, w.organization_id, dc.created_at;
 
 # PAGE TEMPLATES -> PRIMARY ASSET
 PAGE_TEMPLATES_TO_PRIMARY_ASSET_SQL = """
-INSERT INTO v2_primary_asset (id, display_name, primary_asset_type, organization_id, created_at, updated_at)
+INSERT INTO v2_primary_asset (id, display_name, kind, organization_id, created_at, updated_at)
 SELECT dc.id,
     CASE
         WHEN ROW_NUMBER() OVER (PARTITION BY w.organization_id, dc.content_name ORDER BY dc.created_at) > 1
@@ -159,7 +159,7 @@ AND derived_contents.node_id is NULL;
 
 # PAGES -> PRIMARY ASSET
 PRIMARY_ASSET__PAGE__PAGE_TEMPLATE = """
-INSERT INTO v2_primary_asset (id, display_name, primary_asset_type, organization_id, created_at, updated_at)
+INSERT INTO v2_primary_asset (id, display_name, kind, organization_id, created_at, updated_at)
 SELECT dc.version_id,
     CASE
         WHEN ROW_NUMBER() OVER (PARTITION BY w.organization_id, dc.content_name ORDER BY dc.created_at) > 1

@@ -62,7 +62,7 @@ class PrimaryAssetTagRead(BaseModel):
 class PrimaryAssetRead(BaseModel):
     id: UUID
     organization_id: str
-    primary_asset_type: str
+    kind: str
     display_name: str
     created_at: datetime | None
     updated_at: datetime | None
@@ -78,12 +78,12 @@ class PrimaryAssetRead(BaseModel):
 
 class PrimaryAssetCreate(BaseModel):
     display_name: str
-    primary_asset_type: str
+    kind: str
 
 
 class PrimaryAssetUpdate(BaseModel):
     display_name: str | None = None
-    primary_asset_type: str | None = None
+    kind: str | None = None
 
 
 class VersionCreate(BaseModel):

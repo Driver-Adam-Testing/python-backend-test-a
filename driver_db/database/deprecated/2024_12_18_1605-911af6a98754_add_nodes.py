@@ -51,9 +51,7 @@ def upgrade() -> None:
         sa.Column(
             "organization_id", sqlmodel.sql.sqltypes.AutoString(), nullable=False
         ),
-        sa.Column(
-            "primary_asset_type", sqlmodel.sql.sqltypes.AutoString(), nullable=False
-        ),
+        sa.Column("kind", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
         sa.Column("repository_id", sqlmodel.sql.sqltypes.AutoString(), nullable=True),
         sa.Column(
             "created_at",
@@ -189,7 +187,7 @@ def upgrade() -> None:
                 pa.organization_id AS primary_asset_organization_id,
                 pa.created_at AS primary_asset_created_at,
                 pa.updated_at AS primary_asset_updated_at,
-                pa.primary_asset_type AS primary_asset_primary_asset_type,
+                pa.kind AS primary_asset_kind,
                 v.id AS version_id,
                 v.display_name AS version_display_name,
                 v.created_at AS version_created_at,

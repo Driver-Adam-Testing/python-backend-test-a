@@ -354,7 +354,7 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
         sa_relationship_kwargs={"foreign_keys": "DocumentSource.document_id"},
     )
     chunks_and_embeds: list["ChunkAndEmbedding"] = Relationship(
-        back_populates="content", cascade_delete=True
+        back_populates="content"
     )
 
     node: Node = Relationship(
@@ -421,7 +421,7 @@ class Tag(SQLModel, table=True):  # type: ignore
     #     back_populates="tag",
     #     sa_relationship_kwargs={"foreign_keys": "TagContent.tag_id"},
     # )
-    primary_assets: list["PrimaryAssetRow"] = Relationship(  # noqa: F821
+    primary_assets: list["PrimaryAsset"] = Relationship(  # noqa: F821
         back_populates="tags",
         sa_relationship_kwargs={"secondary": "v2_primary_asset_tag"},
     )
@@ -432,7 +432,6 @@ class ChunkAndEmbedding(SQLModel, table=True):  # type: ignore
     content_id: UUID = Field(
         foreign_key="derived_contents.id",
         nullable=False,
-        ondelete="CASCADE",
         index=True,
     )
     content: DerivedContent | None = Relationship(back_populates="chunks_and_embeds")

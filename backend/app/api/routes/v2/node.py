@@ -116,13 +116,15 @@ async def list_primary_assets(
     filters.pop("sort_by", None)
     filters.pop("sort_direction", None)
     tag_ids = filters.pop("tag_ids", None)
-    primary_asset_type = filters.pop("primary_asset_type", None)
+    kind = filters.pop("primary_asset_type", None)
+    if not kind:
+        kind = filters.pop("kind", None)
 
-    if primary_asset_type:
-        if isinstance(primary_asset_type, str):
-            primary_asset_type = primary_asset_type.split(",")
-        if isinstance(primary_asset_type, list):
-            query = query.where(PrimaryAsset.kind.in_(primary_asset_type))
+    if kind:
+        if isinstance(kind, str):
+            kind = kind.split(",")
+        if isinstance(kind, list):
+            query = query.where(PrimaryAsset.kind.in_(kind))
 
     if tag_ids:
         query = query.where(
@@ -306,7 +308,7 @@ class DerivedContentResponse(BaseModel):
                 "primary_asset_id": derived_content.full_node.primary_asset_id,
                 "primary_asset_display_name": derived_content.full_node.primary_asset_display_name,
                 "primary_asset_organization_id": derived_content.full_node.primary_asset_organization_id,
-                "primary_asset_primary_asset_type": derived_content.full_node.primary_asset_primary_asset_type,
+                "primary_asset_kind": derived_content.full_node.primary_asset_kind,
                 "version_id": derived_content.full_node.version_id,
                 "version_display_name": derived_content.full_node.version_display_name,
                 "node_id": derived_content.full_node.node_id,
@@ -384,26 +386,26 @@ async def list_contents(
 
 class PrimaryAssetCreate(BaseModel):
     display_name: str
-    primary_asset_type: str
+    kind: str
 
-    @field_validator("primary_asset_type")
-    def validate_primary_asset_type(cls, v: str) -> str:
+    @field_validator("kind")
+    def validate_kind(cls, v: str) -> str:
         if v not in [e.value for e in PrimaryAssetKind]:
             raise ValueError(
-                f"primary_asset_type must be one of {[e.value for e in PrimaryAssetKind]}"
+                f"kind must be one of {[e.value for e in PrimaryAssetKind]}"
             )
         return v
 
 
 class PrimaryAssetUpdate(BaseModel):
     display_name: str | None = None
-    primary_asset_type: str | None = None
+    kind: str | None = None
 
-    @field_validator("primary_asset_type")
-    def validate_primary_asset_type(cls, v: str | None) -> str | None:
+    @field_validator("kind")
+    def validate_kind(cls, v: str | None) -> str | None:
         if v is not None and v not in [e.value for e in PrimaryAssetKind]:
             raise ValueError(
-                f"primary_asset_type must be one of {[e.value for e in PrimaryAssetKind]}"
+                f"kind must be one of {[e.value for e in PrimaryAssetKind]}"
             )
         return v
 
@@ -418,7 +420,7 @@ async def create_primary_asset(
     new_asset = PrimaryAsset(
         display_name=payload.display_name,
         organization_id=user.organization_id,
-        kind=payload.primary_asset_type,
+        kind=payload.kind,
     )
     session.add(new_asset)
     session.commit()
@@ -446,10 +448,10 @@ async def update_primary_asset(
     # Update fields if provided
     if payload.display_name is not None:
         asset.display_name = payload.display_name
-    if payload.primary_asset_type is not None:
-        if payload.primary_asset_type not in [e.value for e in PrimaryAssetKind]:
-            raise HTTPException(status_code=400, detail="Invalid primary_asset_type")
-        asset.kind = payload.primary_asset_type
+    if payload.kind is not None:
+        if payload.kind not in [e.value for e in PrimaryAssetKind]:
+            raise HTTPException(status_code=400, detail="Invalid kind")
+        asset.kind = payload.kind
 
     session.add(asset)
     session.commit()

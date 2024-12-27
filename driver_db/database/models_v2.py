@@ -138,14 +138,14 @@ class Version(SQLModel, table=True):  # type: ignore
     nodes: list["Node"] = Relationship(back_populates="version")
     root_node: Optional["Node"] = Relationship(
         sa_relationship_kwargs={
-            "primaryjoin": "and_(VersionRow.id == NodeRow.version_id)",
-            "order_by": "func.length(NodeRow.relative_path)",
+            "primaryjoin": "and_(Version.id == Node.version_id)",
+            "order_by": "func.length(Node.relative_path)",
             "uselist": False,
         }
     )
 
 
-# TODO: consider kind on NodeRow. Maybe a bool or enum?
+# TODO: consider kind on Node. Maybe a bool or enum?
 class Node(SQLModel, table=True):  # type: ignore
     __tablename__ = "v2_node"
     __table_args__ = (
@@ -197,12 +197,12 @@ class Node(SQLModel, table=True):  # type: ignore
 
     parent_node: Optional["Node"] = Relationship(
         sa_relationship_kwargs={
-            "primaryjoin": "and_(NodeRow.version_id == foreign(NodeRow.version_id), NodeRow.version_id == remote(NodeRow.version_id), NodeRow.relative_path != remote(NodeRow.relative_path), NodeRow.relative_path.like(remote(NodeRow.relative_path) + '%'))",
+            "primaryjoin": "and_(Node.version_id == foreign(Node.version_id), Node.version_id == remote(Node.version_id), Node.relative_path != remote(Node.relative_path), Node.relative_path.like(remote(Node.relative_path) + '%'))",
             "uselist": False,
             "viewonly": True,
             "lazy": "select",
-            "remote_side": "[NodeRow.version_id]",
-            "order_by": "desc(func.length(NodeRow.relative_path))",
+            "remote_side": "[Node.version_id]",
+            "order_by": "desc(func.length(Node.relative_path))",
         }
     )
 

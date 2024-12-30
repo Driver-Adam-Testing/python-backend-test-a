@@ -5,7 +5,6 @@ from typing import Union
 from database.models_v1 import (
     ChunkAndEmbedding,
     DerivedContent,
-    Enum_Derived_Content_Status,
 )
 from modal_funcs import (
     make_folder_tech_doc,
@@ -14,14 +13,11 @@ from modal_funcs import (
     make_toplevel_tech_docs,
 )
 from openai import OpenAIError
-from sqlalchemy.orm import selectinload
 from sqlmodel import delete, select
 from utils.dag import LiteNode
 from utils.db import (
-    DerivedContentTypeMap,
-    get_derived_content_type_uuid,
     get_rel_path_workspace_id_codebase_id_from_source_content_id,
-    get_source_code_derived_content, 
+    get_source_code_derived_content,
 )
 from utils.task import Task, TaskResult, TaskResultKind
 
@@ -45,7 +41,6 @@ class FolderTechDocTask(Task):
         child_docs_tasks: tuple[TechDocsTask],
         codebase_name: str,
         db_node_id: uuid.UUID,  # TODO: this needs to be node_id
-        load_persisted_results: bool,
     ) -> None:
         self.child_docs_tasks = child_docs_tasks
         self.codebase_name = codebase_name
@@ -54,7 +49,6 @@ class FolderTechDocTask(Task):
             task_name=task_name,
             node=node,
             dependencies=child_docs_tasks,
-            load_persisted_results=load_persisted_results,
         )
 
     async def run_implementation(
@@ -153,7 +147,6 @@ class FileTechDocTask(Task):
         node: LiteNode,
         task_name: str,
         db_node_id: uuid.UUID,
-        load_persisted_results: bool,
     ) -> None:
         self.codebase_name = codebase_name
         self.source_code = source_code
@@ -161,7 +154,6 @@ class FileTechDocTask(Task):
         super().__init__(
             task_name=task_name,
             node=node,
-            load_persisted_results=load_persisted_results,
         )
 
     async def run_implementation(
@@ -256,8 +248,7 @@ class FileTechDocTask(Task):
                     await session.refresh(record)
                     content_ids.append(record.id)
                 content_ids = [
-                    str(cid)
-                    for cid in content_ids
+                    str(cid) for cid in content_ids
                 ]  # Make json serializable for result writer by converting to string... TODO
         return {"content_ids": content_ids}
 
@@ -273,7 +264,6 @@ class SymbolsTask(Task):
         source_code: str,
         tech_docs_task: FileTechDocTask,
         db_node_id: uuid.UUID,
-        load_persisted_results: bool,
     ) -> None:
         self.source_code = source_code
         self.tech_docs_task = tech_docs_task
@@ -282,7 +272,6 @@ class SymbolsTask(Task):
             task_name=task_name,
             node=node,
             dependencies=(tech_docs_task,),
-            load_persisted_results=load_persisted_results,
         )
 
     async def run_implementation(
@@ -363,7 +352,6 @@ class TopLevelDocsTask(Task):
         codebase_name: str,
         ordered_tech_docs_tasks: tuple[TechDocsTask],
         db_node_id: uuid.UUID,
-        load_persisted_results: bool,
     ) -> None:
         self.codebase_name = codebase_name
         self.db_node_id = db_node_id
@@ -371,7 +359,6 @@ class TopLevelDocsTask(Task):
             task_name=f"TopLevelTechDocsTask of {codebase_name}",
             node=node,
             dependencies=ordered_tech_docs_tasks,
-            load_persisted_results=load_persisted_results,
         )
 
     async def run_implementation(
@@ -475,7 +462,6 @@ class EmbeddingTask(Task):
         self,
         node: LiteNode,
         task_name: str,
-        load_persisted_results: bool,
         source_code: str | None = None,
         db_node_id: uuid.UUID | None = None,
         dependent_tasks: list[Task] | None = None,
@@ -498,7 +484,6 @@ class EmbeddingTask(Task):
             task_name=task_name,
             node=node,
             dependencies=deduped_tasks,
-            load_persisted_results=load_persisted_results,
         )
 
     # TODO: for PoC we moved the chunking/embedding AND IO into post-run-io, but this is not ideal. But it was the quickest way to get it working.
@@ -515,7 +500,7 @@ class EmbeddingTask(Task):
         dependent_io_results: dict["Task", dict[str, any]],
     ) -> dict[str, any]:
         from database.db import async_engine
-        from database.models_v1 import ChunkAndEmbedding, DerivedContentType
+        from database.models_v1 import ChunkAndEmbedding
         from sqlmodel.ext.asyncio.session import AsyncSession
 
         type_names_to_embed = [
@@ -531,12 +516,9 @@ class EmbeddingTask(Task):
 
             async with database_sem, AsyncSession(async_engine) as session:
                 # TODO: modify for (content_type) kind
-                contents_query = (
-                    select(DerivedContent)
-                    .where(
-                        DerivedContent.id.in_(content_ids_to_embed),
-                        DerivedContent.content_type_slug.in_(type_names_to_embed),
-                    )
+                contents_query = select(DerivedContent).where(
+                    DerivedContent.id.in_(content_ids_to_embed),
+                    DerivedContent.content_type_slug.in_(type_names_to_embed),
                 )
                 print(f"Querying '{task.task_name}' content to embed")
                 result = await session.exec(contents_query)

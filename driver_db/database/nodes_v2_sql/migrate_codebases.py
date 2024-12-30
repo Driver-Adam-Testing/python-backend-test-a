@@ -21,6 +21,12 @@ WITH ordered_codebase_versions AS (
         -- an inspector_version_id + display_name:
         ir.id            AS inspector_version_id,
         CASE
+            WHEN ir.display_name = 'Unversioned'
+                THEN ir.display_name
+                 || ROW_NUMBER() OVER (
+                        PARTITION BY w.organization_id, c.codebase_name
+                        ORDER BY dc.created_at
+                    )
             WHEN ir.display_name IS NOT NULL
                  THEN ir.display_name
             ELSE '0.0.'

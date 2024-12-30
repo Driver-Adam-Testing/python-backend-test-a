@@ -67,6 +67,55 @@ class FileInfo:
     source_content_id: None | uuid.UUID = None
 
 
+async def get_result_loading_config(
+    inspection_mode: InspectionMode,
+    version_id: uuid.UUID,
+    previous_version_id: uuid.UUID | None = None,
+) -> list[tuple[uuid.UUID, set[NodeStatus]]]:
+    from utils.db import try_get_latest_run_from_version_id
+
+    result_loading_config = []
+    is_diff = previous_version_id is not None
+
+    match inspection_mode:
+        case InspectionMode.NORMAL:
+            existing_run_id_for_prev_version = (
+                await try_get_latest_run_from_version_id(previous_version_id)
+                if is_diff
+                else None
+            )
+            existing_run_id_for_current_version = None
+        case InspectionMode.RESUME:
+            existing_run_id_for_prev_version = (
+                await try_get_latest_run_from_version_id(previous_version_id)
+                if is_diff
+                else None
+            )
+            existing_run_id_for_current_version = (
+                await try_get_latest_run_from_version_id(version_id)
+            )
+        case InspectionMode.RERUN:
+            existing_run_id_for_prev_version = (
+                await try_get_latest_run_from_version_id(previous_version_id)
+                if is_diff
+                else None
+            )
+            existing_run_id_for_current_version = None
+        case _:
+            raise ValueError("Invalid inspection mode")
+
+    if existing_run_id_for_prev_version:
+        result_loading_config.append(
+            (existing_run_id_for_prev_version, {NodeStatus.UNMODIFIED})
+        )
+    if existing_run_id_for_current_version:
+        result_loading_config.append(
+            (existing_run_id_for_current_version, set(NodeStatus))
+        )
+
+    return result_loading_config
+
+
 @app.function(
     image=inspection_image,
     secrets=[
@@ -99,9 +148,8 @@ async def inspect_db(
         create_inspector_run,
         download_source_file,
         get_analyzable_nodes_by_version_id,
-        get_prev_version,
         get_version_by_id,
-        try_get_latest_run_from_version_id,
+        try_get_prev_version,
     )
 
     # Get the Version and check if it has previous_version_id
@@ -109,51 +157,14 @@ async def inspect_db(
     org_id = version.primary_asset.organization_id
     org_hashed_id = hashlib.sha256(org_id.encode()).hexdigest()[:63]
 
-    previous_version = get_prev_version(version_id)
+    previous_version = try_get_prev_version(version_id)
+    previous_version_id = previous_version.id if previous_version else None
+
     codebase_name = version.primary_asset.display_name
 
-    is_diff = previous_version is not None
-
-    match inspection_mode:
-        case InspectionMode.NORMAL:
-            # We have a run_id to load from for the previous version if we are diffing; otherwise, no loading.
-            existing_run_id_for_prev_version = (
-                await try_get_latest_run_from_version_id(previous_version.id)
-                if is_diff
-                else None
-            )
-            existing_run_id_for_current_version = None
-        case InspectionMode.RESUME:
-            # Two run ids to load from: one for the previous version (if we're doing a diff) and one for the current version.
-            existing_run_id_for_prev_version = (
-                await try_get_latest_run_from_version_id(previous_version.id)
-                if is_diff
-                else None
-            )
-            existing_run_id_for_current_version = (
-                await try_get_latest_run_from_version_id(version_id)
-            )
-        case InspectionMode.RERUN:
-            existing_run_id_for_prev_version = (
-                await try_get_latest_run_from_version_id(previous_version.id)
-                if is_diff
-                else None
-            )
-            existing_run_id_for_current_version = None
-        case _:
-            raise ValueError("Invalid inspection mode")
-
-    result_loading_config = []
-    # Note: Order may matter. We want to load results for the previous version first,
-    # then overwrite them with results for the current version if applicable.
-    if existing_run_id_for_prev_version:
-        result_loading_config.append(
-            (existing_run_id_for_prev_version, {NodeStatus.UNMODIFIED})
-        )
-    if existing_run_id_for_current_version:
-        result_loading_config.append(
-            (existing_run_id_for_current_version, set(NodeStatus))
-        )
+    result_loading_config = await get_result_loading_config(
+        inspection_mode, version_id, previous_version_id
+    )
 
     run_id = await create_inspector_run(version_id)
 

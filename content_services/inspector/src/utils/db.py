@@ -32,7 +32,7 @@ async def get_version_by_id(version_id: uuid.UUID) -> VersionRow:
         return (await session.exec(statement)).one()
 
 
-async def get_prev_version(version_id: uuid.UUID) -> None | VersionRow:
+async def try_get_prev_version(version_id: uuid.UUID) -> None | VersionRow:
     from database.db import async_engine
     from sqlmodel import select
 

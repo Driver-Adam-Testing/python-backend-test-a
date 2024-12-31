@@ -51,7 +51,7 @@ SELECT * FROM (
     LEFT JOIN inspection_versions ir
       ON ir.id = dc.version_id
     WHERE dc.content_kind = 'codebase'
-);
+) AS temp;
 CREATE TEMP TABLE version_rows_marked AS
 SELECT * FROM  (
     SELECT
@@ -63,7 +63,7 @@ SELECT * FROM  (
       ON ocv1.org_id = ocv2.org_id
      AND ocv1.codebase_name = ocv2.codebase_name
     WHERE ocv2.codebase_version_order = 1
-);
+) AS temp2;
 INSERT INTO v2_primary_asset (
     id,
     display_name,
@@ -132,7 +132,7 @@ SELECT * FROM (
         dc.version_id = vr.inspector_version_id
         OR dc.version_id = dc.codebase_id
       )
-);
+) AS temp3;
 
 INSERT INTO v2_node (
     id,

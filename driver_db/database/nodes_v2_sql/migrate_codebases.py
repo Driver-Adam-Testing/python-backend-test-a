@@ -159,7 +159,8 @@ WHERE rn = 1
 UPDATE derived_contents
 SET node_id = n.id
 FROM v2_node n
-WHERE n.id = derived_contents.source_content_id
+WHERE (n.id = derived_contents.source_content_id
+  OR n.id = derived_contents.id)
   AND derived_contents.node_id IS NULL;
 
 ------------------------------------------------------------------------------
@@ -171,8 +172,7 @@ FROM v2_node n
 JOIN version_rows_marked vr
   ON vr.relative_path_dir = n.relative_path
  AND n.version_id = vr.version_id_from_dc_codebase
-WHERE derived_contents.source_content_id = vr.version_id_from_dc_codebase
-  OR derived_contents.id = vr.version_id_from_dc_codebase;
+WHERE derived_contents.source_content_id = vr.version_id_from_dc_codebase;
 
 ------------------------------------------------------------------------------
 -- 5) Final Select (optional)

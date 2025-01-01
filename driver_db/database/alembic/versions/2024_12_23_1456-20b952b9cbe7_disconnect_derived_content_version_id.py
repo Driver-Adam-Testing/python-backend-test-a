@@ -67,8 +67,8 @@ def downgrade():
     """)
     op.create_foreign_key(
         "derived_contents_version_id_fkey",
-        "derived_contents",
-        "v2_version",
+        "derived_content",
+        "inspection_versions",
         ["version_id"],
         ["id"],
     )

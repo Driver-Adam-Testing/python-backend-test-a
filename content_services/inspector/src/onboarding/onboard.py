@@ -7,6 +7,7 @@ from uuid import uuid4
 
 import modal
 from common import app
+from database.models_v2_enums import ContentKind, PrimaryAssetKind, VersionStatus
 
 image = (
     modal.Image.debian_slim(python_version="3.12")
@@ -162,35 +163,18 @@ def run_codebase_onboarding(
     override_codebase_name: str | None = None,
     version_str: str | None = None,
     repository_id: str | None = None,
-) -> tuple[str, str]:
+) -> str:
     from database.db import (
         engine,  # We defer the import since we'll have the secrets set here
     )
     from database.models_v1 import (
-        Codebase,
         DerivedContent,
-        Enum_Codebase_Status,
-        Enum_Derived_Content_Status,
-        InspectionVersion,
         UsageEventType,
-        Workspace,
     )
     from database.models_v2 import (
-        NodeRow,
-        PrimaryAssetRow,
-        VersionRow,
-    )
-    from onboarding.onboard_utils import (
-        RunInProgressError,
-        create_bucket_if_dne,
-        download_file_from_presigned_url,
-        get_codebase_content_record_status_for,
-        get_source_content_type_uuid,
-        is_on_blacklist,
-        load_driverignore,
-        run_file_stats_and_reencode,
-        unpack_archive,
-        upload_file_to_s3,
+        Node,
+        PrimaryAsset,
+        Version,
     )
     from shared.interfaces.usage.event_metadata import (
         UsageEventMetadata,
@@ -201,6 +185,17 @@ def run_codebase_onboarding(
     from shared.usage.usage_service import UsageService
     from shared.usage.utils import bytes_to_sloc
     from sqlmodel import Session, select
+
+    from onboarding.onboard_utils import (
+        RunInProgressError,
+        create_bucket_if_dne,
+        download_file_from_presigned_url,
+        is_on_blacklist,
+        load_driverignore,
+        run_file_stats_and_reencode,
+        unpack_archive,
+        upload_file_to_s3,
+    )
 
     if not version_str:
         version_str = "Unversioned"
@@ -226,9 +221,9 @@ def run_codebase_onboarding(
     # and raise an exception. Namely, the previously onboarded zip won't have a version.
     with Session(engine) as session, session.begin():
         primary_asset = session.exec(
-            select(PrimaryAssetRow).where(
-                PrimaryAssetRow.display_name == codebase_name,
-                PrimaryAssetRow.organization_id == org_id,
+            select(PrimaryAsset).where(
+                PrimaryAsset.display_name == codebase_name,
+                PrimaryAsset.organization_id == org_id,
             )
         ).first()
         if primary_asset:
@@ -236,18 +231,18 @@ def run_codebase_onboarding(
             # TODO: VersionRow look up ONLY to check the status of the previous version is complete.
             primary_asset_id = primary_asset.id
             statement = (
-                select(VersionRow)
+                select(Version)
                 .where(
-                    PrimaryAssetRow.id == primary_asset_id,
+                    PrimaryAsset.id == primary_asset_id,
                 )
-                .order_by(VersionRow.created_at.desc())
+                .order_by(Version.created_at.desc())
             )
             prior_version = session.exec(statement).first()
             assert prior_version is not None, "Prior version should always be present"
             # TODO: check the provider - for manual providers we should not create a new version
             # if provider == "manual" and prior_version: raise
             prior_version_name = prior_version.display_name
-            if prior_version.status == "generating": # TODO use enum!
+            if prior_version.status == VersionStatus.GENERATING.value:
                 print(
                     f"Codebase {primary_asset.display_name} has a prior version name: {prior_version_name}"
                     f" id: {prior_version.id}"
@@ -260,26 +255,26 @@ def run_codebase_onboarding(
             prior_version_name = None
             primary_asset_id = uuid4()
 
-        version = VersionRow(
-            id=uuid4(),
-            primary_asset_id=primary_asset_id,
-            display_name=version_str,
-            status="generating",
-        )
-        session.add(version)
-        version_id = version.id
-
         is_new_primary_asset = False
-        if primary_asset is not None:
+        if primary_asset is None:
             is_new_primary_asset = True
-            primary_asset = PrimaryAssetRow(
+            primary_asset = PrimaryAsset(
                 id=primary_asset_id,
                 display_name=codebase_name,
                 organization_id=org_id,
-                primary_asset_kind="codebase",
+                kind=PrimaryAssetKind.CODEBASE.value,
                 repository_id=repository_id,
             )
             session.add(primary_asset)
+
+        version = Version(
+            id=uuid4(),
+            primary_asset_id=primary_asset_id,
+            display_name=version_str,
+            status=VersionStatus.GENERATING.value,
+        )
+        version_id = version.id
+        session.add(version)
 
         usage_balance = UsageService(session).get_usage_balance(org_id)
     org_id_bucket = hashlib.sha256(org_id.encode()).hexdigest()[:63]
@@ -314,10 +309,15 @@ def run_codebase_onboarding(
             if not is_on_blacklist(Path(directory)) and not is_ignored:
                 # TODO: analysis metadata for directories?
                 # TODO: this is fragile - consider using DAG logic here
-                dir_node = NodeRow(
+                formatted_dir = (
+                    str(directory) + "/"
+                    if not directory.endswith("/")
+                    else str(directory)
+                )
+                dir_node = Node(
                     version_id=version_id,
-                    relative_path=directory,
-                    kind="directory",
+                    relative_path=formatted_dir,
+                    # kind="directory", # TODO enum
                     misc_metadata={},
                 )
                 session.add(dir_node)
@@ -332,18 +332,20 @@ def run_codebase_onboarding(
                 and not codebase_stats[file_path]["is_ignored"]
             ):
                 node_id = uuid4()
-                file_node = NodeRow(
+                file_node = Node(
                     id=node_id,
                     version_id=version_id,
                     relative_path=str(file_path),
-                    kind="source-code",
+                    # kind="source-code", # TODO
                     misc_metadata=codebase_stats[file_path],
                 )
                 file_dc = DerivedContent(
                     content_type_id=None,
-                    content_type_slug="source-code",
+                    content_kind=ContentKind.CODEBASE_FILE.value,
                     node_id=node_id,
-                    relative_path=str(file_path), # TODO: this should be removed from the model
+                    relative_path=str(
+                        file_path
+                    ),  # TODO: this should be removed from the model
                     content=None,
                     content_name=None,
                     misc_metadata=None,
@@ -352,6 +354,7 @@ def run_codebase_onboarding(
                 session.add(file_node)
                 session.add(file_dc)
                 # Only add to SLOC and size if the file is analyzable
+
                 if codebase_stats[file_path]["is_analyzable"]:
                     codebase_sloc += codebase_stats[file_path]["sloc"]
                     codebase_size_in_bytes += codebase_stats[file_path]["size"]
@@ -383,7 +386,7 @@ def run_codebase_onboarding(
         )
         # TODO: do this inside the same transaction as creating the primary asset
         session_meta = UsageSessionMetadata(
-            content_type="codebase", # TODO enum
+            content_type="codebase",  # TODO enum
             content_id=str(primary_asset_id),
             content_name=codebase_name,
             version_id=str(version_id),
@@ -395,12 +398,12 @@ def run_codebase_onboarding(
                 session_id=llm_session.session_id,
                 organization_id=org_id,
                 user_id=creator_id,
-                event_source="codebase_onboarding", # TODO make enum
+                event_source="codebase_onboarding",  # TODO make enum
                 bytes_in=-codebase_size_in_bytes,
                 bytes_out=0,
                 tokens_in=0,
                 tokens_out=0,
-                timestamp=datetime.now(), #TODO: enforce timezone aware datetime objects, always
+                timestamp=datetime.now(),  # TODO: enforce timezone aware datetime objects, always
                 event_type=UsageEventType.ONBOARDING_USAGE_DEBIT,
                 event_metadata=UsageEventMetadata(
                     model="None",

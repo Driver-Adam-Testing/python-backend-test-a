@@ -157,7 +157,7 @@ async def inspect_db(
     org_id = version.primary_asset.organization_id
     org_hashed_id = hashlib.sha256(org_id.encode()).hexdigest()[:63]
 
-    previous_version = try_get_prev_version(version_id)
+    previous_version = await try_get_prev_version(version_id)
     previous_version_id = previous_version.id if previous_version else None
 
     codebase_name = version.primary_asset.display_name
@@ -193,8 +193,8 @@ async def inspect_db(
             download_abs_path = download_source_file(
                 s3_client=s3_client,
                 bucket_name=org_hashed_id,
-                primary_asset_id=version.primary_asset.id,
-                version_id=version_id,
+                primary_asset_id=str(version.primary_asset.id),
+                version_id=str(version_id),
                 node_rel_path=db_file_node.relative_path,
                 download_root=download_root,
             )
@@ -217,8 +217,8 @@ async def inspect_db(
                 download_abs_path = download_source_file(
                     s3_client=s3_client,
                     bucket_name=org_hashed_id,
-                    primary_asset_id=previous_version.primary_asset.id,
-                    version_id=previous_version.id,
+                    primary_asset_id=str(previous_version.primary_asset.id),
+                    version_id=str(previous_version.id),
                     node_rel_path=db_previous_file_node.relative_path,
                     download_root=previous_download_root,
                 )
@@ -240,7 +240,7 @@ async def inspect_db(
             for node in diff_dag.topological_sort():
                 print(node.root_rel_path, node.status)
 
-        if previous_version.id:
+        if previous_version is not None:
             sorted_nodes = diff_dag.topological_sort()
         else:
             sorted_nodes = codebase_dag.topological_sort()
@@ -338,7 +338,6 @@ async def inspect_files(
             )
             file_tech_docs_task = FileTechDocTask(
                 codebase_name=codebase_name,
-                version_id=version_id,
                 source_code=source_code,
                 node=lite_node,
                 task_name=f"TechDoc {node.root_rel_path}",
@@ -509,10 +508,12 @@ def onboard_and_inspect(
     archive_name: str,
     org_id: str,
     creator_id: str,
+    # _workspace_id: UUID,
     provider: str = "manual",
     version: str | None = None,  # this is the version string NOT the ID from our db
     repository_id: str | None = None,
 ) -> None:
+    from database.models_v2_enums import VersionStatus
     from onboarding.onboard_utils import RunInProgressError, set_codebase_status
 
     print(
@@ -521,7 +522,7 @@ def onboard_and_inspect(
     )
     try:
         try:
-            codebase_id, version_id = run_codebase_onboarding.remote(
+            version_id = run_codebase_onboarding.remote(
                 presigned_url,
                 archive_name,
                 org_id,
@@ -536,13 +537,13 @@ def onboard_and_inspect(
             )
             return
 
-        print(f"Onboarding complete for codebase: {codebase_id}, {version_id}")
+        print(f"Onboarding complete for version: {version_id}")
         print("Inspecting...")
         inspect_db.remote(version_id)
         print("Inspection complete")
 
         # TODO: set the version status
-        set_codebase_status(version_id, "generation-complete")
+        set_codebase_status(version_id, VersionStatus.GENERATION_COMPLETE.value)
 
     except Exception as e:
         exception_type = type(e).__name__
@@ -556,5 +557,5 @@ def onboard_and_inspect(
         # Since codebase and version could possibly be undefined in this clean up action, we don't care if it fails
         with suppress(Exception):
             # TODO: set the version status
-            set_codebase_status(version_id, "generation-error")
+            set_codebase_status(version_id, VersionStatus.GENERATION_ERROR.value)
         raise e

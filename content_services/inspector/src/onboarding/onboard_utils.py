@@ -13,76 +13,20 @@ from uuid import UUID
 import requests
 from boto3 import resource
 from botocore.client import ClientError
-from database.models_v1 import (
-    Codebase,
-    DerivedContent,
-    Enum_Codebase_Status,
-    Enum_Derived_Content_Status,
-    Workspace,
-)
-from database.models_v2 import VersionRow
+from database.models_v2 import Version
 from gitignore_parser import parse_gitignore
-from sqlmodel import Session, select
+from sqlmodel import Session
 
 
 class RunInProgressError(Exception):
     pass
 
 
-# TODO dedup; already exists for inspector
-@cache
-def get_source_content_type_uuid(content_type_name: str) -> UUID:
-    from database.db import engine
-    from database.models_v1 import DerivedContentType
-
-    sct_uuid = None
-    with Session(engine) as session:
-        sel_statement = select(DerivedContentType).where(
-            DerivedContentType.type_name == content_type_name
-        )
-        res_sct = session.exec(sel_statement).first()
-        if res_sct:
-            sct_uuid = res_sct.id
-    return sct_uuid
-
-
-@cache
-def get_org_id_from_workspace(workspace_id: UUID) -> str:
-    from database.db import engine
-
-    org_id = None
-    with Session(engine) as session:
-        sel_statement = select(Workspace).where(Workspace.id == workspace_id)
-        workspace = session.exec(sel_statement).first()
-        if workspace:
-            org_id = workspace.organization_id
-    return org_id
-
-
-def get_codebase_content_record_status_for(
-    codebase_id: UUID, version_id: UUID
-) -> tuple[Enum_Derived_Content_Status, UUID]:
-    from database.db import engine
-    from sqlmodel import Session, select
-
-    with Session(engine) as session:
-        cb_sc_uuid = get_source_content_type_uuid("codebase")
-        sel_statement = select(DerivedContent).where(
-            DerivedContent.codebase_id == codebase_id,
-            DerivedContent.content_type_id == cb_sc_uuid,
-            DerivedContent.version_id == version_id,
-        )
-        codebase_dc = session.exec(sel_statement).one()
-    return codebase_dc.status, codebase_dc.id
-
-
-def set_codebase_status(
-    version_id: UUID, status: str
-) -> None:
+def set_codebase_status(version_id: UUID, status: str) -> None:
     from database.db import engine
 
     with Session(engine) as session, session.begin():
-        version = session.get(VersionRow, version_id)
+        version = session.get(Version, version_id)
         version.status = status
         session.add(version)
 

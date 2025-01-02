@@ -6,6 +6,7 @@ from database.models_v1 import (
     ChunkAndEmbedding,
     DerivedContent,
 )
+from database.models_v2_enums import ContentKind
 from modal_funcs import (
     make_folder_tech_doc,
     make_symbol_docs,
@@ -15,10 +16,7 @@ from modal_funcs import (
 from openai import OpenAIError
 from sqlmodel import delete, select
 from utils.dag import LiteNode
-from utils.db import (
-    get_rel_path_workspace_id_codebase_id_from_source_content_id,
-    get_source_code_derived_content,
-)
+from utils.db import get_source_code_derived_content
 from utils.task import Task, TaskResult, TaskResultKind
 
 TechDocsTask = Union["FileTechDocTask", "FolderTechDocTask", "TopLevelDocsTask"]
@@ -83,7 +81,7 @@ class FolderTechDocTask(Task):
             # Short Single Sentence
             short_sent_dc = DerivedContent(
                 content_type_id=None,
-                content_type_slug="short_sentence_description",
+                content_kind=ContentKind.SHORT_SENTENCE_DESCRIPTION.value,  # "short_sentence_description",
                 node_id=self.db_node_id,
                 relative_path=str(self.node.root_rel_path),
                 content=docs["short"]["single_sentence"],
@@ -92,7 +90,7 @@ class FolderTechDocTask(Task):
             # Short Single Paragraph
             short_para_dc = DerivedContent(
                 content_type_id=None,
-                content_type_slug="short_paragraph_description",
+                content_kind=ContentKind.SHORT_PARAGRAPH_DESCRIPTION.value,
                 node_id=self.db_node_id,
                 relative_path=str(self.node.root_rel_path),
                 content=docs["short"]["single_paragraph"],
@@ -101,7 +99,7 @@ class FolderTechDocTask(Task):
             # Long File Description
             long_desc_dc = DerivedContent(
                 content_type_id=None,
-                content_type_slug="long_description",
+                content_kind=ContentKind.LONG_DESCRIPTION.value,
                 node_id=self.db_node_id,
                 relative_path=str(self.node.root_rel_path),
                 content=docs["long"],
@@ -111,11 +109,11 @@ class FolderTechDocTask(Task):
             async with AsyncSession(async_engine) as session:
                 dc_delete_query = delete(DerivedContent).where(
                     DerivedContent.node_id == self.db_node_id,
-                    DerivedContent.content_type_slug.in_(
+                    DerivedContent.content_kind.in_(
                         [
-                            "short_sentence_description",
-                            "short_paragraph_description",
-                            "long_description",
+                            ContentKind.SHORT_SENTENCE_DESCRIPTION.value,
+                            ContentKind.SHORT_PARAGRAPH_DESCRIPTION.value,
+                            ContentKind.LONG_DESCRIPTION.value,
                         ]
                     ),
                 )
@@ -184,7 +182,7 @@ class FileTechDocTask(Task):
             # Short Single Sentence
             short_sent_dc = DerivedContent(
                 content_type_id=None,
-                content_type_slug="short_sentence_description",
+                content_kind=ContentKind.SHORT_SENTENCE_DESCRIPTION.value,
                 node_id=self.db_node_id,
                 relative_path=str(self.node.root_rel_path),
                 content=docs["short"]["single_sentence"],
@@ -193,7 +191,7 @@ class FileTechDocTask(Task):
             # Short Single Paragraph
             short_para_dc = DerivedContent(
                 content_type_id=None,
-                content_type_slug="short_paragraph_description",
+                content_kind=ContentKind.SHORT_PARAGRAPH_DESCRIPTION.value,
                 node_id=self.db_node_id,
                 relative_path=str(self.node.root_rel_path),
                 content=docs["short"]["single_paragraph"],
@@ -202,7 +200,7 @@ class FileTechDocTask(Task):
             # Long File Description
             long_desc_dc = DerivedContent(
                 content_type_id=None,
-                content_type_slug="long_description",
+                content_kind=ContentKind.LONG_DESCRIPTION.value,
                 node_id=self.db_node_id,
                 relative_path=str(self.node.root_rel_path),
                 content=docs["long"],
@@ -214,7 +212,7 @@ class FileTechDocTask(Task):
                 for i, chunk in enumerate(docs["chunk_descriptions"]):
                     chunk_dc = DerivedContent(
                         content_type_id=None,
-                        content_type_slug="chunk_description",
+                        content_kind=ContentKind.CHUNK_DESCRIPTIONS.value,
                         node_id=self.db_node_id,
                         relative_path=str(self.node.root_rel_path),
                         content=chunk,
@@ -226,12 +224,12 @@ class FileTechDocTask(Task):
             async with AsyncSession(async_engine) as session:
                 dc_delete_query = delete(DerivedContent).where(
                     DerivedContent.node_id == self.db_node_id,
-                    DerivedContent.content_type_slug.in_(
+                    DerivedContent.content_kind.in_(
                         [
-                            "chunk_description",
-                            "short_sentence_description",
-                            "short_paragraph_description",
-                            "long_description",
+                            ContentKind.CHUNK_DESCRIPTIONS.value,
+                            ContentKind.SHORT_SENTENCE_DESCRIPTION.value,
+                            ContentKind.SHORT_PARAGRAPH_DESCRIPTION.value,
+                            ContentKind.LONG_DESCRIPTION.value,
                         ]
                     ),
                 )
@@ -310,7 +308,7 @@ class SymbolsTask(Task):
             for idx, symbol in enumerate(symbols):
                 symbol_dc = DerivedContent(
                     content_type_id=None,
-                    content_type_slug="symbol",
+                    content_kind=ContentKind.SYMBOL.value,
                     node_id=self.db_node_id,
                     relative_path=str(self.node.root_rel_path),
                     content=None,
@@ -323,7 +321,7 @@ class SymbolsTask(Task):
                 dc_delete_query = (
                     delete(DerivedContent)
                     .where(DerivedContent.node_id == self.db_node_id)
-                    .where(DerivedContent.content_type_slug == "symbol")
+                    .where(DerivedContent.content_kind == ContentKind.SYMBOL.value)
                 )
                 await session.exec(dc_delete_query)
                 await session.commit()
@@ -402,25 +400,26 @@ class TopLevelDocsTask(Task):
             # )
 
             top_level_tups = [
-                ("top_level_short_sentence", docs["short"]["single_sentence"]),
-                ("top_level_short_paragraph", docs["short"]["single_paragraph"]),
-                ("top_level_terse_sentence", docs["short"]["terse_sentence"]),
-                ("top_level_long_description", docs["long"]),
+                (
+                    ContentKind.TOP_LEVEL_SHORT_SENTENCE.value,
+                    docs["short"]["single_sentence"],
+                ),
+                (
+                    ContentKind.TOP_LEVEL_SHORT_PARAGRAPH.value,
+                    docs["short"]["single_paragraph"],
+                ),
+                (
+                    ContentKind.TOP_LEVEL_TERSE_SENTENCE.value,
+                    docs["short"]["terse_sentence"],
+                ),
+                (ContentKind.TOP_LEVEL_LONG_DESCRIPTION.value, docs["long"]),
             ]
 
-            (
-                relative_path,
-                workspace_id,
-                codebase_id,
-            ) = await get_rel_path_workspace_id_codebase_id_from_source_content_id(
-                self.db_node_id
-            )
-
             dc_contents = []
-            for dc_type_slug, dc_docs in top_level_tups:
+            for content_kind, dc_docs in top_level_tups:
                 dc = DerivedContent(
                     content_type_id=None,
-                    content_type_slug=dc_type_slug,
+                    content_kind=content_kind,
                     node_id=self.db_node_id,
                     relative_path=str(self.node.root_rel_path),
                     content=dc_docs,
@@ -434,7 +433,7 @@ class TopLevelDocsTask(Task):
             async with AsyncSession(async_engine) as session:
                 dc_delete_query = delete(DerivedContent).where(
                     DerivedContent.node_id == self.db_node_id,
-                    DerivedContent.content_type_id.in_(
+                    DerivedContent.content_kind.in_(
                         [dc_slug for dc_slug, _ in top_level_tups]
                     ),
                 )
@@ -472,11 +471,7 @@ class EmbeddingTask(Task):
             )
 
         self.source_code = source_code
-        if db_node_id:
-            source_code_derived_content = get_source_code_derived_content(db_node_id)
-            self.source_code_dc_id = source_code_derived_content.id
-        else:
-            self.source_code_dc_id = None
+        self.db_node_id = db_node_id
 
         dependent_tasks = dependent_tasks or []
         deduped_tasks = tuple(set(dependent_tasks))
@@ -503,9 +498,17 @@ class EmbeddingTask(Task):
         from database.models_v1 import ChunkAndEmbedding
         from sqlmodel.ext.asyncio.session import AsyncSession
 
-        type_names_to_embed = [
-            "long_description",
-            "symbol",
+        if self.db_node_id:
+            source_code_derived_content = await get_source_code_derived_content(
+                self.db_node_id
+            )
+            source_code_dc_id = source_code_derived_content.id
+        else:
+            source_code_dc_id = None
+
+        content_kinds_to_embed = [
+            ContentKind.LONG_DESCRIPTION.value,
+            ContentKind.SYMBOL.value,
         ]
         # TODO: type names are just strings now
 
@@ -518,7 +521,7 @@ class EmbeddingTask(Task):
                 # TODO: modify for (content_type) kind
                 contents_query = select(DerivedContent).where(
                     DerivedContent.id.in_(content_ids_to_embed),
-                    DerivedContent.content_type_slug.in_(type_names_to_embed),
+                    DerivedContent.content_kind.in_(content_kinds_to_embed),
                 )
                 print(f"Querying '{task.task_name}' content to embed")
                 result = await session.exec(contents_query)
@@ -527,7 +530,7 @@ class EmbeddingTask(Task):
                 if not content_rows:
                     continue
                 body = [
-                    (c.content, c.id, c.content_type_slug, c.misc_metadata)
+                    (c.content, c.id, c.content_kind, c.misc_metadata)
                     for c in content_rows
                 ]
                 contents, ids, type_names, metadata = zip(*body, strict=False)
@@ -561,15 +564,15 @@ class EmbeddingTask(Task):
             # TODO: chunkandembedding needs to point at a piece of content, but we don't store the source code on the database
             sc_chunks = await self.chunk_embed_and_prep_for_db(
                 [self.source_code],
-                [self.source_code_dc_id],
-                ["source-code"],
+                [source_code_dc_id],
+                [ContentKind.CODEBASE_FILE.value],
                 [{}],
             )
 
             async with database_sem, AsyncSession(async_engine) as session:  # noqa: SIM117
                 async with session.begin():
                     delete_statement = delete(ChunkAndEmbedding).where(
-                        ChunkAndEmbedding.content_id == self.source_code_sc_id
+                        ChunkAndEmbedding.content_id == source_code_dc_id
                     )
                     await session.exec(delete_statement)
                     session.add_all(sc_chunks)

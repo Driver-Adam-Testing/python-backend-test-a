@@ -108,6 +108,16 @@ class MetricsLambda(Construct):
                 comparison_operator=aws_cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
                 treat_missing_data=aws_cloudwatch.TreatMissingData.IGNORE,
             )
+            self.lambda_error_rate_alarm = aws_cloudwatch.Alarm(
+                self,
+                "MetricLambdaErrorAlarm",
+                alarm_description=f"[{params.environment}] Metrics Lambda Errors > 5 over last 5 minutes",
+                metric=self.lambda_function.metric_errors(),
+                threshold=5,
+                evaluation_periods=1,
+                comparison_operator=aws_cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+                treat_missing_data=aws_cloudwatch.TreatMissingData.IGNORE,
+            )
 
         if params.cloudwatch_alarm_arn:
             notification_action = aws_cloudwatch_actions.SnsAction(
@@ -119,6 +129,7 @@ class MetricsLambda(Construct):
             )
             self.metric_dlq_alarm.add_alarm_action(notification_action)
             self.metric_message_age_alarm.add_alarm_action(notification_action)
+            self.lambda_error_rate_alarm.add_alarm_action(notification_action)
         else:
             print(
                 f"*** NO CW DLQ ALARM CONFIGURED FOR MetricAlarm in {params.environment} ***"

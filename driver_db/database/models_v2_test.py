@@ -8,9 +8,9 @@ from .models_v2 import (
     ChunkRow,
     ContentRow,
     FullNodeView,
-    NodeRow,
-    PrimaryAssetRow,
-    VersionRow,
+    Node,
+    PrimaryAsset,
+    Version,
 )
 
 # Define the test database URL (adjust with your credentials)
@@ -54,63 +54,63 @@ def session(engine: create_engine) -> Session:
 
 def test_primary_asset_table(session: Session) -> None:
     """Test creation and retrieval of a PrimaryAssetRow record."""
-    asset = PrimaryAssetRow(display_name="Test Asset", organization_id="org_123")
+    asset = PrimaryAsset(display_name="Test Asset", organization_id="org_123")
     session.add(asset)
     session.commit()
 
     retrieved_asset = session.exec(
-        select(PrimaryAssetRow).where(PrimaryAssetRow.display_name == "Test Asset")
+        select(PrimaryAsset).where(PrimaryAsset.display_name == "Test Asset")
     ).one()
     assert retrieved_asset.organization_id == "org_123"
 
 
 def test_version_table(session: Session) -> None:
     """Test creation and retrieval of a VersionRow record."""
-    asset = PrimaryAssetRow(display_name="Test Asset", organization_id="org_123")
+    asset = PrimaryAsset(display_name="Test Asset", organization_id="org_123")
     session.add(asset)
     session.commit()
 
-    version = VersionRow(primary_asset_id=asset.id, display_name="Version 1")
+    version = Version(primary_asset_id=asset.id, display_name="Version 1")
     session.add(version)
     session.commit()
 
     retrieved_version = session.exec(
-        select(VersionRow).where(VersionRow.display_name == "Version 1")
+        select(Version).where(Version.display_name == "Version 1")
     ).one()
     assert retrieved_version.primary_asset_id == asset.id
 
 
 def test_node_table(session: Session) -> None:
     """Test creation and retrieval of a NodeRow record."""
-    asset = PrimaryAssetRow(display_name="Test Asset", organization_id="org_123")
+    asset = PrimaryAsset(display_name="Test Asset", organization_id="org_123")
     session.add(asset)
     session.commit()
 
-    version = VersionRow(primary_asset_id=asset.id, display_name="Version 1")
+    version = Version(primary_asset_id=asset.id, display_name="Version 1")
     session.add(version)
     session.commit()
 
-    node = NodeRow(version_id=version.id, relative_path="/path/to/node")
+    node = Node(version_id=version.id, relative_path="/path/to/node")
     session.add(node)
     session.commit()
 
     retrieved_node = session.exec(
-        select(NodeRow).where(NodeRow.relative_path == "/path/to/node")
+        select(Node).where(Node.relative_path == "/path/to/node")
     ).one()
     assert retrieved_node.version_id == version.id
 
 
 def test_content_table(session: Session) -> None:
     """Test creation and retrieval of a ContentRow record."""
-    asset = PrimaryAssetRow(display_name="Test Asset", organization_id="org_123")
+    asset = PrimaryAsset(display_name="Test Asset", organization_id="org_123")
     session.add(asset)
     session.commit()
 
-    version = VersionRow(primary_asset_id=asset.id, display_name="Version 1")
+    version = Version(primary_asset_id=asset.id, display_name="Version 1")
     session.add(version)
     session.commit()
 
-    node = NodeRow(version_id=version.id, relative_path="/path/to/node")
+    node = Node(version_id=version.id, relative_path="/path/to/node")
     session.add(node)
     session.commit()
 
@@ -128,15 +128,15 @@ def test_content_table(session: Session) -> None:
 
 def test_chunk_table(session: Session) -> None:
     """Test creation and retrieval of a ChunkRow record."""
-    asset = PrimaryAssetRow(display_name="Test Asset", organization_id="org_123")
+    asset = PrimaryAsset(display_name="Test Asset", organization_id="org_123")
     session.add(asset)
     session.commit()
 
-    version = VersionRow(primary_asset_id=asset.id, display_name="Version 1")
+    version = Version(primary_asset_id=asset.id, display_name="Version 1")
     session.add(version)
     session.commit()
 
-    node = NodeRow(version_id=version.id, relative_path="/path/to/node")
+    node = Node(version_id=version.id, relative_path="/path/to/node")
     session.add(node)
     session.commit()
 
@@ -164,17 +164,17 @@ def test_chunk_table(session: Session) -> None:
 def test_save_functionality(session: Session) -> None:
     """Test the save functionality of FullNodeView."""
     # Create and commit a primary asset
-    asset = PrimaryAssetRow(display_name="Test Asset", organization_id="org_123")
+    asset = PrimaryAsset(display_name="Test Asset", organization_id="org_123")
     session.add(asset)
     session.commit()
 
     # Create and commit a version linked to the primary asset
-    version = VersionRow(primary_asset_id=asset.id, display_name="Version 1")
+    version = Version(primary_asset_id=asset.id, display_name="Version 1")
     session.add(version)
     session.commit()
 
     # Create and commit a node linked to the version
-    node = NodeRow(version_id=version.id, relative_path="/path/to/node")
+    node = Node(version_id=version.id, relative_path="/path/to/node")
     session.add(node)
     session.commit()
 
@@ -193,34 +193,34 @@ def test_save_functionality(session: Session) -> None:
 
     # Retrieve and assert the saved data
     retrieved_asset = session.exec(
-        select(PrimaryAssetRow).where(PrimaryAssetRow.id == asset.id)
+        select(PrimaryAsset).where(PrimaryAsset.id == asset.id)
     ).one()
     assert retrieved_asset.display_name == "Test Asset"
     assert retrieved_asset.organization_id == "org_123"
 
     retrieved_version = session.exec(
-        select(VersionRow).where(VersionRow.id == version.id)
+        select(Version).where(Version.id == version.id)
     ).one()
     assert retrieved_version.display_name == "Version 1"
 
-    retrieved_node = session.exec(select(NodeRow).where(NodeRow.id == node.id)).one()
+    retrieved_node = session.exec(select(Node).where(Node.id == node.id)).one()
     assert retrieved_node.relative_path == "/path/to/node"
 
 
 def test_query_full_nodes(session: Session) -> None:
     """Test querying the FullNodeView for expected data."""
     # Create and commit a primary asset
-    asset = PrimaryAssetRow(display_name="Test Asset", organization_id="org_123")
+    asset = PrimaryAsset(display_name="Test Asset", organization_id="org_123")
     session.add(asset)
     session.commit()
 
     # Create and commit a version linked to the primary asset
-    version = VersionRow(primary_asset_id=asset.id, display_name="Version 1")
+    version = Version(primary_asset_id=asset.id, display_name="Version 1")
     session.add(version)
     session.commit()
 
     # Create and commit a node linked to the version
-    node = NodeRow(version_id=version.id, relative_path="/path/to/node")
+    node = Node(version_id=version.id, relative_path="/path/to/node")
     session.add(node)
     session.commit()
 
@@ -255,17 +255,17 @@ def test_query_full_nodes(session: Session) -> None:
 def test_relationships_populated(session: Session) -> None:
     """Test that all relationship fields are populated correctly."""
     # Create and commit a primary asset
-    asset = PrimaryAssetRow(display_name="Test Asset", organization_id="org_123")
+    asset = PrimaryAsset(display_name="Test Asset", organization_id="org_123")
     session.add(asset)
     session.commit()
 
     # Create and commit a version linked to the primary asset
-    version = VersionRow(primary_asset_id=asset.id, display_name="Version 1")
+    version = Version(primary_asset_id=asset.id, display_name="Version 1")
     session.add(version)
     session.commit()
 
     # Create and commit a node linked to the version
-    node = NodeRow(version_id=version.id, relative_path="/path/to/node")
+    node = Node(version_id=version.id, relative_path="/path/to/node")
     session.add(node)
     session.commit()
 
@@ -288,11 +288,11 @@ def test_relationships_populated(session: Session) -> None:
 
     # Retrieve and assert relationships
     retrieved_version = session.exec(
-        select(VersionRow).where(VersionRow.id == version.id)
+        select(Version).where(Version.id == version.id)
     ).one()
     assert retrieved_version.primary_asset.id == asset.id
 
-    retrieved_node = session.exec(select(NodeRow).where(NodeRow.id == node.id)).one()
+    retrieved_node = session.exec(select(Node).where(Node.id == node.id)).one()
     assert retrieved_node.version.id == version.id
 
     retrieved_content = session.exec(
@@ -310,12 +310,12 @@ def test_cascading_deletes(session: Session) -> None:
     """Test that cascading deletes work correctly."""
 
     # Create and commit a primary asset
-    asset = PrimaryAssetRow(display_name="Test Asset", organization_id="org_123")
+    asset = PrimaryAsset(display_name="Test Asset", organization_id="org_123")
     session.add(asset)
     session.commit()
 
     # Create and commit a version linked to the primary asset
-    version = VersionRow(primary_asset_id=asset.id, display_name="Version 1")
+    version = Version(primary_asset_id=asset.id, display_name="Version 1")
     session.add(version)
     session.commit()
 
@@ -323,7 +323,7 @@ def test_cascading_deletes(session: Session) -> None:
     version_id = version.id
 
     # Create and commit a node linked to the version
-    node = NodeRow(version_id=version.id, relative_path="/path/to/node")
+    node = Node(version_id=version.id, relative_path="/path/to/node")
     session.add(node)
     session.commit()
 
@@ -361,14 +361,10 @@ def test_cascading_deletes(session: Session) -> None:
 
     # Assert that the version, node, content, and chunk are deleted
     assert (
-        session.exec(
-            select(VersionRow).where(VersionRow.id == version_id)
-        ).one_or_none()
+        session.exec(select(Version).where(Version.id == version_id)).one_or_none()
         is None
     )
-    assert (
-        session.exec(select(NodeRow).where(NodeRow.id == node_id)).one_or_none() is None
-    )
+    assert session.exec(select(Node).where(Node.id == node_id)).one_or_none() is None
     assert (
         session.exec(
             select(ContentRow).where(ContentRow.id == content_id)

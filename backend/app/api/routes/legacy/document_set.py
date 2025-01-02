@@ -8,9 +8,9 @@ from app.api.routes.legacy.s3 import S3BucketAccess
 from app.core.logger import logger
 from database.models_v1 import DerivedContent, DerivedContentType
 from database.models_v2 import (
-    NodeRow,
-    PrimaryAssetRow,
-    VersionRow,
+    Node,
+    PrimaryAsset,
+    Version,
 )
 from fastapi import HTTPException
 from sqlmodel import Session, select
@@ -164,13 +164,13 @@ def get_document_set(
     version_id: str | None = None,
 ) -> DocumentSet:
     # Find the primary asset
-    primary_asset = session.get(PrimaryAssetRow, codebase_id)
+    primary_asset = session.get(PrimaryAsset, codebase_id)
     if not primary_asset or primary_asset.organization_id != organization_id:
         raise HTTPException(
             status_code=404, detail="Primary asset not found or not in org"
         )
 
-    if primary_asset.primary_asset_type not in ["CODEBASE", "FILE", "PAGE"]:
+    if primary_asset.kind not in ["CODEBASE", "FILE", "PAGE"]:
         raise HTTPException(
             status_code=400, detail="Primary asset type does not match node kind"
         )
@@ -182,7 +182,7 @@ def get_document_set(
 
     # Determine the VersionRow
     if version_id:
-        version = session.get(VersionRow, version_id)
+        version = session.get(Version, version_id)
         if not version or version.primary_asset_id != primary_asset.id:
             raise ValueError(
                 f"Version with id {version_id} not found or not tied to this asset"
@@ -190,9 +190,9 @@ def get_document_set(
     else:
         # No version_id provided, get the latest version
         version = session.exec(
-            select(VersionRow)
-            .where(VersionRow.primary_asset_id == primary_asset.id)
-            .order_by(VersionRow.created_at.desc())
+            select(Version)
+            .where(Version.primary_asset_id == primary_asset.id)
+            .order_by(Version.created_at.desc())
         ).first()
 
     if not version:
@@ -200,8 +200,8 @@ def get_document_set(
 
     # Find the node
     node = session.exec(
-        select(NodeRow).where(
-            NodeRow.version_id == version.id, NodeRow.relative_path == relative_path
+        select(Node).where(
+            Node.version_id == version.id, Node.relative_path == relative_path
         )
     ).one_or_none()
 
@@ -215,8 +215,8 @@ def get_document_set(
     document_set = DocumentSet(source_content_id=str(node.id))  # type: ignore
 
     for doc in docs:
-        # Identify doc type by doc.content_type_slug
-        doc_type = doc.content_type_slug
+        # Identify doc type by doc.content_kind
+        doc_type = doc.content_kind
         if doc.id is None:
             continue
         if doc.content is None:

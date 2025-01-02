@@ -1,9 +1,9 @@
 from datetime import datetime
-from enum import Enum
 from typing import Optional
 from uuid import UUID
 
 import sqlalchemy
+from database.models_v2_enums import PrimaryAssetKind, VersionStatus
 from pydantic import field_validator
 from sqlalchemy import (
     Column,
@@ -17,15 +17,7 @@ from sqlalchemy.dialects.postgresql import UUID as SaUuid
 from sqlmodel import Field, Relationship, Session, SQLModel, select, text
 
 
-class PrimaryAssetTypeEnum(str, Enum):
-    CODEBASE = "CODEBASE"
-    FILE = "FILE"
-    PAGE = "PAGE"
-    PAGE_TEMPLATE = "PAGE_TEMPLATE"
-
-
-# TODO: primary_asset_type should be primary_asset_kind
-class PrimaryAssetRow(SQLModel, table=True):  # type: ignore
+class PrimaryAsset(SQLModel, table=True):  # type: ignore
     __tablename__ = "v2_primary_asset"
     __table_args__ = (
         Index(
@@ -45,8 +37,18 @@ class PrimaryAssetRow(SQLModel, table=True):  # type: ignore
         default=None,
     )
     display_name: str
+    repository_id: str | None
     organization_id: str
-    primary_asset_kind: str # TODO enum!
+    kind: str
+
+    @field_validator("kind")
+    def validate_kind(cls, value: str) -> str:
+        if value not in PrimaryAssetKind.__members__:
+            raise ValueError(
+                f"kind must be one of {list(PrimaryAssetKind.__members__.keys())}"
+            )
+        return value
+
     created_at: None | datetime = Field(
         sa_column=Column(
             DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -62,24 +64,15 @@ class PrimaryAssetRow(SQLModel, table=True):  # type: ignore
         ),
         default=None,
     )
-    versions: list["VersionRow"] = Relationship(back_populates="primary_asset")
-    repository_id: str | None
+    versions: list["Version"] = Relationship(back_populates="primary_asset")
+
     tags: list["Tag"] = Relationship(  # noqa: F821
         back_populates="primary_assets",
         sa_relationship_kwargs={"secondary": "v2_primary_asset_tag"},
     )
 
-    @field_validator("primary_asset_type", mode="before")
-    def validate_primary_asset_type(cls, value: str) -> str:
-        if value not in PrimaryAssetTypeEnum:
-            raise ValueError(
-                f"primary_asset_type must be one of {list(PrimaryAssetTypeEnum)}"
-            )
-        return value
 
-
-# TODO: add back previous version pointer. It's handy and less error prone for some use cases
-class VersionRow(SQLModel, table=True):  # type: ignore
+class Version(SQLModel, table=True):  # type: ignore
     __tablename__ = "v2_version"
     __table_args__ = (
         Index(
@@ -121,20 +114,39 @@ class VersionRow(SQLModel, table=True):  # type: ignore
         ),
         default=None,
     )
-    status: str  # TODO: add a field_validator
 
-    primary_asset: "PrimaryAssetRow" = Relationship(back_populates="versions")
-    nodes: list["NodeRow"] = Relationship(back_populates="version")
-    root_node: Optional["NodeRow"] = Relationship(
+    status: str
+
+    @field_validator("status")
+    def validate_status(cls, value: str) -> str:
+        if value not in VersionStatus.__members__:
+            raise ValueError(
+                f"status must be one of {list(VersionStatus.__members__.keys())}"
+            )
+        return value
+
+    previous_version_id: UUID | None = Field(
+        sa_column=Column(
+            SaUuid(as_uuid=True),
+            ForeignKey("v2_version.id", ondelete="SET NULL"),
+            nullable=True,
+        ),
+        default=None,
+    )
+
+    primary_asset: "PrimaryAsset" = Relationship(back_populates="versions")
+    nodes: list["Node"] = Relationship(back_populates="version")
+    root_node: Optional["Node"] = Relationship(
         sa_relationship_kwargs={
-            "primaryjoin": "and_(VersionRow.id == NodeRow.version_id)",
-            "order_by": "func.length(NodeRow.relative_path)",
+            "primaryjoin": "and_(Version.id == Node.version_id)",
+            "order_by": "func.length(Node.relative_path)",
             "uselist": False,
         }
     )
 
 
-class NodeRow(SQLModel, table=True):  # type: ignore
+# TODO: consider kind on Node. Maybe a bool or enum?
+class Node(SQLModel, table=True):  # type: ignore
     __tablename__ = "v2_node"
     __table_args__ = (
         Index(
@@ -158,9 +170,8 @@ class NodeRow(SQLModel, table=True):  # type: ignore
         ),
     )
     relative_path: str = Field(
-        sa_column=Column(sqlalchemy.Text, nullable=False, index=True) # TODO don't need sa_column
+        sa_column=Column(sqlalchemy.Text, nullable=False, index=True)
     )
-    kind: str # TODO make enum with FILE, DIRECTORY, OTHER
     created_at: None | datetime = Field(
         sa_column=Column(
             DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -181,28 +192,19 @@ class NodeRow(SQLModel, table=True):  # type: ignore
         sa_column=Column(JSONB, nullable=True), default=None
     )
 
-    version: "VersionRow" = Relationship(back_populates="nodes")
+    version: "Version" = Relationship(back_populates="nodes")
     contents: list["DerivedContent"] = Relationship(back_populates="node")  # noqa: F821
 
-    parent_node: Optional["NodeRow"] = Relationship(
+    parent_node: Optional["Node"] = Relationship(
         sa_relationship_kwargs={
-            "primaryjoin": "and_(NodeRow.version_id == foreign(NodeRow.version_id), NodeRow.version_id == remote(NodeRow.version_id), NodeRow.relative_path != remote(NodeRow.relative_path), NodeRow.relative_path.like(remote(NodeRow.relative_path) + '%'))",
+            "primaryjoin": "and_(Node.version_id == foreign(Node.version_id), Node.version_id == remote(Node.version_id), Node.relative_path != remote(Node.relative_path), Node.relative_path.like(remote(Node.relative_path) + '%'))",
             "uselist": False,
             "viewonly": True,
             "lazy": "select",
-            "remote_side": "[NodeRow.version_id]",
-            "order_by": "desc(func.length(NodeRow.relative_path))",
+            "remote_side": "[Node.version_id]",
+            "order_by": "desc(func.length(Node.relative_path))",
         }
     )
-    # child_nodes: list["NodeRow"] = Relationship(
-    #     sa_relationship_kwargs={
-    #         "primaryjoin": "and_(NodeRow.version_id == foreign(NodeRow.version_id), NodeRow.version_id == remote(NodeRow.version_id), NodeRow.relative_path != remote(NodeRow.relative_path), remote(NodeRow.relative_path).like(NodeRow.relative_path + '%'))",
-    #         "viewonly": True,
-    #         "lazy": "select",
-    #         "remote_side": "[NodeRow.version_id]",
-    #         "order_by": "asc(func.length(NodeRow.relative_path))"
-    #     }
-    # )
 
 
 class FullNodeView(SQLModel, table=True):  # type: ignore
@@ -212,7 +214,7 @@ class FullNodeView(SQLModel, table=True):  # type: ignore
     primary_asset_organization_id: str | None = Field(default=None)
     primary_asset_created_at: None | datetime = Field(default=None)
     primary_asset_updated_at: None | datetime = Field(default=None)
-    primary_asset_primary_asset_type: str | None = Field(default=None)
+    primary_asset_kind: str | None = Field(default=None)
     version_id: UUID | None = Field(default=None, primary_key=True)
     version_display_name: str | None = Field(default=None)
     version_created_at: None | datetime = Field(default=None)
@@ -225,15 +227,13 @@ class FullNodeView(SQLModel, table=True):  # type: ignore
     def add(self, session: Session) -> None:
         if self.primary_asset_id:
             primary_asset = session.exec(
-                select(PrimaryAssetRow).where(
-                    PrimaryAssetRow.id == self.primary_asset_id
-                )
+                select(PrimaryAsset).where(PrimaryAsset.id == self.primary_asset_id)
             ).one_or_none()
             if primary_asset:
                 primary_asset.display_name = self.primary_asset_display_name
                 primary_asset.organization_id = self.primary_asset_organization_id
             else:
-                primary_asset = PrimaryAssetRow(
+                primary_asset = PrimaryAsset(
                     id=self.primary_asset_id,
                     display_name=self.primary_asset_display_name,
                     organization_id=self.primary_asset_organization_id,
@@ -242,12 +242,12 @@ class FullNodeView(SQLModel, table=True):  # type: ignore
 
         if self.version_id:
             version = session.exec(
-                select(VersionRow).where(VersionRow.id == self.version_id)
+                select(Version).where(Version.id == self.version_id)
             ).one_or_none()
             if version:
                 version.display_name = self.version_display_name
             else:
-                version = VersionRow(
+                version = Version(
                     id=self.version_id,
                     display_name=self.version_display_name,
                 )
@@ -255,12 +255,12 @@ class FullNodeView(SQLModel, table=True):  # type: ignore
 
         if self.node_id:
             node = session.exec(
-                select(NodeRow).where(NodeRow.id == self.node_id)
+                select(Node).where(Node.id == self.node_id)
             ).one_or_none()
             if node:
                 node.relative_path = self.node_relative_path
             else:
-                node = NodeRow(
+                node = Node(
                     id=self.node_id,
                     relative_path=self.node_relative_path,
                 )

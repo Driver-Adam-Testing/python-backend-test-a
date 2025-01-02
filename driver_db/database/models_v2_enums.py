@@ -1,12 +1,20 @@
 import enum
 
 
-class NodeType(enum.Enum):
-    FILE = "file"
-    DIRECTORY = "directory"
+class PrimaryAssetKind(str, enum.Enum):
+    CODEBASE = "CODEBASE"
+    FILE = "FILE"
+    PAGE = "PAGE"
+    PAGE_TEMPLATE = "PAGE_TEMPLATE"
 
 
-class ContentType(enum.Enum):
+class VersionStatus(str, enum.Enum):
+    GENERATING = "GENERATING"
+    GENERATION_COMPLETE = "GENERATION_COMPLETE"
+    GENERATION_ERROR = "GENERATION_ERROR"
+
+
+class ContentKind(enum.Enum):
     PDF_VISUAL_SUMMARY = "pdf-visual-summary"
     PDF_TEXT_SUMMARY = "pdf-text-summary"
     PDF_IMAGE_SUMMARY = "pdf-image-summary"
@@ -30,6 +38,10 @@ class ContentType(enum.Enum):
     CODEBASE_DIRECTORY = "codebase-directory"
     CODEBASE_FILE = "codebase-file"
     SUPPLEMENTAL_DOCUMENT = "supplemental-document"
+    TOP_LEVEL_SHORT_SENTENCE = "TOP_LEVEL_SHORT_SENTENCE"
+    TOP_LEVEL_SHORT_PARAGRAPH = "TOP_LEVEL_SHORT_PARAGRAPH"
+    TOP_LEVEL_TERSE_SENTENCE = "TOP_LEVEL_TERSE_SENTENCE"
+    TOP_LEVEL_LONG_DESCRIPTION = "TOP_LEVEL_LONG_DESCRIPTION"
 
 
 class FileTypeEnum(enum.Enum):

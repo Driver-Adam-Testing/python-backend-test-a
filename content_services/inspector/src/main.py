@@ -6,6 +6,7 @@ from contextlib import suppress
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
+from uuid import UUID
 
 import modal
 from onboarding.onboard import run_codebase_onboarding
@@ -30,7 +31,6 @@ from common import app  # noqa: E402
 from utils.dag import FileTreeDag, Node, NodeKind, NodeStatus  # noqa: E402
 
 with inspection_image.imports():
-    from database.models_v1 import Enum_Derived_Content_Status
     from tasks import (
         EmbeddingTask,
         FileTechDocTask,
@@ -67,6 +67,55 @@ class FileInfo:
     source_content_id: None | uuid.UUID = None
 
 
+async def get_result_loading_config(
+    inspection_mode: InspectionMode,
+    version_id: uuid.UUID,
+    previous_version_id: uuid.UUID | None = None,
+) -> list[tuple[uuid.UUID, set[NodeStatus]]]:
+    from utils.db import try_get_latest_run_from_version_id
+
+    result_loading_config = []
+    is_diff = previous_version_id is not None
+
+    match inspection_mode:
+        case InspectionMode.NORMAL:
+            existing_run_id_for_prev_version = (
+                await try_get_latest_run_from_version_id(previous_version_id)
+                if is_diff
+                else None
+            )
+            existing_run_id_for_current_version = None
+        case InspectionMode.RESUME:
+            existing_run_id_for_prev_version = (
+                await try_get_latest_run_from_version_id(previous_version_id)
+                if is_diff
+                else None
+            )
+            existing_run_id_for_current_version = (
+                await try_get_latest_run_from_version_id(version_id)
+            )
+        case InspectionMode.RERUN:
+            existing_run_id_for_prev_version = (
+                await try_get_latest_run_from_version_id(previous_version_id)
+                if is_diff
+                else None
+            )
+            existing_run_id_for_current_version = None
+        case _:
+            raise ValueError("Invalid inspection mode")
+
+    if existing_run_id_for_prev_version:
+        result_loading_config.append(
+            (existing_run_id_for_prev_version, {NodeStatus.UNMODIFIED})
+        )
+    if existing_run_id_for_current_version:
+        result_loading_config.append(
+            (existing_run_id_for_current_version, set(NodeStatus))
+        )
+
+    return result_loading_config
+
+
 @app.function(
     image=inspection_image,
     secrets=[
@@ -91,91 +140,46 @@ class FileInfo:
 async def inspect_db(
     version_id: uuid.UUID,
     inspection_mode: InspectionMode = InspectionMode.NORMAL,
-    rerun_node_paths: list[str] | None = None,
 ) -> None:
     import tempfile
 
     import boto3
     from utils.db import (
-        SourceContentTypeMap,
         create_inspector_run,
-        download_source_content_file,
-        get_analyzable_source_contents_by_version_id,
-        get_codebase_by_id,
-        get_latest_run_from_version_id,
+        download_source_file,
+        get_analyzable_nodes_by_version_id,
         get_version_by_id,
-        get_workspace_by_id,
+        try_get_prev_version,
     )
-
-    # TODO verify rerun_node_paths in the diff rerun case; it works for non diff case.
-
-    # TODO: this is unneeded, just get version
-    codebase = await get_codebase_by_id(codebase_id)
-    workspace_id = codebase.workspace_id
-    workspace = await get_workspace_by_id(workspace_id)
-
-    # TODO: look up VersionRow from id
-    # TODO: get org_id from the version
-    org_id = workspace.organization_id
-    org_hashed_id = hashlib.sha256(org_id.encode()).hexdigest()[:63]
 
     # Get the Version and check if it has previous_version_id
     version = await get_version_by_id(version_id)
+    org_id = version.primary_asset.organization_id
+    org_hashed_id = hashlib.sha256(org_id.encode()).hexdigest()[:63]
 
-    # TODO: version no longer have previous_version_id, must do another query to get it (sort by created_at)
-    previous_version_id = version.previous_version_id
-    # TODO: this is primary asset display_name
-    codebase_name = codebase.codebase_name
+    previous_version = await try_get_prev_version(version_id)
+    previous_version_id = previous_version.id if previous_version else None
 
-    if inspection_mode == InspectionMode.RESUME and previous_version_id:
-        raise ValueError(
-            "Cannot resume from diff case yet! Can only resume greenfield inspector run!"
-        )
+    codebase_name = version.primary_asset.display_name
 
-    if previous_version_id:
-        assert (
-            rerun_node_paths is None
-        ), "Cannot rerun specific nodes when doing diff update flow"
+    result_loading_config = await get_result_loading_config(
+        inspection_mode, version_id, previous_version_id
+    )
 
-    # If we are resuming, we should get the latest run for the current version,
-    # (we don't support diff resumes yet!)
-    if inspection_mode == InspectionMode.RESUME:
-        # TODO: need InspectionRun model
-        previous_run_id = await get_latest_run_from_version_id(version_id)
-    else:
-        # In the case that we are doing a diff, we get the latest run for the *previous* version
-        previous_run_id = (
-            await get_latest_run_from_version_id(previous_version_id)
-            if previous_version_id
-            else None
-        )
-
-    # TODO: need the InspectionRun model
     run_id = await create_inspector_run(version_id)
 
     # Get content records for version_id
     # TODO: nodes don't currently have a kind, so will need a way to differentiate files and directories
-    source_contents_files = await get_analyzable_source_contents_by_version_id(
-        version_id, {SourceContentTypeMap.FILE}
+    db_file_nodes = await get_analyzable_nodes_by_version_id(version_id, {"file"})
+    db_all_codebase_nodes = await get_analyzable_nodes_by_version_id(
+        version_id, {"file", "directory"}
     )
-    source_contents_all = await get_analyzable_source_contents_by_version_id(
-        version_id, {SourceContentTypeMap.FILE, SourceContentTypeMap.DIRECTORY}
-    )
-    # TODO: the root doesn't exist in this context anymore - its just a directory
-    source_content_codebase = await get_analyzable_source_contents_by_version_id(
-        version_id, {SourceContentTypeMap.CODEBASE_ROOT}
-    )
-    assert len(source_content_codebase) == 1
-    source_content_codebase_id = source_content_codebase[0].id
 
     # Get content records for previous_version_id if available
-    if previous_version_id:
-        previous_source_contents_files = (
-            await get_analyzable_source_contents_by_version_id(
-                previous_version_id, {SourceContentTypeMap.FILE}
-            )
+    if previous_version is not None:
+        db_previous_file_nodes = await get_analyzable_nodes_by_version_id(
+            previous_version.id, {"file"}
         )
-
     # Download s3 for version_id (and previous if available)
     s3_client = boto3.client("s3", endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL"))
     with (
@@ -185,15 +189,13 @@ async def inspect_db(
         download_root = Path(download_dir)
         file_paths = []
         print("Downloading all source files for codebase from s3...")
-        for sc in source_contents_files:
-            # TODO: relative_path from node
-            # TODO: codebase_id -> primary_asset_id
-            download_abs_path = download_source_content_file(
+        for db_file_node in db_file_nodes:
+            download_abs_path = download_source_file(
                 s3_client=s3_client,
                 bucket_name=org_hashed_id,
-                codebase_id=codebase_id,
-                version_id=version_id,
-                source_content_rel_path=sc.relative_path,
+                primary_asset_id=str(version.primary_asset.id),
+                version_id=str(version_id),
+                node_rel_path=db_file_node.relative_path,
                 download_root=download_root,
             )
             file_paths.append(download_abs_path)
@@ -207,19 +209,17 @@ async def inspect_db(
         for node in codebase_dag.topological_sort():
             print(node.root_rel_path, node.status)
 
-        if previous_version_id:
+        if previous_version is not None:
             previous_download_root = Path(previous_download_dir)
             previous_file_paths = []
             print("Downloading all source files for previous codebase from s3...")
-            # TODO: relative_path from node
-            # TODO: codebase_id -> primary_asset_id
-            for scn in previous_source_contents_files:
-                download_abs_path = download_source_content_file(
+            for db_previous_file_node in db_previous_file_nodes:
+                download_abs_path = download_source_file(
                     s3_client=s3_client,
                     bucket_name=org_hashed_id,
-                    codebase_id=codebase_id,
-                    version_id=previous_version_id,
-                    source_content_rel_path=scn.relative_path,
+                    primary_asset_id=str(previous_version.primary_asset.id),
+                    version_id=str(previous_version.id),
+                    node_rel_path=db_previous_file_node.relative_path,
                     download_root=previous_download_root,
                 )
                 previous_file_paths.append(download_abs_path)
@@ -240,23 +240,12 @@ async def inspect_db(
             for node in diff_dag.topological_sort():
                 print(node.root_rel_path, node.status)
 
-        if rerun_node_paths:
-            for rerun_path in rerun_node_paths:
-                rerun_path = download_root / rerun_path
-                codebase_dag.mark_as_modified(
-                    rerun_path, include_upstream=False, include_downstream=True
-                )
-
-        if rerun_node_paths:
-            sorted_nodes = codebase_dag.topological_sort(changed_nodes_only=True)
+        if previous_version is not None:
+            sorted_nodes = diff_dag.topological_sort()
         else:
-            if previous_version_id:
-                sorted_nodes = diff_dag.topological_sort()
-            else:
-                sorted_nodes = codebase_dag.topological_sort()
-        # TODO: this will use node.relative_path instead of sc.relative_path
-        path_to_source_content_id = {
-            Path(sc.relative_path): sc.id for sc in source_contents_all
+            sorted_nodes = codebase_dag.topological_sort()
+        path_to_db_node_id = {
+            Path(db_node.relative_path): db_node.id for db_node in db_all_codebase_nodes
         }
 
         print("======= Nodes being processed  =======")
@@ -264,7 +253,7 @@ async def inspect_db(
             print(node.root_rel_path, node.status, node.kind)
 
         nodes_with_id: list[tuple[Node, uuid.UUID | None]] = [
-            (node, path_to_source_content_id[node.root_rel_path])
+            (node, path_to_db_node_id[node.root_rel_path])
             for node in sorted_nodes
             if node.root_rel_path != Path(".")
         ]
@@ -274,15 +263,12 @@ async def inspect_db(
             print(node.root_rel_path, sc_id)
 
         await inspect_files(
-            sc_codebase_id=source_content_codebase_id,
             version_id=version_id,
             codebase_root=download_root,
             nodes_with_id=nodes_with_id,
-            root_node=sorted_nodes[-1],
             codebase_name=codebase_name,
             run_id=run_id,
-            is_rerun=inspection_mode == InspectionMode.RERUN,
-            previous_run_id=previous_run_id,
+            result_loading_config=result_loading_config,
         )
 
 
@@ -304,29 +290,20 @@ def build_dag(root_path: Path, file_paths: list[Path]) -> FileTreeDag:
 
 
 async def inspect_files(
-    sc_codebase_id: uuid.UUID,
     version_id: uuid.UUID,
     codebase_root: Path,
     nodes_with_id: list[tuple[Node, uuid.UUID | None]],
-    root_node: Node,
     codebase_name: str,
-    run_id: str,
-    is_rerun: bool,
-    previous_run_id: str | None = None,
+    run_id: UUID,
+    result_loading_config: list[tuple[UUID, set[NodeStatus]]] | None,
 ) -> None:
     print("---------- All nodes ----------")
     for node, _ in nodes_with_id:
         print(node)
 
     tasks = []
-    for node, sc_id in nodes_with_id:
+    for node, db_node_id in nodes_with_id:
         lite_node = node.into_lite_node()
-
-        # TODO check condition below!!
-        # When resuming (without diff flow), we should always load persisted results. All nodes are UNMODIFIED in this case.
-        # When rerunning, we will have marked nodes to rerun as modified if we want them to be rerun, so we don't want to load results for those marked as modified.
-        # When diffing, we should load persisted results for nodes that are unmodified, and not for nodes that are modified.
-        load_persisted_results = lite_node.status == NodeStatus.UNMODIFIED
 
         if node.kind in {NodeKind.SUB_FOLDER, NodeKind.ROOT_FOLDER}:
             child_doc_tasks = tuple(
@@ -339,18 +316,15 @@ async def inspect_files(
             )
             folder_tech_docs_task = FolderTechDocTask(
                 node=lite_node,
-                version_id=version_id,
                 task_name=f"FolderTechDoc {node.root_rel_path}",
                 child_docs_tasks=child_doc_tasks,
                 codebase_name=codebase_name,
-                source_content_id=sc_id,
-                load_persisted_results=load_persisted_results,
+                db_node_id=db_node_id,
             )
             folder_embedding_task = EmbeddingTask(
                 node=node,
                 task_name=f"Embedding TechDoc (Folder) {node.root_rel_path}",
                 dependent_tasks=[folder_tech_docs_task],
-                load_persisted_results=load_persisted_results,
             )
             tasks.extend([folder_tech_docs_task, folder_embedding_task])
         else:  # File
@@ -359,43 +333,36 @@ async def inspect_files(
                 node=node,
                 task_name=f"Embedding Source Code {node.root_rel_path}",
                 source_code=source_code,
-                source_content_id=sc_id,
+                db_node_id=db_node_id,
                 dependent_tasks=[],
-                load_persisted_results=load_persisted_results,
             )
             file_tech_docs_task = FileTechDocTask(
                 codebase_name=codebase_name,
-                version_id=version_id,
                 source_code=source_code,
                 node=lite_node,
                 task_name=f"TechDoc {node.root_rel_path}",
-                source_content_id=sc_id,
-                load_persisted_results=load_persisted_results,
+                db_node_id=db_node_id,
             )
             file_tech_docs_embedding_task = EmbeddingTask(
                 node=node,
                 task_name=f"Embedding TechDoc (File) {node.root_rel_path}",
                 source_code=None,
-                source_content_id=None,
+                db_node_id=None,
                 dependent_tasks=[file_tech_docs_task],
-                load_persisted_results=load_persisted_results,
             )
             symbols_task = SymbolsTask(
                 task_name=f"Symbols {node.root_rel_path}",
-                version_id=version_id,
                 node=lite_node,
                 source_code=source_code,
                 tech_docs_task=file_tech_docs_task,
-                source_content_id=sc_id,
-                load_persisted_results=load_persisted_results,
+                db_node_id=db_node_id,
             )
             symbols_embedding_task = EmbeddingTask(
                 node=node,
                 task_name=f"Embedding Symbols {node.root_rel_path}",
                 source_code=None,
-                source_content_id=None,
+                db_node_id=None,
                 dependent_tasks=[symbols_task],
-                load_persisted_results=load_persisted_results,
             )
             tasks.extend(
                 [
@@ -407,34 +374,26 @@ async def inspect_files(
                 ]
             )
 
-    # We never generate top level docs in a re-run scenario since we don't have the full task result graph
-    # in order to update them.
-    if not is_rerun:
-        # # TODO when not rerrunning, we should always have the root node as the last. VERIFY!
-        # root_node, _ = nodes_with_id[-1]
+    root_node, root_db_node_id = nodes_with_id[-1]
 
-        # If no changes propagated to the root node due to child changes/additions/deletions,
-        # we can reuse the persisted result for the tasks
-        load_persisted_results = root_node.status == NodeStatus.UNMODIFIED
+    # TODO check propagation of changes to root node is working properly such that these tasks are appropriatly triggered
+    # on rerun case.
 
-        all_tech_docs_tasks = tuple(
-            t for t in tasks if isinstance(t, FileTechDocTask | FolderTechDocTask)
-        )
-        top_level_tech_docs_task = TopLevelDocsTask(
-            node=root_node,
-            version_id=version_id,
-            codebase_name=codebase_name,
-            ordered_tech_docs_tasks=all_tech_docs_tasks,  # TODO where does source content go here?
-            source_content_id=sc_codebase_id,
-            load_persisted_results=load_persisted_results,
-        )
-        top_level_embedding_task = EmbeddingTask(
-            node=root_node,
-            task_name="Embedding TopLevelDocs",
-            dependent_tasks=[top_level_tech_docs_task],
-            load_persisted_results=load_persisted_results,
-        )
-        tasks.extend([top_level_tech_docs_task, top_level_embedding_task])
+    all_tech_docs_tasks = tuple(
+        t for t in tasks if isinstance(t, FileTechDocTask | FolderTechDocTask)
+    )
+    top_level_tech_docs_task = TopLevelDocsTask(
+        node=root_node,
+        codebase_name=codebase_name,
+        ordered_tech_docs_tasks=all_tech_docs_tasks,  # TODO where does source content go here?
+        db_node_id=root_db_node_id,
+    )
+    top_level_embedding_task = EmbeddingTask(
+        node=root_node,
+        task_name="Embedding TopLevelDocs",
+        dependent_tasks=[top_level_tech_docs_task],
+    )
+    tasks.extend([top_level_tech_docs_task, top_level_embedding_task])
 
     print("\n---------- All tasks ----------")
     for t in tasks:
@@ -445,7 +404,9 @@ async def inspect_files(
         bucket_name=os.environ["BUCKET_NAME"], tasks=tasks, serial_exe=False
     )
 
-    task_results = await task_manager.run_tasks(run_id, previous_run_id=previous_run_id)
+    task_results = await task_manager.run_tasks(
+        run_id, result_loading_config=result_loading_config
+    )
 
     print("\n---------- Task results ----------")
     pprinter = pprint.PrettyPrinter(indent=2)
@@ -477,28 +438,13 @@ def main(
     codebase_id: str,
     version_id: str,
     mode: str,
-    rerun_paths: str | None = None,
 ) -> None:
     """Resume or rerun inspector given a version"""
     inspection_mode = InspectionMode.from_str(mode)
-
-    if inspection_mode == InspectionMode.RESUME and rerun_paths:
-        raise ValueError(
-            "Cannot resume and specify rerun paths! Resume and rerun are mutually exclusive."
-        )
-
-    rerun_node_paths = rerun_paths.split(",") if rerun_paths is not None else None
-    if rerun_node_paths:
-        print("Rerunning nodes:")
-        rerun_node_paths = [path.lstrip("/") for path in rerun_node_paths]
-        for path in rerun_node_paths:
-            print("--> ", path)
-
     inspect_db.remote(
         codebase_id,
         version_id,
         inspection_mode,
-        rerun_node_paths,
     )
 
 
@@ -562,11 +508,12 @@ def onboard_and_inspect(
     archive_name: str,
     org_id: str,
     creator_id: str,
+    # _workspace_id: UUID,
     provider: str = "manual",
     version: str | None = None,  # this is the version string NOT the ID from our db
     repository_id: str | None = None,
 ) -> None:
-    # TODO: workspace is gone
+    from database.models_v2_enums import VersionStatus
     from onboarding.onboard_utils import RunInProgressError, set_codebase_status
 
     print(
@@ -575,7 +522,7 @@ def onboard_and_inspect(
     )
     try:
         try:
-            codebase_id, version_id = run_codebase_onboarding.remote(
+            version_id = run_codebase_onboarding.remote(
                 presigned_url,
                 archive_name,
                 org_id,
@@ -590,17 +537,13 @@ def onboard_and_inspect(
             )
             return
 
-        print(f"Onboarding complete for codebase: {codebase_id}, {version_id}")
+        print(f"Onboarding complete for version: {version_id}")
         print("Inspecting...")
-        inspect_db.remote(
-            codebase_id, version_id
-        )  # TODO: we only need the version_id here
+        inspect_db.remote(version_id)
         print("Inspection complete")
 
         # TODO: set the version status
-        set_codebase_status(
-            codebase_id, version_id, Enum_Derived_Content_Status.generation_complete
-        )
+        set_codebase_status(version_id, VersionStatus.GENERATION_COMPLETE.value)
 
     except Exception as e:
         exception_type = type(e).__name__
@@ -614,7 +557,5 @@ def onboard_and_inspect(
         # Since codebase and version could possibly be undefined in this clean up action, we don't care if it fails
         with suppress(Exception):
             # TODO: set the version status
-            set_codebase_status(
-                codebase_id, version_id, Enum_Derived_Content_Status.generation_error
-            )
+            set_codebase_status(version_id, VersionStatus.GENERATION_ERROR.value)
         raise e

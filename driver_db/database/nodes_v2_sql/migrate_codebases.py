@@ -110,7 +110,11 @@ SELECT * FROM (
     SELECT
         dc.id,
         vr.version_id_from_dc_codebase,
-        dc.relative_path,
+        CASE
+          WHEN dc.content_kind = 'codebase-directory'
+            THEN dc.relative_path || '/'
+          ELSE dc.relative_path
+        END AS relative_path,
         dc.created_at,
         dc.updated_at,
         dc.metadata,
@@ -173,6 +177,42 @@ JOIN version_rows_marked vr
   ON vr.relative_path_dir = n.relative_path
  AND n.version_id = vr.version_id_from_dc_codebase
 WHERE derived_contents.source_content_id = vr.version_id_from_dc_codebase;
+
+UPDATE derived_contents
+SET content_kind = 'TOP_LEVEL_SHORT_SENTENCE'
+FROM v2_node n
+JOIN version_rows_marked vr
+  ON vr.relative_path_dir = n.relative_path
+ AND n.version_id = vr.version_id_from_dc_codebase
+WHERE derived_contents.source_content_id = vr.version_id_from_dc_codebase
+AND content_kind = 'short_sentence_description';
+
+UPDATE derived_contents
+SET content_kind = 'TOP_LEVEL_SHORT_PARAGRAPH'
+FROM v2_node n
+JOIN version_rows_marked vr
+  ON vr.relative_path_dir = n.relative_path
+ AND n.version_id = vr.version_id_from_dc_codebase
+WHERE derived_contents.source_content_id = vr.version_id_from_dc_codebase
+AND content_kind = 'short_paragraph_description';
+
+UPDATE derived_contents
+SET content_kind = 'TOP_LEVEL_TERSE_SENTENCE'
+FROM v2_node n
+JOIN version_rows_marked vr
+  ON vr.relative_path_dir = n.relative_path
+ AND n.version_id = vr.version_id_from_dc_codebase
+WHERE derived_contents.source_content_id = vr.version_id_from_dc_codebase
+AND content_kind = 'terse_sentence_description';
+
+UPDATE derived_contents
+SET content_kind = 'TOP_LEVEL_LONG_DESCRIPTION'
+FROM v2_node n
+JOIN version_rows_marked vr
+  ON vr.relative_path_dir = n.relative_path
+ AND n.version_id = vr.version_id_from_dc_codebase
+WHERE derived_contents.source_content_id = vr.version_id_from_dc_codebase
+AND content_kind = 'long_description';
 
 ------------------------------------------------------------------------------
 -- 5) Final Select (optional)

@@ -17,7 +17,29 @@ depends_on = None
 
 def upgrade() -> None:
     op.execute("""
-        UPDATE inspector_run
+        DELETE FROM inspectorrun ir
+               WHERE ir.id in(
+                     SELECT ir2.id
+                     FROM inspectorrun ir2
+                     LEFT JOIN v2_version v2
+                     ON v2.id = ir.inspection_version_id
+                     WHERE v2.id IS NULL
+               )
+    """)
+    op.execute("""
+        DELETE FROM inspection_versions iv
+                WHERE iv.id in(
+                        SELECT iv2.id
+                        FROM inspection_versions iv2
+                        JOIN inspectorrun ir
+                        on iv2.id = ir.inspection_version_id
+                        LEFT JOIN v2_version v2
+                        ON v2.id = iv2.id
+                        WHERE v2.id IS NULL
+                )
+    """)
+    op.execute("""
+        UPDATE inspectorrun
         SET version_id = inspection_version_id
     """)
 

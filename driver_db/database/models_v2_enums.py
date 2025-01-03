@@ -14,6 +14,12 @@ class VersionStatus(str, enum.Enum):
     GENERATION_ERROR = "GENERATION_ERROR"
 
 
+class NodeKind(str, enum.Enum):
+    CODEBASE_FILE = "cb-file"
+    CODEBASE_DIRECTORY = "cb-dir"
+    OTHER = "other"
+
+
 class ContentKind(enum.Enum):
     PDF_VISUAL_SUMMARY = "pdf-visual-summary"
     PDF_TEXT_SUMMARY = "pdf-text-summary"

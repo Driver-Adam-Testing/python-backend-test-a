@@ -17,16 +17,6 @@ depends_on = None
 
 def upgrade() -> None:
     op.execute("""
-        DELETE FROM inspectorrun ir
-               WHERE ir.id in(
-                     SELECT ir2.id
-                     FROM inspectorrun ir2
-                     LEFT JOIN v2_version v2
-                     ON v2.id = ir.inspection_version_id
-                     WHERE v2.id IS NULL
-               )
-    """)
-    op.execute("""
         DELETE FROM inspection_versions iv
                 WHERE iv.id in(
                         SELECT iv2.id
@@ -37,6 +27,16 @@ def upgrade() -> None:
                         ON v2.id = iv2.id
                         WHERE v2.id IS NULL
                 )
+    """)
+    op.execute("""
+        DELETE FROM inspectorrun ir
+               WHERE ir.id in(
+                     SELECT ir2.id
+                     FROM inspectorrun ir2
+                     LEFT JOIN v2_version v2
+                     ON v2.id = ir.inspection_version_id
+                     WHERE v2.id IS NULL
+               )
     """)
     op.execute("""
         UPDATE inspectorrun

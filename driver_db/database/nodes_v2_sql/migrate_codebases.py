@@ -11,6 +11,8 @@ SELECT * FROM (
             WHEN dc.version_id IS NOT NULL THEN dc.version_id
             ELSE dc.id
         END AS version_id_resolved,
+        -- version_id_from_dc_codebase is an inaccurate name; version id is version_id_resolved
+        dc.id                   AS version_id_from_dc_codebase,
         w.organization_id       AS org_id,
         c.codebase_name,
         c.id                    AS codebase_id,
@@ -179,7 +181,7 @@ FROM v2_node n
 JOIN version_rows_marked vr
   ON vr.relative_path_dir = n.relative_path
  AND n.version_id = vr.version_id_resolved
-WHERE derived_contents.source_content_id = vr.version_id_resolved;
+WHERE derived_contents.source_content_id = vr.version_id_from_dc_codebase;
 
 UPDATE derived_contents
 SET content_kind = 'TOP_LEVEL_SHORT_SENTENCE'

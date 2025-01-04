@@ -500,9 +500,7 @@ class InspectionVersion(SQLModel, table=True):
 
 class InspectorRun(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    inspection_version_id: UUID = Field(
-        foreign_key="inspection_versions.id", nullable=True
-    )  # TODO delete after migration
+    inspection_version_id: UUID | None
     version_id: UUID = Field(
         foreign_key="v2_version.id",
         nullable=True,  # TODO make non-nullable after migration

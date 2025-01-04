@@ -7,6 +7,11 @@ BEGIN;
 CREATE TEMP TABLE version_rows AS
 SELECT * FROM (
     SELECT
+        CASE
+            WHEN dc.version_id IS NOT NULL THEN dc.version_id
+            ELSE dc.id
+        END AS version_id_resolved,
+        -- version_id_from_dc_codebase is an inaccurate name; version id is version_id_resolved
         dc.id                   AS version_id_from_dc_codebase,
         w.organization_id       AS org_id,
         c.codebase_name,
@@ -57,7 +62,7 @@ SELECT * FROM  (
     SELECT
         ocv1.*,
         -- We use the first version's ID as the "primary asset" ID
-        ocv2.version_id_from_dc_codebase AS primary_asset_id
+        ocv2.version_id_resolved AS primary_asset_id
     FROM version_rows ocv1
     JOIN version_rows ocv2
       ON ocv1.org_id = ocv2.org_id
@@ -94,7 +99,7 @@ INSERT INTO v2_version (
     updated_at
 )
 SELECT
-    vr.version_id_from_dc_codebase,
+    vr.version_id_resolved,
     vr.primary_asset_id,
     vr.version_display_name,
     'GENERATION-COMPLETE',
@@ -109,7 +114,7 @@ CREATE TEMP TABLE deduped_nodes AS
 SELECT * FROM (
     SELECT
         dc.id,
-        vr.version_id_from_dc_codebase,
+        vr.version_id_resolved,
         dc.content_kind,
         CASE
           WHEN dc.content_kind = 'codebase-directory'
@@ -120,7 +125,7 @@ SELECT * FROM (
         dc.updated_at,
         dc.metadata,
         ROW_NUMBER() OVER (
-            PARTITION BY vr.version_id_from_dc_codebase, dc.relative_path
+            PARTITION BY vr.version_id_resolved, dc.relative_path
             ORDER BY dc.created_at DESC
         ) AS rn,
         ROW_NUMBER() OVER (
@@ -150,7 +155,7 @@ INSERT INTO v2_node (
 )
 SELECT
     id,
-    version_id_from_dc_codebase,
+    version_id_resolved,
     CASE
         WHEN content_kind = 'codebase-directory' THEN 'CODEBASE_DIRECTORY'::enum_node_kind
         WHEN content_kind = 'codebase-file'      THEN 'CODEBASE_FILE'::enum_node_kind
@@ -182,7 +187,7 @@ SET node_id = n.id
 FROM v2_node n
 JOIN version_rows_marked vr
   ON vr.relative_path_dir = n.relative_path
- AND n.version_id = vr.version_id_from_dc_codebase
+ AND n.version_id = vr.version_id_resolved
 WHERE derived_contents.source_content_id = vr.version_id_from_dc_codebase;
 
 UPDATE derived_contents
@@ -224,7 +229,6 @@ AND content_kind = 'long_description';
 ------------------------------------------------------------------------------
 -- 5) Final Select (optional)
 ------------------------------------------------------------------------------
--- Example: Just show nodes for debugging
 SELECT *
 FROM v2_node
 ORDER BY created_at DESC;

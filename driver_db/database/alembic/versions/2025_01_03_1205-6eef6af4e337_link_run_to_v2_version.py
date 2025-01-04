@@ -16,6 +16,9 @@ depends_on = None
 
 
 def upgrade() -> None:
+    op.drop_constraint(
+        "inspectorrun_inspection_version_id_fkey", "inspectorrun", type_="foreignkey"
+    )
     op.execute("""
         DELETE FROM inspection_versions iv
                 WHERE iv.id in(

@@ -145,6 +145,7 @@ ins_node_raw AS (
     INSERT INTO v2_node (
         id,
         version_id,
+        kind,
         relative_path,
         created_at,
         updated_at
@@ -152,6 +153,7 @@ ins_node_raw AS (
     SELECT
         vb.version_id,   -- node.id = version_id for 1:1
         vb.version_id,   -- version_id
+        'OTHER' AS kind, -- node kind is other
         vb.relative_path,
         vb.created_at,
         vb.updated_at

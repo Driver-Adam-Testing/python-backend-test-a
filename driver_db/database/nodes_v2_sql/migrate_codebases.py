@@ -110,6 +110,7 @@ SELECT * FROM (
     SELECT
         dc.id,
         vr.version_id_from_dc_codebase,
+        dc.content_kind,
         CASE
           WHEN dc.content_kind = 'codebase-directory'
             THEN dc.relative_path || '/'
@@ -141,6 +142,7 @@ SELECT * FROM (
 INSERT INTO v2_node (
     id,
     version_id,
+    kind,
     relative_path,
     created_at,
     updated_at,
@@ -149,6 +151,11 @@ INSERT INTO v2_node (
 SELECT
     id,
     version_id_from_dc_codebase,
+    CASE
+        WHEN content_kind = 'codebase-directory' THEN 'CODEBASE_DIRECTORY'::enum_node_kind
+        WHEN content_kind = 'codebase-file'      THEN 'CODEBASE_FILE'::enum_node_kind
+        ELSE 'OTHER'::enum_node_kind
+    END,
     relative_path,
     created_at,
     updated_at,

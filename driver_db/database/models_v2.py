@@ -3,7 +3,7 @@ from typing import Optional
 from uuid import UUID
 
 import sqlalchemy
-from database.models_v2_enums import PrimaryAssetKind, VersionStatus
+from database.models_v2_enums import NodeKind, PrimaryAssetKind, VersionStatus
 from pydantic import field_validator
 from sqlalchemy import (
     Column,
@@ -162,6 +162,7 @@ class Node(SQLModel, table=True):  # type: ignore
         ),
         default=None,
     )
+    kind: NodeKind
     version_id: UUID = Field(
         sa_column=Column(
             SaUuid(as_uuid=True),

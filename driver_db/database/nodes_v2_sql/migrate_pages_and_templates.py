@@ -84,6 +84,7 @@ ins_node AS (
     INSERT INTO v2_node (
         id,
         version_id,
+        kind,
         relative_path,
         created_at,
         updated_at
@@ -91,6 +92,7 @@ ins_node AS (
     SELECT
         p.id,      -- node.id = dc.id
         p.id,      -- version_id = same dc.id
+        'other' AS kind,
         p.relative_path,
         p.created_at,
         p.updated_at

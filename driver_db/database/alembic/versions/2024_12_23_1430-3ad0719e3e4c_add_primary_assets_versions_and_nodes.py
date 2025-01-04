@@ -117,9 +117,9 @@ def upgrade() -> None:
         sa.Column(
             "kind",
             sa.Enum(
-                "cb-file",
-                "cb-dir",
-                "other",
+                "CODEBASE_FILE",
+                "CODEBASE_DIRECTORY",
+                "OTHER",
                 name="enum_node_kind",
             ),
             nullable=False,

@@ -92,7 +92,7 @@ ins_node AS (
     SELECT
         p.id,      -- node.id = dc.id
         p.id,      -- version_id = same dc.id
-        'other' AS kind,
+        'OTHER' AS kind,
         p.relative_path,
         p.created_at,
         p.updated_at

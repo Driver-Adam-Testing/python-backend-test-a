@@ -153,7 +153,7 @@ ins_node_raw AS (
     SELECT
         vb.version_id,   -- node.id = version_id for 1:1
         vb.version_id,   -- version_id
-        'other' AS kind, -- node kind is other
+        'OTHER' AS kind, -- node kind is other
         vb.relative_path,
         vb.created_at,
         vb.updated_at

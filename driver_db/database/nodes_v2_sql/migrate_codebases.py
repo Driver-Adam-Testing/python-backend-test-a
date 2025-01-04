@@ -152,9 +152,9 @@ SELECT
     id,
     version_id_from_dc_codebase,
     CASE
-        WHEN content_kind = 'codebase-directory' THEN 'cb-dir'
-        WHEN content_kind = 'codebase-file' THEN 'cb-file'
-        ELSE 'other'
+        WHEN content_kind = 'codebase-directory' THEN 'CODEBASE_DIRECTORY'::enum_node_kind
+        WHEN content_kind = 'codebase-file'      THEN 'CODEBASE_FILE'::enum_node_kind
+        ELSE 'OTHER'::enum_node_kind
     END,
     relative_path,
     created_at,

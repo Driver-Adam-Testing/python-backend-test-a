@@ -15,9 +15,9 @@ class VersionStatus(str, enum.Enum):
 
 
 class NodeKind(str, enum.Enum):
-    CODEBASE_FILE = "cb-file"
-    CODEBASE_DIRECTORY = "cb-dir"
-    OTHER = "other"
+    CODEBASE_FILE = "CODEBASE_FILE"
+    CODEBASE_DIRECTORY = "CODEBASE_DIRECTORY"
+    OTHER = "OTHER"
 
 
 class ContentKind(enum.Enum):

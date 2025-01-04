@@ -7,7 +7,12 @@ from uuid import uuid4
 
 import modal
 from common import app
-from database.models_v2_enums import ContentKind, PrimaryAssetKind, VersionStatus
+from database.models_v2_enums import (
+    ContentKind,
+    NodeKind,
+    PrimaryAssetKind,
+    VersionStatus,
+)
 
 image = (
     modal.Image.debian_slim(python_version="3.12")
@@ -317,7 +322,7 @@ def run_codebase_onboarding(
                 dir_node = Node(
                     version_id=version_id,
                     relative_path=formatted_dir,
-                    # kind="directory", # TODO enum
+                    kind=NodeKind.CODEBASE_DIRECTORY,
                     misc_metadata={},
                 )
                 session.add(dir_node)
@@ -336,7 +341,7 @@ def run_codebase_onboarding(
                     id=node_id,
                     version_id=version_id,
                     relative_path=str(file_path),
-                    # kind="source-code", # TODO
+                    kind=NodeKind.CODEBASE_FILE,
                     misc_metadata=codebase_stats[file_path],
                 )
                 file_dc = DerivedContent(

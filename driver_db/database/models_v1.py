@@ -239,12 +239,10 @@ class DocumentSource(SQLModel, table=True):
     """Link table between documents and their sources."""
 
     document_id: None | uuid.UUID = Field(
-        default=None, foreign_key="derived_contents.id", primary_key=True
+        default=None, foreign_key="derived_contents.id"
     )
-    include: bool
-    source_id: None | uuid.UUID = Field(
-        default=None, foreign_key="derived_contents.id", primary_key=True
-    )
+    include: bool | None
+    source_id: None | uuid.UUID = Field(default=None, foreign_key="derived_contents.id")
     document: "DerivedContent" = Relationship(
         back_populates="source_links",
         sa_relationship_kwargs={"foreign_keys": "DocumentSource.document_id"},
@@ -252,6 +250,13 @@ class DocumentSource(SQLModel, table=True):
     source: "DerivedContent" = Relationship(
         back_populates="document_links",
         sa_relationship_kwargs={"foreign_keys": "DocumentSource.source_id"},
+    )
+
+    source_node_id: None | uuid.UUID = Field(
+        default=None, foreign_key="v2_node.id", primary_key=True
+    )
+    page_node_id: None | uuid.UUID = Field(
+        default=None, foreign_key="v2_node.id", primary_key=True
     )
 
 

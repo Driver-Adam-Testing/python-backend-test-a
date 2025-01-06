@@ -117,7 +117,7 @@ SELECT * FROM (
         vr.version_id_resolved,
         dc.content_kind,
         CASE
-          WHEN dc.content_kind = 'codebase-directory'
+          WHEN (dc.content_kind = 'codebase-directory' AND RIGHT(dc.relative_path, 1) <> '/')
             THEN dc.relative_path || '/'
           ELSE dc.relative_path
         END AS relative_path,

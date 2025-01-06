@@ -44,13 +44,12 @@ def upgrade():
 
     op.execute("""
     UPDATE document_sources
-    SET source_node_id = dclookup.node_id
-    FROM derived_contents dc
-    JOIN derived_contents dclookup ON dclookup.relative_path = CONCAT(dc.relative_path, '/') 
-    AND dclookup.version_id = dc.version_id
-    WHERE document_sources.source_id = dc.id 
-    AND dc.content_kind = 'codebase' 
-    AND dclookup.content_kind = 'codebase-directory';
+    SET source_node_id = n.id
+    FROM document_sources ds
+    JOIN derived_contents dc ON ds.source_id = dc.id
+    LEFT JOIN v2_node n ON n.relative_path = CONCAT(dc.relative_path, '/')
+    WHERE ds.source_node_id IS NULL
+    AND dc.content_kind = 'codebase';
     """)
 
     # Create foreign keys for the new columns

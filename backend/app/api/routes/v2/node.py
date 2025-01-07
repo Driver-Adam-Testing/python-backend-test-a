@@ -13,6 +13,7 @@ from app.api.session import CurrentSession
 from database.models_v1 import DerivedContent, Tag
 from database.models_v2 import (
     Node,
+    NodeKind,
     PrimaryAsset,
     PrimaryAssetKind,
     PrimaryAssetTag,
@@ -710,7 +711,7 @@ async def new_page(session: CurrentSession, user: UserToken) -> DerivedContentRe
     new_primary_asset = PrimaryAsset(
         display_name=new_display_name,
         organization_id=user.organization_id,
-        kind="PAGE",
+        kind=PrimaryAssetKind.PAGE,
     )
     session.add(new_primary_asset)
     session.commit()
@@ -721,7 +722,9 @@ async def new_page(session: CurrentSession, user: UserToken) -> DerivedContentRe
     session.add(new_version)
     session.commit()
 
-    new_node = Node(version_id=new_version.id, relative_path="/page")
+    new_node = Node(
+        version_id=new_version.id, relative_path="/page", kind=NodeKind.OTHER
+    )
     session.add(new_node)
     session.commit()
 

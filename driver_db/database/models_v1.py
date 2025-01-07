@@ -258,6 +258,14 @@ class DocumentSource(SQLModel, table=True):
     page_node_id: None | uuid.UUID = Field(
         default=None, foreign_key="v2_node.id", primary_key=True
     )
+    source_node: "Node" = Relationship(
+        back_populates="document_sources",
+        sa_relationship_kwargs={"foreign_keys": "DocumentSource.source_node_id"},
+    )
+    page_node: "Node" = Relationship(
+        back_populates="document_sources",
+        sa_relationship_kwargs={"foreign_keys": "DocumentSource.page_node_id"},
+    )
 
 
 # TODO add indexes back

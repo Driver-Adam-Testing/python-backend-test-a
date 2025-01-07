@@ -111,3 +111,26 @@ class TagCreate(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+class DocumentSourceRead(BaseModel):
+    class NodeRead(BaseModel):
+        id: UUID | None
+        relative_path: str | None
+
+        class VersionRead(BaseModel):
+            display_name: str | None
+            id: UUID | None
+
+            class PrimaryAssetRead(BaseModel):
+                id: UUID | None
+                display_name: str | None
+                kind: str | None
+
+            primary_asset: PrimaryAssetRead
+
+        version: VersionRead
+
+    source_node: NodeRead
+    page_node_id: UUID | None
+    source_node_id: UUID | None

@@ -4,13 +4,16 @@ from uuid import UUID
 
 from app.api.auth import UserToken
 from app.api.routes.v2.node_schemas import (
+    DocumentSourceRead,
     NodeReadWithRelationships,
     PrimaryAssetRead,
     TagCreate,
     TagRead,
+    VersionCreate,
+    VersionUpdate,
 )
 from app.api.session import CurrentSession
-from database.models_v1 import DerivedContent, Tag
+from database.models_v1 import DerivedContent, DocumentSource, Tag
 from database.models_v2 import (
     Node,
     NodeKind,
@@ -35,68 +38,6 @@ class ListWithCount(BaseModel, Generic[T]):
 router = APIRouter()
 
 
-# @router.get("/full_nodes", response_model=ListWithCount[FullNodeView])
-# async def list_full_nodes(
-#     request: Request,
-#     session: CurrentSession,
-#     user: UserToken,
-#     limit: int = 10,
-#     offset: int = 0,
-#     sort_by: str = "primary_asset_updated_at",
-#     sort_direction: str = "DESC",
-#     root_nodes_only: bool = False,
-# ) -> ListWithCount[FullNodeView]:
-#     query = select(FullNodeView).where(
-#         FullNodeView.primary_asset_organization_id == user.organization_id
-#     )
-
-#     filters = dict(request.query_params)
-#     filters.pop("limit", None)
-#     filters.pop("offset", None)
-#     filters.pop("sort_by", None)
-#     filters.pop("sort_direction", None)
-
-#     for key, value in filters.items():
-#         if hasattr(FullNodeView, key):
-#             query = query.where(getattr(FullNodeView, key) == value)
-
-#     if root_nodes_only:
-#         query = query.where(
-#             ~FullNodeView.node_relative_path.contains("/")
-#             | (
-#                 FullNodeView.node_relative_path.endswith("/")
-#                 & (
-#                     func.length(FullNodeView.node_relative_path)
-#                     - func.length(
-#                         func.replace(FullNodeView.node_relative_path, "/", "")
-#                     )
-#                     == 1
-#                 )
-#             )
-#         )
-#     if hasattr(FullNodeView, sort_by):
-#         if sort_direction.upper() == "ASC":
-#             query = query.order_by(getattr(FullNodeView, sort_by).asc())
-#         elif sort_direction.upper() == "DESC":
-#             query = query.order_by(getattr(FullNodeView, sort_by).desc())
-#         else:
-#             raise HTTPException(status_code=400, detail="Invalid sort direction")
-#     else:
-#         raise HTTPException(status_code=400, detail="Invalid sort field")
-
-#     count_query = select(func.count()).select_from(query.subquery())
-#     total_count = session.exec(count_query).one()
-
-#     query = query.limit(limit).offset(offset)
-#     result = session.exec(query)
-#     full_nodes = result.all()
-
-#     if not full_nodes:
-#         raise HTTPException(status_code=404, detail="No full nodes found")
-
-#     return ListWithCount(results=full_nodes, total_count=total_count)
-
-
 @router.get("/primary_assets", response_model=ListWithCount[PrimaryAssetRead])
 async def list_primary_assets(
     request: Request,
@@ -106,7 +47,7 @@ async def list_primary_assets(
     offset: int = 0,
     sort_by: str = "updated_at",
     sort_direction: str = "DESC",
-) -> ListWithCount[PrimaryAsset]:
+) -> ListWithCount[PrimaryAssetRead]:
     query = select(PrimaryAsset).where(
         PrimaryAsset.organization_id == user.organization_id
     )
@@ -174,6 +115,52 @@ async def list_primary_assets(
     primary_assets = result.all()
 
     return ListWithCount(results=primary_assets, total_count=total_count)
+
+
+@router.get("/document_sources", response_model=ListWithCount[DocumentSourceRead])
+async def list_document_sources(
+    request: Request,
+    session: CurrentSession,
+    user: UserToken,
+    limit: int = 10,
+    offset: int = 0,
+    sort_direction: str = "DESC",
+    sort_by: str | None = None,
+) -> ListWithCount[DocumentSourceRead]:
+    query = select(DocumentSource).options(
+        selectinload(DocumentSource.source_node)
+        .selectinload(Node.version)
+        .selectinload(Version.primary_asset)
+    )
+    filters = dict(request.query_params)
+    filters.pop("limit", None)
+    filters.pop("offset", None)
+    filters.pop("sort_by", None)
+    filters.pop("sort_direction", None)
+
+    for key, value in filters.items():
+        if hasattr(DocumentSource, key):
+            query = query.where(getattr(DocumentSource, key) == value)
+
+    if sort_by:
+        if hasattr(DocumentSource, sort_by):
+            if sort_direction.upper() == "ASC":
+                query = query.order_by(getattr(DocumentSource, sort_by).asc())
+            elif sort_direction.upper() == "DESC":
+                query = query.order_by(getattr(DocumentSource, sort_by).desc())
+            else:
+                raise HTTPException(status_code=400, detail="Invalid sort direction")
+        else:
+            raise HTTPException(status_code=400, detail="Invalid sort field")
+
+    count_query = select(func.count()).select_from(query.subquery())
+    total_count = session.exec(count_query).one()
+
+    query = query.limit(limit).offset(offset)
+    result = session.exec(query)
+    document_sources = result.all()
+
+    return ListWithCount(results=document_sources, total_count=total_count)
 
 
 @router.get("/versions", response_model=ListWithCount[Version])
@@ -275,6 +262,7 @@ async def list_nodes(
     return ListWithCount(results=nodes, total_count=total_count)
 
 
+# TODO: Put this in enums and make all the classes "Read" Classes
 class DerivedContentResponse(BaseModel):
     id: UUID | None
     node_id: UUID | None
@@ -317,7 +305,6 @@ async def list_contents(
     offset: int = 0,
     sort_by: str = "updated_at",
     sort_direction: str = "DESC",
-    content_type_names: str | list[str] = "",
 ) -> ListWithCount[DerivedContentResponse]:
     query = (
         select(DerivedContent)
@@ -337,11 +324,6 @@ async def list_contents(
             )
         )
     )
-
-    if content_type_names:
-        if isinstance(content_type_names, str):
-            content_type_names = [content_type_names]
-        query = query.where(DerivedContent.content_kind.in_(content_type_names))
 
     filters = dict(request.query_params)
     filters.pop("limit", None)
@@ -455,15 +437,6 @@ async def update_primary_asset(
     session.commit()
     session.refresh(asset)
     return asset
-
-
-class VersionCreate(BaseModel):
-    primary_asset_id: UUID
-    display_name: str
-
-
-class VersionUpdate(BaseModel):
-    display_name: str | None = None
 
 
 @router.post("/versions", response_model=Version)

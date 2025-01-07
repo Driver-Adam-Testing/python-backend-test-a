@@ -206,6 +206,14 @@ class Node(SQLModel, table=True):  # type: ignore
             "order_by": "desc(func.length(Node.relative_path))",
         }
     )
+    document_sources: list["DocumentSource"] = Relationship(  # noqa: F821
+        back_populates="source_node",
+        sa_relationship_kwargs={"foreign_keys": "DocumentSource.source_node_id"},
+    )
+    page_sources: list["DocumentSource"] = Relationship(  # noqa: F821
+        back_populates="page_node",
+        sa_relationship_kwargs={"foreign_keys": "DocumentSource.page_node_id"},
+    )
 
 
 # TODO: Delete This, I think

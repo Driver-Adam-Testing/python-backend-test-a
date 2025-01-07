@@ -127,7 +127,7 @@ async def get_source_code_derived_content(node_id: uuid.UUID) -> DerivedContent:
     async with AsyncSession(async_engine) as session:
         statement = select(DerivedContent).where(
             DerivedContent.node_id == node_id,
-            DerivedContent.content_kind == ContentKind.CODEBASE_FILE.value,
+            DerivedContent.content_kind == ContentKind.CODEBASE_FILE,
         )
         return (await session.exec(statement)).one()
 

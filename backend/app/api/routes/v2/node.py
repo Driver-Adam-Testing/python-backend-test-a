@@ -6,7 +6,9 @@ from app.api.auth import UserToken
 from app.api.routes.v2.node_schemas import (
     DocumentSourceRead,
     NodeReadWithRelationships,
+    PrimaryAssetCreate,
     PrimaryAssetRead,
+    PrimaryAssetUpdate,
     TagCreate,
     TagRead,
     VersionCreate,
@@ -22,8 +24,9 @@ from database.models_v2 import (
     PrimaryAssetTag,
     Version,
 )
+from database.models_v2_enums import VersionStatus
 from fastapi import APIRouter, Body, HTTPException, Path, Request, Response
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel
 from sqlalchemy.orm import selectinload
 from sqlmodel import func, select
 
@@ -39,7 +42,7 @@ router = APIRouter()
 
 
 @router.get("/primary_assets", response_model=ListWithCount[PrimaryAssetRead])
-async def list_primary_assets(
+def list_primary_assets(
     request: Request,
     session: CurrentSession,
     user: UserToken,
@@ -51,6 +54,7 @@ async def list_primary_assets(
     query = select(PrimaryAsset).where(
         PrimaryAsset.organization_id == user.organization_id
     )
+    # TODO these should be explicit in the function parameters so they get properly validated. See old content endpoint
     filters = dict(request.query_params)
     filters.pop("limit", None)
     filters.pop("offset", None)
@@ -64,7 +68,11 @@ async def list_primary_assets(
     if kind:
         if isinstance(kind, str):
             kind = kind.split(",")
+            query = query.where(PrimaryAsset.kind == PrimaryAssetKind(kind))
         if isinstance(kind, list):
+            kind = [
+                PrimaryAssetKind(k) for k in kind
+            ]  # TODO these may be invalid. If we move it to the endpoint parameters, fastapi will validate them
             query = query.where(PrimaryAsset.kind.in_(kind))
 
     if tag_ids:
@@ -164,7 +172,7 @@ async def list_document_sources(
 
 
 @router.get("/versions", response_model=ListWithCount[Version])
-async def list_versions(
+def list_versions(
     request: Request,
     session: CurrentSession,
     user: UserToken,
@@ -213,7 +221,7 @@ async def list_versions(
 
 
 @router.get("/nodes", response_model=ListWithCount[NodeReadWithRelationships])
-async def list_nodes(
+def list_nodes(
     request: Request,
     session: CurrentSession,
     user: UserToken,
@@ -297,7 +305,7 @@ class DerivedContentResponse(BaseModel):
 
 
 @router.get("/contents", response_model=ListWithCount[DerivedContentResponse])
-async def list_contents(
+def list_contents(
     request: Request,
     session: CurrentSession,
     user: UserToken,
@@ -364,39 +372,12 @@ async def list_contents(
     return ListWithCount(results=contents, total_count=total_count)
 
 
-class PrimaryAssetCreate(BaseModel):
-    display_name: str
-    kind: str
-
-    @field_validator("kind")
-    def validate_kind(cls, v: str) -> str:
-        if v not in [e.value for e in PrimaryAssetKind]:
-            raise ValueError(
-                f"kind must be one of {[e.value for e in PrimaryAssetKind]}"
-            )
-        return v
-
-
-class PrimaryAssetUpdate(BaseModel):
-    display_name: str | None = None
-    kind: str | None = None
-
-    @field_validator("kind")
-    def validate_kind(cls, v: str | None) -> str | None:
-        if v is not None and v not in [e.value for e in PrimaryAssetKind]:
-            raise ValueError(
-                f"kind must be one of {[e.value for e in PrimaryAssetKind]}"
-            )
-        return v
-
-
 @router.post("/primary_assets", response_model=PrimaryAsset)
-async def create_primary_asset(
+def create_primary_asset(
     session: CurrentSession,
     user: UserToken,
     payload: PrimaryAssetCreate = Body(...),
 ) -> PrimaryAsset:
-    # Create a new PrimaryAssetRow
     new_asset = PrimaryAsset(
         display_name=payload.display_name,
         organization_id=user.organization_id,
@@ -409,7 +390,7 @@ async def create_primary_asset(
 
 
 @router.put("/primary_assets/{asset_id}", response_model=PrimaryAsset)
-async def update_primary_asset(
+def update_primary_asset(
     session: CurrentSession,
     user: UserToken,
     asset_id: UUID = Path(...),
@@ -429,8 +410,6 @@ async def update_primary_asset(
     if payload.display_name is not None:
         asset.display_name = payload.display_name
     if payload.kind is not None:
-        if payload.kind not in [e.value for e in PrimaryAssetKind]:
-            raise HTTPException(status_code=400, detail="Invalid kind")
         asset.kind = payload.kind
 
     session.add(asset)
@@ -440,7 +419,7 @@ async def update_primary_asset(
 
 
 @router.post("/versions", response_model=Version)
-async def create_version(
+def create_version(
     session: CurrentSession,
     user: UserToken,
     payload: VersionCreate = Body(...),
@@ -455,10 +434,7 @@ async def create_version(
     if not primary_asset:
         raise HTTPException(status_code=404, detail="Primary asset not found")
 
-    new_version = Version(
-        primary_asset_id=payload.primary_asset_id,
-        display_name=payload.display_name,
-    )
+    new_version = Version(**payload.dict())
     session.add(new_version)
     session.commit()
     session.refresh(new_version)
@@ -466,7 +442,7 @@ async def create_version(
 
 
 @router.put("/versions/{version_id}", response_model=Version)
-async def update_version(
+def update_version(
     session: CurrentSession,
     user: UserToken,
     version_id: UUID = Path(...),
@@ -484,6 +460,8 @@ async def update_version(
 
     if payload.display_name is not None:
         version.display_name = payload.display_name
+    if payload.status is not None:
+        version.status = payload.status
 
     session.add(version)
     session.commit()
@@ -501,7 +479,7 @@ class NodeUpdate(BaseModel):
 
 
 @router.post("/nodes", response_model=Node)
-async def create_node(
+def create_node(
     session: CurrentSession, user: UserToken, payload: NodeCreate = Body(...)
 ) -> Node:
     # Verify version belongs to user's organization
@@ -528,7 +506,7 @@ async def create_node(
 
 
 @router.put("/nodes/{node_id}", response_model=Node)
-async def update_node(
+def update_node(
     session: CurrentSession,
     user: UserToken,
     node_id: UUID = Path(...),
@@ -574,7 +552,7 @@ class DerivedContentUpdate(BaseModel):
 
 
 @router.post("/contents", response_model=DerivedContentResponse)
-async def create_derived_content(
+def create_derived_content(
     session: CurrentSession, user: UserToken, payload: DerivedContentCreate = Body(...)
 ) -> DerivedContentResponse:
     # Verify node belongs to user's organization
@@ -608,7 +586,7 @@ async def create_derived_content(
 
 # TODO: I want this to be explicitly operating on a CONCEPTUAL entity of a PAGE, rather than an explicit entity in the DB
 @router.put("/edit_page/{node_id}", response_model=DerivedContentResponse)
-async def edit_page_CONVENIENCE_METHOD(
+def edit_page_CONVENIENCE_METHOD(
     session: CurrentSession,
     user: UserToken,
     node_id: UUID = Path(...),
@@ -660,7 +638,7 @@ async def edit_page_CONVENIENCE_METHOD(
 
 
 @router.post("/new_page", response_model=DerivedContentResponse)
-async def new_page(session: CurrentSession, user: UserToken) -> DerivedContentResponse:
+def new_page(session: CurrentSession, user: UserToken) -> DerivedContentResponse:
     # Find all PrimaryAssetRows with the name "Untitled Page X" where X is any number for the user's organization
     existing_assets = session.exec(
         select(PrimaryAsset).where(
@@ -690,7 +668,9 @@ async def new_page(session: CurrentSession, user: UserToken) -> DerivedContentRe
     session.commit()
 
     new_version = Version(
-        primary_asset_id=new_primary_asset.id, display_name="0", status="user-data"
+        primary_asset_id=new_primary_asset.id,
+        display_name="0",
+        status=VersionStatus.GENERATION_COMPLETE,
     )
     session.add(new_version)
     session.commit()
@@ -718,7 +698,7 @@ async def new_page(session: CurrentSession, user: UserToken) -> DerivedContentRe
 
 
 @router.post("/new_template", response_model=DerivedContentResponse)
-async def new_template(
+def new_template(
     session: CurrentSession,
     user: UserToken,
 ) -> DerivedContentResponse:
@@ -750,7 +730,11 @@ async def new_template(
     session.add(new_primary_asset)
     session.commit()
 
-    new_version = Version(primary_asset_id=new_primary_asset.id, display_name="0")
+    new_version = Version(
+        primary_asset_id=new_primary_asset.id,
+        display_name="0",
+        status=VersionStatus.GENERATION_COMPLETE,
+    )
     session.add(new_version)
     session.commit()
 
@@ -778,7 +762,7 @@ async def new_template(
 
 
 @router.get("/tags", response_model=ListWithCount[TagRead])
-async def list_tags(
+def list_tags(
     request: Request,
     session: CurrentSession,
     user: UserToken,
@@ -823,7 +807,7 @@ async def list_tags(
 
 
 @router.post("/tags", response_model=TagRead)
-async def create_tag(
+def create_tag(
     session: CurrentSession,
     user: UserToken,
     payload: TagCreate = Body(...),
@@ -844,7 +828,7 @@ async def create_tag(
 
 
 @router.put("/tags/{tag_id}", response_model=TagRead)
-async def update_tag(
+def update_tag(
     session: CurrentSession,
     user: UserToken,
     tag_id: UUID = Path(...),
@@ -875,7 +859,7 @@ async def update_tag(
 
 
 @router.post("/primary_asset_tags", response_model=PrimaryAssetTag)
-async def create_primary_asset_tag(
+def create_primary_asset_tag(
     session: CurrentSession,
     user: UserToken,
     payload: PrimaryAssetTag = Body(...),
@@ -891,7 +875,7 @@ async def create_primary_asset_tag(
 
 
 @router.delete("/primary_asset_tags/{primary_asset_id}/{tag_id}", response_model=None)
-async def delete_primary_asset_tag(
+def delete_primary_asset_tag(
     session: CurrentSession,
     user: UserToken,
     tag_id: UUID = Path(...),

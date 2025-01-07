@@ -247,7 +247,7 @@ def run_codebase_onboarding(
             # TODO: check the provider - for manual providers we should not create a new version
             # if provider == "manual" and prior_version: raise
             prior_version_name = prior_version.display_name
-            if prior_version.status == VersionStatus.GENERATING.value:
+            if prior_version.status == VersionStatus.GENERATING:
                 print(
                     f"Codebase {primary_asset.display_name} has a prior version name: {prior_version_name}"
                     f" id: {prior_version.id}"
@@ -267,7 +267,7 @@ def run_codebase_onboarding(
                 id=primary_asset_id,
                 display_name=codebase_name,
                 organization_id=org_id,
-                kind=PrimaryAssetKind.CODEBASE.value,
+                kind=PrimaryAssetKind.CODEBASE,
                 repository_id=repository_id,
             )
             session.add(primary_asset)
@@ -276,7 +276,7 @@ def run_codebase_onboarding(
             id=uuid4(),
             primary_asset_id=primary_asset_id,
             display_name=version_str,
-            status=VersionStatus.GENERATING.value,
+            status=VersionStatus.GENERATING,
         )
         version_id = version.id
         session.add(version)
@@ -346,7 +346,7 @@ def run_codebase_onboarding(
                 )
                 file_dc = DerivedContent(
                     content_type_id=None,
-                    content_kind=ContentKind.CODEBASE_FILE.value,
+                    content_kind=ContentKind.CODEBASE_FILE,
                     node_id=node_id,
                     relative_path=str(
                         file_path

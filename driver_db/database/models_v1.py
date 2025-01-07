@@ -6,7 +6,6 @@ from uuid import UUID
 import sqlalchemy.dialects.postgresql
 import strawberry
 from pgvector.sqlalchemy import Vector
-from pydantic import field_validator
 from sqlalchemy import (
     Column,
     Computed,
@@ -291,17 +290,7 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
     workspace_id: UUID | None
     content_type_id: UUID | None
     version_id: None | UUID
-
-    content_kind: str = Field(
-        sa_column=Column(sqlalchemy.Text, nullable=True, index=True)
-    )
-
-    @field_validator("content_kind")
-    def validate_content_kind(cls, value: str) -> str:
-        if value is not None and value not in ContentKind.__members__:
-            raise ValueError("content_kind must be a member of ContentKind or None")
-        return value
-
+    content_kind: ContentKind | None = Field(nullable=True, index=True)
     source_content_id: UUID | None
     # Content doesn't need to be associated with a codebase in our flat asset design. But for now, we keep
     # all source contents and derived contents for a codebase associated with the codebase. PDFs and other docs,

@@ -12,6 +12,7 @@ from .models_v2 import (
     PrimaryAsset,
     Version,
 )
+from .models_v2_enums import VersionStatus
 
 # Define the test database URL (adjust with your credentials)
 TEST_DATABASE_URL = "postgresql://postgres:changethis@localhost:5432/postgres"
@@ -70,7 +71,11 @@ def test_version_table(session: Session) -> None:
     session.add(asset)
     session.commit()
 
-    version = Version(primary_asset_id=asset.id, display_name="Version 1")
+    version = Version(
+        primary_asset_id=asset.id,
+        display_name="Version 1",
+        status=VersionStatus.GENERATING,
+    )
     session.add(version)
     session.commit()
 
@@ -86,7 +91,11 @@ def test_node_table(session: Session) -> None:
     session.add(asset)
     session.commit()
 
-    version = Version(primary_asset_id=asset.id, display_name="Version 1")
+    version = Version(
+        primary_asset_id=asset.id,
+        display_name="Version 1",
+        status=VersionStatus.GENERATING,
+    )
     session.add(version)
     session.commit()
 
@@ -106,7 +115,11 @@ def test_content_table(session: Session) -> None:
     session.add(asset)
     session.commit()
 
-    version = Version(primary_asset_id=asset.id, display_name="Version 1")
+    version = Version(
+        primary_asset_id=asset.id,
+        display_name="Version 1",
+        status=VersionStatus.GENERATING,
+    )
     session.add(version)
     session.commit()
 
@@ -132,7 +145,11 @@ def test_chunk_table(session: Session) -> None:
     session.add(asset)
     session.commit()
 
-    version = Version(primary_asset_id=asset.id, display_name="Version 1")
+    version = Version(
+        primary_asset_id=asset.id,
+        display_name="Version 1",
+        status=VersionStatus.GENERATING,
+    )
     session.add(version)
     session.commit()
 
@@ -169,7 +186,11 @@ def test_save_functionality(session: Session) -> None:
     session.commit()
 
     # Create and commit a version linked to the primary asset
-    version = Version(primary_asset_id=asset.id, display_name="Version 1")
+    version = Version(
+        primary_asset_id=asset.id,
+        display_name="Version 1",
+        status=VersionStatus.GENERATING,
+    )
     session.add(version)
     session.commit()
 
@@ -215,7 +236,11 @@ def test_query_full_nodes(session: Session) -> None:
     session.commit()
 
     # Create and commit a version linked to the primary asset
-    version = Version(primary_asset_id=asset.id, display_name="Version 1")
+    version = Version(
+        primary_asset_id=asset.id,
+        display_name="Version 1",
+        status=VersionStatus.GENERATING,
+    )
     session.add(version)
     session.commit()
 
@@ -260,7 +285,11 @@ def test_relationships_populated(session: Session) -> None:
     session.commit()
 
     # Create and commit a version linked to the primary asset
-    version = Version(primary_asset_id=asset.id, display_name="Version 1")
+    version = Version(
+        primary_asset_id=asset.id,
+        display_name="Version 1",
+        status=VersionStatus.GENERATING,
+    )
     session.add(version)
     session.commit()
 
@@ -315,7 +344,11 @@ def test_cascading_deletes(session: Session) -> None:
     session.commit()
 
     # Create and commit a version linked to the primary asset
-    version = Version(primary_asset_id=asset.id, display_name="Version 1")
+    version = Version(
+        primary_asset_id=asset.id,
+        display_name="Version 1",
+        status=VersionStatus.GENERATING,
+    )
     session.add(version)
     session.commit()
 

@@ -543,7 +543,7 @@ def onboard_and_inspect(
         print("Inspection complete")
 
         # TODO: set the version status
-        set_codebase_status(version_id, VersionStatus.GENERATION_COMPLETE.value)
+        set_codebase_status(version_id, VersionStatus.GENERATION_COMPLETE)
 
     except Exception as e:
         exception_type = type(e).__name__
@@ -557,5 +557,5 @@ def onboard_and_inspect(
         # Since codebase and version could possibly be undefined in this clean up action, we don't care if it fails
         with suppress(Exception):
             # TODO: set the version status
-            set_codebase_status(version_id, VersionStatus.GENERATION_ERROR.value)
+            set_codebase_status(version_id, VersionStatus.GENERATION_ERROR)
         raise e

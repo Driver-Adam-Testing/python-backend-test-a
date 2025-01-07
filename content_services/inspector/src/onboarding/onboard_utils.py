@@ -4,6 +4,7 @@ import re
 import time
 import zipfile
 from collections.abc import Callable
+from enum import Enum
 from functools import cache
 from pathlib import Path
 from shutil import rmtree
@@ -22,7 +23,7 @@ class RunInProgressError(Exception):
     pass
 
 
-def set_codebase_status(version_id: UUID, status: str) -> None:
+def set_codebase_status(version_id: UUID, status: Enum) -> None:
     from database.db import engine
 
     with Session(engine) as session, session.begin():

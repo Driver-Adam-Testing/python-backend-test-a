@@ -88,6 +88,7 @@ class PrimaryAssetUpdate(BaseModel):
 
 
 class VersionCreate(BaseModel):
+    primary_asset_id: UUID
     display_name: str
     status: VersionStatus
 

@@ -273,10 +273,10 @@ def run_codebase_onboarding(
             session.add(primary_asset)
 
         version = Version(
-            id=uuid4(),
             primary_asset_id=primary_asset_id,
             display_name=version_str,
             status=VersionStatus.GENERATING,
+            previous_version_id=prior_version.id if prior_version else None,
         )
         version_id = version.id
         session.add(version)

@@ -6,7 +6,7 @@ from database.models_v1 import (
     InspectorRun,
 )
 from database.models_v2 import Node, Version
-from database.models_v2_enums import ContentKind
+from database.models_v2_enums import ContentKind, NodeKind
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 
@@ -26,26 +26,12 @@ async def get_version_by_id(version_id: uuid.UUID) -> Version:
 
 async def try_get_prev_version(version_id: uuid.UUID) -> None | Version:
     from database.db import async_engine
-    from sqlalchemy.orm import selectinload
     from sqlmodel import select
 
     async with AsyncSession(async_engine) as session:
-        stmt = (
-            select(Version)
-            .where(Version.id == version_id)
-            .options(selectinload(Version.primary_asset))
-        )
+        stmt = select(Version).where(Version.id == version_id)
         version = (await session.exec(stmt)).one()
-        primary_asset = version.primary_asset
-
-        stmt = (
-            select(Version)
-            .where(Version.primary_asset_id == primary_asset.id)
-            .where(Version.created_at < version.created_at)
-            .order_by(Version.created_at.desc())
-            .limit(1)
-            .options(selectinload(Version.primary_asset))
-        )
+        stmt = select(Version).where(Version.id == version.previous_version_id)
         previous_version = (await session.exec(stmt)).first()
         return previous_version
 
@@ -87,33 +73,25 @@ async def try_get_latest_run_from_version_id(version_id: uuid.UUID) -> uuid.UUID
         return result.id
 
 
-# TODO this actually would get source and derived content if the incoming types weren't correct
 # TODO : get analyable nodes by version_id
 async def get_analyzable_nodes_by_version_id(
-    version_id: uuid.UUID, content_types: set[str]
+    version_id: uuid.UUID, content_types: set[NodeKind]
 ) -> list[Node]:
     from database.db import async_engine
     from sqlmodel import select
 
-    # TODO: Implement the appropriate way to filter  nodes by kind!!!!
-
-    # down to what has been configured.
     async with AsyncSession(async_engine) as session:
         statement = select(Node).where(
             Node.version_id == version_id,
-            # Node.kind.in_(content_types), # TODO fix this to use kind
+            Node.kind.in_(content_types),
         )
-        if content_types == {"file"}:
-            statement = statement.where(~Node.relative_path.endswith("/"))
-        if content_types == {"directory"}:
-            statement = statement.where(Node.relative_path.endswith("/"))
 
         results = await session.exec(statement)
 
     res_list = []
     for res in results.all():
-        is_file = not res.relative_path.endswith("/")
-        is_directory = not is_file
+        is_file = res.kind == NodeKind.CODEBASE_FILE
+        is_directory = res.kind == NodeKind.CODEBASE_DIRECTORY
         is_analyzable_file = is_file and res.misc_metadata["is_analyzable"] is True
         if is_directory or is_analyzable_file:
             res_list.append(res)

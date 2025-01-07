@@ -21,6 +21,7 @@ from database.models_v2 import (
 )
 from fastapi import APIRouter, Body, HTTPException, Path, Request, Response
 from pydantic import BaseModel, field_validator
+from sqlalchemy.orm import selectinload
 from sqlmodel import func, select
 
 T = TypeVar("T")
@@ -279,10 +280,11 @@ class DerivedContentResponse(BaseModel):
     node_id: UUID | None
     content: str | None
     misc_metadata: dict | None
-    status: str | None
     created_at: datetime | None
     updated_at: datetime | None
-    full_node: dict | None = None  # Include full node details
+    node: Node
+    version: Version
+    primary_asset: PrimaryAsset
 
     @classmethod
     def from_derived_content(
@@ -299,22 +301,10 @@ class DerivedContentResponse(BaseModel):
             updated_at=derived_content.updated_at,
             order=derived_content.order,
             version_id=derived_content.node.version_id,
-            tags=[
-                # {"id": tag.id, "name": tag.name} for tag in derived_content.tags
-            ],  # Extract entire tag objects
-            status="generation-complete",  # TODO: populate full_nodes
-            # full_node={
-            #     "primary_asset_id": derived_content.full_node.primary_asset_id,
-            #     "primary_asset_display_name": derived_content.full_node.primary_asset_display_name,
-            #     "primary_asset_organization_id": derived_content.full_node.primary_asset_organization_id,
-            #     "primary_asset_kind": derived_content.full_node.primary_asset_kind,
-            #     "version_id": derived_content.full_node.version_id,
-            #     "version_display_name": derived_content.full_node.version_display_name,
-            #     "node_id": derived_content.full_node.node_id,
-            #     "node_relative_path": derived_content.full_node.node_relative_path,
-            # }
-            # if derived_content.full_node
-            # else None,  # Extract full node details
+            status=derived_content.node.version.status,
+            node=derived_content.node,
+            version=derived_content.node.version,
+            primary_asset=derived_content.node.version.primary_asset,
         )
 
 
@@ -331,11 +321,21 @@ async def list_contents(
 ) -> ListWithCount[DerivedContentResponse]:
     query = (
         select(DerivedContent)
-        .select_from(DerivedContent)
-        .join(Node, DerivedContent.node_id == Node.id)
-        .join(Version, Node.version_id == Version.id)
-        .join(PrimaryAsset, Version.primary_asset_id == PrimaryAsset.id)
-        .where(PrimaryAsset.organization_id == user.organization_id)
+        .options(
+            selectinload(DerivedContent.node)
+            .selectinload(Node.version)
+            .selectinload(Version.primary_asset)
+            .selectinload(PrimaryAsset.tags)
+        )
+        .where(
+            DerivedContent.node.has(
+                Node.version.has(
+                    Version.primary_asset.has(
+                        PrimaryAsset.organization_id == user.organization_id
+                    )
+                )
+            )
+        )
     )
 
     if content_type_names:
@@ -667,7 +667,7 @@ async def edit_page_CONVENIENCE_METHOD(
             .where(Node.id == derived_content.node_id)
             .where(
                 PrimaryAsset.kind.in_(
-                    PrimaryAssetKind.PAGE, PrimaryAssetKind.PAGE_TEMPLATE
+                    [PrimaryAssetKind.PAGE, PrimaryAssetKind.PAGE_TEMPLATE]
                 )
             )
         ).one_or_none()
@@ -798,6 +798,7 @@ async def new_template(
         status="generation-complete",
         version_id=None,
     )
+
     session.add(new_derived_content)
     session.commit()
     return DerivedContentResponse.from_derived_content(new_derived_content)

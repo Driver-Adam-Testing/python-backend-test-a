@@ -1,19 +1,17 @@
+import uuid
 from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
-import sqlalchemy
 from database.models_v2_enums import NodeKind, PrimaryAssetKind, VersionStatus
 from sqlalchemy import (
     Column,
     DateTime,
-    ForeignKey,
     Index,
     func,
 )
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.dialects.postgresql import UUID as SaUuid
-from sqlmodel import Field, Relationship, SQLModel, text
+from sqlmodel import Field, Relationship, SQLModel
 
 
 class PrimaryAsset(SQLModel, table=True):  # type: ignore
@@ -27,19 +25,11 @@ class PrimaryAsset(SQLModel, table=True):  # type: ignore
         ),
     )
 
-    id: UUID | None = Field(
-        sa_column=Column(
-            SaUuid(as_uuid=True),
-            primary_key=True,
-            server_default=text("uuid_generate_v4()"),
-        ),
-        default=None,
-    )
+    id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     display_name: str
     repository_id: str | None
     organization_id: str
     kind: PrimaryAssetKind
-
     created_at: None | datetime = Field(
         sa_column=Column(
             DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -56,7 +46,6 @@ class PrimaryAsset(SQLModel, table=True):  # type: ignore
         default=None,
     )
     versions: list["Version"] = Relationship(back_populates="primary_asset")
-
     tags: list["Tag"] = Relationship(  # noqa: F821
         back_populates="primary_assets",
         sa_relationship_kwargs={"secondary": "v2_primary_asset_tag"},
@@ -74,22 +63,20 @@ class Version(SQLModel, table=True):  # type: ignore
         ),
     )
 
-    id: UUID | None = Field(
-        sa_column=Column(
-            SaUuid(as_uuid=True),
-            primary_key=True,
-            server_default=text("uuid_generate_v4()"),
-        ),
-        default=None,
-    )
+    id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     primary_asset_id: UUID = Field(
-        sa_column=Column(
-            SaUuid(as_uuid=True),
-            ForeignKey("v2_primary_asset.id", ondelete="CASCADE"),
-            nullable=False,
-        ),
+        foreign_key="v2_primary_asset.id",
+        nullable=False,
+        ondelete="CASCADE",
     )
     display_name: str
+    status: VersionStatus
+    previous_version_id: UUID | None = Field(
+        default=None,
+        nullable=True,
+        foreign_key="v2_version.id",
+        ondelete="SET NULL",
+    )
     created_at: None | datetime = Field(
         sa_column=Column(
             DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -105,18 +92,6 @@ class Version(SQLModel, table=True):  # type: ignore
         ),
         default=None,
     )
-
-    status: VersionStatus
-
-    previous_version_id: UUID | None = Field(
-        sa_column=Column(
-            SaUuid(as_uuid=True),
-            ForeignKey("v2_version.id", ondelete="SET NULL"),
-            nullable=True,
-        ),
-        default=None,
-    )
-
     primary_asset: "PrimaryAsset" = Relationship(back_populates="versions")
     nodes: list["Node"] = Relationship(back_populates="version")
     root_node: Optional["Node"] = Relationship(
@@ -128,7 +103,6 @@ class Version(SQLModel, table=True):  # type: ignore
     )
 
 
-# TODO: consider kind on Node. Maybe a bool or enum?
 class Node(SQLModel, table=True):  # type: ignore
     __tablename__ = "v2_node"
     __table_args__ = (
@@ -136,25 +110,18 @@ class Node(SQLModel, table=True):  # type: ignore
             "ix_version_id_relative_path", "version_id", "relative_path", unique=True
         ),
     )
-
-    id: UUID | None = Field(
-        sa_column=Column(
-            SaUuid(as_uuid=True),
-            primary_key=True,
-            server_default=text("uuid_generate_v4()"),
-        ),
-        default=None,
-    )
+    id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     kind: NodeKind
     version_id: UUID = Field(
-        sa_column=Column(
-            SaUuid(as_uuid=True),
-            ForeignKey("v2_version.id", ondelete="CASCADE"),
-            nullable=False,
-        ),
+        foreign_key="v2_version.id",
+        ondelete="CASCADE",
+        nullable=False,
     )
-    relative_path: str = Field(
-        sa_column=Column(sqlalchemy.Text, nullable=False, index=True)
+    relative_path: str = Field(nullable=False, index=True)
+
+    # TODO: enforce data structure with field_validator when misc_metadata is populated
+    misc_metadata: dict | None = Field(  # type: ignore
+        sa_column=Column(JSONB, nullable=True), default=None
     )
     created_at: None | datetime = Field(
         sa_column=Column(
@@ -171,11 +138,6 @@ class Node(SQLModel, table=True):  # type: ignore
         ),
         default=None,
     )
-    # TODO: enforce data structure with field_validator when misc_metadata is populated
-    misc_metadata: dict | None = Field(  # type: ignore
-        sa_column=Column(JSONB, nullable=True), default=None
-    )
-
     version: "Version" = Relationship(back_populates="nodes")
     contents: list["DerivedContent"] = Relationship(back_populates="node")  # noqa: F821
 
@@ -254,7 +216,5 @@ class Node(SQLModel, table=True):  # type: ignore
 
 class PrimaryAssetTag(SQLModel, table=True):
     __tablename__ = "v2_primary_asset_tag"
-    tag_id: UUID = Field(default=None, primary_key=True, foreign_key="tags.id")
-    primary_asset_id: UUID = Field(
-        default=None, primary_key=True, foreign_key="v2_primary_asset.id"
-    )
+    tag_id: UUID = Field(primary_key=True, foreign_key="tags.id")
+    primary_asset_id: UUID = Field(primary_key=True, foreign_key="v2_primary_asset.id")

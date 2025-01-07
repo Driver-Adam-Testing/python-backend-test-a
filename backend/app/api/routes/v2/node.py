@@ -772,7 +772,7 @@ async def new_template(
     new_primary_asset = PrimaryAsset(
         display_name=new_display_name,
         organization_id=user.organization_id,
-        kind="PAGE_TEMPLATE",
+        kind=PrimaryAssetKind.PAGE_TEMPLATE,
     )
     session.add(new_primary_asset)
     session.commit()
@@ -781,7 +781,9 @@ async def new_template(
     session.add(new_version)
     session.commit()
 
-    new_node = Node(version_id=new_version.id, relative_path="/template")
+    new_node = Node(
+        version_id=new_version.id, relative_path="/template", kind=NodeKind.OTHER
+    )
     session.add(new_node)
     session.commit()
 

@@ -1,6 +1,5 @@
 import logging
 from pathlib import Path
-from uuid import UUID
 
 import modal
 from fastapi import APIRouter
@@ -84,6 +83,6 @@ def trigger_pdf_summary_processing(
         environment_name=settings.MODAL_ENVIRONMENT,
         tag="create_and_embed_pdf_summaries",
     )
-    call = create_and_embed_pdf_summaries.spawn(body.source_content_id)
+    call = create_and_embed_pdf_summaries.spawn(body.node_id)
 
     return Onboarding(status="OK", call_id=call.object_id)

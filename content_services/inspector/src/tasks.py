@@ -81,7 +81,7 @@ class FolderTechDocTask(Task):
             # Short Single Sentence
             short_sent_dc = DerivedContent(
                 content_type_id=None,
-                content_kind=ContentKind.SHORT_SENTENCE_DESCRIPTION.value,  # "short_sentence_description",
+                content_kind=ContentKind.SHORT_SENTENCE_DESCRIPTION,
                 node_id=self.db_node_id,
                 relative_path=str(self.node.root_rel_path),
                 content=docs["short"]["single_sentence"],
@@ -90,7 +90,7 @@ class FolderTechDocTask(Task):
             # Short Single Paragraph
             short_para_dc = DerivedContent(
                 content_type_id=None,
-                content_kind=ContentKind.SHORT_PARAGRAPH_DESCRIPTION.value,
+                content_kind=ContentKind.SHORT_PARAGRAPH_DESCRIPTION,
                 node_id=self.db_node_id,
                 relative_path=str(self.node.root_rel_path),
                 content=docs["short"]["single_paragraph"],
@@ -99,7 +99,7 @@ class FolderTechDocTask(Task):
             # Long File Description
             long_desc_dc = DerivedContent(
                 content_type_id=None,
-                content_kind=ContentKind.LONG_DESCRIPTION.value,
+                content_kind=ContentKind.LONG_DESCRIPTION,
                 node_id=self.db_node_id,
                 relative_path=str(self.node.root_rel_path),
                 content=docs["long"],
@@ -111,9 +111,9 @@ class FolderTechDocTask(Task):
                     DerivedContent.node_id == self.db_node_id,
                     DerivedContent.content_kind.in_(
                         [
-                            ContentKind.SHORT_SENTENCE_DESCRIPTION.value,
-                            ContentKind.SHORT_PARAGRAPH_DESCRIPTION.value,
-                            ContentKind.LONG_DESCRIPTION.value,
+                            ContentKind.SHORT_SENTENCE_DESCRIPTION,
+                            ContentKind.SHORT_PARAGRAPH_DESCRIPTION,
+                            ContentKind.LONG_DESCRIPTION,
                         ]
                     ),
                 )
@@ -182,7 +182,7 @@ class FileTechDocTask(Task):
             # Short Single Sentence
             short_sent_dc = DerivedContent(
                 content_type_id=None,
-                content_kind=ContentKind.SHORT_SENTENCE_DESCRIPTION.value,
+                content_kind=ContentKind.SHORT_SENTENCE_DESCRIPTION,
                 node_id=self.db_node_id,
                 relative_path=str(self.node.root_rel_path),
                 content=docs["short"]["single_sentence"],
@@ -191,7 +191,7 @@ class FileTechDocTask(Task):
             # Short Single Paragraph
             short_para_dc = DerivedContent(
                 content_type_id=None,
-                content_kind=ContentKind.SHORT_PARAGRAPH_DESCRIPTION.value,
+                content_kind=ContentKind.SHORT_PARAGRAPH_DESCRIPTION,
                 node_id=self.db_node_id,
                 relative_path=str(self.node.root_rel_path),
                 content=docs["short"]["single_paragraph"],
@@ -200,7 +200,7 @@ class FileTechDocTask(Task):
             # Long File Description
             long_desc_dc = DerivedContent(
                 content_type_id=None,
-                content_kind=ContentKind.LONG_DESCRIPTION.value,
+                content_kind=ContentKind.LONG_DESCRIPTION,
                 node_id=self.db_node_id,
                 relative_path=str(self.node.root_rel_path),
                 content=docs["long"],
@@ -212,7 +212,7 @@ class FileTechDocTask(Task):
                 for i, chunk in enumerate(docs["chunk_descriptions"]):
                     chunk_dc = DerivedContent(
                         content_type_id=None,
-                        content_kind=ContentKind.CHUNK_DESCRIPTIONS.value,
+                        content_kind=ContentKind.CHUNK_DESCRIPTIONS,
                         node_id=self.db_node_id,
                         relative_path=str(self.node.root_rel_path),
                         content=chunk,
@@ -226,10 +226,10 @@ class FileTechDocTask(Task):
                     DerivedContent.node_id == self.db_node_id,
                     DerivedContent.content_kind.in_(
                         [
-                            ContentKind.CHUNK_DESCRIPTIONS.value,
-                            ContentKind.SHORT_SENTENCE_DESCRIPTION.value,
-                            ContentKind.SHORT_PARAGRAPH_DESCRIPTION.value,
-                            ContentKind.LONG_DESCRIPTION.value,
+                            ContentKind.CHUNK_DESCRIPTIONS,
+                            ContentKind.SHORT_SENTENCE_DESCRIPTION,
+                            ContentKind.SHORT_PARAGRAPH_DESCRIPTION,
+                            ContentKind.LONG_DESCRIPTION,
                         ]
                     ),
                 )
@@ -308,7 +308,7 @@ class SymbolsTask(Task):
             for idx, symbol in enumerate(symbols):
                 symbol_dc = DerivedContent(
                     content_type_id=None,
-                    content_kind=ContentKind.SYMBOL.value,
+                    content_kind=ContentKind.SYMBOL,
                     node_id=self.db_node_id,
                     relative_path=str(self.node.root_rel_path),
                     content=None,
@@ -321,7 +321,7 @@ class SymbolsTask(Task):
                 dc_delete_query = (
                     delete(DerivedContent)
                     .where(DerivedContent.node_id == self.db_node_id)
-                    .where(DerivedContent.content_kind == ContentKind.SYMBOL.value)
+                    .where(DerivedContent.content_kind == ContentKind.SYMBOL)
                 )
                 await session.exec(dc_delete_query)
                 await session.commit()
@@ -401,18 +401,18 @@ class TopLevelDocsTask(Task):
 
             top_level_tups = [
                 (
-                    ContentKind.TOP_LEVEL_SHORT_SENTENCE.value,
+                    ContentKind.TOP_LEVEL_SHORT_SENTENCE,
                     docs["short"]["single_sentence"],
                 ),
                 (
-                    ContentKind.TOP_LEVEL_SHORT_PARAGRAPH.value,
+                    ContentKind.TOP_LEVEL_SHORT_PARAGRAPH,
                     docs["short"]["single_paragraph"],
                 ),
                 (
-                    ContentKind.TOP_LEVEL_TERSE_SENTENCE.value,
+                    ContentKind.TOP_LEVEL_TERSE_SENTENCE,
                     docs["short"]["terse_sentence"],
                 ),
-                (ContentKind.TOP_LEVEL_LONG_DESCRIPTION.value, docs["long"]),
+                (ContentKind.TOP_LEVEL_LONG_DESCRIPTION, docs["long"]),
             ]
 
             dc_contents = []
@@ -507,8 +507,8 @@ class EmbeddingTask(Task):
             source_code_dc_id = None
 
         content_kinds_to_embed = [
-            ContentKind.LONG_DESCRIPTION.value,
-            ContentKind.SYMBOL.value,
+            ContentKind.LONG_DESCRIPTION,
+            ContentKind.SYMBOL,
         ]
         # TODO: type names are just strings now
 
@@ -565,7 +565,7 @@ class EmbeddingTask(Task):
             sc_chunks = await self.chunk_embed_and_prep_for_db(
                 [self.source_code],
                 [source_code_dc_id],
-                [ContentKind.CODEBASE_FILE.value],
+                [ContentKind.CODEBASE_FILE],
                 [{}],
             )
 

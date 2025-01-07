@@ -2,6 +2,7 @@ from datetime import datetime
 from uuid import UUID
 
 from database.models_v2 import PrimaryAsset, Version
+from database.models_v2_enums import PrimaryAssetKind
 from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -52,7 +53,7 @@ def get_codebase_versions(
         select(PrimaryAsset).where(
             PrimaryAsset.id == codebase_id,
             PrimaryAsset.organization_id == user.organization_id,
-            PrimaryAsset.kind == "CODEBASE",  # Ensuring it's a codebase
+            PrimaryAsset.kind == PrimaryAssetKind.CODEBASE,
         )
     ).one_or_none()
 

@@ -2,6 +2,7 @@
 from datetime import datetime
 from uuid import UUID
 
+from database.models_v2_enums import PrimaryAssetKind, VersionStatus
 from pydantic import BaseModel
 
 # Read Schemas
@@ -78,21 +79,22 @@ class PrimaryAssetRead(BaseModel):
 
 class PrimaryAssetCreate(BaseModel):
     display_name: str
-    kind: str
+    kind: PrimaryAssetKind
 
 
 class PrimaryAssetUpdate(BaseModel):
     display_name: str | None = None
-    kind: str | None = None
+    kind: PrimaryAssetKind | None = None
 
 
 class VersionCreate(BaseModel):
-    primary_asset_id: UUID
     display_name: str
+    status: VersionStatus
 
 
 class VersionUpdate(BaseModel):
     display_name: str | None = None
+    status: VersionStatus | None = None
 
 
 class NodeCreate(BaseModel):

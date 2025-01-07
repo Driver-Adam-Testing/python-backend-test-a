@@ -4,7 +4,6 @@ from uuid import UUID
 
 import sqlalchemy
 from database.models_v2_enums import NodeKind, PrimaryAssetKind, VersionStatus
-from pydantic import field_validator
 from sqlalchemy import (
     Column,
     DateTime,
@@ -39,15 +38,7 @@ class PrimaryAsset(SQLModel, table=True):  # type: ignore
     display_name: str
     repository_id: str | None
     organization_id: str
-    kind: str
-
-    @field_validator("kind")
-    def validate_kind(cls, value: str) -> str:
-        if value not in PrimaryAssetKind.__members__:
-            raise ValueError(
-                f"kind must be one of {list(PrimaryAssetKind.__members__.keys())}"
-            )
-        return value
+    kind: PrimaryAssetKind
 
     created_at: None | datetime = Field(
         sa_column=Column(
@@ -115,15 +106,7 @@ class Version(SQLModel, table=True):  # type: ignore
         default=None,
     )
 
-    status: str
-
-    @field_validator("status")
-    def validate_status(cls, value: str) -> str:
-        if value not in VersionStatus.__members__:
-            raise ValueError(
-                f"status must be one of {list(VersionStatus.__members__.keys())}"
-            )
-        return value
+    status: VersionStatus
 
     previous_version_id: UUID | None = Field(
         sa_column=Column(

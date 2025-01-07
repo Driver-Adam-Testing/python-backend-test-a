@@ -12,7 +12,6 @@ from app.api.routes.v2.node_schemas import (
 from app.api.session import CurrentSession
 from database.models_v1 import DerivedContent, Tag
 from database.models_v2 import (
-    FullNodeView,
     Node,
     PrimaryAsset,
     PrimaryAssetKind,
@@ -21,7 +20,6 @@ from database.models_v2 import (
 )
 from fastapi import APIRouter, Body, HTTPException, Path, Request, Response
 from pydantic import BaseModel, field_validator
-from sqlalchemy.orm import selectinload
 from sqlmodel import func, select
 
 T = TypeVar("T")
@@ -35,66 +33,66 @@ class ListWithCount(BaseModel, Generic[T]):
 router = APIRouter()
 
 
-@router.get("/full_nodes", response_model=ListWithCount[FullNodeView])
-async def list_full_nodes(
-    request: Request,
-    session: CurrentSession,
-    user: UserToken,
-    limit: int = 10,
-    offset: int = 0,
-    sort_by: str = "primary_asset_updated_at",
-    sort_direction: str = "DESC",
-    root_nodes_only: bool = False,
-) -> ListWithCount[FullNodeView]:
-    query = select(FullNodeView).where(
-        FullNodeView.primary_asset_organization_id == user.organization_id
-    )
+# @router.get("/full_nodes", response_model=ListWithCount[FullNodeView])
+# async def list_full_nodes(
+#     request: Request,
+#     session: CurrentSession,
+#     user: UserToken,
+#     limit: int = 10,
+#     offset: int = 0,
+#     sort_by: str = "primary_asset_updated_at",
+#     sort_direction: str = "DESC",
+#     root_nodes_only: bool = False,
+# ) -> ListWithCount[FullNodeView]:
+#     query = select(FullNodeView).where(
+#         FullNodeView.primary_asset_organization_id == user.organization_id
+#     )
 
-    filters = dict(request.query_params)
-    filters.pop("limit", None)
-    filters.pop("offset", None)
-    filters.pop("sort_by", None)
-    filters.pop("sort_direction", None)
+#     filters = dict(request.query_params)
+#     filters.pop("limit", None)
+#     filters.pop("offset", None)
+#     filters.pop("sort_by", None)
+#     filters.pop("sort_direction", None)
 
-    for key, value in filters.items():
-        if hasattr(FullNodeView, key):
-            query = query.where(getattr(FullNodeView, key) == value)
+#     for key, value in filters.items():
+#         if hasattr(FullNodeView, key):
+#             query = query.where(getattr(FullNodeView, key) == value)
 
-    if root_nodes_only:
-        query = query.where(
-            ~FullNodeView.node_relative_path.contains("/")
-            | (
-                FullNodeView.node_relative_path.endswith("/")
-                & (
-                    func.length(FullNodeView.node_relative_path)
-                    - func.length(
-                        func.replace(FullNodeView.node_relative_path, "/", "")
-                    )
-                    == 1
-                )
-            )
-        )
-    if hasattr(FullNodeView, sort_by):
-        if sort_direction.upper() == "ASC":
-            query = query.order_by(getattr(FullNodeView, sort_by).asc())
-        elif sort_direction.upper() == "DESC":
-            query = query.order_by(getattr(FullNodeView, sort_by).desc())
-        else:
-            raise HTTPException(status_code=400, detail="Invalid sort direction")
-    else:
-        raise HTTPException(status_code=400, detail="Invalid sort field")
+#     if root_nodes_only:
+#         query = query.where(
+#             ~FullNodeView.node_relative_path.contains("/")
+#             | (
+#                 FullNodeView.node_relative_path.endswith("/")
+#                 & (
+#                     func.length(FullNodeView.node_relative_path)
+#                     - func.length(
+#                         func.replace(FullNodeView.node_relative_path, "/", "")
+#                     )
+#                     == 1
+#                 )
+#             )
+#         )
+#     if hasattr(FullNodeView, sort_by):
+#         if sort_direction.upper() == "ASC":
+#             query = query.order_by(getattr(FullNodeView, sort_by).asc())
+#         elif sort_direction.upper() == "DESC":
+#             query = query.order_by(getattr(FullNodeView, sort_by).desc())
+#         else:
+#             raise HTTPException(status_code=400, detail="Invalid sort direction")
+#     else:
+#         raise HTTPException(status_code=400, detail="Invalid sort field")
 
-    count_query = select(func.count()).select_from(query.subquery())
-    total_count = session.exec(count_query).one()
+#     count_query = select(func.count()).select_from(query.subquery())
+#     total_count = session.exec(count_query).one()
 
-    query = query.limit(limit).offset(offset)
-    result = session.exec(query)
-    full_nodes = result.all()
+#     query = query.limit(limit).offset(offset)
+#     result = session.exec(query)
+#     full_nodes = result.all()
 
-    if not full_nodes:
-        raise HTTPException(status_code=404, detail="No full nodes found")
+#     if not full_nodes:
+#         raise HTTPException(status_code=404, detail="No full nodes found")
 
-    return ListWithCount(results=full_nodes, total_count=total_count)
+#     return ListWithCount(results=full_nodes, total_count=total_count)
 
 
 @router.get("/primary_assets", response_model=ListWithCount[PrimaryAssetRead])
@@ -299,23 +297,23 @@ class DerivedContentResponse(BaseModel):
             created_at=derived_content.created_at,
             updated_at=derived_content.updated_at,
             order=derived_content.order,
-            version_id=derived_content.full_node.version_id,
+            version_id=derived_content.node.version_id,
             tags=[
                 # {"id": tag.id, "name": tag.name} for tag in derived_content.tags
             ],  # Extract entire tag objects
             status="generation-complete",  # TODO: populate full_nodes
-            full_node={
-                "primary_asset_id": derived_content.full_node.primary_asset_id,
-                "primary_asset_display_name": derived_content.full_node.primary_asset_display_name,
-                "primary_asset_organization_id": derived_content.full_node.primary_asset_organization_id,
-                "primary_asset_kind": derived_content.full_node.primary_asset_kind,
-                "version_id": derived_content.full_node.version_id,
-                "version_display_name": derived_content.full_node.version_display_name,
-                "node_id": derived_content.full_node.node_id,
-                "node_relative_path": derived_content.full_node.node_relative_path,
-            }
-            if derived_content.full_node
-            else None,  # Extract full node details
+            # full_node={
+            #     "primary_asset_id": derived_content.full_node.primary_asset_id,
+            #     "primary_asset_display_name": derived_content.full_node.primary_asset_display_name,
+            #     "primary_asset_organization_id": derived_content.full_node.primary_asset_organization_id,
+            #     "primary_asset_kind": derived_content.full_node.primary_asset_kind,
+            #     "version_id": derived_content.full_node.version_id,
+            #     "version_display_name": derived_content.full_node.version_display_name,
+            #     "node_id": derived_content.full_node.node_id,
+            #     "node_relative_path": derived_content.full_node.node_relative_path,
+            # }
+            # if derived_content.full_node
+            # else None,  # Extract full node details
         )
 
 
@@ -333,9 +331,10 @@ async def list_contents(
     query = (
         select(DerivedContent)
         .select_from(DerivedContent)
-        .join(FullNodeView, DerivedContent.node_id == FullNodeView.node_id)
-        .where(FullNodeView.primary_asset_organization_id == user.organization_id)
-        .options(selectinload(DerivedContent.full_node))  # Eager load full_node
+        .join(Node, DerivedContent.node_id == Node.id)
+        .join(Version, Node.version_id == Version.id)
+        .join(PrimaryAsset, Version.primary_asset_id == PrimaryAsset.id)
+        .where(PrimaryAsset.organization_id == user.organization_id)
     )
 
     if content_type_names:
@@ -352,8 +351,6 @@ async def list_contents(
     for key, value in filters.items():
         if hasattr(DerivedContent, key):
             query = query.where(getattr(DerivedContent, key) == value)
-        elif key.startswith("full_node_") and hasattr(FullNodeView, key[10:]):
-            query = query.where(getattr(FullNodeView, key[10:]) == value)
 
     if hasattr(DerivedContent, sort_by):
         if sort_direction.upper() == "ASC":

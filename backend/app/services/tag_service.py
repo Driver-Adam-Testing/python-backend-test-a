@@ -7,7 +7,6 @@ from database.models_v1 import (
     Tag,
     TagContent,
 )
-from database.models_v2 import FullNodeView
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
@@ -51,10 +50,8 @@ class TagService:
         content = self.content_repository.get_by_conditions(
             [
                 DerivedContent.id == content_id,
-                FullNodeView.primary_asset_organization_id
-                == organization_id,  # get by workspace organization_id
             ],
-            [FullNodeView],
+            [],
         )
 
         if not content:

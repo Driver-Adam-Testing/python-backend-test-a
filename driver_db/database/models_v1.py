@@ -23,7 +23,7 @@ from sqlalchemy.dialects.postgresql import UUID as SaUuid
 from sqlmodel import JSON, Field, Relationship, SQLModel
 
 from .custom_types import TSVector
-from .models_v2 import FullNodeView, Node
+from .models_v2 import Node
 from .models_v2_enums import ContentKind
 
 
@@ -366,13 +366,13 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
         back_populates="contents",
         sa_relationship_kwargs={"foreign_keys": "DerivedContent.node_id"},
     )
-    full_node: FullNodeView = Relationship(
-        sa_relationship_kwargs={
-            "primaryjoin": "DerivedContent.node_id == foreign(FullNodeView.node_id)",
-            "foreign_keys": "DerivedContent.node_id",
-            "viewonly": True,
-        }
-    )
+    # full_node: FullNodeView = Relationship(
+    #     sa_relationship_kwargs={
+    #         "primaryjoin": "DerivedContent.node_id == foreign(FullNodeView.node_id)",
+    #         "foreign_keys": "DerivedContent.node_id",
+    #         "viewonly": True,
+    #     }
+    # )
 
 
 class Tag(SQLModel, table=True):  # type: ignore

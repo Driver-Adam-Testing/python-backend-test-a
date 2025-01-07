@@ -14,7 +14,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as SaUuid
-from sqlmodel import Field, Relationship, Session, SQLModel, select, text
+from sqlmodel import Field, Relationship, SQLModel, text
 
 
 class PrimaryAsset(SQLModel, table=True):  # type: ignore
@@ -208,64 +208,65 @@ class Node(SQLModel, table=True):  # type: ignore
     )
 
 
-class FullNodeView(SQLModel, table=True):  # type: ignore
-    __tablename__ = "v2_full_node"
-    primary_asset_id: UUID | None = Field(default=None, primary_key=True)
-    primary_asset_display_name: str | None = Field(default=None)
-    primary_asset_organization_id: str | None = Field(default=None)
-    primary_asset_created_at: None | datetime = Field(default=None)
-    primary_asset_updated_at: None | datetime = Field(default=None)
-    primary_asset_kind: str | None = Field(default=None)
-    version_id: UUID | None = Field(default=None, primary_key=True)
-    version_display_name: str | None = Field(default=None)
-    version_created_at: None | datetime = Field(default=None)
-    version_updated_at: None | datetime = Field(default=None)
-    node_id: UUID | None = Field(primary_key=True)
-    node_relative_path: str | None = Field(default=None)
-    node_created_at: None | datetime = Field(default=None)
-    node_updated_at: None | datetime = Field(default=None)
+# TODO: Delete This, I think
+# class FullNodeView(SQLModel, table=True):  # type: ignore
+#     __tablename__ = "v2_full_node"
+#     primary_asset_id: UUID | None = Field(default=None, primary_key=True)
+#     primary_asset_display_name: str | None = Field(default=None)
+#     primary_asset_organization_id: str | None = Field(default=None)
+#     primary_asset_created_at: None | datetime = Field(default=None)
+#     primary_asset_updated_at: None | datetime = Field(default=None)
+#     primary_asset_kind: str | None = Field(default=None)
+#     version_id: UUID | None = Field(default=None, primary_key=True)
+#     version_display_name: str | None = Field(default=None)
+#     version_created_at: None | datetime = Field(default=None)
+#     version_updated_at: None | datetime = Field(default=None)
+#     node_id: UUID | None = Field(primary_key=True)
+#     node_relative_path: str | None = Field(default=None)
+#     node_created_at: None | datetime = Field(default=None)
+#     node_updated_at: None | datetime = Field(default=None)
 
-    def add(self, session: Session) -> None:
-        if self.primary_asset_id:
-            primary_asset = session.exec(
-                select(PrimaryAsset).where(PrimaryAsset.id == self.primary_asset_id)
-            ).one_or_none()
-            if primary_asset:
-                primary_asset.display_name = self.primary_asset_display_name
-                primary_asset.organization_id = self.primary_asset_organization_id
-            else:
-                primary_asset = PrimaryAsset(
-                    id=self.primary_asset_id,
-                    display_name=self.primary_asset_display_name,
-                    organization_id=self.primary_asset_organization_id,
-                )
-                session.add(primary_asset)
+#     def add(self, session: Session) -> None:
+#         if self.primary_asset_id:
+#             primary_asset = session.exec(
+#                 select(PrimaryAsset).where(PrimaryAsset.id == self.primary_asset_id)
+#             ).one_or_none()
+#             if primary_asset:
+#                 primary_asset.display_name = self.primary_asset_display_name
+#                 primary_asset.organization_id = self.primary_asset_organization_id
+#             else:
+#                 primary_asset = PrimaryAsset(
+#                     id=self.primary_asset_id,
+#                     display_name=self.primary_asset_display_name,
+#                     organization_id=self.primary_asset_organization_id,
+#                 )
+#                 session.add(primary_asset)
 
-        if self.version_id:
-            version = session.exec(
-                select(Version).where(Version.id == self.version_id)
-            ).one_or_none()
-            if version:
-                version.display_name = self.version_display_name
-            else:
-                version = Version(
-                    id=self.version_id,
-                    display_name=self.version_display_name,
-                )
-                session.add(version)
+#         if self.version_id:
+#             version = session.exec(
+#                 select(Version).where(Version.id == self.version_id)
+#             ).one_or_none()
+#             if version:
+#                 version.display_name = self.version_display_name
+#             else:
+#                 version = Version(
+#                     id=self.version_id,
+#                     display_name=self.version_display_name,
+#                 )
+#                 session.add(version)
 
-        if self.node_id:
-            node = session.exec(
-                select(Node).where(Node.id == self.node_id)
-            ).one_or_none()
-            if node:
-                node.relative_path = self.node_relative_path
-            else:
-                node = Node(
-                    id=self.node_id,
-                    relative_path=self.node_relative_path,
-                )
-                session.add(node)
+#         if self.node_id:
+#             node = session.exec(
+#                 select(Node).where(Node.id == self.node_id)
+#             ).one_or_none()
+#             if node:
+#                 node.relative_path = self.node_relative_path
+#             else:
+#                 node = Node(
+#                     id=self.node_id,
+#                     relative_path=self.node_relative_path,
+#                 )
+#                 session.add(node)
 
 
 class PrimaryAssetTag(SQLModel, table=True):

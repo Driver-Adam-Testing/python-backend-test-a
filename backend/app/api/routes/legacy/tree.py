@@ -23,32 +23,17 @@ class FlatNode:
 
 
 def get_codebase_tree(
-    codebase_id: str,  # codebase_id now corresponds to PrimaryAssetRow.id
+    version_id: str,  # version_id is now the primary identifier
     session: Session,
     organization_id: str,
-    version_id: str | None = None,
 ) -> list[FlatNode]:
-    # INSERT_YOUR_REWRITE_HERE
     # Perform a single query to fetch all necessary data
-    if not version_id:
-        # Fetch the most recent version if version_id is not provided
-        most_recent_version = session.exec(
-            select(Version.id)
-            .join(PrimaryAsset, Version.primary_asset_id == PrimaryAsset.id)
-            .where(PrimaryAsset.id == codebase_id)
-            .where(PrimaryAsset.organization_id == organization_id)
-            .order_by(Version.created_at.desc())
-            .limit(1)
-        ).first()
-        version_id = most_recent_version if most_recent_version else None
-
     nodes = session.exec(
         select(Node, Version, PrimaryAsset)
         .join(Version, Node.version_id == Version.id)
         .join(PrimaryAsset, Version.primary_asset_id == PrimaryAsset.id)
-        .where(PrimaryAsset.id == codebase_id)
+        .where(Version.id == version_id)
         .where(PrimaryAsset.organization_id == organization_id)
-        .where((Version.id == version_id) if version_id else True)
     ).all()
 
     # If no nodes found, return an empty list

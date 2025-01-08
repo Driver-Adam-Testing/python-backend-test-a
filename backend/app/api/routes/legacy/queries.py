@@ -167,7 +167,6 @@ class Query:
         #     raise GraphQLError("Access denied", extensions={"code": "NOT_FOUND"})
 
         return get_codebase_tree(
-            codebase_id=str(codebaseId) if codebaseId else None,
             session=session,
             organization_id=user.organization_id,
             version_id=str(versionId) if versionId else None,

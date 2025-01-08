@@ -39,7 +39,7 @@ class ContentKind(enum.Enum):
     QUICK_START_USE = "quick_start_use"
     ARCHITECTURE_DIAGRAM = "architecture_diagram"
     CHUNK_DESCRIPTIONS = "chunk_descriptions"
-    APPLICATION_NOTE = "application_note"
+    application_note = "application_note"
     SHORT_SENTENCE_DESCRIPTION = "short_sentence_description"
     SYMBOL = "symbol"
     PDF_SUMMARY = "pdf_summary"

@@ -13,6 +13,7 @@ from sqlalchemy import (
     Enum,
     Index,
     Integer,
+    String,
     UniqueConstraint,
     func,
     text,
@@ -290,7 +291,14 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
     workspace_id: UUID | None
     content_type_id: UUID | None
     version_id: None | UUID
-    content_kind: ContentKind | None = Field(nullable=True, index=True)
+    content_kind: ContentKind | None = Field(
+        sa_column=Column(
+            String,
+            nullable=True,
+            index=True,
+        ),
+        default=None,
+    )
     source_content_id: UUID | None
     # Content doesn't need to be associated with a codebase in our flat asset design. But for now, we keep
     # all source contents and derived contents for a codebase associated with the codebase. PDFs and other docs,

@@ -86,6 +86,7 @@ class ContentRead(BaseModel):
     id: UUID | None
     node_id: UUID | None
     content: str | None
+    content_kind: ContentKind
     misc_metadata: dict | None
     created_at: datetime | None
     updated_at: datetime | None

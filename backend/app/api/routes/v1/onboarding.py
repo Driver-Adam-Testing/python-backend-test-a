@@ -64,7 +64,7 @@ def trigger_onboarding(
 
 
 class PdfOnboardingRequestBody(BaseModel):
-    source_content_id: str | None = None
+    node_id: str | None = None
 
 
 @router.post(

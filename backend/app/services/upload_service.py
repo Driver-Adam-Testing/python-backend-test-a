@@ -87,24 +87,21 @@ class UploadService:
     ) -> PDFUploadResponse:
         original_file_name = os.path.basename(request.file_path)
 
-        # TODO: Now we create a new version instead of not processing, but perhaps we can include
-        # a warning that a document of this name already exists?
-        # TODO: or check if the document is identical to exisitng and skip processing in that case
         existing_asset = self.asset_repository.get_by_conditions(
             [
                 PrimaryAsset.display_name == original_file_name,
                 PrimaryAsset.organization_id == user.organization_id,
             ]
         )
-        # if existing_doc_count > 0:
-        #     logger.warn(f"Existing doc found with name: {original_file_name}")
-        #     raise HTTPException(
-        #         status_code=400, detail="Document with this name already exists"
-        #     )
+        if existing_asset is not None:
+            logger.warn(f"Existing doc found with name: {original_file_name}")
+            raise HTTPException(
+                status_code=400, detail="Document with this name already exists"
+            )
 
         file_name = re.sub(r"[^a-zA-Z0-9.]", "_", original_file_name)
         file_name = file_name.replace(" ", "_")
-        file_name = f"{uuid4()}_{file_name}"  # TODO: idk why we add this uuid here, not attached to any db entity
+        file_name = f"{uuid4()}_{file_name}"
 
         relative_path = unquote_plus(file_name)  # sanitize and make safe for s3 upload
 
@@ -119,37 +116,29 @@ class UploadService:
             # when we move to the org bucket
             upload_key = f"documents/{org_id_hash}/{relative_path}"
 
-            if not existing_asset:
-                new_asset = self.asset_repository.create(
-                    PrimaryAsset(
-                        display_name=original_file_name,
-                        organization_id=org_id,
-                        kind=PrimaryAssetKind.FILE,
-                    )
+            with self.session.begin():
+                # TODO: doe this all as a single transaction
+                # double check session.beging behavior to make sure it rollls back appropriately
+                new_asset = PrimaryAsset(
+                    display_name=original_file_name,
+                    organization_id=org_id,
+                    kind=PrimaryAssetKind.FILE,
                 )
-                asset_id = new_asset.id
-                previous_versions_count = 0
-            else:
-                asset_id = existing_asset.id
-                previous_versions_count = self.version_repository.count_by(
-                    [Version.primary_asset_id == asset_id]
-                )
+                self.session.add(new_asset)
 
-            new_version = self.version_repository.create(
-                Version(
-                    primary_asset_id=asset_id,
-                    display_name=f"v{previous_versions_count + 1}",
+                new_version = Version(
+                    primary_asset_id=new_asset.id,
+                    display_name="v1",
                     status=VersionStatus.GENERATING,
                 )
-            )
+                self.session.add(new_version)
 
-            new_node = self.node_repository.create(
-                Node(
+                new_node = Node(
                     kind=NodeKind.OTHER,
                     version_id=new_version.id,
                     relative_path=relative_path,
                 )
-            )
+                self.session.add(new_node)
 
             pdf_metadata = {
                 "organization_id": org_id,
@@ -160,7 +149,7 @@ class UploadService:
                 "content_type": "supplemental-document",
                 "node_id": str(new_node.id),
                 "version_id": str(new_version.id),
-                "primary_asset_id": str(asset_id),
+                "primary_asset_id": str(new_asset.id),
             }
             upload_url = generate_put_presigned_url(
                 key=upload_key,

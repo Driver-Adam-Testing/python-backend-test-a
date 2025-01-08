@@ -61,7 +61,7 @@ api_router.include_router(user.router, prefix="/user", tags=["user"])
 api_router.include_router(
     organization.router, prefix="/organization", tags=["organization"]
 )
-api_router.include_router(v2_router, prefix="/node", tags=["node"])
+api_router.include_router(v2_router.router, prefix="/node", tags=["node"])
 
 if settings.ENVIRONMENT != "production":
     api_router.include_router(

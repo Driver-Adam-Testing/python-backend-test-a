@@ -37,8 +37,6 @@ class UploadService:
     def __init__(self, session: CurrentSession) -> None:
         self.session = session
         self.asset_repository = BaseRepository(session, PrimaryAsset)
-        self.version_repository = BaseRepository(session, Version)
-        self.node_repository = BaseRepository(session, Node)
 
     def upload_codebase(
         self, user: UserToken, request: UploadCodebaseRequest

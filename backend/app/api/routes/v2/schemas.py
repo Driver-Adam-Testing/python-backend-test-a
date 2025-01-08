@@ -189,3 +189,8 @@ class DerivedContentUpdate(BaseModel):
 class DocumentSourceCreate(BaseModel):
     source_node_id: UUID
     page_node_id: UUID
+
+
+class PrimaryAssetTagCreate(BaseModel):
+    tag_id: UUID
+    primary_asset_id: UUID

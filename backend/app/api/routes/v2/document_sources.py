@@ -60,12 +60,12 @@ async def list_document_sources(
 async def create_document_source(
     session: CurrentSession,
     user: UserToken,
-    document_source_data: DocumentSourceCreate,
+    payload: DocumentSourceCreate,
 ) -> DocumentSourceDetailRead:
     # Create a new DocumentSource instance
     new_document_source = DocumentSource(
-        source_node_id=document_source_data.source_node_id,
-        page_node_id=document_source_data.page_node_id,
+        source_node_id=payload.source_node_id,
+        page_node_id=payload.page_node_id,
     )
 
     # Add the new document source to the session
@@ -103,15 +103,15 @@ async def delete_document_source(
 async def batch_create_document_sources(
     session: CurrentSession,
     user: UserToken,
-    document_sources_data: list[DocumentSourceCreate],
+    payload: list[DocumentSourceCreate],
 ) -> list[DocumentSourceDetailRead]:
     created_document_sources = []
 
-    for document_source_data in document_sources_data:
+    for data in payload:
         # Delete existing sources with the same page_node_id
         session.exec(
             delete(DocumentSource).where(
-                DocumentSource.page_node_id == document_source_data.page_node_id
+                DocumentSource.page_node_id == data.page_node_id
             )
         )
 
@@ -121,7 +121,7 @@ async def batch_create_document_sources(
             source_node_id=data.source_node_id,
             page_node_id=data.page_node_id,
         )
-        for data in document_sources_data
+        for data in payload
     ]
 
     # Add the new document sources to the session
@@ -134,3 +134,28 @@ async def batch_create_document_sources(
         created_document_sources.append(new_document_source)
 
     return created_document_sources
+
+
+@router.delete("/document_sources/batch", response_model=list[bool])
+async def batch_delete_document_sources(
+    session: CurrentSession,
+    user: UserToken,
+    payload: list[DocumentSourceCreate],
+) -> list[bool]:
+    deletion_results = []
+
+    for data in payload:
+        # Delete the document source with the specified source_node_id and page_node_id
+        result = session.exec(
+            delete(DocumentSource).where(
+                DocumentSource.source_node_id == data.source_node_id,
+                DocumentSource.page_node_id == data.page_node_id,
+                PrimaryAsset.organization_id == user.organization_id,
+            )
+        )
+        session.commit()
+
+        # Append True if a row was deleted, otherwise False
+        deletion_results.append(result.rowcount > 0)
+
+    return deletion_results

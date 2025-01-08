@@ -24,6 +24,7 @@ from app.api.routes.v2 import (
     convenience_endpoints,
     document_sources,
     nodes,
+    primary_asset_tags,
     primary_assets,
     versions,
 )

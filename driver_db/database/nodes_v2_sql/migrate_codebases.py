@@ -18,6 +18,7 @@ SELECT * FROM (
         c.id                    AS codebase_id,
         dc.created_at,
         dc.updated_at,
+        ir.previous_version_id,
 
         CASE
             WHEN dc.relative_path IS NOT NULL

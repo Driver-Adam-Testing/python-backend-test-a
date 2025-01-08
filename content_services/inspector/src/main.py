@@ -144,6 +144,7 @@ async def inspect_db(
     import tempfile
 
     import boto3
+    from database.models_v2_enums import NodeKind as DbNodeKind
     from utils.db import (
         create_inspector_run,
         download_source_file,
@@ -170,15 +171,18 @@ async def inspect_db(
 
     # Get content records for version_id
     # TODO: nodes don't currently have a kind, so will need a way to differentiate files and directories
-    db_file_nodes = await get_analyzable_nodes_by_version_id(version_id, {"file"})
+    db_file_nodes = await get_analyzable_nodes_by_version_id(
+        version_id, {DbNodeKind.CODEBASE_FILE}
+    )
+
     db_all_codebase_nodes = await get_analyzable_nodes_by_version_id(
-        version_id, {"file", "directory"}
+        version_id, {DbNodeKind.CODEBASE_FILE, DbNodeKind.CODEBASE_DIRECTORY}
     )
 
     # Get content records for previous_version_id if available
     if previous_version is not None:
         db_previous_file_nodes = await get_analyzable_nodes_by_version_id(
-            previous_version.id, {"file"}
+            previous_version.id, {DbNodeKind.CODEBASE_FILE}
         )
     # Download s3 for version_id (and previous if available)
     s3_client = boto3.client("s3", endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL"))

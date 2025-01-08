@@ -108,7 +108,7 @@ ins_version_raw AS (
         'v' || p.version_num::text,  -- e.g. "v1", "v2", ...
         p.created_at,
         p.updated_at,
-        'GENERATION-COMPLETE'
+        'GENERATION_COMPLETE'
     FROM pdfs p
     JOIN primary_asset_bridge pab
       ON p.org_id       = pab.org_id

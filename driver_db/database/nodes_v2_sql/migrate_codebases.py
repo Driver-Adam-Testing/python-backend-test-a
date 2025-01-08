@@ -102,7 +102,7 @@ SELECT
     vr.version_id_resolved,
     vr.primary_asset_id,
     vr.version_display_name,
-    'GENERATION-COMPLETE',
+    'GENERATION_COMPLETE',
     vr.created_at,
     vr.updated_at
 FROM version_rows_marked vr;

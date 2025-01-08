@@ -74,7 +74,7 @@ ins_version AS (
         'v' || p.rn::text  AS display_name,  -- e.g. "v1", "v2" for duplicates
         p.created_at,
         p.updated_at,
-        'GENERATION-COMPLETE'
+        'GENERATION_COMPLETE'
     FROM pages p
     RETURNING id
 ),

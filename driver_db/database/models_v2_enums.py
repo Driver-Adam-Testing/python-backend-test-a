@@ -1,5 +1,7 @@
 import enum
 
+import strawberry
+
 
 class PrimaryAssetKind(str, enum.Enum):
     CODEBASE = "CODEBASE"
@@ -20,6 +22,7 @@ class NodeKind(str, enum.Enum):
     OTHER = "OTHER"
 
 
+@strawberry.enum
 class ContentKind(enum.Enum):
     PDF_VISUAL_SUMMARY = "pdf-visual-summary"
     PDF_TEXT_SUMMARY = "pdf-text-summary"

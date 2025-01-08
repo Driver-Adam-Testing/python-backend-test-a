@@ -67,7 +67,7 @@ PDF_TO_VERSION_SQL = """
 INSERT INTO v2_version (id, primary_asset_id, display_name, created_at, updated_at, status)
 SELECT dc.id, pa.id,
     '0.0.' || ROW_NUMBER() OVER (PARTITION BY w.organization_id, dc.content_name ORDER BY dc.created_at ASC) - 1,
-    dc.created_at, dc.updated_at, 'GENERATION-COMPLETE'
+    dc.created_at, dc.updated_at, 'GENERATION_COMPLETE'
 FROM derived_contents dc
 JOIN workspaces w ON w.id = dc.workspace_id
 JOIN v2_primary_asset pa ON pa.organization_id = w.organization_id
@@ -181,7 +181,7 @@ PAGES_TO_VERSION_SQL = """
 INSERT INTO v2_version (id, primary_asset_id, display_name, created_at, updated_at, status)
 SELECT dc.id, pa.id,
     '0.0.0',
-    dc.created_at, dc.updated_at, 'GENERATION-COMPLETE'
+    dc.created_at, dc.updated_at, 'GENERATION_COMPLETE'
 FROM derived_contents dc
 JOIN v2_primary_asset pa ON dc.id = pa.id
 WHERE dc.content_kind = 'application_note';

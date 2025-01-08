@@ -184,3 +184,8 @@ class ContentCreate(BaseModel):
 class DerivedContentUpdate(BaseModel):
     content: str | None = None
     content_name: str | None = None
+
+
+class DocumentSourceCreate(BaseModel):
+    source_node_id: UUID
+    page_node_id: UUID

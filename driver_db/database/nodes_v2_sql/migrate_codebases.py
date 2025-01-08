@@ -18,6 +18,7 @@ SELECT * FROM (
         c.id                    AS codebase_id,
         dc.created_at,
         dc.updated_at,
+        ir.previous_version_id,
 
         CASE
             WHEN dc.relative_path IS NOT NULL
@@ -96,7 +97,8 @@ INSERT INTO v2_version (
     display_name,
     status,
     created_at,
-    updated_at
+    updated_at,
+    previous_version_id
 )
 SELECT
     vr.version_id_resolved,
@@ -104,7 +106,8 @@ SELECT
     vr.version_display_name,
     'GENERATION-COMPLETE',
     vr.created_at,
-    vr.updated_at
+    vr.updated_at,
+    vr.previous_version_id
 FROM version_rows_marked vr;
 
 ------------------------------------------------------------------------------

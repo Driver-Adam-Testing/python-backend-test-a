@@ -4,7 +4,7 @@ import uuid
 import boto3
 
 
-def generate_get_presigned_url(key, bucket, expires=3600):
+def generate_get_presigned_url(key: str, bucket: str, expires: int = 3600) -> str:
     s3_client = boto3.client(
         "s3",
     )
@@ -20,15 +20,14 @@ def generate_get_presigned_url(key, bucket, expires=3600):
 
 def get_presigned_url_from_content_information(
     codebase_id: uuid.UUID, organization_id: str, relative_path: str
-):
+) -> str:
     org_id_hash = hashlib.sha256(organization_id.encode()).hexdigest()[:63]
     object_key = f"{codebase_id}/{relative_path}"
 
     return generate_get_presigned_url(key=object_key, bucket=org_id_hash)
 
 
-def get_presigned_url_without_codebase(organization_id: str, relative_path: str):
+def get_presigned_url_without_codebase(organization_id: str, relative_path: str) -> str:
     org_id_hash = hashlib.sha256(organization_id.encode()).hexdigest()[:63]
-    object_key = f"documents/{relative_path}"
 
-    return generate_get_presigned_url(key=object_key, bucket=org_id_hash)
+    return generate_get_presigned_url(key=relative_path, bucket=org_id_hash)

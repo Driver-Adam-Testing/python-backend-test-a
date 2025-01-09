@@ -87,8 +87,7 @@ def create_and_embed_pdf_summaries(node_id: str) -> None:
             node = session.exec(
                 select(Node)
                 .where(Node.id == node_id)
-                .options(selectinload(Node.version))
-                .options(selectinload(Version.primary_asset))
+                .options(selectinload(Node.version).selectinload(Version.primary_asset))
             ).one()
 
             # this document is not associated with a codebase

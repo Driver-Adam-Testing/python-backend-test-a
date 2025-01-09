@@ -91,22 +91,24 @@ def handler(event: dict, context: dict) -> any:
                 logger.info("key = " + real_object_key)
                 logger.info("bucket = " + bucket_name)
                 metadata = head_object(bucket=bucket_name, key=real_object_key)
-                source_content_id = metadata["Metadata"]["source_content_id"]
+                node_id = metadata["Metadata"]["node_id"]
+                version_id = metadata["Metadata"]["version_id"]
+                asset_id = metadata["Metadata"]["primary_asset_id"]
                 if has_no_threats_tag(bucket=bucket_name, key=real_object_key):
                     logger.info("No threats found, continuing document onboarding")
                     # Check if the destination bucket exists, and create it if it doesn't
                     bucket_exists = ensure_bucket_exists(
                         metadata["Metadata"]["org_bucket"], region="us-east-1"
                     )
-                    logger.info(
-                        f"Processing content created with ID:{source_content_id}"
-                    )
+                    logger.info(f"Processing content created with ID:{node_id}")
 
                     if bucket_exists:
                         logger.info("Copying to organization bucket...")
                         destination_bucket_name = metadata["Metadata"]["org_bucket"]
                         real_file_name = Path(real_object_key).name
-                        destination_real_object_key = f"documents/{real_file_name}"
+                        destination_real_object_key = (
+                            f"{asset_id}/{version_id}/{real_file_name}"
+                        )
                         object_copied = copy_s3_object(
                             source_bucket=bucket_name,
                             source_key=real_object_key,
@@ -128,13 +130,13 @@ def handler(event: dict, context: dict) -> any:
 
                         pdf_summary_response = exec_generate_pdf_summaries(
                             {
-                                "source_content_id": source_content_id,
+                                "node_id": node_id,
                             },
                             token_json["access_token"],
                         )
                         results.append(
                             {
-                                "source_content_id": source_content_id,
+                                "node_id": node_id,
                                 "bucket": destination_bucket_name,
                                 "key": destination_real_object_key,
                                 "pdf_summary_response": pdf_summary_response,
@@ -142,9 +144,8 @@ def handler(event: dict, context: dict) -> any:
                         )
                 else:
                     logger.error("GuardDuty Found something, removing PDF from DB.")
-                    exec_remove_pdf_record(
-                        source_content_id, token_json["access_token"]
-                    )
+                    # TODO: with node, not sure if this is right anymore?
+                    exec_remove_pdf_record(node_id, token_json["access_token"])
 
     return results
 

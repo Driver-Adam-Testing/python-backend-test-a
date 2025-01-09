@@ -6,7 +6,6 @@ from database.models_v1 import (
     DocumentSource,
     Tag,
     TagContent,
-    Workspace,
 )
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
@@ -51,10 +50,8 @@ class TagService:
         content = self.content_repository.get_by_conditions(
             [
                 DerivedContent.id == content_id,
-                Workspace.organization_id
-                == organization_id,  # get by workspace organization_id
             ],
-            [Workspace],
+            [],
         )
 
         if not content:

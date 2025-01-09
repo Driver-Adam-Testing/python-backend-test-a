@@ -21,7 +21,6 @@ from app.api.routes.legacy.orm_ops import (
     get_codebase_by_id,
 )
 from app.api.routes.legacy.scalars import ID, NodeType
-from app.api.routes.legacy.symbol_set import SymbolSetResponse, symbol_set
 from app.api.routes.legacy.tree import FlatNode, get_codebase_tree
 from app.repositories.github_app_installations_repository import (
     GithubAppInstallationsRepository,
@@ -117,8 +116,7 @@ class Query:
         if not check_access(
             session,
             info.context.user.organization_id,
-            workspace_id=str(workspaceId),
-            codebase_id=str(codebaseId),
+            primary_asset_id=str(codebaseId),
         ):
             raise GraphQLError("Access denied", extensions={"code": "NOT_FOUND"})
 
@@ -158,36 +156,35 @@ class Query:
     def tree(
         self,
         info: Info,
-        codebaseId: ID,
+        codebaseId: ID | None = None,
         workspaceId: ID | None = None,
         versionId: ID | None = None,
     ) -> list[FlatNode]:
         session = info.context.session
         user = info.context.user
-
-        if not check_access(session, user.organization_id, codebase_id=str(codebaseId)):
-            raise GraphQLError("Access denied", extensions={"code": "NOT_FOUND"})
+        # Access now happens on Primary Asset
+        # if not check_access(session, user.organization_id, primary_asset_id=str(codebaseId), version_id=str(versionId) if versionId else None):
+        #     raise GraphQLError("Access denied", extensions={"code": "NOT_FOUND"})
 
         return get_codebase_tree(
-            codebase_id=str(codebaseId),
             session=session,
             organization_id=user.organization_id,
             version_id=str(versionId) if versionId else None,
         )
 
-    @strawberry.field
-    def symbolSet(
-        self, info: Info, sourceContentId: ID, page: int = 1, pageSize: int = 10
-    ) -> SymbolSetResponse:
-        session = info.context.session
-        organization_id = info.context.user.organization_id
-        if not check_access(
-            session, organization_id, source_content_id=str(sourceContentId)
-        ):
-            raise GraphQLError("Access denied", extensions={"code": "NOT_FOUND"})
-        return symbol_set(
-            session, str(sourceContentId), organization_id, page, pageSize
-        )
+    # @strawberry.field
+    # def symbolSet(
+    #     self, info: Info, sourceContentId: ID, page: int = 1, pageSize: int = 10
+    # ) -> SymbolSetResponse:
+    #     session = info.context.session
+    #     organization_id = info.context.user.organization_id
+    #     if not check_access(
+    #         session, organization_id, source_content_id=str(sourceContentId)
+    #     ):
+    #         raise GraphQLError("Access denied", extensions={"code": "NOT_FOUND"})
+    #     return symbol_set(
+    #         session, str(sourceContentId), organization_id, page, pageSize
+    #     )
 
     @strawberry.mutation
     def applicationNoteEdit(self, call_id: ID) -> ApplicationNoteEditResponse:

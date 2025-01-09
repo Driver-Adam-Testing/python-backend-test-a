@@ -25,7 +25,6 @@ from database.models_v1 import (
 from graphql import GraphQLError
 from modal import Function
 from sqlalchemy.future import select
-from sqlmodel import Session
 from strawberry.types import Info
 
 
@@ -170,7 +169,7 @@ class Mutation:
         self, info: Info, input: GenerateApplicationNoteInput
     ) -> GenerateApplicationNoteOutput:
         user = info.context.user
-        session: Session = info.context.session
+        session = info.context.session
         if not check_access(
             session, user.organization_id, codebase_id=input.codebase_id
         ):
@@ -304,7 +303,7 @@ class Mutation:
                     "Application note not found", extensions={"code": "BAD_REQUEST"}
                 )
 
-            def escape_html(obj):
+            def escape_html(obj: str) -> str:
                 return (
                     obj.replace("&", "&amp;")
                     .replace("<", "&lt;")
@@ -380,9 +379,7 @@ class Mutation:
 
         if not codebase_id or not file_path or not workspace_id or not creator_id:
             raise GraphQLError("Invalid Request", extensions={"code": "BAD_REQUEST"})
-        if not check_access(
-            session, org_id, codebase_id=codebase_id, workspace_id=workspace_id
-        ):
+        if not check_access(session, org_id, codebase_id=codebase_id):
             raise GraphQLError(
                 "Access denied to the codebase", extensions={"code": "FORBIDDEN"}
             )
@@ -426,7 +423,6 @@ class Mutation:
             session,
             user.organization_id,
             codebase_id=input.codebase_id,
-            workspace_id=input.workspace_id,
         ):
             raise GraphQLError(
                 "Access denied to the codebase", extensions={"code": "FORBIDDEN"}
@@ -482,15 +478,6 @@ class Mutation:
             if not note:
                 raise GraphQLError(
                     "Application note not found", extensions={"code": "BAD_REQUEST"}
-                )
-
-            def escape_html(obj):
-                return (
-                    obj.replace("&", "&amp;")
-                    .replace("<", "&lt;")
-                    .replace(">", "&gt;")
-                    .replace('"', "&quot;")
-                    .replace("'", "&#039;")
                 )
 
             note.content = input.content

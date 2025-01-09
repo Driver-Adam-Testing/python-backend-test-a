@@ -1,36 +1,8 @@
 import time
 from pathlib import Path
-from uuid import UUID
 
-from database.models_v1 import DerivedContentType
 from shared.chunking.text_splitter import split_text
 from shared.embedding.text_embedder import async_batch_embed_text
-
-
-async def get_source_content_type_uuid(content_type: str, session) -> UUID:
-    from sqlmodel import select
-
-    sct_uuid = None
-    sel_statement = select(DerivedContentType).where(
-        DerivedContentType.type_name == content_type
-    )
-    res_sct = (await session.exec(sel_statement)).first()
-    if res_sct:
-        sct_uuid = res_sct.id
-    return sct_uuid
-
-
-async def get_derived_content_type_uuid(content_type: str, session) -> UUID:
-    from sqlmodel import select
-
-    dct_uuid = None
-    sel_statement = select(DerivedContentType).where(
-        DerivedContentType.type_name == content_type
-    )
-    res_dct = (await session.exec(sel_statement)).first()
-    if res_dct:
-        dct_uuid = res_dct.id
-    return dct_uuid
 
 
 def download_source_content_file(

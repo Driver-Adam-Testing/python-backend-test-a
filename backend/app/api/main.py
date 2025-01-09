@@ -17,6 +17,23 @@ from app.api.routes.v1 import (
     usage,
     user,
 )
+
+# ruff: noqa: F401
+from app.api.routes.v2 import (
+    contents,
+    convenience_endpoints,
+    document_sources,
+    nodes,
+    primary_asset_tags,
+    primary_assets,
+    versions,
+)
+from app.api.routes.v2 import (
+    router as v2_router,
+)
+from app.api.routes.v2 import (
+    tags as v2_tags,
+)
 from app.core.config import settings
 
 api_router = APIRouter()
@@ -45,6 +62,7 @@ api_router.include_router(user.router, prefix="/user", tags=["user"])
 api_router.include_router(
     organization.router, prefix="/organization", tags=["organization"]
 )
+api_router.include_router(v2_router.router, prefix="/node", tags=["node"])
 
 if settings.ENVIRONMENT != "production":
     api_router.include_router(

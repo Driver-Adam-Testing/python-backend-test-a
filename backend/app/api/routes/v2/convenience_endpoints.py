@@ -8,7 +8,12 @@ from sqlmodel import select
 
 from app.api.auth import UserToken
 from app.api.routes.v2.router import router
-from app.api.routes.v2.schemas import ContentDetailRead, DerivedContentUpdate
+from app.api.routes.v2.schemas import (
+    ContentDetailRead,
+    DerivedContentUpdate,
+    NodeDetailRead,
+    PrimaryAssetRead,
+)
 from app.api.session import CurrentSession
 
 
@@ -100,7 +105,7 @@ def new_page(session: CurrentSession, user: UserToken) -> ContentDetailRead:
     session.commit()
 
     new_node = Node(
-        version_id=new_version.id, relative_path="/page", kind=NodeKind.OTHER
+        version_id=new_version.id, relative_path="page", kind=NodeKind.OTHER
     )
     session.add(new_node)
     session.commit()
@@ -109,7 +114,7 @@ def new_page(session: CurrentSession, user: UserToken) -> ContentDetailRead:
         content_type_id=None,
         content_kind="application_note",
         node_id=new_node.id,
-        relative_path="/page",
+        relative_path="page",
         content="",
         content_name=new_display_name,
         misc_metadata={},
@@ -118,7 +123,45 @@ def new_page(session: CurrentSession, user: UserToken) -> ContentDetailRead:
     )
     session.add(new_derived_content)
     session.commit()
-    return new_derived_content
+    session.refresh(new_derived_content)
+
+    # Ensure the node relationship is populated
+    new_derived_content.node = new_node
+
+    # Return a ContentDetailRead object
+    return ContentDetailRead(
+        id=new_derived_content.id,
+        node_id=new_derived_content.node_id,
+        content=new_derived_content.content,
+        content_kind=new_derived_content.content_kind,
+        misc_metadata=new_derived_content.misc_metadata,
+        created_at=new_derived_content.created_at,
+        updated_at=new_derived_content.updated_at,
+        node=NodeDetailRead(
+            id=new_node.id,
+            version_id=new_node.version_id,
+            relative_path=new_node.relative_path,
+            kind=new_node.kind,
+            created_at=new_node.created_at,
+            updated_at=new_node.updated_at,
+            version=NodeDetailRead.NodeVersionRead(
+                id=new_version.id,
+                primary_asset_id=new_version.primary_asset_id,
+                display_name=new_version.display_name,
+                created_at=new_version.created_at,
+                updated_at=new_version.updated_at,
+                status=new_version.status,
+                primary_asset=PrimaryAssetRead(
+                    id=new_primary_asset.id,
+                    organization_id=new_primary_asset.organization_id,
+                    kind=new_primary_asset.kind,
+                    display_name=new_primary_asset.display_name,
+                    created_at=new_primary_asset.created_at,
+                    updated_at=new_primary_asset.updated_at,
+                ),
+            ),
+        ),
+    )
 
 
 @router.post("/new_template", response_model=ContentDetailRead)
@@ -163,7 +206,7 @@ def new_template(
     session.commit()
 
     new_node = Node(
-        version_id=new_version.id, relative_path="/template", kind=NodeKind.OTHER
+        version_id=new_version.id, relative_path="template", kind=NodeKind.OTHER
     )
     session.add(new_node)
     session.commit()
@@ -172,14 +215,51 @@ def new_template(
         content_type_id=None,
         content_kind="template",
         node_id=new_node.id,
-        relative_path="/template",
+        relative_path="template",
         content="",
         content_name=new_display_name,
         misc_metadata={},
         status="generation-complete",
         version_id=None,
     )
-
     session.add(new_derived_content)
     session.commit()
-    return new_derived_content
+    session.refresh(new_derived_content)
+
+    # Ensure the node relationship is populated
+    new_derived_content.node = new_node
+
+    # Return a ContentDetailRead object
+    return ContentDetailRead(
+        id=new_derived_content.id,
+        node_id=new_derived_content.node_id,
+        content=new_derived_content.content,
+        content_kind=new_derived_content.content_kind,
+        misc_metadata=new_derived_content.misc_metadata,
+        created_at=new_derived_content.created_at,
+        updated_at=new_derived_content.updated_at,
+        node=NodeDetailRead(
+            id=new_node.id,
+            version_id=new_node.version_id,
+            relative_path=new_node.relative_path,
+            kind=new_node.kind,
+            created_at=new_node.created_at,
+            updated_at=new_node.updated_at,
+            version=NodeDetailRead.NodeVersionRead(
+                id=new_version.id,
+                primary_asset_id=new_version.primary_asset_id,
+                display_name=new_version.display_name,
+                created_at=new_version.created_at,
+                updated_at=new_version.updated_at,
+                status=new_version.status,
+                primary_asset=PrimaryAssetRead(
+                    id=new_primary_asset.id,
+                    organization_id=new_primary_asset.organization_id,
+                    kind=new_primary_asset.kind,
+                    display_name=new_primary_asset.display_name,
+                    created_at=new_primary_asset.created_at,
+                    updated_at=new_primary_asset.updated_at,
+                ),
+            ),
+        ),
+    )

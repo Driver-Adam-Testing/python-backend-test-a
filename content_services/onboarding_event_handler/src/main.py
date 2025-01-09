@@ -88,7 +88,6 @@ def handler(
                         "object_key": object_key,
                         "org_id": metadata["Metadata"]["organization_id"],
                         "creator_id": metadata["Metadata"]["creator_id"],
-                        "workspace_id": metadata["Metadata"]["workspace_id"],
                         "filepath": metadata["Metadata"]["file_path"],
                         "codebase_name": metadata["Metadata"]["codebase_name"],
                         "provider": metadata["Metadata"]["provider"],

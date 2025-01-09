@@ -80,7 +80,6 @@ class LLMUsageSession:
     def _start_session(self) -> UUID:
         # Start a new session
         with Session(engine) as session:
-            # with self.session.begin():
             usage_session = UsageSession(
                 status=UsageSessionStatus.RUNNING,
                 organization_id=self.organization_id,
@@ -106,24 +105,27 @@ class LLMUsageSession:
             session.commit()
 
     def send_event(self, usage_metric: UsageMetric) -> dict:
+        """
+        Send an event to the metrics event bus
+        AWS event bridge has a max event size of 256KB
+        """
         client = get_aws_client() if not self.aws_client else self.aws_client
 
+        # Create a copy of the usage metric to avoid modifying the original
+        event_detail = usage_metric.model_dump()
+        event_detail["event_metadata"] = {}
+        event_detail = json.dumps(event_detail, default=str)
         entry = {
             "Time": datetime.now(),
             "Source": "metrics.client",
-            "DetailType": str(
-                UsageEventType(usage_metric.event_type)
-            ),  # return a more human-readable version of the enum name
-            "Detail": json.dumps(usage_metric.model_dump(), default=str),
+            "DetailType": str(UsageEventType(usage_metric.event_type)),
+            "Detail": event_detail,
             "EventBusName": "metrics-event-bus",
             "TraceHeader": str(usage_metric.session_id),
         }
 
         try:
-            response = client.put_events(
-                Entries=[entry],
-                # EndpointId=endpoint_id  # Include endpoint ID if provided
-            )
+            response = client.put_events(Entries=[entry])
             self.events_sent += 1
             print(f"Sent event: {response}")
             # TODO: check response for errors and retry if necessary or report to error handling service

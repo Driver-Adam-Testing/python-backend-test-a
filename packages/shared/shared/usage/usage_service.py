@@ -232,7 +232,7 @@ class UsageService:
                 UsageCharge(
                     asset_name=asset_name,
                     event_type=UsageEventType.ONBOARDING_USAGE_DEBIT,
-                    timestamp=sesh.created_at,
+                    timestamp=onboarding_usage_event.timestamp,
                     bytes=onboarding_usage_event.bytes_in,
                 )
             )

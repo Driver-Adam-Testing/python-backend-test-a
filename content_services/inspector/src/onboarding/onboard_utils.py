@@ -316,6 +316,20 @@ def is_on_blacklist(filepath: Path) -> bool:
     ]
     blacklist_file_exts = [
         ".svg",
+        ".hex",
+        ".bin",
+        ".BIN",
+        ".dat",
+        ".DAT",
+        ".exe",
+        ".o",
+        ".a",
+        ".so",
+        ".dll",
+        ".dylib",
+        ".cdylib",
+        ".axf",
+        ".elf",
     ]
     blacklist_file_names = [
         ".DS_Store",

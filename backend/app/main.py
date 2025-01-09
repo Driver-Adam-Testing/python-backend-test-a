@@ -2,7 +2,7 @@ import json
 import logging
 import logging.handlers
 from datetime import datetime
-from logging import Formatter
+from logging import Formatter, LogRecord
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -19,7 +19,7 @@ class JsonFormatter(Formatter):
     def __init__(self):
         super().__init__()
 
-    def format(self, record):
+    def format(self, record: LogRecord):
         json_record = {}
         json_record["level"] = record.levelname
         json_record["timestamp"] = datetime.fromtimestamp(record.created).strftime(
@@ -27,8 +27,9 @@ class JsonFormatter(Formatter):
         )
         json_record["name"] = record.name
         json_record["message"] = record.getMessage()
+        if record.exc_info:
+            json_record["traceback"] = self.formatException(record.exc_info)
         return json.dumps(json_record)
-
 
 def custom_generate_unique_id(route: APIRoute) -> str:
     return f"{route.tags[0]}-{route.name}"

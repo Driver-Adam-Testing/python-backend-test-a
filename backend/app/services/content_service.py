@@ -11,6 +11,8 @@ from database.models_v1 import (
     DerivedContent,
     DocumentSource,
     Enum_Derived_Content_Status,
+    InspectionVersion,
+    InspectorRun,
     Tag,
     TagContent,
     Workspace,
@@ -22,6 +24,7 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.selectable import Select
 from sqlmodel import Session, asc, desc, func, or_, select, text
 
+from app.api.routes.legacy.s3 import S3BucketAccess
 from app.core.logger import logger
 from app.repositories.base_repository import BaseRepository
 from app.repositories.workspace_repository import WorkspaceRepository
@@ -809,6 +812,10 @@ def delete_codebase_and_related_entities(
         irs = [dc for dc in derived_contents if dc.source_content_id is not None]
         source_content = [dc for dc in derived_contents if dc.source_content_id is None]
 
+        version_ids_to_delete = {
+            dc.version_id for dc in derived_contents if dc.version_id is not None
+        }
+
         session.query(DocumentSource).filter(
             DocumentSource.source_id.in_([source.id for source in source_content])
         ).delete(synchronize_session="fetch")
@@ -817,15 +824,22 @@ def delete_codebase_and_related_entities(
             TagContent.content_id.in_([source.id for source in source_content])
         ).delete(synchronize_session="fetch")
 
-        # Batch delete derived contents with source_content_id
         session.query(DerivedContent).filter(
             DerivedContent.id.in_([ir.id for ir in irs])
         ).delete(synchronize_session="fetch")
 
-        # Now delete the source content
         session.query(DerivedContent).filter(
             DerivedContent.id.in_([source.id for source in source_content])
         ).delete(synchronize_session="fetch")
+        if version_ids_to_delete:
+            session.query(InspectorRun).filter(
+                InspectorRun.inspection_version_id.in_(version_ids_to_delete)
+            ).delete(synchronize_session="fetch")
+
+        if version_ids_to_delete:
+            session.query(InspectionVersion).filter(
+                InspectionVersion.id.in_(version_ids_to_delete)
+            ).delete(synchronize_session="fetch")
 
         # Collect records for S3 deletion
         records_to_delete_in_s3.extend(
@@ -834,19 +848,18 @@ def delete_codebase_and_related_entities(
             if source.content_kind == DerivedContentTypeNames.CODEBASE_FILE.value
         )
 
-        # Delete the codebase record
+        # TODO delete task results from s3 as well
+
         codebase = session.exec(
             select(Codebase).where(Codebase.id == codebase_id)
         ).first()
         session.delete(codebase)
 
-        # raise Exception("Test rollback") rollback works
-
         session.commit()  # Commit if everything is successful
 
-    except Exception as e:
+    except Exception:
         logger.exception(
-            f"Error deleting codebase_id {content_id} and related entities: {e!s}"
+            f"Error deleting codebase_id {content_id} and related entities."
         )
         session.rollback()  # Rollback on any exception
         raise
@@ -866,12 +879,13 @@ def delete_from_remote_storage(content: DerivedContent, organization_id: str) ->
     if content.content_kind == DerivedContentTypeNames.CODEBASE_FILE.value:
         key = f"{content.codebase_id}/source/{content.relative_path}"
     else:
+        organization_bucket = organization_bucket_from_organization_id(organization_id)
         key = (
             content.relative_path
             if content.relative_path.startswith("documents/")
             else f"documents/{content.relative_path}"
         )
-    logger.info(
-        f"Deleting content {key} from s3 storage in bucket {organization_bucket}"
-    )
-    delete_file_from_s3(key=key, bucket=organization_bucket)
+        logger.info(
+            f"Deleting content {key} from s3 storage in bucket {organization_bucket}"
+        )
+        delete_file_from_s3(key=key, bucket=organization_bucket)

@@ -9,6 +9,8 @@ from .ir_common import (
     IrCollection,
     IrData,
     ListedBacktickNameRawContentWithNone,
+    ListedRawContentWithNone,
+    NestedListedRawContent,
     VariableData,
 )
 from .symbol_common import (
@@ -70,6 +72,8 @@ You focus on writing technical documentation for modules. You are skilled at exp
 
 You will be given the name of a module to document and the source code where the module is defined.
 
+When documenting control flow within the module, focus on logic blocks such as "always" blocks or "generate" blocks within the module.
+
 Your job is to describe the module. **Always respond using exactly the following JSON schema**:
 {
     "constants": [
@@ -80,6 +84,11 @@ Your job is to describe the module. **Always respond using exactly the following
     "ports": [
         {"name": <port_name1>, "content": <Terse 1 sentence description of the first port>},
         {"name": <port_name2>, "content": <Terse 1 sentence description of the second port>},
+        ...
+    ],
+    "control_flow": [
+        <bullet point 1 for description of logic and control flow>,
+        <bullet point 2 for description of logic and control flow>,
         ...
     ],
     "description": <one paragraph description of the module>,
@@ -99,6 +108,19 @@ Summarize the modules in the code provided below.
 
 Module to document:
 """
+# "logic_blocks": [
+#     [
+#         <bullet point 1 for description of logic and control flow of first logic block>,
+#         <bullet point 2 for description of logic and control flow of first logic block>,
+#         ...
+#     ],
+#     [
+#         <bullet point 1 for description of logic and control flow of second logic block>,
+#         <bullet point 2 for description of logic and control flow of second logic block>,
+#         ...
+#     ],
+#     ...
+# ]
 
 
 FUNCTIONS_AND_TASKS_FOUND_SYSTEM_PROMPT_JSON = """
@@ -179,6 +201,8 @@ class VerilogModuleData(IrData):
     constants: ListedBacktickNameRawContentWithNone
     ports: ListedBacktickNameRawContentWithNone
     description: FieldNameWithRawContent
+    control_flow: ListedRawContentWithNone
+    # logic_blocks: NestedListedRawContent
 
     @classmethod
     def system_prompt(cls) -> str:
@@ -205,6 +229,7 @@ class VerilogModuleData(IrData):
             description=FieldNameWithRawContent(content=""),
             constants=ListedBacktickNameRawContentWithNone(content=[]),
             ports=ListedBacktickNameRawContentWithNone(content=[]),
+            logic_blocks=NestedListedRawContent(content=[]),
         )
 
 

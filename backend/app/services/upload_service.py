@@ -114,29 +114,30 @@ class UploadService:
             # when we move to the org bucket
             upload_key = f"documents/{org_id_hash}/{relative_path}"
 
-            with self.session.begin():
-                # TODO: doe this all as a single transaction
-                # double check session.beging behavior to make sure it rollls back appropriately
-                new_asset = PrimaryAsset(
-                    display_name=original_file_name,
-                    organization_id=org_id,
-                    kind=PrimaryAssetKind.FILE,
-                )
-                self.session.add(new_asset)
+            # with self.session.begin():
+            # TODO: a transaction is already in progress at this point, so we can't start another
+            # I'm not sure why a transaction is already in progress?
+            new_asset = PrimaryAsset(
+                display_name=original_file_name,
+                organization_id=org_id,
+                kind=PrimaryAssetKind.FILE,
+            )
+            self.session.add(new_asset)
 
-                new_version = Version(
-                    primary_asset_id=new_asset.id,
-                    display_name="v1",
-                    status=VersionStatus.GENERATING,
-                )
-                self.session.add(new_version)
+            new_version = Version(
+                primary_asset_id=new_asset.id,
+                display_name="v1",
+                status=VersionStatus.GENERATING,
+            )
+            self.session.add(new_version)
 
-                new_node = Node(
-                    kind=NodeKind.OTHER,
-                    version_id=new_version.id,
-                    relative_path=relative_path,
-                )
-                self.session.add(new_node)
+            new_node = Node(
+                kind=NodeKind.OTHER,
+                version_id=new_version.id,
+                relative_path=relative_path,
+            )
+            self.session.add(new_node)
+            self.session.commit()
 
             pdf_metadata = {
                 "organization_id": org_id,

@@ -31,4 +31,4 @@ class UploadResponse(BaseModel):
 
 class PDFUploadResponse(BaseModel):
     upload_url: str
-    source_content_id: UUID
+    node_id: UUID

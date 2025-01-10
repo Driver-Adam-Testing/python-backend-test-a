@@ -56,6 +56,7 @@ class UploadService:
 
             logger.info(f"Upload URL generated for {upload_key}")
             codebase_metadata = {
+                "unhashed_organization_id": organization_id,
                 "organization_id": org_id_hash,
                 "org_bucket": org_id_hash,
                 "org_name": user.organization_name,

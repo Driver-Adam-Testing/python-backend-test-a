@@ -453,7 +453,9 @@ def main(
 
 
 @app.function(
-    image=modal.Image.debian_slim(python_version="3.12").pip_install("sendgrid"),
+    image=modal.Image.debian_slim(python_version="3.12").pip_install(
+        "sendgrid", "strawberry-graphql"
+    ),
     secrets=[modal.Secret.from_name("sendgrid"), modal.Secret.from_name("env-name")],
 )
 def send_exception_email(exception_details: str) -> None:

@@ -23,7 +23,7 @@ class NodeKind(str, enum.Enum):
 
 
 @strawberry.enum
-class ContentKind(enum.Enum):
+class ContentKind(str, enum.Enum):
     PDF_VISUAL_SUMMARY = "pdf-visual-summary"
     PDF_TEXT_SUMMARY = "pdf-text-summary"
     PDF_IMAGE_SUMMARY = "pdf-image-summary"

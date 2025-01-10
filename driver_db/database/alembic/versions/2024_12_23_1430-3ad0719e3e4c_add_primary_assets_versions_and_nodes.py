@@ -120,7 +120,7 @@ def upgrade() -> None:
                 "CODEBASE_FILE",
                 "CODEBASE_DIRECTORY",
                 "OTHER",
-                name="enum_node_kind",
+                name="nodekind",
             ),
             nullable=False,
         ),

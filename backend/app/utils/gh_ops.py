@@ -199,8 +199,8 @@ def generate_codebase_metadata(
     upload_key: str,
 ) -> dict:
     org_id_hash = org_id_to_hash(org_id)
-
     return {
+        "unhashed_organization_id": org_id,
         "organization_id": org_id_hash,
         "org_bucket": org_id_hash,
         "org_name": org_name,

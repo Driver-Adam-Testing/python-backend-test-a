@@ -8,6 +8,7 @@ from .ir_common import (
     FnData,
     IrCollection,
     IrData,
+    ListedBacktickNameRawContentNoNone,
     ListedBacktickNameRawContentWithNone,
     ListedRawContentWithNone,
     NestedListedRawContent,
@@ -200,7 +201,7 @@ Data type to document:
 # IR Classes
 class VerilogModuleData(IrData):
     description: RawContent
-    constants: ListedBacktickNameRawContentWithNone
+    constants: ListedBacktickNameRawContentNoNone
     ports: ListedBacktickNameRawContentWithNone
     logic_and_control_flow: ListedRawContentWithNone
     # logic_blocks: NestedListedRawContent

@@ -163,9 +163,9 @@ class Node(SQLModel, table=True):  # type: ignore
 
     @property
     def s3_url(self) -> str:
-        org_id_hash = hashlib.sha256(self.version.organization_id.encode()).hexdigest()[
-            :63
-        ]
+        org_id_hash = hashlib.sha256(
+            self.version.primary_asset.organization_id.encode()
+        ).hexdigest()[:63]
         return f"https://{org_id_hash}.s3.amazonaws.com/{self.version.primary_asset_id}/{self.version_id}/{self.relative_path}"
 
 

@@ -26,12 +26,17 @@ async def get_version_by_id(version_id: uuid.UUID) -> Version:
 
 async def try_get_prev_version(version_id: uuid.UUID) -> None | Version:
     from database.db import async_engine
+    from sqlalchemy.orm import selectinload
     from sqlmodel import select
 
     async with AsyncSession(async_engine) as session:
         stmt = select(Version).where(Version.id == version_id)
         version = (await session.exec(stmt)).one()
-        stmt = select(Version).where(Version.id == version.previous_version_id)
+        stmt = (
+            select(Version)
+            .where(Version.id == version.previous_version_id)
+            .options(selectinload(Version.primary_asset))
+        )
         previous_version = (await session.exec(stmt)).first()
         return previous_version
 

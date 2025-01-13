@@ -439,14 +439,12 @@ def get_file_content(path: Path) -> str:
 
 @app.local_entrypoint()
 def main(
-    codebase_id: str,
     version_id: str,
     mode: str,
 ) -> None:
     """Resume or rerun inspector given a version"""
     inspection_mode = InspectionMode.from_str(mode)
     inspect_db.remote(
-        codebase_id,
         version_id,
         inspection_mode,
     )

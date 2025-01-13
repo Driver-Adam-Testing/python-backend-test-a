@@ -181,16 +181,6 @@ def run_codebase_onboarding(
         PrimaryAsset,
         Version,
     )
-    from shared.interfaces.usage.event_metadata import (
-        UsageEventMetadata,
-        UsageMetric,
-        UsageSessionMetadata,
-    )
-    from shared.usage.llm_session import LLMUsageSession
-    from shared.usage.usage_service import UsageService
-    from shared.usage.utils import bytes_to_sloc
-    from sqlmodel import Session, select
-
     from onboarding.onboard_utils import (
         RunInProgressError,
         create_bucket_if_dne,
@@ -201,6 +191,15 @@ def run_codebase_onboarding(
         unpack_archive,
         upload_file_to_s3,
     )
+    from shared.interfaces.usage.event_metadata import (
+        UsageEventMetadata,
+        UsageMetric,
+        UsageSessionMetadata,
+    )
+    from shared.usage.llm_session import LLMUsageSession
+    from shared.usage.usage_service import UsageService
+    from shared.usage.utils import bytes_to_sloc
+    from sqlmodel import Session, select
 
     if not version_str:
         version_str = "Unversioned"
@@ -285,8 +284,8 @@ def run_codebase_onboarding(
     org_id_bucket = hashlib.sha256(org_id.encode()).hexdigest()[:63]
     create_bucket_if_dne(org_id_bucket)
 
-    version_fragment = f"{primary_asset_id}/version/{version_id}"
-    s3_dest_root = Path(version_fragment) / "source"
+    version_fragment = f"{primary_asset_id}/{version_id}"
+    s3_dest_root = Path(version_fragment)
 
     all_directories = []
     codebase_stats = {}

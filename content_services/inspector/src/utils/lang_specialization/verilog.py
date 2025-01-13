@@ -11,6 +11,7 @@ from .ir_common import (
     ListedBacktickNameRawContentWithNone,
     ListedRawContentWithNone,
     NestedListedRawContent,
+    RawContent,
     VariableData,
 )
 from .symbol_common import (
@@ -86,12 +87,12 @@ Your job is to describe the module. **Always respond using exactly the following
         {"name": <port_name2>, "content": <Terse 1 sentence description of the second port>},
         ...
     ],
-    "control_flow": [
+    "logic_and_control_flow": [
         <bullet point 1 for description of logic and control flow>,
         <bullet point 2 for description of logic and control flow>,
         ...
     ],
-    "description": <one paragraph description of the module>,
+    "description": <two sentence description of the module>,
 }
 
 Return JSON according to the schema above. Do not use the format ```json ... ```, just return the JSON data.
@@ -198,10 +199,10 @@ Data type to document:
 
 # IR Classes
 class VerilogModuleData(IrData):
+    description: RawContent
     constants: ListedBacktickNameRawContentWithNone
     ports: ListedBacktickNameRawContentWithNone
-    description: FieldNameWithRawContent
-    control_flow: ListedRawContentWithNone
+    logic_and_control_flow: ListedRawContentWithNone
     # logic_blocks: NestedListedRawContent
 
     @classmethod

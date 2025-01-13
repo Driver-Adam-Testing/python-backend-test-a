@@ -124,7 +124,7 @@ def download_source_file(
     node_rel_path: str,
     download_root: Path,
 ) -> Path:
-    s3_key = f"{primary_asset_id}/version/{version_id}/source/{node_rel_path}"
+    s3_key = f"{primary_asset_id}/{version_id}/{node_rel_path}"
     local_download_path = download_root / node_rel_path
     local_download_path.parent.mkdir(parents=True, exist_ok=True)
 

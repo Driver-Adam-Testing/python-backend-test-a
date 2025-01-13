@@ -32,7 +32,7 @@ class S3BucketAccess:
         # Ensure the leading slash is removed from the final path to avoid incorrect key generation
         prefix: str = "source"
         if self.version_id:
-            return f"{self.codebase_id}/version/{self.version_id}/{prefix}/{relative_path.lstrip('/')}"
+            return f"{self.codebase_id}/{self.version_id}/{relative_path.lstrip('/')}"
         else:
             return f"{self.codebase_id}/{prefix}/{relative_path.lstrip('/')}"
 

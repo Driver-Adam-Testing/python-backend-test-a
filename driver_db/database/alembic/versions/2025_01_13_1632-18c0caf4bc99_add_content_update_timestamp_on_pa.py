@@ -1,7 +1,7 @@
 """Add content update timestamp on PA
 
 Revision ID: 18c0caf4bc99
-Revises: 57be28321d1c
+Revises: cd839fe094c1
 Create Date: 2025-01-13 16:32:09.735701
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "18c0caf4bc99"
-down_revision = "57be28321d1c"
+down_revision = "cd839fe094c1"
 branch_labels = None
 depends_on = None
 

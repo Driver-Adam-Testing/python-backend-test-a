@@ -258,10 +258,16 @@ class DocumentSource(SQLModel, table=True):
     )
 
     source_node_id: None | uuid.UUID = Field(
-        default=None, foreign_key="v2_node.id", primary_key=True
+        default=None,
+        foreign_key="v2_node.id",
+        primary_key=True,
+        ondelete="CASCADE",
     )
     page_node_id: None | uuid.UUID = Field(
-        default=None, foreign_key="v2_node.id", primary_key=True
+        default=None,
+        foreign_key="v2_node.id",
+        primary_key=True,
+        ondelete="CASCADE",
     )
     source_node: "Node" = Relationship(
         back_populates="document_sources",
@@ -310,7 +316,11 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
     # however, won't have a codebase ID -- just a workspace ID, since we are keeping workspaces for now.
 
     node_id: None | UUID = Field(
-        default=None, foreign_key="v2_node.id", nullable=True, index=True
+        default=None,
+        foreign_key="v2_node.id",
+        ondelete="CASCADE",
+        nullable=True,
+        index=True,
     )
 
     relative_path: str = Field(

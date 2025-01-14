@@ -45,7 +45,13 @@ class PrimaryAsset(SQLModel, table=True):  # type: ignore
         sa_column=Column(DateTime(timezone=True), nullable=True),
         default=None,
     )
-    versions: list["Version"] = Relationship(back_populates="primary_asset")
+    versions: list["Version"] = Relationship(
+        back_populates="primary_asset",
+        sa_relationship_kwargs={
+            "passive_deletes": True,
+            "cascade": "all, delete-orphan",
+        },
+    )
     tags: list["Tag"] = Relationship(  # noqa: F821
         back_populates="primary_assets",
         sa_relationship_kwargs={"secondary": "v2_primary_asset_tag"},
@@ -93,7 +99,13 @@ class Version(SQLModel, table=True):  # type: ignore
         default=None,
     )
     primary_asset: "PrimaryAsset" = Relationship(back_populates="versions")
-    nodes: list["Node"] = Relationship(back_populates="version")
+    nodes: list["Node"] = Relationship(
+        back_populates="version",
+        sa_relationship_kwargs={
+            "cascade": "all, delete-orphan",
+            "passive_deletes": True,
+        },
+    )
     root_node: Optional["Node"] = Relationship(
         sa_relationship_kwargs={
             "primaryjoin": "and_(Version.id == Node.version_id)",
@@ -139,7 +151,13 @@ class Node(SQLModel, table=True):  # type: ignore
         default=None,
     )
     version: "Version" = Relationship(back_populates="nodes")
-    contents: list["DerivedContent"] = Relationship(back_populates="node")  # noqa: F821
+    contents: list["DerivedContent"] = Relationship(  # noqa: F821
+        back_populates="node",
+        sa_relationship_kwargs={
+            "cascade": "all, delete-orphan",
+            "passive_deletes": True,
+        },
+    )
 
     parent_node: Optional["Node"] = Relationship(
         sa_relationship_kwargs={
@@ -153,11 +171,19 @@ class Node(SQLModel, table=True):  # type: ignore
     )
     document_sources: list["DocumentSource"] = Relationship(  # noqa: F821
         back_populates="source_node",
-        sa_relationship_kwargs={"foreign_keys": "DocumentSource.source_node_id"},
+        sa_relationship_kwargs={
+            "foreign_keys": "DocumentSource.source_node_id",
+            "cascade": "all, delete-orphan",
+            "passive_deletes": True,
+        },
     )
     page_sources: list["DocumentSource"] = Relationship(  # noqa: F821
         back_populates="page_node",
-        sa_relationship_kwargs={"foreign_keys": "DocumentSource.page_node_id"},
+        sa_relationship_kwargs={
+            "foreign_keys": "DocumentSource.page_node_id",
+            "cascade": "all, delete-orphan",
+            "passive_deletes": True,
+        },
     )
 
     @property
@@ -170,5 +196,7 @@ class Node(SQLModel, table=True):  # type: ignore
 
 class PrimaryAssetTag(SQLModel, table=True):
     __tablename__ = "v2_primary_asset_tag"
-    tag_id: UUID = Field(primary_key=True, foreign_key="tags.id")
-    primary_asset_id: UUID = Field(primary_key=True, foreign_key="v2_primary_asset.id")
+    tag_id: UUID = Field(primary_key=True, ondelete="CASCADE", foreign_key="tags.id")
+    primary_asset_id: UUID = Field(
+        primary_key=True, ondelete="CASCADE", foreign_key="v2_primary_asset.id"
+    )

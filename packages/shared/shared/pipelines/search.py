@@ -3,10 +3,7 @@ import re
 from uuid import UUID
 
 from database.db import get_session
-from database.models_v1 import (
-    ChunkAndEmbedding,
-    DerivedContent,
-)
+from database.models_v1 import ChunkAndEmbedding, ContentKind, DerivedContent
 from database.models_v2 import Node, PrimaryAsset, Version
 from rank_bm25 import BM25Okapi
 from sqlalchemy import Select
@@ -94,7 +91,8 @@ def overall_score(
 def create_filtered_chunk_statement(
     organization_id: str,
     node_ids: list[UUID] | None = None,
-    embedded_query: Any = None,  # noqa: F821
+    content_kinds: list[ContentKind] | None = None,
+    embedded_query: list | None = None,
 ) -> Select:
     """
     Create the base SQL statement for filtering relevant ChunkAndEmbedding records.
@@ -130,6 +128,9 @@ def create_filtered_chunk_statement(
         .join(PrimaryAsset)
         .where(PrimaryAsset.organization_id == organization_id)
     )
+
+    if content_kinds:
+        stmt = stmt.where(DerivedContent.content_kind.in_(content_kinds))
 
     if node_ids:
         # Example usage: This allows searching within a node and all its sub-paths.
@@ -192,6 +193,7 @@ def semantic_search(session: Session, input: SearchInput) -> SearchResults:
         organization_id=input.organization_id,
         node_ids=input.node_ids,
         embedded_query=embedded_query,
+        content_kinds=input.content_kinds,
     ).order_by(asc("semantic_score"))
 
     if input.limit:
@@ -241,6 +243,7 @@ def keyword_search(session: Session, input: SearchInput) -> SearchResults:
     stmt = create_filtered_chunk_statement(
         organization_id=input.organization_id,
         node_ids=input.node_ids,
+        content_kinds=input.content_kinds,
     ).where(ChunkAndEmbedding.__ts_vector__.match(input.query))
 
     db_results = session.exec(stmt).all()
@@ -303,6 +306,7 @@ def hybrid_search(session: Session, input: SearchInput) -> SearchResults:
             organization_id=input.organization_id,
             node_ids=input.node_ids,
             embedded_query=embedded_query,
+            content_kinds=input.content_kinds,
         )
         .order_by(asc("semantic_score"))
         .limit(2 * input.limit)

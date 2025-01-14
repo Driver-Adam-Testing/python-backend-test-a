@@ -1,16 +1,23 @@
+from enum import Enum
+from uuid import UUID
+
 from shared.interfaces.request import DriverRequest
 from shared.interfaces.response import DriverResponse
 
-# TODO: make result metadata a strict type.
+
+class SearchAlgorithm(str, Enum):
+    KEYWORD = "KEYWORD"
+    SEMANTIC = "SEMANTIC"
+    HYBRID = "HYBRID"
 
 
 class SearchInput(DriverRequest):
+    limit: int | None = 20
     query: str
+    algorithm: SearchAlgorithm = SearchAlgorithm.HYBRID
     token_limit: int | None = None
-    result_limit: int | None = 20
-    algorithm: str = "semantic"
-    content_type: str | list[str] | None = None
-    paths: str | list[str] | None = None
+    content_kinds: list[str] | None = None
+    node_ids: list[UUID] | None = None
     organization_id: str | None = None
 
 

@@ -4,6 +4,7 @@ from database.derived_content_types import DerivedContentTypeNames
 
 from shared.agent.agent_base import AgentBase
 from shared.agent.tools.tool_strict import ToolStrict
+from shared.interfaces.search import SearchAlgorithm
 from shared.pipelines.search import (
     SearchInput,
     search_content_without_session,
@@ -22,10 +23,10 @@ class SearchTool(ToolStrict):
             - source-code: Search source code files.
             - codebase-technical-documentation: Search technical documentation.
             - pdf-content: For searching within PDF documents.
-        search_algorithm (SearchAlgorithm): The search algorithm. Defaults to 'hybrid'.
-            - hybrid: Combines keyword and semantic search.
-            - semantic: Focuses on meaning and context. Use english sentences.
-            - keyword: searches in the content of files. Use only a single keyword.
+        search_algorithm (enum): The search algorithm.
+            - HYBRID: Combines keyword and semantic search.
+            - SEMANTIC: Focuses on meaning and context. Use english sentences.
+            - KEYWORD: searches in the content of files. Use only a single keyword.
         search_subfolder_paths (list[str], optional): source paths and dirs to search.
             - Use null to search broadly.
     """
@@ -35,16 +36,10 @@ class SearchTool(ToolStrict):
         source_code = "source-code"
         technical_documentation = "codebase-technical-documentation"
         pdf_content = "pdf-content"
-        # user_generated_files = "user-generated-files"
-
-    class SearchAlgorithm(str, Enum):
-        hybrid = "hybrid"
-        semantic = "semantic"
-        keyword = "keyword"
 
     search_query: str
     content_types: list[SearchToolInputContentType]
-    search_algorithm: SearchAlgorithm = SearchAlgorithm.hybrid
+    search_algorithm: SearchAlgorithm = SearchAlgorithm.HYBRID
     search_subfolder_paths: list[str] | None = None
 
     @property

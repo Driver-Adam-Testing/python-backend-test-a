@@ -1,4 +1,6 @@
+from database.models_v2 import Node
 from pydantic import BaseModel
+from sqlmodel import Session, select
 
 
 class DataScope(BaseModel):
@@ -6,43 +8,20 @@ class DataScope(BaseModel):
     Scope of the agent's operation.
 
     Attributes:
-        paths (list[str]): List of paths the agent can access.
+        nodes (List[Node]): List of nodes the agent can access.
         organization_id (str | None): The organization ID.
     """
 
-    # TODO: this is where to add versions perhaps?
-    paths: list[str] = []
-    organization_id: str | None = [None]
-    user_id: str | None = [None]
+    nodes: list[Node] = []
 
-    def authorize(self, paths: list[str] | str | None) -> bool:
-        """
-        Verify that a list of paths is within the allowed data scope.
-
-        Args:
-            paths (list[str]): The list of paths to verify.
-        """
-
-        if self.organization_id is None:
-            raise ValueError("The organization_id field must be set.")
-        if paths is None:
-            return True
-        if isinstance(paths, str):
-            paths = [paths]
-        for path in paths:
-            if not any(
-                path == allowed_path
-                or path.startswith(f"{allowed_path}")
-                or path == allowed_path.rstrip("/")
-                for allowed_path in self.paths
-            ):
-                raise ValueError(f"Path '{path}' is not within the allowed data scope.")
-        return True
-
-    def into_datascope(self, paths: list[str] | str | None) -> "DataScope":
-        if paths is None or paths == []:
-            return self
-        if isinstance(paths, str):
-            paths = [paths]
-        self.authorize(paths)
-        return DataScope(paths=paths, organization_id=self.organization_id)
+    def to_child_inclusive_nodes(self, session: Session) -> list[Node]:
+        all_nodes = set(self.nodes)
+        for node in self.nodes:
+            child_nodes = session.exec(
+                select(Node).where(
+                    (Node.version_id == node.version_id)
+                    & (Node.relative_path.startswith(node.relative_path))
+                )
+            ).all()
+            all_nodes.update(child_nodes)
+        return list(all_nodes)

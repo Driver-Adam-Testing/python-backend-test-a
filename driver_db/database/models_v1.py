@@ -1,6 +1,7 @@
 import enum
 import uuid
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 import sqlalchemy.dialects.postgresql
@@ -9,21 +10,25 @@ from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     Column,
     Computed,
+    Connection,
     DateTime,
     Enum,
     Index,
     Integer,
     String,
     UniqueConstraint,
+    event,
     func,
     text,
+    update,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as SaUuid
-from sqlmodel import JSON, Field, Relationship, SQLModel
+from sqlalchemy.orm import Mapper
+from sqlmodel import JSON, Field, Relationship, SQLModel, select
 
 from .custom_types import TSVector
-from .models_v2 import Node
+from .models_v2 import Node, PrimaryAsset, Version
 from .models_v2_enums import ContentKind
 
 
@@ -390,6 +395,32 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
     # )
 
 
+def update_primary_asset_content_timestamp(
+    mapper: Mapper[Any], connection: Connection, target: DerivedContent
+) -> None:
+    # TODO node_id is nullable today, but once that changes, this should be updated
+    if not target.node_id:
+        return
+
+    primary_asset = (
+        select(PrimaryAsset.id)
+        .join(Version)
+        .join(Node)
+        .where(Node.id == target.node_id)
+    )
+
+    stmt = (
+        update(PrimaryAsset)
+        .where(PrimaryAsset.id.in_(primary_asset))
+        .values(related_content_last_updated=func.now())
+    )
+    connection.execute(stmt)
+
+
+event.listen(DerivedContent, "after_update", update_primary_asset_content_timestamp)
+event.listen(DerivedContent, "after_insert", update_primary_asset_content_timestamp)
+
+
 class Tag(SQLModel, table=True):  # type: ignore
     __tablename__ = "tags"
     __table_args__ = (
@@ -441,7 +472,7 @@ class Tag(SQLModel, table=True):  # type: ignore
     #     back_populates="tag",
     #     sa_relationship_kwargs={"foreign_keys": "TagContent.tag_id"},
     # )
-    primary_assets: list["PrimaryAsset"] = Relationship(  # noqa: F821
+    primary_assets: list["PrimaryAsset"] = Relationship(
         back_populates="tags",
         sa_relationship_kwargs={"secondary": "v2_primary_asset_tag"},
     )

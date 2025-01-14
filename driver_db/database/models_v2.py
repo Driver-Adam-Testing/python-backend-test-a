@@ -5,12 +5,7 @@ from typing import Optional
 from uuid import UUID
 
 from database.models_v2_enums import NodeKind, PrimaryAssetKind, VersionStatus
-from sqlalchemy import (
-    Column,
-    DateTime,
-    Index,
-    func,
-)
+from sqlalchemy import Column, DateTime, Index, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -44,6 +39,10 @@ class PrimaryAsset(SQLModel, table=True):  # type: ignore
             onupdate=func.now(),
             nullable=False,
         ),
+        default=None,
+    )
+    related_content_last_updated: None | datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=True),
         default=None,
     )
     versions: list["Version"] = Relationship(

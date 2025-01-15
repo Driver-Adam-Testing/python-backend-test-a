@@ -125,8 +125,7 @@ class Query:
         return get_document_set(
             nodeKind,
             path,
-            str(workspaceId),
-            str(codebaseId),
+            str(codebaseId),  # TODO: this is actually primary asset id
             info.context.user.organization_id,
             session,
             fetch_code_content,

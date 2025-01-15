@@ -209,7 +209,6 @@ def semantic_search(session: Session, input: SearchInput) -> SearchResults:
     search_results = []
     for chunk, score in results:
         metadata = {
-            "relative_path": chunk.content.node.relative_path,
             "chunk_number": chunk.chunk_number,
         }
         search_results.append(
@@ -217,6 +216,8 @@ def semantic_search(session: Session, input: SearchInput) -> SearchResults:
                 content=chunk.text,
                 score=overall_score(semantic_score=score),
                 metadata=metadata,
+                relative_path=chunk.content.node.relative_path,
+                version_display_name=chunk.content.node.version.display_name,
             )
         )
 
@@ -258,9 +259,7 @@ def keyword_search(session: Session, input: SearchInput) -> SearchResults:
     search_results = []
     for (chunk, _), bm25_score in zip(db_results, bm25_scores):
         metadata = {
-            "relative_path": chunk.content.node.relative_path,
             "version_id": chunk.content.node.version_id,
-            "version_name": chunk.content.node.version.display_name,
             "chunk_number": chunk.chunk_number,
         }
         search_results.append(
@@ -268,6 +267,8 @@ def keyword_search(session: Session, input: SearchInput) -> SearchResults:
                 content=chunk.text,
                 score=overall_score(bm25_score=bm25_score),
                 metadata=metadata,
+                relative_path=chunk.content.node.relative_path,
+                version_display_name=chunk.content.node.version.display_name,
             )
         )
 
@@ -359,7 +360,6 @@ def hybrid_search(session: Session, input: SearchInput) -> SearchResults:
         accumulated_tokens += token_count
 
         metadata = {
-            "relative_path": chunk.content.node.relative_path,
             "chunk_number": chunk.chunk_number,
         }
 
@@ -371,6 +371,8 @@ def hybrid_search(session: Session, input: SearchInput) -> SearchResults:
             SearchResult(
                 content=chunk.text,
                 score=hybrid_score,
+                relative_path=chunk.content.node.relative_path,
+                version_display_name=chunk.content.node.version.display_name,
                 metadata=metadata,
             )
         )

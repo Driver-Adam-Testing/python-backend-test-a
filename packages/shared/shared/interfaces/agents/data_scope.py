@@ -1,27 +1,128 @@
-from database.models_v2 import Node
+from uuid import UUID
+
+from database.db import get_session
+from database.models_v2 import Node, PrimaryAsset, Version
 from pydantic import BaseModel
-from sqlmodel import Session, select
+from sqlalchemy.orm import selectinload
+from sqlmodel import and_, or_, select
 
 
+# TODO: from_node_ids?
+# TODO: Validate organization_id
 class DataScope(BaseModel):
     """
     Scope of the agent's operation.
 
     Attributes:
-        nodes (List[Node]): List of nodes the agent can access.
+        nodes (List[DataScopeNode]): List of nodes the agent can access.
         organization_id (str | None): The organization ID.
     """
 
-    nodes: list[Node] = []
+    class DataScopeNode:
+        """
+        Represents a node within the DataScope that is lazy-loaded from the database.
+        """
 
-    def to_child_inclusive_nodes(self, session: Session) -> list[Node]:
-        all_nodes = set(self.nodes)
-        for node in self.nodes:
-            child_nodes = session.exec(
-                select(Node).where(
-                    (Node.version_id == node.version_id)
-                    & (Node.relative_path.startswith(node.relative_path))
+        def __init__(self, node: Node) -> None:
+            self._node = node
+
+        @property
+        def node(self) -> Node:
+            return self._node
+
+        def get_identifier(self) -> str:
+            """
+            Returns a string identifier for the node in the format: v{version_display_name}:{relative_path}.
+            """
+            version_display_name = self._node.version.display_name
+            return f"{version_display_name}:{self._node.relative_path}"
+
+    node_ids: list[UUID]
+
+    # TODO: Move user_id somewhere else
+    user_id: str
+    organization_id: str
+    _cached_nodes: list[DataScopeNode] | None = None
+
+    @property
+    def nodes(self) -> list[DataScopeNode]:
+        if self._cached_nodes is None:
+            with get_session() as session:
+                stmt = (
+                    select(Node)
+                    .options(selectinload(Node.version))
+                    .where(Node.id.in_(self.node_ids))
                 )
-            ).all()
-            all_nodes.update(child_nodes)
-        return list(all_nodes)
+                nodes = session.exec(stmt).all()
+            self._cached_nodes = [DataScope.DataScopeNode(node) for node in nodes]
+        return list(self._cached_nodes)
+
+    def get_node_by_identifier(self, identifier: str) -> DataScopeNode | None:
+        """
+        Retrieves a node by its identifier in the format: {version_display_name}:{relative_path}.
+        """
+        for data_scope_node in self.nodes:
+            if data_scope_node.get_identifier() == identifier:
+                return data_scope_node
+        return None
+
+    def to_child_datascope(self, identifiers: list[str]) -> "DataScope":
+        """
+        This returns a DataScope that has node_ids of Nodes where the version display name and the relative_path are children of the in this datascope, and errors if false.
+        """
+        # Ensure all identifiers start with an existing node identifier
+        existing_identifiers = {node.get_identifier() for node in self.nodes}
+        for identifier in identifiers:
+            if not any(
+                identifier.startswith(existing_id)
+                for existing_id in existing_identifiers
+            ):
+                raise ValueError(
+                    f"Identifier '{identifier}' does not start with any existing node identifier."
+                )
+
+        # Get node_ids that match a node on this datascope
+        matching_node_ids = []
+        for identifier in identifiers:
+            node = self.get_node_by_identifier(identifier)
+            if node:
+                matching_node_ids.append(node.node.id)
+
+        if len(matching_node_ids) != len(identifiers):
+            with get_session() as session:
+                stmt = (
+                    select(Node)
+                    .join(Version)
+                    .join(PrimaryAsset)
+                    .options(selectinload(Node.version))
+                    .where(
+                        or_(
+                            *[
+                                and_(
+                                    Node.relative_path == identifier.split(":", 1)[1],
+                                    Version.display_name == identifier.split(":", 1)[0],
+                                )
+                                for identifier in identifiers
+                            ]
+                        )
+                    )
+                    .where(PrimaryAsset.organization_id == self.organization_id)
+                )
+                nodes = session.exec(stmt).all()
+                ds = DataScope(
+                    node_ids=[n.id for n in nodes],
+                    user_id=self.user_id,
+                    organization_id=self.organization_id,
+                )
+                ds._cached_nodes = nodes
+                return ds
+        else:
+            ds = DataScope(
+                node_ids=matching_node_ids,
+                user_id=self.user_id,
+                organization_id=self.organization_id,
+            )
+            ds._cached_nodes = [
+                node for node in self.nodes if node.node.id in matching_node_ids
+            ]
+            return ds

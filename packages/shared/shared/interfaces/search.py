@@ -26,6 +26,8 @@ class SearchInput(DriverRequest):
 class SearchResult(DriverResponse):
     content: str
     score: float
+    version_display_name: str
+    relative_path: str
     metadata: dict
 
 

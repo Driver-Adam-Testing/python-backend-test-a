@@ -94,7 +94,8 @@ class PipelineInput(PromptWithContext):
             PipelineStepConfiguration(step_type=PipelineStepType.DEFAULT)
         ]
     )
-    scope: DataScope = DataScope(paths=[], organization_id=None, user_id=None)
+    # TODO: Make this Non-nullable?
+    scope: DataScope | None = None
 
 
 class PipelineStepResponse(BaseModel):

@@ -1,21 +1,20 @@
 from uuid import UUID
 
-from database.models_v2 import Node
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from modal import Function
 from modal.functions import FunctionCall
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field
 from shared.interfaces.agents.pipeline_configuration import (
     DataScope,
     PipelineInput,
     PipelineResponse,
     PipelineStepConfiguration,
     PipelineStepType,
+    PromptWithContext,
 )
 from shared.interfaces.request import DriverModalBatchRequest
 from shared.interfaces.response import DriverModalResponse
 from shared.pipelines.agents.execute import execute_sequence
-from sqlmodel import select
 
 from app.api.auth import ContentEditorPermission, ContentReadonlyPermission, UserToken
 from app.api.session import CurrentSession
@@ -23,23 +22,13 @@ from app.api.session import CurrentSession
 router = APIRouter()
 
 
-class AgentRunRequest(BaseModel):
+class AgentRunRequest(PromptWithContext):
     steps: list[PipelineStepConfiguration] = Field(
         default_factory=lambda: [
             PipelineStepConfiguration(step_type=PipelineStepType.DEFAULT)
         ]
     )
     node_ids: list[UUID] | None = None
-    page_node_id: UUID | None = None
-
-    @model_validator(mode="before")
-    def check_node_ids(cls, values: any) -> any:
-        node_ids, page_node_id = values.get("node_ids"), values.get("page_node_id")
-        if not node_ids and not page_node_id:
-            raise ValueError("Either node_ids or page_node_id must be provided.")
-        if node_ids and page_node_id:
-            raise ValueError("Only one of node_ids or page_node_id should be provided.")
-        return values
 
 
 @router.post(
@@ -50,50 +39,17 @@ class AgentRunRequest(BaseModel):
 def execute_agent_sequence(
     user: UserToken, session: CurrentSession, input: AgentRunRequest
 ) -> PipelineResponse:
-    # Initialize nodes list
-    nodes = []
-
-    # Validate and collect nodes from node_ids
-    if input.node_ids:
-        nodes = session.exec(select(Node).where(Node.id.in_(input.node_ids))).all()
-        if not all(
-            node.version.primary_asset.organization_id == user.organization_id
-            for node in nodes
-        ):
-            raise HTTPException(
-                status_code=403,
-                detail="One or more node_ids are not in the organization.",
-            )
-
-    # Validate and collect nodes from page_node_id
-    if input.page_node_id:
-        page_node = session.exec(
-            select(Node).where(Node.id == input.page_node_id)
-        ).one_or_none()
-        if (
-            not page_node
-            or page_node.version.primary_asset.organization_id != user.organization_id
-        ):
-            raise HTTPException(
-                status_code=403, detail="page_node_id is not in the organization."
-            )
-
-        # Collect nodes from page_node's document sources
-        document_source_nodes = session.exec(
-            select(Node).where(
-                Node.id.in_([source.id for source in page_node.documentsources])
-            )
-        ).all()
-        nodes.extend(document_source_nodes)
-
-    # Create PipelineInput with collected nodes
+    # TODO: authorize node_ids
     pipeline_input = PipelineInput(
+        prompt=input.prompt,
+        context=input.context,
         steps=input.steps,
         scope=DataScope(
-            nodes=nodes,
+            node_ids=input.node_ids,
+            organization_id=user.organization_id,
+            user_id=user.subject,
         ),
     )
-
     return execute_sequence(pipeline_input)
 
 

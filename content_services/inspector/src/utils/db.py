@@ -65,7 +65,7 @@ async def try_get_latest_run_from_version_id(version_id: uuid.UUID) -> uuid.UUID
         statement = (
             select(InspectorRun)
             .where(
-                InspectorRun.inspection_version_id == version_id
+                InspectorRun.version_id == version_id
             )  # TODO this fk name will probably be version_id once updated
             .order_by(InspectorRun.created_at.desc())
         )

@@ -166,6 +166,7 @@ async def inspect_db(
     result_loading_config = await get_result_loading_config(
         inspection_mode, version_id, previous_version_id
     )
+    print("Result loading config: ", result_loading_config)
 
     run_id = await create_inspector_run(version_id)
 
@@ -182,7 +183,7 @@ async def inspect_db(
     # Get content records for previous_version_id if available
     if previous_version is not None:
         db_previous_file_nodes = await get_analyzable_nodes_by_version_id(
-            previous_version.id, {DbNodeKind.CODEBASE_FILE}
+            previous_version_id, {DbNodeKind.CODEBASE_FILE}
         )
     # Download s3 for version_id (and previous if available)
     s3_client = boto3.client("s3", endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL"))

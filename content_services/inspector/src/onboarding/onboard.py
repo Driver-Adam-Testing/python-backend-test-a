@@ -181,6 +181,16 @@ def run_codebase_onboarding(
         PrimaryAsset,
         Version,
     )
+    from shared.interfaces.usage.event_metadata import (
+        UsageEventMetadata,
+        UsageMetric,
+        UsageSessionMetadata,
+    )
+    from shared.usage.llm_session import LLMUsageSession
+    from shared.usage.usage_service import UsageService
+    from shared.usage.utils import bytes_to_sloc
+    from sqlmodel import Session, select
+
     from onboarding.onboard_utils import (
         RunInProgressError,
         create_bucket_if_dne,
@@ -191,15 +201,6 @@ def run_codebase_onboarding(
         unpack_archive,
         upload_file_to_s3,
     )
-    from shared.interfaces.usage.event_metadata import (
-        UsageEventMetadata,
-        UsageMetric,
-        UsageSessionMetadata,
-    )
-    from shared.usage.llm_session import LLMUsageSession
-    from shared.usage.usage_service import UsageService
-    from shared.usage.utils import bytes_to_sloc
-    from sqlmodel import Session, select
 
     if not version_str:
         version_str = "Unversioned"
@@ -228,6 +229,7 @@ def run_codebase_onboarding(
             select(PrimaryAsset).where(
                 PrimaryAsset.display_name == codebase_name,
                 PrimaryAsset.organization_id == org_id,
+                PrimaryAsset.kind == PrimaryAssetKind.CODEBASE,
             )
         ).first()
         if primary_asset:
@@ -237,7 +239,7 @@ def run_codebase_onboarding(
             statement = (
                 select(Version)
                 .where(
-                    PrimaryAsset.id == primary_asset_id,
+                    Version.primary_asset_id == primary_asset_id,
                 )
                 .order_by(Version.created_at.desc())
             )

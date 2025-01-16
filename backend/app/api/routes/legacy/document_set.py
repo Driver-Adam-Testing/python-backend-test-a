@@ -6,7 +6,7 @@ from uuid import UUID
 import strawberry
 from app.api.routes.legacy.s3 import S3BucketAccess
 from app.core.logger import logger
-from database.models_v1 import DerivedContent, DerivedContentType
+from database.models_v1 import DerivedContent
 from database.models_v2 import (
     Node,
     PrimaryAsset,
@@ -130,17 +130,6 @@ def node_kind_map(node_kind: str) -> str:
         return "codebase-file"
     else:
         raise ValueError(f"Invalid node kind: {node_kind}")
-
-
-def content_types_map(db: Session) -> dict[str, str]:
-    types = db.exec(select(DerivedContentType)).all()
-    return {type.type_name: str(type.id) for type in types}
-
-
-def content_type_id_map(kind: str, db: Session) -> dict[str, any]:
-    content_types = content_types_map(db)
-    kind_translation = node_kind_map(kind)
-    return {"typeName": kind_translation, "id": content_types[kind_translation]}
 
 
 def fetch_code_metadata(node: Node) -> CodeMetadata | None:

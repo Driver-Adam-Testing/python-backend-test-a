@@ -3,7 +3,6 @@ import json
 import os
 
 import strawberry
-from app.api.routes.legacy.api_types import SourceContentInput
 from app.api.routes.legacy.orm_ops import (
     check_access,
     get_derived_content_by_id,
@@ -13,11 +12,9 @@ from app.core.logger import logger
 from app.utils.aws_s3 import generate_put_presigned_url
 from database.models_v1 import (
     DerivedContent,
-    DerivedContentType,
-    Workspace,
 )
+from database.models_v2 import Node, PrimaryAsset, Version
 from graphql import GraphQLError
-from sqlalchemy.future import select
 from strawberry.types import Info
 
 
@@ -108,55 +105,6 @@ class WebhookInput:
 
 @strawberry.type
 class Mutation:
-    @strawberry.mutation
-    def createSourceContent(self, info: Info, input: SourceContentInput) -> str:
-        user = info.context.user
-        m2m = info.context.m2m
-        session = info.context.session
-
-        # This endpoint is called by the onboarding lambda, which is not a user and does not have a user token
-        if user is not None:
-            if not check_access(
-                session, user.organization_id, codebase_id=input.codebase_id
-            ):
-                raise GraphQLError(
-                    "Access denied to the codebase", extensions={"code": "FORBIDDEN"}
-                )
-            workspace = session.execute(
-                select(Workspace).filter_by(id=input.workspace_id)  # type: ignore
-            ).scalar_one_or_none()
-            if not workspace or workspace.organization_id != user.organization_id:
-                raise GraphQLError(
-                    "Workspace not found or access denied",
-                    extensions={"code": "FORBIDDEN"},
-                )
-        elif m2m is None:
-            raise GraphQLError(
-                "No user or m2m token found",
-                extensions={"code": "FORBIDDEN"},
-            )
-
-        # TODO: Get rid of the database hits to get source and derived content types. They don't change often enough and they are limited. It's inefficient that they're defined in the database.
-        content_type = session.execute(
-            select(DerivedContentType).filter_by(type_name=input.source_content_type)  # type: ignore
-        ).scalar_one_or_none()
-
-        if not content_type:
-            raise GraphQLError(
-                "SourceContentType not found", extensions={"code": "BAD_REQUEST"}
-            )
-
-        source_content = DerivedContent(
-            source_content_id=None,  # No parent for source content rows!
-            content_type_id=content_type.id,  # type: ignore
-            workspace_id=input.workspace_id,  # type: ignore
-            codebase_id=input.codebase_id,  # type: ignore
-            relative_path=input.relative_path,  # type: ignore
-        )
-        session.add(source_content)
-        session.commit()
-        return str(source_content.id)
-
     @strawberry.mutation
     def updateApplicationNote(
         self, info: Info, input: UpdateApplicationNoteInput
@@ -294,8 +242,10 @@ class Mutation:
             note = (
                 session.query(DerivedContent)
                 .filter(DerivedContent.id == input.id)
-                .join(Workspace)
-                .filter(Workspace.organization_id == user.organization_id)
+                .join(Node)
+                .join(Version)
+                .join(PrimaryAsset)
+                .where(PrimaryAsset.organization_id == user.organization_id)
                 .one_or_none()
             )
 

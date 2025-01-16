@@ -4,7 +4,6 @@ from uuid import UUID
 
 from database.models_v1 import (
     DerivedContent,
-    DerivedContentType,
     DocumentSource,
     Enum_Derived_Content_Status,
     Tag,
@@ -37,10 +36,6 @@ class ListContentTypesInput(BaseModel):
     offset: int | None = 0
     sort_by: str | None = None
     sort_direction: str | None = "DESC"
-
-
-class ListContentTypesResults(BaseModel):
-    results: list[DerivedContentType]
 
 
 class ListContentResult(BaseModel):

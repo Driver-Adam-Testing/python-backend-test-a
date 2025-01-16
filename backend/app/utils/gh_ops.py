@@ -253,7 +253,6 @@ def download_and_upload_repo(
     gh_org_name: str,
     owner: str,
     org_id: str,
-    workspace_id: str,
     repo: str,
     repo_id: str,
     access_token: str,
@@ -269,7 +268,6 @@ def download_and_upload_repo(
         metadata = generate_codebase_metadata(
             org_id,
             gh_org_name,
-            workspace_id,
             repo,
             repo_id,
             owner,

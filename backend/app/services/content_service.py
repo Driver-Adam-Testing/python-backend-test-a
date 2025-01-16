@@ -1,4 +1,3 @@
-import functools
 import hashlib
 from uuid import UUID
 
@@ -6,31 +5,19 @@ import pypandoc
 from botocore.exceptions import ClientError
 from database.derived_content_types import DerivedContentTypeNames
 from database.models_v1 import (
-    ChunkAndEmbedding,
-    Codebase,
     DerivedContent,
     DocumentSource,
     Enum_Derived_Content_Status,
-    InspectionVersion,
-    InspectorRun,
     Tag,
-    TagContent,
-    Workspace,
 )
-from database.models_v2 import (
-    Node,
-    PrimaryAsset,
-    Version,
-)
+from database.models_v2 import Node, PrimaryAsset, PrimaryAssetTag, Version
 from fastapi import HTTPException, status
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.selectable import Select
 from sqlmodel import Session, asc, desc, func, or_, select, text
 
 from app.core.logger import logger
 from app.repositories.base_repository import BaseRepository
-from app.repositories.workspace_repository import WorkspaceRepository
 from app.schemas.content_schema import (
     BatchContentSourceAssociationResponse,
     ContentSourceAssociationItem,
@@ -42,8 +29,6 @@ from app.schemas.content_schema import (
     ListContentInput,
     ListContentResult,
     ListContentResults,
-    ListContentTypesInput,
-    ListContentTypesResults,
     TagResult,
 )
 from app.services.utils.content_utils import get_content_name
@@ -60,9 +45,7 @@ class ContentService:
     def __init__(self: "ContentService", session: Session) -> None:
         self.session = session
         self.content_repository = BaseRepository(session, DerivedContent)
-        self.workspace_repository = WorkspaceRepository(session)
         self.document_source_repository = BaseRepository(session, DocumentSource)
-        self.tag_content_repository = BaseRepository(session, TagContent)
         self.node_repository = BaseRepository(session, Node)
 
     def associate_sources_with_content(
@@ -375,7 +358,7 @@ class ContentService:
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"Invalid status value: {search_input.status}",
                 )
-            statement = statement.where(DerivedContent.status == search_input.status)
+            statement = statement.where(Version.status == search_input.status)
 
         if search_input.content_type_id:
             logger.warning("Filtering by content_type_id is deprecated.")
@@ -396,28 +379,12 @@ class ContentService:
                 DerivedContent.content_kind.in_(search_input.content_type_name)
             )
 
-        if search_input.latest_version_only:
-            # subquery = (
-            #     select(VersionRow.primary_asset_id, func.max(VersionRow.updated_at).label('max_updated_at'))
-            #     .group_by(VersionRow.primary_asset_id)
-            #     .subquery()
-            # )
-            # latest_versions = (
-            #     select(VersionRow.id)
-            #     .join(subquery, (VersionRow.primary_asset_id == subquery.c.primary_asset_id) & (VersionRow.updated_at == subquery.c.max_updated_at))
-            #     .subquery()
-            # )
-            # statement = statement.where(VersionRow.id.in_(latest_versions))
-            pass
-
         if (search_input.tags and any(search_input.tags)) or (
             search_input.tag_ids and any(search_input.tag_ids)
         ):
             # For tags filtering we need to join Tag if not done.
-            statement = statement.join(
-                TagContent, TagContent.content_id == DerivedContent.id, isouter=True
-            )
-            statement = statement.join(Tag, Tag.id == TagContent.tag_id, isouter=True)
+            statement = statement.join(PrimaryAssetTag)
+            statement = statement.join(Tag)
             if search_input.tags and any(search_input.tags):
                 tag_clauses = [
                     Tag.name.contains(tag) for tag in search_input.tags if tag
@@ -432,26 +399,6 @@ class ContentService:
 
         return statement
 
-    def get_list_content_types(
-        self: "ContentService", lct_inputs: ListContentTypesInput
-    ) -> ListContentTypesResults:
-        logger.info(f"Getting list of content types with input {lct_inputs}")
-        try:
-            results = self.content_repository.get_all(
-                lct_inputs.limit,
-                lct_inputs.offset,
-                lct_inputs.sort_by,
-                lct_inputs.sort_direction,
-            )
-        except ValueError:
-            logger.exception("Error getting list of content types")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Bad Request"
-            )
-
-        logger.info("List of content types retrieved successfully")
-        return ListContentTypesResults(results=results)
-
     def get_content_sources(
         self: "ContentService", content_id: UUID, organization_id: str
     ) -> ContentSourceResponse:
@@ -465,13 +412,6 @@ class ContentService:
             )
 
         sources = [link.source for link in content.source_links]
-
-        # We need caching, so bypassing content service stuff.
-        @functools.cache
-        def get_codebase(codebase_id: UUID) -> Codebase | None:
-            return self.session.exec(
-                select(Codebase).where(Codebase.id == codebase_id)
-            ).first()
 
         # If the source is associated with a codebase, get the codebase status and propagate to children
 
@@ -554,13 +494,11 @@ class ContentService:
     ) -> DerivedContent:
         logger.info(f"Editing content {content_id} for organization {organization_id}")
 
-        content = self.content_repository.get_by_conditions(
-            [
-                Workspace.organization_id == organization_id,
-                DerivedContent.id == content_id,
-            ],
-            [Workspace],
-        )
+        content = self.session.exec(
+            select(DerivedContent)
+            .where(DerivedContent.id == content_id)
+            .where(DerivedContent.workspace.has(organization_id=organization_id))
+        ).first()
 
         if not content or content.workspace.organization_id != organization_id:
             raise HTTPException(
@@ -625,88 +563,27 @@ class ContentService:
                 detail="Content not found or not downloadable",
             )
 
-    def delete_content(self, organization_id: str, content_id: UUID) -> None:
-        logger.info(f"Deleting content {content_id} for organization {organization_id}")
-
-        # Check if the content exists and is associated with the organization
-        content = self.content_repository.get_by_conditions(
-            [
-                Workspace.organization_id == organization_id,
-                DerivedContent.id == content_id,
-            ],
-            [Workspace],
-        )
-
-        if not content or content.workspace.organization_id != organization_id:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
-            )
-
-        valid_content_types = {
-            DerivedContentTypeNames.APPLICATION_NOTE.value,
-            DerivedContentTypeNames.TEMPLATE.value,
-            DerivedContentTypeNames.SUPPLEMENTAL_DOCUMENT.value,
-            DerivedContentTypeNames.CODEBASE.value,
-        }
-
-        if content.content_kind not in valid_content_types:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid content type"
-            )
-
-        if content.content_kind == DerivedContentTypeNames.CODEBASE.value:
-            records_to_delete_in_s3 = delete_codebase_and_related_entities(
-                self.session, self, content_id
-            )
-            # delete remote content
-            for record in records_to_delete_in_s3:
-                logger.info(
-                    f"Deleting content {record.relative_path} from remote storage"
-                )
-                try:
-                    delete_from_remote_storage(record, organization_id)
-                except Exception:
-                    """
-                    if we get here the bucket or content might not exist.
-                    This was added because automated testing was failing since the content is made up and does not exist in the bucket.
-                    See Eric for more information.
-                    """
-                    logger.exception(
-                        f"Error deleting content {record.id} from remote storage"
-                    )
-        else:
-            try:
-                delete_document_and_related_entities(self.session, content)
-                logger.info(
-                    f"Content {content_id} successfully deleted for organization {organization_id}"
-                )
-            except IntegrityError:
-                logger.exception(f"Error deleting content {content_id}")
-                raise HTTPException(status_code=400, detail="Error deleting content")
-
-            if content.content_kind == "supplemental-document":
-                # delete remote content
-                delete_from_remote_storage(content, organization_id)
-
     def get_content_tags(
         self: "ContentService", content_id: UUID, organization_id: str
     ) -> ContentTagsResponse:
         logger.info(f"Fetching tags for content {content_id}")
+        primary_asset = self.session.exec(
+            select(PrimaryAsset)
+            .options(selectinload(PrimaryAsset.tags))
+            .join(PrimaryAsset)
+            .join(Version)
+            .join(Node)
+            .join(DerivedContent)
+            .where(DerivedContent.id == content_id)
+            .where(PrimaryAsset.organization_id == organization_id)
+        ).first()
 
-        content = self.content_repository.get_by_conditions(
-            [
-                Workspace.organization_id == organization_id,
-                DerivedContent.id == content_id,
-            ],
-            [Workspace],
-        )
-
-        if not content or content.workspace.organization_id != organization_id:
+        if not primary_asset:
             logger.error(
-                f"Content {content_id} not found for organization {organization_id}"
+                f"Primary asset {content_id} not found for organization {organization_id}"
             )
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Primary asset not found"
             )
 
         tag_results = [
@@ -717,7 +594,7 @@ class ContentService:
                 created_at=tag.created_at,
                 updated_at=tag.updated_at,
             )
-            for tag in content.tags
+            for tag in primary_asset.tags
         ]
 
         logger.info(f"Tags retrieved successfully for content {content_id}")
@@ -732,139 +609,6 @@ class ContentService:
             return rst_content
         except RuntimeError:
             raise HTTPException(status_code=500, detail="Conversion error")
-
-
-def delete_document_and_related_entities(
-    session: Session, content: DerivedContent
-) -> None:
-    try:
-        # Delete related DocumentSource entities
-        document_sources = session.exec(
-            select(DocumentSource).where(
-                or_(
-                    # fetch all document sources associated with the content. e.g. content is an app note
-                    DocumentSource.document_id == content.id,
-                    # fetch all document sources that are sources for the content.
-                    # e.g. content is a pdf and is a source for a note.
-                    DocumentSource.source_id == content.id,
-                )
-            )
-        ).all()
-        # Deleting Many-to-Many relationship requires fetching the related entities and deleting them
-        for document_source in document_sources:
-            session.delete(document_source)
-
-        # Delete related TagContent entities
-        tag_contents = session.exec(
-            select(TagContent).where(TagContent.content_id == content.id)
-        ).all()
-
-        for tag_content in tag_contents:
-            session.delete(tag_content)
-
-        # Delete related ChunkAndEmbed entities
-        chunk_and_embeddings = session.exec(
-            select(ChunkAndEmbedding).where(ChunkAndEmbedding.content_id == content.id)
-        ).all()
-
-        for chunk_and_embedding in chunk_and_embeddings:
-            session.delete(chunk_and_embedding)
-
-        # Delete all the derived contents associated with the document
-        for derived_content in content.derived_contents:
-            session.delete(derived_content)
-
-        session.delete(content)
-    # except IntegrityError:
-    except:
-        logger.exception(f"Error deleting content {content.id}")
-        session.rollback()
-        raise
-    else:
-        # if not session.in_transaction():
-        session.commit()
-
-
-def delete_codebase_and_related_entities(
-    session: Session, service: ContentService, content_id: UUID
-) -> list[DerivedContent]:
-    records_to_delete_in_s3 = []
-    codebase_record = service.content_repository.get(content_id)
-    if not codebase_record:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Codebase not found"
-        )
-
-    codebase_id = codebase_record.codebase_id
-
-    try:
-        # Fetch all derived content and related entities in a single query
-        derived_contents = session.exec(
-            select(DerivedContent)
-            .where(DerivedContent.codebase_id == codebase_id)
-            .options(
-                selectinload(DerivedContent.source_links),
-                selectinload(DerivedContent.tag_links),
-            )
-        ).all()
-
-        # Separate derived contents into those with and without source_content_id
-        irs = [dc for dc in derived_contents if dc.source_content_id is not None]
-        source_content = [dc for dc in derived_contents if dc.source_content_id is None]
-
-        version_ids_to_delete = {
-            dc.version_id for dc in derived_contents if dc.version_id is not None
-        }
-
-        session.query(DocumentSource).filter(
-            DocumentSource.source_id.in_([source.id for source in source_content])
-        ).delete(synchronize_session="fetch")
-
-        session.query(TagContent).filter(
-            TagContent.content_id.in_([source.id for source in source_content])
-        ).delete(synchronize_session="fetch")
-
-        session.query(DerivedContent).filter(
-            DerivedContent.id.in_([ir.id for ir in irs])
-        ).delete(synchronize_session="fetch")
-
-        session.query(DerivedContent).filter(
-            DerivedContent.id.in_([source.id for source in source_content])
-        ).delete(synchronize_session="fetch")
-        if version_ids_to_delete:
-            session.query(InspectorRun).filter(
-                InspectorRun.inspection_version_id.in_(version_ids_to_delete)
-            ).delete(synchronize_session="fetch")
-
-        if version_ids_to_delete:
-            session.query(InspectionVersion).filter(
-                InspectionVersion.id.in_(version_ids_to_delete)
-            ).delete(synchronize_session="fetch")
-
-        # Collect records for S3 deletion
-        records_to_delete_in_s3.extend(
-            source
-            for source in source_content
-            if source.content_kind == DerivedContentTypeNames.CODEBASE_FILE.value
-        )
-
-        # TODO delete task results from s3 as well
-
-        codebase = session.exec(
-            select(Codebase).where(Codebase.id == codebase_id)
-        ).first()
-        session.delete(codebase)
-
-        session.commit()  # Commit if everything is successful
-
-    except Exception:
-        logger.exception(
-            f"Error deleting codebase_id {content_id} and related entities."
-        )
-        session.rollback()  # Rollback on any exception
-        raise
-
-    return records_to_delete_in_s3
 
 
 def organization_bucket_from_organization_id(organization_id: str) -> str:

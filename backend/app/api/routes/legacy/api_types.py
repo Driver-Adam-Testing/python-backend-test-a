@@ -3,12 +3,6 @@ from uuid import UUID
 
 import strawberry
 from app.api.routes.legacy.scalars import ID
-from database.models_v1 import (
-    Codebase,
-    DerivedContent,
-    DerivedContentType,
-    Workspace,
-)
 
 
 @strawberry.input
@@ -33,85 +27,6 @@ class RuntimeLogAgentMessageQuery:
     agent_instance_id: UUID | None = None
 
 
-@strawberry.input
-class WorkspaceQuery:
-    __model__ = Workspace
-    id: UUID | None = None
-    display_name: str | None = None
-    description: str | None = None
-
-
-@strawberry.input
-class CodebaseQuery:
-    __model__ = Codebase
-    id: UUID | None = None
-    codebase_name: str | None = None
-    description: str | None = None
-    status: str | None = None
-    storage_url: str | None = None
-    resource_root: str | None = None
-    creator_id: str | None = None
-    workspace: WorkspaceQuery | None = None
-
-
-@strawberry.input
-class DerivedContentTypeQuery:
-    __model__ = DerivedContentType
-    id: UUID | None = None
-    type_name: str | None = None
-
-
-@strawberry.input
-class DerivedContentQuery:
-    __model__ = DerivedContent
-    id: UUID | None = None
-    content: str | None = None
-    misc_metadata: dict | None = None
-    status: str | None = None
-    order: int | None = None
-    derived_content_type: DerivedContentTypeQuery | None = None
-
-
-@strawberry.experimental.pydantic.type(Workspace, all_fields=True)
-class WorkspaceResults:
-    @strawberry.experimental.pydantic.type(Codebase, all_fields=True)
-    class WorkspaceCodebaseResults:
-        pass
-
-    codebases: list[WorkspaceCodebaseResults]
-
-
-# type: ignore
-@strawberry.experimental.pydantic.type(DerivedContentType, all_fields=True)
-class DerivedContentTypeResults:
-    pass
-
-
-# type: ignore
-@strawberry.experimental.pydantic.type(DerivedContent, all_fields=True)
-class DerivedContentResults:
-    @strawberry.field(description="Metadata of the derived content")
-    def metadata(self) -> dict | None:
-        return self.misc_metadata  # type: ignore
-
-    derived_content_type: DerivedContentTypeResults
-
-
-# type: ignore
-
-
-# type: ignore
-@strawberry.experimental.pydantic.type(Codebase, all_fields=True)
-class CodebaseResults:
-    pass
-
-
-# type: ignore
-@strawberry.experimental.pydantic.input(Workspace, all_fields=True)
-class WorkspaceInput:
-    pass
-
-
 # type: ignore
 @strawberry.input
 class SourceContentInput:
@@ -119,20 +34,6 @@ class SourceContentInput:
     codebase_id: UUID | None = None
     relative_path: str | None = None
     source_content_type: str | None = None
-
-
-# type: ignore
-@strawberry.experimental.pydantic.input(Codebase, all_fields=True)
-class CodebaseInput:
-    pass
-
-
-@strawberry.type
-class OrganizationResult:
-    id: str
-    name: str
-    display_name: str
-    workspaces: list[WorkspaceResults]  # Specify the type of elements in the list
 
 
 @strawberry.type

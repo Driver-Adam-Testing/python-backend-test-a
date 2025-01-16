@@ -21,8 +21,6 @@ from app.schemas.content_schema import (
     ExportSingleRequest,
     ListContentInput,
     ListContentResults,
-    ListContentTypesInput,
-    ListContentTypesResults,
 )
 from app.services.content_service import ContentService
 
@@ -73,37 +71,6 @@ def list_content(
         ),
     )
     return results
-
-
-@router.get(
-    "/types", summary="List content types", dependencies=[ContentReadonlyPermission]
-)
-def get_list_content_types(
-    session: CurrentSession,
-    limit: int | None = 20,
-    offset: int | None = 0,
-    sort_by: str | None = None,
-    sort_direction: str | None = "ASC",
-) -> ListContentTypesResults:
-    """
-    List content types.
-
-    Parameters:
-    - session: Current session object
-    - limit: Maximum number of items to return
-    - offset: Number of items to skip
-    - sort_by: Field to sort by
-    - sort_direction: Direction to sort (ASC or DESC)
-
-    Returns:
-    - ListContentTypesResults: Results of the content types list query
-    """
-    content_service = ContentService(session)
-    return content_service.get_list_content_types(
-        ListContentTypesInput(
-            limit=limit, offset=offset, sort_by=sort_by, sort_direction=sort_direction
-        )
-    )
 
 
 @router.get(

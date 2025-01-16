@@ -1,20 +1,8 @@
 from database.models_v1 import (
-    Codebase,
     DerivedContent,
-    Workspace,
 )
 from database.models_v2 import Node, PrimaryAsset, Version
-from sqlmodel import Session, delete, select
-
-
-def get_workspace_related_entities(session: Session, org_id: str) -> list[Workspace]:
-    statement = (
-        select(Workspace)
-        .join(Codebase, Workspace.id == Codebase.workspace_id)  # type: ignore
-        .where(Workspace.organization_id == org_id)
-    )
-    result = session.exec(statement).all()
-    return result  # type: ignore
+from sqlmodel import Session, select
 
 
 # TODO remove me
@@ -30,28 +18,10 @@ def get_derived_content_by_id(session: Session, id: str) -> DerivedContent | Non
     return result.first()
 
 
-def delete_codebase_by_id(session: Session, codebase_id: str) -> bool:
-    # TODO cascade delete from codebase to content
-    with session.begin():
-        # Delete all associated SourceContent
-        session.exec(
-            delete(DerivedContent).where(DerivedContent.codebase_id == codebase_id)  # type: ignore
-        )
-        # Finally, delete the codebase itself
-        count = session.exec(delete(Codebase).where(Codebase.id == codebase_id))  # type: ignore
-        return count > 0
-
-
-def get_codebase_by_id(session: Session, codebase_id: str) -> Codebase | None:
-    statement = select(Codebase).where(Codebase.id == codebase_id)
-    result = session.exec(statement)
-    return result.first()
-
-
+# TODO: do away with this?
 def check_access(
     session: Session,
     organization_id: str,
-    codebase_id: str | None = None,
     derived_content_id: str | None = None,
     node_id: str | None = None,
     version_id: str | None = None,
@@ -59,14 +29,6 @@ def check_access(
 ) -> bool:
     # TODO: undo this check
     access_checks = []
-
-    if codebase_id:
-        primary_asset = session.exec(
-            select(PrimaryAsset).where(PrimaryAsset.id == codebase_id)
-        ).first()
-        access_checks.append(
-            primary_asset and primary_asset.organization_id == organization_id
-        )
 
     if derived_content_id:
         derived_content = session.exec(

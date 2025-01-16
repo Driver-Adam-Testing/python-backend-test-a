@@ -282,26 +282,6 @@ def test_list_tags_from_other_org(
     assert tag_results.count == 0
 
 
-def test_associate_tag(
-    tag_service: TagService,
-    current_user_with_org: UserToken,
-    tag: NewTagInput,
-    content: DerivedContent,
-) -> None:
-    content_id = content.id
-    tag_id = tag.id
-    include = True
-    response = tag_service.associate_tag(
-        current_user_with_org.organization_id, content_id, tag_id, include
-    )
-    assert response is not None
-
-    response = tag_service.disassociate_tag(
-        current_user_with_org.organization_id, content_id, tag_id
-    )
-    assert response is not None
-
-
 def test_associate_tag_from_other_org(
     tag_service: TagService,
     current_user_with_other_org: UserToken,

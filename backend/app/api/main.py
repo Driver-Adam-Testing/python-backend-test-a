@@ -7,7 +7,6 @@ from app.api.routes.v1 import (
     content,
     git_provider,
     healthcheck,
-    instructions,
     onboarding,
     organization,
     search,
@@ -50,9 +49,6 @@ api_router.include_router(search.router, prefix="/search", tags=["search"])
 api_router.include_router(content.router, prefix="/content", tags=["content"])
 api_router.include_router(codebase.router, prefix="/codebases", tags=["codebase"])
 api_router.include_router(tags.router, prefix="/tags", tags=["tags"])
-api_router.include_router(
-    instructions.router, prefix="/instructions", tags=["instructions"]
-)
 api_router.include_router(upload.router, prefix="/upload", tags=["upload"])
 api_router.include_router(
     agent_pipelines.router, prefix="/agent_pipelines", tags=["agent_pipelines"]

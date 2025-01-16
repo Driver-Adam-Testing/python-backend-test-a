@@ -32,7 +32,7 @@ class PrimaryAssetRead(BaseModel):
     updated_at: datetime | None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class VersionRead(BaseModel):
@@ -44,7 +44,7 @@ class VersionRead(BaseModel):
     status: str | None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class NodeRead(BaseModel):
@@ -56,7 +56,7 @@ class NodeRead(BaseModel):
     updated_at: datetime | None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class TagRead(BaseModel):
@@ -71,7 +71,7 @@ class TagRead(BaseModel):
     updated_by: str
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class PrimaryAssetTagRead(BaseModel):
@@ -79,7 +79,7 @@ class PrimaryAssetTagRead(BaseModel):
     primary_asset_id: UUID
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class ContentRead(BaseModel):

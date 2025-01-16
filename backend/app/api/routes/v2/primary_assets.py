@@ -112,14 +112,10 @@ def delete_primary_asset(
         .where(PrimaryAsset.organization_id == user.organization_id)
     ).one_or_none()
 
-    session.delete(asset)
-    session.commit()
-
     if not asset:
         raise HTTPException(status_code=404, detail="Primary asset not found")
 
     org_id_hash = hashlib.sha256(user.organization_id.encode()).hexdigest()[:63]
-
     prefix = f"{primary_asset_id}/"
 
     s3 = boto3.resource(
@@ -132,5 +128,8 @@ def delete_primary_asset(
     bucket = s3.Bucket(org_id_hash)
 
     bucket.objects.filter(Prefix=prefix).delete()
+
+    session.delete(asset)
+    session.commit()
 
     return asset

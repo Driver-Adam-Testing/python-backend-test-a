@@ -132,14 +132,14 @@ def get_content_by_id(
 
 
 @router.get(
-    "/{content_id}/download",
+    "/{node_id}/download",
     summary="Get download URL from S3 by ID",
     dependencies=[ContentReadonlyPermission],
 )
 def get_download_content_by_id(
     session: CurrentSession,
     user: UserToken,
-    content_id: UUID,
+    node_id: UUID,
 ) -> DownloadContentResponse:
     """
     Get download URL from S3 by ID
@@ -147,13 +147,13 @@ def get_download_content_by_id(
     Parameters:
     - session: Current session object
     - user: Current user object
-    - content_id: UUID of the content
+    - node_id: UUID of the node
 
     Returns:
     - DerivedContent: Content details
     """
     content_service = ContentService(session)
-    return content_service.get_content_download_url(content_id, user.organization_id)
+    return content_service.get_content_download_url(node_id, user.organization_id)
 
 
 @router.get(

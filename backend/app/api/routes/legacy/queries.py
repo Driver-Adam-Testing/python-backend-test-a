@@ -103,20 +103,19 @@ class Query:
         info: Info,
         nodeKind: NodeType,
         path: str | None = None,
-        workspaceId: ID | None = None,
-        codebaseId: ID | None = None,
+        primaryAssetId: ID | None = None,
         versionId: ID | None = None,
     ) -> DocumentSet:
-        if path is None or workspaceId is None or codebaseId is None:
+        if path is None or versionId is None or primaryAssetId is None:
             raise GraphQLError(
-                "path, workspaceId, and codebaseId must not be None",
+                "path, versionId, and codebaseId must not be None",
                 extensions={"code": "BAD_REQUEST"},
             )
         session = info.context.session
         if not check_access(
             session,
             info.context.user.organization_id,
-            primary_asset_id=str(codebaseId),
+            primary_asset_id=str(primaryAssetId),
         ):
             raise GraphQLError("Access denied", extensions={"code": "NOT_FOUND"})
 
@@ -125,8 +124,7 @@ class Query:
         return get_document_set(
             nodeKind,
             path,
-            str(workspaceId),
-            str(codebaseId),
+            str(primaryAssetId),
             info.context.user.organization_id,
             session,
             fetch_code_content,

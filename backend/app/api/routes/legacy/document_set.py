@@ -12,7 +12,9 @@ from database.models_v2 import (
     PrimaryAsset,
     Version,
 )
+from database.models_v2_enums import ContentKind, NodeKind
 from fastapi import HTTPException
+from sqlalchemy.orm import selectinload
 from sqlmodel import Session, select
 
 
@@ -91,6 +93,18 @@ class ApplicationNote:
 
 
 @strawberry.type
+class TopLevel:
+    short_sentence: str = ""
+    short_paragraph: str = ""
+    terse_sentence: str = ""
+    long_description: str = ""
+    short_sentence_document: Document | None = None
+    short_paragraph_document: Document | None = None
+    terse_sentence_document: Document | None = None
+    long_description_document: Document | None = None
+
+
+@strawberry.type
 class DocumentSet:
     source_content_id: str = strawberry.field(default="")
     architecture: str = strawberry.field(default="")
@@ -101,6 +115,7 @@ class DocumentSet:
     quickstart: Quickstart = strawberry.field(default_factory=Quickstart)
     chunk_descriptions: list[str] | None = strawberry.field(default=None)
     code: Code = strawberry.field(default_factory=Code)
+    toplevel: TopLevel = strawberry.field(default_factory=TopLevel)
     application_notes: list[ApplicationNote] | None = strawberry.field(
         default_factory=list
     )
@@ -128,43 +143,40 @@ def content_type_id_map(kind: str, db: Session) -> dict[str, any]:
     return {"typeName": kind_translation, "id": content_types[kind_translation]}
 
 
-def fetch_code_metadata(content: DerivedContent) -> CodeMetadata | None:
-    if not content.misc_metadata:
+def fetch_code_metadata(node: Node) -> CodeMetadata | None:
+    if not node.misc_metadata:
         return None
     return CodeMetadata(
-        size=content.misc_metadata.get("size"),
-        sloc=content.misc_metadata.get("sloc"),
-        extension=content.misc_metadata.get("extension"),
-        is_binary=content.misc_metadata.get("is_binary"),
-        is_hex=content.misc_metadata.get("is_hex"),
-        is_analyzable=content.misc_metadata.get("is_analyzable"),
-        is_blacklisted=content.misc_metadata.get("is_blacklisted"),
+        size=node.misc_metadata.get("size"),
+        sloc=node.misc_metadata.get("sloc"),
+        extension=node.misc_metadata.get("extension"),
+        is_binary=node.misc_metadata.get("is_binary"),
+        is_hex=node.misc_metadata.get("is_hex"),
+        is_analyzable=node.misc_metadata.get("is_analyzable"),
+        is_blacklisted=node.misc_metadata.get("is_blacklisted"),
     )
 
 
-def fetch_code_content_from_s3(
-    relative_path: str, organization_id: str, codebase_id: str, version_id: str
-) -> str:
+def fetch_code_content_from_s3(node: Node) -> str:
     s3_access = S3BucketAccess(
-        organization_id=organization_id,
-        codebase_id=codebase_id,
-        version_id=version_id,
+        organization_id=node.version.primary_asset.organization_id,
+        primary_asset_id=node.version.primary_asset_id,
+        version_id=node.version_id,
     )
-    return s3_access.get_file_content(relative_path=relative_path)
+    return s3_access.get_file_content(relative_path=node.relative_path)
 
 
 def get_document_set(
     node_kind: str,
     path: str,
-    workspace_id: str,  # now ignored
-    codebase_id: str,
+    primary_asset_id: str,
     organization_id: str,
     session: Session,
     fetch_code_content: bool,
     version_id: str | None = None,
 ) -> DocumentSet:
     # Find the primary asset
-    primary_asset = session.get(PrimaryAsset, codebase_id)
+    primary_asset = session.get(PrimaryAsset, primary_asset_id)
     if not primary_asset or primary_asset.organization_id != organization_id:
         raise HTTPException(
             status_code=404, detail="Primary asset not found or not in org"
@@ -176,9 +188,6 @@ def get_document_set(
         )
 
     relative_path = path
-    # If it's a codebase root, remove trailing slash
-    if node_kind_map(node_kind) == "codebase":
-        relative_path = path.replace("/", "")
 
     # Determine the VersionRow
     if version_id:
@@ -200,9 +209,9 @@ def get_document_set(
 
     # Find the node
     node = session.exec(
-        select(Node).where(
-            Node.version_id == version.id, Node.relative_path == relative_path
-        )
+        select(Node)
+        .where(Node.version_id == version.id, Node.relative_path == relative_path)
+        .options(selectinload(Node.version).selectinload(Version.primary_asset))
     ).one_or_none()
 
     if not node:
@@ -223,57 +232,77 @@ def get_document_set(
             doc.content = ""
 
         # Skip symbols
-        if doc_type == DerivedContentTypes.SYMBOL.value:
+        if doc_type == ContentKind.SYMBOL.value:
             continue
 
-        if doc_type == DerivedContentTypes.LONG_DESCRIPTION.value:
+        if doc_type == ContentKind.LONG_DESCRIPTION.value:
             document_set.long = doc.content
             document_set.long_document = Document(id=doc.id, content=doc.content)
-        elif doc_type == DerivedContentTypes.SHORT_PARAGRAPH_DESCRIPTION.value:
+        elif doc_type == ContentKind.SHORT_PARAGRAPH_DESCRIPTION.value:
             document_set.short.single_paragraph = doc.content
             document_set.short.single_paragraph_document = Document(
                 id=doc.id, content=doc.content
             )
-        elif doc_type == DerivedContentTypes.SHORT_SENTENCE_DESCRIPTION.value:
+        elif doc_type == ContentKind.SHORT_SENTENCE_DESCRIPTION.value:
             document_set.short.single_sentence = doc.content
             document_set.short.single_sentence_document = Document(
                 id=doc.id, content=doc.content
             )
-        elif doc_type == DerivedContentTypes.TERSE_SENTENCE_DESCRIPTION.value:
+        elif doc_type == ContentKind.TERSE_SENTENCE_DESCRIPTION.value:
             document_set.short.terse_sentence = doc.content
             document_set.short.terse_sentence_document = Document(
                 id=doc.id, content=doc.content
             )
-        elif doc_type == DerivedContentTypes.ARCHITECTURE_DIAGRAM.value:
+        elif doc_type == ContentKind.ARCHITECTURE_DIAGRAM.value:
             document_set.architecture = doc.content
             document_set.architecture_document = Document(
                 id=doc.id, content=doc.content
             )
-        elif doc_type == DerivedContentTypes.CHUNK_DESCRIPTIONS.value:
+        elif doc_type == ContentKind.CHUNK_DESCRIPTIONS.value:
             if document_set.chunk_descriptions is None:
                 document_set.chunk_descriptions = []
             document_set.chunk_descriptions.extend(doc.content.split("\n\n\n"))
-        elif doc_type == DerivedContentTypes.QUICK_START_GETTING_STARTED.value:
+        elif doc_type == ContentKind.QUICK_START_GETTING_STARTED.value:
             document_set.quickstart.getting_started = doc.content
             document_set.quickstart.getting_started_document = Document(
                 id=doc.id, content=doc.content
             )
-        elif doc_type == DerivedContentTypes.QUICK_START_DEPENDENCIES.value:
+        elif doc_type == ContentKind.QUICK_START_DEPENDENCIES.value:
             document_set.quickstart.dependencies = doc.content
             document_set.quickstart.dependencies_document = Document(
                 id=doc.id, content=doc.content
             )
-        elif doc_type == DerivedContentTypes.QUICK_START_ENTRY.value:
+        elif doc_type == ContentKind.QUICK_START_ENTRY.value:
             document_set.quickstart.entry = doc.content
             document_set.quickstart.entry_document = Document(
                 id=doc.id, content=doc.content
             )
-        elif doc_type == DerivedContentTypes.QUICK_START_USE.value:
+        elif doc_type == ContentKind.QUICK_START_USE.value:
             document_set.quickstart.use = doc.content
             document_set.quickstart.use_document = Document(
                 id=doc.id, content=doc.content
             )
-        elif doc_type == DerivedContentTypes.APPLICATION_NOTE.value:
+        elif doc_type == ContentKind.TOP_LEVEL_SHORT_SENTENCE.value:
+            document_set.toplevel.short_sentence = doc.content
+            document_set.toplevel.short_sentence_document = Document(
+                id=doc.id, content=doc.content
+            )
+        elif doc_type == ContentKind.TOP_LEVEL_SHORT_PARAGRAPH.value:
+            document_set.toplevel.short_paragraph = doc.content
+            document_set.toplevel.short_paragraph_document = Document(
+                id=doc.id, content=doc.content
+            )
+        elif doc_type == ContentKind.TOP_LEVEL_TERSE_SENTENCE.value:
+            document_set.toplevel.terse_sentence = doc.content
+            document_set.toplevel.terse_sentence_document = Document(
+                id=doc.id, content=doc.content
+            )
+        elif doc_type == ContentKind.TOP_LEVEL_LONG_DESCRIPTION.value:
+            document_set.toplevel.long_description = doc.content
+            document_set.toplevel.long_description_document = Document(
+                id=doc.id, content=doc.content
+            )
+        elif doc_type == ContentKind.application_note.value:
             try:
                 parsed_content = json.loads(doc.content)
                 if document_set.application_notes is None:
@@ -293,25 +322,18 @@ def get_document_set(
             except json.JSONDecodeError as e:
                 logger.warning(f"[ParseError]: {doc.id} - {e!s}")
         else:
-            logger.warning(
-                "no DerivedContentTypes documentSet match for "  # TODO: Merge Messup
-            )
-    # TODO: Something got messed up in the merge
-    # if content_type["typeName"] == "codebase-file":
-    #     code_metadata = fetch_code_metadata(content)
-    #     code_content = None
-    #     if fetch_code_content:
-    #         code_content = fetch_code_content_from_s3(
-    #             relative_path=content.relative_path,
-    #             organization_id=organization_id,
-    #             codebase_id=codebase_id if codebase_id else str(content.codebase_id),
-    #             version_id=version_id,
-    #         )
-    #     document_set.code = Code(  # type: ignore
-    #         file_name=content.relative_path.split("/")[-1],
-    #         extension=content.relative_path.split(".")[-1],
-    #         content=code_content,
-    #         metadata=code_metadata,
-    #     )
+            logger.warning(f"no ContentKind documentSet match for {doc_type}")
+
+    if node.kind == NodeKind.CODEBASE_FILE:
+        code_metadata = fetch_code_metadata(node)
+        code_content = None
+        if fetch_code_content:
+            code_content = fetch_code_content_from_s3(node)
+        document_set.code = Code(  # type: ignore
+            file_name=node.relative_path.split("/")[-1],
+            extension=node.relative_path.split(".")[-1],
+            content=code_content,
+            metadata=code_metadata,
+        )
 
     return document_set

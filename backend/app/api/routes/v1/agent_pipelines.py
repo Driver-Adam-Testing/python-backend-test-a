@@ -59,12 +59,20 @@ def execute_agent_sequence(
     dependencies=[ContentReadonlyPermission],
 )
 def execute_agent_sequence_modal_async(
-    user: UserToken, input: PipelineInput, session: CurrentSession
+    user: UserToken, input: AgentRunRequest, session: CurrentSession
 ) -> DriverModalResponse:
-    input.scope.organization_id = user.organization_id
-    input.scope.user_id = user.user_id
+    pipeline_input = PipelineInput(
+        prompt=input.prompt,
+        context=input.context,
+        steps=input.steps,
+        scope=DataScope(
+            node_ids=input.node_ids,
+            organization_id=user.organization_id,
+            user_id=user.user_id,
+        ),
+    )
     modal_function = Function.lookup("agent", "run")
-    instance = modal_function.spawn(input)
+    instance = modal_function.spawn(pipeline_input)
     return DriverModalResponse(call_id=instance.object_id)
 
 
@@ -119,9 +127,18 @@ def get_batch_execution_results(
     dependencies=[ContentReadonlyPermission],
 )
 def execute_agent_sequence_modal_sync(
-    user: UserToken, input: PipelineInput
+    user: UserToken, input: AgentRunRequest
 ) -> PipelineResponse:
-    input.scope.organization_id = user.organization_id
+    # Transform AgentRunRequest to PipelineInput
+    pipeline_input = PipelineInput(
+        steps=input.steps,
+        scope=DataScope(
+            node_ids=input.node_ids,
+            organization_id=user.organization_id,
+            user_id=user.subject,
+        ),
+    )
+
     modal_function = Function.lookup("agent", "run")
-    result = modal_function.remote(input)
+    result = modal_function.remote(pipeline_input)
     return result

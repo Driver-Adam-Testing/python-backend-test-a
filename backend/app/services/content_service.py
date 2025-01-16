@@ -21,9 +21,7 @@ from app.repositories.base_repository import BaseRepository
 from app.schemas.content_schema import (
     BatchContentSourceAssociationResponse,
     ContentSourceAssociationItem,
-    ContentSourceResponse,
     ContentTagsResponse,
-    CreateContentRequest,
     DeleteDocumentSourceResponse,
     DownloadContentResponse,
     ListContentInput,
@@ -31,7 +29,6 @@ from app.schemas.content_schema import (
     ListContentResults,
     TagResult,
 )
-from app.services.utils.content_utils import get_content_name
 from app.utils.aws_s3 import (
     delete_file_from_s3,
     generate_org_get_presigned_url,
@@ -152,50 +149,6 @@ class ContentService:
             source_id=deleted_item.source_id,
             message="Document source disassociated successfully",
         )
-
-    def create_content(
-        self: "ContentService", organization_id: str, request: CreateContentRequest
-    ) -> DerivedContent:
-        logger.info(
-            f"Creating content for organization {organization_id} with input {request}"
-        )
-
-        if (
-            request.content_type != DerivedContentTypeNames.APPLICATION_NOTE.value
-            and request.content_type != DerivedContentTypeNames.TEMPLATE.value
-        ):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid content type"
-            )
-
-        default_workspace = self.workspace_repository.get_default_workspace(
-            organization_id
-        )
-
-        if not default_workspace:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Default workspace not found",
-            )
-
-        content_name = (
-            "Untitled"
-            if request.content_type == DerivedContentTypeNames.APPLICATION_NOTE.value
-            else "Untitled Template"
-        )
-
-        new_content = self.content_repository.create(
-            DerivedContent(
-                content_kind=request.content_type,
-                workspace_id=default_workspace.id,
-                relative_path="",
-                content="",
-                content_name=content_name,
-                misc_metadata={},
-                status=Enum_Derived_Content_Status.generation_complete,
-            )
-        )
-        return new_content
 
     def get_list_content(
         self: "ContentService", organization_id: str, search_input: ListContentInput
@@ -399,53 +352,6 @@ class ContentService:
 
         return statement
 
-    def get_content_sources(
-        self: "ContentService", content_id: UUID, organization_id: str
-    ) -> ContentSourceResponse:
-        logger.info(f"Fetching content sources for content {content_id}")
-
-        content = self.content_repository.get(content_id)
-        if not content or content.workspace.organization_id != organization_id:
-            logger.error(f"Content {content_id} not found")
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
-            )
-
-        sources = [link.source for link in content.source_links]
-
-        # If the source is associated with a codebase, get the codebase status and propagate to children
-
-        logger.info(f"Content sources resolved for content {content_id}")
-        source_results = [
-            ListContentResult(
-                id=source.id,
-                organization_id=source.workspace.organization_id,
-                content_kind=source.content_kind,
-                content_name=get_content_name(source),
-                workspace_id=source.workspace_id,
-                workspace_name=source.workspace.display_name,
-                source_content_id=source.source_content_id,
-                codebase_id=None,
-                codebase_name=None,
-                relative_path=source.relative_path,
-                content=source.content,
-                misc_metadata=source.misc_metadata,
-                status=source.status,
-                created_at=source.created_at,
-                updated_at=source.updated_at,
-                source_content=source.source_content,
-                order=source.order,
-                tags=source.tags,
-                source_links=source.source_links,
-                version_id=source.version_id,
-                version=source.inspection_version.version
-                if source.inspection_version
-                else None,
-            )
-            for source in sources
-        ]
-        return ContentSourceResponse(results=source_results)
-
     def get_content_by_id(
         self: "ContentService", content_id: UUID, organization_id: str
     ) -> DerivedContent:
@@ -462,29 +368,6 @@ class ContentService:
             )
 
         return content
-
-    def get_content_root_by_id(
-        self: "ContentService", content_id: UUID, user_org_id: str
-    ) -> DerivedContent:
-        """
-        Get the root codebase content record for a given content ID. this is need by the frontend to appropriately
-        add document sources.
-        """
-        logger.info(f"Fetching content by ID {content_id}")
-        content = self.content_repository.get(content_id)
-        if not content or content.workspace.organization_id != user_org_id:
-            logger.error(f"Content {content_id} not found")
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
-            )
-
-        parent = self.session.exec(
-            select(DerivedContent)
-            .where(DerivedContent.codebase_id == content.codebase_id)
-            .where(DerivedContent.content_kind == "codebase")
-        ).first()
-
-        return parent
 
     def edit_content(
         self: "ContentService",

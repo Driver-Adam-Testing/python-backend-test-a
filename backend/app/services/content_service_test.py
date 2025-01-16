@@ -242,19 +242,6 @@ def test_get_content_by_id_from_other_org(
         )
 
 
-def test_get_content_root_by_id(
-    content_service: ContentService,
-    current_user_with_org: UserToken,
-    codebase_file: DerivedContent,
-    codebase_content: DerivedContent,
-) -> None:
-    root_content = content_service.get_content_root_by_id(
-        codebase_file.id, current_user_with_org.organization_id
-    )
-    assert root_content is not None
-    assert root_content.codebase_id == codebase_file.codebase_id
-
-
 def test_get_content_root_by_id_from_other_org(
     content_service: ContentService,
     current_user_with_other_org: UserToken,

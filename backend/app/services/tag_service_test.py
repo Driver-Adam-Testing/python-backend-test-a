@@ -114,40 +114,6 @@ def delete_tag(tag_service: TagService, current_user_with_org: UserToken) -> Tag
 
 
 @pytest.fixture(scope="function")
-def codebase_content(
-    tag_service: TagService,
-    current_user_with_org: UserToken,
-    workspace: Workspace,
-    codebase: Codebase,
-) -> Generator[DerivedContent, None, None]:
-    workspace_id = workspace.id
-    codebase_id = codebase.id
-    content_type_id = (
-        tag_service.content_service.derived_content_type_repository.get_by_type_name(
-            DerivedContentTypeNames.CODEBASE.value
-        )
-    ).id
-    codebase_record = DerivedContent(
-        content_type_id=content_type_id,
-        workspace_id=workspace_id,
-        codebase_id=codebase_id,
-        relative_path=codebase.codebase_name,
-        misc_metadata={},
-        status=Enum_Derived_Content_Status.generation_complete,
-        created_at=datetime.now(),
-        updated_at=datetime.now(),
-    )
-    codebase_content = tag_service.content_service.content_repository.create(
-        codebase_record
-    )
-
-    try:
-        yield codebase_content
-    finally:
-        tag_service.content_service.content_repository.delete(codebase_content.id)
-
-
-@pytest.fixture(scope="function")
 def org_b_codebase_content(
     tag_service: TagService,
     current_user_with_org: UserToken,

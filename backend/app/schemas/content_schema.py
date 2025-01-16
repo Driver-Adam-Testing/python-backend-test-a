@@ -44,12 +44,12 @@ class ListContentResult(BaseModel):
     content_type_id: UUID | None = None
     content_type_name: str | None = None
     # All content must be in a workspace currently
-    workspace_id: UUID | None = None
+    workspace_id: None = None
     workspace_name: str | None = None
     content_name: str | None = None
     source_content_id: UUID | None = None
     # Content doesn't need to be associated with a codebase in our flat asset design
-    codebase_id: UUID | None = None
+    codebase_id: None = None
     codebase_name: str | None = None
     relative_path: str | None = None
     content: str | None = None
@@ -89,12 +89,6 @@ class BatchTagAssociationRequest(BaseModel):
 
 class BatchTagAssociationResponse(BaseModel):
     results: list[TagAssociationResponse]
-
-
-class CreateContentRequest(BaseModel):
-    workspace_id: UUID | None = None
-    codebase_id: UUID | None = None
-    content_type: str
 
 
 class ContentResultBase(BaseModel, Generic[DataT]):

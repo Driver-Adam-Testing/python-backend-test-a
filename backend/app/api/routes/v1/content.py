@@ -14,7 +14,6 @@ from app.schemas.content_schema import (
     BatchDeleteDocumentSourceResponse,
     ContentSourceResponse,
     ContentTagsResponse,
-    CreateContentRequest,
     DeleteContentSourcesRequest,
     DeleteDocumentSourceResponse,
     DownloadContentResponse,
@@ -201,31 +200,6 @@ def batch_associate_sources(
     return content_service.associate_sources_with_content(
         user.organization_id, content_id, content_source_associations.sources
     )
-
-
-@router.post(
-    "/",
-    summary="Create a blank application note or template.",
-    dependencies=[ContentEditorPermission],
-)
-def create_blank_document(
-    session: CurrentSession,
-    user: UserToken,
-    request: CreateContentRequest,
-) -> DerivedContent:
-    """
-    Create a blank application note.
-
-    Parameters:
-    - session: Current session object
-    - user: Current user object
-    - request: CreateContentRequest object containing the optional workspace_id and codebase_id and content_type
-
-    Returns:
-    - DerivedContent: Created content details
-    """
-    content_service = ContentService(session)
-    return content_service.create_content(user.organization_id, request)
 
 
 @router.delete(

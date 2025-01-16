@@ -49,9 +49,10 @@ def get_codebase_versions(
     offset: int = Query(default=0, ge=0),
 ) -> CodebaseVersionsResponse:
     # Find the primary asset that represents the codebase
+    primary_asset_id = codebase_id  # URL MISNOMER
     primary_asset = session.exec(
         select(PrimaryAsset).where(
-            PrimaryAsset.id == codebase_id,
+            PrimaryAsset.id == primary_asset_id,
             PrimaryAsset.organization_id == user.organization_id,
             PrimaryAsset.kind == PrimaryAssetKind.CODEBASE,
         )

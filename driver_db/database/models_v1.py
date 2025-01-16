@@ -48,8 +48,6 @@ class RuntimeLogAgentInstance(SQLModel, table=True):  # type: ignore
         ),
     )
     id: UUID | None = Field(default_factory=uuid.uuid4, primary_key=True)
-    workspace_id: str | None
-    codebase_id: str | None
     model: str
     messages: list["RuntimeLogAgentMessage"] = Relationship(
         back_populates="agent_instance"
@@ -160,8 +158,6 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
     )
 
     # Removing FKs from the following:
-    codebase_id: UUID | None
-    workspace_id: UUID | None
     content_type_id: UUID | None
     version_id: None | UUID
     content_kind: ContentKind | None = Field(

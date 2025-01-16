@@ -1,5 +1,4 @@
 import hashlib
-import uuid
 
 import boto3
 
@@ -18,16 +17,7 @@ def generate_get_presigned_url(key: str, bucket: str, expires: int = 3600) -> st
     )
 
 
-def get_presigned_url_from_content_information(
-    codebase_id: uuid.UUID, organization_id: str, relative_path: str
-) -> str:
-    org_id_hash = hashlib.sha256(organization_id.encode()).hexdigest()[:63]
-    object_key = f"{codebase_id}/{relative_path}"
-
-    return generate_get_presigned_url(key=object_key, bucket=org_id_hash)
-
-
-def get_presigned_url_without_codebase(organization_id: str, relative_path: str) -> str:
+def get_presigned_url(organization_id: str, path: str) -> str:
     org_id_hash = hashlib.sha256(organization_id.encode()).hexdigest()[:63]
 
-    return generate_get_presigned_url(key=relative_path, bucket=org_id_hash)
+    return generate_get_presigned_url(key=path, bucket=org_id_hash)

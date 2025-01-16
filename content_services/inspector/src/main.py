@@ -513,7 +513,6 @@ def onboard_and_inspect(
     archive_name: str,
     org_id: str,
     creator_id: str,
-    # _workspace_id: UUID,
     provider: str = "manual",
     version: str | None = None,  # this is the version string NOT the ID from our db
     repository_id: str | None = None,

@@ -173,10 +173,7 @@ class ContentService:
                     id=derived_content.id,
                     organization_id=organization_id,
                     content_name=derived_content.content_kind,
-                    workspace_id=None,
-                    workspace_name=None,
                     source_content_id=None,
-                    codebase_id=None,
                     codebase_name=None,
                     relative_path=derived_content.relative_path,
                     content=derived_content.content,
@@ -366,41 +363,6 @@ class ContentService:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
             )
-
-        return content
-
-    def edit_content(
-        self: "ContentService",
-        organization_id: str,
-        content_id: UUID,
-        new_content: dict,
-    ) -> DerivedContent:
-        logger.info(f"Editing content {content_id} for organization {organization_id}")
-
-        content = self.session.exec(
-            select(DerivedContent)
-            .where(DerivedContent.id == content_id)
-            .where(DerivedContent.workspace.has(organization_id=organization_id))
-        ).first()
-
-        if not content or content.workspace.organization_id != organization_id:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
-            )
-
-        if (
-            content.content_kind != DerivedContentTypeNames.APPLICATION_NOTE.value
-            and content.content_kind != DerivedContentTypeNames.TEMPLATE.value
-        ):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid content type"
-            )
-
-        content = self.content_repository.update(content, DerivedContent(**new_content))
-
-        logger.info(
-            f"Content {content_id} successfully edited for organization {organization_id}"
-        )
 
         return content
 

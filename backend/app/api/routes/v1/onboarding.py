@@ -21,7 +21,7 @@ class Onboarding(BaseModel):
 class OnboardingRequestBody(BaseModel):
     creator_id: str | None = None
     org_id: str | None = None
-    workspace_id: str | None = None
+    workspace_id: str | None = None  # CALLED VIA EXTERNAL SERVICE, INVESTIGATE
     download_url: str
     object_key: str
     repository_id: str | None = None
@@ -55,7 +55,6 @@ def trigger_onboarding(
         archive_name,
         trigger_body.org_id,
         trigger_body.creator_id,
-        # UUID(trigger_body.workspace_id),
         trigger_body.provider,
         trigger_body.version,
     )

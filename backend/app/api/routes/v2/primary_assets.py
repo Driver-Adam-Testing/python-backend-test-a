@@ -112,42 +112,25 @@ def delete_primary_asset(
         .where(PrimaryAsset.organization_id == user.organization_id)
     ).one_or_none()
 
+    session.delete(asset)
+    session.commit()
+
     if not asset:
         raise HTTPException(status_code=404, detail="Primary asset not found")
 
     org_id_hash = hashlib.sha256(user.organization_id.encode()).hexdigest()[:63]
-    s3_client = boto3.client(
+
+    prefix = f"{primary_asset_id}/"
+
+    s3 = boto3.resource(
         "s3",
         aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
         aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
         region_name=settings.AWS_REGION,
     )
-    bucket_name = org_id_hash
-    prefix = f"{primary_asset_id}/"
 
-    continuation_token: str | None = None
+    bucket = s3.Bucket(org_id_hash)
 
-    while True:
-        if continuation_token:
-            response = s3_client.list_objects_v2(
-                Bucket=bucket_name, Prefix=prefix, ContinuationToken=continuation_token
-            )
-        else:
-            response = s3_client.list_objects_v2(Bucket=bucket_name, Prefix=prefix)
-
-        if "Contents" in response:
-            delete_keys = {
-                "Objects": [{"Key": obj["Key"]} for obj in response["Contents"]]
-            }
-            s3_client.delete_objects(Bucket=bucket_name, Delete=delete_keys)
-
-        # If no more pages, break out of the loop
-        if not response.get("IsTruncated"):
-            break
-
-        continuation_token = response.get("NextContinuationToken")
-
-    session.delete(asset)
-    session.commit()
+    bucket.objects.filter(Prefix=prefix).delete()
 
     return asset

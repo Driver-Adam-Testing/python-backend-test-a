@@ -438,6 +438,30 @@ def get_file_content(path: Path) -> str:
     return Path(path).read_text()
 
 
+@app.function(
+    image=modal.Image.debian_slim(python_version="3.12")
+    .copy_local_dir(local_path="../../driver_db", remote_path="/driver_db")
+    .pip_install("/driver_db"),
+    secrets=[
+        modal.Secret.from_name("db"),
+    ],
+    proxy=modal.Proxy.from_name("pg-proxy")
+    if os.environ["MODAL_ENVIRONMENT"] != "staging"
+    else None,
+)
+def set_codebase_status_in_container(version_id: str, status: str) -> None:
+    """This container is needed because the local entrypoint can't run using remote packages/secrets"""
+    from database.db import engine
+    from database.models_v2 import Version
+    from database.models_v2_enums import VersionStatus
+    from sqlmodel import Session
+
+    with Session(engine) as session, session.begin():
+        version = session.get(Version, version_id)
+        version.status = VersionStatus(status)
+        session.add(version)
+
+
 @app.local_entrypoint()
 def main(
     version_id: str,
@@ -445,10 +469,17 @@ def main(
 ) -> None:
     """Resume or rerun inspector given a version"""
     inspection_mode = InspectionMode.from_str(mode)
-    inspect_db.remote(
-        version_id,
-        inspection_mode,
-    )
+    try:
+        inspect_db.remote(
+            version_id,
+            inspection_mode,
+        )
+    except Exception as e:
+        print(f"Error while processing version {version_id}: {e}")
+        set_codebase_status_in_container.remote(version_id, "GENERATION_ERROR")
+        raise
+    else:
+        set_codebase_status_in_container.remote(version_id, "GENERATION_COMPLETE")
 
 
 @app.function(
@@ -513,7 +544,6 @@ def onboard_and_inspect(
     archive_name: str,
     org_id: str,
     creator_id: str,
-    # _workspace_id: UUID,
     provider: str = "manual",
     version: str | None = None,  # this is the version string NOT the ID from our db
     repository_id: str | None = None,

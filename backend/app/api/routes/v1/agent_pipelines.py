@@ -127,9 +127,18 @@ def get_batch_execution_results(
     dependencies=[ContentReadonlyPermission],
 )
 def execute_agent_sequence_modal_sync(
-    user: UserToken, input: PipelineInput
+    user: UserToken, input: AgentRunRequest
 ) -> PipelineResponse:
-    input.scope.organization_id = user.organization_id
+    # Transform AgentRunRequest to PipelineInput
+    pipeline_input = PipelineInput(
+        steps=input.steps,
+        scope=DataScope(
+            node_ids=input.node_ids,
+            organization_id=user.organization_id,
+            user_id=user.subject,
+        ),
+    )
+
     modal_function = Function.lookup("agent", "run")
-    result = modal_function.remote(input)
+    result = modal_function.remote(pipeline_input)
     return result

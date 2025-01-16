@@ -103,7 +103,7 @@ def fetch_repos(session: Session, organization_id: str) -> list[dict[str, Any]]:
     gh_repository = GithubAppInstallationsRepository(session)
     github_installations = gh_repository.list_by_organization_id(organization_id)
 
-    results = []
+    all_results = []
     try:
         with httpx.Client() as client:
             for github_installation in github_installations:
@@ -123,8 +123,13 @@ def fetch_repos(session: Session, organization_id: str) -> list[dict[str, Any]]:
                 headers = {"Authorization": f"token {token}"}
                 page_count = 1
                 response = client.get(url, headers=headers)
-                for repo in response.json()["repositories"]:
-                    results.append(repo)
+                response.raise_for_status()
+                current_repos = response.json()["repositories"]
+                for repo in current_repos:
+                    repo["installation_id"] = (
+                        github_installation.github_app_installation_id
+                    )
+                all_results.extend(current_repos)
                 link_header: str = response.headers.get("link", None)
                 while link_header:
                     page_count = page_count + 1
@@ -141,22 +146,22 @@ def fetch_repos(session: Session, organization_id: str) -> list[dict[str, Any]]:
                     ]
                     has_next = False
                     for match in matches:
-                        url, rel = match.groups()
-                        if rel == "next" and url:
+                        next_url, rel = match.groups()
+                        if rel == "next" and next_url:
                             has_next = True
-                            response = client.get(url, headers=headers)
+                            response = client.get(next_url, headers=headers)
                             response.raise_for_status()
-                            results = results + response.json()["repositories"]
+                            current_repos = response.json()["repositories"]
+                            for repo in current_repos:
+                                repo["installation_id"] = (
+                                    github_installation.github_app_installation_id
+                                )
+                            all_results.extend(current_repos)
 
                     if not has_next:
-                        logger.debug("Does not have next url in link header, stopping.")
                         break
 
-                for result in results:
-                    result["installation_id"] = (
-                        github_installation.github_app_installation_id
-                    )
-        return results
+        return all_results
     except Exception as e:
         logger.error(f"Failed to fetch repositories: {e}")
         raise e

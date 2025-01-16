@@ -190,7 +190,6 @@ def fetch_default_branch_and_commit(org_name: str, repo: str, access_token: str)
 def generate_codebase_metadata(
     org_id: str,
     org_name: str,
-    workspace_id: str,
     repo: str,
     repo_id: str,
     owner: str,
@@ -204,7 +203,6 @@ def generate_codebase_metadata(
         "organization_id": org_id_hash,
         "org_bucket": org_id_hash,
         "org_name": org_name,
-        "workspace_id": workspace_id,
         "creator_id": owner,
         "file_path": upload_key,
         "codebase_name": repo,
@@ -248,7 +246,6 @@ def download_and_upload_repo(
     gh_org_name: str,
     owner: str,
     org_id: str,
-    workspace_id: str,
     repo: str,
     repo_id: str,
     access_token: str,
@@ -264,7 +261,6 @@ def download_and_upload_repo(
         metadata = generate_codebase_metadata(
             org_id,
             gh_org_name,
-            workspace_id,
             repo,
             repo_id,
             owner,

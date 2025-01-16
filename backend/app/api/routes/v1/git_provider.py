@@ -7,6 +7,7 @@ from datetime import datetime
 
 from database.models_v1 import GithubAppInstallation
 from database.models_v2 import PrimaryAsset
+from database.models_v2_enums import PrimaryAssetKind
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -266,6 +267,7 @@ def get_codebase(session: CurrentSession, org_id: str, repo_name: str) -> Primar
         select(PrimaryAsset).where(
             PrimaryAsset.organization_id == org_id,
             PrimaryAsset.display_name == repo_name,
+            PrimaryAsset.kind == PrimaryAssetKind.CODEBASE,
         )
     ).one_or_none()
     return primary_asset

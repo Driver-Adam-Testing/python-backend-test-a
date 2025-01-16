@@ -50,6 +50,7 @@ class PrimaryAsset(SQLModel, table=True):  # type: ignore
         sa_relationship_kwargs={
             "passive_deletes": True,
             "cascade": "all, delete-orphan",
+            "order_by": "desc(Version.updated_at)",
         },
     )
     tags: list["Tag"] = Relationship(  # noqa: F821

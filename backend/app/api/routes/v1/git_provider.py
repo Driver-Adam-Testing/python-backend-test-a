@@ -3,10 +3,11 @@ import hashlib
 import hmac
 import json
 import logging
-import uuid
 from datetime import datetime
 
-from database.models_v1 import DerivedContent, DerivedContentType, GithubAppInstallation
+from database.models_v1 import GithubAppInstallation
+from database.models_v2 import PrimaryAsset
+from database.models_v2_enums import PrimaryAssetKind
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -18,7 +19,6 @@ from app.core.config import settings
 from app.repositories.github_app_installations_repository import (
     GithubAppInstallationsRepository,
 )
-from app.repositories.workspace_repository import WorkspaceRepository
 from app.utils.aws_s3 import org_id_to_hash
 from app.utils.aws_secrets_manager import format_secret_key, write_secret
 from app.utils.gh_ops import (
@@ -104,24 +104,16 @@ def clone_repo(
     if provider != "github":
         raise NotImplementedError()
 
-    workspace_repo = WorkspaceRepository(session)
-    default_workspace = workspace_repo.get_default_workspace(
-        current_user.organization_id
-    )
-    if not default_workspace:
-        raise HTTPException(status_code=400, detail="Default workspace not found")
-
     if not verify_app_installation_access(
         session, current_user.organization_id, repo.metadata["installation_id"]
     ):
         logger.error(
-            f"User is not authorized to access Github installation id = {repo.metadata["installation_id"]} in organization {current_user.organization_id}"
+            f"User is not authorized to access Github installation id = {repo.metadata["installation_id"]} "
+            f"in organization {current_user.organization_id}"
         )
         raise HTTPException(
             status_code=403, detail="Unauthorized to access this installation ID."
         )
-
-    workspace_id = str(default_workspace.id)
 
     token = fetch_app_access_token(repo.metadata["installation_id"])
     upload_key = (
@@ -131,7 +123,6 @@ def clone_repo(
         gh_org_name=repo.org,
         owner=current_user.user_id,
         org_id=current_user.organization_id,
-        workspace_id=workspace_id,
         repo=repo.repo_name,
         repo_id=str(repo.metadata["id"]),
         access_token=token,
@@ -234,15 +225,11 @@ def handle_push_event(session: CurrentSession, body: dict) -> JSONResponse:
             status_code=status.HTTP_202_ACCEPTED, content={"message": ""}
         )
 
-    default_workspace = WorkspaceRepository(session).get_default_workspace(
-        gh_app_install.organization_id
-    )
-
-    codebase_content_record = get_codebase_content_record(
-        session, default_workspace.id, repo_name
-    )
-    if not codebase_content_record:
-        logger.warning("Codebase content record not found for repo: %s", repo_name)
+    codebase_asset = get_codebase(session, gh_app_install.organization_id, repo_name)
+    if not codebase_asset:
+        logger.warning(
+            "Codebase primary asset record not found for repo: %s", repo_name
+        )
         return JSONResponse(
             status_code=status.HTTP_202_ACCEPTED,
             content={"message": ""},
@@ -255,7 +242,6 @@ def handle_push_event(session: CurrentSession, body: dict) -> JSONResponse:
         gh_org_name=org_name,
         owner="",
         org_id=gh_app_install.organization_id,
-        workspace_id=str(default_workspace.id),
         repo=repo_name,
         repo_id=repo_id,
         access_token=token,
@@ -276,22 +262,15 @@ def handle_push_event(session: CurrentSession, body: dict) -> JSONResponse:
         )
 
 
-def get_codebase_content_record(
-    session: CurrentSession, default_workspace: uuid.UUID, repo_name: str
-) -> DerivedContent:
-    statement = (
-        select(DerivedContent)
-        .join(
-            DerivedContentType,
-            DerivedContent.content_type_id == DerivedContentType.id,
+def get_codebase(session: CurrentSession, org_id: str, repo_name: str) -> PrimaryAsset:
+    primary_asset = session.exec(
+        select(PrimaryAsset).where(
+            PrimaryAsset.organization_id == org_id,
+            PrimaryAsset.display_name == repo_name,
+            PrimaryAsset.kind == PrimaryAssetKind.CODEBASE,
         )
-        .where(
-            DerivedContentType.type_name == "codebase",
-            DerivedContent.workspace_id == default_workspace,
-            DerivedContent.relative_path == repo_name,
-        )
-    )
-    return session.exec(statement).first()
+    ).one_or_none()
+    return primary_asset
 
 
 def handle_ping_event() -> JSONResponse:

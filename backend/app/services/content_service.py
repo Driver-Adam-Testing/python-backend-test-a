@@ -17,14 +17,17 @@ from database.models_v1 import (
     TagContent,
     Workspace,
 )
-from database.models_v2 import Node, PrimaryAsset, Version
+from database.models_v2 import (
+    Node,
+    PrimaryAsset,
+    Version,
+)
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.selectable import Select
 from sqlmodel import Session, asc, desc, func, or_, select, text
 
-from app.api.routes.legacy.s3 import S3BucketAccess
 from app.core.logger import logger
 from app.repositories.base_repository import BaseRepository
 from app.repositories.workspace_repository import WorkspaceRepository
@@ -60,6 +63,7 @@ class ContentService:
         self.workspace_repository = WorkspaceRepository(session)
         self.document_source_repository = BaseRepository(session, DocumentSource)
         self.tag_content_repository = BaseRepository(session, TagContent)
+        self.node_repository = BaseRepository(session, Node)
 
     def associate_sources_with_content(
         self: "ContentService",
@@ -580,34 +584,30 @@ class ContentService:
         return content
 
     def get_content_download_url(
-        self, content_id: UUID, organization_id: str
+        self, node_id: UUID, organization_id: str
     ) -> DownloadContentResponse:
         """
         Get a presigned URL for downloading this content from S3
         """
-        logger.info(f"Fetching content by ID {content_id}")
+        logger.info(f"Fetching content by ID {node_id}")
 
-        content: DerivedContent | None = self.content_repository.get_by_conditions(
+        node: Node | None = self.node_repository.get_by_conditions(
             [
-                Workspace.organization_id == organization_id,
-                DerivedContent.id == content_id,
-                DerivedContent.content_kind
-                == DerivedContentTypeNames.SUPPLEMENTAL_DOCUMENT.value,
+                Node.id == node_id,
+                PrimaryAsset.organization_id == organization_id,
             ],
-            [Workspace],
+            [Version, PrimaryAsset],
         )
 
-        if not content or content.workspace.organization_id != organization_id:
-            logger.error(f"Content {content_id} not found or not downloadable")
+        if not node or node.version.primary_asset.organization_id != organization_id:
+            logger.error(f"Content {node_id} not found or not downloadable")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Content not found or not downloadable",
             )
 
         download_key = (
-            f"documents/{content.relative_path}"
-            if content.codebase_id is None
-            else f"{content.codebase_id}/{content.relative_path}"
+            f"{node.version.primary_asset_id}/{node.version_id}/{node.relative_path}"
         )
         logger.info(f"Trying download_key={download_key}")
         try:
@@ -616,7 +616,7 @@ class ContentService:
                     download_url=generate_org_get_presigned_url(
                         organization_id, download_key
                     ),
-                    content_name=content.content_name or "",
+                    content_name=node.version.primary_asset.display_name or "",
                 )
         except ClientError:
             logger.exception("Content not found or not downloadable")

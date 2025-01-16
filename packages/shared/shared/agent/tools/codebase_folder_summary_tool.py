@@ -1,6 +1,6 @@
 from database.db import get_session
-from database.models_v1 import DerivedContent, InspectionVersion
-from sqlalchemy.orm import selectinload
+from database.models_v1 import ContentKind, DerivedContent
+from database.models_v2 import Node
 from sqlmodel import select
 
 from shared.agent.agent_base import AgentBase
@@ -22,42 +22,16 @@ class CodebaseFolderSummaryTool(ToolStrict):
     codebase_directory_path: str
 
     def execute(self, agent: AgentBase) -> str:
-        agent.scope.authorize(self.codebase_directory_path)
+        scope = agent.scope.to_child_datascope([self.codebase_directory_path])
 
         with get_session() as session:
-            # COMMENT: This gets all InspectionVersion IDs that are NOT a previous_version.
-            # Hence, this is a list of all the most recent version Ids.
-            most_recent_versions_subquery = (
-                select(InspectionVersion.id)
-                .where(
-                    ~InspectionVersion.id.in_(
-                        select(InspectionVersion.previous_version_id).where(
-                            InspectionVersion.previous_version_id.isnot(None)
-                        )
-                    )
-                )
-                .subquery()
-            )
-
-            derived_content = session.exec(
+            stmt = (
                 select(DerivedContent)
-                .where(
-                    (DerivedContent.relative_path == self.codebase_directory_path)
-                    | (
-                        DerivedContent.relative_path
-                        == self.codebase_directory_path.rstrip("/")
-                    ),
-                    DerivedContent.content_type.has(type_name="long_description"),
-                    DerivedContent.workspace.has(
-                        organization_id=agent.scope.organization_id
-                    ),
-                    (
-                        DerivedContent.version_id.in_(most_recent_versions_subquery)
-                        | DerivedContent.version_id.is_(None)
-                    ),
-                )
-                .options(selectinload(DerivedContent.workspace))
-            ).all()
+                .join(Node)
+                .where(Node.id == scope.node_ids[0])
+                .where(DerivedContent.content_kind == ContentKind.LONG_DESCRIPTION)
+            )
+            derived_content = session.exec(stmt).first()
 
             if not derived_content:
                 return f"No content found for file path: {self.codebase_directory_path}"

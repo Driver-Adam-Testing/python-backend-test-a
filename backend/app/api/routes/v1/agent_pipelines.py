@@ -1,17 +1,34 @@
+from uuid import UUID
+
 from fastapi import APIRouter
 from modal import Function
 from modal.functions import FunctionCall
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from shared.interfaces.agents.pipeline_configuration import (
+    DataScope,
     PipelineInput,
     PipelineResponse,
+    PipelineStepConfiguration,
+    PipelineStepType,
+    PromptWithContext,
 )
 from shared.interfaces.request import DriverModalBatchRequest
 from shared.interfaces.response import DriverModalResponse
+from shared.pipelines.agents.execute import execute_sequence
 
 from app.api.auth import ContentEditorPermission, ContentReadonlyPermission, UserToken
+from app.api.session import CurrentSession
 
 router = APIRouter()
+
+
+class AgentRunRequest(PromptWithContext):
+    steps: list[PipelineStepConfiguration] = Field(
+        default_factory=lambda: [
+            PipelineStepConfiguration(step_type=PipelineStepType.DEFAULT)
+        ]
+    )
+    node_ids: list[UUID] | None = None
 
 
 @router.post(
@@ -19,12 +36,21 @@ router = APIRouter()
     summary="Start a modal instance of the execute Agent Sequence",
     dependencies=[ContentEditorPermission],
 )
-def execute_agent_sequence(user: UserToken, input: PipelineInput) -> PipelineResponse:
-    from shared.pipelines.agents.execute import execute_sequence
-
-    input.scope.organization_id = user.organization_id
-    input.scope.user_id = user.user_id
-    return execute_sequence(input)
+def execute_agent_sequence(
+    user: UserToken, session: CurrentSession, input: AgentRunRequest
+) -> PipelineResponse:
+    # TODO: authorize node_ids
+    pipeline_input = PipelineInput(
+        prompt=input.prompt,
+        context=input.context,
+        steps=input.steps,
+        scope=DataScope(
+            node_ids=input.node_ids,
+            organization_id=user.organization_id,
+            user_id=user.subject,
+        ),
+    )
+    return execute_sequence(pipeline_input)
 
 
 @router.post(
@@ -33,7 +59,7 @@ def execute_agent_sequence(user: UserToken, input: PipelineInput) -> PipelineRes
     dependencies=[ContentReadonlyPermission],
 )
 def execute_agent_sequence_modal_async(
-    user: UserToken, input: PipelineInput
+    user: UserToken, input: PipelineInput, session: CurrentSession
 ) -> DriverModalResponse:
     input.scope.organization_id = user.organization_id
     input.scope.user_id = user.user_id

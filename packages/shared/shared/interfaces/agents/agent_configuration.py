@@ -16,10 +16,11 @@ class AgentConfiguration(BaseModel):
     """
 
     model: str | None = None
+
     system_prompts: list[str] = []
     iterations: int = 1
     tool_names: list[str] = []
-    scope: DataScope = DataScope(paths=[], organization_id=None)
+    scope: DataScope | None = None
 
     @property
     def tools(self) -> list[type]:

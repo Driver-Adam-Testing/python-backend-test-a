@@ -20,13 +20,6 @@ def run_agent_default(
     for system_prompt in input.create_system_prompts():
         agent.add_message(system_prompt)
     agent.add_message(prompts.voice.software_engineer.MESSAGE)
-    # if input.scope.nodes and input.iterations > 1:
-    #     input.prompt.add_to_context(
-    #         {
-    #             "searchable_paths_and_root_directories": "These files and directories must match the beginning of any searches: "
-    #             + str(input.scope.paths)
-    #         }
-    #     )
     response = agent.invoke(str(input.prompt))
     return PipelineStepResponse(
         agent_id=agent.agent_id,

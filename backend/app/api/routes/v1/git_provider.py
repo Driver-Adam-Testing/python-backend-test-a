@@ -6,6 +6,8 @@ import logging
 from datetime import datetime
 
 from database.models_v1 import GithubAppInstallation
+from database.models_v2 import PrimaryAsset
+from database.models_v2_enums import PrimaryAssetKind
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -106,7 +108,8 @@ def clone_repo(
         session, current_user.organization_id, repo.metadata["installation_id"]
     ):
         logger.error(
-            f"User is not authorized to access Github installation id = {repo.metadata["installation_id"]} in organization {current_user.organization_id}"
+            f"User is not authorized to access Github installation id = {repo.metadata["installation_id"]} "
+            f"in organization {current_user.organization_id}"
         )
         raise HTTPException(
             status_code=403, detail="Unauthorized to access this installation ID."
@@ -222,6 +225,17 @@ def handle_push_event(session: CurrentSession, body: dict) -> JSONResponse:
             status_code=status.HTTP_202_ACCEPTED, content={"message": ""}
         )
 
+    codebase_asset = get_codebase_asset(
+        session, gh_app_install.organization_id, repo_name
+    )
+    if not codebase_asset:
+        logger.warning(
+            "Codebase primary asset record not found for repo: %s", repo_name
+        )
+        return JSONResponse(
+            status_code=status.HTTP_202_ACCEPTED,
+            content={"message": ""},
+        )
     upload_key = (
         f"codebases/{org_id_to_hash(gh_app_install.organization_id)}/{repo_name}.zip"
     )
@@ -248,6 +262,19 @@ def handle_push_event(session: CurrentSession, body: dict) -> JSONResponse:
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content={"message": ""}
         )
+
+
+def get_codebase_asset(
+    session: CurrentSession, org_id: str, repo_name: str
+) -> PrimaryAsset:
+    primary_asset = session.exec(
+        select(PrimaryAsset).where(
+            PrimaryAsset.organization_id == org_id,
+            PrimaryAsset.display_name == repo_name,
+            PrimaryAsset.kind == PrimaryAssetKind.CODEBASE,
+        )
+    ).one_or_none()
+    return primary_asset
 
 
 def handle_ping_event() -> JSONResponse:

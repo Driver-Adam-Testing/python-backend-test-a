@@ -5,9 +5,9 @@ from uuid import UUID
 from database.models_v1 import (
     DerivedContent,
     DocumentSource,
-    Enum_Derived_Content_Status,
     Tag,
 )
+from database.models_v2_enums import VersionStatus
 from pydantic import BaseModel
 from sqlmodel import SQLModel
 
@@ -51,7 +51,7 @@ class ListContentResult(BaseModel):
     relative_path: str | None = None
     content: str | None = None
     misc_metadata: dict | None = None
-    status: Enum_Derived_Content_Status | None = None
+    status: VersionStatus | None = None
     tags: list[Tag] | None = None
     source_links: list[DocumentSource] | None = None
     created_at: datetime | None = None

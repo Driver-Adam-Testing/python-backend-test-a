@@ -79,43 +79,9 @@ class Enum_Derived_Content_Status(str, enum.Enum):
     generation_error = "generation-error"
 
 
-# TODO: DELETE THIS TABLE
-@strawberry.enum
-class Enum_Codebase_Status(str, enum.Enum):
-    processing = "processing"
-    processing_complete = "processing-complete"
-    processing_error = "processing-error"
-    codebase_rejected = "codebase-rejected"
-
-    def into_dc_status(self) -> Enum_Derived_Content_Status:
-        match self:
-            case Enum_Codebase_Status.processing:
-                return Enum_Derived_Content_Status.generating
-            case Enum_Codebase_Status.processing_complete:
-                return Enum_Derived_Content_Status.generation_complete
-            case Enum_Codebase_Status.processing_error:
-                return Enum_Derived_Content_Status.generation_error
-            case _:
-                raise ValueError(f"No valid mapping for status: {self}")
-
-
 class DocumentSource(SQLModel, table=True):
     __tablename__ = "document_sources"
     """Link table between documents and their sources."""
-
-    document_id: None | uuid.UUID = Field(
-        default=None, foreign_key="derived_contents.id"
-    )
-    include: bool | None
-    source_id: None | uuid.UUID = Field(default=None, foreign_key="derived_contents.id")
-    document: "DerivedContent" = Relationship(
-        back_populates="source_links",
-        sa_relationship_kwargs={"foreign_keys": "DocumentSource.document_id"},
-    )
-    source: "DerivedContent" = Relationship(
-        back_populates="document_links",
-        sa_relationship_kwargs={"foreign_keys": "DocumentSource.source_id"},
-    )
 
     source_node_id: None | uuid.UUID = Field(
         default=None,
@@ -217,25 +183,11 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
             nullable=False,
         ),
     )
-    # source_content: Optional["DerivedContent"] = Relationship(
-    #     back_populates="derived_contents",
-    #     sa_relationship_kwargs={"remote_side": "DerivedContent.id"},
-    # )
-    # derived_contents: list["DerivedContent"] = Relationship(
-    #     back_populates="source_content"
-    # )
+
     order: int | None = Field(
         sa_column=Column(Integer, nullable=True, server_default=text("0"))
     )
-    document_links: list["DocumentSource"] = Relationship(
-        back_populates="source",
-        sa_relationship_kwargs={"foreign_keys": "DocumentSource.source_id"},
-    )
 
-    source_links: list["DocumentSource"] = Relationship(
-        back_populates="document",
-        sa_relationship_kwargs={"foreign_keys": "DocumentSource.document_id"},
-    )
     chunks_and_embeds: list["ChunkAndEmbedding"] = Relationship(
         back_populates="content"
     )

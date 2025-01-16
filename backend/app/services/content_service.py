@@ -3,7 +3,6 @@ from uuid import UUID
 
 import pypandoc
 from botocore.exceptions import ClientError
-from database.derived_content_types import DerivedContentTypeNames
 from database.models_v1 import (
     DerivedContent,
     DocumentSource,
@@ -30,7 +29,6 @@ from app.schemas.content_schema import (
     TagResult,
 )
 from app.utils.aws_s3 import (
-    delete_file_from_s3,
     generate_org_get_presigned_url,
     head_org_object,
 )
@@ -178,13 +176,13 @@ class ContentService:
                     relative_path=derived_content.relative_path,
                     content=derived_content.content,
                     misc_metadata=derived_content.misc_metadata,
-                    status=derived_content.status,
+                    status=derived_content.node.version.status,
                     created_at=derived_content.created_at,
                     updated_at=derived_content.updated_at,
                     source_content=None,
                     order=derived_content.order,
                     tags=[],
-                    source_links=derived_content.source_links,
+                    source_links=None,
                     version_id=None,
                     version=None,
                 )
@@ -461,20 +459,3 @@ def organization_bucket_from_organization_id(organization_id: str) -> str:
     Generate the organization bucket name from the organization ID
     """
     return hashlib.sha256(organization_id.encode()).hexdigest()[:63]
-
-
-def delete_from_remote_storage(content: DerivedContent, organization_id: str) -> None:
-    organization_bucket = organization_bucket_from_organization_id(organization_id)
-    if content.content_kind == DerivedContentTypeNames.CODEBASE_FILE.value:
-        key = f"{content.codebase_id}/source/{content.relative_path}"
-    else:
-        organization_bucket = organization_bucket_from_organization_id(organization_id)
-        key = (
-            content.relative_path
-            if content.relative_path.startswith("documents/")
-            else f"documents/{content.relative_path}"
-        )
-        logger.info(
-            f"Deleting content {key} from s3 storage in bucket {organization_bucket}"
-        )
-        delete_file_from_s3(key=key, bucket=organization_bucket)

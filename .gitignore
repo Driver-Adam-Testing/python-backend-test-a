@@ -183,3 +183,5 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 /content_services/pdf_preprocessing/modal-secrets.sh
+dev3_db_dump.sql
+local_db_backup.sql

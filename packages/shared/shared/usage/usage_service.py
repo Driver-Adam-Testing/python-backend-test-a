@@ -210,7 +210,7 @@ class UsageService:
 
         for sesh in onboarding_sessions:
             meta = sesh.session_metadata
-            content_name = meta.get("content_name")
+            content_name = meta.get("content_name", "Unknown")
             onboarding_usage_event = next(
                 event
                 for event in onboarding_usage_events

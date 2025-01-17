@@ -325,6 +325,7 @@ class InspectorRun(SQLModel, table=True):
     version_id: UUID = Field(
         foreign_key="v2_version.id",
         nullable=True,  # TODO make non-nullable after migration
+        ondelete="SET NULL",
     )
     created_at: None | datetime = Field(
         sa_column=Column(

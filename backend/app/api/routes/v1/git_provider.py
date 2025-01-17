@@ -225,7 +225,9 @@ def handle_push_event(session: CurrentSession, body: dict) -> JSONResponse:
             status_code=status.HTTP_202_ACCEPTED, content={"message": ""}
         )
 
-    codebase_asset = get_codebase(session, gh_app_install.organization_id, repo_name)
+    codebase_asset = get_codebase_asset(
+        session, gh_app_install.organization_id, repo_name
+    )
     if not codebase_asset:
         logger.warning(
             "Codebase primary asset record not found for repo: %s", repo_name
@@ -262,7 +264,9 @@ def handle_push_event(session: CurrentSession, body: dict) -> JSONResponse:
         )
 
 
-def get_codebase(session: CurrentSession, org_id: str, repo_name: str) -> PrimaryAsset:
+def get_codebase_asset(
+    session: CurrentSession, org_id: str, repo_name: str
+) -> PrimaryAsset:
     primary_asset = session.exec(
         select(PrimaryAsset).where(
             PrimaryAsset.organization_id == org_id,

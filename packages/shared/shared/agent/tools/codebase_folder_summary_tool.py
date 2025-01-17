@@ -42,19 +42,17 @@ class CodebaseFolderSummaryTool(ToolStrict):
                 formatted_result = f"""<result>
                     <content>{content.content}</content>
                     <content_type>long_description</content_type>
-                    <path>{content.relative_path}</path>
+                    <path>{content.node.relative_path}</path>
                 </result>"""
                 formatted_results.append(formatted_result.strip())
 
                 search_result = SearchResult(
                     content=content.content,
                     score=0.0,
+                    relative_path=content.node.relative_path,
+                    version_display_name=content.node.version.display_name,
                     metadata={
                         "content_type": "long_description",
-                        "path": content.relative_path,
-                        "relative_path": content.relative_path,
-                        "codebase_id": content.codebase_id,
-                        "workspace_id": content.workspace_id,
                     },
                 )
                 search_results.append(search_result)

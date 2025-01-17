@@ -1,7 +1,7 @@
 from datetime import datetime
 
 import boto3
-from database.models_v1 import Codebase, UsageEvent, UsageEventType, UsageSession
+from database.models_v1 import UsageEvent, UsageEventType, UsageSession
 from sqlmodel import Session, select
 
 from shared.interfaces.usage.event_metadata import (
@@ -25,7 +25,6 @@ class UsageService:
         self.session = session
         self.usage_event_repository = UsageEventRepository(session)
         self.usage_session_repository = BaseRepository(session, UsageSession)
-        self.codebase_repository = BaseRepository(session, Codebase)
         self.aws_client = aws_client
 
     def issue_usage_credits(
@@ -211,26 +210,16 @@ class UsageService:
 
         for sesh in onboarding_sessions:
             meta = sesh.session_metadata
-            codebase_id = meta.get("content_id")
-            content_name = meta.get("content_name")
+            content_name = meta.get("content_name", "Unknown")
             onboarding_usage_event = next(
                 event
                 for event in onboarding_usage_events
                 if event.session_id == sesh.id
             )
-            codebase = self.codebase_repository.get(codebase_id)
-            if not codebase:
-                print(f"Codebase not found for id: {codebase_id}")
-                asset_name = (
-                    f"{content_name} (deleted)"
-                    if content_name
-                    else "(Deleted Codebase)"
-                )
-            else:
-                asset_name = codebase.codebase_name
+
             charges.append(
                 UsageCharge(
-                    asset_name=asset_name,
+                    asset_name=content_name,
                     event_type=UsageEventType.ONBOARDING_USAGE_DEBIT,
                     timestamp=onboarding_usage_event.timestamp,
                     bytes=onboarding_usage_event.bytes_in,

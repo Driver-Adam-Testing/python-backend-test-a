@@ -4,21 +4,16 @@ from datetime import datetime
 
 import strawberry
 from app.api.routes.legacy.api_types import (
-    CodebaseResults,  # type: ignore
     GitProvider,
     GitRepository,
-    OrganizationResult,  # type: ignore
 )
 from app.api.routes.legacy.application_note import (
     ApplicationNoteEditResponse,
-    ApplicationNoteResponse,
     application_note_edit,
-    get_application_note,
 )
 from app.api.routes.legacy.document_set import DocumentSet, get_document_set
 from app.api.routes.legacy.orm_ops import (
     check_access,
-    get_codebase_by_id,
 )
 from app.api.routes.legacy.scalars import ID, NodeType
 from app.api.routes.legacy.tree import FlatNode, get_codebase_tree
@@ -26,9 +21,7 @@ from app.repositories.github_app_installations_repository import (
     GithubAppInstallationsRepository,
 )
 from app.utils.gh_ops import fetch_repos
-from database.models_v1 import Workspace
 from graphql import GraphQLError
-from sqlmodel import select
 from strawberry.types import Info
 from strawberry.types.nodes import Selection
 
@@ -58,44 +51,23 @@ def is_code_content_requested(info: Info) -> bool:
 
 
 @strawberry.type
+class OrganizationResult:
+    id: str
+    name: str
+    display_name: str
+    workspaces: list[str]
+
+
+@strawberry.type
 class Query:
     @strawberry.field
     def organization(self, info: Info, id: str) -> OrganizationResult:
-        session = info.context.session
-        if info.context.user.organization_id != id:
-            raise GraphQLError(
-                "Organization not found", extensions={"code": "NOT_FOUND"}
-            )
-
-        workspaces = session.exec(
-            select(Workspace).where(
-                Workspace.organization_id == info.context.user.organization_id
-            )
-        ).all()
-
         return OrganizationResult(
             id=info.context.user.organization_id,
             name=info.context.user.organization_display_name,
             display_name=info.context.user.organization_display_name,
-            workspaces=list(workspaces),
+            workspaces=[],
         )
-
-    @strawberry.field
-    def codebase(self, info: Info, id: ID | None = None) -> CodebaseResults:
-        session = info.context.session
-        user_org_id = info.context.user.organization_id
-        if id is None:
-            raise GraphQLError(
-                "id must not be None", extensions={"code": "BAD_REQUEST"}
-            )
-        if not check_access(session, user_org_id, codebase_id=str(id)):
-            raise GraphQLError(
-                "Access denied to the codebase", extensions={"code": "NOT_FOUND"}
-            )
-        codebase = get_codebase_by_id(session, str(id))
-        if codebase is None:
-            raise GraphQLError("Codebase not found", extensions={"code": "NOT_FOUND"})
-        return codebase
 
     @strawberry.field
     def documentSet(
@@ -130,25 +102,6 @@ class Query:
             fetch_code_content,
             versionId,
         )
-
-    @strawberry.field
-    def applicationNote(
-        self, info: Info, id: ID | None = None
-    ) -> ApplicationNoteResponse:
-        session = info.context.session
-        if id is not None:
-            id_str = str(id)
-        else:
-            raise GraphQLError(
-                "id must not be None", extensions={"code": "BAD_REQUEST"}
-            )
-        organization_id = info.context.user.organization_id
-        derived_content_id = id_str
-        if not check_access(
-            session, organization_id, derived_content_id=derived_content_id
-        ):
-            raise GraphQLError("Access denied", extensions={"code": "NOT_FOUND"})
-        return get_application_note(id_str, session, info.context.user.organization_id)
 
     @strawberry.field
     def tree(

@@ -74,7 +74,7 @@ def create_and_embed_pdf_summaries(node_id: str) -> None:
     from shared.chunking.text_splitter import split_text
     from shared.embedding.text_embedder import batch_embed_text
     from shared.file_storage.s3 import (
-        get_presigned_url_without_codebase,
+        get_presigned_url,
     )
     from shared.pipelines.process_file.process_file_pdf import run_process_pdf
     from sqlalchemy.orm import selectinload
@@ -90,19 +90,10 @@ def create_and_embed_pdf_summaries(node_id: str) -> None:
                 .options(selectinload(Node.version).selectinload(Version.primary_asset))
             ).one()
 
-            # this document is not associated with a codebase
-            presigned_url = get_presigned_url_without_codebase(
+            presigned_url = get_presigned_url(
                 organization_id=node.version.primary_asset.organization_id,
-                relative_path=f"{node.version.primary_asset_id}/{node.version_id}/{node.relative_path}",
+                path=f"{node.version.primary_asset_id}/{node.version_id}/{node.relative_path}",
             )
-            # TODO: do we support this right now?
-            # if content.codebase_id is None:
-            # else:
-            #     presigned_url = get_presigned_url_from_content_information(
-            #         codebase_id=content.codebase_id,
-            #         organization_id=content.workspace.organization_id,
-            #         relative_path=content.relative_path,
-            #     )
 
         response = requests.get(presigned_url)
         print(str(presigned_url))

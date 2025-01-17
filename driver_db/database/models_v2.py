@@ -112,6 +112,7 @@ class Version(SQLModel, table=True):  # type: ignore
             "primaryjoin": "and_(Version.id == Node.version_id)",
             "order_by": "func.length(Node.relative_path)",
             "uselist": False,
+            "viewonly": True,
         }
     )
 

@@ -14,15 +14,12 @@ from app.schemas.content_schema import (
     BatchDeleteDocumentSourceResponse,
     ContentSourceResponse,
     ContentTagsResponse,
-    CreateContentRequest,
     DeleteContentSourcesRequest,
     DeleteDocumentSourceResponse,
     DownloadContentResponse,
     ExportSingleRequest,
     ListContentInput,
     ListContentResults,
-    ListContentTypesInput,
-    ListContentTypesResults,
 )
 from app.services.content_service import ContentService
 
@@ -73,37 +70,6 @@ def list_content(
         ),
     )
     return results
-
-
-@router.get(
-    "/types", summary="List content types", dependencies=[ContentReadonlyPermission]
-)
-def get_list_content_types(
-    session: CurrentSession,
-    limit: int | None = 20,
-    offset: int | None = 0,
-    sort_by: str | None = None,
-    sort_direction: str | None = "ASC",
-) -> ListContentTypesResults:
-    """
-    List content types.
-
-    Parameters:
-    - session: Current session object
-    - limit: Maximum number of items to return
-    - offset: Number of items to skip
-    - sort_by: Field to sort by
-    - sort_direction: Direction to sort (ASC or DESC)
-
-    Returns:
-    - ListContentTypesResults: Results of the content types list query
-    """
-    content_service = ContentService(session)
-    return content_service.get_list_content_types(
-        ListContentTypesInput(
-            limit=limit, offset=offset, sort_by=sort_by, sort_direction=sort_direction
-        )
-    )
 
 
 @router.get(
@@ -234,31 +200,6 @@ def batch_associate_sources(
     return content_service.associate_sources_with_content(
         user.organization_id, content_id, content_source_associations.sources
     )
-
-
-@router.post(
-    "/",
-    summary="Create a blank application note or template.",
-    dependencies=[ContentEditorPermission],
-)
-def create_blank_document(
-    session: CurrentSession,
-    user: UserToken,
-    request: CreateContentRequest,
-) -> DerivedContent:
-    """
-    Create a blank application note.
-
-    Parameters:
-    - session: Current session object
-    - user: Current user object
-    - request: CreateContentRequest object containing the optional workspace_id and codebase_id and content_type
-
-    Returns:
-    - DerivedContent: Created content details
-    """
-    content_service = ContentService(session)
-    return content_service.create_content(user.organization_id, request)
 
 
 @router.delete(

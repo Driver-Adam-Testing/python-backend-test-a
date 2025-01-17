@@ -23,9 +23,20 @@ def get_url() -> str:
 
 
 def include_object(
-    object: any, name: str, type_: str, reflected: any, compare_to: any
+    object_: any, name: str, type_: str, reflected: any, compare_to: any
 ) -> bool:
-    return not (type_ == "table" and name == "v2_full_node")
+    print(name)
+    # If it's a table AND named exactly what we want to skip, return False
+    if type_ == "table" and name == "v2_full_node":
+        return False
+    # If it's an index AND named exactly what we want to skip, return False
+    if (
+        type_ == "index"
+        and name == "ix_chunkandembedding_text_embedding_3_small_vector_l2_ops"
+    ):
+        return False
+    # Otherwise, return True so Alembic processes it normally
+    return True
 
 
 def run_migrations_offline() -> None:

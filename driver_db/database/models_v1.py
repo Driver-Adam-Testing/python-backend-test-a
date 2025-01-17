@@ -158,7 +158,7 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
         sa_column=Column(sqlalchemy.Text, nullable=True), default=None
     )
     misc_metadata: dict | None = Field(  # type: ignore
-        sa_column=Column("metadata", JSONB, nullable=True), default=None, index=True
+        sa_column=Column("metadata", JSONB, nullable=True), default=None
     )
 
     created_at: None | datetime = Field(
@@ -240,8 +240,11 @@ class Tag(SQLModel, table=True):  # type: ignore
     organization_id: str
     type: str = Field(
         max_length=255,
-        sa_column=sqlalchemy.Column(sqlalchemy.String(255), nullable=False),
-        index=True,
+        sa_column=sqlalchemy.Column(
+            sqlalchemy.String(255),
+            nullable=False,
+            index=True,
+        ),
     )
     created_at: None | datetime = Field(
         sa_column=Column(

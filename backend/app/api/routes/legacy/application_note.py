@@ -2,12 +2,11 @@ import json
 from enum import Enum
 
 import strawberry
-from modal.functions import FunctionCall
-from sqlmodel import Session
-
 from app.api.routes.legacy.orm_ops import get_derived_content_by_id
 from app.api.routes.legacy.scalars import JSON
 from app.core.logger import logger
+from modal.functions import FunctionCall
+from sqlmodel import Session
 
 
 @strawberry.type
@@ -22,7 +21,9 @@ class ApplicationNoteResponse:
     generation_timestamp: str | None = None
 
 
-def get_application_note(id: str, session: Session, organization_id: str):
+def get_application_note(
+    id: str, session: Session, organization_id: str
+) -> ApplicationNoteResponse:
     maybe_doc = get_derived_content_by_id(session, id)
     print(f"not using {organization_id} in input")
     if not maybe_doc:
@@ -40,7 +41,7 @@ def get_application_note(id: str, session: Session, organization_id: str):
     if parsed_content:
         note = ApplicationNoteResponse(
             id=str(doc.id),
-            status=doc.status,
+            status="GENERATION_COMPLETE",
             prompt=parsed_content.get("description", ""),
             name=parsed_content.get("name", ""),
             content=parsed_content.get("content", ""),

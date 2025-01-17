@@ -283,6 +283,7 @@ class ChunkAndEmbedding(SQLModel, table=True):  # type: ignore
         foreign_key="derived_contents.id",
         nullable=False,
         index=True,
+        ondelete="CASCADE",
     )
     content: DerivedContent | None = Relationship(back_populates="chunks_and_embeds")
     text: str

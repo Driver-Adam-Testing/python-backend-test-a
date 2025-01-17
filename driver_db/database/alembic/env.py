@@ -25,8 +25,7 @@ def get_url() -> str:
 def include_object(
     object_: any, name: str, type_: str, reflected: any, compare_to: any
 ) -> bool:
-    if type_ == "table" and name == "v2_full_node":
-        return False
+    # NOTE: Manually managed indexes are ignored by alembic
     if type_ == "index" and name in [
         "ix_chunkandembedding_text_embedding_3_small_vector_l2_ops",
         "ix_chunkandembedding___ts_vector__",

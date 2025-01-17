@@ -123,8 +123,6 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
     )
 
     # Removing FKs from the following:
-    content_type_id: UUID | None
-    version_id: None | UUID
     content_kind: ContentKind | None = Field(
         sa_column=Column(
             String,
@@ -133,7 +131,6 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
         ),
         default=None,
     )
-    source_content_id: UUID | None
     # Content doesn't need to be associated with a codebase in our flat asset design. But for now, we keep
     # all source contents and derived contents for a codebase associated with the codebase. PDFs and other docs,
     # however, won't have a codebase ID -- just a workspace ID, since we are keeping workspaces for now.

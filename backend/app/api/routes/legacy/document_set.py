@@ -299,7 +299,7 @@ def get_document_set(
                 document_set.application_notes.append(
                     ApplicationNote(
                         id=str(doc.id),
-                        status=doc.status if doc.status else "",
+                        status="",
                         prompt=parsed_content.get("description", ""),
                         name=parsed_content.get("name", ""),
                         content=parsed_content.get("content", ""),

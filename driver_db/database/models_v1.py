@@ -12,7 +12,6 @@ from sqlalchemy import (
     Computed,
     Connection,
     DateTime,
-    Enum,
     Index,
     Integer,
     String,
@@ -153,22 +152,15 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
     content: None | str = Field(
         sa_column=Column(sqlalchemy.Text, nullable=True), default=None
     )
+
+    # TODO: Get rid of this?
     content_name: None | str = Field(
         sa_column=Column(sqlalchemy.Text, nullable=True), default=None
     )
     misc_metadata: dict | None = Field(  # type: ignore
-        sa_column=Column("metadata", JSONB, nullable=True), default=None
+        sa_column=Column("metadata", JSONB, nullable=True), default=None, index=True
     )
-    status: Enum_Derived_Content_Status | None = Field(
-        sa_column=sqlalchemy.Column(
-            Enum(
-                Enum_Derived_Content_Status,
-                values_callable=lambda x: [e.value for e in x],
-            ),
-            nullable=True,
-        ),
-        default=None,
-    )
+
     created_at: None | datetime = Field(
         sa_column=Column(
             DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -249,6 +241,7 @@ class Tag(SQLModel, table=True):  # type: ignore
     type: str = Field(
         max_length=255,
         sa_column=sqlalchemy.Column(sqlalchemy.String(255), nullable=False),
+        index=True,
     )
     created_at: None | datetime = Field(
         sa_column=Column(

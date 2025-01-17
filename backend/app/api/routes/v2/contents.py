@@ -80,7 +80,6 @@ def create_derived_content(
         content=payload.content,
         content_name=payload.content_name,
         misc_metadata=payload.misc_metadata,
-        status=payload.status,
         order=payload.order,
     )
     session.add(new_content)

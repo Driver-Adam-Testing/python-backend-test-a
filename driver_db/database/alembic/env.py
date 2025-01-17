@@ -23,9 +23,18 @@ def get_url() -> str:
 
 
 def include_object(
-    object: any, name: str, type_: str, reflected: any, compare_to: any
+    object_: any, name: str, type_: str, reflected: any, compare_to: any
 ) -> bool:
-    return not (type_ == "table" and name == "v2_full_node")
+    # NOTE: Manually managed indexes are ignored by alembic
+    if type_ == "index" and name in [
+        "ix_chunkandembedding_text_embedding_3_small_vector_l2_ops",
+        "ix_chunkandembedding___ts_vector__",
+    ]:
+        return False
+    if type_ == "column" and name == "__ts_vector__":
+        return False
+    # Otherwise, return True so Alembic processes it normally
+    return True
 
 
 def run_migrations_offline() -> None:

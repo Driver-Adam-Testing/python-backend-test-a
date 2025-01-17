@@ -12,7 +12,6 @@ from sqlalchemy import (
     Computed,
     Connection,
     DateTime,
-    Enum,
     Index,
     Integer,
     String,
@@ -124,8 +123,6 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
     )
 
     # Removing FKs from the following:
-    content_type_id: UUID | None
-    version_id: None | UUID
     content_kind: ContentKind | None = Field(
         sa_column=Column(
             String,
@@ -134,7 +131,6 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
         ),
         default=None,
     )
-    source_content_id: UUID | None
     # Content doesn't need to be associated with a codebase in our flat asset design. But for now, we keep
     # all source contents and derived contents for a codebase associated with the codebase. PDFs and other docs,
     # however, won't have a codebase ID -- just a workspace ID, since we are keeping workspaces for now.
@@ -153,22 +149,15 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
     content: None | str = Field(
         sa_column=Column(sqlalchemy.Text, nullable=True), default=None
     )
+
+    # TODO: Get rid of this?
     content_name: None | str = Field(
         sa_column=Column(sqlalchemy.Text, nullable=True), default=None
     )
     misc_metadata: dict | None = Field(  # type: ignore
         sa_column=Column("metadata", JSONB, nullable=True), default=None
     )
-    status: Enum_Derived_Content_Status | None = Field(
-        sa_column=sqlalchemy.Column(
-            Enum(
-                Enum_Derived_Content_Status,
-                values_callable=lambda x: [e.value for e in x],
-            ),
-            nullable=True,
-        ),
-        default=None,
-    )
+
     created_at: None | datetime = Field(
         sa_column=Column(
             DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -248,7 +237,11 @@ class Tag(SQLModel, table=True):  # type: ignore
     organization_id: str
     type: str = Field(
         max_length=255,
-        sa_column=sqlalchemy.Column(sqlalchemy.String(255), nullable=False),
+        sa_column=sqlalchemy.Column(
+            sqlalchemy.String(255),
+            nullable=False,
+            index=True,
+        ),
     )
     created_at: None | datetime = Field(
         sa_column=Column(
@@ -287,6 +280,7 @@ class ChunkAndEmbedding(SQLModel, table=True):  # type: ignore
         foreign_key="derived_contents.id",
         nullable=False,
         index=True,
+        ondelete="CASCADE",
     )
     content: DerivedContent | None = Relationship(back_populates="chunks_and_embeds")
     text: str

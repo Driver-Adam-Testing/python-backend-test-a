@@ -21,4 +21,5 @@ RUN apt-get purge -y --auto-remove build-essential \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /driver_db/database
-CMD [ "/bin/sh", "-c", "poetry run alembic upgrade head" ]
+#CMD [ "/bin/sh", "-c", "poetry run alembic upgrade head" ]
+CMD [ "/bin/sh", "-c", "date" ]

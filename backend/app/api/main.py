@@ -7,7 +7,6 @@ from app.api.routes.v1 import (
     content,
     git_provider,
     healthcheck,
-    instructions,
     onboarding,
     organization,
     search,
@@ -16,6 +15,23 @@ from app.api.routes.v1 import (
     upload,
     usage,
     user,
+)
+
+# ruff: noqa: F401
+from app.api.routes.v2 import (
+    contents,
+    convenience_endpoints,
+    document_sources,
+    nodes,
+    primary_asset_tags,
+    primary_assets,
+    versions,
+)
+from app.api.routes.v2 import (
+    router as v2_router,
+)
+from app.api.routes.v2 import (
+    tags as v2_tags,
 )
 from app.core.config import settings
 
@@ -33,9 +49,6 @@ api_router.include_router(search.router, prefix="/search", tags=["search"])
 api_router.include_router(content.router, prefix="/content", tags=["content"])
 api_router.include_router(codebase.router, prefix="/codebases", tags=["codebase"])
 api_router.include_router(tags.router, prefix="/tags", tags=["tags"])
-api_router.include_router(
-    instructions.router, prefix="/instructions", tags=["instructions"]
-)
 api_router.include_router(upload.router, prefix="/upload", tags=["upload"])
 api_router.include_router(
     agent_pipelines.router, prefix="/agent_pipelines", tags=["agent_pipelines"]
@@ -45,6 +58,7 @@ api_router.include_router(user.router, prefix="/user", tags=["user"])
 api_router.include_router(
     organization.router, prefix="/organization", tags=["organization"]
 )
+api_router.include_router(v2_router.router, prefix="/node", tags=["node"])
 
 if settings.ENVIRONMENT != "production":
     api_router.include_router(

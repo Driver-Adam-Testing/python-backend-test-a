@@ -36,9 +36,13 @@ def create_dependency_graph(
     project_name_to_project_dir = {}
 
     for pyproject_path in pyproject_files:
-        project_name, dependencies = extract_project_info(pyproject_path)
-        project_name_to_project_dir[project_name] = pyproject_path.parent
-        dependency_graph[project_name] = dependencies
+        try:
+            project_name, dependencies = extract_project_info(pyproject_path)
+            project_name_to_project_dir[project_name] = pyproject_path.parent
+            dependency_graph[project_name] = dependencies
+        except KeyError as e:
+            print(f"Warning: {e} in {pyproject_path}")
+            continue
 
     project_name_to_project_deps = {
         project: [dep for dep in deps if dep in dependency_graph]

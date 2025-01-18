@@ -1,19 +1,24 @@
+import logging
 import re
+from uuid import UUID
 
 from database.db import get_session
-from database.models_v1 import (
-    ChunkAndEmbedding,
-    DerivedContent,
-    DerivedContentType,
-    InspectionVersion,
-    Workspace,
-)
+from database.models_v1 import ChunkAndEmbedding, ContentKind, DerivedContent
+from database.models_v2 import Node, PrimaryAsset, Version
 from rank_bm25 import BM25Okapi
-from sqlmodel import Session, asc, or_, select
+from sqlalchemy import Select
+from sqlalchemy.orm import aliased, selectinload
+from sqlmodel import Session, and_, asc, select
 
 from shared.embedding.text_embedder import batch_embed_text
-from shared.interfaces.search import SearchInput, SearchResult, SearchResults
+from shared.interfaces.search import (
+    SearchAlgorithm,
+    SearchInput,
+    SearchResult,
+    SearchResults,
+)
 
+# ---- Constants ----
 SEMANTIC_WEIGHT = 1.0
 BM25_WEIGHT = 1.0
 MAX_BM25_SCORE = 6.0
@@ -21,289 +26,363 @@ SEMANTIC_SCORE_IGNORE_THRESHOLD = 1.25
 CHARS_PER_TOKEN_APPROXIMATION = 2.5
 
 
+# ---- Utility Functions ----
+def tokenize_for_bm25(text: str) -> list[str]:
+    """
+    Tokenize a given text to prepare it for BM25 scoring.
+
+    :param text: The input text.
+    :return: A list of tokens.
+    """
+    return re.findall(r"\b[\w_]+(?:'[\w_]+)?\b", text.lower())
+
+
 def get_bm25_scores(query: str, texts: list[str]) -> list[float]:
-    def tokenize_for_bm25(text: str) -> any:
-        return re.findall(r"\b[\w_]+(?:'[\w_]+)?\b", text.lower())
+    """
+    Compute BM25 scores for a set of texts against a given query.
 
+    :param query: The search query string.
+    :param texts: List of documents to score.
+    :return: A list of BM25 scores, in the same order as texts.
+    """
     tokenized_query = tokenize_for_bm25(query)
-    tokenized_text = [tokenize_for_bm25(text) for text in texts]
-    bm25_text = BM25Okapi(tokenized_text)
-    text_scores = bm25_text.get_scores(tokenized_query)
-
-    return text_scores
+    tokenized_docs = [tokenize_for_bm25(doc) for doc in texts]
+    bm25_model = BM25Okapi(tokenized_docs)
+    return bm25_model.get_scores(tokenized_query)
 
 
 def overall_score(
     semantic_score: float | None = None, bm25_score: float | None = None
 ) -> float:
-    # Normalize the semantic score to be between 0 and 1, cube it to exaggerate distance from 1.0
-    normalized_semantic_score = (
-        max(0, (1 - abs(1 - semantic_score)) ** 3)
-        if semantic_score is not None
-        else None
+    """
+    Compute the overall score from semantic and BM25 scores.
+    - Semantic score is normalized to [0,1], then cubed to emphasize distance from 1.0.
+    - BM25 is a relative score, so we do a naive normalization.
+
+    :param semantic_score: The semantic similarity score (distance-based).
+    :param bm25_score: The BM25 score (higher = more relevant).
+    :return: A single float representing the combined score, in range [0,1].
+    """
+    # Normalize semantic score to [0,1], then cube to exaggerate differences
+    if semantic_score is not None:
+        normalized_semantic = (1 - abs(1 - semantic_score)) ** 3
+        normalized_semantic = max(0.0, normalized_semantic)
+    else:
+        normalized_semantic = None
+
+    # Naive BM25 normalization
+    if bm25_score is not None:
+        normalized_bm25 = 1 - (1 / (1 + bm25_score))
+        normalized_bm25 = max(0.0, normalized_bm25)
+    else:
+        normalized_bm25 = None
+
+    # Combine the two
+    if normalized_semantic is None:
+        return normalized_bm25 if normalized_bm25 is not None else 0.0
+    if normalized_bm25 is None:
+        return normalized_semantic
+
+    return (normalized_semantic * SEMANTIC_WEIGHT + normalized_bm25 * BM25_WEIGHT) / (
+        SEMANTIC_WEIGHT + BM25_WEIGHT
     )
-    # TODO: BM25 is a relative score, so you can't score just one record. Figure out how to normalize this effectively
-    normalized_bm25_score = (
-        max(0, 1 - (1 / (1 + bm25_score))) if bm25_score is not None else None
-    )
-
-    if normalized_semantic_score is None:
-        return normalized_bm25_score
-    if normalized_bm25_score is None:
-        return normalized_semantic_score
-
-    # Calculate the weighted aggregate score between 0 and 1
-    aggregate_score = (
-        normalized_semantic_score * SEMANTIC_WEIGHT
-        + normalized_bm25_score * BM25_WEIGHT
-    ) / (SEMANTIC_WEIGHT + BM25_WEIGHT)
-
-    return aggregate_score
 
 
-def build_base_statement(input: SearchInput, embedded_query: any) -> any:
-    # COMMENT: This gets all InspectionVersion IDs that are NOT a previous_version.
-    # Hence, this is a list of all the most recent version Ids.
-    most_recent_inspector_versions = (
-        select(InspectionVersion.id)
-        .where(
-            ~InspectionVersion.id.in_(
-                select(InspectionVersion.previous_version_id).where(
-                    InspectionVersion.previous_version_id.isnot(None)
-                )
-            )
-        )
-        .subquery()
-    )
-    statement = (
-        select(
+def create_filtered_chunk_statement(
+    organization_id: str,
+    node_ids: list[UUID] | None = None,
+    content_kinds: list[ContentKind] | None = None,
+    embedded_query: list | None = None,
+) -> Select:
+    """
+    Create the base SQL statement for filtering relevant ChunkAndEmbedding records.
+
+    :param organization_id: The organization in which we want to search.
+    :param node_ids: Optional list of node UUIDs to further filter.
+    :param embedded_query: If provided, includes the L2 distance from the query vector.
+    :return: The SQLAlchemy Select statement.
+    """
+    NodeAlias = aliased(Node)
+
+    # Start with a statement that selects (ChunkAndEmbedding, <semantic_score>).
+    if embedded_query is not None:
+        stmt = select(
             ChunkAndEmbedding,
-            DerivedContent,
             ChunkAndEmbedding.text_embedding_3_small.l2_distance(embedded_query).label(
-                "score"
+                "semantic_score"
             ),
         )
-        .select_from(DerivedContent)
-        .join(ChunkAndEmbedding, DerivedContent.id == ChunkAndEmbedding.content_id)
-        .join(Workspace, Workspace.id == DerivedContent.workspace_id)
-        .join(
-            DerivedContentType, DerivedContentType.id == DerivedContent.content_type_id
+    else:
+        stmt = select(ChunkAndEmbedding, select(0).label("semantic_score"))
+
+    stmt = (
+        stmt.distinct()
+        .options(
+            selectinload(ChunkAndEmbedding.content)
+            .selectinload(DerivedContent.node)
+            .selectinload(Node.version)
         )
-        .where(
-            or_(
-                DerivedContent.version_id.in_(most_recent_inspector_versions),
-                DerivedContent.version_id.is_(None),
-            )
-        )
+        .join(DerivedContent)
+        .join(Node)
+        .join(Version)
+        .join(PrimaryAsset)
+        .where(PrimaryAsset.organization_id == organization_id)
     )
-    statement = statement.where(Workspace.organization_id == input.organization_id)
 
-    if input.content_type:
-        if isinstance(input.content_type, str):
-            statement = statement.where(
-                DerivedContentType.type_name == input.content_type
-            )
-        elif isinstance(input.content_type, list):
-            statement = statement.where(
-                DerivedContentType.type_name.in_(input.content_type)
-            )
-    if input.paths == []:
-        # If you sent a list that is empty, you want to filter, but have given no folders or files to look in. Return no results.
-        statement = statement.where(False)
-    if input.paths:
-        if isinstance(input.paths, str):
-            input.paths = [input.paths]
-        statement = statement.where(
-            or_(
-                *[
-                    or_(
-                        DerivedContent.relative_path == file_path,
-                        DerivedContent.relative_path.like(f"{file_path.rstrip('/')}/%"),
-                    )
-                    for file_path in input.paths
-                ]
-            )
-        )
+    if content_kinds:
+        stmt = stmt.where(DerivedContent.content_kind.in_(content_kinds))
 
-    statement = statement.order_by(asc("score"))
-    return statement
+    if node_ids:
+        # Example usage: This allows searching within a node and all its sub-paths.
+        stmt = stmt.join(
+            NodeAlias,
+            and_(
+                NodeAlias.version_id == Node.version_id,
+                Node.relative_path.like(NodeAlias.relative_path + "%"),
+            ),
+        ).where(NodeAlias.id.in_(node_ids))
+
+    return stmt
 
 
+# ---- Public Search Functions ----
 def search_content_without_session(input: SearchInput) -> SearchResults:
+    """
+    Convenience function that manages its own Session, then calls search_content.
+
+    :param input: The user-provided search input config.
+    :return: The search results as a SearchResults object.
+    """
     with get_session() as session:
         return search_content(session, input)
 
 
 def search_content(session: Session, input: SearchInput) -> SearchResults:
-    if input.algorithm == "keyword":
+    """
+    Route the search to the correct algorithm: KEYWORD, SEMANTIC, or HYBRID.
+
+    :param session: The active SQLModel session.
+    :param input: The user-provided search input config.
+    :return: The search results as a SearchResults object.
+    """
+    if input.algorithm == SearchAlgorithm.KEYWORD:
         return keyword_search(session, input)
-    elif input.algorithm == "semantic":
+    elif input.algorithm == SearchAlgorithm.SEMANTIC:
         return semantic_search(session, input)
-    elif input.algorithm == "hybrid":
+    elif input.algorithm == SearchAlgorithm.HYBRID:
         return hybrid_search(session, input)
     else:
         raise ValueError(f"Unsupported algorithm: {input.algorithm}")
 
 
-def keyword_search(session: Session, input: SearchInput) -> SearchResults:
-    embedded_query = batch_embed_text([input.query])[0]
-    statement = build_base_statement(input, embedded_query)
-    statement = statement.where(ChunkAndEmbedding.__ts_vector__.match(input.query))
-
-    if input.result_limit:
-        statement = statement.limit(input.result_limit)
-
-    db_results = session.exec(statement).all()
-    keyword_scores = get_bm25_scores(
-        input.query, [c.text + " " + cm.relative_path for c, cm, _ in db_results]
-    )
-    results = sorted(
-        [
-            SearchResult(
-                content=c.text,
-                score=overall_score(bm25_score=bm25_score),
-                metadata={
-                    "id": c.id,
-                    "workspace_id": cm.workspace_id,
-                    "codebase_id": cm.codebase_id,
-                    "content_type": cm.content_type.type_name,
-                    "relative_path": cm.relative_path,
-                    "source_content_id": cm.source_content_id,
-                    "semantic_score": s,
-                    "keyword_score": bm25_score,
-                },
-            )
-            for (c, cm, s), bm25_score in zip(db_results, keyword_scores)
-        ],
-        key=lambda result: result.score,
-        reverse=True,
-    )
-
-    return SearchResults(results=results)
-
-
 def semantic_search(session: Session, input: SearchInput) -> SearchResults:
+    """
+    Perform purely semantic (vector-based) search.
+
+    :param session: The active SQLModel session.
+    :param input: The user-provided search input.
+    :return: The search results as a SearchResults object.
+    """
+    logger = logging.getLogger(__name__)
+
+    # Embed the query text
     embedded_query = batch_embed_text([input.query])[0]
-    statement = build_base_statement(input, embedded_query)
-    statement = statement.where(
-        ChunkAndEmbedding.text_embedding_3_small.l2_distance(embedded_query)
-        <= SEMANTIC_SCORE_IGNORE_THRESHOLD
-    )
-    statement = statement.order_by(asc("score"))
 
-    if input.result_limit:
-        statement = statement.limit(input.result_limit)
+    # Create filtered statement that includes semantic scores
+    stmt = create_filtered_chunk_statement(
+        organization_id=input.organization_id,
+        node_ids=input.node_ids,
+        embedded_query=embedded_query,
+        content_kinds=input.content_kinds,
+    ).order_by(asc("semantic_score"))
 
-    results = session.exec(statement).all()
+    if input.limit:
+        stmt = stmt.limit(input.limit)
+
+    results = session.exec(stmt).all()
+    logger.debug("Raw semantic search results: %s", results)
 
     if not results:
         return SearchResults(results=[])
 
+    # Convert DB results to SearchResults
     search_results = []
-    accumulated_tokens = 0
-
-    for c, cm, score in results:
-        if input.token_limit is not None and accumulated_tokens > input.token_limit:
-            break
-        token_count = int(len(c.text.split()) / CHARS_PER_TOKEN_APPROXIMATION)
-        accumulated_tokens += token_count
+    for chunk, score in results:
         metadata = {
-            "content_type": cm.content_type.type_name,
-            "relative_path": cm.relative_path,
-            "workspace_id": cm.workspace_id,
-            "codebase_id": cm.codebase_id,
-            "content_id": cm.id,
-            "source_content_id": cm.source_content_id,
-            "chunk_number": c.chunk_number,
-            "semantic_score": score,
+            "chunk_number": chunk.chunk_number,
         }
         search_results.append(
             SearchResult(
-                content=c.text,
-                score=overall_score(score),
+                content=chunk.text,
+                score=overall_score(semantic_score=score),
                 metadata=metadata,
+                relative_path=chunk.content.node.relative_path,
+                version_display_name=chunk.content.node.version.display_name,
             )
         )
 
+    # Sort by score descending
     search_results.sort(key=lambda x: x.score, reverse=True)
-    search_results = search_results[: input.result_limit]
-    for idx, result in enumerate(search_results):
-        result.metadata["result_number"] = idx + 1
+    search_results = search_results[: input.limit]
+
+    # Label results
+    for idx, result in enumerate(search_results, start=1):
+        result.metadata["result_number"] = idx
+
+    return SearchResults(results=search_results)
+
+
+def keyword_search(session: Session, input: SearchInput) -> SearchResults:
+    """
+    Perform purely keyword-based search (TS vector).
+
+    :param session: The active SQLModel session.
+    :param input: The user-provided search input.
+    :return: The search results as a SearchResults object.
+    """
+    # Create statement without semantic score
+    stmt = create_filtered_chunk_statement(
+        organization_id=input.organization_id,
+        node_ids=input.node_ids,
+        content_kinds=input.content_kinds,
+    ).where(ChunkAndEmbedding.__ts_vector__.match(input.query))
+
+    db_results = session.exec(stmt).all()
+    if not db_results:
+        return SearchResults(results=[])
+
+    # Prepare texts for BM25
+    texts_for_bm25 = [f"{c.text} {c.content.node.relative_path}" for c, _ in db_results]
+    bm25_scores = get_bm25_scores(input.query, texts_for_bm25)
+
+    # Convert DB results to SearchResults
+    search_results = []
+    for (chunk, _), bm25_score in zip(db_results, bm25_scores):
+        metadata = {
+            "version_id": chunk.content.node.version_id,
+            "chunk_number": chunk.chunk_number,
+        }
+        search_results.append(
+            SearchResult(
+                content=chunk.text,
+                score=overall_score(bm25_score=bm25_score),
+                metadata=metadata,
+                relative_path=chunk.content.node.relative_path,
+                version_display_name=chunk.content.node.version.display_name,
+            )
+        )
+
+    # Sort by score descending
+    search_results.sort(key=lambda x: x.score, reverse=True)
+
+    # Apply final limit
+    search_results = search_results[: input.limit]
+
+    # Label results
+    for idx, result in enumerate(search_results, start=1):
+        result.metadata["result_number"] = idx
 
     return SearchResults(results=search_results)
 
 
 def hybrid_search(session: Session, input: SearchInput) -> SearchResults:
+    """
+    Hybrid search combines semantic (vector) search and keyword (TS vector/BM25) search.
+
+    Steps:
+      1. Run semantic search (embedding) up to 2x limit.
+      2. Run lexical (TS vector) search up to 2x limit.
+      3. Combine and deduplicate results, preserving semantic scores where available.
+      4. Compute BM25 across combined results.
+      5. Compute overall scores, sort, and return final results.
+
+    :param session: The active SQLModel session.
+    :param input: The user-provided search input.
+    :return: The search results as a SearchResults object.
+    """
+    # 1. Run semantic search
     embedded_query = batch_embed_text([input.query])[0]
-    statement_l2 = build_base_statement(input, embedded_query)
-    statement_l2 = statement_l2.where(
-        ChunkAndEmbedding.text_embedding_3_small.l2_distance(embedded_query) <= 1.25
-    ).order_by(asc("score"))
-
-    statement_tsvector = build_base_statement(input, embedded_query)
-    statement_tsvector = statement_tsvector.where(
-        ChunkAndEmbedding.__ts_vector__.match(input.query)
-    ).order_by(asc("score"))
-
-    if input.result_limit:
-        statement_l2 = statement_l2.limit(input.result_limit)
-        statement_tsvector = statement_tsvector.limit(input.result_limit)
-
-    results_l2 = session.exec(statement_l2).all()
-    results_tsvector = session.exec(statement_tsvector).all()
-
-    results = list(
-        {(c.id, cm.id, score) for c, cm, score in results_l2 + results_tsvector}
-    )
-    results = [
-        (
-            next(
-                c
-                for c in results_l2 + results_tsvector
-                if c[0].id == c_id and c[1].id == cm_id
-            )
+    stmt_semantic = (
+        create_filtered_chunk_statement(
+            organization_id=input.organization_id,
+            node_ids=input.node_ids,
+            embedded_query=embedded_query,
+            content_kinds=input.content_kinds,
         )
-        for c_id, cm_id, score in results
-    ]
+        .order_by(asc("semantic_score"))
+        .limit(2 * input.limit)
+    )
+    results_semantic = session.exec(stmt_semantic).all()
 
-    if not results:
+    # 2. Run lexical search (TS vector)
+    stmt_lexical = (
+        create_filtered_chunk_statement(
+            organization_id=input.organization_id, node_ids=input.node_ids
+        )
+        .where(ChunkAndEmbedding.__ts_vector__.match(input.query))
+        .limit(2 * input.limit)
+    )
+    results_lexical = session.exec(stmt_lexical).all()
+
+    # 3. Combine / deduplicate
+    # Key by chunk.id -> (chunk, semantic_score)
+    chunk_map: dict[str, (ChunkAndEmbedding, float | None)] = {}
+    # Fill from semantic search
+    for chunk, sem_score in results_semantic:
+        chunk_map[chunk.id] = (chunk, sem_score)
+    # Fill from lexical search
+    for chunk, _ in results_lexical:
+        if chunk.id not in chunk_map:
+            chunk_map[chunk.id] = (chunk, None)
+
+    combined_chunks = list(chunk_map.values())
+
+    if not combined_chunks:
         return SearchResults(results=[])
 
+    # 4. Compute BM25 on combined results
+    texts_for_bm25 = [
+        f"{chunk.text} {chunk.content.node.relative_path}"
+        for chunk, _ in combined_chunks
+    ]
+    bm25_scores = get_bm25_scores(input.query, texts_for_bm25)
+
+    # 5. Compute overall score and assemble SearchResults
     search_results = []
     accumulated_tokens = 0
 
-    keyword_scores = get_bm25_scores(
-        input.query, [c.text + " " + cm.relative_path for c, cm, _ in results]
-    )
-    for idx, (c, cm, score) in enumerate(results):
-        if input.token_limit is not None and accumulated_tokens > input.token_limit:
+    for i, (chunk, sem_score) in enumerate(combined_chunks):
+        # Respect token limit if provided
+        if input.token_limit is not None and accumulated_tokens >= input.token_limit:
             break
-        token_count = int(len(c.text.split()) / 2.5)
+
+        token_count = int(len(chunk.text.split()) / CHARS_PER_TOKEN_APPROXIMATION)
         accumulated_tokens += token_count
+
         metadata = {
-            "content_type": cm.content_type.type_name,
-            "relative_path": cm.relative_path,
-            "workspace_id": cm.workspace_id,
-            "codebase_id": cm.codebase_id,
-            "content_id": cm.id,
-            "source_content_id": cm.source_content_id,
-            "chunk_number": c.chunk_number,
-            "semantic_score": score,
-            "bm25_score": keyword_scores[idx],
+            "chunk_number": chunk.chunk_number,
         }
+
+        # Combine semantic and BM25
+        hybrid_score = overall_score(
+            semantic_score=sem_score, bm25_score=bm25_scores[i]
+        )
         search_results.append(
             SearchResult(
-                content=c.text,
-                score=overall_score(
-                    semantic_score=score, bm25_score=keyword_scores[idx]
-                ),
+                content=chunk.text,
+                score=hybrid_score,
+                relative_path=chunk.content.node.relative_path,
+                version_display_name=chunk.content.node.version.display_name,
                 metadata=metadata,
             )
         )
 
+    # Sort final results by score descending, then limit
     search_results.sort(key=lambda x: x.score, reverse=True)
-    search_results = search_results[: input.result_limit]
-    for idx, result in enumerate(search_results):
-        result.metadata["result_number"] = idx + 1
+    search_results = search_results[: input.limit]
+
+    # Label results
+    for idx, result in enumerate(search_results, start=1):
+        result.metadata["result_number"] = idx
 
     return SearchResults(results=search_results)

@@ -1,5 +1,5 @@
 """
-This file exposes the modal (https://www.modal.com) interface for the comprehender package.
+This file exposes the modal (https://www.modal.com) interface for the agent package.
 """
 
 import os
@@ -9,8 +9,6 @@ import modal
 app = modal.App("agent")
 
 
-# Note, all these schenanigans are required because `poetry_install_from_file` doesn't install our comprehender-database
-# package, which is a *local* package in pyproject.toml of comprehender.
 image = (
     modal.Image.debian_slim(python_version="3.12")
     .copy_local_dir("../../driver_db/", remote_path="/driver_db")

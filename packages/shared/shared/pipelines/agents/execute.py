@@ -34,15 +34,17 @@ def validate_pipeline(input: PipelineInput) -> None:
 
 def execute_sequence(input: PipelineInput) -> PipelineResponse:
     validate_pipeline(input)
+    print(input)
     sequence_response = PipelineResponse(step_responses=[], final_result="")
     sequence_prompt = PromptWithContext(prompt=input.prompt, context=input.context)
     working_response = None
-    sequence_prompt.add_to_context(
-        {
-            "searchable_paths_and_root_directories": "these paths must be the path or path-prefix of any searches: "
-            + str(input.scope.paths)
-        }
-    )
+    if input.scope:
+        paths_str = ", ".join(n.get_identifier() for n in input.scope.nodes)
+        sequence_prompt.add_to_context(
+            {
+                "searchable_paths_and_directories_with_version_prefix": f"These paths and their children can be the path or path-prefix of any searches, use the version:path identifier in all search terms: \n\n{paths_str}"
+            }
+        )
 
     methods = {
         PipelineStepType.PROMPT_AUGMENTATION: run_agent_prompt_augmentation,

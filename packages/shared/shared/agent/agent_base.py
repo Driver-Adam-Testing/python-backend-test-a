@@ -56,8 +56,6 @@ class AgentBase(ABC):
             if self.log:
                 with get_session() as session:
                     agent_instance = RuntimeLogAgentInstance(
-                        workspace_id=None,
-                        codebase_id=None,
                         model=self.model,
                         organization_id=self.scope.organization_id,
                     )

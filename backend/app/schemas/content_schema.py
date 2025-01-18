@@ -4,11 +4,10 @@ from uuid import UUID
 
 from database.models_v1 import (
     DerivedContent,
-    DerivedContentType,
     DocumentSource,
-    Enum_Derived_Content_Status,
     Tag,
 )
+from database.models_v2_enums import VersionStatus
 from pydantic import BaseModel
 from sqlmodel import SQLModel
 
@@ -39,35 +38,28 @@ class ListContentTypesInput(BaseModel):
     sort_direction: str | None = "DESC"
 
 
-class ListContentTypesResults(BaseModel):
-    results: list[DerivedContentType]
-
-
 class ListContentResult(BaseModel):
-    id: UUID
-    organization_id: str
-    content_type_id: UUID
-    content_type_name: str
+    id: UUID | None = None
+    organization_id: str | None = None
+    content_type_id: UUID | None = None
+    content_type_name: str | None = None
     # All content must be in a workspace currently
-    workspace_id: UUID
-    workspace_name: str
-    content_name: str
-    source_content_id: UUID | None
+    content_name: str | None = None
+    source_content_id: UUID | None = None
     # Content doesn't need to be associated with a codebase in our flat asset design
-    codebase_id: None | UUID
-    codebase_name: str | None
-    relative_path: str
-    content: None | str
-    misc_metadata: dict | None
-    status: Enum_Derived_Content_Status | None
-    tags: list[Tag]
-    source_links: list[DocumentSource] | None
-    created_at: datetime
-    updated_at: datetime
-    source_content: Optional["DerivedContent"]
-    order: int | None
-    version_id: UUID | None
-    version: str | None
+    codebase_name: str | None = None
+    relative_path: str | None = None
+    content: str | None = None
+    misc_metadata: dict | None = None
+    status: VersionStatus | None = None
+    tags: list[Tag] | None = None
+    source_links: list[DocumentSource] | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+    source_content: Optional["DerivedContent"] = None
+    order: int | None = None
+    version_id: UUID | None = None
+    version: str | None = None
 
 
 class ListContentResults(BaseModel):
@@ -94,12 +86,6 @@ class BatchTagAssociationRequest(BaseModel):
 
 class BatchTagAssociationResponse(BaseModel):
     results: list[TagAssociationResponse]
-
-
-class CreateContentRequest(BaseModel):
-    workspace_id: UUID | None = None
-    codebase_id: UUID | None = None
-    content_type: str
 
 
 class ContentResultBase(BaseModel, Generic[DataT]):

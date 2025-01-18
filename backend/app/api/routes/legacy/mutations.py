@@ -1,17 +1,10 @@
 import hashlib
 import json
 import os
-from datetime import datetime
 
 import strawberry
-from app.api.routes.legacy.api_types import SourceContentInput
-from app.api.routes.legacy.application_note import (
-    ContentStatus,
-)
-from app.api.routes.legacy.document_set import DerivedContentTypes
 from app.api.routes.legacy.orm_ops import (
     check_access,
-    get_codebase_by_id,
     get_derived_content_by_id,
 )
 from app.api.routes.legacy.scalars import ID, JSON
@@ -19,13 +12,9 @@ from app.core.logger import logger
 from app.utils.aws_s3 import generate_put_presigned_url
 from database.models_v1 import (
     DerivedContent,
-    DerivedContentType,
-    Workspace,
 )
+from database.models_v2 import Node, PrimaryAsset, Version
 from graphql import GraphQLError
-from modal import Function
-from sqlalchemy.future import select
-from sqlmodel import Session
 from strawberry.types import Info
 
 
@@ -117,178 +106,6 @@ class WebhookInput:
 @strawberry.type
 class Mutation:
     @strawberry.mutation
-    def createSourceContent(self, info: Info, input: SourceContentInput) -> str:
-        user = info.context.user
-        m2m = info.context.m2m
-        session = info.context.session
-
-        # This endpoint is called by the onboarding lambda, which is not a user and does not have a user token
-        if user is not None:
-            if not check_access(
-                session, user.organization_id, codebase_id=input.codebase_id
-            ):
-                raise GraphQLError(
-                    "Access denied to the codebase", extensions={"code": "FORBIDDEN"}
-                )
-            workspace = session.execute(
-                select(Workspace).filter_by(id=input.workspace_id)  # type: ignore
-            ).scalar_one_or_none()
-            if not workspace or workspace.organization_id != user.organization_id:
-                raise GraphQLError(
-                    "Workspace not found or access denied",
-                    extensions={"code": "FORBIDDEN"},
-                )
-        elif m2m is None:
-            raise GraphQLError(
-                "No user or m2m token found",
-                extensions={"code": "FORBIDDEN"},
-            )
-
-        # TODO: Get rid of the database hits to get source and derived content types. They don't change often enough and they are limited. It's inefficient that they're defined in the database.
-        content_type = session.execute(
-            select(DerivedContentType).filter_by(type_name=input.source_content_type)  # type: ignore
-        ).scalar_one_or_none()
-
-        if not content_type:
-            raise GraphQLError(
-                "SourceContentType not found", extensions={"code": "BAD_REQUEST"}
-            )
-
-        source_content = DerivedContent(
-            source_content_id=None,  # No parent for source content rows!
-            content_type_id=content_type.id,  # type: ignore
-            workspace_id=input.workspace_id,  # type: ignore
-            codebase_id=input.codebase_id,  # type: ignore
-            relative_path=input.relative_path,  # type: ignore
-        )
-        session.add(source_content)
-        session.commit()
-        return str(source_content.id)
-
-    @strawberry.mutation
-    def generateApplicationNote(
-        self, info: Info, input: GenerateApplicationNoteInput
-    ) -> GenerateApplicationNoteOutput:
-        user = info.context.user
-        session: Session = info.context.session
-        if not check_access(
-            session, user.organization_id, codebase_id=input.codebase_id
-        ):
-            raise GraphQLError(
-                "Access denied to the codebase", extensions={"code": "FORBIDDEN"}
-            )
-        codebase = get_codebase_by_id(session, input.codebase_id)
-        if not codebase:
-            raise GraphQLError(
-                "Codebase not found in your organization",
-                extensions={"code": "FORBIDDEN"},
-            )
-        note_content = {
-            "name": "Generating Application Note...",
-            "description": input.prompt,
-            "content": "",
-        }
-
-        metadata = {
-            "prompt": input.prompt,
-            "generation_timestamp": str(datetime.now()),
-            "editor_id": "",
-            "description": "",
-            "prompt_signature": "",
-            "context": input,
-            "modal_context": {"callback": {}},
-            "history": [
-                {
-                    "action": ContentStatus.GENERATING.value,
-                    "data": note_content,
-                    "timestamp": str(datetime.now()),
-                }
-            ],
-            "errors": [],
-        }
-
-        content = session.exec(
-            select(DerivedContent)  # type: ignore
-            .join(
-                DerivedContentType,
-                DerivedContent.content_type_id == DerivedContentType.id,
-            )
-            .where(
-                DerivedContent.codebase_id == input.codebase_id,
-                DerivedContentType.type_name == "codebase",
-            )
-        ).first()[0]
-        content_type_id = (
-            session.exec(
-                select(DerivedContentType.id).where(  # type: ignore
-                    DerivedContentType.type_name
-                    == DerivedContentTypes.APPLICATION_NOTE.value  # type: ignore
-                )
-            )
-            .all()[0]
-            .id
-        )
-        app_note = DerivedContent(
-            workspace_id=content.workspace_id,
-            source_content_id=content.id,
-            relative_path=content.relative_path,
-            content_type_id=content_type_id,
-            content=json.dumps(note_content),
-            status=ContentStatus.GENERATING.value,
-            metadata=metadata,
-        )
-
-        session.add(app_note)
-        session.commit()
-
-        ## NOTE: This is a major change, we skip the comprehneder api entirely.
-        app_note_func = Function.lookup("comprehender", "create_app_note")
-        call = app_note_func.spawn(
-            str(input.workspace_id),
-            str(input.codebase_id),
-            str(input.prompt) if input.prompt else "",
-            {"document_id": str(app_note.id)},
-            {},
-        )
-        if call is None:
-            raise GraphQLError(
-                "Failed to spawn app note function call.",
-                extensions={"code": "INTERNAL_SERVER_ERROR"},
-            )
-        return GenerateApplicationNoteOutput(id=str(call.object_id))  # type: ignore
-
-    @strawberry.mutation
-    def generateApplicationNoteEdit(
-        self, info: Info, input: ApplicationNoteEditInput
-    ) -> GenerateApplicationNoteEditOutput:
-        # NOTE: This is being called regardless of appnote or techdoc situations.
-        user = info.context.user
-        session = info.context.session
-        if not check_access(session, user.organization_id, derived_content_id=input.id):
-            raise GraphQLError(
-                "Access denied to the workspace", extensions={"code": "FORBIDDEN"}
-            )
-
-        note = get_derived_content_by_id(session, input.id)
-
-        if not note:
-            raise GraphQLError(
-                "Application Notes not found.", extensions={"code": "BAD_REQUEST"}
-            )
-
-        app_note_func = Function.lookup("comprehender", "single_shot_edit")
-        call = app_note_func.spawn(input.workspace_id, input.id, input.prompt, None)
-        if call is None:
-            raise GraphQLError(
-                "Failed to initiate application note edit process.",
-                extensions={"code": "INTERNAL_SERVER_ERROR"},
-            )
-        return GenerateApplicationNoteEditOutput(
-            call_id=call.object_id,
-            status=ContentStatus.GENERATING.value,  # type: ignore
-        )
-
-    @strawberry.mutation
     def updateApplicationNote(
         self, info: Info, input: UpdateApplicationNoteInput
     ) -> None:
@@ -304,7 +121,7 @@ class Mutation:
                     "Application note not found", extensions={"code": "BAD_REQUEST"}
                 )
 
-            def escape_html(obj):
+            def escape_html(obj: str) -> str:
                 return (
                     obj.replace("&", "&amp;")
                     .replace("<", "&lt;")
@@ -380,9 +197,7 @@ class Mutation:
 
         if not codebase_id or not file_path or not workspace_id or not creator_id:
             raise GraphQLError("Invalid Request", extensions={"code": "BAD_REQUEST"})
-        if not check_access(
-            session, org_id, codebase_id=codebase_id, workspace_id=workspace_id
-        ):
+        if not check_access(session, org_id, codebase_id=codebase_id):
             raise GraphQLError(
                 "Access denied to the codebase", extensions={"code": "FORBIDDEN"}
             )
@@ -416,53 +231,6 @@ class Mutation:
                 "Upload URL not created.", extensions={"code": "BAD_REQUEST"}
             )
 
-    @strawberry.mutation
-    def generateDocumentEdit(
-        self, info: Info, input: DocumentEditInput
-    ) -> GenerateApplicationNoteEditOutput:
-        user = info.context.user
-        session = info.context.session
-        if not check_access(
-            session,
-            user.organization_id,
-            codebase_id=input.codebase_id,
-            workspace_id=input.workspace_id,
-        ):
-            raise GraphQLError(
-                "Access denied to the codebase", extensions={"code": "FORBIDDEN"}
-            )
-        codebase = get_codebase_by_id(session, input.codebase_id)
-        if not codebase:
-            raise GraphQLError("Codebase not found", extensions={"code": "BAD_REQUEST"})
-
-        techDoc = session.exec(
-            select(DerivedContent).where(DerivedContent.id == input.document_id)  # type: ignore
-        ).first()
-        if not techDoc:
-            raise GraphQLError(
-                "Document not found.", extensions={"code": "BAD_REQUEST"}
-            )
-
-        try:
-            single_shot_edit = Function.lookup("comprehender", "single_shot_edit")
-            call = single_shot_edit.spawn(
-                str(input.workspace_id), str(input.codebase_id), "", input.options
-            )
-            if call is None:
-                raise GraphQLError(
-                    "Failed to initiate document edit process.",
-                    extensions={"code": "INTERNAL_SERVER_ERROR"},
-                )
-            return GenerateApplicationNoteEditOutput(  # type: ignore
-                call_id=call.object_id, status=ContentStatus.GENERATING.value
-            )
-        except Exception as error:
-            logger.error(f"Error generating document edit: {error}", exc_info=True)
-            raise GraphQLError(
-                "Document edit not created",
-                extensions={"code": "BAD_REQUEST", "message": "Document edit failed."},
-            )
-
     # NOTE: Not dry. same as updateApplicationNote
 
     @strawberry.mutation
@@ -474,23 +242,16 @@ class Mutation:
             note = (
                 session.query(DerivedContent)
                 .filter(DerivedContent.id == input.id)
-                .join(Workspace)
-                .filter(Workspace.organization_id == user.organization_id)
+                .join(Node)
+                .join(Version)
+                .join(PrimaryAsset)
+                .where(PrimaryAsset.organization_id == user.organization_id)
                 .one_or_none()
             )
 
             if not note:
                 raise GraphQLError(
                     "Application note not found", extensions={"code": "BAD_REQUEST"}
-                )
-
-            def escape_html(obj):
-                return (
-                    obj.replace("&", "&amp;")
-                    .replace("<", "&lt;")
-                    .replace(">", "&gt;")
-                    .replace('"', "&quot;")
-                    .replace("'", "&#039;")
                 )
 
             note.content = input.content

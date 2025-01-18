@@ -528,9 +528,7 @@ def comprehend_file_top_down(
                 )
             )
         except openai.BadRequestError as e:
-            email_func = modal.Function.lookup(
-                "codebase-onboarding", "send_exception_email"
-            )
+            email_func = modal.Function.lookup("inspector-v2", "send_exception_email")
             exception_details = f"NON-BREAKING EXCEPTION:\nBadRequestError from OpenAI: {e.message}.\nCheck logs for additional details."
             email_func.remote(exception_details)
 
@@ -579,9 +577,7 @@ def comprehend_file_top_down(
                 code=source_code,
             )
         except openai.BadRequestError as e:
-            email_func = modal.Function.lookup(
-                "codebase-onboarding", "send_exception_email"
-            )
+            email_func = modal.Function.lookup("inspector-v2", "send_exception_email")
             exception_details = f"NON-BREAKING EXCEPTION:\nBadRequestError from OpenAI: {e.message}.\nCheck logs for additional details."
             email_func.remote(exception_details)
 

@@ -42,7 +42,7 @@ def execute_sequence(input: PipelineInput) -> PipelineResponse:
         paths_str = ", ".join(n.get_identifier() for n in input.scope.nodes)
         sequence_prompt.add_to_context(
             {
-                "searchable_paths_and_directories_with_version_prefix": f"These paths and their children can be the path or path-prefix of any searches, use the version:path identifier in all search terms: \n\n{paths_str}"
+                "searchable_paths_and_directories_with_version_prefix": f"These paths and their children can be the path or path-prefix of any searches: \n\n{paths_str}"
             }
         )
 

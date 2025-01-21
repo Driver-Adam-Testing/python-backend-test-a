@@ -42,7 +42,7 @@ class CodebaseFolderSummaryTool(ToolStrict):
                 formatted_result = f"""<result>
                     <content>{content.content}</content>
                     <content_type>long_description</content_type>
-                    <path>{content.node.relative_path}</path>
+                    <path>{content.node.version.display_name}/{content.node.relative_path}</path>
                 </result>"""
                 formatted_results.append(formatted_result.strip())
 

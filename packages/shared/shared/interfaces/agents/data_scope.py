@@ -35,7 +35,7 @@ class DataScope(BaseModel):
             Returns a string identifier for the node in the format: v{version_display_name}:{relative_path}.
             """
             version_display_name = self._node.version.display_name
-            return f"{version_display_name}:{self._node.relative_path}"
+            return f"{version_display_name}/{self._node.relative_path}"
 
     node_ids: list[UUID]
 

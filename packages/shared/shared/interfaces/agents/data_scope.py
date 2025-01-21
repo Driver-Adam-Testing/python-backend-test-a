@@ -32,7 +32,7 @@ class DataScope(BaseModel):
 
         def get_identifier(self) -> str:
             """
-            Returns a string identifier for the node in the format: v{version_display_name}:{relative_path}.
+            Returns a string identifier for the node in the format: {version_display_name}/{relative_path}.
             """
             version_display_name = self._node.version.display_name
             return f"{version_display_name}/{self._node.relative_path}"
@@ -50,7 +50,9 @@ class DataScope(BaseModel):
             with get_session() as session:
                 stmt = (
                     select(Node)
-                    .options(selectinload(Node.version))
+                    .options(
+                        selectinload(Node.version).selectinload(Version.primary_asset)
+                    )
                     .where(Node.id.in_(self.node_ids))
                 )
                 nodes = session.exec(stmt).all()
@@ -59,7 +61,7 @@ class DataScope(BaseModel):
 
     def get_node_by_identifier(self, identifier: str) -> DataScopeNode | None:
         """
-        Retrieves a node by its identifier in the format: {version_display_name}:{relative_path}.
+        Retrieves a node by its identifier in the format: {version_display_name}/{relative_path}.
         """
         for data_scope_node in self.nodes:
             if data_scope_node.get_identifier() == identifier:
@@ -94,7 +96,9 @@ class DataScope(BaseModel):
                     select(Node)
                     .join(Version)
                     .join(PrimaryAsset)
-                    .options(selectinload(Node.version))
+                    .options(
+                        selectinload(Node.version).selectinload(Version.primary_asset)
+                    )
                     .where(
                         or_(
                             *[
@@ -126,3 +130,25 @@ class DataScope(BaseModel):
                 node for node in self.nodes if node.node.id in matching_node_ids
             ]
             return ds
+
+    def to_human_readable_summary(self) -> str:
+        # Create a dictionary to group identifiers by their primary asset display name
+        grouped_identifiers = {}
+
+        for node in self.nodes:
+            primary_asset_display_name = node.node.version.primary_asset.display_name
+            identifier = f"{node.node.version.display_name}/{node.node.relative_path}"
+
+            if primary_asset_display_name not in grouped_identifiers:
+                grouped_identifiers[primary_asset_display_name] = []
+
+            grouped_identifiers[primary_asset_display_name].append(identifier)
+
+        # Format the grouped identifiers into a human-readable summary
+        summary_lines = []
+        for primary_asset, identifiers in grouped_identifiers.items():
+            summary_lines.append(f"Paths for Asset: {primary_asset}")
+            for identifier in identifiers:
+                summary_lines.append(f"  - {identifier}")
+
+        return "\n".join(summary_lines)

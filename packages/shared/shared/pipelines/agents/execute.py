@@ -39,10 +39,9 @@ def execute_sequence(input: PipelineInput) -> PipelineResponse:
     sequence_prompt = PromptWithContext(prompt=input.prompt, context=input.context)
     working_response = None
     if input.scope:
-        paths_str = ", ".join(n.get_identifier() for n in input.scope.nodes)
         sequence_prompt.add_to_context(
             {
-                "searchable_paths_and_directories_with_version_prefix": f"These paths and their children can be the path or path-prefix of any searches: \n\n{paths_str}"
+                "searchable_paths_and_directories_with_version_prefix": f"These paths and their children can be the path or path-prefix of any searches: \n\n{input.scope.to_human_readable_summary()}"
             }
         )
 

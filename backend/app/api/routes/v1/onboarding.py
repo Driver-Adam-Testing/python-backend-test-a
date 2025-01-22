@@ -1,6 +1,5 @@
 import logging
 from pathlib import Path
-from uuid import UUID
 
 import modal
 from fastapi import APIRouter
@@ -22,7 +21,7 @@ class Onboarding(BaseModel):
 class OnboardingRequestBody(BaseModel):
     creator_id: str | None = None
     org_id: str | None = None
-    workspace_id: str | None = None
+    workspace_id: str | None = None  # CALLED VIA EXTERNAL SERVICE, INVESTIGATE
     download_url: str
     object_key: str
     repository_id: str | None = None
@@ -56,7 +55,6 @@ def trigger_onboarding(
         archive_name,
         trigger_body.org_id,
         trigger_body.creator_id,
-        UUID(trigger_body.workspace_id),
         trigger_body.provider,
         trigger_body.version,
     )
@@ -65,7 +63,7 @@ def trigger_onboarding(
 
 
 class PdfOnboardingRequestBody(BaseModel):
-    source_content_id: str | None = None
+    node_id: str | None = None
 
 
 @router.post(
@@ -84,6 +82,6 @@ def trigger_pdf_summary_processing(
         environment_name=settings.MODAL_ENVIRONMENT,
         tag="create_and_embed_pdf_summaries",
     )
-    call = create_and_embed_pdf_summaries.spawn(body.source_content_id)
+    call = create_and_embed_pdf_summaries.spawn(body.node_id)
 
     return Onboarding(status="OK", call_id=call.object_id)

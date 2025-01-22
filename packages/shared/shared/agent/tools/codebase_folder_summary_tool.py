@@ -1,6 +1,6 @@
 from database.db import get_session
-from database.models_v1 import DerivedContent, InspectionVersion
-from sqlalchemy.orm import selectinload
+from database.models_v1 import ContentKind, DerivedContent
+from database.models_v2 import Node
 from sqlmodel import select
 
 from shared.agent.agent_base import AgentBase
@@ -22,70 +22,56 @@ class CodebaseFolderSummaryTool(ToolStrict):
     codebase_directory_path: str
 
     def execute(self, agent: AgentBase) -> str:
-        agent.scope.authorize(self.codebase_directory_path)
+        scope = agent.scope.to_child_datascope([self.codebase_directory_path])
 
         with get_session() as session:
-            # COMMENT: This gets all InspectionVersion IDs that are NOT a previous_version.
-            # Hence, this is a list of all the most recent version Ids.
-            most_recent_versions_subquery = (
-                select(InspectionVersion.id)
+            stmt = (
+                select(DerivedContent)
+                .join(Node)
+                .where(Node.id == scope.node_ids[0])
                 .where(
-                    ~InspectionVersion.id.in_(
-                        select(InspectionVersion.previous_version_id).where(
-                            InspectionVersion.previous_version_id.isnot(None)
-                        )
+                    (DerivedContent.content_kind == ContentKind.LONG_DESCRIPTION)
+                    | (
+                        DerivedContent.content_kind
+                        == ContentKind.TOP_LEVEL_LONG_DESCRIPTION
                     )
                 )
-                .subquery()
             )
 
-            derived_content = session.exec(
-                select(DerivedContent)
-                .where(
-                    (DerivedContent.relative_path == self.codebase_directory_path)
-                    | (
-                        DerivedContent.relative_path
-                        == self.codebase_directory_path.rstrip("/")
-                    ),
-                    DerivedContent.content_type.has(type_name="long_description"),
-                    DerivedContent.workspace.has(
-                        organization_id=agent.scope.organization_id
-                    ),
-                    (
-                        DerivedContent.version_id.in_(most_recent_versions_subquery)
-                        | DerivedContent.version_id.is_(None)
-                    ),
-                )
-                .options(selectinload(DerivedContent.workspace))
-            ).all()
+            # Fetch all matching rows
+            derived_contents = session.exec(stmt).all()
 
-            if not derived_content:
+            # If none are found, return the 'not found' message
+            if not derived_contents:
                 return f"No content found for file path: {self.codebase_directory_path}"
 
             search_results = []
             formatted_results = []
-            for content in derived_content:
+
+            # Iterate over all results
+            for content in derived_contents:
                 formatted_result = f"""<result>
-                    <content>{content.content}</content>
-                    <content_type>long_description</content_type>
-                    <path>{content.relative_path}</path>
-                </result>"""
-                formatted_results.append(formatted_result.strip())
+        <content>{content.content}</content>
+        <content_type>long_description</content_type>
+        <path>{content.node.version.display_name}/{content.node.relative_path}</path>
+    </result>""".strip()
+                formatted_results.append(formatted_result)
 
                 search_result = SearchResult(
                     content=content.content,
                     score=0.0,
-                    metadata={
-                        "content_type": "long_description",
-                        "path": content.relative_path,
-                        "relative_path": content.relative_path,
-                        "codebase_id": content.codebase_id,
-                        "workspace_id": content.workspace_id,
-                    },
+                    relative_path=content.node.relative_path,
+                    version_display_name=content.node.version.display_name,
+                    node_id=content.node.id,
+                    version_id=content.node.version_id,
+                    metadata={"content_type": content.content_kind},
                 )
                 search_results.append(search_result)
 
+            # Add the aggregated results to the Agent
             agent.add_search_results(SearchResults(results=search_results))
+
+            # Return the joined summaries
             return "\n".join(formatted_results)
 
     @classmethod

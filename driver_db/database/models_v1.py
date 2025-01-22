@@ -1,7 +1,7 @@
 import enum
 import uuid
 from datetime import datetime
-from typing import Optional
+from typing import Any
 from uuid import UUID
 
 import sqlalchemy.dialects.postgresql
@@ -10,30 +10,25 @@ from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     Column,
     Computed,
+    Connection,
     DateTime,
-    Enum,
     Index,
     Integer,
+    String,
     UniqueConstraint,
+    event,
     func,
     text,
+    update,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as SaUuid
-from sqlmodel import JSON, Field, Relationship, SQLModel
+from sqlalchemy.orm import Mapper
+from sqlmodel import JSON, Field, Relationship, SQLModel, select
 
 from .custom_types import TSVector
-
-
-# TODO remove in favor of derived content types once new embeddings created
-class ContentType(str, enum.Enum):
-    SOURCE_CODE = "SOURCE_CODE"
-    AUXILIARY_DOCUMENTATION = "AUXILIARY_DOCUMENTATION"
-    FILE_SUMMARY = "FILE_SUMMARY"
-    FOLDER_SUMMARY = "FOLDER_SUMMARY"
-    CODE_SYMBOL = "CODE_SYMBOL"
-    PDF_SUMMARY = "PDF_SUMMARY"
-    UNKNOWN = "UNKNOWN"
+from .models_v2 import Node, PrimaryAsset, Version
+from .models_v2_enums import ContentKind
 
 
 class RuntimeLogAgentInstance(SQLModel, table=True):  # type: ignore
@@ -52,8 +47,6 @@ class RuntimeLogAgentInstance(SQLModel, table=True):  # type: ignore
         ),
     )
     id: UUID | None = Field(default_factory=uuid.uuid4, primary_key=True)
-    workspace_id: str | None
-    codebase_id: str | None
     model: str
     messages: list["RuntimeLogAgentMessage"] = Relationship(
         back_populates="agent_instance"
@@ -77,6 +70,7 @@ class RuntimeLogAgentMessage(SQLModel, table=True):  # type: ignore
     agent_instance: RuntimeLogAgentInstance = Relationship(back_populates="messages")
 
 
+# TODO: DELETE THIS TABLE
 @strawberry.enum
 class Enum_Derived_Content_Status(str, enum.Enum):
     generating = "generating"
@@ -84,187 +78,41 @@ class Enum_Derived_Content_Status(str, enum.Enum):
     generation_error = "generation-error"
 
 
-@strawberry.enum
-class Enum_Codebase_Status(str, enum.Enum):
-    processing = "processing"
-    processing_complete = "processing-complete"
-    processing_error = "processing-error"
-    codebase_rejected = "codebase-rejected"
-
-    def into_dc_status(self) -> Enum_Derived_Content_Status:
-        match self:
-            case Enum_Codebase_Status.processing:
-                return Enum_Derived_Content_Status.generating
-            case Enum_Codebase_Status.processing_complete:
-                return Enum_Derived_Content_Status.generation_complete
-            case Enum_Codebase_Status.processing_error:
-                return Enum_Derived_Content_Status.generation_error
-            case _:
-                raise ValueError(f"No valid mapping for status: {self}")
-
-
-class Workspace(SQLModel, table=True):  # type: ignore
-    __tablename__ = "workspaces"
-    id: UUID | None = Field(
-        sa_column=Column(
-            SaUuid(as_uuid=True),
-            primary_key=True,
-            server_default=text("uuid_generate_v4()"),
-        ),
-        default=None,
-    )
-    display_name: None | str = Field(
-        max_length=255,
-        sa_column=sqlalchemy.Column(sqlalchemy.String(255), nullable=True),
-    )
-    description: None | str = None
-    organization_id: str
-    created_at: None | datetime = Field(
-        sa_column=Column(
-            DateTime(timezone=True), server_default=func.now(), nullable=False
-        ),
-        default=None,
-    )
-    updated_at: None | datetime = Field(
-        sa_column=Column(
-            DateTime(timezone=True),
-            server_default=func.now(),
-            onupdate=func.now(),
-            nullable=False,
-        ),
-    )
-    codebases: list["Codebase"] = Relationship(back_populates="workspace")
-    source_contents: list["DerivedContent"] = Relationship(back_populates="workspace")
-
-
-class Codebase(SQLModel, table=True):  # type: ignore
-    __tablename__ = "codebases"
-    __table_args__ = (
-        sqlalchemy.UniqueConstraint(
-            "workspace_id", "codebase_name", name="uq_workspace_id_codebase_name"
-        ),
-    )
-
-    id: UUID | None = Field(
-        sa_column=Column(
-            SaUuid(as_uuid=True),
-            primary_key=True,
-            server_default=text("uuid_generate_v4()"),
-        ),
-        default=None,
-    )
-    workspace_id: UUID = Field(foreign_key="workspaces.id", index=True)
-    codebase_name: str = Field(
-        max_length=255,
-        sa_column=sqlalchemy.Column(sqlalchemy.String(255), nullable=False),
-    )
-    description: None | str = Field(sa_column=Column(sqlalchemy.Text, nullable=True))
-    status: Enum_Codebase_Status = Field(
-        sa_column=sqlalchemy.Column(
-            Enum(Enum_Codebase_Status, values_callable=lambda x: [e.value for e in x]),
-            nullable=False,
-        )
-    )  # TODO this makes the enum values the strings to match sequelize versions.
-    # Normally we wouldn't need to define the field at all
-    storage_url: None | str = Field(sa_column=Column(sqlalchemy.Text, nullable=True))
-    resource_root: None | str = Field(sa_column=Column(sqlalchemy.Text, nullable=True))
-    creator_id: str | None
-    created_at: None | datetime = Field(
-        sa_column=Column(
-            DateTime(timezone=True), server_default=func.now(), nullable=False
-        ),
-        default=None,
-    )
-    updated_at: None | datetime = Field(
-        sa_column=Column(
-            DateTime(timezone=True),
-            server_default=func.now(),
-            onupdate=func.now(),
-            nullable=False,
-        ),
-    )
-    workspace: Workspace = Relationship(back_populates="codebases")
-    source_contents: list["DerivedContent"] = Relationship(back_populates="codebase")
-
-
-class DerivedContentType(SQLModel, table=True):  # type: ignore
-    __tablename__ = "derived_content_types"
-    id: UUID | None = Field(
-        sa_column=Column(
-            SaUuid(as_uuid=True),
-            primary_key=True,
-            server_default=text("uuid_generate_v4()"),
-        ),
-        default=None,
-    )
-    type_name: str = Field(
-        max_length=255,
-        sa_column=sqlalchemy.Column(
-            sqlalchemy.String(255), unique=True, nullable=False
-        ),
-    )
-    created_at: None | datetime = Field(
-        sa_column=Column(
-            DateTime(timezone=True), server_default=func.now(), nullable=False
-        ),
-        default=None,
-    )
-    updated_at: None | datetime = Field(
-        sa_column=Column(
-            DateTime(timezone=True),
-            server_default=func.now(),
-            onupdate=func.now(),
-            nullable=False,
-        ),
-    )
-    contents: list["DerivedContent"] = Relationship(back_populates="content_type")
-
-
-class TagContent(SQLModel, table=True):
-    __tablename__ = "tags_contents"
-    """Link table between Tags and Content models."""
-
-    tag_id: None | uuid.UUID = Field(
-        default=None, foreign_key="tags.id", primary_key=True
-    )
-    include: bool
-    content_id: None | uuid.UUID = Field(
-        default=None, foreign_key="derived_contents.id", primary_key=True
-    )
-    tag: Optional["Tag"] = Relationship(
-        back_populates="content_links",
-        sa_relationship_kwargs={"foreign_keys": "TagContent.tag_id"},
-    )
-    content: Optional["DerivedContent"] = Relationship(
-        back_populates="tag_links",
-        sa_relationship_kwargs={"foreign_keys": "TagContent.content_id"},
-    )
-
-
 class DocumentSource(SQLModel, table=True):
     __tablename__ = "document_sources"
     """Link table between documents and their sources."""
 
-    document_id: None | uuid.UUID = Field(
-        default=None, foreign_key="derived_contents.id", primary_key=True
+    source_node_id: None | uuid.UUID = Field(
+        default=None,
+        foreign_key="v2_node.id",
+        primary_key=True,
+        ondelete="CASCADE",
     )
-    include: bool
-    source_id: None | uuid.UUID = Field(
-        default=None, foreign_key="derived_contents.id", primary_key=True
+    page_node_id: None | uuid.UUID = Field(
+        default=None,
+        foreign_key="v2_node.id",
+        primary_key=True,
+        ondelete="CASCADE",
     )
-    document: "DerivedContent" = Relationship(
-        back_populates="source_links",
-        sa_relationship_kwargs={"foreign_keys": "DocumentSource.document_id"},
+    source_node: "Node" = Relationship(
+        back_populates="document_sources",
+        sa_relationship_kwargs={"foreign_keys": "DocumentSource.source_node_id"},
     )
-    source: "DerivedContent" = Relationship(
-        back_populates="document_links",
-        sa_relationship_kwargs={"foreign_keys": "DocumentSource.source_id"},
+    page_node: "Node" = Relationship(
+        back_populates="document_sources",
+        sa_relationship_kwargs={"foreign_keys": "DocumentSource.page_node_id"},
     )
 
 
 # TODO add indexes back
 class DerivedContent(SQLModel, table=True):  # type: ignore
     __tablename__ = "derived_contents"
+
+    # TODO:
+    # Point tags at node or primary asset
+    # remove derived_content_type
+    # remove workspace
+    # remove codebase
     id: UUID | None = Field(
         sa_column=Column(
             SaUuid(as_uuid=True),
@@ -273,45 +121,43 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
         ),
         default=None,
     )
-    content_type_id: UUID = Field(
-        foreign_key="derived_content_types.id", nullable=False, index=True
-    )
-    content_type: DerivedContentType = Relationship(back_populates="contents")
-    # All content must be in a workspace
-    workspace_id: UUID = Field(foreign_key="workspaces.id", nullable=False, index=True)
-    source_content_id: UUID | None = Field(
-        foreign_key="derived_contents.id", index=True, nullable=True, default=None
+
+    # Removing FKs from the following:
+    content_kind: ContentKind | None = Field(
+        sa_column=Column(
+            String,
+            nullable=True,
+            index=True,
+        ),
+        default=None,
     )
     # Content doesn't need to be associated with a codebase in our flat asset design. But for now, we keep
     # all source contents and derived contents for a codebase associated with the codebase. PDFs and other docs,
     # however, won't have a codebase ID -- just a workspace ID, since we are keeping workspaces for now.
-    codebase_id: None | UUID = Field(
-        default=None, foreign_key="codebases.id", nullable=True, index=True
+
+    node_id: None | UUID = Field(
+        default=None,
+        foreign_key="v2_node.id",
+        ondelete="CASCADE",
+        nullable=True,
+        index=True,
     )
 
-    codebase: None | Codebase = Relationship(back_populates="source_contents")
     relative_path: str = Field(
         sa_column=Column(sqlalchemy.Text, nullable=False, index=True)
     )
     content: None | str = Field(
         sa_column=Column(sqlalchemy.Text, nullable=True), default=None
     )
+
+    # TODO: Get rid of this?
     content_name: None | str = Field(
         sa_column=Column(sqlalchemy.Text, nullable=True), default=None
     )
     misc_metadata: dict | None = Field(  # type: ignore
         sa_column=Column("metadata", JSONB, nullable=True), default=None
     )
-    status: Enum_Derived_Content_Status | None = Field(
-        sa_column=sqlalchemy.Column(
-            Enum(
-                Enum_Derived_Content_Status,
-                values_callable=lambda x: [e.value for e in x],
-            ),
-            nullable=True,
-        ),
-        default=None,
-    )
+
     created_at: None | datetime = Field(
         sa_column=Column(
             DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -326,41 +172,45 @@ class DerivedContent(SQLModel, table=True):  # type: ignore
             nullable=False,
         ),
     )
-    source_content: Optional["DerivedContent"] = Relationship(
-        back_populates="derived_contents",
-        sa_relationship_kwargs={"remote_side": "DerivedContent.id"},
-    )
-    derived_contents: list["DerivedContent"] = Relationship(
-        back_populates="source_content"
-    )
+
     order: int | None = Field(
         sa_column=Column(Integer, nullable=True, server_default=text("0"))
     )
-    workspace: Workspace = Relationship(back_populates="source_contents")
-    document_links: list["DocumentSource"] = Relationship(
-        back_populates="source",
-        sa_relationship_kwargs={"foreign_keys": "DocumentSource.source_id"},
-    )
 
-    source_links: list["DocumentSource"] = Relationship(
-        back_populates="document",
-        sa_relationship_kwargs={"foreign_keys": "DocumentSource.document_id"},
-    )
     chunks_and_embeds: list["ChunkAndEmbedding"] = Relationship(
-        back_populates="content", cascade_delete=True
+        back_populates="content"
     )
 
-    tag_links: list["TagContent"] = Relationship(back_populates="content")
-    tags: list["Tag"] = Relationship(
-        back_populates=None,
-        sa_relationship_kwargs={"secondary": "tags_contents", "viewonly": True},
+    node: Node = Relationship(
+        back_populates="contents",
+        sa_relationship_kwargs={"foreign_keys": "DerivedContent.node_id"},
     )
-    version_id: None | UUID = Field(
-        foreign_key="inspection_versions.id", nullable=True, index=True, default=None
+
+
+def update_primary_asset_content_timestamp(
+    mapper: Mapper[Any], connection: Connection, target: DerivedContent
+) -> None:
+    # TODO node_id is nullable today, but once that changes, this should be updated
+    if not target.node_id:
+        return
+
+    primary_asset = (
+        select(PrimaryAsset.id)
+        .join(Version)
+        .join(Node)
+        .where(Node.id == target.node_id)
     )
-    inspection_version: Optional["InspectionVersion"] = Relationship(
-        back_populates="contents"
+
+    stmt = (
+        update(PrimaryAsset)
+        .where(PrimaryAsset.id.in_(primary_asset))
+        .values(related_content_last_updated=func.now())
     )
+    connection.execute(stmt)
+
+
+event.listen(DerivedContent, "after_update", update_primary_asset_content_timestamp)
+event.listen(DerivedContent, "after_insert", update_primary_asset_content_timestamp)
 
 
 class Tag(SQLModel, table=True):  # type: ignore
@@ -387,7 +237,11 @@ class Tag(SQLModel, table=True):  # type: ignore
     organization_id: str
     type: str = Field(
         max_length=255,
-        sa_column=sqlalchemy.Column(sqlalchemy.String(255), nullable=False),
+        sa_column=sqlalchemy.Column(
+            sqlalchemy.String(255),
+            nullable=False,
+            index=True,
+        ),
     )
     created_at: None | datetime = Field(
         sa_column=Column(
@@ -405,13 +259,18 @@ class Tag(SQLModel, table=True):  # type: ignore
             onupdate=func.now(),
             nullable=False,
         ),
+        default=None,
     )
     updated_by: str = Field(
         sa_column=sqlalchemy.Column(sqlalchemy.String(128), nullable=False),
     )
-    content_links: list["TagContent"] = Relationship(
-        back_populates="tag",
-        sa_relationship_kwargs={"foreign_keys": "TagContent.tag_id"},
+    # content_links: list["TagContent"] = Relationship(
+    #     back_populates="tag",
+    #     sa_relationship_kwargs={"foreign_keys": "TagContent.tag_id"},
+    # )
+    primary_assets: list["PrimaryAsset"] = Relationship(
+        back_populates="tags",
+        sa_relationship_kwargs={"secondary": "v2_primary_asset_tag"},
     )
 
 
@@ -420,8 +279,8 @@ class ChunkAndEmbedding(SQLModel, table=True):  # type: ignore
     content_id: UUID = Field(
         foreign_key="derived_contents.id",
         nullable=False,
-        ondelete="CASCADE",
         index=True,
+        ondelete="CASCADE",
     )
     content: DerivedContent | None = Relationship(back_populates="chunks_and_embeds")
     text: str
@@ -450,52 +309,17 @@ class ChunkAndEmbedding(SQLModel, table=True):  # type: ignore
         "__ts_vector__",
         TSVector(),
         Computed("to_tsvector('english', text)", persisted=True),
-    )
-    __table_args__ = (
-        Index(
-            "ix_chunkandembedding___ts_vector__", __ts_vector__, postgresql_using="gin"
-        ),
-    )
-
-
-class InspectionVersion(SQLModel, table=True):
-    __tablename__ = "inspection_versions"
-
-    id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    version: str  # Typically a Git commit hash
-    display_name: str | None = (
-        None  # User-defined name; could default to Git tags if available
-    )
-    created_at: None | datetime = Field(
-        sa_column=Column(
-            DateTime(timezone=True), server_default=func.now(), nullable=False
-        ),
-        default=None,
-    )
-    updated_at: None | datetime = Field(
-        sa_column=Column(
-            DateTime(timezone=True),
-            server_default=func.now(),
-            onupdate=func.now(),
-            nullable=False,
-        ),
-    )
-    previous_version_id: UUID | None = Field(
-        foreign_key="inspection_versions.id", nullable=True, index=True
-    )  # Points to the previous version for chain tracking
-    contents: list["DerivedContent"] = Relationship(back_populates="inspection_version")
-    inspector_runs: list["InspectorRun"] = Relationship(
-        back_populates="inspection_version"
+        index=Index("ix_chunkandembedding___ts_vector__", postgresql_using="gin"),
     )
 
 
 class InspectorRun(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    inspection_version_id: UUID = Field(
-        foreign_key="inspection_versions.id", nullable=False
-    )
-    inspection_version: "InspectionVersion" = Relationship(
-        back_populates="inspector_runs"
+    inspection_version_id: UUID | None
+    version_id: UUID = Field(
+        foreign_key="v2_version.id",
+        nullable=True,  # TODO make non-nullable after migration
+        ondelete="SET NULL",
     )
     created_at: None | datetime = Field(
         sa_column=Column(

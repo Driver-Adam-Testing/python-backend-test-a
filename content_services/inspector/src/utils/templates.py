@@ -5,8 +5,7 @@ from inspect import signature
 from pathlib import Path
 from typing import Any, Self
 
-from modal import Function
-from pydantic import UUID4, BaseModel, ValidationError
+from pydantic import BaseModel, ValidationError
 
 from utils.models import ChatOpenAI, OutputConfig, OutputConfigKind
 
@@ -36,16 +35,6 @@ class TemplateError(Exception):
 
 class SectionKind(BaseModel):
     kind: S
-
-
-def _template_section_with_sse(
-    section_prompt: str, workspace_id: UUID4, codebase_id: UUID4
-) -> str:
-    func = Function.lookup("comprehender", "single_shot_edit")
-    modal_call = func.remote(
-        str(workspace_id), str(codebase_id), f"{section_prompt}", {}
-    )
-    return f"{modal_call["content"]}\n"
 
 
 class Boolean(BaseModel):
@@ -230,32 +219,6 @@ class Template(BaseModel):
                 case _:
                     raise TemplateError(
                         f"Unsupported template section kind {tag.kind} for direct llm execution"
-                    )
-
-        return output
-
-    def run_with_single_shot_edit_agent(
-        self, workspace_id: UUID4, codebase_id: UUID4
-    ) -> str:
-        output = ""
-        for tup in self.template:
-            tag = SectionKind(kind=tup[0])
-            args = tup[1:]
-            match tag.kind:
-                case S.RAW:
-                    (raw_content,) = args
-                    output += f"{raw_content}\n"
-                case S.SINGLE_PROMPT_TEXT:  # Simple section header, prompt pair
-                    section_title, section_prompt = args
-                    content = _template_section_with_sse(
-                        section_prompt=section_prompt,
-                        workspace_id=workspace_id,
-                        codebase_id=codebase_id,
-                    )
-                    output += f"{section_title}\n{content}\n"
-                case _:
-                    raise ValueError(
-                        f"Unsupported template section kind {tag.kind} for single shot edit agent execution"
                     )
 
         return output

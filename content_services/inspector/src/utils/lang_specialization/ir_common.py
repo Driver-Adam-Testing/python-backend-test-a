@@ -127,6 +127,22 @@ class ListedRawContentWithNone(MdRenderable):
         return output_str
 
 
+class NestedListedRawContent(MdRenderable):
+    content: list[list[str]]
+
+    def render_markdown(self, doc_label: str) -> str:
+        output_str = ""
+        output_str += f"- **{snake_case_to_spaced_string(doc_label)}**:\n"
+        if len(self.content) > 0:
+            for idx, item in enumerate(self.content):
+                output_str += f"    - Block {idx+1}\n"
+                for subitem in item:
+                    output_str += f"        - {subitem}\n"
+        else:
+            output_str += "    - None\n"
+        return output_str
+
+
 class ListData(BaseModel):
     data: list[str]
 

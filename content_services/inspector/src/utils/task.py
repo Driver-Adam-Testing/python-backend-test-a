@@ -8,12 +8,13 @@ from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 from typing import Any
+from uuid import UUID
 
 import boto3
 import modal.exception
 from botocore.exceptions import NoCredentialsError
 
-from utils.dag import LiteNode
+from utils.dag import LiteNode, NodeStatus
 
 TaskName = str
 
@@ -166,7 +167,6 @@ class S3TaskResultPersistence(TaskResultPersistence):
 class Task(abc.ABC):
     task_name: str
     node: LiteNode
-    load_persisted_results: bool = False
     dependencies: tuple[type["Task"], ...] = field(default_factory=tuple)
     _base_recoverable_errors: set = field(init=False, repr=False)
 
@@ -274,20 +274,20 @@ class TaskManager:
         return cls(*args, persistence=S3TaskResultPersistence(bucket_name), **kwargs)
 
     async def run_tasks(
-        self, run_id: str, previous_run_id: str | None = None
+        self,
+        run_id: UUID,
+        result_loading_config: list[tuple[UUID, set[NodeStatus]]] | None = None,
     ) -> dict[type[Task], TaskResult]:
-        if previous_run_id and self.persistence:
+        result_loading_config = result_loading_config or []
+
+        if len(result_loading_config) > 0 and self.persistence:
             # We can block the event loop with blocking IO when loading the state we aren't running
             # anything concurrent yet
-
-            # We always load from a previous run ID. If we are resuming in the greenfield case, we have a
-            # run ID from the previous run for the same version. If we are resuming in the diff flow case,
-            # we load results from the latest run for the previous version. See caller.
-            self.load_persisted_results(previous_run_id)
+            self.load_persisted_results(result_loading_config)
         # return
 
         if self.persistence:
-            writer_task = asyncio.create_task(self._write_task_results(run_id))
+            writer_task = asyncio.create_task(self._write_task_results(str(run_id)))
 
         try:
             if self.serial_exe:
@@ -305,18 +305,28 @@ class TaskManager:
 
         return self.task_results
 
-    def load_persisted_results(self, run_id: str) -> None:
+    def load_persisted_results(
+        self, result_loading_config: list[tuple[str, set[NodeStatus]]]
+    ) -> None:
         print("Loading persisted results for resumption...")
-        persisted_results = self.persistence.load_all_results(run_id)
         flattened_tasks = self.tasks
         print("Total tasks:", len(flattened_tasks))
-        for task in flattened_tasks:
-            task_hash_str = task.hashed_stable_id
-            if task.load_persisted_results and task_hash_str in persisted_results:
-                print(f"Loaded results for task '{task.task_name}' from storage")
-                self.task_results[task] = persisted_results[task_hash_str]
+
+        loaded_results = {}
+        for run_id, node_statuses in result_loading_config:
+            persisted_results = self.persistence.load_all_results(run_id)
+            for task in flattened_tasks:
+                if (
+                    task.node.status in node_statuses
+                    and task.hashed_stable_id in persisted_results
+                ):
+                    print(f"Using results for task '{task.task_name}' from storage")
+                    # Note that potential overwriting here is intentional.
+                    loaded_results[task] = persisted_results[task.hashed_stable_id]
+
+        self.task_results.update(loaded_results)
         print(
-            f"Loaded results successfully for {len(self.task_results)} tasks from storage"
+            f"Loaded results successfully for {len(loaded_results)} tasks from storage"
         )
 
     async def _schedule_and_await_task(self, task: type[Task]) -> asyncio.Task:

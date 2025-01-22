@@ -27,12 +27,7 @@ cd pdf_preprocessing
 # Perform modal deploy on src/main.py with the environment argument
 modal deploy --env=$environment src/main.py
 cd ..
-# Navigate to the pdf_preprocessing directory
-cd comprehender
-# Perform modal deploy on src/main.py with the environment argument
-modal deploy --env=$environment src/main.py
-cd ..
-# Navigate to the pdf_preprocessing directory
+# Navigate to the embedding directory
 cd embedding
 # Perform modal deploy on src/main.py with the environment argument
 modal deploy --env=$environment src/main.py

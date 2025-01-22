@@ -2,52 +2,51 @@ import datetime
 from logging.config import fileConfig
 
 from alembic import context
+from database.config import settings
+from database.models_v1 import SQLModel as V1
+from database.models_v2 import SQLModel as V2
 from sqlalchemy import engine_from_config, inspect, pool, text
 from sqlalchemy.engine import Connection
+from sqlmodel import SQLModel  # Import SQLModel
 
-# this is the Alembic Config object, which provides
-# access to the values within the .ini file in use.
 config = context.config
-
-# Interpret the config file for Python logging.
-# This line sets up loggers basically.
 fileConfig(str(config.config_file_name))
 
-# add your model's MetaData object here
-# for 'autogenerate' support
-# from myapp import mymodel
-# target_metadata = mymodel.Base.metadata
-# target_metadata = None
+print(V1)
+print(V2)
 
-from database.models_v1 import SQLModel as SQLModelV1  # noqa
-from database.config import settings  # noqa
-
-target_metadata = SQLModelV1.metadata
-# other values from the config, defined by the needs of env.py,
-# can be acquired:
-# my_important_option = config.get_main_option("my_important_option")
-# ... etc.
+target_metadata = SQLModel.metadata
 
 
-def get_url():
+def get_url() -> str:
     return str(settings.SQLALCHEMY_DATABASE_URI)
 
 
-def run_migrations_offline():
-    """Run migrations in 'offline' mode.
+def include_object(
+    object_: any, name: str, type_: str, reflected: any, compare_to: any
+) -> bool:
+    # NOTE: Manually managed indexes are ignored by alembic
+    if type_ == "index" and name in [
+        "ix_chunkandembedding_text_embedding_3_small_vector_l2_ops",
+        "ix_chunkandembedding___ts_vector__",
+    ]:
+        return False
+    if type_ == "column" and name == "__ts_vector__":
+        return False
+    # Otherwise, return True so Alembic processes it normally
+    return True
 
-    This configures the context with just a URL
-    and not an Engine, though an Engine is acceptable
-    here as well.  By skipping the Engine creation
-    we don't even need a DBAPI to be available.
 
-    Calls to context.execute() here emit the given string to the
-    script output.
-
-    """
+def run_migrations_offline() -> None:
+    """Run migrations in 'offline' mode."""
     url = get_url()
     context.configure(
-        url=url, target_metadata=target_metadata, literal_binds=True, compare_type=True
+        url=url,
+        target_metadata=target_metadata,
+        literal_binds=True,
+        compare_type=True,
+        dialect_opts={"paramstyle": "named"},
+        include_object=include_object,
     )
 
     with context.begin_transaction():
@@ -59,13 +58,8 @@ def table_exists(connection: Connection, table_name: str) -> bool:
     return table_name in inspector.get_table_names()
 
 
-def run_migrations_online():
-    """Run migrations in 'online' mode.
-
-    In this scenario we need to create an Engine
-    and associate a connection with the context.
-
-    """
+def run_migrations_online() -> None:
+    """Run migrations in 'online' mode."""
     configuration = config.get_section(config.config_ini_section)
     configuration["sqlalchemy.url"] = get_url()
     connectable = engine_from_config(
@@ -76,27 +70,26 @@ def run_migrations_online():
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata, compare_type=True
+            connection=connection,
+            target_metadata=target_metadata,
+            compare_type=True,
+            include_object=include_object,
         )
 
         with context.begin_transaction():
-            # We allow bypassing the lock for initial setup purposes when the alembic table doesn't exist.
+            # Check if alembic_version table exists
             if table_exists(connection, "alembic_version"):
-                # Since we are using Postgres, we can handle DB migration concurrency with LOCK TABLE so that only
-                # one container really applies the migrations.
-                # https://github.com/sqlalchemy/alembic/issues/633
-                # command.ensure_version(config=context.config)
+                # Lock the alembic_version table to prevent concurrency issues
                 print("Locking alembic_version table for migration")
                 connection.execute(
-                    statement=text(
-                        "LOCK TABLE alembic_version IN ACCESS EXCLUSIVE MODE"
-                    )
+                    text("LOCK TABLE alembic_version IN ACCESS EXCLUSIVE MODE")
                 )
-            now = datetime.datetime.now(datetime.UTC)
+
+            now = datetime.datetime.now()
             print("Running migrations at", now)
             context.run_migrations()
-            print("Migrations complete at", datetime.datetime.now(datetime.UTC))
-            # lock is released when transaction ends
+            print("Migrations complete at", datetime.datetime.now())
+            # Lock is released when transaction ends
 
 
 if context.is_offline_mode():

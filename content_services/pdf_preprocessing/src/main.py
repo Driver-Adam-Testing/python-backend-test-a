@@ -63,66 +63,54 @@ def send_exception_email(exception_details: str) -> None:
 
 
 @app.function(timeout=16200, **pdf_preprocessing_modal_config)
-def create_and_embed_pdf_summaries(content_id: str) -> None:
+def create_and_embed_pdf_summaries(node_id: str) -> None:
     import io
 
     import requests
     from database.db import engine
-    from database.models_v1 import ChunkAndEmbedding, DerivedContent, DerivedContentType
+    from database.models_v1 import ChunkAndEmbedding, DerivedContent
+    from database.models_v2 import Node, Version
+    from database.models_v2_enums import ContentKind, VersionStatus
     from shared.chunking.text_splitter import split_text
     from shared.embedding.text_embedder import batch_embed_text
     from shared.file_storage.s3 import (
-        get_presigned_url_from_content_information,
-        get_presigned_url_without_codebase,
+        get_presigned_url,
     )
     from shared.pipelines.process_file.process_file_pdf import run_process_pdf
     from sqlalchemy.orm import selectinload
     from sqlmodel import Session, select
 
-    print(f"Processing {content_id!s}")
+    print(f"Processing {node_id!s}")
     try:
         # TODO: call an orm function to do this.
         with Session(engine) as session:
-            content_results = session.exec(
-                select(DerivedContent)
-                .where(DerivedContent.id == content_id)
-                .options(selectinload(DerivedContent.workspace))
-            ).all()
-            if len(content_results) != 1:
-                raise Exception("Wrong content_id value")
-            content: DerivedContent = content_results[0]
+            node = session.exec(
+                select(Node)
+                .where(Node.id == node_id)
+                .options(selectinload(Node.version).selectinload(Version.primary_asset))
+            ).one()
 
-            if content.codebase_id is None:
-                # this document is not associated with a codebase
-                presigned_url = get_presigned_url_without_codebase(
-                    organization_id=content.workspace.organization_id,
-                    relative_path=content.relative_path,
-                )
-            else:
-                presigned_url = get_presigned_url_from_content_information(
-                    codebase_id=content.codebase_id,
-                    organization_id=content.workspace.organization_id,
-                    relative_path=content.relative_path,
-                )
+            presigned_url = get_presigned_url(
+                organization_id=node.version.primary_asset.organization_id,
+                path=f"{node.version.primary_asset_id}/{node.version_id}/{node.relative_path}",
+            )
 
         response = requests.get(presigned_url)
         print(str(presigned_url))
         response.raise_for_status()
 
         pdf_content = io.BytesIO(response.content)
-        pdf_content.name = content.relative_path.split("/")[-1]
+        pdf_content.name = node.relative_path.split("/")[-1]
         results = run_process_pdf(pdf_content)
         with Session(engine) as session:
             for result in results:
-                content_type_id = session.exec(
-                    select(DerivedContentType.id).where(
-                        DerivedContentType.type_name == result.content_type.value
-                    )
-                ).one_or_none()
+                content_kind = result.content_type.value
 
-                if content_type_id is None:
+                if content_kind not in ContentKind:
+                    # TODO: run_process_pdf uses ProcessedPdfFileContentType enum from shared/interfaces
+                    # but we have the num in driver_db for content_kind, we should use that instead.
                     raise Exception(
-                        f"DerivedContentType not found for value: {result.content_type.value}"
+                        f"Matching ContentKind not found for value: {result.content_type.value}"
                     )
 
                 # TODO: This should all be in a service.
@@ -131,16 +119,15 @@ def create_and_embed_pdf_summaries(content_id: str) -> None:
                 cleaned_content = str(result.content.replace("\x00", ""))
 
                 derived_content = DerivedContent(
-                    workspace_id=content.workspace.id,
-                    codebase_id=content.codebase_id,
+                    content_type_id=None,
+                    content_kind=content_kind,
+                    node_id=node_id,
+                    relative_path=node.relative_path,
                     content=cleaned_content,
-                    content_type_id=content_type_id,
-                    source_content_id=content_id,
                     misc_metadata={
                         "open_ai_file_id": result.open_ai_file_id,
                         "page": result.page,
                     },
-                    relative_path=content.relative_path,
                 )
                 session.add(derived_content)
                 session.commit()
@@ -169,10 +156,12 @@ def create_and_embed_pdf_summaries(content_id: str) -> None:
 
         # Re-query the content object and update its status
         with Session(engine) as session:
-            content = session.exec(
-                select(DerivedContent).where(DerivedContent.id == content_id)
+            node = session.exec(
+                select(Node)
+                .where(Node.id == node_id)
+                .options(selectinload(Node.version))
             ).one()
-            content.status = "generation-complete"
+            node.version.status = VersionStatus.GENERATION_COMPLETE
             session.commit()
 
     except Exception as e:

@@ -4,6 +4,7 @@ from database.derived_content_types import DerivedContentTypeNames
 
 from shared.agent.agent_base import AgentBase
 from shared.agent.tools.tool_strict import ToolStrict
+from shared.interfaces.search import SearchAlgorithm
 from shared.pipelines.search import (
     SearchInput,
     search_content_without_session,
@@ -22,11 +23,11 @@ class SearchTool(ToolStrict):
             - source-code: Search source code files.
             - codebase-technical-documentation: Search technical documentation.
             - pdf-content: For searching within PDF documents.
-        search_algorithm (SearchAlgorithm): The search algorithm. Defaults to 'hybrid'.
-            - hybrid: Combines keyword and semantic search.
-            - semantic: Focuses on meaning and context. Use english sentences.
-            - keyword: searches in the content of files. Use only a single keyword.
-        search_subfolder_paths (list[str], optional): source paths and dirs to search.
+        search_algorithm (enum): The search algorithm.
+            - HYBRID: Combines keyword and semantic search.
+            - SEMANTIC: Focuses on meaning and context. Use english sentences.
+            - KEYWORD: searches in the content of files. Use only a single keyword.
+        search_subfolder_with_version_paths (list[str], optional): source paths and dirs to search.
             - Use null to search broadly.
     """
 
@@ -35,17 +36,11 @@ class SearchTool(ToolStrict):
         source_code = "source-code"
         technical_documentation = "codebase-technical-documentation"
         pdf_content = "pdf-content"
-        # user_generated_files = "user-generated-files"
-
-    class SearchAlgorithm(str, Enum):
-        hybrid = "hybrid"
-        semantic = "semantic"
-        keyword = "keyword"
 
     search_query: str
     content_types: list[SearchToolInputContentType]
-    search_algorithm: SearchAlgorithm = SearchAlgorithm.hybrid
-    search_subfolder_paths: list[str] | None = None
+    search_algorithm: SearchAlgorithm = SearchAlgorithm.HYBRID
+    search_subfolder_with_version_paths: list[str] | None = None
 
     @property
     def derived_content_types(self) -> list[str]:
@@ -108,15 +103,18 @@ class SearchTool(ToolStrict):
 
     def execute(self, agent: AgentBase) -> str:
         # Ensure relative paths are subfolders or files within agent.paths
-        agent.scope.authorize(self.search_subfolder_paths)
-
-        scope = agent.scope.into_datascope(self.search_subfolder_paths)
+        if self.search_subfolder_with_version_paths:
+            node_ids = agent.scope.to_child_datascope(
+                self.search_subfolder_with_version_paths
+            ).node_ids
+        else:
+            node_ids = agent.scope.node_ids
         search_input = SearchInput(
             query=self.search_query,
             algorithm=self.search_algorithm.value,
-            content_type=self.derived_content_types,
-            organization_id=scope.organization_id,
-            paths=scope.paths,
+            content_kinds=self.derived_content_types,
+            organization_id=agent.scope.organization_id,
+            node_ids=node_ids,
         )
         results = search_content_without_session(search_input)
 
@@ -126,15 +124,11 @@ class SearchTool(ToolStrict):
         formatted_results = []
         for result in results.results:
             content = result.content
-            metadata = result.metadata
-            content_type = metadata.get("content_type", "")
-            relative_path = metadata.get("relative_path", "")
-            metadata["path"] = relative_path
+
             # TODO: add formatting to the interface. This would allow us to share then
             formatted_result = f"""<result>
                 <content>{content}</content>
-                <content_type>{content_type}</content_type>
-                <path>{relative_path}</path>
+                <path>{result.version_display_name}/{result.relative_path}</path>
             </result>"""
             formatted_results.append(formatted_result.strip())
 

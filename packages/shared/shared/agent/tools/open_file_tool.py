@@ -1,5 +1,5 @@
 from database.db import get_session
-from database.models_v1 import DerivedContent
+from database.models_v1 import ChunkAndEmbedding, DerivedContent
 from sqlalchemy.orm import selectinload
 from sqlmodel import select
 
@@ -20,29 +20,18 @@ class OpenFileTool(ToolStrict):
     file_path: str
 
     def execute(self, agent: AgentBase) -> str:
-        agent.scope.authorize(self.file_path)
+        try:
+            datascope = agent.scope.to_child_datascope([self.file_path])
 
-        with get_session() as session:
-            derived_content: DerivedContent | None = session.exec(
-                select(DerivedContent)
-                .where(
-                    DerivedContent.relative_path == self.file_path,
-                    DerivedContent.content_type.has(type_name="codebase-file"),
-                    DerivedContent.workspace.has(
-                        organization_id=agent.scope.organization_id
-                    ),
+            with get_session() as session:
+                stmt = (
+                    select(ChunkAndEmbedding)
+                    .join(DerivedContent)
+                    .where(DerivedContent.node_id == datascope.node_ids[0])
+                    .options(selectinload(ChunkAndEmbedding.content))
+                    .order_by(ChunkAndEmbedding.chunk_number)
                 )
-                .options(selectinload(DerivedContent.chunks_and_embeds))
-                .options(selectinload(DerivedContent.workspace))
-                .order_by(DerivedContent.updated_at.desc())
-            ).first()
-
-            if not derived_content:
-                return f"No content found for file path: {self.file_path}"
-
-            chunks_and_embeddings = sorted(
-                derived_content.chunks_and_embeds, key=lambda chunk: chunk.chunk_number
-            )
+                chunks_and_embeddings = session.exec(stmt).all()
 
             if not chunks_and_embeddings:
                 return f"No content found for file path: {self.file_path}"
@@ -68,19 +57,22 @@ class OpenFileTool(ToolStrict):
             search_result = SearchResult(
                 content=full_text,
                 score=1.0,
-                metadata={
-                    "content_type": "codebase-file",
-                    "path": self.file_path,
-                    "tool": "OpenFileTool",
-                    "relative_path": self.file_path,
-                    "codebase_id": derived_content.codebase_id,
-                    "workspace_id": derived_content.workspace_id,
-                },
+                relative_path=datascope.nodes[0].relative_path,
+                version_display_name=datascope.nodes[0].version.display_name,
+                node_id=datascope.nodes[0].id,
+                version_id=datascope.nodes[0].version_id,
+                metadata={},
             )
             agent.add_search_results(SearchResults(results=[search_result]))
 
             return full_text
+        except Exception:
+            import traceback
 
-    @classmethod
-    def system_prompt(cls) -> str:
-        return """Use the OpenFileTool to read a source code file in it's entirety. File paths must have a known source code extension."""
+            traceback.print_exc()
+            raise
+
+
+@classmethod
+def system_prompt(cls: any) -> str:
+    return """Use the OpenFileTool to read a source code file in it's entirety. File paths must have a known source code extension."""

@@ -12,9 +12,8 @@ from app.api.auth import (
     UserToken,
 )
 from app.api.session import CurrentSession
-from app.schemas.content_schema import ListContentInput, TagAssociationResponse
+from app.schemas.content_schema import ListContentInput
 from app.schemas.tag_schema import (
-    CollectionSourceInput,
     EditTagInput,
     ListTagContentsResults,
     ListTagsInput,
@@ -105,41 +104,6 @@ def read_tag_contents(
             sort_direction=sort_direction,
             status=status,
         ),
-    )
-
-
-@router.post(
-    "/{tag_id}/content/{content_id}",
-    summary="Associate a tag with this content",
-    dependencies=[ContentEditorPermission],
-)
-def associate_tag_with_content(
-    session: CurrentSession,
-    user: UserToken,
-    content_id: str,
-    tag_id: str,
-    input: CollectionSourceInput,
-) -> TagAssociationResponse:
-    tag_service = TagService(session)
-    return tag_service.associate_tag(
-        user.organization_id, UUID(content_id), UUID(tag_id), input.include
-    )
-
-
-@router.delete(
-    "/{tag_id}/content/{content_id}",
-    summary="Disassociate a tag with this content",
-    dependencies=[ContentEditorPermission],
-)
-def disassociate_tag_with_content(
-    session: CurrentSession,
-    user: UserToken,
-    content_id: str,
-    tag_id: str,
-) -> TagAssociationResponse:
-    tag_service = TagService(session)
-    return tag_service.disassociate_tag(
-        user.organization_id, UUID(content_id), UUID(tag_id)
     )
 
 

@@ -103,7 +103,7 @@ def fetch_repos(session: Session, organization_id: str) -> list[dict[str, Any]]:
     gh_repository = GithubAppInstallationsRepository(session)
     github_installations = gh_repository.list_by_organization_id(organization_id)
 
-    results = []
+    all_results = []
     try:
         with httpx.Client() as client:
             for github_installation in github_installations:
@@ -123,8 +123,13 @@ def fetch_repos(session: Session, organization_id: str) -> list[dict[str, Any]]:
                 headers = {"Authorization": f"token {token}"}
                 page_count = 1
                 response = client.get(url, headers=headers)
-                for repo in response.json()["repositories"]:
-                    results.append(repo)
+                response.raise_for_status()
+                current_repos = response.json()["repositories"]
+                for repo in current_repos:
+                    repo["installation_id"] = (
+                        github_installation.github_app_installation_id
+                    )
+                all_results.extend(current_repos)
                 link_header: str = response.headers.get("link", None)
                 while link_header:
                     page_count = page_count + 1
@@ -141,22 +146,22 @@ def fetch_repos(session: Session, organization_id: str) -> list[dict[str, Any]]:
                     ]
                     has_next = False
                     for match in matches:
-                        url, rel = match.groups()
-                        if rel == "next" and url:
+                        next_url, rel = match.groups()
+                        if rel == "next" and next_url:
                             has_next = True
-                            response = client.get(url, headers=headers)
+                            response = client.get(next_url, headers=headers)
                             response.raise_for_status()
-                            results = results + response.json()["repositories"]
+                            current_repos = response.json()["repositories"]
+                            for repo in current_repos:
+                                repo["installation_id"] = (
+                                    github_installation.github_app_installation_id
+                                )
+                            all_results.extend(current_repos)
 
                     if not has_next:
-                        logger.debug("Does not have next url in link header, stopping.")
                         break
 
-                for result in results:
-                    result["installation_id"] = (
-                        github_installation.github_app_installation_id
-                    )
-        return results
+        return all_results
     except Exception as e:
         logger.error(f"Failed to fetch repositories: {e}")
         raise e
@@ -170,7 +175,11 @@ def fetch_default_branch_and_commit(org_name: str, repo: str, access_token: str)
     headers = {"Authorization": f"token {access_token}"}
     repo_url = get_github_repo_url(org_name, repo)
 
-    repo_data = requests.get(repo_url, headers=headers).json()
+    repo = requests.get(repo_url, headers=headers)
+    repo_data = repo.json()
+    logger.info(
+        f"Repo information retrieved from github API (status code {repo.status_code}): {repo_data}"
+    )
     default_branch = repo_data["default_branch"]
 
     branch_url = f"{repo_url}/branches/{default_branch}"
@@ -186,7 +195,6 @@ def fetch_default_branch_and_commit(org_name: str, repo: str, access_token: str)
 def generate_codebase_metadata(
     org_id: str,
     org_name: str,
-    workspace_id: str,
     repo: str,
     repo_id: str,
     owner: str,
@@ -195,12 +203,11 @@ def generate_codebase_metadata(
     upload_key: str,
 ) -> dict:
     org_id_hash = org_id_to_hash(org_id)
-
     return {
+        "unhashed_organization_id": org_id,
         "organization_id": org_id_hash,
         "org_bucket": org_id_hash,
         "org_name": org_name,
-        "workspace_id": workspace_id,
         "creator_id": owner,
         "file_path": upload_key,
         "codebase_name": repo,
@@ -244,7 +251,6 @@ def download_and_upload_repo(
     gh_org_name: str,
     owner: str,
     org_id: str,
-    workspace_id: str,
     repo: str,
     repo_id: str,
     access_token: str,
@@ -260,7 +266,6 @@ def download_and_upload_repo(
         metadata = generate_codebase_metadata(
             org_id,
             gh_org_name,
-            workspace_id,
             repo,
             repo_id,
             owner,

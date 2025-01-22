@@ -11,7 +11,6 @@ from .ir_common import (
     ListedBacktickNameRawContentNoNone,
     ListedBacktickNameRawContentWithNone,
     ListedRawContentWithNone,
-    NestedListedRawContent,
     RawContent,
     VariableData,
 )
@@ -110,19 +109,6 @@ Summarize the modules in the code provided below.
 
 Module to document:
 """
-# "logic_blocks": [
-#     [
-#         <bullet point 1 for description of logic and control flow of first logic block>,
-#         <bullet point 2 for description of logic and control flow of first logic block>,
-#         ...
-#     ],
-#     [
-#         <bullet point 1 for description of logic and control flow of second logic block>,
-#         <bullet point 2 for description of logic and control flow of second logic block>,
-#         ...
-#     ],
-#     ...
-# ]
 
 
 FUNCTIONS_AND_TASKS_FOUND_SYSTEM_PROMPT_JSON = """
@@ -204,7 +190,6 @@ class VerilogModuleData(IrData):
     constants: ListedBacktickNameRawContentNoNone
     ports: ListedBacktickNameRawContentWithNone
     logic_and_control_flow: ListedRawContentWithNone
-    # logic_blocks: NestedListedRawContent
 
     @classmethod
     def system_prompt(cls) -> str:
@@ -231,7 +216,7 @@ class VerilogModuleData(IrData):
             description=FieldNameWithRawContent(content=""),
             constants=ListedBacktickNameRawContentWithNone(content=[]),
             ports=ListedBacktickNameRawContentWithNone(content=[]),
-            logic_blocks=NestedListedRawContent(content=[]),
+            logic_and_control_flow=ListedRawContentWithNone(content=[]),
         )
 
 

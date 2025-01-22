@@ -128,7 +128,7 @@ class SearchTool(ToolStrict):
             # TODO: add formatting to the interface. This would allow us to share then
             formatted_result = f"""<result>
                 <content>{content}</content>
-                <path>{result.version_display_name}:{result.relative_path}</path>
+                <path>{result.version_display_name}/{result.relative_path}</path>
             </result>"""
             formatted_results.append(formatted_result.strip())
 

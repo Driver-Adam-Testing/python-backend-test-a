@@ -29,35 +29,47 @@ class CodebaseFolderSummaryTool(ToolStrict):
                 select(DerivedContent)
                 .join(Node)
                 .where(Node.id == scope.node_ids[0])
-                .where(DerivedContent.content_kind == ContentKind.LONG_DESCRIPTION)
+                .where(
+                    (DerivedContent.content_kind == ContentKind.LONG_DESCRIPTION)
+                    | (
+                        DerivedContent.content_kind
+                        == ContentKind.TOP_LEVEL_LONG_DESCRIPTION
+                    )
+                )
             )
-            derived_content = session.exec(stmt).first()
 
-            if not derived_content:
+            # Fetch all matching rows
+            derived_contents = session.exec(stmt).all()
+
+            # If none are found, return the 'not found' message
+            if not derived_contents:
                 return f"No content found for file path: {self.codebase_directory_path}"
 
             search_results = []
             formatted_results = []
-            for content in derived_content:
+
+            # Iterate over all results
+            for content in derived_contents:
                 formatted_result = f"""<result>
-                    <content>{content.content}</content>
-                    <content_type>long_description</content_type>
-                    <path>{content.node.relative_path}</path>
-                </result>"""
-                formatted_results.append(formatted_result.strip())
+        <content>{content.content}</content>
+        <content_type>long_description</content_type>
+        <path>{content.node.version.display_name}/{content.node.relative_path}</path>
+    </result>""".strip()
+                formatted_results.append(formatted_result)
 
                 search_result = SearchResult(
                     content=content.content,
                     score=0.0,
                     relative_path=content.node.relative_path,
                     version_display_name=content.node.version.display_name,
-                    metadata={
-                        "content_type": "long_description",
-                    },
+                    metadata={"content_type": content.content_kind},
                 )
                 search_results.append(search_result)
 
+            # Add the aggregated results to the Agent
             agent.add_search_results(SearchResults(results=search_results))
+
+            # Return the joined summaries
             return "\n".join(formatted_results)
 
     @classmethod

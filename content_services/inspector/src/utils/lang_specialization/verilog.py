@@ -8,7 +8,10 @@ from .ir_common import (
     FnData,
     IrCollection,
     IrData,
+    ListedBacktickNameRawContentNoNone,
     ListedBacktickNameRawContentWithNone,
+    ListedRawContentWithNone,
+    RawContent,
     VariableData,
 )
 from .symbol_common import (
@@ -70,6 +73,8 @@ You focus on writing technical documentation for modules. You are skilled at exp
 
 You will be given the name of a module to document and the source code where the module is defined.
 
+When documenting control flow within the module, focus on logic blocks such as "always" blocks or "generate" blocks within the module.
+
 Your job is to describe the module. **Always respond using exactly the following JSON schema**:
 {
     "constants": [
@@ -82,7 +87,12 @@ Your job is to describe the module. **Always respond using exactly the following
         {"name": <port_name2>, "content": <Terse 1 sentence description of the second port>},
         ...
     ],
-    "description": <one paragraph description of the module>,
+    "logic_and_control_flow": [
+        <bullet point 1 for description of logic and control flow>,
+        <bullet point 2 for description of logic and control flow>,
+        ...
+    ],
+    "description": <two sentence description of the module>,
 }
 
 Return JSON according to the schema above. Do not use the format ```json ... ```, just return the JSON data.
@@ -176,9 +186,10 @@ Data type to document:
 
 # IR Classes
 class VerilogModuleData(IrData):
-    constants: ListedBacktickNameRawContentWithNone
+    description: RawContent
+    constants: ListedBacktickNameRawContentNoNone
     ports: ListedBacktickNameRawContentWithNone
-    description: FieldNameWithRawContent
+    logic_and_control_flow: ListedRawContentWithNone
 
     @classmethod
     def system_prompt(cls) -> str:
@@ -205,6 +216,7 @@ class VerilogModuleData(IrData):
             description=FieldNameWithRawContent(content=""),
             constants=ListedBacktickNameRawContentWithNone(content=[]),
             ports=ListedBacktickNameRawContentWithNone(content=[]),
+            logic_and_control_flow=ListedRawContentWithNone(content=[]),
         )
 
 

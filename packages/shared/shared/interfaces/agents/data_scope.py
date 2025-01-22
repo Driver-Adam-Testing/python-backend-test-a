@@ -103,8 +103,8 @@ class DataScope(BaseModel):
                         or_(
                             *[
                                 and_(
-                                    Node.relative_path == identifier.split(":", 1)[1],
-                                    Version.display_name == identifier.split(":", 1)[0],
+                                    Node.relative_path == identifier.split("/", 1)[1],
+                                    Version.display_name == identifier.split("/", 1)[0],
                                 )
                                 for identifier in identifiers
                             ]

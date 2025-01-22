@@ -28,6 +28,8 @@ class SearchResult(DriverResponse):
     score: float
     version_display_name: str
     relative_path: str
+    version_id: UUID
+    node_id: UUID
     metadata: dict
 
 

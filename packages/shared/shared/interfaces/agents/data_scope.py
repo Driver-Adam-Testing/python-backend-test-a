@@ -118,7 +118,6 @@ class DataScope(BaseModel):
                     user_id=self.user_id,
                     organization_id=self.organization_id,
                 )
-                ds._cached_nodes = nodes
                 return ds
         else:
             ds = DataScope(

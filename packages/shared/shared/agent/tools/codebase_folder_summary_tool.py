@@ -29,7 +29,13 @@ class CodebaseFolderSummaryTool(ToolStrict):
                 select(DerivedContent)
                 .join(Node)
                 .where(Node.id == scope.node_ids[0])
-                .where(DerivedContent.content_kind == ContentKind.LONG_DESCRIPTION)
+                .where(
+                    (DerivedContent.content_kind == ContentKind.LONG_DESCRIPTION)
+                    | (
+                        DerivedContent.content_kind
+                        == ContentKind.TOP_LEVEL_LONG_DESCRIPTION
+                    )
+                )
             )
 
             # Fetch all matching rows
@@ -56,7 +62,7 @@ class CodebaseFolderSummaryTool(ToolStrict):
                     score=0.0,
                     relative_path=content.node.relative_path,
                     version_display_name=content.node.version.display_name,
-                    metadata={"content_type": "long_description"},
+                    metadata={"content_type": content.content_kind},
                 )
                 search_results.append(search_result)
 

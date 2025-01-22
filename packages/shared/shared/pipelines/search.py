@@ -218,6 +218,8 @@ def semantic_search(session: Session, input: SearchInput) -> SearchResults:
                 metadata=metadata,
                 relative_path=chunk.content.node.relative_path,
                 version_display_name=chunk.content.node.version.display_name,
+                version_id=chunk.content.node.version_id,
+                node_id=chunk.content.node_id,
             )
         )
 
@@ -269,6 +271,8 @@ def keyword_search(session: Session, input: SearchInput) -> SearchResults:
                 metadata=metadata,
                 relative_path=chunk.content.node.relative_path,
                 version_display_name=chunk.content.node.version.display_name,
+                version_id=chunk.content.node.version_id,
+                node_id=chunk.content.node_id,
             )
         )
 
@@ -373,6 +377,8 @@ def hybrid_search(session: Session, input: SearchInput) -> SearchResults:
                 score=hybrid_score,
                 relative_path=chunk.content.node.relative_path,
                 version_display_name=chunk.content.node.version.display_name,
+                version_id=chunk.content.node.version_id,
+                node_id=chunk.content.node_id,
                 metadata=metadata,
             )
         )

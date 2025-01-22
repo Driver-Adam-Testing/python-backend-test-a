@@ -62,6 +62,8 @@ class CodebaseFolderSummaryTool(ToolStrict):
                     score=0.0,
                     relative_path=content.node.relative_path,
                     version_display_name=content.node.version.display_name,
+                    node_id=content.node.id,
+                    version_id=content.node.version_id,
                     metadata={"content_type": content.content_kind},
                 )
                 search_results.append(search_result)

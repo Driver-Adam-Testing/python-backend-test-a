@@ -302,9 +302,10 @@ def default_llm_analysis(
             chunk_size=CHUNK_SIZE,
             chunk_overlap=CHUNK_OVERLAP,
         )
+        chunk_texts = [chunk.text for chunk in code_chunks]
         symbol_list = _default_checker_multi_prompt(
             llm=llm,
-            code_chunks=code_chunks,
+            code_chunks=chunk_texts,
             user_prompt=user_prompt,
             system_prompt=system_prompt,
         )
@@ -316,7 +317,7 @@ def default_llm_analysis(
                         symbol_kind=symbol_kind,
                         name=symbol_name,
                         path=root_rel_path,
-                        code=code_chunks[chunk_idx],
+                        code=chunk_texts[chunk_idx],
                     )
     else:
         symbol_list = _default_checker(

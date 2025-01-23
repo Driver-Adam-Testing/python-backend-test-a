@@ -21,6 +21,7 @@ def upgrade():
 
 def downgrade():
     # No straightforward way to remove an enum value in Postgres
+    # Used example in accepted answer here: https://stackoverflow.com/questions/25811017/how-to-delete-an-enum-type-value-in-postgres
     op.execute(
         "CREATE TYPE versionstatus_new AS ENUM ('GENERATING', 'GENERATION_COMPLETE', 'GENERATION_ERROR')"
     )

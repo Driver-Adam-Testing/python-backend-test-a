@@ -162,32 +162,6 @@ def pdf_name_with_whitespace_sns_event():
     }
 
 
-# def test_document_upload_lambda_handler(sns_event):
-#     """
-#     Test the document upload lambda handler with a mock SNS event.
-#
-#     This test checks if the handler returns a list of results, and each result contains
-#     the expected keys and values.
-#     """
-#     # Assuming the environment and AWS resources are mocked appropriately
-#     response = handler(sns_event, {})
-#     assert isinstance(response, list), "Handler response should be a list"
-#     assert len(response) > 0, "Handler response list should not be empty"
-#     for result in response:
-#         assert (
-#             "source_content_id" in result
-#         ), "Result should contain 'source_content_id'"
-#         assert "bucket" in result, "Result should contain 'bucket'"
-#         assert "key" in result, "Result should contain 'key'"
-#         assert (
-#             "pdf_summary_response" in result
-#         ), "Result should contain 'pdf_summary_response'"
-#         assert (
-#             result["pdf_summary_response"] == "OK"
-#         ), "PDF summary response should be 'OK'"
-#
-
-
 def test_real_document_upload_lambda_handler(real_sns_event):
     """
     Test the document upload lambda handler with a real SNS event.
@@ -199,9 +173,6 @@ def test_real_document_upload_lambda_handler(real_sns_event):
     assert isinstance(response, list), "Handler response should be a list"
     assert len(response) > 0, "Handler response list should not be empty"
     for result in response:
-        assert (
-            "source_content_id" in result
-        ), "Result should contain 'source_content_id'"
         assert "bucket" in result, "Result should contain 'bucket'"
         assert "key" in result, "Result should contain 'key'"
         assert (

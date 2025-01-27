@@ -129,6 +129,5 @@ if __name__ == "__main__":
     includes = driver_tree.extract_imports()
     print("Extracted includes:")
     for include_node, text in includes:
-        # Print start and end line
         print("Line range:", driver_tree.get_node_line_range(include_node))
         print(include_node.text, text)

@@ -348,46 +348,47 @@ class CFunctionRawSymbolCollection(RawSymbolCollection):
         function_raw_symbol_data = {}
 
         for func_def_node, func_name in driver_tree.extract_functions():
-            start_line, end_line = driver_tree.get_node_line_range(func_def_node)
+            if func_name is not None:
+                start_line, end_line = driver_tree.get_node_line_range(func_def_node)
 
-            raw_symbol_data = RawSymbolData(
-                parser_kind=ParserKind.TREE_SITTER,
-                symbol_kind=SymbolKind.CALLABLE,
-                name=func_name,
-                path=root_rel_path,
-                scope=None,
-                scope_relation=None,
-                children=[],
-                start_line=start_line,
-                end_line=end_line,
-                symbol_code=None,
-                file_code=None,
-                reference_code=None,
-                delimiter=None,
-                is_large_file=is_multi_prompt,
-                is_overloaded=False,
-            )
-
-            # Copy-pasted from create_raw_symbol_via_ctags. We may want to encapsulate this in a function if we
-            # need to reuse it.
-            CHUNK_SIZE = 64_000
-            CHUNK_OVERLAP = 1_000
-            s_code = "\n".join(code.split("\n")[start_line - 1 : end_line + 1])
-            if is_multi_prompt:
-                s_code_chunks = split_text(
-                    text=s_code,
-                    chunk_size=CHUNK_SIZE,
-                    chunk_overlap=CHUNK_OVERLAP,
+                raw_symbol_data = RawSymbolData(
+                    parser_kind=ParserKind.TREE_SITTER,
+                    symbol_kind=SymbolKind.CALLABLE,
+                    name=func_name,
+                    path=root_rel_path,
+                    scope=None,
+                    scope_relation=None,
+                    children=[],
+                    start_line=start_line,
+                    end_line=end_line,
+                    symbol_code=None,
+                    file_code=None,
+                    reference_code=None,
+                    delimiter=None,
+                    is_large_file=is_multi_prompt,
+                    is_overloaded=False,
                 )
-                if len(s_code_chunks) > 1:
-                    raw_symbol_data.symbol_code = s_code_chunks[0].text
+
+                # Copy-pasted from create_raw_symbol_via_ctags. We may want to encapsulate this in a function if we
+                # need to reuse it.
+                CHUNK_SIZE = 64_000
+                CHUNK_OVERLAP = 1_000
+                s_code = "\n".join(code.split("\n")[start_line - 1 : end_line + 1])
+                if is_multi_prompt:
+                    s_code_chunks = split_text(
+                        text=s_code,
+                        chunk_size=CHUNK_SIZE,
+                        chunk_overlap=CHUNK_OVERLAP,
+                    )
+                    if len(s_code_chunks) > 1:
+                        raw_symbol_data.symbol_code = s_code_chunks[0].text
+                    else:
+                        raw_symbol_data.symbol_code = s_code
                 else:
                     raw_symbol_data.symbol_code = s_code
-            else:
-                raw_symbol_data.symbol_code = s_code
-                raw_symbol_data.file_code = code
+                    raw_symbol_data.file_code = code
 
-            function_raw_symbol_data[func_name] = raw_symbol_data
+                function_raw_symbol_data[func_name] = raw_symbol_data
 
         output = (
             None

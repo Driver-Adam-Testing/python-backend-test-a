@@ -151,6 +151,6 @@ class CDriverTree(DriverTree):
             func_name, params_node = get_function_name_and_params(declarator_node)
             if func_name is None:
                 print("Could not parse function name for node:", declarator_node)
-                func_name = "<could_not_parse_name>"  # TODO how should we handle this? defer to LLM?
-            functions.append((function_def, str(func_name)))
+                func_name = None
+            functions.append((function_def, func_name))
         return functions

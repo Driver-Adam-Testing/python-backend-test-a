@@ -93,7 +93,7 @@ def functions_test_code() -> str:
         ("qux", (17, 19)),
         ("wibble", (21, 23)),
         # ("myFunc", (25, 28)),
-        ("<could_not_parse_name>", (25, 28)),  # TODO handle better!
+        (None, (25, 28)),
         ("arrayParam", (30, 32)),
         ("roPointerFunc", (34, 37)),
         ("triplePtrFunc", (39, 42)),

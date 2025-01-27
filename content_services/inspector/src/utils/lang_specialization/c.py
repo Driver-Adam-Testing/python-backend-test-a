@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Self
 
+from shared.chunking.text_splitter import split_text
 from utils.codemap_ctags import extract_symbols_w_ctags
 from utils.models import ChatOpenAI
 from utils.treesitter import CDriverTree, node_to_text
@@ -166,6 +167,8 @@ Variable to document:
 
 VARIABLES_NONE_CONTENT = "\n---\nNo global variables defined in this file."
 
+# TODO how do we handle invalid c? Investigate what happens when tree-sitter fails and handle gracefully
+
 
 class CIncludeRawSymbolCollection(RawSymbolCollection):
     data: dict[str, RawSymbolData]
@@ -176,7 +179,7 @@ class CIncludeRawSymbolCollection(RawSymbolCollection):
 
         import_dict = {}
         for node, import_name in driver_tree.extract_imports():
-            # start_line, end_line = driver_tree.get_node_line_range(node)
+            start_line, end_line = driver_tree.get_node_line_range(node)
             raw_symbol_data = RawSymbolData(
                 parser_kind=ParserKind.TREE_SITTER,
                 symbol_kind=SymbolKind.IMPORT,
@@ -185,8 +188,8 @@ class CIncludeRawSymbolCollection(RawSymbolCollection):
                 scope=None,
                 scope_relation=None,
                 children=[],
-                start_line=None,
-                end_line=None,
+                start_line=start_line,
+                end_line=end_line,
                 symbol_code=node_to_text(node),
                 file_code=code,
                 reference_code=None,
@@ -341,23 +344,50 @@ class CFunctionRawSymbolCollection(RawSymbolCollection):
     def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
         is_multi_prompt = code_requires_multi_prompt(code)
 
-        symbols = extract_symbols_w_ctags(
-            root_rel_path=root_rel_path,
-            file_content=code,
-        )
-
+        driver_tree = CDriverTree.from_code(code)
         function_raw_symbol_data = {}
-        for s in symbols:
-            if s["kind"] in C_FUNCTIONS and not s["name"].startswith("__anon"):
-                function_raw_symbol_data[s["name"]] = create_raw_symbol_via_ctags(
-                    ctags_symbol=s,
-                    root_rel_path=root_rel_path,
-                    code=code,
-                    symbol_kind=SymbolKind.CALLABLE,
-                    scope_relation=None,
-                    delimiter=None,
-                    is_multi_prompt=is_multi_prompt,
+
+        for func_def_node, func_name in driver_tree.extract_functions():
+            start_line, end_line = driver_tree.get_node_line_range(func_def_node)
+
+            raw_symbol_data = RawSymbolData(
+                parser_kind=ParserKind.TREE_SITTER,
+                symbol_kind=SymbolKind.CALLABLE,
+                name=func_name,
+                path=root_rel_path,
+                scope=None,
+                scope_relation=None,
+                children=[],
+                start_line=start_line,
+                end_line=end_line,
+                symbol_code=None,
+                file_code=None,
+                reference_code=None,
+                delimiter=None,
+                is_large_file=is_multi_prompt,
+                is_overloaded=False,
+            )
+
+            # Copy-pasted from create_raw_symbol_via_ctags. We may want to encapsulate this in a function if we
+            # need to reuse it.
+            CHUNK_SIZE = 64_000
+            CHUNK_OVERLAP = 1_000
+            s_code = "\n".join(code.split("\n")[start_line - 1 : end_line + 1])
+            if is_multi_prompt:
+                s_code_chunks = split_text(
+                    text=s_code,
+                    chunk_size=CHUNK_SIZE,
+                    chunk_overlap=CHUNK_OVERLAP,
                 )
+                if len(s_code_chunks) > 1:
+                    raw_symbol_data.symbol_code = s_code_chunks[0].text
+                else:
+                    raw_symbol_data.symbol_code = s_code
+            else:
+                raw_symbol_data.symbol_code = s_code
+                raw_symbol_data.file_code = code
+
+            function_raw_symbol_data[func_name] = raw_symbol_data
 
         output = (
             None

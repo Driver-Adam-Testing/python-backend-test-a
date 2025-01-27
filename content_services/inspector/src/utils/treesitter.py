@@ -43,18 +43,25 @@ class DriverTree(ABC):
     def extract_imports(self) -> list[tuple[tree_sitter.Node, str]]:
         pass
 
-    # @abstractmethod
-    # def extract_functions(self) -> List[tuple[tree_sitter.Node, str]]:
-    #     pass
-    #
-    # @abstractmethod
-    # def extract_data_structures(self) -> List[tuple[tree_sitter.Node, str]]:
-    #     pass
+    @abstractmethod
+    def extract_functions(self) -> list[tuple[tree_sitter.Node, str]]:
+        pass
 
     def get_node_line_range(self, node: tree_sitter.Node) -> tuple[int, int]:
-        # TODO this behavior needs to be vetted further across kinds of nodes before it is used in production
-        start_line = self.tree.root_node.start_point.row + node.start_point.row + 1
+        # Syntax nodes store their position in the source code both in raw bytes and row/column coordinates.
+        # In a point, rows and columns are zero-based.
+        # The row field represents the number of newlines before a given position
+        # See: https://tree-sitter.github.io/tree-sitter/using-parsers/2-basic-parsing.html?highlight=row#syntax-nodes
+
+        start_line = (
+            self.tree.root_node.start_point.row + node.start_point.row + 1
+        )  # Make it 1-based, as in editors
         end_line = self.tree.root_node.start_point.row + node.end_point.row + 1
+
+        # Check if the last byte in the node's span is a newline; it seems sometimes the node includes it, so we adjust
+        if self.source_bytes[node.end_byte - 1 : node.end_byte] == b"\n":
+            end_line -= 1
+
         return start_line, end_line
 
 
@@ -66,13 +73,44 @@ class DriverTreeError(Exception):
     pass
 
 
+def get_function_name_and_params(
+    declarator_node: tree_sitter.Node,
+) -> tuple[str | None, tree_sitter.Node | None]:
+    """
+    Extract the function name and parameter node from a function declarator.
+    Handles attributes, nested declarators, and parenthesized declarators.
+    """
+    if declarator_node.type == "function_declarator":
+        name_node = declarator_node.child_by_field_name("declarator")
+        params_node = declarator_node.child_by_field_name("parameters")
+
+        if name_node and name_node.type == "identifier":
+            return name_node.text.decode("utf-8"), params_node
+        elif name_node:
+            # Recurse into nested declarators (e.g., parenthesized_declarator, pointer_declarator)
+            return get_function_name_and_params(name_node)
+
+    elif declarator_node.type in {
+        "pointer_declarator",
+        "parenthesized_declarator",
+        "attributed_declarator",
+    }:
+        # Recurse into nested declarators
+        inner_declarator = declarator_node.child_by_field_name("declarator")
+        if inner_declarator:
+            return get_function_name_and_params(inner_declarator)
+
+    # Unsupported or unhandled declarator type
+    return None, None
+
+
 class CDriverTree(DriverTree):
     language = "c"
 
     def extract_imports(self) -> list[tuple[tree_sitter.Node, str]]:
+        """Extract all #include directives and their target text from the C code."""
         query = self.tree_sitter_lang.query(
-            textwrap.dedent(
-                """
+            textwrap.dedent("""
             (
               (preproc_include
                 (string_literal) @include_path)
@@ -81,15 +119,14 @@ class CDriverTree(DriverTree):
               (preproc_include
                 (system_lib_string) @include_path)
             ) @include_directive
-            """
-            )
+            """)
         )
         matches = query.matches(self.tree.root_node)
         includes = []
 
-        for match in matches:
-            include_directive_node = match[1]["include_directive"][0]
-            include_path_node = match[1]["include_path"][0]
+        for _pattern_index, captures_by_name in matches:
+            include_directive_node = captures_by_name["include_directive"][0]
+            include_path_node = captures_by_name["include_path"][0]
 
             include_path_text = self.source_bytes[
                 include_path_node.start_byte : include_path_node.end_byte
@@ -103,31 +140,17 @@ class CDriverTree(DriverTree):
         sorted_includes = sorted(includes, key=lambda x: x[0].start_byte)
         return sorted_includes
 
+    def extract_functions(self) -> list[tuple[tree_sitter.Node, str]]:
+        query = self.tree_sitter_lang.query("(function_definition) @function_def")
+        matches = query.matches(self.tree.root_node)
+        functions = []
 
-if __name__ == "__main__":
-    code = textwrap.dedent(
-        """
-        #include <stdio.h>
-        #include "myheader.h"
-        #include "../headers/another_header.h"
-        #include    <stdlib.h>
-        #  include "utils.h"
-        #if defined(USE_CUSTOM_HEADER)
-            #include "custom.h"
-        #else
-            #include <default.h>
-        #endif
-
-        int main(void) { return 1 }
-        """
-    )
-
-    # with open(pathlib.Path(__file__).parent.resolve() / "basic_tests.c") as f:
-    #     code = f.read()
-    driver_tree = CDriverTree.from_code(code_str=code)
-
-    includes = driver_tree.extract_imports()
-    print("Extracted includes:")
-    for include_node, text in includes:
-        print("Line range:", driver_tree.get_node_line_range(include_node))
-        print(include_node.text, text)
+        for _pattern_index, captures_by_name in matches:
+            function_def = captures_by_name["function_def"][0]
+            declarator_node = function_def.child_by_field_name("declarator")
+            func_name, params_node = get_function_name_and_params(declarator_node)
+            if func_name is None:
+                print("Could not parse function name for node:", declarator_node)
+                func_name = "<could_not_parse_name>"  # TODO how should we handle this? defer to LLM?
+            functions.append((function_def, str(func_name)))
+        return functions

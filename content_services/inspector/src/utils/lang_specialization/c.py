@@ -3,6 +3,7 @@ from typing import Self
 
 from utils.codemap_ctags import extract_symbols_w_ctags
 from utils.models import ChatOpenAI
+from utils.treesitter import CDriverTree, node_to_text
 
 from .ir_common import (
     DataStructureData,
@@ -12,6 +13,7 @@ from .ir_common import (
     VariableData,
 )
 from .symbol_common import (
+    ParserKind,
     RawSymbolCollection,
     RawSymbolData,
     SymbolKind,
@@ -163,6 +165,44 @@ Variable to document:
 """
 
 VARIABLES_NONE_CONTENT = "\n---\nNo global variables defined in this file."
+
+
+class CIncludeRawSymbolCollection(RawSymbolCollection):
+    data: dict[str, RawSymbolData]
+
+    @classmethod
+    def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
+        driver_tree = CDriverTree.from_code(code)
+
+        import_dict = {}
+        for node, import_name in driver_tree.extract_imports():
+            # start_line, end_line = driver_tree.get_node_line_range(node)
+            raw_symbol_data = RawSymbolData(
+                parser_kind=ParserKind.TREE_SITTER,
+                symbol_kind=SymbolKind.IMPORT,
+                name=import_name,
+                path=root_rel_path,
+                scope=None,
+                scope_relation=None,
+                children=[],
+                start_line=None,
+                end_line=None,
+                symbol_code=node_to_text(node),
+                file_code=code,
+                reference_code=None,
+                delimiter=None,
+                is_large_file=code_requires_multi_prompt(code),
+            )
+            import_dict[import_name] = raw_symbol_data
+        output = cls(data=import_dict) if import_dict else None
+        return output
+
+    @classmethod
+    def from_llm(cls, code: str, root_rel_path: str) -> Self:
+        raise NotImplementedError("Static analysis should be used for c imports")
+
+    def to_dict(self) -> dict[str, RawSymbolData]:
+        return self.data
 
 
 class CDataStructureData(DataStructureData):

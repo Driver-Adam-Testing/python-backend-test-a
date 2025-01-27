@@ -5,10 +5,11 @@ from utils.lang_specialization.c import (
     CDataStructureRawSymbolCollection,
     CFunctionCollection,
     CFunctionRawSymbolCollection,
+    CIncludeRawSymbolCollection,
     CVariableCollection,
     CVariableRawSymbolCollection,
 )
-from utils.lang_specialization.default import default_imports_checker
+from utils.lang_specialization.ir_common import ListData
 from utils.templates import S
 
 SOURCE_CODE_SMALL_TEMPLATE_C = [
@@ -19,10 +20,10 @@ SOURCE_CODE_SMALL_TEMPLATE_C = [
         SOURCE_CODE_SMALL_PURPOSE_USER_PROMPT,
     ),
     (
-        S.LLM_COND_JSON,
+        S.FN_COND_JSON,
         "# Imports and Dependencies",
-        default_imports_checker,
-        lambda _llm, output, _code: output,
+        CIncludeRawSymbolCollection.from_static_analysis,
+        lambda _llm, output, _code: ListData(data=list(output.data.keys())),
         None,
     ),
     (

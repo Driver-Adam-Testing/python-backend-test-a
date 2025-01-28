@@ -25,7 +25,7 @@ int main(void) { return 1; }
 def test_extract_import_texts(imports_c_code: str) -> None:
     driver_tree = CDriverTree.from_code(imports_c_code)
 
-    imports = driver_tree.extract_imports()
+    includes = driver_tree.extract_imports()
 
     expected_imports = [
         "stdio.h",
@@ -37,12 +37,11 @@ def test_extract_import_texts(imports_c_code: str) -> None:
         "default.h",  # From #else branch
     ]
 
-    assert len(imports) == len(
+    assert len(includes) == len(
         expected_imports
-    ), f"Expected {len(expected_imports)} imports, but found {len(imports)}."
+    ), f"Expected {len(expected_imports)} imports, but found {len(includes)}."
 
-    # Check the import texts
-    extracted_imports = [include_text for _, include_text in imports]
+    extracted_imports = [include.name for include in includes]
     assert (
         extracted_imports == expected_imports
     ), f"Expected {expected_imports}, but found {extracted_imports}."
@@ -52,7 +51,7 @@ def test_extract_import_line_numbers(imports_c_code: str) -> None:
     driver_tree = CDriverTree.from_code(imports_c_code)
 
     # Extract imports
-    imports = driver_tree.extract_imports()
+    includes = driver_tree.extract_imports()
 
     # Expected start and end line numbers
     expected_line_numbers = [
@@ -65,9 +64,8 @@ def test_extract_import_line_numbers(imports_c_code: str) -> None:
         (9, 9),  # <default.h>
     ]
 
-    # Verify the line numbers
     extracted_line_numbers = [
-        driver_tree.get_node_line_range(node) for node, _ in imports
+        (include.start_line, include.end_line) for include in includes
     ]
 
     assert (
@@ -110,10 +108,7 @@ def test_extract_function_properties(
 
     functions = driver_tree.extract_functions()
 
-    extracted = [
-        (name, driver_tree.get_node_line_range(func_node))
-        for func_node, name in functions
-    ]
+    extracted = [(f.name, (f.start_line, f.end_line)) for f in functions]
 
     assert (expected_function_name, expected_line_range) in extracted, (
         f"Expected function ({expected_function_name}, {expected_line_range}) "
@@ -158,8 +153,8 @@ def test_extract_enums(
     data_structs = driver_tree.extract_data_structures()
 
     extracted = [
-        (name, driver_tree.get_node_line_range(ds_node))
-        for ds_node, name in data_structs
+        (data_struct.name, (data_struct.start_line, data_struct.end_line))
+        for data_struct in data_structs
     ]
 
     assert (expected_enum_name, expected_line_range) in extracted, (
@@ -206,8 +201,8 @@ def test_extract_structs(
     data_structs = driver_tree.extract_data_structures()
 
     extracted = [
-        (name, driver_tree.get_node_line_range(ds_node))
-        for ds_node, name in data_structs
+        (data_struct.name, (data_struct.start_line, data_struct.end_line))
+        for data_struct in data_structs
     ]
 
     assert (expected_struct_name, expected_line_range) in extracted, (
@@ -252,11 +247,11 @@ def test_extract_unions(
 ) -> None:
     driver_tree = CDriverTree.from_code(unions_test_code)
 
-    data_structures = driver_tree.extract_data_structures()
+    data_structs = driver_tree.extract_data_structures()
 
     extracted = [
-        (name, driver_tree.get_node_line_range(ds_node))
-        for ds_node, name in data_structures
+        (data_struct.name, (data_struct.start_line, data_struct.end_line))
+        for data_struct in data_structs
     ]
 
     assert (expected_union_name, expected_line_range) in extracted, (

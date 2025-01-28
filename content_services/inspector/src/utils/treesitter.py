@@ -6,6 +6,8 @@ from typing import Self
 import tree_sitter
 import tree_sitter_c
 
+from utils.lang_specialization.symbol_common import RawTreeSitterSymbolData, SymbolKind
+
 LANGUAGES = {"c": tree_sitter.Language(tree_sitter_c.language())}
 
 
@@ -111,7 +113,7 @@ def get_function_name_and_params(
 class CDriverTree(DriverTree):
     language = "c"
 
-    def extract_imports(self) -> list[tuple[tree_sitter.Node, str]]:
+    def extract_imports(self) -> list[RawTreeSitterSymbolData]:
         """Extract all #include directives and their target text from the C code."""
         query = self.tree_sitter_lang.query(
             textwrap.dedent("""
@@ -140,11 +142,20 @@ class CDriverTree(DriverTree):
             elif include_path_node.type == "string_literal":
                 include_path_text = include_path_text.replace('"', "")
 
-            includes.append((include_directive_node, include_path_text))
-        sorted_includes = sorted(includes, key=lambda x: x[0].start_byte)
+            start_line, end_line = self.get_node_line_range(include_directive_node)
+            includes.append(
+                RawTreeSitterSymbolData(
+                    name=include_path_text,
+                    start_line=start_line,
+                    end_line=end_line,
+                    symbol_kind=SymbolKind.IMPORT,
+                )
+            )
+        sorted_includes = sorted(includes, key=lambda x: x.start_line)
+
         return sorted_includes
 
-    def extract_functions(self) -> list[tuple[tree_sitter.Node, str]]:
+    def extract_functions(self) -> list[RawTreeSitterSymbolData]:
         query = self.tree_sitter_lang.query("(function_definition) @function_def")
         matches = query.matches(self.tree.root_node)
         functions = []
@@ -156,14 +167,25 @@ class CDriverTree(DriverTree):
             if func_name is None:
                 print("Could not parse function name for node:", declarator_node)
                 func_name = None
-            functions.append((function_def, func_name))
-        return functions
+            start_line, end_line = self.get_node_line_range(function_def)
+            func = RawTreeSitterSymbolData(
+                name=func_name,
+                start_line=start_line,
+                end_line=end_line,
+                symbol_kind=SymbolKind.CALLABLE,
+            )
+            functions.append(func)
+        sorted_functions = sorted(functions, key=lambda x: x.start_line)
+        return sorted_functions
 
-    def extract_data_structures(self) -> list[tuple[tree_sitter.Node, str | None]]:
+    def extract_data_structures(self) -> list[RawTreeSitterSymbolData]:
         """
         Extract struct, union, and enum tags and typedefs, ignoring forward declarations.
         Note the usage of 'translation_unit' to ensure we only match top-level declarations and so that we don't
         double-count typedefs that have a struct (or other kind of tag) within them.
+
+        Note: we can mine the following tests for more cases to implement:
+        https://github.com/tree-sitter/tree-sitter-c/blob/master/test/corpus/declarations.txt
         """
 
         query_str = textwrap.dedent("""
@@ -255,7 +277,8 @@ class CDriverTree(DriverTree):
                 case _:
                     raise DriverTreeError("Unexpected case in extract_data_structures")
 
-            # Convert the name node (if any) into text
+            # Convert the name node (if any) into text; note we assume a single type, but typedefs could
+            # actually declare multiple. There's a test case that shows it. < TODO
             if len(name_nodes) > 0:
                 name_node = name_nodes[0]
                 data_structure_name = self.source_bytes[
@@ -264,9 +287,16 @@ class CDriverTree(DriverTree):
             else:
                 data_structure_name = None  # If we didn't capture a name...
 
-            results.append((data_structure_node, data_structure_name))
+            start_line, end_line = self.get_node_line_range(data_structure_node)
+            ds = RawTreeSitterSymbolData(
+                name=data_structure_name,
+                start_line=start_line,
+                end_line=end_line,
+                symbol_kind=SymbolKind.DATA_STRUCTURE,
+            )
+            results.append(ds)
 
-        results.sort(key=lambda x: x[0].start_byte)
+        results.sort(key=lambda x: x.start_line)
         return results
 
 
@@ -275,6 +305,7 @@ if __name__ == "__main__":
     Test code; left with a known case our code does not fully handle yet so you can
     implement it!
     """
+
     code = """typedef struct {
     int x;
     int y;

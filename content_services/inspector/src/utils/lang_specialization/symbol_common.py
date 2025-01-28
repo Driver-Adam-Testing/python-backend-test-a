@@ -85,6 +85,13 @@ class ScopeRelation(StrEnum):
     ENUMERATOR = "Enumerators"
 
 
+class RawTreeSitterSymbolData(BaseModel):
+    name: str | None
+    start_line: int
+    end_line: int
+    symbol_kind: SymbolKind
+
+
 class RawSymbolData(BaseModel):
     parser_kind: ParserKind
     symbol_kind: SymbolKind
@@ -101,6 +108,65 @@ class RawSymbolData(BaseModel):
     delimiter: str | None
     is_large_file: bool = Field(default=False)
     is_overloaded: bool = Field(default=False)
+
+    @classmethod
+    def from_tree_sitter_raw_symbol(
+        cls,
+        ts_symbol: RawTreeSitterSymbolData,
+        path: Path,
+        scope: str | None,
+        scope_relation: ScopeRelation | None,
+        children: list[Self],
+        symbol_code: str | None,
+        file_code: str | None,
+        reference_code: str | None,
+        delimiter: str | None,
+        is_large_file: bool,
+        is_overloaded: bool,
+        use_padding: bool,
+        code: str,
+        is_multi_prompt: bool,
+    ) -> Self:
+        raw_symbol = cls(
+            parser_kind=ParserKind.TREE_SITTER,
+            symbol_kind=ts_symbol.symbol_kind,
+            name=ts_symbol.name,
+            path=path,
+            scope=scope,
+            scope_relation=scope_relation,
+            children=children,
+            start_line=ts_symbol.start_line,
+            end_line=ts_symbol.end_line,
+            symbol_code=symbol_code,
+            file_code=file_code,
+            reference_code=reference_code,
+            delimiter=delimiter,
+            is_large_file=is_large_file,
+            is_overloaded=is_overloaded,
+        )
+
+        if use_padding:
+            start_line = max(0, raw_symbol.start_line - BLIND_PADDING_TOP)
+            end_line = raw_symbol.end_line + BLIND_PADDING_BOTTOM
+        else:
+            start_line = raw_symbol.start_line
+            end_line = raw_symbol.end_line
+        s_code = "\n".join(code.split("\n")[start_line - 1 : end_line + 1])
+        if is_multi_prompt or is_overloaded:
+            from shared.chunking.text_splitter import split_text
+
+            s_code_chunks = split_text(
+                text=s_code,
+                chunk_size=CHUNK_SIZE,
+                chunk_overlap=CHUNK_OVERLAP,
+            )
+            if len(s_code_chunks) > 1:
+                raw_symbol.symbol_code = s_code_chunks[0].text
+            else:
+                raw_symbol.symbol_code = s_code
+        else:
+            raw_symbol.symbol_code = s_code
+            raw_symbol.file_code = code
 
 
 class RawSymbolCollection(BaseModel, abc.ABC):

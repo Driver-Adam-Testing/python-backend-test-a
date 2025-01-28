@@ -1,7 +1,6 @@
 from pathlib import Path
 from typing import Self
 
-from utils.codemap_ctags import extract_symbols_w_ctags
 from utils.models import ChatOpenAI
 from utils.treesitter import CDriverTree
 
@@ -15,9 +14,7 @@ from .ir_common import (
 from .symbol_common import (
     RawSymbolCollection,
     RawSymbolData,
-    SymbolKind,
     code_requires_multi_prompt,
-    create_raw_symbol_via_ctags,
 )
 
 C_VARIABLES = {"variable", "externvar"}
@@ -171,6 +168,7 @@ class CIncludeRawSymbolCollection(RawSymbolCollection):
     @classmethod
     def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
         driver_tree = CDriverTree.from_code(code)
+        is_large_file = code_requires_multi_prompt(code)
 
         import_dict = {}
         for ts_symbol in driver_tree.extract_imports():
@@ -182,13 +180,13 @@ class CIncludeRawSymbolCollection(RawSymbolCollection):
                 children=[],
                 reference_code=None,
                 delimiter=None,
-                is_large_file=code_requires_multi_prompt(code),
+                is_large_file=is_large_file,
                 is_overloaded=False,
                 use_padding=False,
                 code=code,
             )
             import_dict[ts_symbol.name] = raw_symbol_data
-        output = cls(data=import_dict) if import_dict else None
+        output = None if len(import_dict) == 0 else cls(data=import_dict)
         return output
 
     @classmethod
@@ -293,6 +291,7 @@ class CDataStructureRawSymbolCollection(RawSymbolCollection):
     def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
         driver_tree = CDriverTree.from_code(code)
         data_structure_raw_symbol_data = {}
+        is_large_file = code_requires_multi_prompt(code)
 
         for ts_symbol in driver_tree.extract_data_structures():
             if ts_symbol.name is not None:
@@ -304,7 +303,7 @@ class CDataStructureRawSymbolCollection(RawSymbolCollection):
                     children=[],
                     reference_code=None,
                     delimiter=None,
-                    is_large_file=code_requires_multi_prompt(code),
+                    is_large_file=is_large_file,
                     is_overloaded=False,
                     use_padding=False,
                     code=code,
@@ -334,6 +333,7 @@ class CFunctionRawSymbolCollection(RawSymbolCollection):
     def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
         driver_tree = CDriverTree.from_code(code)
         function_raw_symbol_data = {}
+        is_large_file = code_requires_multi_prompt(code)
 
         for ts_symbol in driver_tree.extract_functions():
             if ts_symbol.name is not None:
@@ -345,7 +345,7 @@ class CFunctionRawSymbolCollection(RawSymbolCollection):
                     children=[],
                     reference_code=None,
                     delimiter=None,
-                    is_large_file=code_requires_multi_prompt(code),
+                    is_large_file=is_large_file,
                     is_overloaded=False,
                     use_padding=False,
                     code=code,
@@ -372,25 +372,26 @@ class CVariableRawSymbolCollection(RawSymbolCollection):
 
     @classmethod
     def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
-        is_multi_prompt = code_requires_multi_prompt(code)
-
-        symbols = extract_symbols_w_ctags(
-            root_rel_path=root_rel_path,
-            file_content=code,
-        )
-
+        driver_tree = CDriverTree.from_code(code)
         variable_raw_symbol_data = {}
-        for s in symbols:
-            if s["kind"] in C_VARIABLES:
-                variable_raw_symbol_data[s["name"]] = create_raw_symbol_via_ctags(
-                    ctags_symbol=s,
-                    root_rel_path=root_rel_path,
-                    code=code,
-                    symbol_kind=SymbolKind.VARIABLE,
+        is_large_file = code_requires_multi_prompt(code)
+
+        for ts_symbol in driver_tree.extract_variables():
+            if ts_symbol.name is not None:
+                raw_symbol_data = RawSymbolData.from_tree_sitter_raw_symbol(
+                    ts_symbol=ts_symbol,
+                    path=root_rel_path,
+                    scope=None,
                     scope_relation=None,
+                    children=[],
+                    reference_code=None,
                     delimiter=None,
-                    is_multi_prompt=is_multi_prompt,
+                    is_large_file=is_large_file,
+                    is_overloaded=False,
+                    use_padding=False,
+                    code=code,
                 )
+                variable_raw_symbol_data[ts_symbol.name] = raw_symbol_data
 
         output = (
             None

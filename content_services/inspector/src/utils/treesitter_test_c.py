@@ -75,7 +75,7 @@ def test_extract_import_line_numbers(imports_c_code: str) -> None:
     ), f"Expected {expected_line_numbers}, but found {extracted_line_numbers}."
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def functions_test_code() -> str:
     file_path = (
         pathlib.Path(__file__).parent / "treesitter_testcases" / "c" / "test_funcs.c"
@@ -108,19 +108,158 @@ def test_extract_function_properties(
 ) -> None:
     driver_tree = CDriverTree.from_code(functions_test_code)
 
-    # Extract functions
     functions = driver_tree.extract_functions()
 
-    # Find the function by name
-    function_nodes = {func_name: node for node, func_name in functions}
-    assert (
-        expected_function_name in function_nodes
-    ), f"Function {expected_function_name} not found."
+    extracted = [
+        (name, driver_tree.get_node_line_range(func_node))
+        for func_node, name in functions
+    ]
 
-    # Verify line range
-    func_node = function_nodes[expected_function_name]
-    start_line, end_line = driver_tree.get_node_line_range(func_node)
-    assert (start_line, end_line) == expected_line_range, (
-        f"Function {expected_function_name} expected range {expected_line_range}, "
-        f"but got ({start_line}, {end_line})."
+    assert (expected_function_name, expected_line_range) in extracted, (
+        f"Expected function ({expected_function_name}, {expected_line_range}) "
+        f"not found in extracted functions: {extracted}"
+    )
+
+
+@pytest.fixture(scope="module")
+def enums_test_code() -> str:
+    file_path = (
+        pathlib.Path(__file__).parent / "treesitter_testcases" / "c" / "test_enums.c"
+    )
+    with open(file_path, encoding="utf-8") as f:
+        return f.read()
+
+
+@pytest.mark.parametrize(
+    "expected_enum_name, expected_line_range",
+    [
+        ("Color", (4, 8)),
+        ("Weekday", (11, 17)),
+        ("MyAnonEnum", (20, 24)),
+        (None, (28, 31)),  # Anonymous global enum
+        ("Direction", (35, 40)),
+        ("Kind", (43, 47)),
+        pytest.param(
+            "KindPtr",
+            (43, 47),
+            marks=pytest.mark.xfail(
+                reason="Known issue: we don't capture typedefs that define multiple types"
+            ),
+        ),
+    ],
+)
+def test_extract_enums(
+    enums_test_code: str,
+    expected_enum_name: str,
+    expected_line_range: tuple[int, int],
+) -> None:
+    driver_tree = CDriverTree.from_code(enums_test_code)
+
+    data_structs = driver_tree.extract_data_structures()
+
+    extracted = [
+        (name, driver_tree.get_node_line_range(ds_node))
+        for ds_node, name in data_structs
+    ]
+
+    assert (expected_enum_name, expected_line_range) in extracted, (
+        f"Expected enum ({expected_enum_name}, {expected_line_range}) "
+        f"not found in extracted enums: {extracted}"
+    )
+
+
+@pytest.fixture(scope="module")
+def structs_test_code() -> str:
+    file_path = (
+        pathlib.Path(__file__).parent / "treesitter_testcases" / "c" / "test_structs.c"
+    )
+    with open(file_path, encoding="utf-8") as f:
+        return f.read()
+
+
+@pytest.mark.parametrize(
+    "expected_struct_name, expected_line_range",
+    [
+        ("Named", (7, 10)),
+        ("MyStruct", (19, 22)),
+        ("MyAnonTypedef", (25, 27)),
+        (None, (30, 33)),
+        ("Outer", (36, 42)),
+        ("Point", (45, 48)),
+        ("Point2", (51, 55)),
+        pytest.param(
+            "Point2Ptr",
+            (51, 55),
+            marks=pytest.mark.xfail(
+                reason="Known issue: we don't capture typedefs that define multiple types"
+            ),
+        ),
+    ],
+)
+def test_extract_structs(
+    structs_test_code: str,
+    expected_struct_name: str,
+    expected_line_range: tuple[int, int],
+) -> None:
+    driver_tree = CDriverTree.from_code(structs_test_code)
+
+    data_structs = driver_tree.extract_data_structures()
+
+    extracted = [
+        (name, driver_tree.get_node_line_range(ds_node))
+        for ds_node, name in data_structs
+    ]
+
+    assert (expected_struct_name, expected_line_range) in extracted, (
+        f"Expected struct ({expected_struct_name}, {expected_line_range}) "
+        f"not found in extracted structs: {extracted}"
+    )
+
+
+@pytest.fixture(scope="module")
+def unions_test_code() -> str:
+    file_path = (
+        pathlib.Path(__file__).parent / "treesitter_testcases" / "c" / "test_unions.c"
+    )
+    with open(file_path, encoding="utf-8") as f:
+        return f.read()
+
+
+@pytest.mark.parametrize(
+    "expected_union_name, expected_line_range",
+    [
+        ("Named", (7, 10)),
+        ("ForwardDecl", (13, 16)),
+        ("MyUnion", (19, 22)),
+        ("MyAnonUnion", (25, 28)),
+        (None, (31, 34)),
+        ("Outer", (40, 46)),
+        ("Combined", (49, 52)),
+        ("Point2", (54, 58)),
+        pytest.param(
+            "Point2Ptr",
+            (54, 58),
+            marks=pytest.mark.xfail(
+                reason="Known issue: we don't capture typedefs that define multiple types"
+            ),
+        ),
+    ],
+)
+def test_extract_unions(
+    unions_test_code: str,
+    expected_union_name: str,
+    expected_line_range: tuple[int, int],
+) -> None:
+    driver_tree = CDriverTree.from_code(unions_test_code)
+
+    data_structures = driver_tree.extract_data_structures()
+
+    extracted = [
+        (name, driver_tree.get_node_line_range(ds_node))
+        for ds_node, name in data_structures
+    ]
+
+    assert (expected_union_name, expected_line_range) in extracted, (
+        f"Expected unions ({expected_union_name}, {expected_line_range}) "
+        f"not found in extracted unions: {extracted}"
     )

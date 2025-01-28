@@ -47,6 +47,10 @@ class DriverTree(ABC):
     def extract_functions(self) -> list[tuple[tree_sitter.Node, str]]:
         pass
 
+    @abstractmethod
+    def extract_data_structures(self) -> list[tuple[tree_sitter.Node, str]]:
+        pass
+
     def get_node_line_range(self, node: tree_sitter.Node) -> tuple[int, int]:
         # Syntax nodes store their position in the source code both in raw bytes and row/column coordinates.
         # In a point, rows and columns are zero-based.
@@ -154,3 +158,130 @@ class CDriverTree(DriverTree):
                 func_name = None
             functions.append((function_def, func_name))
         return functions
+
+    def extract_data_structures(self) -> list[tuple[tree_sitter.Node, str | None]]:
+        """
+        Extract struct, union, and enum tags and typedefs, ignoring forward declarations.
+        Note the usage of 'translation_unit' to ensure we only match top-level declarations and so that we don't
+        double-count typedefs that have a struct (or other kind of tag) within them.
+        """
+
+        query_str = textwrap.dedent("""
+          ; Match the struct, union, and enum tags...
+          (translation_unit
+            (struct_specifier
+              (type_identifier)? @struct.name
+              (field_declaration_list) @struct.body
+            ) @struct.definition
+          )
+
+          (translation_unit
+            (union_specifier
+              (type_identifier)? @union.name
+              (field_declaration_list) @union.body
+            ) @union.definition
+          )
+
+          (translation_unit
+            (enum_specifier
+              (type_identifier)? @enum.name
+              (enumerator_list) @enum.body
+            ) @enum.definition
+          )
+
+          ; Match the struct, union, and enum tags that are combined with declarations..
+          (declaration
+              (struct_specifier
+                (type_identifier)? @struct.name
+                (field_declaration_list) @struct.body
+              ) @struct.definition
+            )
+
+            (declaration
+              (union_specifier
+                (type_identifier)? @union.name
+                (field_declaration_list) @union.body
+              ) @union.definition
+            )
+
+            (declaration
+              (enum_specifier
+                (type_identifier)? @enum.name
+                (enumerator_list) @enum.body
+              ) @enum.definition
+            )
+
+          ; Now capture the typedef variants...
+          (translation_unit
+            (type_definition
+              type: (struct_specifier)
+              declarator: (type_identifier) @struct.name
+            ) @struct.typedef
+          )
+
+          (translation_unit
+            (type_definition
+              type: (union_specifier)
+              declarator: (type_identifier) @union.name
+            ) @union.typedef
+          )
+
+          (translation_unit
+            (type_definition
+              type: (enum_specifier)
+              declarator: (type_identifier) @enum.name
+            ) @enum.typedef
+          )
+        """)
+
+        query = self.tree_sitter_lang.query(query_str)
+        matches = query.matches(self.tree.root_node)
+        results = []
+
+        for _pattern_idx, captures_dict in matches:
+            match captures_dict:
+                case {"struct.definition": [data_structure_node], **rest}:
+                    name_nodes = rest.get("struct.name", [])
+                case {"union.definition": [data_structure_node], **rest}:
+                    name_nodes = rest.get("union.name", [])
+                case {"enum.definition": [data_structure_node], **rest}:
+                    name_nodes = rest.get("enum.name", [])
+                case {"struct.typedef": [data_structure_node], **rest}:
+                    name_nodes = rest.get("struct.name", [])
+                case {"union.typedef": [data_structure_node], **rest}:
+                    name_nodes = rest.get("union.name", [])
+                case {"enum.typedef": [data_structure_node], **rest}:
+                    name_nodes = rest.get("enum.name", [])
+                case _:
+                    raise DriverTreeError("Unexpected case in extract_data_structures")
+
+            # Convert the name node (if any) into text
+            if len(name_nodes) > 0:
+                name_node = name_nodes[0]
+                data_structure_name = self.source_bytes[
+                    name_node.start_byte : name_node.end_byte
+                ].decode("utf8")
+            else:
+                data_structure_name = None  # If we didn't capture a name...
+
+            results.append((data_structure_node, data_structure_name))
+
+        results.sort(key=lambda x: x[0].start_byte)
+        return results
+
+
+if __name__ == "__main__":
+    """
+    Test code; left with a known case our code does not fully handle yet so you can
+    implement it!
+    """
+    code = """typedef struct {
+    int x;
+    int y;
+}
+Point2, *Point2Ptr;
+"""
+    driver_tree = CDriverTree.from_code(code)
+    data_structures = driver_tree.extract_data_structures()
+    print(driver_tree.tree.root_node.children)
+    print(data_structures)

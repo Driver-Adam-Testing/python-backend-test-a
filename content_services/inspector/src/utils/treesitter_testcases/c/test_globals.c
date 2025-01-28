@@ -42,3 +42,8 @@ register uint64_t rd_ asm("x" "10");
 
 // Attributes with GNU style
 extern __attribute__((visibility("hidden"))) int foo;
+
+// Array
+#define LEN 2
+local const int extra_lbits[LEN] /* extra bits for each length code */
+   = {0,0};

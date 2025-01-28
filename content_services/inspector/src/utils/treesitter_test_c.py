@@ -319,6 +319,8 @@ def globals_test_code() -> str:
         ("rd_", (41, 41)),
         # GNU attribute variable
         ("foo", (44, 44)),
+        # Array
+        ("extra_lbits", (48, 49)),
     ],
 )
 def test_extract_globals(

@@ -1,4 +1,3 @@
-import textwrap
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Self
@@ -42,15 +41,19 @@ class DriverTree(ABC):
         )
 
     @abstractmethod
-    def extract_imports(self) -> list[tuple[tree_sitter.Node, str]]:
+    def extract_imports(self) -> list[RawTreeSitterSymbolData]:
         pass
 
     @abstractmethod
-    def extract_functions(self) -> list[tuple[tree_sitter.Node, str]]:
+    def extract_functions(self) -> list[RawTreeSitterSymbolData]:
         pass
 
     @abstractmethod
-    def extract_data_structures(self) -> list[tuple[tree_sitter.Node, str]]:
+    def extract_data_structures(self) -> list[RawTreeSitterSymbolData]:
+        pass
+
+    @abstractmethod
+    def extract_variables(self) -> list[RawTreeSitterSymbolData]:
         pass
 
     def get_node_line_range(self, node: tree_sitter.Node) -> tuple[int, int]:
@@ -110,13 +113,27 @@ def get_function_name_and_params(
     return None, None
 
 
+def find_identifier_node(node: tree_sitter.Node) -> tree_sitter.Node | None:
+    """Recursively find the first identifier node in a declarator"""
+    if node.type == "identifier":
+        return node
+
+    for child in node.children:
+        if child.type == "identifier":
+            return child
+        result = find_identifier_node(child)
+        if result:
+            return result
+    return None
+
+
 class CDriverTree(DriverTree):
     language = "c"
 
     def extract_imports(self) -> list[RawTreeSitterSymbolData]:
         """Extract all #include directives and their target text from the C code."""
         query = self.tree_sitter_lang.query(
-            textwrap.dedent("""
+            """
             (
               (preproc_include
                 (string_literal) @include_path)
@@ -125,7 +142,7 @@ class CDriverTree(DriverTree):
               (preproc_include
                 (system_lib_string) @include_path)
             ) @include_directive
-            """)
+            """
         )
         matches = query.matches(self.tree.root_node)
         includes = []
@@ -188,73 +205,57 @@ class CDriverTree(DriverTree):
         https://github.com/tree-sitter/tree-sitter-c/blob/master/test/corpus/declarations.txt
         """
 
-        query_str = textwrap.dedent("""
-          ; Match the struct, union, and enum tags...
-          (translation_unit
-            (struct_specifier
-              (type_identifier)? @struct.name
-              (field_declaration_list) @struct.body
-            ) @struct.definition
-          )
+        query_str = """
+            (translation_unit
+              [
+                ; Typedef variants
+                (type_definition
+                  type: [
+                    (struct_specifier)
+                    (union_specifier)
+                    (enum_specifier)
+                  ]
+                  declarator: (type_identifier) @struct.name @union.name @enum.name
+                ) @struct.typedef @union.typedef @enum.typedef
 
-          (translation_unit
-            (union_specifier
-              (type_identifier)? @union.name
-              (field_declaration_list) @union.body
-            ) @union.definition
-          )
+                ; Direct declarations
+                (declaration
+                  [
+                    (struct_specifier
+                      (type_identifier)? @struct.name
+                      (field_declaration_list) @struct.body
+                    ) @struct.definition
 
-          (translation_unit
-            (enum_specifier
-              (type_identifier)? @enum.name
-              (enumerator_list) @enum.body
-            ) @enum.definition
-          )
+                    (union_specifier
+                      (type_identifier)? @union.name
+                      (field_declaration_list) @union.body
+                    ) @union.definition
 
-          ; Match the struct, union, and enum tags that are combined with declarations..
-          (declaration
-              (struct_specifier
-                (type_identifier)? @struct.name
-                (field_declaration_list) @struct.body
-              ) @struct.definition
+                    (enum_specifier
+                      (type_identifier)? @enum.name
+                      (enumerator_list) @enum.body
+                    ) @enum.definition
+                  ]
+                )
+
+                ; Bare specifiers
+                (struct_specifier
+                  (type_identifier)? @struct.name
+                  (field_declaration_list) @struct.body
+                ) @struct.definition
+
+                (union_specifier
+                  (type_identifier)? @union.name
+                  (field_declaration_list) @union.body
+                ) @union.definition
+
+                (enum_specifier
+                  (type_identifier)? @enum.name
+                  (enumerator_list) @enum.body
+                ) @enum.definition
+              ]
             )
-
-            (declaration
-              (union_specifier
-                (type_identifier)? @union.name
-                (field_declaration_list) @union.body
-              ) @union.definition
-            )
-
-            (declaration
-              (enum_specifier
-                (type_identifier)? @enum.name
-                (enumerator_list) @enum.body
-              ) @enum.definition
-            )
-
-          ; Now capture the typedef variants...
-          (translation_unit
-            (type_definition
-              type: (struct_specifier)
-              declarator: (type_identifier) @struct.name
-            ) @struct.typedef
-          )
-
-          (translation_unit
-            (type_definition
-              type: (union_specifier)
-              declarator: (type_identifier) @union.name
-            ) @union.typedef
-          )
-
-          (translation_unit
-            (type_definition
-              type: (enum_specifier)
-              declarator: (type_identifier) @enum.name
-            ) @enum.typedef
-          )
-        """)
+        """
 
         query = self.tree_sitter_lang.query(query_str)
         matches = query.matches(self.tree.root_node)
@@ -298,6 +299,48 @@ class CDriverTree(DriverTree):
 
         results.sort(key=lambda x: x.start_line)
         return results
+
+    def extract_variables(self) -> list[RawTreeSitterSymbolData]:
+        query = self.tree_sitter_lang.query(
+            """
+            (translation_unit
+                (declaration) @global_var)
+            """
+        )
+        matches = query.matches(self.tree.root_node)
+
+        variables = []
+        for _pattern_index, captures_by_name in matches:
+            decl_node = captures_by_name["global_var"][0]
+            start_line, end_line = self.get_node_line_range(decl_node)
+
+            if any(child.type == "function_declarator" for child in decl_node.children):
+                continue
+            if any(child.type == "type_definition" for child in decl_node.children):
+                continue
+
+            # Find the identifier node(s) in this declaration
+            for child in decl_node.children:
+                if child.type in [
+                    "identifier",
+                    "init_declarator",
+                    "pointer_declarator",
+                    "array_declarator",
+                    "attributed_declarator",
+                ]:
+                    id_node = find_identifier_node(child)
+                    if id_node:
+                        var_name = id_node.text.decode("utf8")
+                        var = RawTreeSitterSymbolData(
+                            name=var_name,
+                            start_line=start_line,
+                            end_line=end_line,
+                            symbol_kind=SymbolKind.VARIABLE,
+                        )
+                        variables.append(var)
+
+        sorted_vars = sorted(variables, key=lambda x: x.start_line)
+        return sorted_vars
 
 
 if __name__ == "__main__":

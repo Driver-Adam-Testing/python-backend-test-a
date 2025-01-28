@@ -205,6 +205,9 @@ def test_extract_structs(
         for data_struct in data_structs
     ]
 
+    dupes = [item for item in extracted if extracted.count(item) > 1]
+    assert not dupes, f"Found duplicate declarations: {dupes}"
+
     assert (expected_struct_name, expected_line_range) in extracted, (
         f"Expected struct ({expected_struct_name}, {expected_line_range}) "
         f"not found in extracted structs: {extracted}"
@@ -254,7 +257,85 @@ def test_extract_unions(
         for data_struct in data_structs
     ]
 
+    dupes = [item for item in extracted if extracted.count(item) > 1]
+    assert not dupes, f"Found duplicate declarations: {dupes}"
+
     assert (expected_union_name, expected_line_range) in extracted, (
         f"Expected unions ({expected_union_name}, {expected_line_range}) "
         f"not found in extracted unions: {extracted}"
+    )
+
+
+@pytest.fixture(scope="module")
+def globals_test_code() -> str:
+    file_path = (
+        pathlib.Path(__file__).parent / "treesitter_testcases" / "c" / "test_globals.c"
+    )
+    with open(file_path, encoding="utf-8") as f:
+        return f.read()
+
+
+@pytest.mark.parametrize(
+    "expected_global_name, expected_line_range",
+    [
+        # This was very helpful for crafting the test cases!
+        # https://github.com/tree-sitter/tree-sitter-c/blob/master/test/corpus/declarations.txt
+        # Primitive types
+        ("a", (2, 2)),
+        ("b", (3, 3)),
+        ("c", (4, 4)),
+        ("d", (5, 5)),
+        # Multiple declarations
+        ("e", (8, 9)),
+        ("f", (8, 9)),
+        ("g", (8, 9)),
+        ("h", (10, 10)),
+        ("i", (10, 10)),
+        # Storage class vars
+        ("aa", (13, 13)),
+        ("bb", (13, 13)),
+        ("cc", (14, 14)),
+        ("dd", (15, 15)),
+        ("ee", (16, 16)),
+        # Pointers
+        ("ptr", (19, 19)),
+        ("ptr2", (20, 20)),
+        ("ptr3", (21, 21)),
+        # Type qualifier variables
+        ("q", (24, 24)),
+        ("q2", (25, 25)),
+        ("q3", (26, 26)),
+        ("q4", (27, 27)),
+        ("q5", (28, 28)),
+        # Attribute variables
+        ("ii", (31, 31)),
+        ("jj", (32, 32)),
+        # ("kk", (33, 33)),
+        # Struct/union/enum variables
+        ("bbb", (36, 36)),
+        ("ddd", (37, 37)),
+        ("ggg", (38, 38)),
+        # Assembly register variable
+        ("rd_", (41, 41)),
+        # GNU attribute variable
+        ("foo", (44, 44)),
+    ],
+)
+def test_extract_globals(
+    globals_test_code: str,
+    expected_global_name: str,
+    expected_line_range: tuple[int, int],
+) -> None:
+    driver_tree = CDriverTree.from_code(globals_test_code)
+
+    globals_found = driver_tree.extract_variables()
+
+    extracted = [(g.name, (g.start_line, g.end_line)) for g in globals_found]
+
+    dupes = [item for item in extracted if extracted.count(item) > 1]
+    assert not dupes, f"Found duplicate declarations: {dupes}"
+
+    assert (expected_global_name, expected_line_range) in extracted, (
+        f"Expected globals ({expected_global_name}, {expected_line_range}) "
+        f"not found in extracted globals: {extracted}"
     )

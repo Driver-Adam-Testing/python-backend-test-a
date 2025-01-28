@@ -4,6 +4,7 @@ from fastapi import APIRouter
 from modal import Function
 from modal.functions import FunctionCall
 from pydantic import BaseModel, Field
+from shared.interfaces.agents.block_kind import BlockKind
 from shared.interfaces.agents.pipeline_configuration import (
     DataScope,
     PipelineInput,
@@ -15,6 +16,11 @@ from shared.interfaces.agents.pipeline_configuration import (
 from shared.interfaces.request import DriverModalBatchRequest
 from shared.interfaces.response import DriverModalResponse
 from shared.pipelines.agents.execute import execute_sequence
+from shared.prompts.block_kind.block_kind_any import BlockKindCopyEditorAny
+from shared.prompts.block_kind.block_kind_code import BlockKindCopyEditorCodeBlock
+from shared.prompts.block_kind.block_kind_diagram import BlockKindCopyEditorDiagram
+from shared.prompts.block_kind.block_kind_list import BlockKindCopyEditorList
+from shared.prompts.block_kind.block_kind_text import BlockKindCopyEditorText
 
 from app.api.auth import ContentEditorPermission, ContentReadonlyPermission, UserToken
 from app.api.session import CurrentSession
@@ -29,6 +35,7 @@ class AgentRunRequest(PromptWithContext):
         ]
     )
     node_ids: list[UUID] | None = None
+    block_kind: BlockKind
 
 
 @router.post(
@@ -40,6 +47,17 @@ def execute_agent_sequence(
     user: UserToken, session: CurrentSession, input: AgentRunRequest
 ) -> PipelineResponse:
     # TODO: authorize node_ids
+    block_kind_to_response_format = {
+        BlockKind.TEXT: BlockKindCopyEditorText,
+        BlockKind.LIST: BlockKindCopyEditorList,
+        BlockKind.ANY: BlockKindCopyEditorAny,
+        BlockKind.CODE: BlockKindCopyEditorCodeBlock,
+        BlockKind.DIAGRAM: BlockKindCopyEditorDiagram,
+    }
+    response_format = block_kind_to_response_format.get(
+        input.block_kind, BlockKindCopyEditorAny
+    )
+
     pipeline_input = PipelineInput(
         prompt=input.prompt,
         context=input.context,
@@ -49,6 +67,7 @@ def execute_agent_sequence(
             organization_id=user.organization_id,
             user_id=user.subject,
         ),
+        response_format=response_format,
     )
     return execute_sequence(pipeline_input)
 
@@ -61,6 +80,17 @@ def execute_agent_sequence(
 def execute_agent_sequence_modal_async(
     user: UserToken, input: AgentRunRequest, session: CurrentSession
 ) -> DriverModalResponse:
+    block_kind_to_response_format = {
+        BlockKind.TEXT: BlockKindCopyEditorText,
+        BlockKind.LIST: BlockKindCopyEditorList,
+        BlockKind.ANY: BlockKindCopyEditorAny,
+        BlockKind.CODE: BlockKindCopyEditorCodeBlock,
+        BlockKind.DIAGRAM: BlockKindCopyEditorDiagram,
+    }
+    response_format = block_kind_to_response_format.get(
+        input.block_kind, BlockKindCopyEditorAny
+    )
+
     pipeline_input = PipelineInput(
         prompt=input.prompt,
         context=input.context,
@@ -70,6 +100,7 @@ def execute_agent_sequence_modal_async(
             organization_id=user.organization_id,
             user_id=user.user_id,
         ),
+        response_format=response_format,
     )
     modal_function = Function.lookup("agent", "run")
     instance = modal_function.spawn(pipeline_input)

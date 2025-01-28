@@ -9,7 +9,7 @@ from pathlib import Path
 from uuid import UUID
 
 import modal
-from onboarding.onboard import run_codebase_onboarding
+from onboarding.onboard import run_codebase_connection, run_codebase_onboarding
 
 inspection_image = (
     modal.Image.debian_slim(python_version="3.12")
@@ -130,7 +130,7 @@ async def get_result_loading_config(
         ),
     ],
     proxy=modal.Proxy.from_name("pg-proxy")
-    if os.environ["MODAL_ENVIRONMENT"] != "staging"
+    if os.environ["MODAL_ENVIRONMENT"] != "dev-shane"
     else None,
     memory="2048",
     timeout=3600 * 8,
@@ -446,7 +446,7 @@ def get_file_content(path: Path) -> str:
         modal.Secret.from_name("db"),
     ],
     proxy=modal.Proxy.from_name("pg-proxy")
-    if os.environ["MODAL_ENVIRONMENT"] != "staging"
+    if os.environ["MODAL_ENVIRONMENT"] != "dev-shane"
     else None,
 )
 def set_codebase_status_in_container(version_id: str, status: str) -> None:
@@ -480,6 +480,29 @@ def main(
         raise
     else:
         set_codebase_status_in_container.remote(version_id, "GENERATION_COMPLETE")
+
+
+@app.local_entrypoint()
+def local_connect() -> None:
+    presigned_url = "https://development-codebase-dropzone.s3.us-east-1.amazonaws.com/analysis/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/mesa.zip?response-content-disposition=inline&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEAEaCXVzLWVhc3QtMSJHMEUCIQD5LX0bv7JWiIqZ2bhuvFWbuht%2FCPKDsNRF0Ayz2kZcEQIgRmodkgx3tr4riKlNgANwJwuioWcHZLH2G5vrn737%2Bl4qvgQI%2Bv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARABGgw1NTAwODI3NjExMDkiDJmED2kCynGhalKM%2FyqSBMTLW6kDJ21P8ju%2F8FHvGwThpiyTuIdbnSdvaJs1XH2X%2BMcTun%2B8MzS1tHD9J33G%2FAveITFnm%2F7%2BqqZwn6NfScLlpIKkp3gX%2F5Lp1Lb3%2FoF3InVAYWZO1%2FfRZWrRB2Qa3Sxv%2BTrWybx4IE%2BJYTy9feKz%2FcQccLGRiXwkTBGG0Gs7oB%2B8Ds4DTF%2Fn1gcs2gNVljU7pI4xKLsWzLKIAoqZCo2iAUk8R593a6qVcxyb%2BM%2Fdys%2BL04PtrvsIYNOL5dLKfSiDJDgloHDDxmyiwlDk0MmK9TyUdMrCPnM98PMdVlw%2BNh4rXkR4Z3U3fE6zfYa861E%2FUUFNgE6kS4Y0r1g4zWsPKWkmfV76JQCNutbaz2qm%2F%2FDyoNQ1r8J6%2F7WKaCrLoB1HTkK9jXUh%2BW2HDZFJOSA%2FrRWiDTZ9OlfU7zHxjSBI3LrtTBNQCuEdQrXurxSYL0NRDBrnKENrwVZDIl40Rw9kEeBxDS16GMEtNpiFX1ZMTs82lW7dlmkC1UAfu2NC1Qm1%2B9b8Sq4AIveX7DZ1lLnMRIgtpsDFW8ZArm4R1raMYnhe01G702amRK4chjKxxfwgebQnFaq%2BV0J9akBrHfWzqVFjgfzGTtEoUbV6YxR8nvF9vLL1wLyDd3IUlSPpY%2FDbOq1%2BaOGvl03Ee3lrnTIzXCEFa9%2BipWUDF9Jq8nbc1ajYm6Fcemg5tU17PXvQW7gXMObGy7wGOsUCaQuVPXsWrj%2FNdixhbgDADzmhT4BHY22IOJmY3ETOrCADobZmG%2BAyR7trfKsOAQxBEMqo4JzQ3FqCKbOPtR8wktNRqQh1C1jyogOwcdddW0forrI8Arc5Q5fpBCP9f0h15gI7OjCuubCBlgbnWunAzbeYJTnUQJaAm4hztXbjkkwkRxHT08sY1dmAcPJhANqTt1amx84x%2FSjxacK2B%2BL4mx03g6twF95F153zrEydqBW%2FK2iRfKWH6F3NNHOVSX4Z2lZ3F%2FOjOsbQZJ5fd%2BgDuXCIjQ63ki80yA9HI%2BzBaElbItPrMSSlmnzScQflL8gIDvhWi34A5vOmplIkEttoP6todbiYmPD%2FihHm6reqy2jSHKbYVp1GmIJEeC542oqnBJSANjB15svIXMo3hwPNFSizTrFPd0SwjWj1fBdKt3CYZGvBsA%3D%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAYAE342GKWREFJZHV%2F20250124%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20250124T004919Z&X-Amz-Expires=6000&X-Amz-SignedHeaders=host&X-Amz-Signature=6b719f5da64af048af5dfdce667fcacaefb496afebc4b068d1a1f5c48d4fe4ba"
+    archive_name = "mesa.zip"
+    org_id = "org_s76pU1v8LAYhTOWB"
+    creator_id = "test"
+    provider = "manual"
+    override_codebase_name = None
+    version_str = None
+    repository_id = None
+
+    run_codebase_connection.local(
+        presigned_url,
+        archive_name,
+        org_id,
+        creator_id,
+        provider,
+        override_codebase_name,
+        version_str,
+        repository_id,
+    )
 
 
 @app.function(
@@ -532,7 +555,7 @@ onboarding_and_inspect_image = (
         modal.Mount.from_local_python_packages("onboarding"),  # Why not automounted?
     ],
     proxy=modal.Proxy.from_name("pg-proxy")
-    if os.environ["MODAL_ENVIRONMENT"] != "staging"
+    if os.environ["MODAL_ENVIRONMENT"] != "dev-shane"
     else None,
     timeout=3600 * 8,
     region="us-east",

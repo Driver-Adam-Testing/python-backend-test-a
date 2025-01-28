@@ -38,7 +38,7 @@ def load_extension_and_name_mapping() -> dict:
 
     import yaml
 
-    with open("/linguist/languages.yml") as f:
+    with open("linguist/languages.yml") as f:
         language_dict = yaml.safe_load(f)
     extension_map = defaultdict(list)
     name_map = defaultdict(list)
@@ -445,6 +445,16 @@ def run_file_stats_and_reencode(
         file_stats["is_analyzable"] = False
     file_stats["is_blacklisted"] = is_blacklisted
     file_stats["is_ignored"] = is_ignored
+
+    if file_stats["is_analyzable"]:
+        file_type = get_file_type_from_extension(file_stats["extension"])
+        if not file_type:
+            file_type = get_file_type_from_filename(local_path.name)
+        if not file_type:
+            file_type = "Other"
+        file_stats["language"] = file_type
+    else:
+        file_stats["language"] = "N/A"
 
     return file_stats
 

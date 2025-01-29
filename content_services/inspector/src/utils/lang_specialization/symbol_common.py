@@ -3,6 +3,7 @@ from enum import Enum, IntEnum, StrEnum, auto
 from pathlib import Path
 from typing import Self
 
+from openai import OpenAIError
 from pydantic import BaseModel, Field
 from utils.codemap_ctags import extract_symbols_w_ctags
 from utils.models import ChatOpenAI
@@ -17,7 +18,7 @@ BLIND_PADDING_BOTTOM = 10
 class Lang(IntEnum):
     C = 0
     CPP = 1
-    HEADER = 2
+    C_OR_CPP_HEADER = 2
     PYTHON = 3
     VERILOG = 4
     RUST = 5
@@ -35,7 +36,7 @@ class Lang(IntEnum):
             case ".cpp" | ".cc" | ".cxx" | ".c++":
                 return cls.CPP
             case ".h" | ".hpp" | ".hh" | ".hxx" | ".h++":
-                return cls.HEADER
+                return cls.C_OR_CPP_HEADER
             case ".py" | ".pyw" | ".pyi":
                 return cls.PYTHON
             case ".v" | ".sv":  # TODO: seprately specialize SystemVerilog
@@ -52,6 +53,9 @@ class Lang(IntEnum):
                 return cls.C_SHARP
             case _:
                 return cls.DEFAULT
+
+    def __str__(self) -> str:
+        return self.name
 
 
 class ParserKind(Enum):
@@ -185,8 +189,8 @@ class RawSymbolCollection(BaseModel, abc.ABC):
         pass
 
 
-def _disambiguate_header(source: str, fallback: Lang) -> Lang:
-    llm = ChatOpenAI(model="gpt-4o-2024-08-06", temperature=0, request_timeout=120)
+def disambiguate_header(code: str, fallback: Lang) -> Lang:
+    llm = ChatOpenAI(model="gpt-4o", temperature=0, request_timeout=60)
     system_prompt = """
     You are a software engineering expert that determines whether a header file corresponds to the C or C++ language.
 
@@ -202,11 +206,12 @@ def _disambiguate_header(source: str, fallback: Lang) -> Lang:
     - 0 if the code corresponds to C
     - 1 if the code corresponds to C++
     """
-    user_prompt = f"File contents:\n\n{source}"
-    c_or_cpp_raw = llm.generate_response(
-        system_prompt=system_prompt, user_prompt=user_prompt
-    )
+    user_prompt = f"File contents:\n\n{code}"
+
     try:
+        c_or_cpp_raw = llm.generate_response(
+            system_prompt=system_prompt, user_prompt=user_prompt
+        )
         zero_or_one = int(c_or_cpp_raw)
         match zero_or_one:
             case 0:
@@ -215,9 +220,14 @@ def _disambiguate_header(source: str, fallback: Lang) -> Lang:
                 return Lang.CPP
             case _:
                 return fallback
+    except OpenAIError as e:
+        print(
+            f"OpenAI API error encountered: {e}. Using fallback {fallback} for header analysis."
+        )
+        return fallback
     except ValueError as e:
         print(
-            f"Failed to parse integer from LLM response to determine if a header file is C or C++: {e}"
+            f"Failed to parse integer from LLM response: {e}. Using fallback {fallback} for header analysis ."
         )
         return fallback
 

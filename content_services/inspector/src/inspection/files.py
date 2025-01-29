@@ -10,7 +10,7 @@ from utils.dag import LiteNode
 from utils.io import (
     get_prompt_template,
 )
-from utils.lang_specialization.symbol_common import Lang
+from utils.lang_specialization.symbol_common import Lang, disambiguate_header
 from utils.models import ChatOpenAI
 from utils.templates import Template
 
@@ -207,7 +207,7 @@ SOURCE_CODE_LARGE_BY_LANG = {
     Lang.DEFAULT: SOURCE_CODE_LARGE_TEMPLATE_DEFAULT,
     Lang.C: SOURCE_CODE_LARGE_TEMPLATE_C,
     Lang.CPP: SOURCE_CODE_LARGE_TEMPLATE_CPP,
-    Lang.HEADER: SOURCE_CODE_LARGE_TEMPLATE_HEADER,
+    Lang.C_OR_CPP_HEADER: SOURCE_CODE_LARGE_TEMPLATE_HEADER,
     Lang.PYTHON: SOURCE_CODE_LARGE_TEMPLATE_PY,
     Lang.VERILOG: SOURCE_CODE_LARGE_TEMPLATE_VERILOG,
     Lang.RUST: SOURCE_CODE_LARGE_TEMPLATE_RUST,
@@ -220,7 +220,7 @@ SOURCE_CODE_SMALL_BY_LANG = {
     Lang.DEFAULT: SOURCE_CODE_SMALL_TEMPLATE_DEFAULT,
     Lang.C: SOURCE_CODE_SMALL_TEMPLATE_C,
     Lang.CPP: SOURCE_CODE_SMALL_TEMPLATE_CPP,
-    Lang.HEADER: SOURCE_CODE_SMALL_TEMPLATE_HEADER,
+    Lang.C_OR_CPP_HEADER: SOURCE_CODE_SMALL_TEMPLATE_HEADER,
     Lang.PYTHON: SOURCE_CODE_SMALL_TEMPLATE_PY,
     Lang.VERILOG: SOURCE_CODE_SMALL_TEMPLATE_VERILOG,
     Lang.RUST: SOURCE_CODE_SMALL_TEMPLATE_RUST,
@@ -233,7 +233,7 @@ METADATA_SMALL_BY_LANG = {
     Lang.DEFAULT: METADATA_SMALL_TEMPLATE,
     Lang.C: METADATA_SMALL_TEMPLATE,
     Lang.CPP: METADATA_SMALL_TEMPLATE,
-    Lang.HEADER: METADATA_SMALL_TEMPLATE,
+    Lang.C_OR_CPP_HEADER: METADATA_SMALL_TEMPLATE,
     Lang.PYTHON: METADATA_SMALL_TEMPLATE,
     Lang.VERILOG: METADATA_SMALL_TEMPLATE,
     Lang.RUST: METADATA_SMALL_TEMPLATE,
@@ -246,7 +246,7 @@ METADATA_MEDIUM_BY_LANG = {
     Lang.DEFAULT: METADATA_MEDIUM_TEMPLATE,
     Lang.C: METADATA_MEDIUM_TEMPLATE,
     Lang.CPP: METADATA_MEDIUM_TEMPLATE,
-    Lang.HEADER: METADATA_MEDIUM_TEMPLATE,
+    Lang.C_OR_CPP_HEADER: METADATA_MEDIUM_TEMPLATE,
     Lang.PYTHON: METADATA_MEDIUM_TEMPLATE,
     Lang.VERILOG: METADATA_MEDIUM_TEMPLATE,
     Lang.RUST: METADATA_MEDIUM_TEMPLATE,
@@ -259,7 +259,7 @@ METADATA_LARGE_BY_LANG = {
     Lang.DEFAULT: METADATA_LARGE_TEMPLATE,
     Lang.C: METADATA_LARGE_TEMPLATE,
     Lang.CPP: METADATA_LARGE_TEMPLATE,
-    Lang.HEADER: METADATA_LARGE_TEMPLATE,
+    Lang.C_OR_CPP_HEADER: METADATA_LARGE_TEMPLATE,
     Lang.PYTHON: METADATA_LARGE_TEMPLATE,
     Lang.VERILOG: METADATA_LARGE_TEMPLATE,
     Lang.RUST: METADATA_LARGE_TEMPLATE,
@@ -475,7 +475,7 @@ def comprehend_file_top_down(
                             template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_C
                         case Lang.CPP:
                             template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CPP
-                        case Lang.HEADER:
+                        case Lang.C_OR_CPP_HEADER:
                             template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_HEADER
                         case Lang.PYTHON:
                             template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_PY
@@ -556,6 +556,19 @@ def comprehend_file_top_down(
             language = Lang.from_ext_and_source(
                 ext=node.root_rel_path.suffix, source=source_code
             )
+
+            if language == Lang.C_OR_CPP_HEADER:
+                language = disambiguate_header(
+                    code=source_code, fallback=Lang.C_OR_CPP_HEADER
+                )
+                print(
+                    f"Disambiguated header file `{node.root_rel_path}` to be `{language}`"
+                )
+                if language == Lang.CPP:
+                    # We still defer to the generic header template if c++, but we use C language specialization
+                    # for C headers.
+                    language = Lang.C_OR_CPP_HEADER
+
             template = TEMPLATE_DATA[file_kind.kind][language]
             long_template = Template(template=template)
             file_description_long = long_template.run_with_code(

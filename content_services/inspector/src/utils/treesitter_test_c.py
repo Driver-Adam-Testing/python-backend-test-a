@@ -50,10 +50,8 @@ def test_extract_import_texts(imports_c_code: str) -> None:
 def test_extract_import_line_numbers(imports_c_code: str) -> None:
     driver_tree = CDriverTree.from_code(imports_c_code)
 
-    # Extract imports
     includes = driver_tree.extract_imports()
 
-    # Expected start and end line numbers
     expected_line_numbers = [
         (1, 1),  # <stdio.h>
         (2, 2),  # "myheader.h"

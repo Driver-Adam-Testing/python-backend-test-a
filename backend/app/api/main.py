@@ -22,6 +22,7 @@ from app.api.routes.v2 import (
     contents,
     convenience_endpoints,
     document_sources,
+    generation,
     nodes,
     primary_asset_tags,
     primary_assets,

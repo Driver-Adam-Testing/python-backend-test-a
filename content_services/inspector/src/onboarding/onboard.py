@@ -1,5 +1,6 @@
 import hashlib
 import os
+import re
 from pathlib import Path
 from uuid import uuid4
 
@@ -55,6 +56,7 @@ def run_codebase_connection(
     )
     from database.models_v1 import (
         DerivedContent,
+        GitProviderKind,
     )
     from database.models_v2 import (
         Node,
@@ -79,6 +81,10 @@ def run_codebase_connection(
 
     if provider == "github":
         override_codebase_name = archive_name.rsplit(".", 1)[0]
+    elif provider == GitProviderKind.GITLAB_ENTERPRISE_SELF_MANAGED.value.lower():
+        override_codebase_name = re.sub(
+            r"-[a-fA-F0-9]{40}-[a-fA-F0-9]{40}", "", archive_name
+        ).rsplit(".", 1)[0]
 
     with tempfile.TemporaryDirectory() as temp_dir:
         # Override so unpack from github doesn't have hash in name.

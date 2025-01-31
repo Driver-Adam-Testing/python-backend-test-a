@@ -20,6 +20,7 @@ CONTENT_EDITOR = "content:editor"
 CONTENT_READONLY = "content:readonly"
 USAGE_CREDITOR = "usage_credit:management"
 SUBSCRIPTION_MANAGER = "subscription:management"
+GIT_PROVIDER_MANAGER = "git_provider:management"
 
 
 @expiring_cache(3600)
@@ -73,6 +74,7 @@ UNPROTECTED_PATHS = [
     "/api/v1/sandbox/apollo-sandbox/",
     "/api/v1/git-provider/github/webhook",
     "/api/v1/git-provider/github/callback",
+    "/api/v1/git-provider/app/callback",
 ]
 
 security = HTTPBearer()
@@ -177,3 +179,4 @@ ContentReadonlyPermission = Depends(require_permission(CONTENT_READONLY))
 OrgManagerPermission = Depends(require_permission(ORG_MANAGER))
 UsageCreditPermission = Depends(require_permission(USAGE_CREDITOR))
 SubscriptionManagerPermission = Depends(require_permission(SUBSCRIPTION_MANAGER))
+GitProviderManagerPermission = Depends(require_permission(GIT_PROVIDER_MANAGER))

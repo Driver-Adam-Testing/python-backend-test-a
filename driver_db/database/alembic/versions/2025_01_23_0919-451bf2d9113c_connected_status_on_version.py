@@ -15,11 +15,12 @@ branch_labels = None
 depends_on = None
 
 
-def upgrade():
+
+def upgrade() -> None:
     op.execute("ALTER TYPE versionstatus ADD VALUE 'CONNECTED'")
 
 
-def downgrade():
+def downgrade() -> None:
     # No straightforward way to remove an enum value in Postgres
     # Used example in accepted answer here: https://stackoverflow.com/questions/25811017/how-to-delete-an-enum-type-value-in-postgres
     op.execute(

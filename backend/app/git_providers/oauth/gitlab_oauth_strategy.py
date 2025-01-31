@@ -1,0 +1,61 @@
+import logging
+from urllib.parse import urlencode
+
+import httpx
+from app.git_providers.core.config import GitProviderConfig
+
+logger = logging.getLogger(__name__)
+
+
+class GitLabOAuthStrategy:
+    def __init__(self, config: GitProviderConfig) -> None:
+        self.config = config
+
+    def _make_post_request(self, url: str, payload: dict) -> dict:
+        with httpx.Client() as client:
+            response = client.post(url, data=payload)
+            response.raise_for_status()
+            return response.json()
+
+    def _token_info(self, token: str) -> dict:
+        url = f"{self.config.base_url}/{self.config.token_info_endpoint}"
+        headers = {"Authorization": f"Bearer {token}"}
+        with httpx.Client() as client:
+            response = client.get(url, headers=headers)
+            print(response)
+            response.raise_for_status()  # Raises an exception if the HTTP response status is not successful.
+            return response.json()
+
+    def generate_authorization_url(self, state: str) -> str:
+        query_params = {
+            "client_id": self.config.client_id,
+            "redirect_uri": self.config.redirect_uri,
+            "response_type": "code",
+            "scope": self.config.scope,
+            "state": state,
+        }
+        return f"{self.config.authorize_url}?{urlencode(query_params)}"
+
+    def exchange_code_for_token(self, code: str) -> dict:
+        payload = {
+            "client_id": self.config.client_id,
+            "client_secret": self.config.client_secret,
+            "code": code,
+            "grant_type": "authorization_code",
+            "redirect_uri": self.config.redirect_uri,
+        }
+        return self._make_post_request(self.config.access_token_url, payload)
+
+    def refresh_access_token(self, refresh_token: str) -> dict:
+        payload = {
+            "grant_type": "refresh_token",
+            "refresh_token": refresh_token,
+            "client_id": self.config.client_id,
+            "client_secret": self.config.client_secret,
+        }
+        return self._make_post_request(self.config.access_token_url, payload)
+
+    def is_token_valid(self, token: str) -> bool:
+        token_info = self._token_info(token)
+        expires_in = token_info["expires_in"]
+        return expires_in > 0

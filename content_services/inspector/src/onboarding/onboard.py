@@ -174,12 +174,23 @@ def run_codebase_onboarding(
     )
     from database.models_v1 import (
         DerivedContent,
+        GitProviderKind,
         UsageEventType,
     )
     from database.models_v2 import (
         Node,
         PrimaryAsset,
         Version,
+    )
+    from onboarding.onboard_utils import (
+        RunInProgressError,
+        create_bucket_if_dne,
+        download_file_from_presigned_url,
+        is_on_blacklist,
+        load_driverignore,
+        run_file_stats_and_reencode,
+        unpack_archive,
+        upload_file_to_s3,
     )
     from shared.interfaces.usage.event_metadata import (
         UsageEventMetadata,
@@ -191,17 +202,6 @@ def run_codebase_onboarding(
     from shared.usage.utils import bytes_to_sloc
     from sqlmodel import Session, select
 
-    from onboarding.onboard_utils import (
-        RunInProgressError,
-        create_bucket_if_dne,
-        download_file_from_presigned_url,
-        is_on_blacklist,
-        load_driverignore,
-        run_file_stats_and_reencode,
-        unpack_archive,
-        upload_file_to_s3,
-    )
-
     if not version_str:
         version_str = "Unversioned"
 
@@ -209,8 +209,11 @@ def run_codebase_onboarding(
     download_file_from_presigned_url(presigned_url, download_dest)
 
     print(f"Downloaded {archive_name} from S3")
-
-    if provider == "github":
+    supported_git_providers = [
+        "github",
+        GitProviderKind.GITLAB_ENTERPRISE_SELF_MANAGED.value.lower(),
+    ]
+    if provider in supported_git_providers:
         override_codebase_name = archive_name.rsplit(".", 1)[0]
 
     # Override so unpack from github doesn't have hash in name.

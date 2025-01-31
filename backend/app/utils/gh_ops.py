@@ -242,7 +242,9 @@ def upload_to_s3(zip_content: bytes, metadata: dict, upload_key: str) -> bool:
         "Content-Type": "application/zip",
         "Content-Length": str(len(zip_content)),
     }
-    response = requests.put(s3_url, data=zip_content, headers=headers, timeout=120)
+    response = requests.put(
+        s3_url, data=zip_content, headers=headers, timeout=120, follow_redirects=True
+    )
     response.raise_for_status()
     return response.status_code == 200
 

@@ -3,21 +3,42 @@ import hashlib
 import hmac
 import json
 import logging
-from datetime import datetime
 
-from database.models_v1 import GithubAppInstallation
+from database.models_v1 import (
+    GithubAppInstallation,
+    GitProviderApp,
+    GitProviderAppInstallation,
+)
 from database.models_v2 import PrimaryAsset
 from database.models_v2_enums import PrimaryAssetKind
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from shared.interfaces.aws_client_config import AWSClientConfig
 from sqlmodel import select
 
-from app.api.auth import ContentEditorPermission, UserToken
+from app.api.auth import (
+    ContentEditorPermission,
+    GitProviderManagerPermission,
+    UserToken,
+)
 from app.api.session import CurrentSession
 from app.core.config import settings
 from app.repositories.github_app_installations_repository import (
     GithubAppInstallationsRepository,
+)
+from app.schemas.git_provider_schema import (
+    CreateGitProviderAppRequest,
+    GitRepository,
+)
+from app.services.gitlab_provider_service import (
+    authorize_git_provider,
+    clone_git_repository,
+    create_git_provider_app,
+    fetch_git_provider_app_install_by_user_id,
+    fetch_git_provider_apps_by_org_id,
+    fetch_user_repositories_by_app_id,
+    handle_authorization_callback,
 )
 from app.utils.aws_s3 import org_id_to_hash
 from app.utils.aws_secrets_manager import format_secret_key, write_secret
@@ -33,10 +54,152 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+aws_config = AWSClientConfig(
+    region_name="us-east-1",
+    aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+    aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+)
+
+
 class OkResponse(BaseModel):
     """Response model to validate and return when performing a health check."""
 
     status: str = "OK"
+
+
+#### APP ###
+@router.get(
+    "/app",
+    summary="Get git provider apps",
+    response_model=list[GitProviderApp],
+)
+def get_apps(
+    session: CurrentSession,
+    current_user: UserToken,
+) -> list[GitProviderApp]:
+    return fetch_git_provider_apps_by_org_id(session, current_user.organization_id)
+
+
+@router.post(
+    "/app",
+    summary="Create git provider app.",
+    dependencies=[GitProviderManagerPermission],
+    response_model=GitProviderApp,
+)
+def create_app(
+    session: CurrentSession,
+    gp_app_input: CreateGitProviderAppRequest,
+) -> GitProviderApp:
+    return create_git_provider_app(session, gp_app_input, aws_config)
+
+
+@router.get("/app/{application_id}/authorize")
+def get_provider_authorize_url(
+    session: CurrentSession,
+    current_user: UserToken,
+    application_id: str,
+) -> JSONResponse:
+    auth_url = authorize_git_provider(
+        session,
+        current_user.organization_id,
+        current_user.user_id,
+        application_id,
+        aws_config,
+    )
+    return JSONResponse(
+        status_code=status.HTTP_200_OK, content={"authorize_url": auth_url}
+    )
+
+
+@router.get(
+    "/app/{application_id}/installation",
+    summary="Get app install for logged in user.",
+    response_model=GitProviderAppInstallation,
+)
+def get_app_installation(
+    session: CurrentSession,
+    current_user: UserToken,
+    application_id: str,
+) -> GitProviderAppInstallation:
+    install = fetch_git_provider_app_install_by_user_id(
+        session,
+        current_user.organization_id,
+        current_user.user_id,
+        application_id,
+    )
+
+    if not install:
+        raise HTTPException(status_code=404, detail="Installation not found.")
+
+    return install
+
+
+@router.get("/app/{application_id}/repos", response_model=list[GitRepository])
+def get_user_repositories_by_app_id(
+    session: CurrentSession,
+    current_user: UserToken,
+    application_id: str,
+) -> list[GitRepository]:
+    return fetch_user_repositories_by_app_id(
+        session,
+        current_user.organization_id,
+        current_user.user_id,
+        application_id,
+        aws_config,
+    )
+
+
+@router.get("/app/callback")
+def git_provider_app_callback(
+    session: CurrentSession,
+    state: str,
+    code: str | None = None,
+    error: str | None = Query(None),
+) -> Response:
+    if not error and not code:
+        raise HTTPException(status_code=400, detail="Bad request")
+
+    if error:  # if the user denies the authorization request
+        logger.error(f"Error in callback: {error}")
+    else:
+        handle_authorization_callback(session, code, state, aws_config)
+
+    content = "<html><body><script>window.close();</script></body></html>"
+    return Response(content=content, media_type="text/html")
+
+
+@router.post("/app/{application_id}/clone-repo", dependencies=[ContentEditorPermission])
+def clone_git_provider_repo(
+    session: CurrentSession,
+    current_user: UserToken,
+    application_id: str,
+    repo: GitRepository,
+) -> JSONResponse:
+    upload_key = (
+        f"analysis/{org_id_to_hash(current_user.organization_id)}/{repo.repo_name}.zip"
+    )
+    bucket_name = (
+        settings.DROPZONE_BUCKET_NAME
+        if not settings.USE_LEGACY_DROPZONE
+        else f"{settings.ENVIRONMENT}-{settings.AWS_S3_CODE_BUCKET_SUFFIX}"
+    )
+    analysis_download_url = clone_git_repository(
+        session,
+        current_user.organization_id,
+        current_user.user_id,
+        application_id,
+        repo,
+        upload_key,
+        bucket_name,
+        aws_config,
+    )
+    return JSONResponse(
+        status_code=status.HTTP_202_ACCEPTED,
+        content={"download_url": analysis_download_url},
+    )
+
+
+### GIT PROVIDER ###
 
 
 @router.get("/{provider}/callback", response_model=OkResponse)
@@ -84,14 +247,6 @@ def git_provider_callback(
 
     content = "<html><body><script>window.close();</script></body></html>"
     return Response(content=content, media_type="text/html")
-
-
-class GitRepository(BaseModel):
-    provider_name: str
-    repo_name: str
-    org: str
-    last_updated: datetime
-    metadata: dict
 
 
 @router.post("/{provider}/clone-repo", dependencies=[ContentEditorPermission])

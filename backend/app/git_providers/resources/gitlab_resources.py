@@ -60,6 +60,7 @@ class GitLabAPIResources:
                 }
                 git_repo = GitRepository(
                     provider_name=self.provider_kind.name.replace("_", " ").title(),
+                    provider_kind=self.provider_kind,
                     repo_name=detailed_project.name,
                     org=detailed_project.namespace["full_path"],
                     last_updated=latest_commit.committed_date,

@@ -160,7 +160,7 @@ class GitLabProvider:
             repo_info.repo_name,
             str(repo_id),
             user_id,
-            repo_info.provider_name,
+            str(repo_info.provider_kind),
             latest_commit,
             upload_key,
         )

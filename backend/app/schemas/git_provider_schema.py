@@ -10,6 +10,7 @@ class GitProvider(BaseModel):
 
 class GitRepository(BaseModel):
     provider_name: str
+    provider_kind: GitProviderKind | None = None
     repo_name: str
     org: str
     last_updated: str

@@ -57,6 +57,7 @@ def trigger_onboarding(
         trigger_body.creator_id,
         trigger_body.provider,
         trigger_body.version,
+        trigger_body.repository_id,
     )
 
     return Onboarding(status="OK", call_id=call.object_id)

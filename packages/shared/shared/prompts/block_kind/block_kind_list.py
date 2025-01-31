@@ -32,11 +32,14 @@ class BlockKindCopyEditorList(BlockResponse):
         ORDERED = "ORDERED"
         UNORDERED = "UNORDERED"
 
-    response: list[str]
+    list_output: list[str]
     list_kind: ListKind
+    rationale: str
 
     def to_markdown(self) -> str:
-        if self.list_kind == self.ListKind.ORDERED:
-            return "\n".join(f"{i+1}. {item}" for i, item in enumerate(self.response))
+        if self.list_output == self.ListKind.ORDERED:
+            return "\n".join(
+                f"{i+1}. {item}" for i, item in enumerate(self.list_output)
+            )
         else:
-            return "\n".join(f"- {item}" for item in self.response)
+            return "\n".join(f"- {item}" for item in self.list_output)

@@ -23,6 +23,7 @@ inspection_image = (
             "pydantic>=2.8.2",
             "tiktoken",
             "/shared_pkg",
+            "gitignore-parser",
         ]
     )
 )
@@ -130,7 +131,7 @@ async def get_result_loading_config(
         ),
     ],
     proxy=modal.Proxy.from_name("pg-proxy")
-    if os.environ["MODAL_ENVIRONMENT"] != "dev-shane"
+    if os.environ["MODAL_ENVIRONMENT"] != "staging"
     else None,
     memory="2048",
     timeout=3600 * 8,
@@ -145,6 +146,12 @@ async def inspect_db(
 
     import boto3
     from database.models_v2_enums import NodeKind as DbNodeKind
+    from database.models_v2_enums import VersionStatus
+    from onboarding.onboard_utils import (
+        reencode_file,
+        set_codebase_status,
+        unpack_archive,
+    )
     from utils.db import (
         create_inspector_run,
         download_source_file,
@@ -193,18 +200,54 @@ async def inspect_db(
     ):
         download_root = Path(download_dir)
         file_paths = []
-        print("Downloading all source files for codebase from s3...")
-        for db_file_node in db_file_nodes:
-            download_abs_path = download_source_file(
-                s3_client=s3_client,
-                bucket_name=org_hashed_id,
-                primary_asset_id=str(version.primary_asset.id),
-                version_id=str(version_id),
-                node_rel_path=db_file_node.relative_path,
-                download_root=download_root,
+        if version.status == VersionStatus.CONNECTED:
+            # TODO: check usage before switching to generating
+            # if it's in the connected state, must upload the individual files to S3
+            download_archive_key = (
+                f"{version.primary_asset_id}/{version_id}/{version_id}.zip"
             )
-            file_paths.append(download_abs_path)
-        print("Download complete")
+            download_path = Path(download_dir) / f"{version_id}.zip"
+            print(f"downloading zip to {download_path}")
+            s3_client.download_file(org_hashed_id, download_archive_key, download_path)
+
+            extracted_path = unpack_archive(
+                archive_path=download_path,
+                override_codebase_name=codebase_name,
+                extraction_path=download_dir,
+            )
+            print(f"Extracted archive to {extracted_path}")
+            for root, _, files in os.walk(extracted_path):
+                for filename in files:
+                    local_path = Path(root) / filename
+                    trimmed_path = local_path.relative_to(download_dir)
+                    for node in db_file_nodes:
+                        if node.relative_path == str(trimmed_path):
+                            reencode_file(local_path)
+
+                            s3_client.upload_file(
+                                local_path,
+                                org_hashed_id,
+                                f"{version.primary_asset_id}/{version_id}/{node.relative_path}",
+                            )
+                            print(
+                                f"uploading {trimmed_path} to s3 at {version.primary_asset_id}/{version_id}/{node.relative_path}"
+                            )
+                            file_paths.append(local_path)
+            set_codebase_status(version_id, VersionStatus.GENERATING)
+
+        else:
+            print("Downloading all source files for codebase from s3...")
+            for db_file_node in db_file_nodes:
+                download_abs_path = download_source_file(
+                    s3_client=s3_client,
+                    bucket_name=org_hashed_id,
+                    primary_asset_id=str(version.primary_asset.id),
+                    version_id=str(version_id),
+                    node_rel_path=db_file_node.relative_path,
+                    download_root=download_root,
+                )
+                file_paths.append(download_abs_path)
+            print("Download complete")
 
         codebase_dag: FileTreeDag = build_dag(
             root_path=download_root, file_paths=file_paths
@@ -446,7 +489,7 @@ def get_file_content(path: Path) -> str:
         modal.Secret.from_name("db"),
     ],
     proxy=modal.Proxy.from_name("pg-proxy")
-    if os.environ["MODAL_ENVIRONMENT"] != "dev-shane"
+    if os.environ["MODAL_ENVIRONMENT"] != "staging"
     else None,
 )
 def set_codebase_status_in_container(version_id: str, status: str) -> None:
@@ -483,9 +526,9 @@ def main(
 
 
 @app.local_entrypoint()
-def local_connect() -> None:
-    presigned_url = "https://development-codebase-dropzone.s3.us-east-1.amazonaws.com/analysis/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/mesa.zip?response-content-disposition=inline&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEAEaCXVzLWVhc3QtMSJHMEUCIQD5LX0bv7JWiIqZ2bhuvFWbuht%2FCPKDsNRF0Ayz2kZcEQIgRmodkgx3tr4riKlNgANwJwuioWcHZLH2G5vrn737%2Bl4qvgQI%2Bv%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARABGgw1NTAwODI3NjExMDkiDJmED2kCynGhalKM%2FyqSBMTLW6kDJ21P8ju%2F8FHvGwThpiyTuIdbnSdvaJs1XH2X%2BMcTun%2B8MzS1tHD9J33G%2FAveITFnm%2F7%2BqqZwn6NfScLlpIKkp3gX%2F5Lp1Lb3%2FoF3InVAYWZO1%2FfRZWrRB2Qa3Sxv%2BTrWybx4IE%2BJYTy9feKz%2FcQccLGRiXwkTBGG0Gs7oB%2B8Ds4DTF%2Fn1gcs2gNVljU7pI4xKLsWzLKIAoqZCo2iAUk8R593a6qVcxyb%2BM%2Fdys%2BL04PtrvsIYNOL5dLKfSiDJDgloHDDxmyiwlDk0MmK9TyUdMrCPnM98PMdVlw%2BNh4rXkR4Z3U3fE6zfYa861E%2FUUFNgE6kS4Y0r1g4zWsPKWkmfV76JQCNutbaz2qm%2F%2FDyoNQ1r8J6%2F7WKaCrLoB1HTkK9jXUh%2BW2HDZFJOSA%2FrRWiDTZ9OlfU7zHxjSBI3LrtTBNQCuEdQrXurxSYL0NRDBrnKENrwVZDIl40Rw9kEeBxDS16GMEtNpiFX1ZMTs82lW7dlmkC1UAfu2NC1Qm1%2B9b8Sq4AIveX7DZ1lLnMRIgtpsDFW8ZArm4R1raMYnhe01G702amRK4chjKxxfwgebQnFaq%2BV0J9akBrHfWzqVFjgfzGTtEoUbV6YxR8nvF9vLL1wLyDd3IUlSPpY%2FDbOq1%2BaOGvl03Ee3lrnTIzXCEFa9%2BipWUDF9Jq8nbc1ajYm6Fcemg5tU17PXvQW7gXMObGy7wGOsUCaQuVPXsWrj%2FNdixhbgDADzmhT4BHY22IOJmY3ETOrCADobZmG%2BAyR7trfKsOAQxBEMqo4JzQ3FqCKbOPtR8wktNRqQh1C1jyogOwcdddW0forrI8Arc5Q5fpBCP9f0h15gI7OjCuubCBlgbnWunAzbeYJTnUQJaAm4hztXbjkkwkRxHT08sY1dmAcPJhANqTt1amx84x%2FSjxacK2B%2BL4mx03g6twF95F153zrEydqBW%2FK2iRfKWH6F3NNHOVSX4Z2lZ3F%2FOjOsbQZJ5fd%2BgDuXCIjQ63ki80yA9HI%2BzBaElbItPrMSSlmnzScQflL8gIDvhWi34A5vOmplIkEttoP6todbiYmPD%2FihHm6reqy2jSHKbYVp1GmIJEeC542oqnBJSANjB15svIXMo3hwPNFSizTrFPd0SwjWj1fBdKt3CYZGvBsA%3D%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAYAE342GKWREFJZHV%2F20250124%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20250124T004919Z&X-Amz-Expires=6000&X-Amz-SignedHeaders=host&X-Amz-Signature=6b719f5da64af048af5dfdce667fcacaefb496afebc4b068d1a1f5c48d4fe4ba"
-    archive_name = "mesa.zip"
+async def local_connect() -> None:
+    presigned_url = "https://development-codebase-dropzone.s3.us-east-1.amazonaws.com/analysis/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/diff-tests-main-22.zip?response-content-disposition=inline&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEIz%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCICwv3MWTJfgOycXpYFUMCmJkwbSCI%2BU3OFeNQjWrcaJDAiEAy7TCbzqcJcuoUkZI5798RZvYQUceVMA9UsCRB0vvQZUqvgQIlP%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARABGgw1NTAwODI3NjExMDkiDL5aPTcc0Lb633cnDSqSBF2x0CIvE6A6w0deizF6TyiM5Maj%2BwN8MsSiMAf8%2FQd4M3VcnQEAPqQU03EBDvoc%2BokaCiP7f8aMC7Y1CVl6oTEqXFeVAsWWelH9N4FrUrB7LheMDQwH3lUrTwQEUi1oEsWxvk%2FxjQ2fM1z%2FUsNZtcWNlnGHF49fHRYwfgAceeGnIOkQSGA3JqRbP6BOVamoz4CF6YOMWfBciz7pRtnmWepbisgV0bfqcWLU8GZQlkFV0z5lPV86NklGQOT17z0XQozEN7KJv1MoXXf%2FltPs%2FyAuDeG2w1UhAbLg2lGEN7Vxf8kvvPibRj%2FOrTSqAZwBQTVLBZlxo8iXmb0maonNzhK%2B7qNsglH21gi0LMt99W%2BixH19sCcio9SJ3wLlDdlkJfNeYjQQpXuXktcAhqa7z%2FUqd8TcwaPrnNdX2PcmdDsF7XkiuJS5xCGFv3QBWaqhcRpXY%2BfO2%2FpuO3fMu1C2%2FoHeti6V6GJjyvloAXpF%2FJrFNA61Td%2FdDgadRwLoYZm6ob%2BofWGtMtrAB%2BzP0PgZVrQPYJnc8XPDp%2FyMaVnfRsjvnyOmpVoP6hHlcisGEUN9AhDrEdG7NrLWyBOc%2F5eG0me6O6bWjenXgHosQaPEHFKWoU24mC6Fa829raT87pF56zeWCAUiaTyzN6QFhxPlNwcRK7R5LBR7QjRyiiVUm7U6uCDOO0STHgdxZKsKrYpvEW3fMKDw6bwGOsUCkFZr8Bhl0RSRVF9w3LuTRchX5%2BwPLNdwLpkNLvByYd3LFpjfhg1XFAnBcKZnE15sFl7CEW%2B3p%2FsD9z%2FI2For7LwqaBizHTsu%2B9Tk%2B7A9iZC5F12qi54nMsXeS0bYrie%2F6kVx0FJ7CY3R35Qi3lJDIxtSH7vCmD1PNY9WedNlfOWLsnYSxrVW1%2Bsf60b2MKPtBVIVkqaBt508fhmMNK37w1a%2BfKApdJYc%2BecGmkWWXVbR8F63VWv1H1h0zTeoyyUz8CFdqJIflRjKrAL%2F46VOVK8hrXl4tWnSG4y1cDkZxs%2FgsqYT%2FhWotFPZTgW%2FkTrNAGUOvF79nkzx7LPXkCY36Ql7ChKjYTLXUVQEReL4QGFbblM4JbokixtGzKINuGVylbI9zRkej4cV9QB0kace%2FSAFYfVbRO8RfIQrse4XbsEg41IngA%3D%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAYAE342GKVKS5KJA7%2F20250129%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20250129T190702Z&X-Amz-Expires=12000&X-Amz-SignedHeaders=host&X-Amz-Signature=291c2f96e5e16977c0dd699591730b2ab622b0a9e4d4c197d1909ea6be3b4ed2"
+    archive_name = "diff-tests-main-22.zip"
     org_id = "org_s76pU1v8LAYhTOWB"
     creator_id = "test"
     provider = "manual"
@@ -493,7 +536,7 @@ def local_connect() -> None:
     version_str = None
     repository_id = None
 
-    run_codebase_connection.local(
+    run_codebase_connection.remote(
         presigned_url,
         archive_name,
         org_id,
@@ -503,6 +546,7 @@ def local_connect() -> None:
         version_str,
         repository_id,
     )
+    # inspect_db.remote(version_id = 'e308eccc-8105-4cd4-8163-c591b507057d')
 
 
 @app.function(
@@ -555,7 +599,7 @@ onboarding_and_inspect_image = (
         modal.Mount.from_local_python_packages("onboarding"),  # Why not automounted?
     ],
     proxy=modal.Proxy.from_name("pg-proxy")
-    if os.environ["MODAL_ENVIRONMENT"] != "dev-shane"
+    if os.environ["MODAL_ENVIRONMENT"] != "staging"
     else None,
     timeout=3600 * 8,
     region="us-east",

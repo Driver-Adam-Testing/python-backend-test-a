@@ -8,9 +8,25 @@ class CodebaseAnalysisRequest(BaseModel):
     download_url: str
 
 
+class CodebaseConnectionRequest(BaseModel):
+    download_urls: str
+
+
+class CodebaseGenerationRequest(BaseModel):
+    version_ids: list[str]
+
+
+class CodebaseGenerationResponse(BaseModel):
+    call_id: str
+
+
 class CodebaseAnalysisResponse(BaseModel):
     call_id: str
     codebase_object_key: str
+
+
+class CodebaseConnectionResponse(BaseModel):
+    call_id: str
 
 
 class ModalFunctionCallResponse(BaseModel):

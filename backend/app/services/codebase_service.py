@@ -99,6 +99,12 @@ class CodebaseService:
             codebase_object_key=codebase_object_key,  # S3 object key for the codebase to be used if and when customer triggers onboarding
         )
 
+    # @staticmethod
+    # def execute_codebase_generation(
+    #     organization_id: str,
+    #     version_ids: list[str],
+    # ) -> CodebaseGenerationResponse:
+
     @staticmethod
     def get_codebase_analysis_results(call_id: str) -> CodebaseAnalysisResult:
         modal_response = execute_modal_function_call(call_id)

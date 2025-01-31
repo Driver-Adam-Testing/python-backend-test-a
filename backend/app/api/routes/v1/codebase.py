@@ -2,7 +2,7 @@ from datetime import datetime
 from uuid import UUID
 
 from database.models_v2 import PrimaryAsset, Version
-from database.models_v2_enums import PrimaryAssetKind
+from database.models_v2_enums import PrimaryAssetKind, VersionStatus
 from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -15,6 +15,10 @@ from app.schemas.codebase_schema import (
     CodebaseAnalysisRequest,
     CodebaseAnalysisResponse,
     CodebaseAnalysisResult,
+    CodebaseConnectionRequest,
+    CodebaseConnectionResponse,
+    CodebaseGenerationRequest,
+    CodebaseGenerationResponse,
     CodebaseOnboardRequest,
 )
 from app.services.codebase_service import CodebaseService
@@ -109,6 +113,50 @@ def exec_codebase_analysis(
     return CodebaseService.execute_codebase_analysis(
         user.organization_id, request.download_url
     )
+
+
+@router.post(
+    "/connect",
+    summary="Execute codebase connection",
+    dependencies=[ContentEditorPermission],
+)
+def exec_codebase_connection(
+    user: UserToken,
+    request: CodebaseConnectionRequest,
+) -> CodebaseConnectionResponse:
+    return CodebaseService.execute_codebase_connection(
+        user.organization_id, request.download_urls
+    )
+
+
+@router.post(
+    "/generate",
+    summary="Execute codebase generation",
+    dependencies=[ContentEditorPermission],
+)
+def exec_codebase_generation(
+    session: CurrentSession,
+    user: UserToken,
+    request: CodebaseGenerationRequest,
+) -> CodebaseGenerationResponse:
+    query = (
+        select(Version)
+        .join(PrimaryAsset)
+        .where(
+            Version.id.in_(request.version_ids),
+            Version.status == VersionStatus.CONNECTED,
+            PrimaryAsset.organization_id == user.organization_id,
+        )
+    )
+    result = session.exec(query).all()
+    if len(result) != len(request.version_ids):
+        raise HTTPException(
+            status_code=404, detail="Versions not found for provided ids"
+        )
+
+    # TODO: check usage before generation
+    # TODO call execute function or modal function
+    return CodebaseGenerationResponse(call_id="1234")
 
 
 @router.get(

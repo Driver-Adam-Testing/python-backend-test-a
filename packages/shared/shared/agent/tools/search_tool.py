@@ -109,6 +109,12 @@ class SearchTool(ToolStrict):
             ).node_ids
         else:
             node_ids = agent.scope.node_ids
+
+        if agent.scope.node_ids and not node_ids:
+            raise ValueError(
+                f"Search path {self.search_subfolder_with_version_paths} isn't in scope. Please try again."
+            )
+
         search_input = SearchInput(
             query=self.search_query,
             algorithm=self.search_algorithm.value,

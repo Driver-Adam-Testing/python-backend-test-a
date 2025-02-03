@@ -159,8 +159,6 @@ Variable to document:
 
 VARIABLES_NONE_CONTENT = "\n---\nNo global variables defined in this file."
 
-# TODO how do we handle invalid c? Investigate what happens when tree-sitter fails and handle gracefully
-
 
 class CIncludeRawSymbolCollection(RawSymbolCollection):
     data: dict[str, RawSymbolData]

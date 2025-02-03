@@ -1,0 +1,234 @@
+import base64
+import json
+import logging
+
+from database.models_v1 import GitProviderApp, GitProviderAppInstallation
+from shared.interfaces.aws_client_config import AWSClientConfig
+from shared.secret_management.aws_secret_management import (
+    AWSSecretManagementStrategy,
+    format_secret_name,
+)
+from sqlmodel import Session
+
+from app.git_providers.providers.gitlab_provider import (
+    GitLabProvider,
+    GitProviderAppRevokeError,
+)
+from app.repositories.git_provider_repository import (
+    delete_git_provider_app_install,
+    git_provider_app_by_id,
+    git_provider_app_installation_by_user_id,
+    git_provider_apps_by_org_id,
+)
+from app.schemas.git_provider_schema import (
+    CreateGitProviderAppRequest,
+    GitProviderAppSecret,
+    GitRepository,
+)
+from app.schemas.secret_management_schema import (
+    APP_INSTALL_SECRET_NAME_PREFIX,
+    APP_SECRET_NAME_PREFIX,
+)
+
+logger = logging.getLogger(__name__)
+
+
+def fetch_git_provider_apps_by_org_id(
+    session: Session, organization_id: str
+) -> list[GitProviderApp]:
+    return git_provider_apps_by_org_id(session, organization_id)
+
+
+def fetch_git_provider_app_install_by_user_id(
+    session: Session, organization_id: str, user_id: str, app_id: str
+) -> GitProviderAppInstallation | None:
+    return git_provider_app_installation_by_user_id(
+        session, organization_id, app_id, user_id
+    )
+
+
+def create_git_provider_app(
+    session: Session,
+    gp_app_input: CreateGitProviderAppRequest,
+    aws_config: AWSClientConfig,
+) -> GitProviderApp:
+    git_provider_app = GitProviderApp(
+        owner_organization_id=gp_app_input.organization_id,
+        name=gp_app_input.name,
+        provider_kind=gp_app_input.provider_kind,
+        shared_provider=gp_app_input.shared_provider,
+        base_url=gp_app_input.base_url,
+        client_id=gp_app_input.client_id,
+        redirect_uri=gp_app_input.redirect_uri,
+        scopes=" ".join(gp_app_input.scopes),
+    )
+    session.add(git_provider_app)
+
+    # Attempt to write the secret
+    secrets_manager = AWSSecretManagementStrategy(config=aws_config)
+    app_secret_name = format_secret_name(
+        APP_SECRET_NAME_PREFIX, str(git_provider_app.id)
+    )
+    secret_value = json.dumps(
+        GitProviderAppSecret(client_secret=gp_app_input.client_secret).model_dump()
+    )
+    try:
+        logger.info(f"Writing secret {app_secret_name}")
+        secrets_manager.write_secret(app_secret_name, secret_value)
+    except Exception as e:
+        logger.error(
+            f"Error writing secret for app {git_provider_app.name} with ID {git_provider_app.id}. Aborting operation."
+        )
+        session.rollback()
+        raise e
+
+    # Commit the session if secret writing was successful
+    try:
+        session.commit()
+        logger.info(f"App {git_provider_app.id} created successfully.")
+    except Exception as e:
+        logger.error(
+            f"Error committing session for app {git_provider_app.name} with ID {git_provider_app.id}. Rolling back database."
+        )
+        secrets_manager.delete_secret(app_secret_name)
+        session.rollback()
+        raise e
+
+    session.refresh(git_provider_app)
+
+    return git_provider_app
+
+
+def authorize_git_provider(
+    session: Session,
+    organization_id: str,
+    user_id: str,
+    app_id: str,
+    aws_config: AWSClientConfig,
+) -> str:
+    git_provider = GitLabProvider.from_config(
+        git_provider_app_by_id(session, organization_id, app_id), aws_config
+    )
+    return git_provider.authorize_provider(organization_id, user_id, app_id)
+
+
+def handle_authorization_callback(
+    session: Session,
+    code: str,
+    state: str,
+    aws_config: AWSClientConfig,
+) -> None:
+    state_bytes = base64.b64decode(state)
+    state_str = state_bytes.decode("utf-8")
+    state_dict = json.loads(state_str)
+
+    organization_id, user_id, application_id = (
+        state_dict["organization_id"],
+        state_dict["user_id"],
+        state_dict["application_id"],
+    )
+
+    git_provider_app = git_provider_app_by_id(session, organization_id, application_id)
+    existing_app_install = next(
+        (
+            app_install
+            for app_install in git_provider_app.app_installations
+            if app_install.user_id == user_id
+            and app_install.organization_id == organization_id
+        ),
+        None,
+    )
+    if existing_app_install is None:
+        logger.info(
+            f"App installation does not exist for user {user_id} and app {application_id}"
+        )
+        app_install = GitProviderAppInstallation(
+            user_id=user_id, organization_id=organization_id
+        )
+        git_provider_app.app_installations.append(app_install)
+        session.add(git_provider_app)
+        session.commit()
+        session.refresh(git_provider_app)
+        app_install_id = app_install.id
+        git_provider = GitLabProvider.from_config(git_provider_app, aws_config)
+        git_provider.handle_app_authorization_callback(code, str(app_install_id))
+    else:
+        logger.info(
+            f"App installation already exists for user {user_id} and app {application_id}"
+        )
+
+
+def fetch_user_repositories_by_app_id(
+    session: Session,
+    organization_id: str,
+    user_id: str,
+    app_id: str,
+    aws_config: AWSClientConfig,
+) -> list[GitRepository]:
+    git_provider = GitLabProvider.from_config(
+        git_provider_app_by_id(session, organization_id, app_id), aws_config
+    )
+
+    user_app_install = git_provider_app_installation_by_user_id(
+        session, organization_id, app_id, user_id
+    )
+    try:
+        return git_provider.fetch_repos(user_app_install)
+    except GitProviderAppRevokeError as e:
+        logger.error(
+            f"Access token expired or was revoked for user {user_id} and app {app_id}"
+        )
+        # if we get an error fetching repositories, getting the access token failed and need to uninstall the app and force the user to re-authenticate/reinstall
+        handle_user_app_revoke(
+            session, organization_id, app_id, str(user_app_install.id), aws_config
+        )
+        raise e
+
+
+def clone_git_repository(
+    session: Session,
+    organization_id: str,
+    user_id: str,
+    app_id: str,
+    git_repo: GitRepository,
+    upload_key: str,
+    bucket_name: str,
+    aws_config: AWSClientConfig,
+) -> str:
+    existing_app_install = git_provider_app_installation_by_user_id(
+        session, organization_id, app_id, user_id
+    )
+    if not existing_app_install:
+        logger.error(f"App installation not found for user {user_id} and app {app_id}")
+        raise ValueError("App installation not found for user")
+
+    git_provider = GitLabProvider.from_config(
+        git_provider_app_by_id(session, organization_id, app_id), aws_config
+    )
+    try:
+        return git_provider.clone_repository(
+            git_repo, user_id, organization_id, upload_key, bucket_name
+        )
+    except GitProviderAppRevokeError as e:
+        logger.error(
+            f"Access token expired or was revoked for user {user_id} and app {app_id}"
+        )
+        # if we get an error fetching repositories, getting the access token failed and need to uninstall the app and force the user to re-authenticate/reinstall
+        handle_user_app_revoke(
+            session, organization_id, app_id, str(existing_app_install.id), aws_config
+        )
+        raise e
+
+
+def handle_user_app_revoke(
+    session: Session,
+    organization_id: str,
+    app_id: str,
+    installation_id: str,
+    aws_config: AWSClientConfig,
+) -> None:
+    logger.info(f"Uninstalling app for installation ID {installation_id}")
+    delete_git_provider_app_install(session, organization_id, app_id, installation_id)
+    AWSSecretManagementStrategy(config=aws_config).delete_secret(
+        format_secret_name(APP_INSTALL_SECRET_NAME_PREFIX, str(installation_id))
+    )

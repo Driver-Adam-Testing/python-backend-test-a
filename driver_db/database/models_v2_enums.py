@@ -14,6 +14,7 @@ class VersionStatus(str, enum.Enum):
     GENERATING = "GENERATING"
     GENERATION_COMPLETE = "GENERATION_COMPLETE"
     GENERATION_ERROR = "GENERATION_ERROR"
+    CONNECTED = "CONNECTED"
 
 
 class NodeKind(str, enum.Enum):

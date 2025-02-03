@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Self
 
 from utils.models import ChatOpenAI
-from utils.treesitter import CDriverTree
+from utils.treesitter_driver import CDriverTree
 
 from .ir_common import (
     DataStructureData,

@@ -470,6 +470,19 @@ def comprehend_file_top_down(
                     language = Lang.from_ext_and_source(
                         ext=node.root_rel_path.suffix, source=chunk_texts[0]
                     )
+
+                    if language == Lang.C_OR_CPP_HEADER:
+                        language = disambiguate_header(
+                            code=chunk_texts[0], fallback=Lang.C_OR_CPP_HEADER
+                        )
+                        print(
+                            f"Disambiguated header file `{node.root_rel_path}` to be `{language}`"
+                        )
+                        if language == Lang.CPP:
+                            # We still defer to the generic header template if c++, but we use C language specialization
+                            # for C headers.
+                            language = Lang.C_OR_CPP_HEADER
+
                     match language:
                         case Lang.C:
                             template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_C
@@ -556,7 +569,6 @@ def comprehend_file_top_down(
             language = Lang.from_ext_and_source(
                 ext=node.root_rel_path.suffix, source=source_code
             )
-
             if language == Lang.C_OR_CPP_HEADER:
                 language = disambiguate_header(
                     code=source_code, fallback=Lang.C_OR_CPP_HEADER

@@ -72,6 +72,7 @@ class DataScope(BaseModel):
         """
         This returns a DataScope that has node_ids of Nodes where the version display name and the relative_path are children of the in this datascope, and errors if false.
         """
+
         # Ensure all identifiers start with an existing node identifier
         existing_identifiers = {node.get_identifier() for node in self.nodes}
         for identifier in identifiers:
@@ -103,7 +104,12 @@ class DataScope(BaseModel):
                         or_(
                             *[
                                 and_(
-                                    Node.relative_path == identifier.split("/", 1)[1],
+                                    or_(
+                                        Node.relative_path
+                                        == identifier.split("/", 1)[1],
+                                        Node.relative_path
+                                        == identifier.split("/", 1)[1] + "/",
+                                    ),
                                     Version.display_name == identifier.split("/", 1)[0],
                                 )
                                 for identifier in identifiers

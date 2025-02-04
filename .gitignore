@@ -185,3 +185,4 @@ cython_debug/
 /content_services/pdf_preprocessing/modal-secrets.sh
 dev3_db_dump.sql
 local_db_backup.sql
+/.cursorignore

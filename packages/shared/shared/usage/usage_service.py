@@ -1,7 +1,9 @@
 from datetime import datetime
+from typing import Literal
 
 import boto3
 from database.models_v1 import UsageEvent, UsageEventType, UsageSession
+from database.models_v2 import PrimaryAsset
 from sqlmodel import Session, select
 
 from shared.interfaces.usage.event_metadata import (
@@ -11,7 +13,6 @@ from shared.interfaces.usage.event_metadata import (
 from shared.interfaces.usage.usage_schema import (
     UsageBalance,
     UsageCharge,
-    UsageEventRange,
     UsageEventSummary,
     UsageMetricUnitType,
 )
@@ -25,6 +26,7 @@ class UsageService:
         self.session = session
         self.usage_event_repository = UsageEventRepository(session)
         self.usage_session_repository = BaseRepository(session, UsageSession)
+        self.primary_asset_repository = BaseRepository(session, PrimaryAsset)
         self.aws_client = aws_client
 
     def issue_usage_credits(
@@ -187,43 +189,65 @@ class UsageService:
     def get_charges(
         self,
         organization_id: str,
-        time_range: UsageEventRange,
+        limit: int = 50,
+        offset: int = 0,
+        sort_direction: Literal["ASC", "DESC"] = "DESC",
     ) -> list[UsageCharge]:
-        charges = []
-        start_date = time_range.start_date
-        end_date = time_range.end_date
+        charges: list[UsageCharge] = []
+
+        max_limit = 100
+        if limit > max_limit:
+            raise ValueError(f"Limit must be less than or equal to {max_limit}")
+
         onboarding_usage_events = self.usage_event_repository.get_usage_events_by_types(
-            organization_id,
-            [
-                UsageEventType.ONBOARDING_USAGE_DEBIT,
-            ],
-            start_date,
-            end_date,
+            organization_id=organization_id,
+            event_types=[UsageEventType.ONBOARDING_USAGE_DEBIT],
+            limit=limit,
+            offset=offset,
+            sort_direction=sort_direction,
         )
 
-        # get distinct session ids
+        # Get session IDs for this batch
         onboarding_session_ids = {event.session_id for event in onboarding_usage_events}
 
+        # Get sessions for this batch to get the primary asset ID
         onboarding_sessions = self.usage_session_repository.get_all(
-            conditions=[UsageSession.id.in_(onboarding_session_ids)]
+            conditions=[UsageSession.id.in_(onboarding_session_ids)],
         )
 
+        # Process each session in the batch
         for sesh in onboarding_sessions:
             meta = sesh.session_metadata
+            primary_asset_id = meta["content_id"]
             content_name = meta.get("content_name", "Unknown")
+
             onboarding_usage_event = next(
                 event
                 for event in onboarding_usage_events
                 if event.session_id == sesh.id
             )
+            # TODO: join events or sessions to the primary asset table to better enforce referential integrity
+            codebase = self.primary_asset_repository.get(primary_asset_id)
+            asset_name = (
+                codebase.display_name
+                if codebase
+                else f"{content_name} (deleted)"
+                if content_name
+                else "(Deleted Codebase)"
+            )
 
             charges.append(
                 UsageCharge(
-                    asset_name=content_name,
+                    asset_name=asset_name,
                     event_type=UsageEventType.ONBOARDING_USAGE_DEBIT,
                     timestamp=onboarding_usage_event.timestamp,
                     bytes=onboarding_usage_event.bytes_in,
                 )
             )
+
+        if sort_direction == "DESC":
+            charges = sorted(charges, key=lambda x: x.timestamp, reverse=True)
+        else:
+            charges = sorted(charges, key=lambda x: x.timestamp)
 
         return charges

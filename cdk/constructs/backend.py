@@ -114,6 +114,10 @@ class Backend(Construct):
             self, "OpenAIApiKeyCredentials", secret_name=openai_secret_name
         )
 
+        inspector_bucket_name = aws_ssm.StringParameter.value_from_lookup(
+            scope, parameter_name="/baseline/infra/v2/inspector/stateBucketName"
+        )
+
         self.dropzone_bucket = aws_s3.Bucket(
             self,
             "DropzoneBucket",
@@ -139,6 +143,7 @@ class Backend(Construct):
             "DROPZONE_BUCKET_NAME": self.dropzone_bucket.bucket_name,
             "AWS_S3_CODE_BUCKET_SUFFIX": "codebase-dropzone",
             "USE_LEGACY_DROPZONE": "True" if params.use_legacy_dropzone else "False",
+            "INSPECTOR_BUCKET_NAME": inspector_bucket_name,
         }
 
         container_secrets = {

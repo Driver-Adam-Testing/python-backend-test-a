@@ -2,7 +2,6 @@ import base64
 import json
 import logging
 
-import httpx
 from app.git_providers.core.config import GitProviderConfig
 from app.git_providers.core.config_loader import load_provider_config
 from app.git_providers.oauth.gitlab_oauth_strategy import GitLabOAuthStrategy
@@ -91,36 +90,23 @@ class GitLabProvider:
             secret_value["access_token"],
             secret_value["refresh_token"],
         )
-        try:
-            if not self.auth_strategy.is_token_valid(access_token):
-                logger.info("Access token not valid, refreshing")
-                new_token = self.auth_strategy.refresh_access_token(refresh_token)
-                access_token = new_token["access_token"]
-                logger.info("New access token acquired")
-                if self.auth_strategy.is_token_valid(access_token):
-                    logger.info("Writing new access token to secrets manager")
-                    self.secrets_manager.write_secret(
-                        install_key,
-                        json.dumps(new_token),
-                    )
-                else:
-                    logger.error("New access token not valid")
-                    raise ValueError("Access token not valid")
 
-            return access_token
-
-        except httpx.HTTPStatusError as e:
-            if (
-                e.response.status_code == 401
-                and e.response.json()["error"] == "invalid_token"
-            ):
-                logger.error("Access token revoked or expired")
-                # this token was either revoked or expired and thus we need to force the user to re-authenticate/reinstall the app
-                raise GitProviderAppRevokeError("Access token revoked or expired", e)
+        if not self.auth_strategy.is_token_valid(access_token):
+            logger.info("Access token not valid, refreshing")
+            new_token = self.auth_strategy.refresh_access_token(refresh_token)
+            access_token = new_token["access_token"]
+            logger.info("New access token acquired")
+            if self.auth_strategy.is_token_valid(access_token):
+                logger.info("Writing new access token to secrets manager")
+                self.secrets_manager.write_secret(
+                    install_key,
+                    json.dumps(new_token),
+                )
             else:
-                raise
+                logger.error("New access token not valid")
+                raise GitProviderAppRevokeError("Access token revoked or expired")
 
-        # return access_token
+        return access_token
 
     def fetch_repos(
         self, app_installation: GitProviderAppInstallation

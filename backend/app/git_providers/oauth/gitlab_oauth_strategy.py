@@ -56,6 +56,16 @@ class GitLabOAuthStrategy:
         return self._make_post_request(self.config.access_token_url, payload)
 
     def is_token_valid(self, token: str) -> bool:
-        token_info = self._token_info(token)
-        expires_in = token_info["expires_in"]
-        return expires_in > 0
+        try:
+            token_info = self._token_info(token)
+            expires_in = token_info["expires_in"]
+            return expires_in > 0
+        except httpx.HTTPStatusError as e:
+            if (
+                e.response.status_code == 401
+                and e.response.json()["error"] == "invalid_token"
+            ):
+                # Token is invalid we can still potentially refresh it
+                return False
+            else:
+                raise

@@ -8,13 +8,13 @@ from shared.interfaces.usage.usage_schema import (
     CreditUsageEvent,
     UsageBalance,
     UsageCharge,
-    UsageEventRange,
     UsageEventSummary,
 )
 from shared.usage.usage_service import UsageService
 from shared.usage.utils import sloc_to_bytes
 
 from app.api.auth import M2MToken, UsageCreditPermission, UserToken
+from app.api.routes.v2.query_utils import Pagination
 from app.api.session import CurrentSession
 from app.core.config import settings
 
@@ -55,18 +55,14 @@ def get_usage_summary(
     summary="Get Recent Usage Charges",
 )
 def get_charges(
-    session: CurrentSession,
-    user: UserToken,
-    start_date: datetime | None = Query(
-        None,
-        description="Start date for the range of charges. ISO 8601 format required",
-    ),
-    end_date: datetime | None = Query(
-        None, description="End date for the range of charges. ISO 8601 format required"
-    ),
+    session: CurrentSession, user: UserToken, pagination: Pagination
 ) -> list[UsageCharge]:
+    limit = pagination.limit
+    offset = pagination.offset
+    sort_direction = pagination.sort_direction
+
     return UsageService(session).get_charges(
-        user.organization_id, UsageEventRange(start_date=start_date, end_date=end_date)
+        user.organization_id, limit=limit, offset=offset, sort_direction=sort_direction
     )
 
 

@@ -7,7 +7,7 @@ from urllib.parse import unquote_plus
 import botocore
 import httpx
 from aws_secretsmanager_caching import SecretCache, SecretCacheConfig
-from src.utils.aws_s3 import generate_get_presigned_url, has_no_threats_tag, head_object
+from src.utils.aws_s3 import generate_get_presigned_url, has_guard_duty_tag, head_object
 from src.utils.config import settings
 
 log_level = os.environ.get("LOG_LEVEL").upper() or logging.INFO
@@ -74,7 +74,7 @@ def handler(
                 real_object_key = unquote_plus(object_key)
                 logger.info("key = " + real_object_key)
                 logger.info("bucket = " + bucket_name)
-                if has_no_threats_tag(bucket=bucket_name, key=real_object_key):
+                if has_guard_duty_tag(bucket=bucket_name, key=real_object_key):
                     logger.info("No threats found, continuing document onboarding")
                     metadata = head_object(bucket=bucket_name, key=real_object_key)
                     presigned_url = generate_get_presigned_url(

@@ -140,11 +140,13 @@ class GitLabProvider:
         logger.info(
             f"Generating codebase metadata for repository {repo_info.repo_name} for installation ID {repo_info.installation_id}"
         )
+        # bind the repo_id to the installation_id to make it easy to identify which provider and repo they belong to
+        repo_identifier = f"DriverInstallId_{installation_id}:GitLabRepoId_{repo_id!s}"
         metadata = generate_codebase_metadata(
             org_id,
             repo_info.org,
             repo_info.repo_name,
-            str(repo_id),
+            repo_identifier,
             user_id,
             str(repo_info.provider_kind),
             latest_commit,

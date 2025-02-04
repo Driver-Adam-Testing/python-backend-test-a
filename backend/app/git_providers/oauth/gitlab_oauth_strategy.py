@@ -3,6 +3,7 @@ from urllib.parse import urlencode
 
 import httpx
 from app.git_providers.core.config import GitProviderConfig
+from app.git_providers.utils.errors import GitProviderAppRevokeError
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +23,6 @@ class GitLabOAuthStrategy:
         headers = {"Authorization": f"Bearer {token}"}
         with httpx.Client() as client:
             response = client.get(url, headers=headers)
-            print(response)
             response.raise_for_status()  # Raises an exception if the HTTP response status is not successful.
             return response.json()
 
@@ -47,13 +47,24 @@ class GitLabOAuthStrategy:
         return self._make_post_request(self.config.access_token_url, payload)
 
     def refresh_access_token(self, refresh_token: str) -> dict:
-        payload = {
-            "grant_type": "refresh_token",
-            "refresh_token": refresh_token,
-            "client_id": self.config.client_id,
-            "client_secret": self.config.client_secret,
-        }
-        return self._make_post_request(self.config.access_token_url, payload)
+        try:
+            payload = {
+                "grant_type": "refresh_token",
+                "refresh_token": refresh_token,
+                "client_id": self.config.client_id,
+                "client_secret": self.config.client_secret,
+            }
+            return self._make_post_request(self.config.access_token_url, payload)
+        except httpx.HTTPStatusError as e:
+            if (
+                e.response.status_code == 400
+                and e.response.json()["error"] == "invalid_grant"
+            ):
+                logger.error("Access token revoked or expired")
+                # this token was either revoked or expired and thus we need to force the user to re-authenticate/reinstall the app
+                raise GitProviderAppRevokeError("Access token revoked or expired", e)
+            else:
+                raise
 
     def is_token_valid(self, token: str) -> bool:
         try:

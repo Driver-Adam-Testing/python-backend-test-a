@@ -6,6 +6,7 @@ from app.git_providers.core.config import GitProviderConfig
 from app.git_providers.core.config_loader import load_provider_config
 from app.git_providers.oauth.gitlab_oauth_strategy import GitLabOAuthStrategy
 from app.git_providers.resources.gitlab_resources import GitLabAPIResources
+from app.git_providers.utils.errors import GitProviderAppRevokeError
 from app.schemas.git_provider_schema import GitRepository
 from app.schemas.secret_management_schema import (
     APP_INSTALL_SECRET_NAME_PREFIX,
@@ -20,16 +21,6 @@ from shared.secret_management.aws_secret_management import (
 )
 
 logger = logging.getLogger(__name__)
-
-
-class GitProviderAppRevokeError(Exception):
-    def __init__(
-        self,
-        message: str,
-        original_exception: Exception | None = None,
-    ) -> None:
-        super().__init__(message)
-        self.original_exception = original_exception
 
 
 class GitLabProvider:

@@ -16,6 +16,8 @@ from shared.interfaces.agents.pipeline_configuration import (
 from shared.interfaces.request import DriverModalBatchRequest
 from shared.interfaces.response import DriverModalResponse
 from shared.pipelines.agents.execute import execute_sequence
+from shared.pipelines.block_kind_pipelines.code import execute_code_block_agent
+from shared.pipelines.block_kind_pipelines.diagram import execute_diagram_block_agent
 from shared.pipelines.block_kind_pipelines.list import execute_list_block_agent
 from shared.pipelines.block_kind_pipelines.table import execute_table_block_agent
 from shared.prompts.block_kind.block_kind_any import BlockKindCopyEditorAny
@@ -75,6 +77,10 @@ def execute_agent_sequence(
         return execute_list_block_agent(pipeline_input)
     elif input.block_kind == BlockKind.TABLE:
         return execute_table_block_agent(pipeline_input)
+    elif input.block_kind == BlockKind.DIAGRAM:
+        return execute_diagram_block_agent(pipeline_input)
+    elif input.block_kind == BlockKind.CODE:
+        return execute_code_block_agent(pipeline_input)
     return execute_sequence(pipeline_input)
 
 

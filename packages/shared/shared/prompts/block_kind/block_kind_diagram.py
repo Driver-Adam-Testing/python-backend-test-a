@@ -13,7 +13,7 @@ class BlockKindCopyEditorDiagram(BaseModel):
 
     Attributes:
         diagram_mermaid (str): A markdown representation of the mermaid diagram.
-        five_word_description (str): a description
+        description (str): a description
 
     Mermaid formatting Instructions:
         - Review any mermaid code blocks in this document and correct any errors preventing them from rendering properly.
@@ -28,7 +28,7 @@ class BlockKindCopyEditorDiagram(BaseModel):
     """
 
     diagram_mermaid: str
-    five_word_description: str
+    description: str
 
     def to_markdown(self) -> str:
         """
@@ -45,4 +45,4 @@ class BlockKindCopyEditorDiagram(BaseModel):
         diagram_mermaid = self.diagram_mermaid.strip()
         if diagram_mermaid.startswith("```mermaid") and diagram_mermaid.endswith("```"):
             return diagram_mermaid
-        return f"```mermaid\n{diagram_mermaid}\n```"
+        return f"```mermaid\n{diagram_mermaid}\n```\n{self.description}"

@@ -28,6 +28,109 @@ image = (
 
 @app.function(
     image=image,
+    secrets=[
+        modal.Secret.from_name("aws-inspector-s3"),
+        modal.Secret.from_name("db"),
+        modal.Secret.from_name("github-app"),
+    ],
+    proxy=modal.Proxy.from_name("pg-proxy")
+    if os.environ["MODAL_ENVIRONMENT"] != "staging"
+    else None,
+    timeout=60 * 60,
+    region="us-east",
+    concurrency_limit=5,
+)
+def handle_github_events(
+    installation_id: str,
+    org_id: str,
+    repos_added: list[dict],
+    repos_deleted: list[dict],
+    repos_pushed: list[dict],
+) -> None:
+    import httpx
+    from database.db import (
+        engine,  # We defer the import since we'll have the secrets set here
+    )
+    from database.models_v2 import PrimaryAsset
+    from onboarding.gh_ops import (
+        download_and_upload_repo,
+        fetch_app_access_token,
+    )
+    from sqlalchemy.orm import selectinload
+    from sqlmodel import Session, select
+
+    try:
+        token = fetch_app_access_token(
+            installation_id=installation_id,
+        )
+    except httpx.HTTPStatusError as ex:
+        # 404s occur when fetching an access ID for an installation
+        # if that installation is uninstalled in Github but not our DB.
+        # Assume this was the case and continue.
+        if ex.response.status_code == 404:
+            print("Github installation not found. Assuming uninstalled.")
+            if len(repos_added) > 0 or len(repos_pushed) > 0:
+                raise ex
+            elif len(repos_deleted) > 0:
+                print("Still deleting assets from db, where needed")
+                # in this case, we want to delete the repos from the db
+
+    errant_repos = []
+    for repo in repos_added:
+        # TODO error handling and threading
+        repo_name_or_none = download_and_upload_repo(
+            org_id=org_id,
+            repo=repo,
+            access_token=token,
+        )
+        if repo_name_or_none is not None:
+            errant_repos.append(repo_name_or_none)
+
+    with Session(engine) as session, session.begin():
+        for repo in repos_deleted:
+            primary_asset = session.exec(
+                select(PrimaryAsset)
+                .where(
+                    PrimaryAsset.repository_id == str(repo["id"]),
+                    PrimaryAsset.organization_id == org_id,
+                )
+                .options(
+                    selectinload(PrimaryAsset.versions),
+                )
+            ).first()
+            if all(
+                v.status
+                in [
+                    VersionStatus.CONNECTED,
+                    VersionStatus.CONNECTING,
+                    VersionStatus.CONNECTION_FAILED,
+                ]
+                for v in primary_asset.versions
+            ):
+                print(
+                    f"Deleting primary asset {primary_asset.id} for repo {repo['name']}"
+                )
+                session.delete(primary_asset)
+            else:
+                print(
+                    f"Primary asset {primary_asset.id} for repo {repo['name']} has versions with tech docs. Not deleting."
+                )
+            # else all other statuses indicate tech docs have been generated, or attempted to be generated,
+            # so we should not delete the asset
+
+    for repo in repos_pushed:
+        download_and_upload_repo(
+            org_id=org_id,
+            repo=repo,
+            access_token=token,
+            is_push=True,
+        )
+        if repo_name_or_none is not None:
+            errant_repos.append(repo_name_or_none)
+
+
+@app.function(
+    image=image,
     mounts=[
         modal.Mount.from_local_file(
             "src/onboarding/languages.yml", "/linguist/languages.yml"
@@ -45,8 +148,8 @@ def run_codebase_connection(
     presigned_url: str,
     archive_name: str,
     org_id: str,  # Not strictly necessary, but we can check that the version belongs to the org.
+    version_id: str,
     provider: str = "manual",
-    version_id: str | None = None,
 ) -> None:
     import tempfile
 
@@ -63,6 +166,7 @@ def run_codebase_connection(
         PrimaryAsset,
         Version,
     )
+    from database.models_v2_enums import VersionStatus
     from onboarding.onboard_utils import (
         create_bucket_if_dne,
         download_file_from_presigned_url,
@@ -164,6 +268,7 @@ def run_codebase_connection(
                 )
                 if not is_on_blacklist(Path(directory)) and not is_ignored:
                     directory_path = Path(directory).relative_to(temp_dir)
+                    # TODO: add a trailing slash here
                     for file_path in codebase_stats:
                         if str(file_path).startswith(directory):
                             file_stats = codebase_stats[file_path]
@@ -240,15 +345,18 @@ def run_codebase_connection(
                     print(
                         f"Created but not committed source content for: {file_path}. Processable: {codebase_stats[file_path]['is_analyzable']}. Stats: {codebase_stats[file_path]}"
                     )
-            update_stmt = (
-                update(Version)
-                .where(Version.id == version_id)
-                .values(status=VersionStatus.CONNECTED)
-            )
-            session.exec(update_stmt)
+            version = session.get(Version, version_id)
+            if version.status == VersionStatus.GENERATING:
+                print("Inspecting...")
+                inspect_db = modal.Function.lookup("inspector_v2", "inspect_db")
+                inspect_db.remote(version_id)  # TODO: spawn?
+                print("Inspection complete")
+            else:
+                version.status = VersionStatus.CONNECTED
+                session.add(version)
 
     print(
-        f"Codebase onboarding complete for codebase: {codebase_name} (cb id: {primary_asset_id}). "
+        f"Codebase connection complete for codebase: {codebase_name} (cb id: {primary_asset_id}). "
         f"Version ID: {version_id}."
     )
 

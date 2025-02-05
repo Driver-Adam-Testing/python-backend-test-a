@@ -155,7 +155,7 @@ def exec_codebase_generation(
         )
 
     # TODO: check usage before generation
-    # TODO call execute function or modal function
+    # TODO call execute function or modal function for each, or create new modal function that handles delegation
     return CodebaseGenerationResponse(call_id="1234")
 
 

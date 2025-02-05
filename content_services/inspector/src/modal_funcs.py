@@ -11,7 +11,14 @@ image = (
         local_path="uctags-2024.10.02-linux-x86_64/bin/ctags", remote_path="/ctags"
     )
     .pip_install(
-        ["openai>=1.40.2", "pydantic>=2.8.2", "tiktoken", "/shared_pkg"]
+        [
+            "openai>=1.40.2",
+            "pydantic>=2.8.2",
+            "tiktoken",
+            "/shared_pkg",
+            "tree-sitter>=0.24.0",
+            "tree-sitter-c>=0.23.4",
+        ]
     )  # TODO lock versions down
 )
 

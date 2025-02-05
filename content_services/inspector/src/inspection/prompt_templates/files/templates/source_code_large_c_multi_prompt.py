@@ -4,14 +4,15 @@ from utils.lang_specialization.c import (
     CDataStructureRawSymbolCollection,
     CFunctionCollection,
     CFunctionRawSymbolCollection,
+    CIncludeRawSymbolCollection,
     CVariableCollection,
     CVariableRawSymbolCollection,
 )
 from utils.lang_specialization.default_multi_context import (
     SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT_MULTI_CONTEXT,
     SOURCE_CODE_PURPOSE_FROM_CHUNKS,
-    default_imports_checker_multi_prompt,
 )
+from utils.lang_specialization.ir_common import ListData
 from utils.templates import S
 
 SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_C = [
@@ -23,10 +24,10 @@ SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_C = [
         SOURCE_CODE_PURPOSE_FROM_CHUNKS,
     ),
     (
-        S.MULTI_LLM_COND_JSON,
+        S.FN_COND_JSON,
         "# Imports and Dependencies",
-        default_imports_checker_multi_prompt,
-        lambda _llm, output, _code: output,
+        CIncludeRawSymbolCollection.from_static_analysis,
+        lambda _llm, output, _code: ListData(data=list(output.data.keys())),
         None,
     ),
     (

@@ -39,7 +39,7 @@ class AgentRunRequest(PromptWithContext):
         ]
     )
     node_ids: list[UUID] | None = None
-    block_kind: BlockKind
+    block_kind: BlockKind | None = None
 
 
 @router.post(
@@ -59,7 +59,7 @@ def execute_agent_sequence(
         BlockKind.DIAGRAM: BlockKindCopyEditorDiagram,
     }
     response_format = block_kind_to_response_format.get(
-        input.block_kind, BlockKindCopyEditorAny
+        input.block_kind or BlockKind.ANY, BlockKindCopyEditorAny
     )
 
     pipeline_input = PipelineInput(

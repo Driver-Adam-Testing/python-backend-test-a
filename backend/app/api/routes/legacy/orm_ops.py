@@ -5,13 +5,6 @@ from database.models_v2 import Node, PrimaryAsset, Version
 from sqlmodel import Session, select
 
 
-# TODO remove me
-def get_source_content_by_id(session: Session, id: str) -> DerivedContent | None:
-    statement = select(DerivedContent).where(DerivedContent.id == id)
-    result = session.exec(statement)
-    return result.first()
-
-
 def get_derived_content_by_id(session: Session, id: str) -> DerivedContent | None:
     statement = select(DerivedContent).where(DerivedContent.id == id)
     result = session.exec(statement)

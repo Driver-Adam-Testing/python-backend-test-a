@@ -111,15 +111,12 @@ def new_page(session: CurrentSession, user: UserToken) -> ContentDetailRead:
     session.commit()
 
     new_derived_content = DerivedContent(
-        content_type_id=None,
         content_kind="application_note",
         node_id=new_node.id,
         relative_path="page",
         content="",
         content_name=new_display_name,
         misc_metadata={},
-        status="generation-complete",
-        version_id=None,
     )
     session.add(new_derived_content)
     session.commit()
@@ -212,15 +209,12 @@ def new_template(
     session.commit()
 
     new_derived_content = DerivedContent(
-        content_type_id=None,
         content_kind="template",
         node_id=new_node.id,
         relative_path="template",
         content="",
         content_name=new_display_name,
         misc_metadata={},
-        status="generation-complete",
-        version_id=None,
     )
     session.add(new_derived_content)
     session.commit()

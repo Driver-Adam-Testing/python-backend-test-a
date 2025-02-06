@@ -22,9 +22,7 @@ class ListContentInput(BaseModel):
     sort_by: str | None = None
     sort_direction: str | None = "DESC"
     status: str | None = None
-    content_type_id: list[str] | None = None
     content_type_name: list[str] | None = None
-    source_content_id: list[str] | None = None
     order: int | None = None
     tags: list[str] | None = None
     tag_ids: list[str] | None = None
@@ -41,11 +39,9 @@ class ListContentTypesInput(BaseModel):
 class ListContentResult(BaseModel):
     id: UUID | None = None
     organization_id: str | None = None
-    content_type_id: UUID | None = None
     content_type_name: str | None = None
     # All content must be in a workspace currently
     content_name: str | None = None
-    source_content_id: UUID | None = None
     # Content doesn't need to be associated with a codebase in our flat asset design
     codebase_name: str | None = None
     relative_path: str | None = None
@@ -112,47 +108,8 @@ class CreateTemplateResponse(BaseModel):
     created: bool
 
 
-class ContentSourceAssociationRequest(BaseModel):
-    include: bool
-
-
-class ContentSourceAssociationItem(BaseModel):
-    source_content_id: UUID
-    include: bool
-
-
 class ContentCollectionAssociationRequest(BaseModel):
     collection_id: UUID
-
-
-class BatchContentSourceAssociationRequest(BaseModel):
-    sources: list[ContentSourceAssociationItem]
-
-
-class DeleteContentSourcesRequest(BaseModel):
-    source_ids: list[UUID]
-
-
-class ContentSourceAssociationResponse(BaseModel):
-    content_id: UUID
-    source_id: UUID
-    message: str
-
-
-class BatchContentSourceAssociationResponse(BaseModel):
-    content_id: UUID
-    sources: list[ContentSourceAssociationItem]
-    message: str
-
-
-class DeleteDocumentSourceResponse(BaseModel):
-    document_id: UUID
-    source_id: UUID
-    message: str
-
-
-class BatchDeleteDocumentSourceResponse(BaseModel):
-    results: list[DeleteDocumentSourceResponse]
 
 
 class BatchDeleteTagsRequest(BaseModel):

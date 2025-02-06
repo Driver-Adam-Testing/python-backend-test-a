@@ -106,7 +106,7 @@ class TopLevel:
 
 @strawberry.type
 class DocumentSet:
-    source_content_id: str = strawberry.field(default="")
+    source_content_id: str = strawberry.field(default="")  # DEPRECATED
     architecture: str = strawberry.field(default="")
     architecture_document: Document = strawberry.field(default_factory=Document)
     long: str = strawberry.field(default="")
@@ -210,6 +210,7 @@ def get_document_set(
         select(DerivedContent).where(DerivedContent.node_id == node.id)
     ).all()
 
+    # NOTE: This needs to stay but is not actually source_content_id anymore
     document_set = DocumentSet(source_content_id=str(node.id))  # type: ignore
 
     for doc in docs:

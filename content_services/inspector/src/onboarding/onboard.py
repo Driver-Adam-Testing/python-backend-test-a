@@ -354,7 +354,6 @@ def run_codebase_onboarding(
                     misc_metadata=codebase_stats[file_path],
                 )
                 file_dc = DerivedContent(
-                    content_type_id=None,
                     content_kind=ContentKind.CODEBASE_FILE,
                     node_id=node_id,
                     relative_path=str(

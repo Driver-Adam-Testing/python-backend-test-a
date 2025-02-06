@@ -54,6 +54,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+NO_OS_DRIVER_BRANCH = "documentation"
 
 aws_config = AWSClientConfig(
     region_name="us-east-1",
@@ -277,8 +278,10 @@ def clone_repo(
     # TODO this is an ADI-specific hack!
     if repo.repo_name == "no-OS" and repo.org == "analogdevicesinc":
         commit_sha = fetch_commit_hash(
-            "analogdevicesinc", "no-OS", "driver_branch", token
+            "analogdevicesinc", "no-OS", NO_OS_DRIVER_BRANCH, token
         )
+    elif repo.repo_name == "diff-tests" and repo.org == "driver-ai":
+        commit_sha = fetch_commit_hash("driver-ai", "diff-tests", "adi_test", token)
     else:
         commit_sha = None
 
@@ -358,20 +361,38 @@ def handle_push_event(session: CurrentSession, body: dict) -> JSONResponse:
     installation_id = str(body["installation"]["id"])
     commit_hash = body["after"]
 
-    NO_OS_DRIVER_BRANCH = "driver_branch"
-    if org_name == "analogdevicesinc" and repo_id == "7014478":  # repo_name == "no-OS":
-        if pushed_ref != f"refs/heads/{NO_OS_DRIVER_BRANCH}":
-            logger.info(
-                "ADI event ignored: Not the driver branch of no-OS. Org: %s, Repo: %s, Ref: %s, Install ID: %s",
-                org_name,
-                repo_name,
-                pushed_ref,
-                installation_id,
-            )
-            return JSONResponse(
-                status_code=status.HTTP_202_ACCEPTED,
-                content={"message": "Push event ignored (not driver branch)"},
-            )
+    if (
+        org_name == "analogdevicesinc"
+        and repo_name == "no-OS"
+        and pushed_ref != f"refs/heads/{NO_OS_DRIVER_BRANCH}"
+    ):
+        logger.info(
+            "ADI event ignored: Not the driver branch of no-OS. Org: %s, Repo: %s, Ref: %s, Install ID: %s",
+            org_name,
+            repo_name,
+            pushed_ref,
+            installation_id,
+        )
+        return JSONResponse(
+            status_code=status.HTTP_202_ACCEPTED,
+            content={"message": "Push event ignored (not driver branch)"},
+        )
+    if (
+        org_name == "driver-ai"
+        and repo_name == "diff-tests"
+        and pushed_ref != "refs/heads/adi_test"
+    ):
+        logger.info(
+            "ADI event ignored: Not the adi_test branch of diff-tests. Org: %s, Repo: %s, Ref: %s, Install ID: %s",
+            org_name,
+            repo_name,
+            pushed_ref,
+            installation_id,
+        )
+        return JSONResponse(
+            status_code=status.HTTP_202_ACCEPTED,
+            content={"message": "Push event ignored (not adi_test branch)"},
+        )
 
     elif pushed_ref != f"refs/heads/{default_branch}":
         logger.info(

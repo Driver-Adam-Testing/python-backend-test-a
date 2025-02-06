@@ -55,6 +55,8 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 NO_OS_DRIVER_BRANCH = "documentation"
+NO_OS_REPO_NAME = "no-OS"
+NO_OS_GH_ORG = "analogdevicesinc"
 
 aws_config = AWSClientConfig(
     region_name="us-east-1",
@@ -276,9 +278,9 @@ def clone_repo(
 
     # Defer to default branch if not the driver branch of no-OS for ADI
     # TODO this is an ADI-specific hack!
-    if repo.repo_name == "no-OS" and repo.org == "analogdevicesinc":
+    if repo.repo_name == NO_OS_REPO_NAME and repo.org == NO_OS_GH_ORG:
         commit_sha = fetch_commit_hash(
-            "analogdevicesinc", "no-OS", NO_OS_DRIVER_BRANCH, token
+            NO_OS_GH_ORG, NO_OS_REPO_NAME, NO_OS_DRIVER_BRANCH, token
         )
     elif repo.repo_name == "diff-tests" and repo.org == "driver-ai":
         commit_sha = fetch_commit_hash("driver-ai", "diff-tests", "adi_test", token)
@@ -362,8 +364,8 @@ def handle_push_event(session: CurrentSession, body: dict) -> JSONResponse:
     commit_hash = body["after"]
 
     if (
-        org_name == "analogdevicesinc"
-        and repo_name == "no-OS"
+        org_name == NO_OS_GH_ORG
+        and repo_name == NO_OS_REPO_NAME
         and pushed_ref != f"refs/heads/{NO_OS_DRIVER_BRANCH}"
     ):
         logger.info(
@@ -377,7 +379,7 @@ def handle_push_event(session: CurrentSession, body: dict) -> JSONResponse:
             status_code=status.HTTP_202_ACCEPTED,
             content={"message": "Push event ignored (not driver branch)"},
         )
-    if (
+    elif (
         org_name == "driver-ai"
         and repo_name == "diff-tests"
         and pushed_ref != "refs/heads/adi_test"
@@ -393,7 +395,6 @@ def handle_push_event(session: CurrentSession, body: dict) -> JSONResponse:
             status_code=status.HTTP_202_ACCEPTED,
             content={"message": "Push event ignored (not adi_test branch)"},
         )
-
     elif pushed_ref != f"refs/heads/{default_branch}":
         logger.info(
             "Push event ignored: Not the default branch. Org: %s, Repo: %s, Ref: %s, Install ID: %s",

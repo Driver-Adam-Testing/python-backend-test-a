@@ -18,6 +18,11 @@ class LlmProvider(str, Enum):
     GOOGLE = "google"
 
 
+class ApiKind(str, Enum):
+    STRICT = "strict"
+    CHAT = "chat"
+
+
 class LlmConfig(BaseModel):
     """
     Represents configuration for a Large Language Model.
@@ -40,6 +45,9 @@ class LlmConfig(BaseModel):
     )
     max_output_tokens: int = Field(
         ..., gt=0, description="Max tokens the model can generate in a single response."
+    )
+    api_kind: ApiKind = Field(
+        ..., description="API version to use for the LLM provider."
     )
 
     @classmethod
@@ -110,6 +118,7 @@ class LlmConfig(BaseModel):
                 max_context_window=details["max_context_window"],
                 optimal_context_window=details["optimal_context_window"],
                 max_output_tokens=details["max_output_tokens"],
+                api_kind=details["api_kind"],
             )
         except KeyError as e:
             raise ValueError(

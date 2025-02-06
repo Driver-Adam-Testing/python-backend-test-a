@@ -46,6 +46,7 @@ from app.utils.gh_ops import (
     download_and_upload_repo,
     exchange_code_for_token,
     fetch_app_access_token,
+    fetch_commit_hash,
     verify_app_installation_access,
 )
 
@@ -271,6 +272,16 @@ def clone_repo(
         )
 
     token = fetch_app_access_token(repo.metadata["installation_id"])
+
+    # Defer to default branch if not the driver branch of no-OS for ADI
+    # TODO this is an ADI-specific hack!
+    if repo.repo_name == "no-OS" and repo.org == "analogdevicesinc":
+        commit_sha = fetch_commit_hash(
+            "analogdevicesinc", "no-OS", "driver_branch", token
+        )
+    else:
+        commit_sha = None
+
     upload_key = (
         f"analysis/{org_id_to_hash(current_user.organization_id)}/{repo.repo_name}.zip"
     )
@@ -282,6 +293,7 @@ def clone_repo(
         repo_id=str(repo.metadata["id"]),
         access_token=token,
         upload_key=upload_key,
+        commit=commit_sha,
     )
 
     if upload_complete is True:
@@ -346,7 +358,22 @@ def handle_push_event(session: CurrentSession, body: dict) -> JSONResponse:
     installation_id = str(body["installation"]["id"])
     commit_hash = body["after"]
 
-    if pushed_ref != f"refs/heads/{default_branch}":
+    NO_OS_DRIVER_BRANCH = "driver_branch"
+    if org_name == "analogdevicesinc" and repo_id == "7014478":  # repo_name == "no-OS":
+        if pushed_ref != f"refs/heads/{NO_OS_DRIVER_BRANCH}":
+            logger.info(
+                "ADI event ignored: Not the driver branch of no-OS. Org: %s, Repo: %s, Ref: %s, Install ID: %s",
+                org_name,
+                repo_name,
+                pushed_ref,
+                installation_id,
+            )
+            return JSONResponse(
+                status_code=status.HTTP_202_ACCEPTED,
+                content={"message": "Push event ignored (not driver branch)"},
+            )
+
+    elif pushed_ref != f"refs/heads/{default_branch}":
         logger.info(
             "Push event ignored: Not the default branch. Org: %s, Repo: %s, Ref: %s, Install ID: %s",
             org_name,

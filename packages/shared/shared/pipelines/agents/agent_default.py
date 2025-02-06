@@ -16,11 +16,15 @@ def run_agent_default(
         max_iterations=input.iterations,
         tools=input.tools,
         llm_usage_session=llm_usage_session,
+        response_type=input.response_format,
     )
     for system_prompt in input.create_system_prompts():
         agent.add_message(system_prompt)
     agent.add_message(prompts.voice.software_engineer.MESSAGE)
     response = agent.invoke(str(input.prompt))
+    if not isinstance(response, str) and hasattr(response, "to_markdown"):
+        response = response.to_markdown()
+
     return PipelineStepResponse(
         agent_id=agent.agent_id,
         agent_result=response,

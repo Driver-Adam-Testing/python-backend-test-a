@@ -6,6 +6,7 @@ from database.db import get_session
 from database.models_v1 import RuntimeLogAgentInstance, RuntimeLogAgentMessage
 from pydantic import BaseModel
 
+from shared.agent.models.llm_models import ModelConfig
 from shared.interfaces.agents.data_scope import DataScope
 from shared.prompts.interface.iterations import (
     PROMPT_FINAL_ITERATION,
@@ -63,6 +64,10 @@ class AgentBase(ABC):
                     session.commit()
                     session.refresh(agent_instance)
                     self.agent_id = agent_instance.id
+
+    @property
+    def model_config(self) -> ModelConfig:
+        return ModelConfig.from_name(self.model)
 
     def add_search_results(self, results: any) -> None:
         self.search_results.append(results)

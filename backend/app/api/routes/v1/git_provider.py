@@ -46,6 +46,7 @@ from app.utils.gh_ops import (
     download_and_upload_repo,
     exchange_code_for_token,
     fetch_app_access_token,
+    fetch_commit_hash,
     verify_app_installation_access,
 )
 
@@ -53,6 +54,9 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+NO_OS_DRIVER_BRANCH = "documentation"
+NO_OS_REPO_NAME = "no-OS"
+NO_OS_GH_ORG = "analogdevicesinc"
 
 aws_config = AWSClientConfig(
     region_name="us-east-1",
@@ -271,6 +275,18 @@ def clone_repo(
         )
 
     token = fetch_app_access_token(repo.metadata["installation_id"])
+
+    # Defer to default branch if not the driver branch of no-OS for ADI
+    # TODO this is an ADI-specific hack!
+    if repo.repo_name == NO_OS_REPO_NAME and repo.org == NO_OS_GH_ORG:
+        commit_sha = fetch_commit_hash(
+            NO_OS_GH_ORG, NO_OS_REPO_NAME, NO_OS_DRIVER_BRANCH, token
+        )
+    elif repo.repo_name == "diff-tests" and repo.org == "driver-ai":
+        commit_sha = fetch_commit_hash("driver-ai", "diff-tests", "adi_test", token)
+    else:
+        commit_sha = None
+
     upload_key = (
         f"analysis/{org_id_to_hash(current_user.organization_id)}/{repo.repo_name}.zip"
     )
@@ -282,6 +298,7 @@ def clone_repo(
         repo_id=str(repo.metadata["id"]),
         access_token=token,
         upload_key=upload_key,
+        commit=commit_sha,
     )
 
     if upload_complete is True:
@@ -346,7 +363,33 @@ def handle_push_event(session: CurrentSession, body: dict) -> JSONResponse:
     installation_id = str(body["installation"]["id"])
     commit_hash = body["after"]
 
-    if pushed_ref != f"refs/heads/{default_branch}":
+    if org_name == NO_OS_GH_ORG and repo_name == NO_OS_REPO_NAME:
+        if pushed_ref != f"refs/heads/{NO_OS_DRIVER_BRANCH}":
+            logger.info(
+                "ADI event ignored: Not the driver branch of no-OS. Org: %s, Repo: %s, Ref: %s, Install ID: %s",
+                org_name,
+                repo_name,
+                pushed_ref,
+                installation_id,
+            )
+            return JSONResponse(
+                status_code=status.HTTP_202_ACCEPTED,
+                content={"message": "Push event ignored (not driver branch)"},
+            )
+    elif org_name == "driver-ai" and repo_name == "diff-tests":
+        if pushed_ref != "refs/heads/adi_test":
+            logger.info(
+                "ADI event ignored: Not the adi_test branch of diff-tests. Org: %s, Repo: %s, Ref: %s, Install ID: %s",
+                org_name,
+                repo_name,
+                pushed_ref,
+                installation_id,
+            )
+            return JSONResponse(
+                status_code=status.HTTP_202_ACCEPTED,
+                content={"message": "Push event ignored (not adi_test branch)"},
+            )
+    elif pushed_ref != f"refs/heads/{default_branch}":
         logger.info(
             "Push event ignored: Not the default branch. Org: %s, Repo: %s, Ref: %s, Install ID: %s",
             org_name,

@@ -65,7 +65,6 @@ def apply_filters_to_query(query: Select, filters: dict, model: SQLModel) -> Sel
     }
 
     for key, value in filters.items():
-        print(key, value)
         # Separate out operator if present
         split_param = key.split("__", 1)
         field_name = split_param[0]  # e.g. "parent_node.relative_path"
@@ -153,7 +152,6 @@ def apply_filters_to_query(query: Select, filters: dict, model: SQLModel) -> Sel
             else:
                 return rel_attr.has(sub_filter_expr)
 
-        print(parts)
         if len(parts) > 1:
             filter_expr = apply_recursive_filter(model, parts, value, op)
             query = query.where(filter_expr)

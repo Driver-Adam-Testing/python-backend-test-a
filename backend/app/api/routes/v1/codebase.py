@@ -15,8 +15,6 @@ from app.schemas.codebase_schema import (
     CodebaseAnalysisRequest,
     CodebaseAnalysisResponse,
     CodebaseAnalysisResult,
-    CodebaseConnectionRequest,
-    CodebaseConnectionResponse,
     CodebaseGenerationRequest,
     CodebaseGenerationResponse,
     CodebaseOnboardRequest,
@@ -112,20 +110,6 @@ def exec_codebase_analysis(
 ) -> CodebaseAnalysisResponse:
     return CodebaseService.execute_codebase_analysis(
         user.organization_id, request.download_url
-    )
-
-
-@router.post(
-    "/connect",
-    summary="Execute codebase connection",
-    dependencies=[ContentEditorPermission],
-)
-def exec_codebase_connection(
-    user: UserToken,
-    request: CodebaseConnectionRequest,
-) -> CodebaseConnectionResponse:
-    return CodebaseService.execute_codebase_connection(
-        user.organization_id, request.download_urls
     )
 
 

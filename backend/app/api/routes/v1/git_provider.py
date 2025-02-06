@@ -242,9 +242,6 @@ def github_callback(
         session.add(gh_app_install)
         session.commit()
 
-    # handle_github_events = modal.Function.lookup("inspector_v2", "handle_github_events")
-    # handle_github_events.spawn(installation_id, org_id)
-
     content = "<html><body><script>window.close();</script></body></html>"
     return Response(content=content, media_type="text/html")
 
@@ -570,33 +567,6 @@ def handle_push_event(session: CurrentSession, body: dict) -> JSONResponse:
         content={"message": ""},
     )
 
-    # upload_key = (
-    #     f"codebases/{org_id_to_hash(gh_app_install.organization_id)}/{repo_name}.zip"
-    # )
-    # token = fetch_app_access_token(installation_id)
-    # upload_complete, _ = download_and_upload_repo(
-    #     gh_org_name=org_name,
-    #     owner="",
-    #     org_id=gh_app_install.organization_id,
-    #     repo=repo_name,
-    #     repo_id=repo_id,
-    #     access_token=token,
-    #     commit=commit_hash,
-    #     upload_key=upload_key,
-    # )
-
-    # if upload_complete:
-    #     logger.info("Repository push event successfully processed: %s", repo_name)
-    #     return JSONResponse(
-    #         status_code=status.HTTP_202_ACCEPTED,
-    #         content={"message": ""},
-    #     )
-    # else:
-    #     logger.error("Repository upload failed in webhook: %s", repo_name)
-    #     return JSONResponse(
-    #         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content={"message": ""}
-    #     )
-
 
 def get_codebase_asset(
     session: CurrentSession, org_id: str, repo_name: str
@@ -632,9 +602,6 @@ def webhook(
     secret_token = settings.GH_WEBHOOK_SECRET
 
     verify_github_signature(body_bytes, secret_token, signature_header)
-
-    # TODO: create github payload to pass into handle_github_events modal function.
-    # Need: GH org, repo_id, repo name
 
     if github_event == "push":
         return handle_push_event(session, body)

@@ -55,6 +55,13 @@ class OpenFileTool(ToolStrict):
 
             full_text = "\n".join(formatted_results)
 
+            # TODO: Make this limit model dependent
+            # TODO: Will become irrelevant when tool response lengths are optimized across all tools.
+            if len(full_text) > 75000:
+                raise Exception(
+                    "The file is too long. Use the SearchTool to return relevant context."
+                )
+
             search_result = SearchResult(
                 content=full_text,
                 score=1.0,

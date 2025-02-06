@@ -492,3 +492,86 @@ class Subscription(SQLModel, table=True):
             postgresql_where=text("status = 'active'"),
         ),
     )
+
+
+class GitProviderKind(str, enum.Enum):
+    # GITHUB = "GITHUB"
+    # GITHUB_ENTERPRISE = "GITHUB_ENTERPRISE"
+    # GITLAB = "GITLAB"
+    # GITLAB_ENTERPRISE = "GITLAB_ENTERPRISE"
+    GITLAB_ENTERPRISE_SELF_MANAGED = "GITLAB_ENTERPRISE_SELF_MANAGED"
+
+    def __str__(self) -> str:
+        return self.name
+
+
+#
+class GitProviderApp(SQLModel, table=True):
+    __tablename__ = "git_provider_apps"
+    id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    provider_kind: GitProviderKind = Field(nullable=False, index=True)
+    shared_provider: bool
+    owner_organization_id: str = Field(index=True)
+    name: str
+    base_url: str
+    client_id: str = Field(index=True, unique=True)
+    redirect_uri: str
+    scopes: str
+    created_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
+        default=None,
+    )
+    updated_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
+        ),
+    )
+    # relationships
+    app_installations: list["GitProviderAppInstallation"] = Relationship(
+        back_populates="git_provider_app", cascade_delete=True
+    )
+
+
+class GitProviderAppInstallation(SQLModel, table=True):
+    __tablename__ = "git_provider_app_installations"
+    id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    git_provider_app_id: UUID = Field(
+        foreign_key="git_provider_apps.id",
+        nullable=False,
+        index=True,
+        ondelete="CASCADE",
+    )
+    organization_id: str
+    user_id: str
+    created_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
+        default=None,
+    )
+    updated_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
+        ),
+    )
+    # relationships
+    git_provider_app: GitProviderApp | None = Relationship(
+        back_populates="app_installations"
+    )
+    # unique constraint
+    __table_args__ = (
+        UniqueConstraint(
+            "git_provider_app_id",
+            "organization_id",
+            "user_id",
+            name="uq_git_provider_app_id_organization_id_user_id",
+        ),
+    )

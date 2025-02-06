@@ -24,15 +24,24 @@ def head_object(bucket: str, key: str) -> dict:
     return s3_client.head_object(Bucket=bucket, Key=key)
 
 
-def has_no_threats_tag(bucket: str, key: str) -> bool:
+def has_guard_duty_tag(bucket: str, key: str) -> bool:
+    """
+    Check if the S3 object has the 'GuardDutyMalwareScanStatus' tag with value 'NO_THREATS_FOUND' or 'UNSUPPORTED'.
+    """
     tags = s3_client.get_object_tagging(Bucket=bucket, Key=key)
+    """
+    supported_tags = ["NO_THREATS_FOUND", "UNSUPPORTED"]
+    the 'UNSUPPORTED' tag is a misnomer because GuardDuty tags file as UNSUPPORTED
+    if they have too many files ( > 1000) or file is too large but we can still process it.
+    """
+    supported_tags = ["NO_THREATS_FOUND", "UNSUPPORTED"]
     return (
         len(
             [
                 tag
                 for tag in tags["TagSet"]
                 if tag["Key"] == "GuardDutyMalwareScanStatus"
-                and tag["Value"] == "NO_THREATS_FOUND"
+                and tag["Value"] in supported_tags
             ]
         )
         == 1

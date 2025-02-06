@@ -1,13 +1,14 @@
 import json
 from collections.abc import Callable
-from typing import Annotated
+from typing import Annotated, Any
 from urllib.request import urlopen
 
+import jwt
 from fastapi import Depends, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import jwt
-from jose.exceptions import JWTError
+from jwt import PyJWTError
+from jwt.algorithms import RSAAlgorithm
 from pydantic import BaseModel, Field
 from shared.utils.decorators import expiring_cache
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -20,6 +21,7 @@ CONTENT_EDITOR = "content:editor"
 CONTENT_READONLY = "content:readonly"
 USAGE_CREDITOR = "usage_credit:management"
 SUBSCRIPTION_MANAGER = "subscription:management"
+GIT_PROVIDER_MANAGER = "git_provider:management"
 
 
 @expiring_cache(3600)
@@ -48,20 +50,22 @@ def get_rsa_key(jwks: dict, kid: str) -> dict:
 
 def verify_token(token: str) -> dict:
     unverified_header = jwt.get_unverified_header(token)
-    rsa_key = get_rsa_key(get_jwks(), unverified_header["kid"])
+    jwks = get_jwks()
+    rsa_key = get_rsa_key(jwks, unverified_header["kid"])
     if not rsa_key:
-        raise JWTError("Unable to find appropriate key")
-    # jwt.decode Raises:
-    # JWTError : If the signature is invalid in any way.
-    # ExpiredSignatureError : If the signature has expired.
-    # JWTClaimsError : If any claim is invalid in any way.
-    return jwt.decode(
-        token,
-        rsa_key,
-        algorithms=ALGORITHMS,
-        audience=settings.AUTH0_AUDIENCE,
-        issuer=f"https://{settings.AUTH0_DOMAIN}/",
-    )
+        raise HTTPException(status_code=401, detail="Unable to find appropriate key")
+
+    public_key = RSAAlgorithm.from_jwk(json.dumps(rsa_key))
+    try:
+        return jwt.decode(
+            token,
+            public_key,
+            algorithms=ALGORITHMS,
+            audience=settings.AUTH0_AUDIENCE,
+            issuer=f"https://{settings.AUTH0_DOMAIN}/",
+        )
+    except PyJWTError:
+        raise HTTPException(status_code=401, detail="Unauthorized")
 
 
 UNPROTECTED_PATHS = [
@@ -73,6 +77,7 @@ UNPROTECTED_PATHS = [
     "/api/v1/sandbox/apollo-sandbox/",
     "/api/v1/git-provider/github/webhook",
     "/api/v1/git-provider/github/callback",
+    "/api/v1/git-provider/app/callback",
 ]
 
 security = HTTPBearer()
@@ -80,7 +85,7 @@ security = HTTPBearer()
 
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(
-        self, request: Request, call_next: any
+        self, request: Request, call_next: Callable
     ) -> JSONResponse | Response:
         if (
             request.method in ["GET", "POST"]
@@ -94,13 +99,12 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 return JSONResponse(
                     status_code=401, content="Missing or malformed Authorization header"
                 )
-            else:
-                token = auth_header[len("Bearer ") :]
-                try:
-                    payload = verify_token(token)
-                    request.state.token_payload = payload
-                except Exception:
-                    return JSONResponse(status_code=401, content="Unauthorized")
+            token = auth_header[len("Bearer ") :]
+            try:
+                payload = verify_token(token)
+                request.state.token_payload = payload
+            except Exception:
+                return JSONResponse(status_code=401, content="Unauthorized")
 
         response = await call_next(request)
         return response
@@ -138,7 +142,7 @@ def get_token_payload(request: Request) -> dict:
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     token_payload: dict = Depends(get_token_payload),
-) -> User:
+) -> User | None:
     if token_payload.get("userId") is not None:
         return User(**token_payload)
     return None
@@ -147,16 +151,16 @@ def get_current_user(
 def get_current_m2m(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     token_payload: dict = Depends(get_token_payload),
-) -> M2M:
+) -> M2M | None:
     if token_payload.get("userId") is None:
         return M2M(**token_payload)
     return None
 
 
-def require_permission(permission: str) -> Callable[[dict], dict]:
+def require_permission(permission: str) -> Callable[[dict[str, Any]], bool]:
     def permission_dependency(
-        user: dict = Depends(get_current_user),
-        token_payload: dict = Depends(get_token_payload),
+        user: dict[str, Any] = Depends(get_current_user),
+        token_payload: dict[str, Any] = Depends(get_token_payload),
     ) -> bool:
         permissions = token_payload.get("permissions", [])
         if permission not in permissions:
@@ -177,3 +181,4 @@ ContentReadonlyPermission = Depends(require_permission(CONTENT_READONLY))
 OrgManagerPermission = Depends(require_permission(ORG_MANAGER))
 UsageCreditPermission = Depends(require_permission(USAGE_CREDITOR))
 SubscriptionManagerPermission = Depends(require_permission(SUBSCRIPTION_MANAGER))
+GitProviderManagerPermission = Depends(require_permission(GIT_PROVIDER_MANAGER))

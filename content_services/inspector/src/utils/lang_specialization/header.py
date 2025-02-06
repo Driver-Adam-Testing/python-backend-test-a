@@ -24,7 +24,7 @@ from .symbol_common import (
 
 C_OR_CPP_HEADER_DATA_STRUCTURES = {"enum", "union", "struct", "class", "typedef"}
 # TODO: Actually force `ctags` to return prototype kind information.
-C_OR_CPP_HEADER_FUNCTIONS = {"function", "prototype"}
+C_OR_CPP_HEADER_FUNCTIONS = {"function"}
 C_OR_CPP_HEADER_MACROS = {"macro"}
 C_OR_CPP_HEADER_VARIABLES = {"variable", "externvar"}
 

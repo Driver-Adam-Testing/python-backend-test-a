@@ -488,10 +488,11 @@ class EmbeddingTask(Task):
         from sqlmodel.ext.asyncio.session import AsyncSession
 
         if self.db_node_id:
-            source_code_derived_content = await get_source_code_derived_content(
-                self.db_node_id
-            )
-            source_code_dc_id = source_code_derived_content.id
+            async with database_sem:
+                source_code_derived_content = await get_source_code_derived_content(
+                    self.db_node_id
+                )
+                source_code_dc_id = source_code_derived_content.id
         else:
             source_code_dc_id = None
 

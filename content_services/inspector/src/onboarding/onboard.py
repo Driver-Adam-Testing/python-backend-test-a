@@ -169,11 +169,14 @@ def run_codebase_onboarding(
     version_str: str | None = None,
     repository_id: str | None = None,
 ) -> str:
+    import re
+
     from database.db import (
         engine,  # We defer the import since we'll have the secrets set here
     )
     from database.models_v1 import (
         DerivedContent,
+        GitProviderKind,
         UsageEventType,
     )
     from database.models_v2 import (
@@ -212,6 +215,11 @@ def run_codebase_onboarding(
     if provider == "github":
         override_codebase_name = archive_name.rsplit(".", 1)[0]
 
+    if provider == GitProviderKind.GITLAB_ENTERPRISE_SELF_MANAGED.value.lower():
+        override_codebase_name = re.sub(
+            r"-[a-fA-F0-9]{40}-[a-fA-F0-9]{40}", "", archive_name
+        ).rsplit(".", 1)[0]
+
     # Override so unpack from github doesn't have hash in name.
     extracted_path = unpack_archive(
         download_dest, override_codebase_name=override_codebase_name
@@ -219,6 +227,7 @@ def run_codebase_onboarding(
     codebase_name = str(extracted_path)
     print("Codebase name: ", codebase_name)
     print("Unpacked archive to: ", extracted_path)
+    print("Repository ID: ", repository_id)
     driverignore = load_driverignore(codebase_root=extracted_path)
 
     # TODO so if they uploaded a zip and we find the codebase, what do we do w.r.t versioning? Below, we disallow it

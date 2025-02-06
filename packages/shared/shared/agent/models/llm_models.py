@@ -11,12 +11,19 @@ class ModelProvider(str, Enum):
     GOOGLE = "google"
 
 
+class SystemPromptConfig(str, Enum):
+    NONE = "none"
+    ONE = "one"
+    MANY = "many"
+
+
 class ModelConfig(BaseModel):
     model_name: str
     model_id: str
     provider: str
     context_window_size: int
     max_output_tokens: int
+    system_prompts: str
 
     @classmethod
     def default(cls) -> "ModelConfig":
@@ -36,5 +43,6 @@ class ModelConfig(BaseModel):
                     provider=details["provider"],
                     context_window_size=details["context_window_size"],
                     max_output_tokens=details["max_output_tokens"],
+                    system_prompts=details["system_prompts"],
                 )
         raise ValueError(f"Model configuration for '{model_name}' not found.")

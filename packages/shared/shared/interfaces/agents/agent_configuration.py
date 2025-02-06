@@ -21,6 +21,7 @@ class AgentConfiguration(BaseModel):
     iterations: int = 1
     tool_names: list[str] = []
     scope: DataScope | None = None
+    response_format: type | None = None
 
     @property
     def tools(self) -> list[type]:

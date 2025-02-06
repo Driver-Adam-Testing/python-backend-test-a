@@ -363,38 +363,32 @@ def handle_push_event(session: CurrentSession, body: dict) -> JSONResponse:
     installation_id = str(body["installation"]["id"])
     commit_hash = body["after"]
 
-    if (
-        org_name == NO_OS_GH_ORG
-        and repo_name == NO_OS_REPO_NAME
-        and pushed_ref != f"refs/heads/{NO_OS_DRIVER_BRANCH}"
-    ):
-        logger.info(
-            "ADI event ignored: Not the driver branch of no-OS. Org: %s, Repo: %s, Ref: %s, Install ID: %s",
-            org_name,
-            repo_name,
-            pushed_ref,
-            installation_id,
-        )
-        return JSONResponse(
-            status_code=status.HTTP_202_ACCEPTED,
-            content={"message": "Push event ignored (not driver branch)"},
-        )
-    elif (
-        org_name == "driver-ai"
-        and repo_name == "diff-tests"
-        and pushed_ref != "refs/heads/adi_test"
-    ):
-        logger.info(
-            "ADI event ignored: Not the adi_test branch of diff-tests. Org: %s, Repo: %s, Ref: %s, Install ID: %s",
-            org_name,
-            repo_name,
-            pushed_ref,
-            installation_id,
-        )
-        return JSONResponse(
-            status_code=status.HTTP_202_ACCEPTED,
-            content={"message": "Push event ignored (not adi_test branch)"},
-        )
+    if org_name == NO_OS_GH_ORG and repo_name == NO_OS_REPO_NAME:
+        if pushed_ref != f"refs/heads/{NO_OS_DRIVER_BRANCH}":
+            logger.info(
+                "ADI event ignored: Not the driver branch of no-OS. Org: %s, Repo: %s, Ref: %s, Install ID: %s",
+                org_name,
+                repo_name,
+                pushed_ref,
+                installation_id,
+            )
+            return JSONResponse(
+                status_code=status.HTTP_202_ACCEPTED,
+                content={"message": "Push event ignored (not driver branch)"},
+            )
+    elif org_name == "driver-ai" and repo_name == "diff-tests":
+        if pushed_ref != "refs/heads/adi_test":
+            logger.info(
+                "ADI event ignored: Not the adi_test branch of diff-tests. Org: %s, Repo: %s, Ref: %s, Install ID: %s",
+                org_name,
+                repo_name,
+                pushed_ref,
+                installation_id,
+            )
+            return JSONResponse(
+                status_code=status.HTTP_202_ACCEPTED,
+                content={"message": "Push event ignored (not adi_test branch)"},
+            )
     elif pushed_ref != f"refs/heads/{default_branch}":
         logger.info(
             "Push event ignored: Not the default branch. Org: %s, Repo: %s, Ref: %s, Install ID: %s",

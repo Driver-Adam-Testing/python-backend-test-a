@@ -24,6 +24,7 @@ from shared.prompts.block_kind.block_kind_any import BlockKindCopyEditorAny
 from shared.prompts.block_kind.block_kind_code import BlockKindCopyEditorCodeBlock
 from shared.prompts.block_kind.block_kind_diagram import BlockKindCopyEditorDiagram
 from shared.prompts.block_kind.block_kind_list import BlockKindCopyEditorList
+from shared.prompts.block_kind.block_kind_table import BlockKindCopyEditorTable
 from shared.prompts.block_kind.block_kind_text import BlockKindCopyEditorText
 
 from app.api.auth import ContentEditorPermission, ContentReadonlyPermission, UserToken
@@ -57,6 +58,7 @@ def execute_agent_sequence(
         BlockKind.ANY: BlockKindCopyEditorAny,
         BlockKind.CODE: BlockKindCopyEditorCodeBlock,
         BlockKind.DIAGRAM: BlockKindCopyEditorDiagram,
+        BlockKind.TABLE: BlockKindCopyEditorTable,
     }
     response_format = block_kind_to_response_format.get(
         input.block_kind or BlockKind.ANY, BlockKindCopyEditorAny
@@ -98,9 +100,10 @@ def execute_agent_sequence_modal_async(
         BlockKind.ANY: BlockKindCopyEditorAny,
         BlockKind.CODE: BlockKindCopyEditorCodeBlock,
         BlockKind.DIAGRAM: BlockKindCopyEditorDiagram,
+        BlockKind.TABLE: BlockKindCopyEditorTable,
     }
     response_format = block_kind_to_response_format.get(
-        input.block_kind, BlockKindCopyEditorAny
+        input.block_kind or BlockKind.ANY, BlockKindCopyEditorAny
     )
 
     pipeline_input = PipelineInput(
@@ -110,7 +113,7 @@ def execute_agent_sequence_modal_async(
         scope=DataScope(
             node_ids=input.node_ids,
             organization_id=user.organization_id,
-            user_id=user.user_id,
+            user_id=user.subject,
         ),
         response_format=response_format,
     )

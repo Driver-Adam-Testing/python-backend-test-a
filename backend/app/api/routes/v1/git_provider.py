@@ -54,7 +54,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-NO_OS_DRIVER_BRANCH = "documentation"
+NO_OS_DRIVER_BRANCH = "staging/docs"
 NO_OS_REPO_NAME = "no-OS"
 NO_OS_GH_ORG = "analogdevicesinc"
 

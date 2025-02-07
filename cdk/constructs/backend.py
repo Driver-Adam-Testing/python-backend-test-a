@@ -212,7 +212,8 @@ class Backend(Construct):
                 github_secret, "GH_CLIENT_PEM_SECRET"
             ),
             "OPENAI_API_KEY": aws_ecs.Secret.from_secrets_manager(
-                openai_secret, "OPENAI_API_KEY"
+                openai_secret,
+                "OPENAI_API_KEY",  # TODO unused. can we remove from here without harm?
             ),
         }
 

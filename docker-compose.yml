@@ -49,11 +49,9 @@ services:
     env_file:
       - .env
     environment:
-      - DOMAIN=${DOMAIN}
       - ENVIRONMENT=${ENVIRONMENT}
       - PYTHONPATH=/app
       - BACKEND_CORS_ORIGINS=${BACKEND_CORS_ORIGINS}
-      - SECRET_KEY=${SECRET_KEY?Variable not set}
       - USERS_OPEN_REGISTRATION=${USERS_OPEN_REGISTRATION}
       - SMTP_HOST=${SMTP_HOST}
       - SMTP_USER=${SMTP_USER}
@@ -71,7 +69,6 @@ services:
       - AUTH0_MGMT_API_CLIENT_SECRET=${AUTH0_MGMT_API_CLIENT_SECRET}
       - AUTH0_MGMT_API_AUDIENCE=${AUTH0_MGMT_API_AUDIENCE}
       - AWS_REGION=${AWS_REGION?Variable not set}
-      - AWS_BUCKET_NAME=${AWS_BUCKET_NAME?Variable not set}
       - AWS_S3_ENDPOINT_URL=http://s3:9000
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID?Variable not set}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY?Variable not set}
@@ -79,9 +76,8 @@ services:
       - MODAL_TOKEN_ID=${MODAL_TOKEN_ID?Variable not set}
       - MODAL_TOKEN_SECRET=${MODAL_TOKEN_SECRET?Variable not set}
       - MODAL_ENVIRONMENT=${MODAL_ENVIRONMENT?dev}
-      - OPENAI_API_KEY=${OPENAI_API_KEY?Variable not set}
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY?Variable not set}
       - INSTALL_DEV=true
+      - INSPECTOR_BUCKET_NAME=${INSPECTOR_BUCKET_NAME?Variable not set}
   s3:
     image: quay.io/minio/minio:latest
     command: server /data --console-address ":9001"
@@ -100,8 +96,7 @@ services:
     entrypoint: >
       /bin/sh -c '
       /usr/bin/mc alias set s3 http://s3:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}";
-      /usr/bin/mc mb s3/"$${AWS_BUCKET_NAME}";
-      /usr/bin/mc mb s3/inspector;
+      /usr/bin/mc mb s3/"$${INSPECTOR_BUCKET_NAME}";
       exit 0;
       '
     env_file: .env

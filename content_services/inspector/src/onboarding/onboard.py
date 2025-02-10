@@ -53,12 +53,13 @@ def handle_github_events(
         engine,  # We defer the import since we'll have the secrets set here
     )
     from database.models_v2 import PrimaryAsset
+    from sqlalchemy.orm import selectinload
+    from sqlmodel import Session, select
+
     from onboarding.gh_ops import (
         download_and_upload_repo,
         fetch_app_access_token,
     )
-    from sqlalchemy.orm import selectinload
-    from sqlmodel import Session, select
 
     try:
         token = fetch_app_access_token(
@@ -77,7 +78,6 @@ def handle_github_events(
                 # in this case, we want to delete the repos from the db
 
     errant_repos = []
-    futures = []
     with ThreadPoolExecutor(max_workers=10) as executor:
         futures = [
             executor.submit(
@@ -138,6 +138,84 @@ def handle_github_events(
 
 @app.function(
     image=image,
+    secrets=[
+        modal.Secret.from_name("aws-inspector-s3"),
+        modal.Secret.from_name("db"),
+        modal.Secret.from_name("github-app"),
+    ],
+    proxy=modal.Proxy.from_name("pg-proxy")
+    if os.environ["MODAL_ENVIRONMENT"] != "staging"
+    else None,
+    timeout=60 * 60,
+    region="us-east",
+    concurrency_limit=1,
+)
+def connect_unconnected_repos() -> None:
+    """This is a migration script to connect unconnected repos
+
+    It will probably only be run once and can likely be deleted by the time you read this :)
+    """
+    import httpx
+    import requests
+    from database.db import engine
+    from database.models_v1 import GithubAppInstallation
+    from sqlmodel import Session, select
+
+    from onboarding.gh_ops import fetch_app_access_token
+
+    with Session(engine) as session:
+        gh_app_installs = session.exec(select(GithubAppInstallation)).all()
+        for install in gh_app_installs:
+            print(f"Processing installation {install.github_app_installation_id}")
+            gh_install_id = install.github_app_installation_id
+            try:
+                token = fetch_app_access_token(gh_install_id)
+            except httpx.HTTPStatusError as ex:
+                # 404s occur when fetching an access ID for an installation
+                # if that installation is uninstalled in Github but not our DB.
+                # Assume this was the case and continue.
+                if ex.response.status_code == 404:
+                    print("Github installation not found. Assuming uninstalled.")
+                    continue
+
+            headers = {
+                "Authorization": f"token {token}",
+                "Accept": "application/vnd.github.v3+json",
+            }
+            response = requests.get(
+                "https://api.github.com/installation/repositories", headers=headers
+            )
+            response.raise_for_status()
+
+            repos = response.json()["repositories"]
+
+            repos_added = []
+            for repo in repos:
+                repos_added.append(
+                    {
+                        "id": repo["id"],
+                        "name": repo["name"],
+                        "full_name": repo["full_name"],
+                    }
+                )
+
+            handle_github_events.spawn(
+                gh_install_id,
+                install.organization_id,
+                repos_added,
+                [],
+                [],
+            )
+
+            print(
+                f"Spawned processing for installation {gh_install_id}. Connecting ({len(repos_added)}) repos."
+            )
+            for repo in repos:
+                print(f"=> Repo: {repo['full_name']}")
+
+
+@app.function(
+    image=image,
     mounts=[
         modal.Mount.from_local_file(
             "src/onboarding/languages.yml", "/linguist/languages.yml"
@@ -174,6 +252,9 @@ def run_codebase_connection(
         Version,
     )
     from database.models_v2_enums import VersionStatus
+    from sqlalchemy.exc import IntegrityError
+    from sqlmodel import Session, select, update
+
     from onboarding.onboard_utils import (
         create_bucket_if_dne,
         download_file_from_presigned_url,
@@ -182,8 +263,6 @@ def run_codebase_connection(
         run_file_stats_and_reencode,
         unpack_archive,
     )
-    from sqlalchemy.exc import IntegrityError
-    from sqlmodel import Session, select, update
 
     download_dest = Path(archive_name)
     download_file_from_presigned_url(presigned_url, download_dest)

@@ -8,7 +8,11 @@ from pathlib import Path
 from uuid import UUID
 
 import modal
-from onboarding.onboard import handle_github_events, run_codebase_connection
+from onboarding.onboard import (
+    connect_unconnected_repos,
+    handle_github_events,
+    run_codebase_connection,
+)
 
 inspection_image = (
     modal.Image.debian_slim(python_version="3.12")
@@ -1027,6 +1031,11 @@ def github_delete_test() -> None:
 def test_inspect_db() -> None:
     version_str = "db0b396f-8902-4325-98f4-b92dfb44b679"
     inspect_db.remote(version_str)
+
+
+@app.local_entrypoint()
+def run_connect_unconnected_repos() -> None:
+    connect_unconnected_repos.remote()
 
 
 @app.function(

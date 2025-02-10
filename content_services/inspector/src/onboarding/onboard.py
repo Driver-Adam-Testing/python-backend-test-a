@@ -1,6 +1,7 @@
 import hashlib
 import os
 import re
+from concurrent.futures import ThreadPoolExecutor, wait
 from pathlib import Path
 from uuid import uuid4
 
@@ -76,15 +77,21 @@ def handle_github_events(
                 # in this case, we want to delete the repos from the db
 
     errant_repos = []
-    for repo in repos_added:
-        # TODO error handling and threading
-        repo_name_or_none = download_and_upload_repo(
-            org_id=org_id,
-            repo=repo,
-            access_token=token,
-        )
-        if repo_name_or_none is not None:
-            errant_repos.append(repo_name_or_none)
+    futures = []
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        futures = [
+            executor.submit(
+                download_and_upload_repo,
+                org_id,
+                repo,
+                token,
+            )
+            for repo in repos_added
+        ]
+        wait(futures)
+        for f in futures:
+            if f.result() is not None:
+                errant_repos.append(f.result())
 
     with Session(engine) as session, session.begin():
         for repo in repos_deleted:
@@ -119,7 +126,7 @@ def handle_github_events(
             # so we should not delete the asset
 
     for repo in repos_pushed:
-        download_and_upload_repo(
+        repo_name_or_none = download_and_upload_repo(
             org_id=org_id,
             repo=repo,
             access_token=token,

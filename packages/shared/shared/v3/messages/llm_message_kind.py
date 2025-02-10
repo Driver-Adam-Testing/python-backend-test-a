@@ -6,4 +6,6 @@ class MessageKind(str, Enum):
     ASSISTANT = "assistant"
     DEVELOPER = "developer"
     SYSTEM = "system"
-    TOOL_CALL = "tool"
+    TOOL_CALL_RESPONSE = "tool_call_response"
+    TOOL_CALL_REQUEST = "tool_call_request"
+    ITERATION = "iteration"

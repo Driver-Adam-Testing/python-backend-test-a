@@ -1,18 +1,20 @@
 from shared.interfaces.search import SearchAlgorithm
 from shared.pipelines.search import SearchInput, search_content_without_session
-from shared.v3.messages.llm_message import LlmMessage, MessageKind
-from shared.v3.tools.agent_tool import (
+from shared.v3.agents.agent_tool import (
     LlmTool,
     LlmToolContext,
     LlmToolReference,
     LlmToolResponse,
 )
+from shared.v3.messages.llm_message import LlmMessage, MessageKind
 
 
 class HybridSearchTool(LlmTool):
     """
     HybridSearchTool performs a hybrid search combining keyword and semantic search
     within a content repository of code and technical documentation.
+
+    If you do not have external information, you can use this tool to search the codebase.
 
     Attributes:
         search_query (str): The query string.
@@ -59,10 +61,11 @@ class HybridSearchToolResponse(LlmToolResponse):
 
     def to_message(self) -> LlmMessage:
         return LlmMessage(
-            message_kind=MessageKind.TOOL_CALL,
+            message_kind=MessageKind.TOOL_CALL_RESPONSE,
             content=self.content,
-            name="HybridSearchTool",
-            message_id=self.id,
+            tool_response=LlmMessage.ToolCallResponse(
+                id=self.id, name="HybridSearchTool"
+            ),
         )
 
     def to_references(self) -> list[LlmToolReference]:

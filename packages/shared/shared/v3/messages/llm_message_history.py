@@ -1,3 +1,15 @@
+from openai.types.chat import (
+    ChatCompletionAssistantMessageParam,
+    ChatCompletionDeveloperMessageParam,
+    ChatCompletionMessageParam,
+    ChatCompletionMessageToolCallParam,
+    ChatCompletionSystemMessageParam,
+    ChatCompletionToolMessageParam,
+    ChatCompletionUserMessageParam,
+)
+from openai.types.chat.chat_completion_message_tool_call_param import (
+    Function as OpenAIFunction,
+)
 from pydantic import BaseModel
 from shared.v3.messages.llm_message import LlmMessage
 from shared.v3.messages.llm_message_kind import MessageKind
@@ -9,48 +21,192 @@ class LlmMessageHistory(BaseModel):
     def add_message(self, message: LlmMessage) -> None:
         self.messages.append(message)
 
-    def get_messages(self) -> list[LlmMessage]:
-        return self.messages
-
-    def to_messagelist_openai_strict(self) -> list[dict]:
+    def to_openai_messagelist_gpt(self) -> list[ChatCompletionMessageParam]:
         """
         Converts the message history to a format suitable for OpenAI's strict API,
         including tool call messages with tool_call_id.
 
         :return: A list of messages formatted for the OpenAI strict API.
         """
-        # Prepare the messages for the API call
-        messages = []
+        messages: list[ChatCompletionMessageParam] = []
         for message in self.messages:
-            try:
-                message_dict = {
-                    "role": message.message_kind,
-                    "content": message.content,
-                }
-                if message.message_kind == MessageKind.TOOL_CALL:
-                    message_dict["tool_call_id"] = message.message_id
-                messages.append(message_dict)
-            except Exception as e:
-                print(message)
-                raise e
+            if message.message_kind == MessageKind.TOOL_CALL_RESPONSE:
+                message_dict: ChatCompletionToolMessageParam = (
+                    ChatCompletionToolMessageParam(
+                        role="tool",
+                        content=message.content,
+                        tool_call_id=message.tool_response.id,
+                    )
+                )
+            elif message.message_kind == MessageKind.ASSISTANT:
+                message_dict: ChatCompletionAssistantMessageParam = (
+                    ChatCompletionAssistantMessageParam(
+                        role="assistant",
+                        content=message.content,
+                        tool_calls=message.tool_requests,
+                    )
+                )
+            elif message.message_kind == MessageKind.DEVELOPER:
+                message_dict: ChatCompletionDeveloperMessageParam = (
+                    ChatCompletionDeveloperMessageParam(
+                        role="developer",
+                        content=message.content,
+                    )
+                )
+            elif message.message_kind == MessageKind.TOOL_CALL_REQUEST:
+                message_dict: ChatCompletionToolMessageParam = (
+                    ChatCompletionAssistantMessageParam(
+                        role="assistant",
+                        content=message.content,
+                        tool_calls=[
+                            ChatCompletionMessageToolCallParam(
+                                id=tool_request.id,
+                                function=OpenAIFunction(
+                                    name=tool_request.name,
+                                    arguments=tool_request.arguments,
+                                ),
+                                type="function",
+                            )
+                            for tool_request in message.tool_requests
+                        ],
+                    )
+                )
+            elif message.message_kind == MessageKind.SYSTEM:
+                message_dict: ChatCompletionSystemMessageParam = (
+                    ChatCompletionSystemMessageParam(
+                        role="system",
+                        content=message.content,
+                    )
+                )
+            elif message.message_kind == MessageKind.USER:
+                message_dict: ChatCompletionUserMessageParam = (
+                    ChatCompletionUserMessageParam(
+                        role="user",
+                        content=message.content,
+                    )
+                )
+            elif message.message_kind == MessageKind.ITERATION and not any(
+                m.message_kind == MessageKind.ITERATION
+                for m in self.messages[self.messages.index(message) + 1 :]
+            ):
+                message_dict = ChatCompletionUserMessageParam(
+                    role="user",
+                    content=message.content,
+                )
+            messages.append(message_dict)
+
         return messages
 
-    def to_anthropic_chat_user_messages(self) -> list[dict]:
-        """
-        Returns all messages except those with the 'system' role.
+    def to_openai_messagelist_o_series(self) -> list:
+        messages = []
+        for message in self.messages:
+            if message.message_kind == MessageKind.TOOL_CALL_RESPONSE:
+                message_dict: ChatCompletionDeveloperMessageParam = (
+                    ChatCompletionDeveloperMessageParam(
+                        role="user",
+                        content=message.content,
+                    )
+                )
+            if message.message_kind == MessageKind.SYSTEM:
+                message_dict: ChatCompletionDeveloperMessageParam = (
+                    ChatCompletionDeveloperMessageParam(
+                        role="developer",
+                        content=message.content,
+                    )
+                )
+            elif message.message_kind == MessageKind.ASSISTANT:
+                message_dict: ChatCompletionAssistantMessageParam = (
+                    ChatCompletionAssistantMessageParam(
+                        role="assistant",
+                        content=message.content,
+                        tool_calls=message.tool_requests,
+                    )
+                )
+            elif message.message_kind == MessageKind.DEVELOPER:
+                message_dict: ChatCompletionDeveloperMessageParam = (
+                    ChatCompletionDeveloperMessageParam(
+                        role="developer",
+                        content=message.content,
+                    )
+                )
+            elif message.message_kind == MessageKind.TOOL_CALL_REQUEST:
+                message_dict: ChatCompletionToolMessageParam = (
+                    ChatCompletionAssistantMessageParam(
+                        role="assistant", content=message.content
+                    )
+                )
+            elif message.message_kind == MessageKind.USER:
+                message_dict: ChatCompletionUserMessageParam = (
+                    ChatCompletionUserMessageParam(
+                        role="user",
+                        content=message.content,
+                    )
+                )
+            elif message.message_kind == MessageKind.ITERATION and not any(
+                m.message_kind == MessageKind.ITERATION
+                for m in self.messages[self.messages.index(message) + 1 :]
+            ):
+                message_dict = ChatCompletionUserMessageParam(
+                    role="user",
+                    content=message.content,
+                )
+            messages.append(message_dict)
 
-        :return: A list of messages excluding system messages.
-        """
-        return [
-            {"role": message.message_kind.value, "content": message.content}
-            for message in self.messages
-            if message.message_kind != MessageKind.SYSTEM
-        ]
+        return messages
 
-    def to_anthropic_chat_system_message(self) -> str:
-        system_messages = [
-            message.content
-            for message in self.messages
-            if message.message_kind == MessageKind.SYSTEM
-        ]
-        return "\n".join(system_messages)
+    def to_openai_messagelist_user_type(self) -> list:
+        messages = []
+        for message in self.messages:
+            if message.message_kind == MessageKind.TOOL_CALL_RESPONSE:
+                message_dict: ChatCompletionUserMessageParam = (
+                    ChatCompletionUserMessageParam(
+                        role="user",
+                        content=message.content,
+                    )
+                )
+            if message.message_kind == MessageKind.SYSTEM:
+                message_dict: ChatCompletionUserMessageParam = (
+                    ChatCompletionUserMessageParam(
+                        role="user",
+                        content=message.content,
+                    )
+                )
+            elif message.message_kind == MessageKind.ASSISTANT:
+                message_dict: ChatCompletionAssistantMessageParam = (
+                    ChatCompletionAssistantMessageParam(
+                        role="assistant",
+                        content=message.content,
+                        tool_calls=message.tool_requests,
+                    )
+                )
+            elif message.message_kind == MessageKind.DEVELOPER:
+                message_dict: ChatCompletionUserMessageParam = (
+                    ChatCompletionUserMessageParam(
+                        role="user",
+                        content=message.content,
+                    )
+                )
+            elif message.message_kind == MessageKind.TOOL_CALL_REQUEST:
+                message_dict: ChatCompletionToolMessageParam = (
+                    ChatCompletionAssistantMessageParam(
+                        role="assistant", content=message.content
+                    )
+                )
+            elif message.message_kind == MessageKind.USER:
+                message_dict: ChatCompletionUserMessageParam = (
+                    ChatCompletionUserMessageParam(
+                        role="user",
+                        content=message.content,
+                    )
+                )
+            elif message.message_kind == MessageKind.ITERATION and not any(
+                m.message_kind == MessageKind.ITERATION
+                for m in self.messages[self.messages.index(message) + 1 :]
+            ):
+                message_dict = ChatCompletionUserMessageParam(
+                    role="user",
+                    content=message.content,
+                )
+            messages.append(message_dict)
+
+        return messages

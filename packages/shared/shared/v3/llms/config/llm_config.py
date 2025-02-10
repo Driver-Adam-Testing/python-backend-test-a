@@ -19,8 +19,10 @@ class LlmProvider(str, Enum):
 
 
 class ApiKind(str, Enum):
-    STRICT = "strict"
-    CHAT = "chat"
+    OPENAI_CHAT_WITH_TOOLS = "openai_chat_with_tools"
+    OPENAI_STRICT = "openai_strict"
+    OPENAI_O1 = "openai_o1"
+    OPENAI_O3 = "openai_o3"
 
 
 class LlmConfig(BaseModel):

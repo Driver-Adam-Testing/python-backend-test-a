@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from shared.interfaces.agents.data_scope import DataScope
 from shared.v3.llms.config.llm_config import LlmConfig
 from shared.v3.messages.llm_message import LlmMessage
-from shared.v3.messages.llm_message_kind import MessageKind
+from shared.v3.utils.parseable import LlmParseable
 
 
 class LlmToolContext(BaseModel):
@@ -18,6 +18,9 @@ class LlmToolReference(BaseModel):
 
 
 class LlmToolResponse(BaseModel, ABC):
+    content: str | None = None
+    references: list[LlmToolReference] = []
+
     @abstractmethod
     def to_message(self) -> LlmMessage:
         raise NotImplementedError()
@@ -26,22 +29,7 @@ class LlmToolResponse(BaseModel, ABC):
         raise NotImplementedError()
 
 
-class LlmToolResponseError(LlmToolResponse):
-    error_message: str
-    tool_call_id: str
-
-    def to_message(self) -> LlmMessage:
-        return LlmMessage(
-            message_kind=MessageKind.TOOL_CALL,
-            message_id=self.tool_call_id,
-            content=f"Error in {self.tool_call_id}: {self.error_message}",
-        )
-
-    def to_references(self) -> list[LlmToolReference]:
-        return []
-
-
-class LlmTool(BaseModel, ABC):
+class LlmTool(LlmParseable, ABC):
     _tool_context: LlmToolContext
 
     @abstractmethod

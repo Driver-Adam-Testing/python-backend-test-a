@@ -4,7 +4,7 @@ provider = "openai"
 max_context_window = 128000
 optimal_context_window = 64000
 max_output_tokens = 16384
-api_kind = "strict"
+api_kind = "openai_strict"
 
 [llms.gpt_4o]
 model_id = "gpt-4o"
@@ -12,7 +12,15 @@ provider = "openai"
 max_context_window = 128000
 optimal_context_window = 64000
 max_output_tokens = 16384
-api_kind = "strict"
+api_kind = "openai_strict"
+
+[llms.gpt_4o_chat]
+model_id = "gpt-4o"
+provider = "openai"
+max_context_window = 128000
+optimal_context_window = 64000
+max_output_tokens = 16384
+api_kind = "openai_chat_with_tools"
 
 [llms.gpt_4o_mini]
 model_id = "gpt-4o-mini"
@@ -20,7 +28,15 @@ provider = "openai"
 max_context_window = 128000
 optimal_context_window = 64000
 max_output_tokens = 16384
-api_kind = "strict"
+api_kind = "openai_strict"
+
+[llms.gpt_4o_mini_chat]
+model_id = "gpt-4o-mini"
+provider = "openai"
+max_context_window = 128000
+optimal_context_window = 64000
+max_output_tokens = 16384
+api_kind = "openai_chat_with_tools"
 
 [llms.o1]
 model_id = "o1"
@@ -28,7 +44,7 @@ provider = "openai"
 max_context_window = 200000
 optimal_context_window = 100000
 max_output_tokens = 100000
-api_kind = "chat"
+api_kind = "openai_o1"
 
 [llms.o1_mini]
 model_id = "o1-mini"
@@ -36,8 +52,15 @@ provider = "openai"
 max_context_window = 128000
 optimal_context_window = 64000
 max_output_tokens = 65536
-api_kind = "chat"
+api_kind = "openai_o1"
 
+[llms.o3_mini]
+model_id = "o3-mini"
+provider = "openai"
+max_context_window = 200000
+optimal_context_window = 100000
+max_output_tokens = 100000
+api_kind = "openai_o3"
 
 # [models.gpt_4o]
 # model_id = "gpt-4o-2024-08-06"

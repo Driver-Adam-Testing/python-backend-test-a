@@ -188,3 +188,26 @@ def execute_agent_sequence_modal_sync(
     modal_function = Function.lookup("agent", "run")
     result = modal_function.remote(pipeline_input)
     return result
+
+
+@router.post(
+    "/v3",
+    summary="Execute Agent Sequence with V3",
+    dependencies=[ContentEditorPermission],
+)
+def execute_agent_sequence_v3(
+    user: UserToken, session: CurrentSession, input: AgentRunRequest
+) -> dict:
+    from shared.v3.pipelines.smart_instruction import run_smart_instruction
+
+    result = run_smart_instruction(
+        user_prompt=input.prompt,
+        text_after_instruction=input.context["after_selected_text"],
+        text_before_instruction=input.context["before_selected_text"],
+        datascope=DataScope(
+            node_ids=input.node_ids,
+            organization_id=user.organization_id,
+            user_id=user.subject,
+        ),
+    )
+    return result

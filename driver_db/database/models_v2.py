@@ -78,7 +78,7 @@ class Version(SQLModel, table=True):  # type: ignore
         index=True,
     )
     display_name: str
-    status: VersionStatus
+    status: VersionStatus = Field(index=True)
     previous_version_id: UUID | None = Field(
         default=None,
         nullable=True,

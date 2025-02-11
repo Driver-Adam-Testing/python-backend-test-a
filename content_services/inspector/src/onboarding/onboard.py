@@ -13,6 +13,8 @@ from database.models_v2_enums import (
     VersionStatus,
 )
 
+from onboarding.gh_ops import AccessTokenError
+
 image = (
     modal.Image.debian_slim(python_version="3.12")
     .apt_install("tree")
@@ -48,7 +50,6 @@ def handle_github_events(
     repos_deleted: list[dict],
     repos_pushed: list[dict],
 ) -> None:
-    import httpx
     from database.db import (
         engine,  # We defer the import since we'll have the secrets set here
     )
@@ -65,17 +66,13 @@ def handle_github_events(
         token = fetch_app_access_token(
             installation_id=installation_id,
         )
-    except httpx.HTTPStatusError as ex:
-        # 404s occur when fetching an access ID for an installation
-        # if that installation is uninstalled in Github but not our DB.
-        # Assume this was the case and continue.
-        if ex.response.status_code == 404:
-            print("Github installation not found. Assuming uninstalled.")
-            if len(repos_added) > 0 or len(repos_pushed) > 0:
-                raise ex
-            elif len(repos_deleted) > 0:
-                print("Still deleting assets from db, where needed")
-                # in this case, we want to delete the repos from the db
+    except AccessTokenError as ex:
+        print("Github installation not found. Assuming uninstalled.")
+        if len(repos_added) > 0 or len(repos_pushed) > 0:
+            raise ex
+        elif len(repos_deleted) > 0:
+            print("Still deleting assets from db, where needed")
+            # in this case, we want to delete the repos from the db
 
     errant_repos = []
     with ThreadPoolExecutor(max_workers=10) as executor:
@@ -155,7 +152,6 @@ def connect_unconnected_repos() -> None:
 
     It will probably only be run once and can likely be deleted by the time you read this :)
     """
-    import httpx
     import requests
     from database.db import engine
     from database.models_v1 import GithubAppInstallation
@@ -170,13 +166,9 @@ def connect_unconnected_repos() -> None:
             gh_install_id = install.github_app_installation_id
             try:
                 token = fetch_app_access_token(gh_install_id)
-            except httpx.HTTPStatusError as ex:
-                # 404s occur when fetching an access ID for an installation
-                # if that installation is uninstalled in Github but not our DB.
-                # Assume this was the case and continue.
-                if ex.response.status_code == 404:
-                    print("Github installation not found. Assuming uninstalled.")
-                    continue
+            except AccessTokenError:
+                print("Github installation not found. Assuming uninstalled.")
+                continue
 
             headers = {
                 "Authorization": f"token {token}",

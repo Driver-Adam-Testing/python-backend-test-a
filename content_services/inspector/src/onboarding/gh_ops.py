@@ -2,9 +2,7 @@ import base64
 import hashlib
 import logging
 import os
-import re
 import time
-from typing import Any
 from uuid import UUID
 
 import boto3
@@ -27,81 +25,27 @@ def generate_jwt() -> str:
     return jwt.encode(payload, decoded_pem, algorithm="RS256")
 
 
+class AccessTokenError(Exception): ...
+
+
 def fetch_app_access_token(installation_id: str) -> str:
     url = f"https://api.github.com/app/installations/{installation_id}/access_tokens"
     jwt = generate_jwt()
     with httpx.Client() as client:
         headers = {"Accept": "application/json", "Authorization": f"Bearer {jwt}"}
         response = client.post(url, headers=headers)
-        response.raise_for_status()  # Raises an exception for 4XX/5XX responses
+        try:
+            response.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                raise AccessTokenError(
+                    f"GitHub application installation {installation_id} not found."
+                ) from e
+            raise
         token_data = response.json()
         if "token" not in token_data:
-            raise Exception("GitHub application access token not found.")
+            raise AccessTokenError("GitHub application access token not found.")
         return token_data["token"]
-
-
-def fetch_repos(installation_id: str) -> list[dict[str, Any]]:
-    per_page = 100
-    max_pages = 100
-
-    all_results = []
-    try:
-        with httpx.Client() as client:
-            url = (
-                f"https://api.github.com/installation/repositories?per_page={per_page}"
-            )
-            try:
-                token = fetch_app_access_token(
-                    installation_id=installation_id,
-                )
-            except httpx.HTTPStatusError as ex:
-                # 404s occur when fetching an access ID for an installation
-                # if that installation is uninstalled in Github but not our DB.
-                # Assume this was the case and continue.
-                if ex.response.status_code == 404:
-                    print("Github installation not found. Assuming uninstalled.")
-                    raise ex
-            headers = {"Authorization": f"token {token}"}
-            page_count = 1
-            response = client.get(url, headers=headers)
-            response.raise_for_status()
-            current_repos = response.json()["repositories"]
-            for repo in current_repos:
-                repo["installation_id"] = installation_id
-            all_results.extend(current_repos)
-            link_header: str = response.headers.get("link", None)
-            while link_header:
-                page_count = page_count + 1
-                if page_count > max_pages:
-                    # GH API has rate limits that will probably kick in before we get this far.
-                    # Protecting ourselves from infinite loops explicitly too.
-                    # We should implement exponential backoff and parse the
-                    # rate limit responses being returned by GH here.
-                    raise ValueError("Aborting GH API pagination at 10000 results.")
-                parts = response.headers["link"].split(",")
-                matches = [
-                    re.search(r'<([^>]+)>; rel="([^"]+)"', part.strip())
-                    for part in parts
-                ]
-                has_next = False
-                for match in matches:
-                    next_url, rel = match.groups()
-                    if rel == "next" and next_url:
-                        has_next = True
-                        response = client.get(next_url, headers=headers)
-                        response.raise_for_status()
-                        current_repos = response.json()["repositories"]
-                        for repo in current_repos:
-                            repo["installation_id"] = installation_id
-                        all_results.extend(current_repos)
-
-                if not has_next:
-                    break
-
-        return all_results
-    except Exception as e:
-        print(f"Failed to fetch repositories: {e}")
-        raise e
 
 
 def get_github_repo_url(full_repo_name: str) -> str:

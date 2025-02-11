@@ -1,7 +1,7 @@
 """add pa and node parentage indexes
 
 Revision ID: a8b7cafaa51f
-Revises: 3b2cb97a373b
+Revises: 4ec484ef0f5b
 Create Date: 2025-02-10 16:48:32.713019
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "a8b7cafaa51f"
-down_revision = "3b2cb97a373b"
+down_revision = "4ec484ef0f5b"
 branch_labels = None
 depends_on = None
 

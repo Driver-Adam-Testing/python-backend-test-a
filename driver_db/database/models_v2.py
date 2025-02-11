@@ -132,6 +132,18 @@ class Node(SQLModel, table=True):  # type: ignore
         Index(
             "ix_version_id_relative_path", "version_id", "relative_path", unique=True
         ),
+        # Index for root_node on a version
+        Index(
+            "idx_node_version_id_relative_path_length",
+            "version_id",
+            func.length("relative_path"),
+        ),
+        # Index for node ancestor searching
+        Index(
+            "ix_node_version_id_relative_path_pattern_ops",
+            "version_id",
+            postgresql_ops={"relative_path": "text_pattern_ops"},
+        ),
     )
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     kind: NodeKind

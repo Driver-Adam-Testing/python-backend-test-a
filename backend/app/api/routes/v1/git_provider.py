@@ -4,6 +4,7 @@ import hmac
 import json
 import logging
 
+import modal
 from database.models_v1 import (
     GithubAppInstallation,
     GitProviderApp,
@@ -206,19 +207,15 @@ def clone_git_provider_repo(
 ### GIT PROVIDER ###
 
 
-@router.get("/{provider}/callback", response_model=OkResponse)
-def git_provider_callback(
+@router.get("/github/callback", response_model=OkResponse)
+def github_callback(
     session: CurrentSession,
-    provider: str,
     code: str,
     state: str,
     installation_id: str,
     request: Request,
     response: Response,
 ) -> OkResponse:
-    if provider != "github":
-        raise HTTPException(status_code=400, detail="Bad request")
-
     if not code:
         raise HTTPException(status_code=400, detail="Bad request")
 
@@ -227,7 +224,7 @@ def git_provider_callback(
     state_dict = json.loads(state_str)
     # TODO: validate state_dict
     org_id, user_id = state_dict["org_id"], state_dict["user_id"]
-    secret_key = format_secret_key(org_id, user_id, provider)
+    secret_key = format_secret_key(org_id, user_id, "github")
     token_data = exchange_code_for_token(code)
     secret_value = json.dumps(token_data)
     write_secret(secret_key, secret_value)
@@ -353,6 +350,157 @@ def verify_github_signature(
         raise e
 
 
+def handle_installation_create_event(
+    session: CurrentSession, body: dict
+) -> JSONResponse:
+    installation_id = str(body["installation"]["id"])
+    gh_app_install = GithubAppInstallationsRepository(session).list_by_installation_id(
+        installation_id
+    )[0]
+    if not gh_app_install:
+        logger.warning(
+            "Installation ID not found in the database; need a row for this app install"
+        )
+        return JSONResponse(
+            status_code=status.HTTP_202_ACCEPTED, content={"message": ""}
+        )
+
+    repositories = body["repositories"]
+    repos_added = []
+    repos_deleted = []
+    repos_pushed = []
+    for repo in repositories:
+        repos_added.append(
+            {
+                "id": repo["id"],
+                "name": repo["name"],
+                "full_name": repo["full_name"],
+            }
+        )
+
+    handle_github_events = modal.Function.lookup("inspector_v2", "handle_github_events")
+    handle_github_events.spawn(
+        installation_id,
+        gh_app_install.organization_id,
+        repos_added,
+        repos_deleted,
+        repos_pushed,
+    )
+
+    logger.info(
+        f"Installation create event processed for {installation_id}. Connecting repos."
+    )
+    return JSONResponse(
+        status_code=status.HTTP_202_ACCEPTED,
+        content={"message": ""},
+    )
+
+
+def handle_installation_delete_event(
+    session: CurrentSession, body: dict
+) -> JSONResponse:
+    installation_id = str(body["installation"]["id"])
+    gh_app_install = GithubAppInstallationsRepository(session).list_by_installation_id(
+        installation_id
+    )[0]
+    if not gh_app_install:
+        logger.warning(
+            "Installation ID not found in the database; need a row for this app install"
+        )
+        return JSONResponse(
+            status_code=status.HTTP_202_ACCEPTED, content={"message": ""}
+        )
+
+    repositories = body["repositories"]
+    repos_added = []
+    repos_deleted = []
+    repos_pushed = []
+    for repo in repositories:
+        repos_deleted.append(
+            {
+                "id": repo["id"],
+                "name": repo["name"],
+                "full_name": repo["full_name"],
+            }
+        )
+
+    handle_github_events = modal.Function.lookup("inspector_v2", "handle_github_events")
+    handle_github_events.spawn(
+        installation_id,
+        gh_app_install.organization_id,
+        repos_added,
+        repos_deleted,
+        repos_pushed,
+    )
+
+    logger.info(
+        f"Installation delete event processed for {installation_id}. Disconnecting repos."
+    )
+    return JSONResponse(
+        status_code=status.HTTP_202_ACCEPTED,
+        content={"message": ""},
+    )
+
+
+def handle_installation_modified_event(
+    session: CurrentSession, body: dict
+) -> JSONResponse:
+    installation_id = str(body["installation"]["id"])
+    gh_app_install = GithubAppInstallationsRepository(session).list_by_installation_id(
+        installation_id
+    )[0]
+    if not gh_app_install:
+        logger.warning(
+            "Installation ID not found in the database; need a row for this app install"
+        )
+        return JSONResponse(
+            status_code=status.HTTP_202_ACCEPTED, content={"message": ""}
+        )
+
+    body_repos_added = body["repositories_added"]
+    body_repos_removed = body["repositories_removed"]
+
+    repos_added = []
+    repos_deleted = []
+    repos_pushed = []
+
+    for repo in body_repos_added:
+        # This repo may already be connected, okay to have integrityerror in modal?
+        repos_added.append(
+            {
+                "id": repo["id"],
+                "name": repo["name"],
+                "full_name": repo["full_name"],
+            }
+        )
+
+    for repo in body_repos_removed:
+        repos_deleted.append(
+            {
+                "id": repo["id"],
+                "name": repo["name"],
+                "full_name": repo["full_name"],
+            }
+        )
+
+    handle_github_events = modal.Function.lookup("inspector_v2", "handle_github_events")
+    handle_github_events.spawn(
+        installation_id,
+        gh_app_install.organization_id,
+        repos_added,
+        repos_deleted,
+        repos_pushed,
+    )
+
+    logger.info(
+        f"Installation modified event processed for {installation_id}. Connecting repos."
+    )
+    return JSONResponse(
+        status_code=status.HTTP_202_ACCEPTED,
+        content={"message": ""},
+    )
+
+
 def handle_push_event(session: CurrentSession, body: dict) -> JSONResponse:
     repository = body["repository"]
     org_name = repository.get("owner", {}).get("login", "unknown")
@@ -434,32 +582,33 @@ def handle_push_event(session: CurrentSession, body: dict) -> JSONResponse:
             status_code=status.HTTP_202_ACCEPTED,
             content={"message": ""},
         )
-    upload_key = (
-        f"codebases/{org_id_to_hash(gh_app_install.organization_id)}/{repo_name}.zip"
-    )
-    token = fetch_app_access_token(installation_id)
-    upload_complete, _ = download_and_upload_repo(
-        gh_org_name=org_name,
-        owner="",
-        org_id=gh_app_install.organization_id,
-        repo=repo_name,
-        repo_id=repo_id,
-        access_token=token,
-        commit=commit_hash,
-        upload_key=upload_key,
+
+    repos_added = []
+    repos_deleted = []
+    repos_pushed = [
+        {
+            "id": repo_id,
+            "name": repo_name,
+            "full_name": repository["full_name"],
+            "commit": commit_hash,
+        }
+    ]
+    handle_github_events = modal.Function.lookup("inspector_v2", "handle_github_events")
+    handle_github_events.spawn(
+        installation_id,
+        gh_app_install.organization_id,
+        repos_added,
+        repos_deleted,
+        repos_pushed,
     )
 
-    if upload_complete:
-        logger.info("Repository push event successfully processed: %s", repo_name)
-        return JSONResponse(
-            status_code=status.HTTP_202_ACCEPTED,
-            content={"message": ""},
-        )
-    else:
-        logger.error("Repository upload failed in webhook: %s", repo_name)
-        return JSONResponse(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content={"message": ""}
-        )
+    logger.info(
+        f"Push event processed for repo: {repo_name}. Processing in background job."
+    )
+    return JSONResponse(
+        status_code=status.HTTP_202_ACCEPTED,
+        content={"message": ""},
+    )
 
 
 def get_codebase_asset(
@@ -502,7 +651,9 @@ def webhook(
     elif github_event == "ping":
         return handle_ping_event()
     elif github_event == "installation":
-        if body["action"] == "deleted":
+        if body["action"] == "created":
+            return handle_installation_create_event(session, body)
+        elif body["action"] == "deleted":
             installation_record = session.exec(
                 select(GithubAppInstallation).where(
                     GithubAppInstallation.github_app_installation_id
@@ -511,9 +662,13 @@ def webhook(
             ).first()
             session.delete(installation_record)
             session.commit()
+            return handle_installation_delete_event(session, body)
         return JSONResponse(
             status_code=status.HTTP_202_ACCEPTED, content={"message": ""}
         )
+    elif github_event == "installation_repositories":
+        # Add or remove event. An edit causes two github events
+        return handle_installation_modified_event(session, body)
 
     logger.info("Unhandled event type: %s", github_event)
     return JSONResponse(

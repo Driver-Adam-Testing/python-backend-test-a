@@ -26,7 +26,6 @@ class UploadPDFRequest(UploadRequestBase):
 
 class UploadResponse(BaseModel):
     upload_url: str
-    download_url: str
 
 
 class PDFUploadResponse(BaseModel):

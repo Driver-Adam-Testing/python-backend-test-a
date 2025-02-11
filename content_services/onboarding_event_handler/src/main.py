@@ -87,16 +87,9 @@ def handler(
                         "download_url": presigned_url,
                         "object_key": object_key,
                         "org_id": metadata["Metadata"]["unhashed_organization_id"],
-                        "creator_id": metadata["Metadata"]["creator_id"],
-                        "filepath": metadata["Metadata"]["file_path"],
-                        "codebase_name": metadata["Metadata"]["codebase_name"],
                         "provider": metadata["Metadata"]["provider"],
-                        "version": metadata["Metadata"].get("version"),
+                        "version_id": metadata["Metadata"]["version_id"],
                     }
-                    if "repository_id" in metadata["Metadata"]:
-                        request_body["repository_id"] = metadata["Metadata"][
-                            "repository_id"
-                        ]
                     onboarding_result = exec_onboarding_service(
                         request_body,
                         token_json["access_token"],
@@ -104,6 +97,7 @@ def handler(
                     onboarded.append(onboarding_result)
                 else:
                     # Handle THREATS_FOUND and other guard duty statuses
+                    # TODO: send user email
                     logger.error("GuardDuty found something.")
         return onboarded
 

@@ -2,13 +2,16 @@ import hashlib
 import os
 import pprint
 import uuid
-from contextlib import suppress
 from enum import Enum
 from pathlib import Path
 from uuid import UUID
 
 import modal
-from onboarding.onboard import run_codebase_onboarding
+from onboarding.onboard import (
+    connect_unconnected_repos,
+    handle_github_events,
+    run_codebase_connection,
+)
 
 inspection_image = (
     modal.Image.debian_slim(python_version="3.12")
@@ -24,6 +27,7 @@ inspection_image = (
             "/shared_pkg",
             "tree-sitter>=0.24.0",
             "tree-sitter-c>=0.23.4",
+            "gitignore-parser",
         ]
     )
 )
@@ -139,6 +143,12 @@ async def inspect_db(
 
     import boto3
     from database.models_v2_enums import NodeKind as DbNodeKind
+    from database.models_v2_enums import VersionStatus
+    from onboarding.onboard_utils import (
+        reencode_file,
+        set_codebase_status,
+        unpack_archive,
+    )
     from utils.db import (
         create_inspector_run,
         download_source_file,
@@ -165,7 +175,6 @@ async def inspect_db(
     run_id = await create_inspector_run(version_id)
 
     # Get content records for version_id
-    # TODO: nodes don't currently have a kind, so will need a way to differentiate files and directories
     db_file_nodes = await get_analyzable_nodes_by_version_id(
         version_id, {DbNodeKind.CODEBASE_FILE}
     )
@@ -187,18 +196,54 @@ async def inspect_db(
     ):
         download_root = Path(download_dir)
         file_paths = []
-        print("Downloading all source files for codebase from s3...")
-        for db_file_node in db_file_nodes:
-            download_abs_path = download_source_file(
-                s3_client=s3_client,
-                bucket_name=org_hashed_id,
-                primary_asset_id=str(version.primary_asset.id),
-                version_id=str(version_id),
-                node_rel_path=db_file_node.relative_path,
-                download_root=download_root,
+        if version.status == VersionStatus.CONNECTED:
+            # TODO: check usage before switching to generating
+            # if it's in the connected state, must upload the individual files to S3
+            download_archive_key = (
+                f"{version.primary_asset_id}/{version_id}/{version_id}_source.zip"
             )
-            file_paths.append(download_abs_path)
-        print("Download complete")
+            download_path = Path(download_dir) / f"{version_id}.zip"
+            print(f"downloading zip to {download_path}")
+            s3_client.download_file(org_hashed_id, download_archive_key, download_path)
+
+            extracted_path = unpack_archive(
+                archive_path=download_path,
+                override_codebase_name=codebase_name,
+                extraction_path=download_dir,
+            )
+            print(f"Extracted archive to {extracted_path}")
+            for root, _, files in os.walk(extracted_path):
+                for filename in files:
+                    local_path = Path(root) / filename
+                    trimmed_path = local_path.relative_to(download_dir)
+                    for node in db_file_nodes:
+                        if node.relative_path == str(trimmed_path):
+                            reencode_file(local_path)
+
+                            s3_client.upload_file(
+                                local_path,
+                                org_hashed_id,
+                                f"{version.primary_asset_id}/{version_id}/{node.relative_path}",
+                            )
+                            print(
+                                f"uploading {trimmed_path} to s3 at {version.primary_asset_id}/{version_id}/{node.relative_path}"
+                            )
+                            file_paths.append(local_path)
+            set_codebase_status(version_id, VersionStatus.GENERATING)
+
+        else:
+            print("Downloading all source files for codebase from s3...")
+            for db_file_node in db_file_nodes:
+                download_abs_path = download_source_file(
+                    s3_client=s3_client,
+                    bucket_name=org_hashed_id,
+                    primary_asset_id=str(version.primary_asset.id),
+                    version_id=str(version_id),
+                    node_rel_path=db_file_node.relative_path,
+                    download_root=download_root,
+                )
+                file_paths.append(download_abs_path)
+            print("Download complete")
 
         codebase_dag: FileTreeDag = build_dag(
             root_path=download_root, file_paths=file_paths
@@ -476,6 +521,517 @@ def main(
         set_codebase_status_in_container.remote(version_id, "GENERATION_COMPLETE")
 
 
+@app.local_entrypoint()
+def test_handle_github_events() -> None:
+    import json
+
+    body = json.loads("""
+        {
+            "action": "created",
+            "installation": {
+                "id": 60598324,
+                "client_id": "Iv1.2cdbf00b132438f4",
+                "account": {
+                "login": "ghiotto1",
+                "id": 1228798,
+                "node_id": "MDQ6VXNlcjEyMjg3OTg=",
+                "avatar_url": "https://avatars.githubusercontent.com/u/1228798?v=4",
+                "gravatar_id": "",
+                "url": "https://api.github.com/users/ghiotto1",
+                "html_url": "https://github.com/ghiotto1",
+                "followers_url": "https://api.github.com/users/ghiotto1/followers",
+                "following_url": "https://api.github.com/users/ghiotto1/following{/other_user}",
+                "gists_url": "https://api.github.com/users/ghiotto1/gists{/gist_id}",
+                "starred_url": "https://api.github.com/users/ghiotto1/starred{/owner}{/repo}",
+                "subscriptions_url": "https://api.github.com/users/ghiotto1/subscriptions",
+                "organizations_url": "https://api.github.com/users/ghiotto1/orgs",
+                "repos_url": "https://api.github.com/users/ghiotto1/repos",
+                "events_url": "https://api.github.com/users/ghiotto1/events{/privacy}",
+                "received_events_url": "https://api.github.com/users/ghiotto1/received_events",
+                "type": "User",
+                "user_view_type": "public",
+                "site_admin": false
+                },
+                "repository_selection": "all",
+                "access_tokens_url": "https://api.github.com/app/installations/60597730/access_tokens",
+                "repositories_url": "https://api.github.com/installation/repositories",
+                "html_url": "https://github.com/settings/installations/60597730",
+                "app_id": 869041,
+                "app_slug": "driverai-gh-demo",
+                "target_id": 1228798,
+                "target_type": "User",
+                "permissions": {
+                "contents": "read",
+                "metadata": "read",
+                "pull_requests": "read",
+                "repository_hooks": "read"
+                },
+                "events": [
+                "create",
+                "delete",
+                "fork",
+                "membership",
+                "organization",
+                "pull_request",
+                "push",
+                "repository"
+                ],
+                "created_at": "2025-02-05T13:30:32.000-08:00",
+                "updated_at": "2025-02-05T13:30:33.000-08:00",
+                "single_file_name": null,
+                "has_multiple_single_files": false,
+                "single_file_paths": [
+
+                ],
+                "suspended_by": null,
+                "suspended_at": null
+            },
+            "repositories": [
+                {
+                "id": 10464543,
+                "node_id": "MDEwOlJlcG9zaXRvcnkxMDQ2NDU0Mw==",
+                "name": "dotfiles",
+                "full_name": "ghiotto1/dotfiles",
+                "private": false
+                },
+                {
+                "id": 116281345,
+                "node_id": "MDEwOlJlcG9zaXRvcnkxMTYyODEzNDU=",
+                "name": "spam-detection",
+                "full_name": "ghiotto1/spam-detection",
+                "private": false
+                }
+            ],
+            "requester": null,
+            "sender": {
+                "login": "ghiotto1",
+                "id": 1228798,
+                "node_id": "MDQ6VXNlcjEyMjg3OTg=",
+                "avatar_url": "https://avatars.githubusercontent.com/u/1228798?v=4",
+                "gravatar_id": "",
+                "url": "https://api.github.com/users/ghiotto1",
+                "html_url": "https://github.com/ghiotto1",
+                "followers_url": "https://api.github.com/users/ghiotto1/followers",
+                "following_url": "https://api.github.com/users/ghiotto1/following{/other_user}",
+                "gists_url": "https://api.github.com/users/ghiotto1/gists{/gist_id}",
+                "starred_url": "https://api.github.com/users/ghiotto1/starred{/owner}{/repo}",
+                "subscriptions_url": "https://api.github.com/users/ghiotto1/subscriptions",
+                "organizations_url": "https://api.github.com/users/ghiotto1/orgs",
+                "repos_url": "https://api.github.com/users/ghiotto1/repos",
+                "events_url": "https://api.github.com/users/ghiotto1/events{/privacy}",
+                "received_events_url": "https://api.github.com/users/ghiotto1/received_events",
+                "type": "User",
+                "user_view_type": "public",
+                "site_admin": false
+            }
+            }
+    """)
+
+    installation_id = str(body["installation"]["id"])
+    repositories = body["repositories"]
+    repos_added = []
+    repos_deleted = []
+    repos_pushed = []
+    for repo in repositories:
+        repos_added.append(
+            {
+                "id": repo["id"],
+                "name": repo["name"],
+                "full_name": repo["full_name"],
+            }
+        )
+
+    org_id = "org_s76pU1v8LAYhTOWB"
+
+    handle_github_events.remote(
+        installation_id,
+        org_id,
+        repos_added,
+        repos_deleted,
+        repos_pushed,
+    )
+
+
+@app.local_entrypoint()
+def local_connect() -> None:
+    presigned_url = "https://development-codebase-dropzone.s3.us-east-1.amazonaws.com/codebases/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/spam-detection.zip?response-content-disposition=inline&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEDcaCXVzLWVhc3QtMSJHMEUCIDb4lgoSFbgsjOCrn8KqTgEvJCqneR7D%2FLoBicug%2FN8VAiEAxqEgXXbcUAx5QF1dgCBZKM%2Fn3sST6vJEQUpKoLTl%2BEsqtQQITxABGgw1NTAwODI3NjExMDkiDOCQGpznimsTef0tFyqSBLjkfZ44%2FFeWpkDD04jMWokfR1rBPrTU9dBLze%2FNIcI6uHp6Fw60wyQomXxV4Tb3dV7v9GHCRfr97N%2BzsnmxVNt%2FNCjx02HHGa7AiGFqr%2FcLyOWMDmT%2BB%2FXl3yEBwcv4zGeJtKgDt4q%2FnkS9v3PszUAvaBKO8XudD8JM6AaEL1W5LGQ1MQmIRn45gYI4RVA4sUqQOrEFWMgPPdOXoNH%2BDiOaqFdMdLpQuJNEcg7HNyLPb2%2BR6CdkxfYEAuoHXESy8gU4xNPm2ZsDRCsyDfyernHiEKHAY9e%2BxceWUonvhlHWZzdxWEW0djo2fSDO44Q6WvdqDGKFIfJt%2Bexn5dEfij5iScD4ZuKpQAsrxPA9NsUOf%2Fd17OqzTj7mSIchaUaNHpqYVDsFx%2B0ciBAL%2B224TbKZ5Wh3mQ1cCQPmI7YW9Ww7lKRoP44RJt4kZp38oT8sf4adigJ8ZfK%2FHk%2Fv%2BpPtIVA9T%2FQj1ghwXRnECI7ayWf2ttgR%2F3HMz6eDfYkjEiwiG1DLT%2FDUN56jK3srUDkZ2AxXM4eX%2BYBb5jjGc6Idn2zeS%2F%2FOhPoHW%2F%2Fd8g5ZlIjwTGH65CF4%2FHAUSfrn8sH%2B5BmVofxovg%2BQfnYIbsPh2RhaDBbMsBIwe%2FS7T3tOLqotrZZaHHC%2BiYS3e0h89qM99JtrdNaou%2FBpg1vH0h5KB1rucJVZGs%2FmUyDjGOSN4VZnASuXMP27j70GOsUCNX74rhYcMEGe2YvXpi0vfWVque7MXHUOVBHv2XIXsd2DFTxqpzdViHNiusKhpoLx6Pd1i1Z0p%2BPvafxwO3jboHkXf8j3lRpcYpO8A5jyxnXBOp0rkpMt12lm4kjQkk18GGP5klw6fEjnZIf3McPF4CUhX5LVJbwXhagg7f7Cfu6PT8qBkkhpqsMRCy6kqyL8yfaAKhKdg8JZCxFqdr6ZsBxgpNzq3uktJfzy8hgUATqGSsm7qBQUXJUy1hCJ%2B9OYWHlZaGvqxBd3bznWaGfV%2Bx4a95o7z0MRZyw0%2FP1Nzwj%2Fm0j6Q%2FFO9W81zA7T7dLNYP8kc5lp6YsaiX04C1PVeoeI38dcg9DMm71aYS56AVEPSb%2Bf5GmsQtsLt22KYIpI%2F6ph8S%2F9PsDkWsR5xTm1B7cnzKE7PB8bMNGx2zYE2q6v1qSosQ%3D%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAYAE342GKXYB6FPCY%2F20250205%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20250205T220805Z&X-Amz-Expires=7200&X-Amz-SignedHeaders=host&X-Amz-Signature=942c1c5225bce1d7517927819c71a65dd46f8c48dba33239b12cd193937ca0a4"
+    archive_name = "spam-detection.zip"
+    org_id = "org_s76pU1v8LAYhTOWB"
+    provider = "github"
+    version_id = "db0b396f-8902-4325-98f4-b92dfb44b679"
+
+    run_codebase_connection.remote(
+        presigned_url,
+        archive_name,
+        org_id,
+        version_id,
+        provider,
+    )
+    # inspect_db.remote(version_id = 'e308eccc-8105-4cd4-8163-c591b507057d')
+
+
+@app.local_entrypoint()
+def github_auth_change() -> None:
+    import json
+
+    org_id = "org_s76pU1v8LAYhTOWB"
+
+    remove_event = json.loads("""
+    {
+        "action": "removed",
+        "installation": {
+            "id": 60598324,
+            "client_id": "Iv1.2cdbf00b132438f4",
+            "account": {
+            "login": "ghiotto1",
+            "id": 1228798,
+            "node_id": "MDQ6VXNlcjEyMjg3OTg=",
+            "avatar_url": "https://avatars.githubusercontent.com/u/1228798?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/ghiotto1",
+            "html_url": "https://github.com/ghiotto1",
+            "followers_url": "https://api.github.com/users/ghiotto1/followers",
+            "following_url": "https://api.github.com/users/ghiotto1/following{/other_user}",
+            "gists_url": "https://api.github.com/users/ghiotto1/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/ghiotto1/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/ghiotto1/subscriptions",
+            "organizations_url": "https://api.github.com/users/ghiotto1/orgs",
+            "repos_url": "https://api.github.com/users/ghiotto1/repos",
+            "events_url": "https://api.github.com/users/ghiotto1/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/ghiotto1/received_events",
+            "type": "User",
+            "user_view_type": "public",
+            "site_admin": false
+            },
+            "repository_selection": "selected",
+            "access_tokens_url": "https://api.github.com/app/installations/60597730/access_tokens",
+            "repositories_url": "https://api.github.com/installation/repositories",
+            "html_url": "https://github.com/settings/installations/60597730",
+            "app_id": 869041,
+            "app_slug": "driverai-gh-demo",
+            "target_id": 1228798,
+            "target_type": "User",
+            "permissions": {
+            "contents": "read",
+            "metadata": "read",
+            "pull_requests": "read",
+            "repository_hooks": "read"
+            },
+            "events": [
+            "create",
+            "delete",
+            "fork",
+            "membership",
+            "organization",
+            "pull_request",
+            "push",
+            "repository"
+            ],
+            "created_at": "2025-02-05T13:30:32.000-08:00",
+            "updated_at": "2025-02-05T13:35:25.000-08:00",
+            "single_file_name": null,
+            "has_multiple_single_files": false,
+            "single_file_paths": [
+
+            ],
+            "suspended_by": null,
+            "suspended_at": null
+        },
+        "repository_selection": "selected",
+        "repositories_added": [
+
+        ],
+        "repositories_removed": [
+            {
+            "id": 10464543,
+            "node_id": "MDEwOlJlcG9zaXRvcnkxMDQ2NDU0Mw==",
+            "name": "dotfiles",
+            "full_name": "ghiotto1/dotfiles",
+            "private": false
+            }
+        ],
+        "requester": null,
+        "sender": {
+            "login": "ghiotto1",
+            "id": 1228798,
+            "node_id": "MDQ6VXNlcjEyMjg3OTg=",
+            "avatar_url": "https://avatars.githubusercontent.com/u/1228798?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/ghiotto1",
+            "html_url": "https://github.com/ghiotto1",
+            "followers_url": "https://api.github.com/users/ghiotto1/followers",
+            "following_url": "https://api.github.com/users/ghiotto1/following{/other_user}",
+            "gists_url": "https://api.github.com/users/ghiotto1/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/ghiotto1/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/ghiotto1/subscriptions",
+            "organizations_url": "https://api.github.com/users/ghiotto1/orgs",
+            "repos_url": "https://api.github.com/users/ghiotto1/repos",
+            "events_url": "https://api.github.com/users/ghiotto1/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/ghiotto1/received_events",
+            "type": "User",
+            "user_view_type": "public",
+            "site_admin": false
+        }
+    }
+    """)
+    add_github_event = json.loads("""
+        {
+        "action": "added",
+        "installation": {
+            "id": 60598324,
+            "client_id": "Iv1.2cdbf00b132438f4",
+            "account": {
+            "login": "ghiotto1",
+            "id": 1228798,
+            "node_id": "MDQ6VXNlcjEyMjg3OTg=",
+            "avatar_url": "https://avatars.githubusercontent.com/u/1228798?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/ghiotto1",
+            "html_url": "https://github.com/ghiotto1",
+            "followers_url": "https://api.github.com/users/ghiotto1/followers",
+            "following_url": "https://api.github.com/users/ghiotto1/following{/other_user}",
+            "gists_url": "https://api.github.com/users/ghiotto1/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/ghiotto1/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/ghiotto1/subscriptions",
+            "organizations_url": "https://api.github.com/users/ghiotto1/orgs",
+            "repos_url": "https://api.github.com/users/ghiotto1/repos",
+            "events_url": "https://api.github.com/users/ghiotto1/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/ghiotto1/received_events",
+            "type": "User",
+            "user_view_type": "public",
+            "site_admin": false
+            },
+            "repository_selection": "selected",
+            "access_tokens_url": "https://api.github.com/app/installations/60597730/access_tokens",
+            "repositories_url": "https://api.github.com/installation/repositories",
+            "html_url": "https://github.com/settings/installations/60597730",
+            "app_id": 869041,
+            "app_slug": "driverai-gh-demo",
+            "target_id": 1228798,
+            "target_type": "User",
+            "permissions": {
+            "contents": "read",
+            "metadata": "read",
+            "pull_requests": "read",
+            "repository_hooks": "read"
+            },
+            "events": [
+            "create",
+            "delete",
+            "fork",
+            "membership",
+            "organization",
+            "pull_request",
+            "push",
+            "repository"
+            ],
+            "created_at": "2025-02-05T13:30:32.000-08:00",
+            "updated_at": "2025-02-05T13:35:25.000-08:00",
+            "single_file_name": null,
+            "has_multiple_single_files": false,
+            "single_file_paths": [
+
+            ],
+            "suspended_by": null,
+            "suspended_at": null
+        },
+        "repository_selection": "selected",
+        "repositories_added": [
+            {
+            "id": 116281345,
+            "node_id": "MDEwOlJlcG9zaXRvcnkxMTYyODEzNDU=",
+            "name": "spam-detection",
+            "full_name": "ghiotto1/spam-detection",
+            "private": false
+            }
+        ],
+        "repositories_removed": [
+
+        ],
+        "requester": null,
+        "sender": {
+            "login": "ghiotto1",
+            "id": 1228798,
+            "node_id": "MDQ6VXNlcjEyMjg3OTg=",
+            "avatar_url": "https://avatars.githubusercontent.com/u/1228798?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/ghiotto1",
+            "html_url": "https://github.com/ghiotto1",
+            "followers_url": "https://api.github.com/users/ghiotto1/followers",
+            "following_url": "https://api.github.com/users/ghiotto1/following{/other_user}",
+            "gists_url": "https://api.github.com/users/ghiotto1/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/ghiotto1/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/ghiotto1/subscriptions",
+            "organizations_url": "https://api.github.com/users/ghiotto1/orgs",
+            "repos_url": "https://api.github.com/users/ghiotto1/repos",
+            "events_url": "https://api.github.com/users/ghiotto1/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/ghiotto1/received_events",
+            "type": "User",
+            "user_view_type": "public",
+            "site_admin": false
+        }
+    }
+    """)
+
+    installation_id = str(add_github_event["installation"]["id"])
+    org_id = "org_s76pU1v8LAYhTOWB"
+    repos_added = []
+    repos_removed = []
+    for repo in add_github_event["repositories_added"]:
+        repos_added.append(
+            {
+                "id": repo["id"],
+                "name": repo["name"],
+                "full_name": repo["full_name"],
+            }
+        )
+    for repo in remove_event["repositories_removed"]:
+        repos_removed.append(
+            {
+                "id": repo["id"],
+                "name": repo["name"],
+                "full_name": repo["full_name"],
+            }
+        )
+    handle_github_events.remote(
+        installation_id,
+        org_id,
+        repos_added,
+        repos_removed,
+        [],
+    )
+
+
+@app.local_entrypoint()
+def github_delete_test() -> None:
+    import json
+
+    body = json.loads("""
+    {
+        "action": "deleted",
+        "installation": {
+            "id": 60598324,
+            "client_id": "Iv1.2cdbf00b132438f4",
+            "account": {
+            "login": "ghiotto1",
+            "id": 1228798,
+            "node_id": "MDQ6VXNlcjEyMjg3OTg=",
+            "avatar_url": "https://avatars.githubusercontent.com/u/1228798?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/ghiotto1",
+            "html_url": "https://github.com/ghiotto1",
+            "followers_url": "https://api.github.com/users/ghiotto1/followers",
+            "following_url": "https://api.github.com/users/ghiotto1/following{/other_user}",
+            "gists_url": "https://api.github.com/users/ghiotto1/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/ghiotto1/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/ghiotto1/subscriptions",
+            "organizations_url": "https://api.github.com/users/ghiotto1/orgs",
+            "repos_url": "https://api.github.com/users/ghiotto1/repos",
+            "events_url": "https://api.github.com/users/ghiotto1/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/ghiotto1/received_events",
+            "type": "User",
+            "user_view_type": "public",
+            "site_admin": false
+            },
+            "repository_selection": "selected",
+            "access_tokens_url": "https://api.github.com/app/installations/60597730/access_tokens",
+            "repositories_url": "https://api.github.com/installation/repositories",
+            "html_url": "https://github.com/settings/installations/60597730",
+            "app_id": 869041,
+            "app_slug": "driverai-gh-demo",
+            "target_id": 1228798,
+            "target_type": "User",
+            "permissions": {
+            "contents": "read",
+            "metadata": "read",
+            "pull_requests": "read",
+            "repository_hooks": "read"
+            },
+            "events": [
+            "create",
+            "delete",
+            "fork",
+            "membership",
+            "organization",
+            "pull_request",
+            "push",
+            "repository"
+            ],
+            "created_at": "2025-02-05T13:30:32.000-08:00",
+            "updated_at": "2025-02-05T13:35:25.000-08:00",
+            "single_file_name": null,
+            "has_multiple_single_files": false,
+            "single_file_paths": [
+
+            ],
+            "suspended_by": null,
+            "suspended_at": null
+        },
+        "repositories": [
+            {
+            "id": 116281345,
+            "node_id": "MDEwOlJlcG9zaXRvcnkxMTYyODEzNDU=",
+            "name": "spam-detection",
+            "full_name": "ghiotto1/spam-detection",
+            "private": false
+            }
+        ],
+        "sender": {
+            "login": "ghiotto1",
+            "id": 1228798,
+            "node_id": "MDQ6VXNlcjEyMjg3OTg=",
+            "avatar_url": "https://avatars.githubusercontent.com/u/1228798?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/ghiotto1",
+            "html_url": "https://github.com/ghiotto1",
+            "followers_url": "https://api.github.com/users/ghiotto1/followers",
+            "following_url": "https://api.github.com/users/ghiotto1/following{/other_user}",
+            "gists_url": "https://api.github.com/users/ghiotto1/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/ghiotto1/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/ghiotto1/subscriptions",
+            "organizations_url": "https://api.github.com/users/ghiotto1/orgs",
+            "repos_url": "https://api.github.com/users/ghiotto1/repos",
+            "events_url": "https://api.github.com/users/ghiotto1/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/ghiotto1/received_events",
+            "type": "User",
+            "user_view_type": "public",
+            "site_admin": false
+        }
+    }
+    """)
+    installation_id = str(body["installation"]["id"])
+    org_id = "org_s76pU1v8LAYhTOWB"
+    # repos_added = []
+    repos_removed = []
+    for repo in body["repositories"]:
+        repos_removed.append(
+            {
+                "id": repo["id"],
+                "name": repo["name"],
+                "full_name": repo["full_name"],
+            }
+        )
+
+    handle_github_events.remote(
+        installation_id,
+        org_id,
+        [],
+        repos_removed,
+        [],
+    )
+
+
+@app.local_entrypoint()
+def test_inspect_db() -> None:
+    version_str = "db0b396f-8902-4325-98f4-b92dfb44b679"
+    inspect_db.remote(version_str)
+
+
+@app.local_entrypoint()
+def run_connect_unconnected_repos() -> None:
+    connect_unconnected_repos.remote()
+
+
 @app.function(
     image=modal.Image.debian_slim(python_version="3.12").pip_install(
         "sendgrid", "strawberry-graphql"
@@ -512,80 +1068,3 @@ onboarding_and_inspect_image = (
     .pip_install("gitignore-parser")
     .pip_install("tree-sitter>=0.24.0", "tree-sitter-c>=0.23.4")
 )
-
-
-@app.function(
-    image=onboarding_and_inspect_image,
-    secrets=[
-        modal.Secret.from_name("db"),
-    ],
-    mounts=[
-        modal.Mount.from_local_dir(
-            local_path="../../driver_db/certs",
-            remote_path="/root/data/",
-        ),
-        modal.Mount.from_local_python_packages("onboarding"),  # Why not automounted?
-    ],
-    proxy=modal.Proxy.from_name("pg-proxy")
-    if os.environ["MODAL_ENVIRONMENT"] != "staging"
-    else None,
-    timeout=3600 * 8,
-    region="us-east",
-    concurrency_limit=5,
-    keep_warm=1,
-)
-def onboard_and_inspect(
-    presigned_url: str,
-    archive_name: str,
-    org_id: str,
-    creator_id: str,
-    provider: str = "manual",
-    version: str | None = None,  # this is the version string NOT the ID from our db
-    repository_id: str | None = None,
-) -> None:
-    from database.models_v2_enums import VersionStatus
-    from onboarding.onboard_utils import RunInProgressError, set_codebase_status
-
-    print(
-        f"Onboarding for: {archive_name} from {provider} with org_id: {org_id}, creator_id: {creator_id}, "
-        f"with presigned_url: {presigned_url}, version: {version}"
-    )
-    try:
-        try:
-            version_id = run_codebase_onboarding.remote(
-                presigned_url,
-                archive_name,
-                org_id,
-                creator_id,
-                provider,
-                version_str=version,
-                repository_id=repository_id,
-            )
-        except RunInProgressError:
-            print(
-                "Halted during onboarding because a previous version was in progress."
-            )
-            return
-
-        print(f"Onboarding complete for version: {version_id}")
-        print("Inspecting...")
-        inspect_db.remote(version_id)
-        print("Inspection complete")
-
-        # TODO: set the version status
-        set_codebase_status(version_id, VersionStatus.GENERATION_COMPLETE)
-
-    except Exception as e:
-        exception_type = type(e).__name__
-        exc_tb = e.__traceback__
-        filename = exc_tb.tb_frame.f_code.co_filename
-        line_number = exc_tb.tb_lineno
-        exception_details = (
-            f"Exception type: {exception_type}\nFile: {filename}\nLine: {line_number}"
-        )
-        send_exception_email.remote(exception_details)
-        # Since codebase and version could possibly be undefined in this clean up action, we don't care if it fails
-        with suppress(Exception):
-            # TODO: set the version status
-            set_codebase_status(version_id, VersionStatus.GENERATION_ERROR)
-        raise e

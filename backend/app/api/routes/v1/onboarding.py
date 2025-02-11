@@ -1,4 +1,5 @@
 import logging
+import uuid
 from pathlib import Path
 
 import modal
@@ -12,55 +13,47 @@ from app.core.config import settings
 router = APIRouter()
 
 
-class Onboarding(BaseModel):
+class CodebaseConnection(BaseModel):
     # TODO: Is the status being consumed somewhere? Otherwise this isn't appropriate.
     status: str = "OK"
     call_id: str | None = None
 
 
-class OnboardingRequestBody(BaseModel):
-    creator_id: str | None = None
+class CodebaseConnectionRequest(BaseModel):
     org_id: str | None = None
-    workspace_id: str | None = None  # CALLED VIA EXTERNAL SERVICE, INVESTIGATE
     download_url: str
     object_key: str
-    repository_id: str | None = None
+    version_id: uuid.UUID
     provider: str | None = None
-    version: str | None = None
 
 
 @router.post(
     "/",
-    summary="Trigger Codebase Onboarding",
+    summary="Trigger Codebase Connection",
     response_description="Return HTTP Status Code 200 (OK)",
 )
-def trigger_onboarding(
+def trigger_codebase_connection(
     current_token: M2MToken,
     session: CurrentSession,
-    trigger_body: OnboardingRequestBody,
-) -> Onboarding:
-    """
-    ## Trigger codebase onboarding
-    Returns:
-        Onboarding: Returns a JSON response with the health status
-    """
+    trigger_body: CodebaseConnectionRequest,
+) -> CodebaseConnection:
     archive_name = Path(trigger_body.object_key).name
     logging.info(
-        f"Triggering codebase onboarding for org = {trigger_body.org_id} and archive = {archive_name}, provider = {trigger_body.provider}"
+        f"Triggering codebase connection for org = {trigger_body.org_id} and archive = {archive_name}, provider = {trigger_body.provider}, version_id = {trigger_body.version_id}"
     )
-    onboard_and_inspect = modal.Function.lookup("inspector-v2", "onboard_and_inspect")
+    run_codebase_connection = modal.Function.lookup(
+        "inspector-v2", "run_codebase_connection"
+    )
 
-    call = onboard_and_inspect.spawn(
+    call = run_codebase_connection.spawn(
         trigger_body.download_url,
         archive_name,
         trigger_body.org_id,
-        trigger_body.creator_id,
         trigger_body.provider,
-        trigger_body.version,
-        trigger_body.repository_id,
+        trigger_body.version_id,
     )
 
-    return Onboarding(status="OK", call_id=call.object_id)
+    return CodebaseConnection(status="OK", call_id=call.object_id)
 
 
 class PdfOnboardingRequestBody(BaseModel):
@@ -74,7 +67,7 @@ class PdfOnboardingRequestBody(BaseModel):
 )
 def trigger_pdf_summary_processing(
     current_token: M2MToken, session: CurrentSession, body: PdfOnboardingRequestBody
-) -> Onboarding:
+) -> CodebaseConnection:
     logging.info("Triggering pdf summary creation...")
     # archive_name = Path(trigger_body.object_key).name
     create_and_embed_pdf_summaries = modal.Function.lookup(
@@ -85,4 +78,4 @@ def trigger_pdf_summary_processing(
     )
     call = create_and_embed_pdf_summaries.spawn(body.node_id)
 
-    return Onboarding(status="OK", call_id=call.object_id)
+    return CodebaseConnection(status="OK", call_id=call.object_id)

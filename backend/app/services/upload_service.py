@@ -15,6 +15,7 @@ from database.models_v2_enums import (
     VersionStatus,
 )
 from fastapi import HTTPException
+from sqlalchemy.exc import IntegrityError
 
 from app.api.auth import UserToken
 from app.api.session import CurrentSession
@@ -27,7 +28,6 @@ from app.schemas.upload_schema import (
     UploadResponse,
 )
 from app.utils.aws_s3 import (
-    generate_get_presigned_url,
     generate_put_presigned_url,
     org_id_to_hash,
 )
@@ -38,7 +38,7 @@ class UploadService:
         self.session = session
         self.asset_repository = BaseRepository(session, PrimaryAsset)
 
-    def upload_codebase(
+    def create_codebase_and_upload_url(
         self, user: UserToken, request: UploadCodebaseRequest
     ) -> UploadResponse:
         logger.info(
@@ -46,40 +46,53 @@ class UploadService:
         )
 
         file_path = request.file_path
-        creator_id = user.user_id
         organization_id = user.organization_id
         codebase_name = os.path.splitext(os.path.basename(file_path))[0]
 
         try:
-            org_id_hash = org_id_to_hash(organization_id)
-            upload_key = f"analysis/{org_id_hash}/{os.path.basename(file_path)}"
-
-            logger.info(f"Upload URL generated for {upload_key}")
-            codebase_metadata = {
-                "unhashed_organization_id": organization_id,
-                "organization_id": org_id_hash,
-                "org_bucket": org_id_hash,
-                "org_name": user.organization_name,
-                "creator_id": creator_id,
-                "file_path": file_path,
-                "codebase_name": codebase_name,
-                "content_type": "codebase",
-                "provider": "manual",
-            }
-
-            upload_url = generate_put_presigned_url(
-                key=upload_key,
-                content_type="application/zip",
-                metadata=codebase_metadata,
+            with self.session.begin():
+                # We create the primary asset here with status == CONNECTING
+                # There is potential for this to get stuck in connecting state, if the upload fails (e.g. firewall issue)
+                # In that case, the user will need to delete the primary asset before reattempting the upload
+                # TODO: future optimization, check for CONNECTION_FAILED and delete the old primary asset
+                new_asset = PrimaryAsset(
+                    display_name=codebase_name,
+                    organization_id=organization_id,
+                    kind=PrimaryAssetKind.CODEBASE,
+                    repository_id=None,
+                )
+                self.session.add(new_asset)
+                new_version = Version(
+                    primary_asset_id=new_asset.id,
+                    display_name="Unversioned",
+                    status=VersionStatus.CONNECTING,
+                    previous_version_id=None,
+                )
+                self.session.add(new_version)
+        except IntegrityError:
+            logger.error(f"Asset with name {codebase_name} already exists")
+            raise HTTPException(
+                status_code=400, detail="Codebase with this name already exists"
             )
-            download_url = generate_get_presigned_url(
-                key=upload_key,
-            )
-        except Exception as e:
-            logger.error(f"Error uploading codebase: {e}")
-            raise HTTPException(status_code=500, detail="Error uploading codebase")
 
-        return UploadResponse(upload_url=upload_url, download_url=download_url)
+        org_id_hash = org_id_to_hash(organization_id)
+        upload_key = f"codebases/{org_id_hash}/{os.path.basename(file_path)}"
+
+        logger.info(f"Upload URL generated for {upload_key}")
+        codebase_metadata = {
+            "unhashed_organization_id": organization_id,
+            "org_name": user.organization_name,
+            "provider": "manual",
+            "version_id": str(new_version.id),
+        }
+
+        upload_url = generate_put_presigned_url(
+            key=upload_key,
+            content_type="application/zip",
+            metadata=codebase_metadata,
+        )
+
+        return UploadResponse(upload_url=upload_url)
 
     def upload_pdf(
         self, user: UserToken, request: UploadPDFRequest

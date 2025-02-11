@@ -426,7 +426,7 @@ def run_codebase_connection(
             version = session.get(Version, version_id)
             if version.status == VersionStatus.GENERATING:
                 print("Inspecting...")
-                inspect_db = modal.Function.lookup("inspector_v2", "inspect_db")
+                inspect_db = modal.Function.lookup("inspector-v2", "inspect_db")
                 inspect_db.remote(version_id)  # TODO: spawn?
                 print("Inspection complete")
             else:

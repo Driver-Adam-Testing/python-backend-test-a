@@ -46,11 +46,11 @@ def trigger_codebase_connection(
     )
 
     call = run_codebase_connection.spawn(
-        trigger_body.download_url,
-        archive_name,
-        trigger_body.org_id,
-        trigger_body.provider,
-        trigger_body.version_id,
+        presigned_url=trigger_body.download_url,
+        archive_name=archive_name,
+        org_id=trigger_body.org_id,
+        version_id=trigger_body.version_id,
+        provider=trigger_body.provider,
     )
 
     return CodebaseConnection(status="OK", call_id=call.object_id)

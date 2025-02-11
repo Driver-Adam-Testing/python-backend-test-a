@@ -53,6 +53,8 @@ def handle_github_events(
     from database.db import (
         engine,  # We defer the import since we'll have the secrets set here
     )
+
+    # primary assets
     from database.models_v2 import PrimaryAsset
     from sqlalchemy.orm import selectinload
     from sqlmodel import Session, select

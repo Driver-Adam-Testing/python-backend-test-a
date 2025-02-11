@@ -24,8 +24,8 @@ class PrimaryAsset(SQLModel, table=True):  # type: ignore
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     display_name: str
     repository_id: str | None
-    organization_id: str
-    kind: PrimaryAssetKind
+    organization_id: str = Field(index=True)
+    kind: PrimaryAssetKind = Field(index=True)
     created_at: None | datetime = Field(
         sa_column=Column(
             DateTime(timezone=True), server_default=func.now(), nullable=False

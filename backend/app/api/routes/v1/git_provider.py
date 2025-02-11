@@ -227,7 +227,9 @@ def github_callback(
     secret_key = format_secret_key(org_id, user_id, "github")
     token_data = exchange_code_for_token(code)
     secret_value = json.dumps(token_data)
-    write_secret(secret_key, secret_value)
+    write_secret(
+        secret_key, secret_value
+    )  # TODO make sure these are unused and stop saving them to avoid confusion.
 
     existing_installation = session.exec(
         select(GithubAppInstallation).where(
@@ -245,6 +247,11 @@ def github_callback(
         )
         session.add(gh_app_install)
         session.commit()
+
+        connect_repos = modal.Function.lookup(
+            "inspector-v2", "connect_repos_for_installation"
+        )
+        connect_repos.spawn(installation_id)
 
     content = "<html><body><script>window.close();</script></body></html>"
     return Response(content=content, media_type="text/html")
@@ -350,66 +357,19 @@ def verify_github_signature(
         raise e
 
 
-def handle_installation_create_event(
-    session: CurrentSession, body: dict
-) -> JSONResponse:
-    installation_id = str(body["installation"]["id"])
-    gh_app_install = GithubAppInstallationsRepository(session).list_by_installation_id(
-        installation_id
-    )[0]
-    if not gh_app_install:
-        logger.warning(
-            "Installation ID not found in the database; need a row for this app install"
-        )
-        return JSONResponse(
-            status_code=status.HTTP_202_ACCEPTED, content={"message": ""}
-        )
-
-    repositories = body["repositories"]
-    repos_added = []
-    repos_deleted = []
-    repos_pushed = []
-    for repo in repositories:
-        repos_added.append(
-            {
-                "id": repo["id"],
-                "name": repo["name"],
-                "full_name": repo["full_name"],
-            }
-        )
-
-    handle_github_events = modal.Function.lookup("inspector-v2", "handle_github_events")
-    handle_github_events.spawn(
-        installation_id,
-        gh_app_install.organization_id,
-        repos_added,
-        repos_deleted,
-        repos_pushed,
-    )
-
-    logger.info(
-        f"Installation create event processed for {installation_id}. Connecting repos."
-    )
-    return JSONResponse(
-        status_code=status.HTTP_202_ACCEPTED,
-        content={"message": ""},
-    )
-
-
 def handle_installation_delete_event(
     session: CurrentSession, body: dict
 ) -> JSONResponse:
     installation_id = str(body["installation"]["id"])
-    gh_app_install = GithubAppInstallationsRepository(session).list_by_installation_id(
-        installation_id
-    )[0]
-    if not gh_app_install:
-        logger.warning(
-            "Installation ID not found in the database; need a row for this app install"
+    installation_record = session.exec(
+        select(GithubAppInstallation).where(
+            GithubAppInstallation.github_app_installation_id == installation_id
         )
-        return JSONResponse(
-            status_code=status.HTTP_202_ACCEPTED, content={"message": ""}
-        )
+    ).first()
+    org_id = installation_record.organization_id
+    session.delete(installation_record)
+    session.commit()
+    installation_id = None
 
     repositories = body["repositories"]
     repos_added = []
@@ -427,7 +387,7 @@ def handle_installation_delete_event(
     handle_github_events = modal.Function.lookup("inspector-v2", "handle_github_events")
     handle_github_events.spawn(
         installation_id,
-        gh_app_install.organization_id,
+        org_id,
         repos_added,
         repos_deleted,
         repos_pushed,
@@ -651,17 +611,8 @@ def webhook(
     elif github_event == "ping":
         return handle_ping_event()
     elif github_event == "installation":
-        if body["action"] == "created":
-            return handle_installation_create_event(session, body)
-        elif body["action"] == "deleted":
-            installation_record = session.exec(
-                select(GithubAppInstallation).where(
-                    GithubAppInstallation.github_app_installation_id
-                    == str(body["installation"]["id"])
-                )
-            ).first()
-            session.delete(installation_record)
-            session.commit()
+        # TODO handle installation suspension;
+        if body["action"] == "deleted":
             return handle_installation_delete_event(session, body)
         return JSONResponse(
             status_code=status.HTTP_202_ACCEPTED, content={"message": ""}

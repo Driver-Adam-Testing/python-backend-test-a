@@ -44,7 +44,7 @@ image = (
     concurrency_limit=5,
 )
 def handle_github_events(
-    installation_id: str,
+    installation_id: str | None,
     org_id: str,
     repos_added: list[dict],
     repos_deleted: list[dict],
@@ -54,8 +54,9 @@ def handle_github_events(
         engine,  # We defer the import since we'll have the secrets set here
     )
 
-    # TODO Import above is a dummy import to avoid the issue with importing
-    # primary assets
+    # TODO Import is a dummy import to avoid the issue with importing
+    # primary assets from models_v2. This should be fixed by consolidating into a single models.py file
+    from database.models_v1 import GithubAppInstallation  # noqa: F401
     from database.models_v2 import PrimaryAsset
     from sqlalchemy.orm import selectinload
     from sqlmodel import Session, select
@@ -65,65 +66,65 @@ def handle_github_events(
         fetch_app_access_token,
     )
 
-    try:
-        token = fetch_app_access_token(
-            installation_id=installation_id,
+    if installation_id is None and (repos_added or repos_pushed):
+        raise ValueError(
+            "Installation ID is required for added or pushed repos. It only can be null for delete-only events"
         )
-    except AccessTokenError as ex:
-        print("Github installation not found. Assuming uninstalled.")
-        if len(repos_added) > 0 or len(repos_pushed) > 0:
-            raise ex
-        elif len(repos_deleted) > 0:
-            print("Still deleting assets from db, where needed")
-            # in this case, we want to delete the repos from the db
+
+    if repos_deleted:
+        with Session(engine) as session, session.begin():
+            for repo in repos_deleted:
+                primary_asset = session.exec(
+                    select(PrimaryAsset)
+                    .where(
+                        PrimaryAsset.repository_id == str(repo["id"]),
+                        PrimaryAsset.organization_id == org_id,
+                    )
+                    .options(selectinload(PrimaryAsset.versions))
+                ).first()
+
+                if not primary_asset:
+                    print(f"Primary asset for repo {repo['name']} not found.")
+                    continue
+
+                if all(
+                    v.status
+                    in {
+                        VersionStatus.CONNECTED,
+                        VersionStatus.CONNECTING,
+                        VersionStatus.CONNECTION_FAILED,
+                    }
+                    for v in primary_asset.versions
+                ):
+                    print(
+                        f"Deleting primary asset {primary_asset.id} for repo {repo['name']}"
+                    )
+                    session.delete(primary_asset)
+                else:
+                    print(
+                        f"Primary asset {primary_asset.id} for repo {repo['name']} has versions with tech docs. Not deleting."
+                    )
+
+    if not repos_added and not repos_pushed:
+        return
+
+    # Fetch token for additions/updates
+    try:
+        token = fetch_app_access_token(installation_id=installation_id)
+    except AccessTokenError:
+        print(f"GitHub installation {installation_id} not found.")
+        raise
 
     errant_repos = []
     with ThreadPoolExecutor(max_workers=10) as executor:
         futures = [
-            executor.submit(
-                download_and_upload_repo,
-                org_id,
-                repo,
-                token,
-            )
+            executor.submit(download_and_upload_repo, org_id, repo, token)
             for repo in repos_added
         ]
         wait(futures)
         for f in futures:
-            if f.result() is not None:
+            if f.result():
                 errant_repos.append(f.result())
-
-    with Session(engine) as session, session.begin():
-        for repo in repos_deleted:
-            primary_asset = session.exec(
-                select(PrimaryAsset)
-                .where(
-                    PrimaryAsset.repository_id == str(repo["id"]),
-                    PrimaryAsset.organization_id == org_id,
-                )
-                .options(
-                    selectinload(PrimaryAsset.versions),
-                )
-            ).first()
-            if all(
-                v.status
-                in [
-                    VersionStatus.CONNECTED,
-                    VersionStatus.CONNECTING,
-                    VersionStatus.CONNECTION_FAILED,
-                ]
-                for v in primary_asset.versions
-            ):
-                print(
-                    f"Deleting primary asset {primary_asset.id} for repo {repo['name']}"
-                )
-                session.delete(primary_asset)
-            else:
-                print(
-                    f"Primary asset {primary_asset.id} for repo {repo['name']} has versions with tech docs. Not deleting."
-                )
-            # else all other statuses indicate tech docs have been generated, or attempted to be generated,
-            # so we should not delete the asset
 
     for repo in repos_pushed:
         repo_name_or_none = download_and_upload_repo(
@@ -134,6 +135,80 @@ def handle_github_events(
         )
         if repo_name_or_none is not None:
             errant_repos.append(repo_name_or_none)
+
+
+@app.function(
+    image=image,
+    secrets=[
+        modal.Secret.from_name("aws-inspector-s3"),
+        modal.Secret.from_name("db"),
+        modal.Secret.from_name("github-app"),
+    ],
+    proxy=modal.Proxy.from_name("pg-proxy")
+    if os.environ["MODAL_ENVIRONMENT"] != "staging"
+    else None,
+    timeout=60 * 60,
+    region="us-east",
+    concurrency_limit=1,
+)
+def connect_repos_for_installation(github_installation_id: str) -> None:
+    import requests
+    from database.db import engine
+    from database.models_v1 import GithubAppInstallation
+    from sqlmodel import Session, select
+
+    from onboarding.gh_ops import fetch_app_access_token
+
+    with Session(engine) as session:
+        install = session.exec(
+            select(GithubAppInstallation).where(
+                GithubAppInstallation.github_app_installation_id
+                == github_installation_id
+            )
+        ).one()
+        print(f"Adding repos for installation {install.github_app_installation_id}")
+
+        gh_install_id = install.github_app_installation_id
+        try:
+            token = fetch_app_access_token(gh_install_id)
+        except AccessTokenError:
+            print("Github installation not found. ")
+            raise
+
+        headers = {
+            "Authorization": f"token {token}",
+            "Accept": "application/vnd.github.v3+json",
+        }
+        response = requests.get(
+            "https://api.github.com/installation/repositories", headers=headers
+        )
+        response.raise_for_status()
+
+        repos = response.json()["repositories"]
+
+        repos_added = []
+        for repo in repos:
+            repos_added.append(
+                {
+                    "id": repo["id"],
+                    "name": repo["name"],
+                    "full_name": repo["full_name"],
+                }
+            )
+
+        handle_github_events.spawn(
+            gh_install_id,
+            install.organization_id,
+            repos_added,
+            [],
+            [],
+        )
+
+        print(
+            f"Spawned processing for installation {gh_install_id}. Connecting ({len(repos_added)}) repos."
+        )
+        for repo in repos:
+            print(f"=> Repo: {repo['full_name']}")
 
 
 @app.function(

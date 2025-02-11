@@ -121,6 +121,7 @@ class SearchTool(ToolStrict):
             content_kinds=self.derived_content_types,
             organization_id=agent.scope.organization_id,
             node_ids=node_ids,
+            limit=15,
         )
         results = search_content_without_session(search_input)
 

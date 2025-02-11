@@ -197,7 +197,7 @@ def exec_codebase_generation(
             )
             llm_session.commit_event_now(usage_metric)
 
-    inspect_db = modal.Function.lookup("inspector_v2", "inspect_db")
+    inspect_db = modal.Function.lookup("inspector-v2", "inspect_db")
     for version in result:
         inspect_db.spawn(version.id)
     return CodebaseGenerationResponse(call_id="1234")

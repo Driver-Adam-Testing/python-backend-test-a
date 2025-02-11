@@ -378,7 +378,7 @@ def handle_installation_create_event(
             }
         )
 
-    handle_github_events = modal.Function.lookup("inspector_v2", "handle_github_events")
+    handle_github_events = modal.Function.lookup("inspector-v2", "handle_github_events")
     handle_github_events.spawn(
         installation_id,
         gh_app_install.organization_id,
@@ -424,7 +424,7 @@ def handle_installation_delete_event(
             }
         )
 
-    handle_github_events = modal.Function.lookup("inspector_v2", "handle_github_events")
+    handle_github_events = modal.Function.lookup("inspector-v2", "handle_github_events")
     handle_github_events.spawn(
         installation_id,
         gh_app_install.organization_id,
@@ -483,7 +483,7 @@ def handle_installation_modified_event(
             }
         )
 
-    handle_github_events = modal.Function.lookup("inspector_v2", "handle_github_events")
+    handle_github_events = modal.Function.lookup("inspector-v2", "handle_github_events")
     handle_github_events.spawn(
         installation_id,
         gh_app_install.organization_id,
@@ -593,7 +593,7 @@ def handle_push_event(session: CurrentSession, body: dict) -> JSONResponse:
             "commit": commit_hash,
         }
     ]
-    handle_github_events = modal.Function.lookup("inspector_v2", "handle_github_events")
+    handle_github_events = modal.Function.lookup("inspector-v2", "handle_github_events")
     handle_github_events.spawn(
         installation_id,
         gh_app_install.organization_id,

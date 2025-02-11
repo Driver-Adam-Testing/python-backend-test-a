@@ -2,7 +2,6 @@ import hashlib
 import os
 import pprint
 import uuid
-from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 from uuid import UUID
@@ -26,6 +25,8 @@ inspection_image = (
             "pydantic>=2.8.2",
             "tiktoken",
             "/shared_pkg",
+            "tree-sitter>=0.24.0",
+            "tree-sitter-c>=0.23.4",
             "gitignore-parser",
         ]
     )
@@ -62,13 +63,6 @@ class InspectionMode(Enum):
             raise ValueError(
                 f"Invalid mode '{mode_str}'. Must be one of: {valid_modes}."
             )
-
-
-# Unified structure for file paths and source content IDs
-@dataclass
-class FileInfo:
-    path: Path
-    source_content_id: None | uuid.UUID = None
 
 
 async def get_result_loading_config(
@@ -1072,4 +1066,5 @@ onboarding_and_inspect_image = (
     .pip_install("requests")
     .pip_install("boto3")
     .pip_install("gitignore-parser")
+    .pip_install("tree-sitter>=0.24.0", "tree-sitter-c>=0.23.4")
 )

@@ -315,11 +315,10 @@ class ChunkAndEmbedding(SQLModel, table=True):  # type: ignore
 
 class InspectorRun(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    inspection_version_id: UUID | None
     version_id: UUID = Field(
         foreign_key="v2_version.id",
-        nullable=True,  # TODO make non-nullable after migration
-        ondelete="SET NULL",
+        nullable=False,
+        ondelete="CASCADE",
     )
     created_at: None | datetime = Field(
         sa_column=Column(
@@ -335,6 +334,7 @@ class InspectorRun(SQLModel, table=True):
             nullable=False,
         ),
     )
+    version: "Version" = Relationship(back_populates="inspector_runs")
 
 
 class UsageSessionStatus(str, enum.Enum):

@@ -96,6 +96,7 @@ class PipelineInput(PromptWithContext):
     )
     # TODO: Make this Non-nullable?
     scope: DataScope | None = None
+    response_format: type
 
 
 class PipelineStepResponse(BaseModel):

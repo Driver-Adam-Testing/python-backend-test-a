@@ -41,7 +41,7 @@ def execute_sequence(input: PipelineInput) -> PipelineResponse:
     if input.scope:
         sequence_prompt.add_to_context(
             {
-                "searchable_paths_and_directories_with_version_prefix": f"These paths and their children can be the path or path-prefix of any searches: \n\n{input.scope.to_human_readable_summary()}. \n do not include the searchable paths in the output."
+                "searchable_paths_and_directories_with_version_prefix": f"These paths and their children can be the path or path-prefix of any searches: \n\n\n{input.scope.to_human_readable_summary()}\n\n\n These paths are only for tool context, and are not to be included in the output."
             }
         )
 
@@ -61,6 +61,12 @@ def execute_sequence(input: PipelineInput) -> PipelineResponse:
         input.scope.organization_id, input.scope.user_id, session_meta
     ) as llm_usage_session:
         for step in input.steps:
+            if (
+                step.step_type == PipelineStepType.COPY_EDITOR
+                or step == input.steps[-1]
+            ):
+                step.response_format = input.response_format
+
             response: PipelineStepResponse = methods[step.step_type](
                 step.into_pipeline_step(
                     sequence_prompt=sequence_prompt,

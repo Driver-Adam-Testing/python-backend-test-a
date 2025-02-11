@@ -1,8 +1,8 @@
 from pathlib import Path
 from typing import Self
 
-from utils.codemap_ctags import extract_symbols_w_ctags
 from utils.models import ChatOpenAI
+from utils.treesitter_driver import CDriverTree
 
 from .ir_common import (
     DataStructureData,
@@ -14,14 +14,9 @@ from .ir_common import (
 from .symbol_common import (
     RawSymbolCollection,
     RawSymbolData,
-    SymbolKind,
     code_requires_multi_prompt,
-    create_raw_symbol_via_ctags,
 )
 
-C_DATA_STRUCTURES = {"enum", "union", "struct", "typedef"}
-C_FUNCTIONS = {"function", "prototype"}
-C_MACROS = {"macro"}
 C_VARIABLES = {"variable", "externvar"}
 
 
@@ -165,6 +160,41 @@ Variable to document:
 VARIABLES_NONE_CONTENT = "\n---\nNo global variables defined in this file."
 
 
+class CIncludeRawSymbolCollection(RawSymbolCollection):
+    data: dict[str, RawSymbolData]
+
+    @classmethod
+    def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
+        driver_tree = CDriverTree.from_code(code)
+        is_large_file = code_requires_multi_prompt(code)
+
+        import_dict = {}
+        for ts_symbol in driver_tree.extract_imports():
+            raw_symbol_data = RawSymbolData.from_tree_sitter_raw_symbol(
+                ts_symbol=ts_symbol,
+                path=root_rel_path,
+                scope=None,
+                scope_relation=None,
+                children=[],
+                reference_code=None,
+                delimiter=None,
+                is_large_file=is_large_file,
+                is_overloaded=False,
+                use_padding=False,
+                code=code,
+            )
+            import_dict[ts_symbol.name] = raw_symbol_data
+        output = None if len(import_dict) == 0 else cls(data=import_dict)
+        return output
+
+    @classmethod
+    def from_llm(cls, code: str, root_rel_path: str) -> Self:
+        raise NotImplementedError("Static analysis should be used for c imports")
+
+    def to_dict(self) -> dict[str, RawSymbolData]:
+        return self.data
+
+
 class CDataStructureData(DataStructureData):
     @classmethod
     def system_prompt(cls) -> str:
@@ -257,26 +287,26 @@ class CDataStructureRawSymbolCollection(RawSymbolCollection):
 
     @classmethod
     def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
-        is_multi_prompt = code_requires_multi_prompt(code)
-
-        symbols = extract_symbols_w_ctags(
-            root_rel_path=root_rel_path,
-            file_content=code,
-        )
-
+        driver_tree = CDriverTree.from_code(code)
         data_structure_raw_symbol_data = {}
-        for s in symbols:
-            if s["kind"] in C_DATA_STRUCTURES and not s["name"].startswith("__anon"):
-                data_structure_raw_symbol_data[s["name"]] = create_raw_symbol_via_ctags(
-                    ctags_symbol=s,
-                    root_rel_path=root_rel_path,
-                    code=code,
-                    symbol_kind=SymbolKind.DATA_STRUCTURE,
-                    scope_relation=None,
-                    delimiter=None,
-                    is_multi_prompt=is_multi_prompt,
-                )
+        is_large_file = code_requires_multi_prompt(code)
 
+        for ts_symbol in driver_tree.extract_data_structures():
+            if ts_symbol.name is not None:
+                raw_symbol_data = RawSymbolData.from_tree_sitter_raw_symbol(
+                    ts_symbol=ts_symbol,
+                    path=root_rel_path,
+                    scope=None,
+                    scope_relation=None,
+                    children=[],
+                    reference_code=None,
+                    delimiter=None,
+                    is_large_file=is_large_file,
+                    is_overloaded=False,
+                    use_padding=False,
+                    code=code,
+                )
+                data_structure_raw_symbol_data[ts_symbol.name] = raw_symbol_data
         output = (
             None
             if len(data_structure_raw_symbol_data) == 0
@@ -299,25 +329,26 @@ class CFunctionRawSymbolCollection(RawSymbolCollection):
 
     @classmethod
     def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
-        is_multi_prompt = code_requires_multi_prompt(code)
-
-        symbols = extract_symbols_w_ctags(
-            root_rel_path=root_rel_path,
-            file_content=code,
-        )
-
+        driver_tree = CDriverTree.from_code(code)
         function_raw_symbol_data = {}
-        for s in symbols:
-            if s["kind"] in C_FUNCTIONS and not s["name"].startswith("__anon"):
-                function_raw_symbol_data[s["name"]] = create_raw_symbol_via_ctags(
-                    ctags_symbol=s,
-                    root_rel_path=root_rel_path,
-                    code=code,
-                    symbol_kind=SymbolKind.CALLABLE,
+        is_large_file = code_requires_multi_prompt(code)
+
+        for ts_symbol in driver_tree.extract_functions():
+            if ts_symbol.name is not None:
+                raw_symbol_data = RawSymbolData.from_tree_sitter_raw_symbol(
+                    ts_symbol=ts_symbol,
+                    path=root_rel_path,
+                    scope=None,
                     scope_relation=None,
+                    children=[],
+                    reference_code=None,
                     delimiter=None,
-                    is_multi_prompt=is_multi_prompt,
+                    is_large_file=is_large_file,
+                    is_overloaded=False,
+                    use_padding=False,
+                    code=code,
                 )
+                function_raw_symbol_data[ts_symbol.name] = raw_symbol_data
 
         output = (
             None
@@ -328,7 +359,7 @@ class CFunctionRawSymbolCollection(RawSymbolCollection):
 
     @classmethod
     def from_llm(cls, code: str, root_rel_path: str) -> Self:
-        pass
+        raise NotImplementedError("Static analysis should be used for C functions")
 
     def to_dict(self) -> dict[str, RawSymbolData]:
         return self.data
@@ -339,25 +370,26 @@ class CVariableRawSymbolCollection(RawSymbolCollection):
 
     @classmethod
     def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
-        is_multi_prompt = code_requires_multi_prompt(code)
-
-        symbols = extract_symbols_w_ctags(
-            root_rel_path=root_rel_path,
-            file_content=code,
-        )
-
+        driver_tree = CDriverTree.from_code(code)
         variable_raw_symbol_data = {}
-        for s in symbols:
-            if s["kind"] in C_VARIABLES:
-                variable_raw_symbol_data[s["name"]] = create_raw_symbol_via_ctags(
-                    ctags_symbol=s,
-                    root_rel_path=root_rel_path,
-                    code=code,
-                    symbol_kind=SymbolKind.VARIABLE,
+        is_large_file = code_requires_multi_prompt(code)
+
+        for ts_symbol in driver_tree.extract_variables():
+            if ts_symbol.name is not None:
+                raw_symbol_data = RawSymbolData.from_tree_sitter_raw_symbol(
+                    ts_symbol=ts_symbol,
+                    path=root_rel_path,
+                    scope=None,
                     scope_relation=None,
+                    children=[],
+                    reference_code=None,
                     delimiter=None,
-                    is_multi_prompt=is_multi_prompt,
+                    is_large_file=is_large_file,
+                    is_overloaded=False,
+                    use_padding=False,
+                    code=code,
                 )
+                variable_raw_symbol_data[ts_symbol.name] = raw_symbol_data
 
         output = (
             None
@@ -368,7 +400,7 @@ class CVariableRawSymbolCollection(RawSymbolCollection):
 
     @classmethod
     def from_llm(cls, code: str, root_rel_path: str) -> Self:
-        pass
+        raise NotImplementedError("Static analysis should be used for C variables")
 
     def to_dict(self) -> dict[str, RawSymbolData]:
         return self.data

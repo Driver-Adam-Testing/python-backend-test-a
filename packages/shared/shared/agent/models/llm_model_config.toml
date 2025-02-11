@@ -3,42 +3,63 @@ model_id = "gpt-4o-2024-08-06"
 provider = "openai"
 context_window_size = 128000
 max_output_tokens = 16384
+system_prompts = "many"
+
+[models.o1]
+model_id = "o1-2024-12-17"
+provider = "openai"
+context_window_size = 200000
+max_output_tokens = 100000
+system_prompts = "none"
+
+[models.o1_mini]
+model_id = "o1-mini-2024-09-12"
+provider = "openai"
+context_window_size = 128000
+max_output_tokens = 65536
+system_prompts = "none"
 
 [models.gpt_4o]
 model_id = "gpt-4o-2024-08-06"
 provider = "openai"
 context_window_size = 128000
 max_output_tokens = 16384
+system_prompts = "many"
 
 [models.gpt_4o_mini]
 model_id = "gpt-4o-mini"
 provider = "openai"
 context_window_size = 128000
 max_output_tokens = 4096
+system_prompts = "many"
 
 [models.gpt_3_5_turbo]
 model_id = "gpt-3.5-turbo"
 provider = "openai"
 context_window_size = 16000
 max_output_tokens = 4096
+system_prompts = "many"
 
 [models.claude_3_sonnet]
 model_id = "claude-3-5-sonnet-20240620"
 provider = "anthropic"
 context_window_size = 200000
 max_output_tokens = 4096
+system_prompts = "one"
 
 [models.claude_3_5_haiku]
 model_id = "claude-3-5-haiku"
 provider = "anthropic"
 context_window_size = 200000
 max_output_tokens = 4096
+system_prompts = "one"
 
 [models.claude_3_5_opus]
 model_id = "claude-3-5-opus"
 provider = "anthropic"
 context_window_size = 200000
 max_output_tokens = 4096
+system_prompts = "one"
 
 [models.gemini]
 model_id = "gemini-1"

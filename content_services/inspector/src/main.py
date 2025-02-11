@@ -3,7 +3,6 @@ import os
 import pprint
 import uuid
 from contextlib import suppress
-from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 from uuid import UUID
@@ -60,13 +59,6 @@ class InspectionMode(Enum):
             raise ValueError(
                 f"Invalid mode '{mode_str}'. Must be one of: {valid_modes}."
             )
-
-
-# Unified structure for file paths and source content IDs
-@dataclass
-class FileInfo:
-    path: Path
-    source_content_id: None | uuid.UUID = None
 
 
 async def get_result_loading_config(

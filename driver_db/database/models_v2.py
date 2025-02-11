@@ -115,6 +115,13 @@ class Version(SQLModel, table=True):  # type: ignore
             "viewonly": True,
         }
     )
+    inspector_runs: list["InspectorRun"] = Relationship(
+        back_populates="version",
+        passive_deletes="all",
+        sa_relationship_kwargs={
+            "order_by": "desc(InspectorRun.updated_at)",
+        },
+    )
 
 
 class Node(SQLModel, table=True):  # type: ignore

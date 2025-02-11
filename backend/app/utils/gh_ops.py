@@ -192,6 +192,20 @@ def fetch_default_branch_and_commit(org_name: str, repo: str, access_token: str)
     return branch_data["commit"]["sha"]
 
 
+def fetch_commit_hash(
+    org_name: str, repo: str, branch_name: str, access_token: str
+) -> str:
+    headers = {"Authorization": f"token {access_token}"}
+    repo_url = get_github_repo_url(org_name, repo)
+    branch_url = f"{repo_url}/branches/{branch_name}"
+    branch_response = requests.get(branch_url, headers=headers)
+    branch_data = branch_response.json()
+    logger.info(
+        f"Branch data retrieved from github API (status code {branch_response.status_code}): {branch_data}"
+    )
+    return branch_data["commit"]["sha"]
+
+
 def generate_codebase_metadata(
     org_id: str,
     org_name: str,

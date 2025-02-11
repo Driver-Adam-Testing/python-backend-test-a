@@ -2,6 +2,7 @@ import hashlib
 from uuid import UUID
 
 import boto3
+from database.models_v1 import InspectorRun
 from database.models_v2 import PrimaryAsset, PrimaryAssetTag, Version
 from fastapi import Body, HTTPException, Path, Request
 from sqlalchemy.orm import selectinload
@@ -115,6 +116,12 @@ def delete_primary_asset(
     if not asset:
         raise HTTPException(status_code=404, detail="Primary asset not found")
 
+    run_ids = session.exec(
+        select(InspectorRun.id)
+        .join(Version)
+        .where(Version.primary_asset_id == asset.id)
+    ).all()
+
     org_id_hash = hashlib.sha256(user.organization_id.encode()).hexdigest()[:63]
     prefix = f"{primary_asset_id}/"
 
@@ -126,8 +133,13 @@ def delete_primary_asset(
     )
 
     bucket = s3.Bucket(org_id_hash)
+    inspector_bucket = s3.Bucket(settings.INSPECTOR_BUCKET_NAME)
 
     bucket.objects.filter(Prefix=prefix).delete()
+
+    for run_id in run_ids:
+        inspector_bucket.objects.filter(Prefix=str(run_id)).delete()
+        # TODO: instead of storing run data in a separate bucket, place in the org bucket under the primary asset
 
     session.delete(asset)
     session.commit()

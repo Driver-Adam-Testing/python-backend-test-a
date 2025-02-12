@@ -1,3 +1,4 @@
+import uuid
 from typing import Literal
 
 from pydantic import BaseModel, computed_field
@@ -9,7 +10,7 @@ class CodebaseAnalysisRequest(BaseModel):
 
 
 class CodebaseGenerationRequest(BaseModel):
-    version_ids: list[str]
+    version_ids: list[uuid.UUID]
 
 
 class CodebaseGenerationResponse(BaseModel):

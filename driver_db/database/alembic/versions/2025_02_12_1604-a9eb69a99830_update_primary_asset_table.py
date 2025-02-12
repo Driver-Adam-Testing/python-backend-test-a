@@ -1,7 +1,7 @@
 """update primary asset table
 
 Revision ID: a9eb69a99830
-Revises: 64c92e2cfdb4
+Revises: e636d17e65dd
 Create Date: 2025-02-12 16:04:59.671260
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "a9eb69a99830"
-down_revision = "64c92e2cfdb4"
+down_revision = "e636d17e65dd"
 branch_labels = None
 depends_on = None
 

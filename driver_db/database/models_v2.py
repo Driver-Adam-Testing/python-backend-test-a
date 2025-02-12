@@ -24,6 +24,14 @@ class PrimaryAsset(SQLModel, table=True):  # type: ignore
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     display_name: str
     repository_id: str | None
+    # TODO unify github and git provider install tables
+    # TODO Populate the github install ids here in the migration
+    installation_id: UUID | None = Field(
+        foreign_key="git_provider_app_installations.id",
+        nullable=True,
+        ondelete="SET NULL",
+        default=None,
+    )
     organization_id: str
     kind: PrimaryAssetKind
     created_at: None | datetime = Field(
@@ -115,7 +123,7 @@ class Version(SQLModel, table=True):  # type: ignore
             "viewonly": True,
         }
     )
-    inspector_runs: list["InspectorRun"] = Relationship(
+    inspector_runs: list["InspectorRun"] = Relationship(  # noqa: F821
         back_populates="version",
         passive_deletes="all",
         sa_relationship_kwargs={

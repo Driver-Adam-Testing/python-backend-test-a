@@ -12,7 +12,6 @@ from database.models_v2_enums import (
     NodeKind,
     VersionStatus,
 )
-
 from onboarding.gh_ops import AccessTokenError
 
 image = (
@@ -58,13 +57,12 @@ def handle_github_events(
     # primary assets from models_v2. This should be fixed by consolidating into a single models.py file
     from database.models_v1 import GithubAppInstallation  # noqa: F401
     from database.models_v2 import PrimaryAsset
-    from sqlalchemy.orm import selectinload
-    from sqlmodel import Session, select
-
     from onboarding.gh_ops import (
         download_and_upload_repo,
         fetch_app_access_token,
     )
+    from sqlalchemy.orm import selectinload
+    from sqlmodel import Session, select
 
     if installation_id is None and (repos_added or repos_pushed):
         raise ValueError(
@@ -155,9 +153,8 @@ def connect_repos_for_installation(github_installation_id: str) -> None:
     import requests
     from database.db import engine
     from database.models_v1 import GithubAppInstallation
-    from sqlmodel import Session, select
-
     from onboarding.gh_ops import fetch_app_access_token
+    from sqlmodel import Session, select
 
     with Session(engine) as session:
         install = session.exec(
@@ -233,9 +230,8 @@ def connect_unconnected_repos() -> None:
     import requests
     from database.db import engine
     from database.models_v1 import GithubAppInstallation
-    from sqlmodel import Session, select
-
     from onboarding.gh_ops import fetch_app_access_token
+    from sqlmodel import Session, select
 
     with Session(engine) as session:
         gh_app_installs = session.exec(select(GithubAppInstallation)).all()
@@ -322,9 +318,6 @@ def run_codebase_connection(
         Version,
     )
     from database.models_v2_enums import VersionStatus
-    from sqlalchemy.exc import IntegrityError
-    from sqlmodel import Session, select, update
-
     from onboarding.onboard_utils import (
         create_bucket_if_dne,
         download_file_from_presigned_url,
@@ -333,6 +326,9 @@ def run_codebase_connection(
         run_file_stats_and_reencode,
         unpack_archive,
     )
+    from shared.usage.utils import bytes_to_sloc
+    from sqlalchemy.exc import IntegrityError
+    from sqlmodel import Session, select, update
 
     download_dest = Path(archive_name)
     download_file_from_presigned_url(presigned_url, download_dest)
@@ -345,6 +341,8 @@ def run_codebase_connection(
         override_codebase_name = re.sub(
             r"-[a-fA-F0-9]{40}-[a-fA-F0-9]{40}", "", archive_name
         ).rsplit(".", 1)[0]
+    else:
+        override_codebase_name = None
 
     with tempfile.TemporaryDirectory() as temp_dir:
         # Override so unpack from github doesn't have hash in name.
@@ -414,10 +412,16 @@ def run_codebase_connection(
                 directory_stats = {
                     "analyzable_bytes": 0,
                     "analyzable_files": 0,
+                    "analyzable_sloc": 0,
                     "total_bytes": 0,
                     "total_files": 0,
+                    "total_sloc": 0,
                     "analyzable_files_by_type": {},
                     "analyzable_bytes_by_type": {},
+                    "analyzable_sloc_by_type": {},
+                    "analyzable_files_by_extension": {},
+                    "analyzable_bytes_by_extension": {},
+                    "analyzable_sloc_by_extension": {},
                 }
                 is_ignored = (
                     driverignore(directory) if driverignore is not None else False
@@ -436,6 +440,7 @@ def run_codebase_connection(
                                 and not file_stats.get("is_ignored", False)
                             ):
                                 file_type = file_stats.get("language")
+
                                 if file_type is None:
                                     file_type = "Other"
                                 if (
@@ -454,10 +459,48 @@ def run_codebase_connection(
                                 directory_stats["analyzable_bytes_by_type"][
                                     file_type
                                 ] += file_stats["size"]
+
+                                file_extension = file_path.suffix
+                                if (
+                                    file_extension
+                                    not in directory_stats[
+                                        "analyzable_files_by_extension"
+                                    ]
+                                ):
+                                    directory_stats["analyzable_files_by_extension"][
+                                        file_extension
+                                    ] = 0
+                                    directory_stats["analyzable_bytes_by_extension"][
+                                        file_extension
+                                    ] = 0
+                                directory_stats["analyzable_files_by_extension"][
+                                    file_extension
+                                ] += 1
+                                directory_stats["analyzable_bytes_by_extension"][
+                                    file_extension
+                                ] += file_stats["size"]
                                 directory_stats["analyzable_bytes"] += file_stats[
                                     "size"
                                 ]
                                 directory_stats["analyzable_files"] += 1
+                    directory_stats["analyzable_sloc"] = bytes_to_sloc(
+                        directory_stats["analyzable_bytes"]
+                    )
+                    directory_stats["total_sloc"] = bytes_to_sloc(
+                        directory_stats["total_bytes"]
+                    )
+                    for type, bytes in directory_stats[
+                        "analyzable_bytes_by_type"
+                    ].items():
+                        directory_stats["analyzable_sloc_by_type"][type] = (
+                            bytes_to_sloc(bytes)
+                        )
+                    for ext, bytes in directory_stats[
+                        "analyzable_bytes_by_extension"
+                    ].items():
+                        directory_stats["analyzable_sloc_by_extension"][ext] = (
+                            bytes_to_sloc(bytes)
+                        )
                     dir_node = Node(
                         version_id=version_id,
                         relative_path=str(directory_path),

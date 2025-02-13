@@ -51,7 +51,7 @@ class OpenAiChatClient(LlmClient):
 
         completion_kwargs = {
             "model": self.config.model_id,
-            "messages": local_message_history.to_openai_messagelist_gpt(),
+            "messages": local_message_history.to_openai_strict(),
         }
 
         if tools:

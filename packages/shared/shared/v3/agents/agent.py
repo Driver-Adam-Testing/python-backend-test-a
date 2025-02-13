@@ -14,7 +14,7 @@ from shared.v3.messages.llm_message import (
 )
 from shared.v3.messages.llm_message_history import LlmMessageHistory
 from shared.v3.messages.llm_message_kind import MessageKind
-from shared.v3.static.messages.iteration_messages import (
+from shared.v3.static.messages.global_iteration_messages import (
     MESSAGE_MULTI_ITERATION_SYSTEM,
     get_iteration_message,
 )
@@ -29,8 +29,13 @@ class BaseAgent:
         config: LlmConfig,
         tools: list[type[LlmTool]] | None = None,
         response_type: type[LlmResponseType] | None = None,
+        message_history: LlmMessageHistory | None = None,
     ) -> None:
-        self.message_history = LlmMessageHistory(messages=[])
+        self.message_history = (
+            message_history
+            if message_history is not None
+            else LlmMessageHistory(messages=[])
+        )
         self.tools = tools if tools is not None else []
         self.client = LlmClient.from_config(config)
         self.datascope = datascope

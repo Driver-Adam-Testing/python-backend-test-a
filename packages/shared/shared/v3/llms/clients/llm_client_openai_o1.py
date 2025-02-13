@@ -61,7 +61,7 @@ class OpenAiO1SeriesClient(LlmClient):
 
         completion_kwargs = {
             "model": self.config.model_id,
-            "messages": local_message_history.to_openai_messagelist_user_type(),
+            "messages": local_message_history.to_openai_o1(),
         }
 
         response: ChatCompletionMessage = (

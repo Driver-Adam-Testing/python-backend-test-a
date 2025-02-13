@@ -5,7 +5,7 @@ from shared.v3.llms.clients.llm_client import LlmClient
 from shared.v3.llms.config.llm_config import LlmConfig
 from shared.v3.messages.llm_message_history import LlmMessageHistory
 from shared.v3.pipelines.interfaces.pipeline_request import PipelineExecutionRequest
-from shared.v3.static.messages.driver_application_messages import (
+from shared.v3.static.messages.global_driver_application_messages import (
     AgenticContextMessage,
     DriverApplicationMessage,
 )
@@ -55,9 +55,6 @@ class PromptInterpretationPipelineResponse(BaseModel):
         instruction: str
 
     original_prompt: str
-    original_document_text_before_selection: str | None
-    original_document_text_after_selection: str | None
-    selected_text: str | None
     prompt_subjects: list[str]
     retrieval_steps: list[PromptInterpretationRetrievalStep]
     composition_steps: list[PromptInterpretationCompositionStep]

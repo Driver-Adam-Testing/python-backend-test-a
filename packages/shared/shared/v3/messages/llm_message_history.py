@@ -21,7 +21,7 @@ class LlmMessageHistory(BaseModel):
     def add_message(self, message: LlmMessage) -> None:
         self.messages.append(message)
 
-    def to_openai_messagelist_gpt(self) -> list[ChatCompletionMessageParam]:
+    def to_openai_strict(self) -> list[ChatCompletionMessageParam]:
         """
         Converts the message history to a format suitable for OpenAI's strict API,
         including tool call messages with tool_call_id.
@@ -30,183 +30,162 @@ class LlmMessageHistory(BaseModel):
         """
         messages: list[ChatCompletionMessageParam] = []
         for message in self.messages:
-            if message.message_kind == MessageKind.TOOL_CALL_RESPONSE:
-                message_dict: ChatCompletionToolMessageParam = (
-                    ChatCompletionToolMessageParam(
-                        role="tool",
-                        content=message.content,
-                        tool_call_id=message.tool_response.id,
+            match message.message_kind:
+                case MessageKind.TOOL_CALL_RESPONSE:
+                    message_dict: ChatCompletionToolMessageParam = (
+                        ChatCompletionToolMessageParam(
+                            role="tool",
+                            content=message.content,
+                            tool_call_id=message.tool_response.id,
+                        )
                     )
-                )
-            elif message.message_kind == MessageKind.ASSISTANT:
-                message_dict: ChatCompletionAssistantMessageParam = (
-                    ChatCompletionAssistantMessageParam(
-                        role="assistant",
-                        content=message.content,
-                        tool_calls=message.tool_requests,
+                case MessageKind.ASSISTANT:
+                    message_dict: ChatCompletionAssistantMessageParam = (
+                        ChatCompletionAssistantMessageParam(
+                            role="assistant",
+                            content=message.content,
+                            tool_calls=message.tool_requests,
+                        )
                     )
-                )
-            elif message.message_kind == MessageKind.DEVELOPER:
-                message_dict: ChatCompletionDeveloperMessageParam = (
-                    ChatCompletionDeveloperMessageParam(
-                        role="developer",
-                        content=message.content,
+                case MessageKind.DEVELOPER:
+                    message_dict: ChatCompletionDeveloperMessageParam = (
+                        ChatCompletionDeveloperMessageParam(
+                            role="developer",
+                            content=message.content,
+                        )
                     )
-                )
-            elif message.message_kind == MessageKind.TOOL_CALL_REQUEST:
-                message_dict: ChatCompletionToolMessageParam = (
-                    ChatCompletionAssistantMessageParam(
-                        role="assistant",
-                        content=message.content,
-                        tool_calls=[
-                            ChatCompletionMessageToolCallParam(
-                                id=tool_request.id,
-                                function=OpenAIFunction(
-                                    name=tool_request.name,
-                                    arguments=tool_request.arguments,
-                                ),
-                                type="function",
-                            )
-                            for tool_request in message.tool_requests
-                        ],
+                case MessageKind.TOOL_CALL_REQUEST:
+                    message_dict: ChatCompletionToolMessageParam = (
+                        ChatCompletionAssistantMessageParam(
+                            role="assistant",
+                            content=message.content,
+                            tool_calls=[
+                                ChatCompletionMessageToolCallParam(
+                                    id=tool_request.id,
+                                    function=OpenAIFunction(
+                                        name=tool_request.name,
+                                        arguments=tool_request.arguments,
+                                    ),
+                                    type="function",
+                                )
+                                for tool_request in message.tool_requests
+                            ],
+                        )
                     )
-                )
-            elif message.message_kind == MessageKind.SYSTEM:
-                message_dict: ChatCompletionSystemMessageParam = (
-                    ChatCompletionSystemMessageParam(
-                        role="system",
-                        content=message.content,
+                case MessageKind.SYSTEM:
+                    message_dict: ChatCompletionSystemMessageParam = (
+                        ChatCompletionSystemMessageParam(
+                            role="system",
+                            content=message.content,
+                        )
                     )
-                )
-            elif message.message_kind == MessageKind.USER:
-                message_dict: ChatCompletionUserMessageParam = (
-                    ChatCompletionUserMessageParam(
+                case MessageKind.USER:
+                    message_dict: ChatCompletionUserMessageParam = (
+                        ChatCompletionUserMessageParam(
+                            role="user",
+                            content=message.content,
+                        )
+                    )
+                case MessageKind.ITERATION if not any(
+                    m.message_kind == MessageKind.ITERATION
+                    for m in self.messages[self.messages.index(message) + 1 :]
+                ):
+                    message_dict = ChatCompletionUserMessageParam(
                         role="user",
                         content=message.content,
                     )
-                )
-            elif message.message_kind == MessageKind.ITERATION and not any(
-                m.message_kind == MessageKind.ITERATION
-                for m in self.messages[self.messages.index(message) + 1 :]
-            ):
-                message_dict = ChatCompletionUserMessageParam(
-                    role="user",
-                    content=message.content,
-                )
             messages.append(message_dict)
 
         return messages
 
-    def to_openai_messagelist_o_series(self) -> list:
+    def to_openai_o3(self) -> list:
         messages = []
         for message in self.messages:
-            if message.message_kind == MessageKind.TOOL_CALL_RESPONSE:
-                message_dict: ChatCompletionDeveloperMessageParam = (
-                    ChatCompletionDeveloperMessageParam(
+            match message.message_kind:
+                case MessageKind.TOOL_CALL_RESPONSE:
+                    message_dict = ChatCompletionDeveloperMessageParam(
                         role="user",
                         content=message.content,
                     )
-                )
-            if message.message_kind == MessageKind.SYSTEM:
-                message_dict: ChatCompletionDeveloperMessageParam = (
-                    ChatCompletionDeveloperMessageParam(
+                case MessageKind.SYSTEM:
+                    message_dict = ChatCompletionDeveloperMessageParam(
                         role="developer",
                         content=message.content,
                     )
-                )
-            elif message.message_kind == MessageKind.ASSISTANT:
-                message_dict: ChatCompletionAssistantMessageParam = (
-                    ChatCompletionAssistantMessageParam(
+                case MessageKind.ASSISTANT:
+                    message_dict = ChatCompletionAssistantMessageParam(
                         role="assistant",
                         content=message.content,
                         tool_calls=message.tool_requests,
                     )
-                )
-            elif message.message_kind == MessageKind.DEVELOPER:
-                message_dict: ChatCompletionDeveloperMessageParam = (
-                    ChatCompletionDeveloperMessageParam(
+                case MessageKind.DEVELOPER:
+                    message_dict = ChatCompletionDeveloperMessageParam(
                         role="developer",
                         content=message.content,
                     )
-                )
-            elif message.message_kind == MessageKind.TOOL_CALL_REQUEST:
-                message_dict: ChatCompletionToolMessageParam = (
-                    ChatCompletionAssistantMessageParam(
+                case MessageKind.TOOL_CALL_REQUEST:
+                    message_dict = ChatCompletionAssistantMessageParam(
                         role="assistant", content=message.content
                     )
-                )
-            elif message.message_kind == MessageKind.USER:
-                message_dict: ChatCompletionUserMessageParam = (
-                    ChatCompletionUserMessageParam(
+                case MessageKind.USER:
+                    message_dict = ChatCompletionUserMessageParam(
                         role="user",
                         content=message.content,
                     )
-                )
-            elif message.message_kind == MessageKind.ITERATION and not any(
-                m.message_kind == MessageKind.ITERATION
-                for m in self.messages[self.messages.index(message) + 1 :]
-            ):
-                message_dict = ChatCompletionUserMessageParam(
-                    role="user",
-                    content=message.content,
-                )
+                case MessageKind.ITERATION if not any(
+                    m.message_kind == MessageKind.ITERATION
+                    for m in self.messages[self.messages.index(message) + 1 :]
+                ):
+                    message_dict = ChatCompletionUserMessageParam(
+                        role="user",
+                        content=message.content,
+                    )
             messages.append(message_dict)
 
         return messages
 
-    def to_openai_messagelist_user_type(self) -> list:
+    def to_openai_o1(self) -> list:
         messages = []
         for message in self.messages:
-            if message.message_kind == MessageKind.TOOL_CALL_RESPONSE:
-                message_dict: ChatCompletionUserMessageParam = (
-                    ChatCompletionUserMessageParam(
+            match message.message_kind:
+                case MessageKind.TOOL_CALL_RESPONSE:
+                    message_dict = ChatCompletionUserMessageParam(
                         role="user",
                         content=message.content,
                     )
-                )
-            if message.message_kind == MessageKind.SYSTEM:
-                message_dict: ChatCompletionUserMessageParam = (
-                    ChatCompletionUserMessageParam(
+                case MessageKind.SYSTEM:
+                    message_dict = ChatCompletionUserMessageParam(
                         role="user",
                         content=message.content,
                     )
-                )
-            elif message.message_kind == MessageKind.ASSISTANT:
-                message_dict: ChatCompletionAssistantMessageParam = (
-                    ChatCompletionAssistantMessageParam(
+                case MessageKind.ASSISTANT:
+                    message_dict = ChatCompletionAssistantMessageParam(
                         role="assistant",
                         content=message.content,
                         tool_calls=message.tool_requests,
                     )
-                )
-            elif message.message_kind == MessageKind.DEVELOPER:
-                message_dict: ChatCompletionUserMessageParam = (
-                    ChatCompletionUserMessageParam(
+                case MessageKind.DEVELOPER:
+                    message_dict = ChatCompletionUserMessageParam(
                         role="user",
                         content=message.content,
                     )
-                )
-            elif message.message_kind == MessageKind.TOOL_CALL_REQUEST:
-                message_dict: ChatCompletionToolMessageParam = (
-                    ChatCompletionAssistantMessageParam(
+                case MessageKind.TOOL_CALL_REQUEST:
+                    message_dict = ChatCompletionAssistantMessageParam(
                         role="assistant", content=message.content
                     )
-                )
-            elif message.message_kind == MessageKind.USER:
-                message_dict: ChatCompletionUserMessageParam = (
-                    ChatCompletionUserMessageParam(
+                case MessageKind.USER:
+                    message_dict = ChatCompletionUserMessageParam(
                         role="user",
                         content=message.content,
                     )
-                )
-            elif message.message_kind == MessageKind.ITERATION and not any(
-                m.message_kind == MessageKind.ITERATION
-                for m in self.messages[self.messages.index(message) + 1 :]
-            ):
-                message_dict = ChatCompletionUserMessageParam(
-                    role="user",
-                    content=message.content,
-                )
+                case MessageKind.ITERATION if not any(
+                    m.message_kind == MessageKind.ITERATION
+                    for m in self.messages[self.messages.index(message) + 1 :]
+                ):
+                    message_dict = ChatCompletionUserMessageParam(
+                        role="user",
+                        content=message.content,
+                    )
             messages.append(message_dict)
 
         return messages

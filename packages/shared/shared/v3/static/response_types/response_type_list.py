@@ -39,18 +39,3 @@ class ListResponse(LlmParseable):
             )
         else:
             return "\n".join(f"- {item}" for item in self.list_output)
-
-    # @classmethod
-    # def to_instruction_string(cls) -> str:
-    #     return f"""
-    #     Please format your response as a JSON object that can be parsed into a pydantic BaseModel instance of the following class:
-
-    #     {cls.__doc__}
-
-    #     Example JSON object:
-    #     {{
-    #         "list_elements": ["Item 1", "Item 2", "Item 3"],
-    #         "list_kind": "UNORDERED",
-    #         "rationale": "This is an example rationale explaining the purpose of the list."
-    #     }}
-    #     """

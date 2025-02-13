@@ -70,3 +70,31 @@ class LlmClient(ABC):
             raise ValueError(
                 f"No suitable LlmClient subclass found for provider {config.provider} and API kind {config.api_kind}."
             )
+
+    @classmethod
+    def gpt_4o(cls) -> "LlmClient":
+        return cls.from_config(LlmConfig.gpt_4o())
+
+    @classmethod
+    def gpt_4o_chat(cls) -> "LlmClient":
+        return cls.from_config(LlmConfig.gpt_4o_chat())
+
+    @classmethod
+    def gpt_4o_mini(cls) -> "LlmClient":
+        return cls.from_config(LlmConfig.gpt_4o_mini())
+
+    @classmethod
+    def gpt_4o_mini_chat(cls) -> "LlmClient":
+        return cls.from_config(LlmConfig.gpt_4o_mini_chat())
+
+    @classmethod
+    def o1(cls) -> "LlmClient":
+        return cls.from_config(LlmConfig.o1())
+
+    @classmethod
+    def o1_mini(cls) -> "LlmClient":
+        return cls.from_config(LlmConfig.o1_mini())
+
+    @classmethod
+    def o3_mini(cls) -> "LlmClient":
+        return cls.from_config(LlmConfig.o3_mini())

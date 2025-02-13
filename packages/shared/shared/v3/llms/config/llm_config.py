@@ -25,6 +25,22 @@ class ApiKind(str, Enum):
     OPENAI_O3 = "openai_o3"
 
 
+class SupportedModels(str, Enum):
+    """
+    Supported models for the LLM config.
+    These should always be the same as the names in the TOML file.
+    """
+
+    DEFAULT = "default"
+    GPT_4O = "gpt_4o"
+    GPT_4O_CHAT = "gpt_4o_chat"
+    GPT_4O_MINI = "gpt_4o_mini"
+    GPT_4O_MINI_CHAT = "gpt_4o_mini_chat"
+    O1 = "o1"
+    O1_MINI = "o1_mini"
+    O3_MINI = "o3_mini"
+
+
 class LlmConfig(BaseModel):
     """
     Represents configuration for a Large Language Model.
@@ -126,3 +142,31 @@ class LlmConfig(BaseModel):
             raise ValueError(
                 f"Missing required field '{e.args[0]}' for model '{model_name}' in {CONFIG_PATH}."
             ) from e
+
+    @classmethod
+    def gpt_4o(cls) -> "LlmConfig":
+        return cls.from_name(SupportedModels.GPT_4O)
+
+    @classmethod
+    def gpt_4o_chat(cls) -> "LlmConfig":
+        return cls.from_name(SupportedModels.GPT_4O_CHAT)
+
+    @classmethod
+    def gpt_4o_mini(cls) -> "LlmConfig":
+        return cls.from_name(SupportedModels.GPT_4O_MINI)
+
+    @classmethod
+    def gpt_4o_mini_chat(cls) -> "LlmConfig":
+        return cls.from_name(SupportedModels.GPT_4O_MINI_CHAT)
+
+    @classmethod
+    def o1(cls) -> "LlmConfig":
+        return cls.from_name(SupportedModels.O1)
+
+    @classmethod
+    def o1_mini(cls) -> "LlmConfig":
+        return cls.from_name(SupportedModels.O1_MINI)
+
+    @classmethod
+    def o3_mini(cls) -> "LlmConfig":
+        return cls.from_name(SupportedModels.O3_MINI)

@@ -1,26 +1,19 @@
 from shared.v3.messages.llm_message import LlmMessage, MessageKind
+from shared.v3.messages.llm_message_kind import MessageKind
+from shared.v3.static.messages.global_message_constants import (
+    DOCUMENT_CONTENT_AFTER_CURSOR_XML_BEGIN,
+    DOCUMENT_CONTENT_AFTER_CURSOR_XML_END,
+    DOCUMENT_CONTENT_BEFORE_CURSOR_XML_BEGIN,
+    DOCUMENT_CONTENT_BEFORE_CURSOR_XML_END,
+    PROMPT_XML_BEGIN,
+    PROMPT_XML_END,
+    USER_SELECTED_TEXT_XML_BEGIN,
+    USER_SELECTED_TEXT_XML_END,
+)
 
 
-class DriverApplicationMessage(LlmMessage):
-    message_kind: MessageKind = MessageKind.SYSTEM
-    content: str = (
-        "This request is part of a documentation generation system. The system is designed to assist in creating various forms of technical documentation, "
-        "including architectural diagrams, tables, lists, code snippets, and technical documents. The goal is to streamline the process of generating "
-        "comprehensive and accurate documentation for different aspects of user-uploaded codebases and their associated technical documentation for hardware and software."
-        "All requests will ultimately be rendered as markdown in an application. All requests will be in reference to some number of files, directories, or other technical documentation."
-    )
-
-
-class AgenticContextMessage(LlmMessage):
-    message_kind: MessageKind = MessageKind.SYSTEM
-    content: str = (
-        "This message is part of a larger system of interconnected LLMs. As an LLM, I may be tasked with retrieving information, preparing information for other LLMs to consume, or composing user responses. "
-        "The system is designed to work collaboratively, ensuring that each LLM contributes to the overall goal of generating comprehensive and accurate technical documentation. "
-        "By leveraging the strengths of multiple LLMs, the system can efficiently handle complex requests and provide high-quality outputs for various documentation needs."
-    )
-
-
-class AbbreviateDocumentSystemMessage(LlmMessage):
+class AbbreviatePageContentSystemMessage(LlmMessage):
+    # TODO: Shorten this message.
     content: str = (
         "You are an expert in converting document sections into relevant, information dense, terse context for agentic systems. "
         "A user selects part of a document (which might be very large or very short) and provides unformatted surrounding text—from both before and after the selection. "
@@ -36,3 +29,25 @@ class AbbreviateDocumentSystemMessage(LlmMessage):
         "By fulfilling these objectives, you ensure the downstream LLM has the context it needs to produce clear, accurate, and non-redundant technical documentation or long-form explanations about the codebase or subject matter."
     )
     message_kind: MessageKind = MessageKind.SYSTEM
+
+
+class AbbreviatePageContentUserMessage(LlmMessage):
+    message_kind: MessageKind = MessageKind.USER
+
+    @classmethod
+    def from_context(
+        cls,
+        prompt: str,
+        page_content: str,
+        before: bool,
+        selected_text: str | None = None,
+    ) -> "AbbreviatePageContentUserMessage":
+        content = (
+            "Given the following user prompt, some page content, and cursor position, please provide a concise, information-dense summary of the relevant parts of the document."
+            "If the page content is not relevant to the user prompt, return an empty string."
+            f"{PROMPT_XML_BEGIN}{prompt}{PROMPT_XML_END}\n"
+            f"{f'{DOCUMENT_CONTENT_BEFORE_CURSOR_XML_BEGIN}{page_content}{DOCUMENT_CONTENT_BEFORE_CURSOR_XML_END}\n' if before else ''}"
+            f"{f'{USER_SELECTED_TEXT_XML_BEGIN}{selected_text}{USER_SELECTED_TEXT_XML_END}\n' if selected_text and selected_text.strip() else ''}"
+            f"{f'{DOCUMENT_CONTENT_AFTER_CURSOR_XML_BEGIN}{page_content}{DOCUMENT_CONTENT_AFTER_CURSOR_XML_END}\n' if not before else ''}"
+        ).strip()
+        return cls(content=content)

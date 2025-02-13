@@ -4,6 +4,7 @@ from abc import ABC
 from typing import Union, get_args, get_origin
 
 from pydantic import BaseModel
+from shared.v3.static.messages.global_message_constants import IMPORTANT
 
 
 class LlmParseable(BaseModel, ABC):
@@ -110,7 +111,7 @@ class LlmParseable(BaseModel, ABC):
             f"Format your response as a JSON object that can be parsed "
             f"as {cls.__name__}(pydantic.BaseModel)\n\n"
             f"{cls.__doc__}\n"
-            f'!IMPORTANT! Set the "parsed_classname" field to "{cls.__name__}"\n'
+            f'{IMPORTANT} Set the "parsed_classname" field to "{cls.__name__}"\n'
             f"Example JSON object:\n"
             f"{example_json}\n"
         )
@@ -129,7 +130,7 @@ class LlmParseable(BaseModel, ABC):
         return (
             f"Format your response as a JSON object that can be parsed "
             f"as {cls.__name__}(pydantic.BaseModel)\n"
-            f"!IMPORTANT! To respond with this tool, Set the 'parsed_classname' field to '{cls.__name__}'.\n"
+            f"{IMPORTANT} To respond with this tool, Set the 'parsed_classname' field to '{cls.__name__}'.\n"
             f"{cls.__doc__}\n"
             f"Example JSON object:\n"
             f"{example_json}\n"

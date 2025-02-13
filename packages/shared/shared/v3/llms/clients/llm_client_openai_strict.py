@@ -33,7 +33,7 @@ class OpenAiStrictWithSystemClient(LlmClient):
 
         completion_kwargs = {
             "model": self.config.model_id,
-            "messages": message_history.to_openai_messagelist_gpt(),
+            "messages": message_history.to_openai_strict(),
         }
 
         if tools:

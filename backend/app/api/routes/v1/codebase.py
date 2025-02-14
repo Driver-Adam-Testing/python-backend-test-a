@@ -169,9 +169,9 @@ def exec_codebase_generation(
     for version in result:
         session_meta = UsageSessionMetadata(
             content_type="codebase",
-            content_id=version.primary_asset_id,
+            content_id=str(version.primary_asset_id),
             content_name=version.primary_asset.display_name,
-            version_id=version.id,
+            version_id=str(version.id),
         )
         with LLMUsageSession(
             user.organization_id, user.user_id, session_meta

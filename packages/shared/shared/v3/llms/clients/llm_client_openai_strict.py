@@ -49,4 +49,4 @@ class OpenAiStrictWithSystemClient(LlmClient):
             .choices[0]
             .message
         )
-        return LlmMessage.from_parsed_chat_completion_message(response)
+        return LlmMessage.from_openai_parsed_chat_completion_message(response)

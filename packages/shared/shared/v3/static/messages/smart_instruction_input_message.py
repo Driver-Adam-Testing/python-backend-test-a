@@ -1,5 +1,4 @@
 from shared.v3.messages.llm_message import LlmMessage, MessageKind
-from shared.v3.messages.llm_message_kind import MessageKind
 from shared.v3.static.messages.global_message_constants import (
     DOCUMENT_CONTENT_AFTER_CURSOR_XML_BEGIN,
     DOCUMENT_CONTENT_AFTER_CURSOR_XML_END,
@@ -21,16 +20,16 @@ class SmartInstructionInputMessage(LlmMessage):
     def from_context(
         cls,
         prompt: str,
-        before: str,
-        after: str,
+        page_content_before_cursor: str | None = None,
+        page_content_after_cursor: str | None = None,
         selected_text: str | None = None,
     ) -> "SmartInstructionInputMessage":
         content = (
-            f"The user has entered the following prompt:"
+            f"The user has entered the following request:"
             f"{PROMPT_XML_BEGIN}{prompt}{PROMPT_XML_END}"
             f"{f'{USER_SELECTED_TEXT_XML_BEGIN}{selected_text}{USER_SELECTED_TEXT_XML_END}' if selected_text else ''}"
-            f"{f'{DOCUMENT_CONTENT_BEFORE_CURSOR_XML_BEGIN}{before}{DOCUMENT_CONTENT_BEFORE_CURSOR_XML_END}' if before.strip() else ''}"
+            f"{f'{DOCUMENT_CONTENT_BEFORE_CURSOR_XML_BEGIN}{page_content_before_cursor}{DOCUMENT_CONTENT_BEFORE_CURSOR_XML_END}' if page_content_before_cursor and page_content_before_cursor.strip() else ''}"
             f"{f'{USER_CURSOR_XML_BEGIN}{selected_text}{USER_CURSOR_XML_END}' if selected_text else '<USER_CURSOR>'}"
-            f"{f'{DOCUMENT_CONTENT_AFTER_CURSOR_XML_BEGIN}{after}{DOCUMENT_CONTENT_AFTER_CURSOR_XML_END}' if after.strip() else ''}"
+            f"{f'{DOCUMENT_CONTENT_AFTER_CURSOR_XML_BEGIN}{page_content_after_cursor}{DOCUMENT_CONTENT_AFTER_CURSOR_XML_END}' if page_content_after_cursor and page_content_after_cursor.strip() else ''}"
         )
         return cls(content=content.strip())

@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from uuid import UUID
 
 from pydantic import BaseModel
 from shared.interfaces.agents.data_scope import DataScope
@@ -27,6 +28,16 @@ class LlmToolResponse(BaseModel, ABC):
 
     def to_references(self) -> list[LlmToolReference]:
         raise NotImplementedError()
+
+
+class ToolReference(BaseModel):
+    content: str
+    score: float
+    version_display_name: str
+    relative_path: str
+    version_id: UUID
+    node_id: UUID
+    metadata: dict
 
 
 class LlmTool(LlmParseable, ABC):

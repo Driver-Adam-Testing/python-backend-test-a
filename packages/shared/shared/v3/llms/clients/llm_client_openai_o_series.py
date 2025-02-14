@@ -1,6 +1,5 @@
-from typing import TYPE_CHECKING
-
 import openai
+from openai.types.chat import ChatCompletionMessage
 from shared.v3.agents.agent_tool import LlmTool
 from shared.v3.agents.response_type import LlmResponseType
 from shared.v3.llms.clients.llm_client import LlmClient
@@ -8,11 +7,8 @@ from shared.v3.llms.config.llm_config import LlmConfig
 from shared.v3.messages.llm_message import LlmMessage, MessageKind
 from shared.v3.messages.llm_message_history import LlmMessageHistory
 
-if TYPE_CHECKING:
-    from openai.types.chat import ChatCompletionMessage
 
-
-class OpenAiO1SeriesClient(LlmClient):
+class OpenAiOSeriesClient(LlmClient):
     """
     OpenAiOSeriesClient is a specialized LLM client that interacts with OpenAI's O-Series models.
 
@@ -61,7 +57,7 @@ class OpenAiO1SeriesClient(LlmClient):
 
         completion_kwargs = {
             "model": self.config.model_id,
-            "messages": local_message_history.to_openai_o1(),
+            "messages": local_message_history.to_openai_o3(),
         }
 
         response: ChatCompletionMessage = (

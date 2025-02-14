@@ -62,6 +62,6 @@ class OpenAiChatClient(LlmClient):
         response: ChatCompletionMessage = (
             self.client.chat.completions.create(**completion_kwargs).choices[0].message
         )
-        return LlmMessage.from_chat_completion_message(
+        return LlmMessage.from_openai_chat_completion_message(
             response, response_type=response_type, tool_list=tools
         )

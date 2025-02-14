@@ -24,7 +24,7 @@ class LlmMessage(BaseModel):
     tool_requests: list[ToolCallRequest] = []
 
     @classmethod
-    def from_parsed_chat_completion_message(
+    def from_openai_parsed_chat_completion_message(
         cls, parsed_message: ParsedChatCompletionMessage
     ) -> "LlmMessage":
         tool_requests = (
@@ -51,68 +51,13 @@ class LlmMessage(BaseModel):
         )
 
     @classmethod
-    def from_chat_completion_message(
+    def from_openai_chat_completion_message(
         cls,
         chat_message: ChatCompletionMessage,
         tool_list: list[type] | None = None,
         response_type: type | None = None,
     ) -> "LlmMessage":
-        # Could merge with o series and only use tool_calls if they exist.
-        json_parsed_content = None
-        if chat_message.content:
-            with contextlib.suppress(json.JSONDecodeError):
-                trimmed_content = (
-                    chat_message.content.strip()
-                    .removeprefix("```json")
-                    .removesuffix("```")
-                    .strip()
-                )
-                json_parsed_content = json.loads(trimmed_content)
-        tool_requests = (
-            [
-                cls.ToolCallRequest(
-                    id=tool_call.id,
-                    name=tool_call.function.name,
-                    arguments=tool_call.function.arguments,
-                    parsed_tool=next(
-                        (
-                            tool.parse_raw(tool_call.function.arguments)
-                            for tool in tool_list
-                            if tool.__name__ == tool_call.function.name
-                        ),
-                        None,
-                    ),
-                )
-                for tool_call in chat_message.tool_calls
-            ]
-            if chat_message.tool_calls
-            else []
-        )
-        parsed_content = None
-        if response_type and not tool_requests:
-            parsed_content = response_type(**json_parsed_content)
-        if tool_list and chat_message.content:
-            for tool in tool_list:
-                if tool.__name__ in chat_message.content:
-                    parsed_content = tool.parse_raw(chat_message.content)
-                    break
-        return cls(
-            message_kind=MessageKind.TOOL_CALL_REQUEST
-            if tool_requests
-            else MessageKind.ASSISTANT,
-            content=chat_message.content,
-            tool_requests=tool_requests,
-            parsed_content=parsed_content,
-        )
-
-    @classmethod
-    def from_chat_completion_message_o_series(
-        cls,
-        chat_message: ChatCompletionMessage,
-        tool_list: list[type] | None = None,
-        response_type: type | None = None,
-    ) -> "LlmMessage":
-        json_parsed_content = None
+        content_as_json_list: list[dict] = []
         with contextlib.suppress(json.JSONDecodeError):
             trimmed_content = (
                 chat_message.content.strip()
@@ -120,31 +65,60 @@ class LlmMessage(BaseModel):
                 .removesuffix("```")
                 .strip()
             )
-            json_parsed_content = json.loads(trimmed_content)
+            content_json = json.loads(trimmed_content)
+            if isinstance(content_json, list):
+                content_as_json_list = content_json
+            else:
+                content_as_json_list = [content_json]
+
         tool_requests = []
-        if json_parsed_content and "class_name" in json_parsed_content:
-            class_name = json_parsed_content["class_name"]
-            if tool_list:
-                for tool in tool_list:
-                    if tool.__name__ == class_name:
-                        tool_requests.append(
-                            cls.ToolCallRequest(
-                                id="",
-                                name=class_name,
-                                arguments=chat_message.content,
-                                parsed_tool=tool(**json_parsed_content),
-                            )
-                        )
-                        break
+
+        if chat_message.tool_calls:
+            tool_requests = [
+                cls.ToolCallRequest(
+                    id=tool_call.id,
+                    name=tool_call.function.name,
+                    arguments=tool_call.function.arguments,
+                    parsed_tool=next(
+                        (
+                            tool.parse_raw(tool_call.function.arguments)
+                            for tool in (tool_list or [])
+                            if tool.__name__ == tool_call.function.name
+                        ),
+                        None,
+                    ),
+                )
+                for tool_call in chat_message.tool_calls
+            ]
+
+        elif content_as_json_list:
+            for content_json in content_as_json_list:
+                if "class_name" in content_json:
+                    class_name = content_json["class_name"]
+                    if tool_list:
+                        for tool in tool_list:
+                            if tool.__name__ == class_name:
+                                tool_requests.append(
+                                    cls.ToolCallRequest(
+                                        id="",
+                                        name=class_name,
+                                        arguments=chat_message.content,
+                                        parsed_tool=tool(**content_json),
+                                    )
+                                )
+                                break
 
         parsed_content = None
-        if response_type and not tool_requests:
-            parsed_content = response_type(**json_parsed_content)
+
+        if response_type and not tool_requests and content_as_json_list:
+            parsed_content = response_type(**content_as_json_list[0])
+
+        message_kind = (
+            MessageKind.TOOL_CALL_REQUEST if tool_requests else MessageKind.ASSISTANT
+        )
 
         return cls(
-            message_kind=MessageKind.TOOL_CALL_REQUEST
-            if tool_requests
-            else MessageKind.ASSISTANT,
+            message_kind=message_kind,
             content=chat_message.content,
             tool_requests=tool_requests,
             parsed_content=parsed_content,

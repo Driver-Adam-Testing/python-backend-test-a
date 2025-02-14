@@ -5,6 +5,7 @@ from prettytable import PrettyTable
 from shared.interfaces.agents.data_scope import DataScope
 from shared.v3.llms.clients.llm_client import LlmClient
 from shared.v3.pipelines.smart_instruction import run_smart_instruction
+from shared.v3.agents.agent_tool import ToolReference
 
 BEFORE = [
     "",
@@ -56,27 +57,6 @@ def run_and_time_pipeline():
     pipeline_requests = inject_pipeline_requests()
     client_timings = {}
 
-    import random
-
-    # Select a random pipeline request
-    request = random.choice(pipeline_requests)
-
-    # Measure the time taken to process the request
-    start_time = time.time()
-
-    response = run_smart_instruction(
-        user_prompt=request["prompt"],
-        text_before_instruction=request["context"]["before_selected_text"],
-        text_after_instruction=request["context"]["after_selected_text"],
-        datascope=DataScope(
-            node_ids=request["node_ids"],
-            organization_id="org_s76pU1v8LAYhTOWB",
-            user_id="org_s76pU1v8LAYhTOWB",
-        ),
-    )
-
-    end_time = time.time()
-
     def process_request(request, client):
         start_time = time.time()
         response = run_smart_instruction(
@@ -93,15 +73,28 @@ def run_and_time_pipeline():
         print(f"\033[38;5;214mClient: {client.config.model_name}\033[0m")
         print(f"\033[38;5;45mRequest: {request['prompt']}\033[0m")
         print(f"\033[38;5;196mResponse: {response['final_response']}\033[0m")
+        total_references = len(response["references"])
+        top_references = response["references"][:5]
+        for idx, reference in enumerate(top_references, start=1):
+            print(f"\033[38;5;82mReference {idx}:\033[0m")
+            print(f"  Content: {reference.content[:100]} ...")
+            print(f"  Score: {reference.score}")
+            print(f"  Version Display Name: {reference.version_display_name}")
+            print(f"  Relative Path: {reference.relative_path}")
+            print(f"  Version ID: {reference.version_id}")
+            print(f"  Node ID: {reference.node_id}")
+            print(f"  Metadata: {reference.metadata}")
+        print(f"\033[38;5;82mTotal References: {total_references}\033[0m")
+
         end_time = time.time()
         return end_time - start_time
 
     llm_clients = [
-        # LlmClient.gpt_4o(),
-        # LlmClient.gpt_4o_mini(),
-        # LlmClient.gpt_4o_mini_chat(),
-        # LlmClient.o1(),
-        # LlmClient.o1_mini(),
+        LlmClient.gpt_4o(),
+        LlmClient.gpt_4o_mini(),
+        LlmClient.gpt_4o_mini_chat(),
+        LlmClient.o1(),
+        LlmClient.o1_mini(),
         LlmClient.o3_mini(),
     ]
 

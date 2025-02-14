@@ -1,3 +1,4 @@
+import uuid
 from typing import Literal
 
 from pydantic import BaseModel, computed_field
@@ -6,6 +7,14 @@ from shared.usage.utils import bytes_to_sloc
 
 class CodebaseAnalysisRequest(BaseModel):
     download_url: str
+
+
+class CodebaseGenerationRequest(BaseModel):
+    version_ids: list[uuid.UUID]
+
+
+class CodebaseGenerationResponse(BaseModel):
+    call_id: str
 
 
 class CodebaseAnalysisResponse(BaseModel):

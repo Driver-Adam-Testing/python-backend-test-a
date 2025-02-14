@@ -26,6 +26,12 @@ class PrimaryAsset(SQLModel, table=True):  # type: ignore
     repository_id: str | None
     organization_id: str = Field(index=True)
     kind: PrimaryAssetKind = Field(index=True)
+    installation_id: UUID | None = Field(
+        foreign_key="git_provider_app_installations.id",
+        nullable=True,
+        ondelete="SET NULL",
+        default=None,
+    )
     created_at: None | datetime = Field(
         sa_column=Column(
             DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -117,7 +123,7 @@ class Version(SQLModel, table=True):  # type: ignore
             "viewonly": True,
         }
     )
-    inspector_runs: list["InspectorRun"] = Relationship(
+    inspector_runs: list["InspectorRun"] = Relationship(  # noqa: F821
         back_populates="version",
         passive_deletes="all",
         sa_relationship_kwargs={

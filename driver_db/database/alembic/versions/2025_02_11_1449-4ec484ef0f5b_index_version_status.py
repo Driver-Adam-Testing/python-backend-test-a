@@ -1,7 +1,7 @@
 """index version status
 
 Revision ID: 4ec484ef0f5b
-Revises: 3b2cb97a373b
+Revises: a9eb69a99830
 Create Date: 2025-02-11 14:49:02.407123
 
 """
@@ -10,7 +10,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "4ec484ef0f5b"
-down_revision = "3b2cb97a373b"
+down_revision = "a9eb69a99830"
 branch_labels = None
 depends_on = None
 

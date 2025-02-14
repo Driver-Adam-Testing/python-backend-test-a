@@ -39,8 +39,8 @@ def run_smart_instruction(
             messages=[
                 SmartInstructionInputMessage.from_context(
                     prompt=user_prompt,
-                    page_content_before_cursor=text_before_instruction,
-                    page_content_after_cursor=text_after_instruction,
+                    page_content_before_cursor=abbreviated_page_content.abbreviated_before,
+                    page_content_after_cursor=abbreviated_page_content.abbreviated_after,
                 )
             ]
         ),
@@ -55,4 +55,7 @@ def run_smart_instruction(
         if abbreviated_page_content.abbreviated_after
         else "",
         "final_response": response.content,
+        "references": list(
+            set({ref for tool in agent.called_tools for ref in tool.references})
+        ),
     }

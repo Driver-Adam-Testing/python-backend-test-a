@@ -4,7 +4,6 @@ from shared.interfaces.agents.data_scope import DataScope
 from shared.v3.agents.agent_tool import (
     LlmTool,
     LlmToolContext,
-    LlmToolResponse,
 )
 from shared.v3.agents.response_type import LlmResponseType
 from shared.v3.llms.clients.llm_client import LlmClient
@@ -36,12 +35,12 @@ class BaseAgent:
             if message_history is not None
             else LlmMessageHistory(messages=[])
         )
-        self.tools = tools if tools is not None else []
-        self.client = LlmClient.from_config(config)
-        self.datascope = datascope
-        self.references = []
-        self.response_type = response_type
-        self.config = config
+        self.tools: list[type[LlmTool]] = tools if tools is not None else []
+        self.client: LlmClient = LlmClient.from_config(config)
+        self.datascope: DataScope = datascope
+        self.response_type: type[LlmResponseType] = response_type
+        self.config: LlmConfig = config
+        self.called_tools: list[LlmTool] = []
 
     def invoke(
         self, prompt: str | None = None, iterations: int = 1, debug: bool = False
@@ -60,21 +59,21 @@ class BaseAgent:
                 tools=self.tools if i < iterations - 1 else None,
                 response_type=self.response_type,
             )
-            if debug:
-                logger.debug("Client response: %s", response)
             self.message_history.add_message(response)
 
             if response.tool_requests:
                 for tool_call in response.tool_requests:
-                    tool_response: LlmToolResponse = tool_call.parsed_tool.execute(
-                        LlmToolContext(
-                            datascope=self.datascope,
-                            llm_config=self.config,
-                            tool_call_id=tool_call.id,
+                    called_tool: LlmTool = tool_call.parsed_tool
+                    self.called_tools.append(called_tool)
+                    self.message_history.add_message(
+                        called_tool.execute(
+                            LlmToolContext(
+                                datascope=self.datascope,
+                                llm_config=self.config,
+                                tool_call_id=tool_call.id,
+                            )
                         )
                     )
-                    self.message_history.add_message(tool_response.to_message())
-                    self.references.extend(tool_response.to_references())
             else:
                 return response
         raise RuntimeError(

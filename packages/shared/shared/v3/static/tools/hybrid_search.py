@@ -3,10 +3,23 @@ from shared.pipelines.search import SearchInput, search_content_without_session
 from shared.v3.agents.agent_tool import (
     LlmTool,
     LlmToolContext,
-    LlmToolReference,
-    LlmToolResponse,
+    ToolReference,
 )
 from shared.v3.messages.llm_message import LlmMessage, MessageKind
+from shared.v3.static.messages.global_message_constants import (
+    REFERENCE_CONTENT_XML_BEGIN,
+    REFERENCE_CONTENT_XML_END,
+    REFERENCE_PATH_XML_BEGIN,
+    REFERENCE_PATH_XML_END,
+    REFERENCE_XML_BEGIN,
+    REFERENCE_XML_END,
+    REFERENCES_XML_BEGIN,
+    REFERENCES_XML_END,
+    SEARCH_QUERY_XML_BEGIN,
+    SEARCH_QUERY_XML_END,
+    TOOL_ERROR_XML_BEGIN,
+    TOOL_ERROR_XML_END,
+)
 
 
 class HybridSearchTool(LlmTool):
@@ -22,51 +35,53 @@ class HybridSearchTool(LlmTool):
 
     search_query: str
 
-    def execute(self, tool_context: LlmToolContext) -> LlmToolResponse:
+    def execute(self, tool_context: LlmToolContext) -> LlmMessage:
+        self._tool_context = tool_context
         search_input = SearchInput(
             query=self.search_query,
             algorithm=SearchAlgorithm.HYBRID,
-            content_kinds=None,  # TODO: make these selectable
+            content_kinds=None,
             organization_id=tool_context.datascope.organization_id,
             node_ids=tool_context.datascope.node_ids,
         )
         results = search_content_without_session(search_input)
 
         if not results.results:
-            return HybridSearchToolResponse("Search returned no results", [])
-
-        formatted_results = []
+            self._references = []
+            return self
         references = []
         for result in results.results:
-            content = result.content
-            path = f"{result.version_display_name}/{result.relative_path}"
-            formatted_result = f"""<result>
-                <content>{content}</content>
-                <path>{path}</path>
-            </result>"""
-            formatted_results.append(formatted_result.strip())
-            references.append(LlmToolReference(content=path))
+            references.append(
+                ToolReference(
+                    content=result.content,
+                    score=result.score,
+                    version_display_name=result.version_display_name,
+                    relative_path=result.relative_path,
+                    version_id=result.version_id,
+                    node_id=result.node_id,
+                    metadata=result.metadata,
+                )
+            )
 
-        return HybridSearchToolResponse(
-            content="\n".join(formatted_results),
-            references=references,
-            id=tool_context.tool_call_id,
-        )
-
-
-class HybridSearchToolResponse(LlmToolResponse):
-    content: str
-    references: list[LlmToolReference]
-    id: str
+        self._references = references
+        return self.to_message()
 
     def to_message(self) -> LlmMessage:
+        if not self._references:
+            return LlmMessage(
+                message_kind=MessageKind.TOOL_CALL_RESPONSE,
+                content=f"{TOOL_ERROR_XML_BEGIN} No results found for the given search query. {SEARCH_QUERY_XML_BEGIN}{self.search_query}{SEARCH_QUERY_XML_END}{TOOL_ERROR_XML_END}",
+                tool_response=LlmMessage.ToolCallResponse(
+                    id=self._tool_context.tool_call_id or None, name="HybridSearchTool"
+                ),
+            )
+
         return LlmMessage(
             message_kind=MessageKind.TOOL_CALL_RESPONSE,
-            content=self.content,
+            content=f"""HybridSearchTool Results for: {SEARCH_QUERY_XML_BEGIN}{self.search_query}{SEARCH_QUERY_XML_END}{REFERENCES_XML_BEGIN}
+                {"".join(f"{REFERENCE_XML_BEGIN}{REFERENCE_CONTENT_XML_BEGIN}{ref.content}{REFERENCE_CONTENT_XML_END}{REFERENCE_PATH_XML_BEGIN}{ref.version_display_name}/{ref.relative_path}{REFERENCE_PATH_XML_END}{REFERENCE_XML_END}" for ref in self._references)}
+            {REFERENCES_XML_END}""".strip(),
             tool_response=LlmMessage.ToolCallResponse(
-                id=self.id, name="HybridSearchTool"
+                id=self._tool_context.tool_call_id or None, name="HybridSearchTool"
             ),
         )
-
-    def to_references(self) -> list[LlmToolReference]:
-        return self.references

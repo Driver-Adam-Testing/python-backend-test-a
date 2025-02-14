@@ -56,21 +56,39 @@ def run_and_time_pipeline():
     pipeline_requests = inject_pipeline_requests()
     client_timings = {}
 
+    import random
+
+    # Select a random pipeline request
+    request = random.choice(pipeline_requests)
+
+    # Measure the time taken to process the request
+    start_time = time.time()
+
+    response = run_smart_instruction(
+        user_prompt=request["prompt"],
+        text_before_instruction=request["context"]["before_selected_text"],
+        text_after_instruction=request["context"]["after_selected_text"],
+        datascope=DataScope(
+            node_ids=request["node_ids"],
+            organization_id="org_s76pU1v8LAYhTOWB",
+            user_id="org_s76pU1v8LAYhTOWB",
+        ),
+    )
+
+    end_time = time.time()
+
     def process_request(request, client):
         start_time = time.time()
-        try:
-            response = run_smart_instruction(
-                user_prompt=request["prompt"],
-                text_before_instruction=request["context"]["before_selected_text"],
-                text_after_instruction=request["context"]["after_selected_text"],
-                datascope=DataScope(
-                    node_ids=request["node_ids"],
-                    organization_id="org_s76pU1v8LAYhTOWB",
-                    user_id="org_s76pU1v8LAYhTOWB",
-                ),
-            )
-        except Exception as e:
-            print(f"An error occurred while processing the request: {e}")
+        response = run_smart_instruction(
+            user_prompt=request["prompt"],
+            text_before_instruction=request["context"]["before_selected_text"],
+            text_after_instruction=request["context"]["after_selected_text"],
+            datascope=DataScope(
+                node_ids=request["node_ids"],
+                organization_id="org_s76pU1v8LAYhTOWB",
+                user_id="org_s76pU1v8LAYhTOWB",
+            ),
+        )
         print(f"\033[38;5;82mTime taken: {time.time() - start_time}\033[0m")
         print(f"\033[38;5;214mClient: {client.config.model_name}\033[0m")
         print(f"\033[38;5;45mRequest: {request['prompt']}\033[0m")

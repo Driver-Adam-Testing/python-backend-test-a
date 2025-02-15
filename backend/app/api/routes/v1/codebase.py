@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import UUID
 
 import modal
@@ -99,7 +99,7 @@ def get_codebase_versions(
             # Here we treat the version's display_name as the "version" string
             version=version.display_name,
             display_name=version.display_name,
-            created_at=version.created_at if version.created_at else datetime.now(),
+            created_at=version.created_at,
         )
         for version in versions
     ]
@@ -185,7 +185,7 @@ def exec_codebase_generation(
                 bytes_out=0,
                 tokens_in=0,
                 tokens_out=0,
-                timestamp=datetime.now(tz=datetime.UTC),
+                timestamp=datetime.now(tz=UTC),
                 event_type=UsageEventType.ONBOARDING_USAGE_DEBIT,
                 event_metadata=UsageEventMetadata(
                     model="None",

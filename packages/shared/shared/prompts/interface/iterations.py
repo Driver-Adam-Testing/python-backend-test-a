@@ -16,7 +16,7 @@ MESSAGE_MIDDLE_ITERATION = {"role": "user", "content": PROMPT_MIDDLE_ITERATION}
 
 PROMPT_FINAL_ITERATION = """
 Return Response. This is the final iteration, and a response must be returned.
-If writing code, the response response that uses only references to the source code results from the tools.
+If writing code, ensure that the response uses only references to the source code results from the tools.
 Ensure that any code or mermaid diagram is syntactically correct.
 """
 MESSAGE_FINAL_ITERATION = {"role": "user", "content": PROMPT_FINAL_ITERATION}

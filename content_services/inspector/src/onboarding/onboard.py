@@ -12,7 +12,6 @@ from database.models_v2_enums import (
     NodeKind,
     VersionStatus,
 )
-from onboarding.gh_ops import AccessTokenError
 
 image = (
     modal.Image.debian_slim(python_version="3.12")
@@ -58,6 +57,7 @@ def handle_github_events(
     from database.models_v1 import GithubAppInstallation  # noqa: F401
     from database.models_v2 import PrimaryAsset
     from onboarding.gh_ops import (
+        AccessTokenError,
         download_and_upload_repo,
         fetch_app_access_token,
     )
@@ -153,7 +153,7 @@ def connect_repos_for_installation(github_installation_id: str) -> None:
     import requests
     from database.db import engine
     from database.models_v1 import GithubAppInstallation
-    from onboarding.gh_ops import fetch_app_access_token
+    from onboarding.gh_ops import AccessTokenError, fetch_app_access_token
     from sqlmodel import Session, select
 
     with Session(engine) as session:
@@ -230,7 +230,7 @@ def connect_unconnected_repos() -> None:
     import requests
     from database.db import engine
     from database.models_v1 import GithubAppInstallation
-    from onboarding.gh_ops import fetch_app_access_token
+    from onboarding.gh_ops import AccessTokenError, fetch_app_access_token
     from sqlmodel import Session, select
 
     with Session(engine) as session:

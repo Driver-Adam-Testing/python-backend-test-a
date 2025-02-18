@@ -16,8 +16,8 @@ image = (
             "pydantic>=2.8.2",
             "tiktoken",
             "/shared_pkg",
-            "tree-sitter>=0.24.0",
-            "tree-sitter-c>=0.23.4",
+            "tree-sitter==0.24.0",
+            "tree-sitter-c==0.23.4",
         ]
     )  # TODO lock versions down
 )

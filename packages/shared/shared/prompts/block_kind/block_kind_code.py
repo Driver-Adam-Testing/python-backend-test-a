@@ -12,13 +12,12 @@ class BlockKindCopyEditorCodeBlock(BaseModel):
     The output is expected to be formatted as a list of markdown code blocks, each with a specified language identifier.
 
     Attributes:
-        code_snippets (list[str]): A list containing the code snippets to be formatted.
+        code_snippets (list[str]): A list containing the code snippets with backticks and language identifier. They will not include definitions that are not present in the source code results.
         descriptions (list[str]): A corresponding list of descriptions for each code snippet, maintaining the same order. (can be a header, paragraph text, descriptive lists, etc.)
 
-    Code Formatting Instructions:
-        - Each code block must be enclosed within markdown code block delimiters (```) with the appropriate language identifier immediately following the opening delimiter.
+    code_snippets Formatting:
+        - Each code block must be enclosed within code block delimiters (three backticks) with the appropriate language identifier immediately following the opening delimiter.
         - The code within each block should be syntactically correct and properly indented to ensure readability and accuracy.
-        - Eliminate any trailing whitespace or unnecessary blank lines within each code block to maintain a clean format.
         - The language identifier is crucial for syntax highlighting and must be included right after the opening code block delimiter.
     """
 
@@ -37,7 +36,7 @@ class BlockKindCopyEditorCodeBlock(BaseModel):
             arranged in the correct sequence as described in the desired output format.
         """
         markdown_snippets = []
-        for snippet, description in zip(self.code_snippets, self.descriptions):
+        for snippet, _ in zip(self.code_snippets, self.descriptions):
             stripped_snippet = snippet.strip()
-            markdown_snippets.append(f"{description}\n{stripped_snippet}\n")
+            markdown_snippets.append(f"\n{stripped_snippet}\n")
         return "\n".join(markdown_snippets)

@@ -38,7 +38,7 @@ def execute_diagram_block_agent(input: PipelineInput) -> PipelineResponse:
             prompt_augmentation_input, llm_usage_session
         )
     default_agent_input = PipelineStepConfiguration(
-        step_type=PipelineStepType.SMART_INSTRUCTION,
+        step_type=PipelineStepType.DEFAULT,
         prompt=PromptWithContext(
             prompt=prompt_augmentation_input.prompt.prompt,
             context=prompt_augmentation_input.prompt.context,
@@ -60,11 +60,8 @@ def execute_diagram_block_agent(input: PipelineInput) -> PipelineResponse:
     )
 
     default_response = run_agent_default(default_agent_input, llm_usage_session)
-    if isinstance(default_response, BlockKindCopyEditorDiagram):
-        final_result = default_response.agent_result.to_markdown()
-
     response = PipelineResponse(
         step_responses=[response, default_response],
-        final_result=final_result,
+        final_result=default_response.agent_result,
     )
     return response

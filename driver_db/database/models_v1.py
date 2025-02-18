@@ -514,9 +514,11 @@ class GitProviderApp(SQLModel, table=True):
     owner_organization_id: str = Field(index=True)
     name: str
     base_url: str
-    client_id: str = Field(index=True, unique=True)
-    redirect_uri: str
-    scopes: str
+    ## This group of fields is used for OAuth
+    client_id: str | None = Field(index=True, unique=True)
+    redirect_uri: str | None
+    scopes: str | None
+    ##
     created_at: None | datetime = Field(
         sa_column=Column(
             DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -547,7 +549,12 @@ class GitProviderAppInstallation(SQLModel, table=True):
         ondelete="CASCADE",
     )
     organization_id: str
-    user_id: str
+    ## This group of fields is used for OAuth
+    user_id: str | None
+    ##
+    misc_metadata: dict | None = Field(
+        sa_column=Column("metadata", JSONB, nullable=True), default=None
+    )
     created_at: None | datetime = Field(
         sa_column=Column(
             DateTime(timezone=True), server_default=func.now(), nullable=False

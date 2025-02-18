@@ -30,18 +30,18 @@ class CodeVerification(BaseModel):
     A model representing the verification details of a code snippet.
 
     Attributes:
+        rationale (str): A one-sentence rationale for correcting the code snippet.
         supporting_evidence_paths (list[str]): A list of paths supporting the verification.
         input_code (str): The original code snippet.
         corrected_code (str | None): The corrected code snippet, if any.
         corrected (bool): A flag indicating whether the code snippet was corrected.
-        rationale (str): The rationale for correcting the code snippet.
     """
 
+    rationale: str
     supporting_evidence_paths: list[str]
     input_code: str
     corrected_code: str | None
     corrected: bool
-    rationale: str
 
 
 def run_agent_find_code_snippets(
@@ -49,10 +49,9 @@ def run_agent_find_code_snippets(
 ) -> PipelineStepResponse:
     agent = OpenAIStrictAgent(
         model=ModelConfig.default().model_id,
-        paths=input.scope.paths,
-        organization_id=input.scope.organization_id,
         response_format=CodeSnippets,
         llm_usage_session=llm_usage_session,
+        scope=input.scope,
     )
     agent.add_message(prompts.voice.software_engineer.MESSAGE)
     agent.add_message(prompts.task.code_snippet_extractor.MESSAGE)
@@ -65,19 +64,18 @@ def run_agent_find_code_snippets(
 
 def run_agent_code_critic_verification(
     input: PipelineStepConfiguration, llm_usage_session: LLMUsageSession
-):
+) -> PipelineStepResponse:
     agent = OpenAIStrictAgent(
         model=ModelConfig.default().model_id,
-        paths=input.scope.paths,
-        organization_id=input.scope.organization_id,
+        scope=input.scope,
         max_iterations=3,
         tools=[SearchTool, OpenFileTool],
         response_format=CodeVerification,
         llm_usage_session=llm_usage_session,
     )
-    agent.add_message(prompts.task.code_critic_verifier.MESSAGE)
-
-    response: CodeVerification = agent.invoke(str(input.prompt))
+    response: CodeVerification = agent.invoke(
+        prompts.task.code_critic_verifier.PROMPT + " " + str(input.prompt)
+    )
 
     return PipelineStepResponse(
         agent_id=agent.agent_id,

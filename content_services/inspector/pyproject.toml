@@ -21,8 +21,10 @@ chardet = "^5.2.0"
 requests = "^2.32.3"
 sendgrid = "^6.11.0"
 gitignore-parser = "^0.1.11"
-tree-sitter = "^0.24.0"
-tree-sitter-c = "^0.23.4"
+pyjwt = "^2.10.1"
+httpx = "^0.28.1"
+tree-sitter = "0.24.0"
+tree-sitter-c = "0.23.4"
 
 
 [tool.poetry.group.dev.dependencies]

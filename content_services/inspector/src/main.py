@@ -157,163 +157,175 @@ async def inspect_db(
         try_get_prev_version,
     )
 
-    # Get the Version and check if it has previous_version_id
-    version = await get_version_by_id(version_id)
-    org_id = version.primary_asset.organization_id
-    org_hashed_id = hashlib.sha256(org_id.encode()).hexdigest()[:63]
+    try:
+        # Get the Version and check if it has previous_version_id
+        version = await get_version_by_id(version_id)
+        org_id = version.primary_asset.organization_id
+        org_hashed_id = hashlib.sha256(org_id.encode()).hexdigest()[:63]
 
-    previous_version = await try_get_prev_version(version_id)
-    previous_version_id = previous_version.id if previous_version else None
+        previous_version = await try_get_prev_version(version_id)
+        previous_version_id = previous_version.id if previous_version else None
 
-    codebase_name = version.primary_asset.display_name
+        codebase_name = version.primary_asset.display_name
 
-    result_loading_config = await get_result_loading_config(
-        inspection_mode, version_id, previous_version_id
-    )
-    print("Result loading config: ", result_loading_config)
-
-    run_id = await create_inspector_run(version_id)
-
-    # Get content records for version_id
-    db_file_nodes = await get_analyzable_nodes_by_version_id(
-        version_id, {DbNodeKind.CODEBASE_FILE}
-    )
-
-    db_all_codebase_nodes = await get_analyzable_nodes_by_version_id(
-        version_id, {DbNodeKind.CODEBASE_FILE, DbNodeKind.CODEBASE_DIRECTORY}
-    )
-
-    # Get content records for previous_version_id if available
-    if previous_version is not None:
-        db_previous_file_nodes = await get_analyzable_nodes_by_version_id(
-            previous_version_id, {DbNodeKind.CODEBASE_FILE}
+        result_loading_config = await get_result_loading_config(
+            inspection_mode, version_id, previous_version_id
         )
-    # Download s3 for version_id (and previous if available)
-    s3_client = boto3.client("s3", endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL"))
-    with (
-        tempfile.TemporaryDirectory() as download_dir,
-        tempfile.TemporaryDirectory() as previous_download_dir,
-    ):
-        download_root = Path(download_dir)
-        file_paths = []
-        if version.status == VersionStatus.CONNECTED:
-            # TODO: check usage before switching to generating
-            # if it's in the connected state, must upload the individual files to S3
-            download_archive_key = (
-                f"{version.primary_asset_id}/{version_id}/{version_id}_source.zip"
-            )
-            download_path = Path(download_dir) / f"{version_id}.zip"
-            print(f"downloading zip to {download_path}")
-            s3_client.download_file(org_hashed_id, download_archive_key, download_path)
+        print("Result loading config: ", result_loading_config)
 
-            extracted_path = unpack_archive(
-                archive_path=download_path,
-                override_codebase_name=codebase_name,
-                extraction_path=download_dir,
-            )
-            print(f"Extracted archive to {extracted_path}")
-            for root, _, files in os.walk(extracted_path):
-                for filename in files:
-                    local_path = Path(root) / filename
-                    trimmed_path = local_path.relative_to(download_dir)
-                    for node in db_file_nodes:
-                        if node.relative_path == str(trimmed_path):
-                            reencode_file(local_path)
+        run_id = await create_inspector_run(version_id)
 
-                            s3_client.upload_file(
-                                local_path,
-                                org_hashed_id,
-                                f"{version.primary_asset_id}/{version_id}/{node.relative_path}",
-                            )
-                            print(
-                                f"uploading {trimmed_path} to s3 at {version.primary_asset_id}/{version_id}/{node.relative_path}"
-                            )
-                            file_paths.append(local_path)
-            set_codebase_status(version_id, VersionStatus.GENERATING)
-
-        else:
-            print("Downloading all source files for codebase from s3...")
-            for db_file_node in db_file_nodes:
-                download_abs_path = download_source_file(
-                    s3_client=s3_client,
-                    bucket_name=org_hashed_id,
-                    primary_asset_id=str(version.primary_asset.id),
-                    version_id=str(version_id),
-                    node_rel_path=db_file_node.relative_path,
-                    download_root=download_root,
-                )
-                file_paths.append(download_abs_path)
-            print("Download complete")
-
-        codebase_dag: FileTreeDag = build_dag(
-            root_path=download_root, file_paths=file_paths
+        # Get content records for version_id
+        db_file_nodes = await get_analyzable_nodes_by_version_id(
+            version_id, {DbNodeKind.CODEBASE_FILE}
         )
 
-        print("======= Nodes from current codebase processed =======")
-        for node in codebase_dag.topological_sort():
-            print(node.root_rel_path, node.status)
+        db_all_codebase_nodes = await get_analyzable_nodes_by_version_id(
+            version_id, {DbNodeKind.CODEBASE_FILE, DbNodeKind.CODEBASE_DIRECTORY}
+        )
 
+        # Get content records for previous_version_id if available
         if previous_version is not None:
-            previous_download_root = Path(previous_download_dir)
-            previous_file_paths = []
-            print("Downloading all source files for previous codebase from s3...")
-            for db_previous_file_node in db_previous_file_nodes:
-                download_abs_path = download_source_file(
-                    s3_client=s3_client,
-                    bucket_name=org_hashed_id,
-                    primary_asset_id=str(previous_version.primary_asset.id),
-                    version_id=str(previous_version.id),
-                    node_rel_path=db_previous_file_node.relative_path,
-                    download_root=previous_download_root,
-                )
-                previous_file_paths.append(download_abs_path)
-            print("Download complete for new version of code")
-
-            previous_codebase_dag: FileTreeDag = build_dag(
-                root_path=previous_download_root,
-                file_paths=previous_file_paths,
+            db_previous_file_nodes = await get_analyzable_nodes_by_version_id(
+                previous_version_id, {DbNodeKind.CODEBASE_FILE}
             )
-            print("======= Nodes from previous codebase =======")
-            for node in previous_codebase_dag.topological_sort():
+        # Download s3 for version_id (and previous if available)
+        s3_client = boto3.client(
+            "s3", endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL")
+        )
+        with (
+            tempfile.TemporaryDirectory() as download_dir,
+            tempfile.TemporaryDirectory() as previous_download_dir,
+        ):
+            download_root = Path(download_dir)
+            file_paths = []
+            if version.status == VersionStatus.CONNECTED:
+                # TODO: check usage before switching to generating
+                # if it's in the connected state, must upload the individual files to S3
+                download_archive_key = (
+                    f"{version.primary_asset_id}/{version_id}/{version_id}_source.zip"
+                )
+                download_path = Path(download_dir) / f"{version_id}.zip"
+                print(f"downloading zip to {download_path}")
+                s3_client.download_file(
+                    org_hashed_id, download_archive_key, download_path
+                )
+
+                extracted_path = unpack_archive(
+                    archive_path=download_path,
+                    override_codebase_name=codebase_name,
+                    extraction_path=download_dir,
+                )
+                print(f"Extracted archive to {extracted_path}")
+                for root, _, files in os.walk(extracted_path):
+                    for filename in files:
+                        local_path = Path(root) / filename
+                        trimmed_path = local_path.relative_to(download_dir)
+                        for node in db_file_nodes:
+                            if node.relative_path == str(trimmed_path):
+                                reencode_file(local_path)
+
+                                s3_client.upload_file(
+                                    local_path,
+                                    org_hashed_id,
+                                    f"{version.primary_asset_id}/{version_id}/{node.relative_path}",
+                                )
+                                print(
+                                    f"uploading {trimmed_path} to s3 at {version.primary_asset_id}/{version_id}/{node.relative_path}"
+                                )
+                                file_paths.append(local_path)
+                set_codebase_status(version_id, VersionStatus.GENERATING)
+
+            else:
+                print("Downloading all source files for codebase from s3...")
+                for db_file_node in db_file_nodes:
+                    download_abs_path = download_source_file(
+                        s3_client=s3_client,
+                        bucket_name=org_hashed_id,
+                        primary_asset_id=str(version.primary_asset.id),
+                        version_id=str(version_id),
+                        node_rel_path=db_file_node.relative_path,
+                        download_root=download_root,
+                    )
+                    file_paths.append(download_abs_path)
+                print("Download complete")
+
+            codebase_dag: FileTreeDag = build_dag(
+                root_path=download_root, file_paths=file_paths
+            )
+
+            print("======= Nodes from current codebase processed =======")
+            for node in codebase_dag.topological_sort():
                 print(node.root_rel_path, node.status)
 
-            diff_dag = codebase_dag.compute_diff(previous_codebase_dag)
-            print("Diff dag computed")
+            if previous_version is not None:
+                previous_download_root = Path(previous_download_dir)
+                previous_file_paths = []
+                print("Downloading all source files for previous codebase from s3...")
+                for db_previous_file_node in db_previous_file_nodes:
+                    download_abs_path = download_source_file(
+                        s3_client=s3_client,
+                        bucket_name=org_hashed_id,
+                        primary_asset_id=str(previous_version.primary_asset.id),
+                        version_id=str(previous_version.id),
+                        node_rel_path=db_previous_file_node.relative_path,
+                        download_root=previous_download_root,
+                    )
+                    previous_file_paths.append(download_abs_path)
+                print("Download complete for new version of code")
 
-            print("======= Nodes from diff dag =======")
-            for node in diff_dag.topological_sort():
-                print(node.root_rel_path, node.status)
+                previous_codebase_dag: FileTreeDag = build_dag(
+                    root_path=previous_download_root,
+                    file_paths=previous_file_paths,
+                )
+                print("======= Nodes from previous codebase =======")
+                for node in previous_codebase_dag.topological_sort():
+                    print(node.root_rel_path, node.status)
 
-        if previous_version is not None:
-            sorted_nodes = diff_dag.topological_sort()
-        else:
-            sorted_nodes = codebase_dag.topological_sort()
-        path_to_db_node_id = {
-            Path(db_node.relative_path): db_node.id for db_node in db_all_codebase_nodes
-        }
+                diff_dag = codebase_dag.compute_diff(previous_codebase_dag)
+                print("Diff dag computed")
 
-        print("======= Nodes being processed  =======")
-        for node in sorted_nodes:
-            print(node.root_rel_path, node.status, node.kind)
+                print("======= Nodes from diff dag =======")
+                for node in diff_dag.topological_sort():
+                    print(node.root_rel_path, node.status)
 
-        nodes_with_id: list[tuple[Node, uuid.UUID | None]] = [
-            (node, path_to_db_node_id[node.root_rel_path])
-            for node in sorted_nodes
-            if node.root_rel_path != Path(".")
-        ]
+            if previous_version is not None:
+                sorted_nodes = diff_dag.topological_sort()
+            else:
+                sorted_nodes = codebase_dag.topological_sort()
+            path_to_db_node_id = {
+                Path(db_node.relative_path): db_node.id
+                for db_node in db_all_codebase_nodes
+            }
 
-        print("======= Nodes with source content id =======")
-        for node, sc_id in nodes_with_id:
-            print(node.root_rel_path, sc_id)
+            print("======= Nodes being processed  =======")
+            for node in sorted_nodes:
+                print(node.root_rel_path, node.status, node.kind)
 
-        await inspect_files(
-            version_id=version_id,
-            codebase_root=download_root,
-            nodes_with_id=nodes_with_id,
-            codebase_name=codebase_name,
-            run_id=run_id,
-            result_loading_config=result_loading_config,
-        )
+            nodes_with_id: list[tuple[Node, uuid.UUID | None]] = [
+                (node, path_to_db_node_id[node.root_rel_path])
+                for node in sorted_nodes
+                if node.root_rel_path != Path(".")
+            ]
+
+            print("======= Nodes with source content id =======")
+            for node, sc_id in nodes_with_id:
+                print(node.root_rel_path, sc_id)
+
+            await inspect_files(
+                version_id=version_id,
+                codebase_root=download_root,
+                nodes_with_id=nodes_with_id,
+                codebase_name=codebase_name,
+                run_id=run_id,
+                result_loading_config=result_loading_config,
+            )
+    except Exception as e:
+        print(f"Error while processing version {version_id}: {e}")
+        set_codebase_status_in_container.remote(version_id, "GENERATION_ERROR")
+        raise
+    else:
+        set_codebase_status_in_container.remote(version_id, "GENERATION_COMPLETE")
 
 
 def hash_file(file_path: Path) -> str:

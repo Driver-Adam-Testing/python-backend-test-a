@@ -109,7 +109,11 @@ def download_and_upload_repo(
     from sqlalchemy.exc import IntegrityError
 
     if not repo.get("commit"):
-        commit = fetch_default_branch_and_commit(repo["full_name"], access_token)
+        try:
+            commit = fetch_default_branch_and_commit(repo["full_name"], access_token)
+        except KeyError:
+            print(f"Failed to find commit for {repo}, unable to process")
+            return repo
     else:
         commit = repo["commit"]
     try:

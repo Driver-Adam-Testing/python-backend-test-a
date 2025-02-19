@@ -501,9 +501,14 @@ def run_codebase_connection(
                         directory_stats["analyzable_sloc_by_extension"][ext] = (
                             bytes_to_sloc(bytes)
                         )
+                    relative_path = (
+                        str(directory_path)
+                        if str(directory_path).endswith("/")
+                        else f"{directory_path}/"
+                    )
                     dir_node = Node(
                         version_id=version_id,
-                        relative_path=str(directory_path),
+                        relative_path=relative_path,
                         kind=NodeKind.CODEBASE_DIRECTORY,
                         misc_metadata=directory_stats,
                     )

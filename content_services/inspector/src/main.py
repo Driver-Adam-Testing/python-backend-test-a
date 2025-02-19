@@ -199,7 +199,10 @@ async def inspect_db(
         ):
             download_root = Path(download_dir)
             file_paths = []
-            if version.status == VersionStatus.CONNECTED:
+            if (
+                version.status == VersionStatus.CONNECTED
+                or version.status == VersionStatus.GENERATING
+            ):
                 # TODO: check usage before switching to generating
                 # if it's in the connected state, must upload the individual files to S3
                 download_archive_key = (
@@ -234,7 +237,8 @@ async def inspect_db(
                                     f"uploading {trimmed_path} to s3 at {version.primary_asset_id}/{version_id}/{node.relative_path}"
                                 )
                                 file_paths.append(local_path)
-                set_codebase_status(version_id, VersionStatus.GENERATING)
+                if version.status == VersionStatus.CONNECTED:
+                    set_codebase_status(version_id, VersionStatus.GENERATING)
 
             else:
                 print("Downloading all source files for codebase from s3...")

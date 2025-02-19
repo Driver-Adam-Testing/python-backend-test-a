@@ -6,9 +6,11 @@ You have {remaining_iterations} more opportunities to execute tools.
 MESSAGE_FIRST_ITERATION = {"role": "user", "content": PROMPT_FIRST_ITERATION}
 
 PROMPT_MIDDLE_ITERATION = """
-If you have 100 percent confidence that there is no additional relevant context to be retrieved, return a response.
-If you have not executed SearchTool, Execute SearchTool in hybrid mode.
-If there is additional context required to become absolutely confident, Execute Tools.
+Review the source code in the files and write your answer using only the results from the tools.
+If you have 100 percent confidence that there is no additional relevant context to be retrieved, you mayreturn a response.
+If there are no SearchTool results in the history, you must Execute SearchTool in hybrid mode.
+If there are only PDF results in the history, you must Execute SearchTool in hybrid mode.
+You may not return a response if you do not have source code results from the tools.
 
 You have {remaining_iterations} more opportunities to execute tools.
 """

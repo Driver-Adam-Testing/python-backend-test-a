@@ -5,7 +5,7 @@ from shared.interfaces.agents.data_scope import DataScope
 from shared.v3.interfaces.llm_message import LlmMessage
 from shared.v3.llms.config.llm_config import LlmConfig
 from shared.v3.utils.parseable import LlmParseable
-from shared.v3.utils.references import Reference
+from shared.v3.utils.references import ReferenceSet
 
 
 class LlmToolContext(BaseModel):
@@ -16,10 +16,10 @@ class LlmToolContext(BaseModel):
 
 class LlmTool(LlmParseable, ABC):
     _tool_context: LlmToolContext
-    _references: list[Reference] | None = None
+    _references: ReferenceSet = ReferenceSet(references=[])
 
     @property
-    def references(self) -> list[Reference]:
+    def references(self) -> ReferenceSet:
         return self._references
 
     @abstractmethod

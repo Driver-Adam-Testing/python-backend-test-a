@@ -22,11 +22,8 @@ class Reference(BaseModel):
         return hash(self) == hash(other)
 
 
-class ReferenceHistory(BaseModel):
+class ReferenceSet(BaseModel):
     references: set[Reference] = set()
 
     def add_reference(self, reference: Reference) -> None:
         self.references.add(reference)
-
-    def get_references(self) -> list[Reference]:
-        return list(self.references)

@@ -17,7 +17,7 @@ from shared.v3.static.messages.global_iteration_messages import (
     MESSAGE_MULTI_ITERATION_SYSTEM,
     get_iteration_message,
 )
-from shared.v3.utils.references import ReferenceHistory
+from shared.v3.utils.references import ReferenceSet
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ class MultiShotLlmClient:
         tools: list[type[LlmTool]] | None = None,
         response_type: type[LlmResponseType] | None = None,
         message_history: LlmMessageHistory | None = None,
-        reference_history: ReferenceHistory | None = None,
+        references: ReferenceSet | None = None,
     ) -> None:
         self.message_history = (
             message_history
@@ -43,11 +43,14 @@ class MultiShotLlmClient:
         self.response_type: type[LlmResponseType] = response_type
         self.config: LlmConfig = config
         self.called_tools: list[LlmTool] = []
-        self.reference_history: ReferenceHistory = (
-            reference_history
-            if reference_history is not None
-            else ReferenceHistory(references=[])
+        self._references: ReferenceSet = (
+            references if references is not None else ReferenceSet(references=[])
         )
+
+    @property
+    def references(self) -> ReferenceSet:
+        self._references + [called_tool.references for called_tool in self.called_tools]
+        return self._references
 
     def invoke(
         self, prompt: str | None = None, iterations: int = 1, debug: bool = False

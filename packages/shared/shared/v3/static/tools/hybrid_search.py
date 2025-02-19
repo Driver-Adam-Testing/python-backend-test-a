@@ -47,11 +47,9 @@ class HybridSearchTool(LlmTool):
         results = search_content_without_session(search_input)
 
         if not results.results:
-            self._references = []
-            return self
-        references = []
+            return self.to_message()
         for result in results.results:
-            references.append(
+            self._references.add_reference(
                 Reference(
                     content=result.content,
                     score=result.score,
@@ -60,10 +58,11 @@ class HybridSearchTool(LlmTool):
                     version_id=result.version_id,
                     node_id=result.node_id,
                     metadata=result.metadata,
+                    tool_call_id=self._tool_context.tool_call_id,
+                    chunk_id=result.metadata.get("chunk_id", None),
+                    chunk_number=result.metadata.get("chunk_number", None),
                 )
             )
-
-        self._references = references
         return self.to_message()
 
     def to_message(self) -> LlmMessage:

@@ -1,11 +1,10 @@
 from shared.interfaces.search import SearchAlgorithm
 from shared.pipelines.search import SearchInput, search_content_without_session
-from shared.v3.agents.agent_tool import (
+from shared.v3.interfaces.llm_message import LlmMessage, MessageKind
+from shared.v3.interfaces.llm_tool import (
     LlmTool,
     LlmToolContext,
-    ToolReference,
 )
-from shared.v3.messages.llm_message import LlmMessage, MessageKind
 from shared.v3.static.messages.global_message_constants import (
     REFERENCE_CONTENT_XML_BEGIN,
     REFERENCE_CONTENT_XML_END,
@@ -20,6 +19,7 @@ from shared.v3.static.messages.global_message_constants import (
     TOOL_ERROR_XML_BEGIN,
     TOOL_ERROR_XML_END,
 )
+from shared.v3.utils.references import Reference
 
 
 class HybridSearchTool(LlmTool):
@@ -52,7 +52,7 @@ class HybridSearchTool(LlmTool):
         references = []
         for result in results.results:
             references.append(
-                ToolReference(
+                Reference(
                     content=result.content,
                     score=result.score,
                     version_display_name=result.version_display_name,

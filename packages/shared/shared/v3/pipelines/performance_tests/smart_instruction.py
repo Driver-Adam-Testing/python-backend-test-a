@@ -5,7 +5,6 @@ from prettytable import PrettyTable
 from shared.interfaces.agents.data_scope import DataScope
 from shared.v3.llms.clients.llm_client import LlmClient
 from shared.v3.pipelines.smart_instruction import run_smart_instruction
-from shared.v3.agents.agent_tool import ToolReference
 
 BEFORE = [
     "",
@@ -32,7 +31,7 @@ PROMPTS = [
 ]
 
 
-def inject_pipeline_requests():
+def inject_pipeline_requests() -> list[dict]:
     pipeline_requests = []
     for _ in range(5):
         import random
@@ -53,11 +52,11 @@ def inject_pipeline_requests():
     return pipeline_requests
 
 
-def run_and_time_pipeline():
+def run_and_time_pipeline() -> None:
     pipeline_requests = inject_pipeline_requests()
     client_timings = {}
 
-    def process_request(request, client):
+    def process_request(request: dict, client: LlmClient) -> float:
         start_time = time.time()
         response = run_smart_instruction(
             user_prompt=request["prompt"],

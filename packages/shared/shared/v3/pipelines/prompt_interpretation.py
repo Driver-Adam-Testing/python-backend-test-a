@@ -1,9 +1,9 @@
 import enum
 
 from pydantic import BaseModel
+from shared.v3.interfaces.llm_message_history import LlmMessageHistory
 from shared.v3.llms.clients.llm_client import LlmClient
 from shared.v3.llms.config.llm_config import LlmConfig
-from shared.v3.messages.llm_message_history import LlmMessageHistory
 from shared.v3.pipelines.interfaces.pipeline_request import PipelineExecutionRequest
 from shared.v3.static.messages.global_driver_application_messages import (
     AgenticContextMessage,
@@ -67,7 +67,7 @@ def prompt_interpretation_pipeline(
 
     pi_client = LlmClient.from_config(LlmConfig.from_name("o3_mini"))
 
-    def generate_prompt_interpretation():
+    def generate_prompt_interpretation() -> PromptInterpretation:
         return pi_client.generate(
             prompt=pipeline_execution_request.original_prompt,
             response_type=PromptInterpretation,

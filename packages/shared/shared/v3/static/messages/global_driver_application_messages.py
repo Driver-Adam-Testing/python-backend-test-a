@@ -1,4 +1,4 @@
-from shared.v3.messages.llm_message import LlmMessage, MessageKind
+from shared.v3.interfaces.llm_message import LlmMessage, MessageKind
 
 
 class DriverApplicationMessage(LlmMessage):

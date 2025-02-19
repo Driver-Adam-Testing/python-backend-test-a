@@ -1,4 +1,4 @@
-from shared.v3.messages.llm_message import LlmMessage, MessageKind
+from shared.v3.interfaces.llm_message import LlmMessage, MessageKind
 from shared.v3.static.messages.global_message_constants import (
     DOCUMENT_CONTENT_AFTER_CURSOR_XML_BEGIN,
     DOCUMENT_CONTENT_AFTER_CURSOR_XML_END,

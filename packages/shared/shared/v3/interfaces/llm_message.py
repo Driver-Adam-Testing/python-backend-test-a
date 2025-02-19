@@ -3,7 +3,7 @@ import json
 
 from openai.types.chat import ChatCompletionMessage, ParsedChatCompletionMessage
 from pydantic import BaseModel
-from shared.v3.messages.llm_message_kind import MessageKind
+from shared.v3.interfaces.llm_message_kind import MessageKind
 
 
 class LlmMessage(BaseModel):

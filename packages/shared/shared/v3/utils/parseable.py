@@ -99,6 +99,7 @@ class LlmParseable(BaseModel, ABC):
 
     @classmethod
     def to_instruction_response_string(cls) -> str:
+        # TODO: validate that cls is a response type first.
         """
         Returns the docstring and an example of the JSON it would take to generate it.
 
@@ -118,6 +119,7 @@ class LlmParseable(BaseModel, ABC):
 
     @classmethod
     def to_instruction_tool_string(cls) -> str:
+        # TODO validate that cls is a tool first.
         """
         Returns the docstring and an example of the JSON it would take to generate it.
 

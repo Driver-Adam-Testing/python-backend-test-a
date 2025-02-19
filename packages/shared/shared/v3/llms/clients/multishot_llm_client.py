@@ -1,27 +1,28 @@
 import logging
 
 from shared.interfaces.agents.data_scope import DataScope
-from shared.v3.agents.agent_tool import (
+from shared.v3.interfaces.llm_message import (
+    LlmMessage,
+)
+from shared.v3.interfaces.llm_message_history import LlmMessageHistory
+from shared.v3.interfaces.llm_message_kind import MessageKind
+from shared.v3.interfaces.llm_response_type import LlmResponseType
+from shared.v3.interfaces.llm_tool import (
     LlmTool,
     LlmToolContext,
 )
-from shared.v3.agents.response_type import LlmResponseType
 from shared.v3.llms.clients.llm_client import LlmClient
 from shared.v3.llms.config.llm_config import LlmConfig
-from shared.v3.messages.llm_message import (
-    LlmMessage,
-)
-from shared.v3.messages.llm_message_history import LlmMessageHistory
-from shared.v3.messages.llm_message_kind import MessageKind
 from shared.v3.static.messages.global_iteration_messages import (
     MESSAGE_MULTI_ITERATION_SYSTEM,
     get_iteration_message,
 )
+from shared.v3.utils.references import ReferenceHistory
 
 logger = logging.getLogger(__name__)
 
 
-class BaseAgent:
+class MultiShotLlmClient:
     def __init__(
         self,
         datascope: DataScope,
@@ -29,6 +30,7 @@ class BaseAgent:
         tools: list[type[LlmTool]] | None = None,
         response_type: type[LlmResponseType] | None = None,
         message_history: LlmMessageHistory | None = None,
+        reference_history: ReferenceHistory | None = None,
     ) -> None:
         self.message_history = (
             message_history
@@ -41,6 +43,11 @@ class BaseAgent:
         self.response_type: type[LlmResponseType] = response_type
         self.config: LlmConfig = config
         self.called_tools: list[LlmTool] = []
+        self.reference_history: ReferenceHistory = (
+            reference_history
+            if reference_history is not None
+            else ReferenceHistory(references=[])
+        )
 
     def invoke(
         self, prompt: str | None = None, iterations: int = 1, debug: bool = False

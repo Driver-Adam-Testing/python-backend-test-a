@@ -1,5 +1,5 @@
-from shared.v3.messages.llm_message import LlmMessage
-from shared.v3.messages.llm_message_kind import MessageKind
+from shared.v3.interfaces.llm_message import LlmMessage
+from shared.v3.interfaces.llm_message_kind import MessageKind
 
 MESSAGE_MULTI_ITERATION_SYSTEM = LlmMessage(
     message_kind=MessageKind.SYSTEM,

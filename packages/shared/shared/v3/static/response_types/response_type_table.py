@@ -1,4 +1,4 @@
-from shared.v3.agents.response_type import LlmResponseType
+from shared.v3.interfaces.llm_response_type import LlmResponseType
 
 
 class TableResponse(LlmResponseType):

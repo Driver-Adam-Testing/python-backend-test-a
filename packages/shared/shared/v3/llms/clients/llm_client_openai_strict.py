@@ -1,11 +1,11 @@
 from typing import TYPE_CHECKING
 
 import openai
-from shared.v3.agents.agent_tool import LlmTool
+from shared.v3.interfaces.llm_message import LlmMessage, MessageKind
+from shared.v3.interfaces.llm_message_history import LlmMessageHistory
+from shared.v3.interfaces.llm_tool import LlmTool
 from shared.v3.llms.clients.llm_client import LlmClient
 from shared.v3.llms.config.llm_config import LlmConfig
-from shared.v3.messages.llm_message import LlmMessage, MessageKind
-from shared.v3.messages.llm_message_history import LlmMessageHistory
 
 if TYPE_CHECKING:
     from openai.types.chat import ParsedChatCompletionMessage

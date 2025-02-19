@@ -1,10 +1,10 @@
 from abc import ABC, abstractmethod
 
-from shared.v3.agents.agent_tool import LlmTool
-from shared.v3.agents.response_type import LlmResponseType
+from shared.v3.interfaces.llm_message import LlmMessage
+from shared.v3.interfaces.llm_message_history import LlmMessageHistory
+from shared.v3.interfaces.llm_response_type import LlmResponseType
+from shared.v3.interfaces.llm_tool import LlmTool
 from shared.v3.llms.config.llm_config import ApiKind, LlmConfig
-from shared.v3.messages.llm_message import LlmMessage
-from shared.v3.messages.llm_message_history import LlmMessageHistory
 
 
 class LlmClient(ABC):
@@ -16,6 +16,7 @@ class LlmClient(ABC):
         """
         self.config = config
 
+    # TODO: Should tool messages be handled by the multishot client? It becomes difficult when completion kwargs for strict mode are present, but it's beyond the scope of the llmclient.
     @abstractmethod
     def generate(
         self,

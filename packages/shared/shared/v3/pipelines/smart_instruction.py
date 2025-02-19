@@ -1,7 +1,7 @@
 from shared.interfaces.agents.data_scope import DataScope
-from shared.v3.agents.agent import BaseAgent
+from shared.v3.interfaces.llm_message_history import LlmMessageHistory
 from shared.v3.llms.clients.llm_client import LlmClient
-from shared.v3.messages.llm_message_history import LlmMessageHistory
+from shared.v3.llms.clients.multishot_llm_client import MultiShotLlmClient
 from shared.v3.pipelines.abbreviate_page_content import (
     AbbreviatedPageContentPipelineResponse,
     abbreviate_page_content,
@@ -31,7 +31,7 @@ def run_smart_instruction(
             )
         )
     )
-    agent = BaseAgent(
+    agent = MultiShotLlmClient(
         datascope=datascope,
         config=client.config,
         tools=[HybridSearchTool],

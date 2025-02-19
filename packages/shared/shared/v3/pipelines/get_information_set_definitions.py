@@ -1,7 +1,7 @@
 from pydantic import BaseModel
+from shared.v3.interfaces.llm_message_history import LlmMessageHistory
 from shared.v3.llms.clients.llm_client import LlmClient
 from shared.v3.llms.config.llm_config import LlmConfig
-from shared.v3.messages.llm_message_history import LlmMessageHistory
 from shared.v3.pipelines.interfaces.pipeline_request import PipelineExecutionRequest
 from shared.v3.static.messages.pipeline_get_information_sets_definitions_messages import (
     GetInformationSetsParametersMessage,
@@ -41,7 +41,9 @@ def get_information_set_definitions(
         ),
     ).parsed_content
 
-    def fetch_retrieval_parameters(information_set):
+    def fetch_retrieval_parameters(
+        information_set: any,
+    ) -> InformationSetRetrievalParameters:
         return llm_client.generate(
             response_type=InformationSetRetrievalParameters,
             message_history=LlmMessageHistory(

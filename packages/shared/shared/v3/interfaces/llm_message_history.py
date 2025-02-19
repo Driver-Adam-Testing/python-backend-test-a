@@ -11,8 +11,8 @@ from openai.types.chat.chat_completion_message_tool_call_param import (
     Function as OpenAIFunction,
 )
 from pydantic import BaseModel
-from shared.v3.messages.llm_message import LlmMessage
-from shared.v3.messages.llm_message_kind import MessageKind
+from shared.v3.interfaces.llm_message import LlmMessage
+from shared.v3.interfaces.llm_message_kind import MessageKind
 
 
 class LlmMessageHistory(BaseModel):

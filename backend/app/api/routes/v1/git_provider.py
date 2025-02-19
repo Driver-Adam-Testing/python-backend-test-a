@@ -3,6 +3,8 @@ import hashlib
 import hmac
 import json
 import logging
+from itertools import groupby
+from uuid import UUID
 
 import modal
 from database.models_v1 import (
@@ -20,26 +22,36 @@ from sqlmodel import select
 
 from app.api.auth import (
     ContentEditorPermission,
-    GitProviderManagerPermission,
+    OrgManagerPermission,
     UserToken,
 )
 from app.api.session import CurrentSession
 from app.core.config import settings
+from app.git_providers.utils.errors import (
+    GitProviderAccessTokenError,
+)
+from app.repositories.git_provider_repository import (
+    git_provider_app_installation_by_id,
+    git_provider_app_installation_by_org_id,
+)
 from app.repositories.github_app_installations_repository import (
     GithubAppInstallationsRepository,
 )
 from app.schemas.git_provider_schema import (
     CreateGitProviderAppRequest,
     GitRepository,
+    GroupAccessToken,
 )
 from app.services.gitlab_provider_service import (
     authorize_git_provider,
     clone_git_repository,
     create_git_provider_app,
-    fetch_git_provider_app_install_by_user_id,
     fetch_git_provider_apps_by_org_id,
-    fetch_user_repositories_by_app_id,
+    fetch_group_repositories_by_app_id,
     handle_authorization_callback,
+    handle_delete_git_provider_app,
+    handle_group_access_revoke,
+    install_group_access_token,
 )
 from app.utils.aws_s3 import org_id_to_hash
 from app.utils.aws_secrets_manager import format_secret_key, write_secret
@@ -76,6 +88,7 @@ class OkResponse(BaseModel):
 @router.get(
     "/app",
     summary="Get git provider apps",
+    dependencies=[OrgManagerPermission],
     response_model=list[GitProviderApp],
 )
 def get_apps(
@@ -88,7 +101,7 @@ def get_apps(
 @router.post(
     "/app",
     summary="Create git provider app.",
-    dependencies=[GitProviderManagerPermission],
+    dependencies=[OrgManagerPermission],
     response_model=GitProviderApp,
 )
 def create_app(
@@ -96,6 +109,25 @@ def create_app(
     gp_app_input: CreateGitProviderAppRequest,
 ) -> GitProviderApp:
     return create_git_provider_app(session, gp_app_input, aws_config)
+
+
+@router.delete(
+    "/app/{application_id}",
+    summary="Delete git provider app.",
+    dependencies=[OrgManagerPermission],
+)
+def delete_git_provider_app(
+    session: CurrentSession,
+    current_user: UserToken,
+    application_id: str,
+) -> JSONResponse:
+    handle_delete_git_provider_app(
+        session, current_user.organization_id, application_id, aws_config
+    )
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={"message": "App deleted."},
+    )
 
 
 @router.get("/app/{application_id}/authorize")
@@ -117,41 +149,98 @@ def get_provider_authorize_url(
 
 
 @router.get(
-    "/app/{application_id}/installation",
-    summary="Get app install for logged in user.",
-    response_model=GitProviderAppInstallation,
+    "/app/{application_id}/installations",
+    summary="Get app install for logged.",
+    response_model=list[GitProviderAppInstallation],
+    dependencies=[OrgManagerPermission],
 )
 def get_app_installation(
     session: CurrentSession,
     current_user: UserToken,
     application_id: str,
-) -> GitProviderAppInstallation:
-    install = fetch_git_provider_app_install_by_user_id(
+) -> list[GitProviderAppInstallation]:
+    installs = git_provider_app_installation_by_org_id(
         session,
         current_user.organization_id,
-        current_user.user_id,
         application_id,
     )
-
-    if not install:
-        raise HTTPException(status_code=404, detail="Installation not found.")
-
-    return install
+    return installs
 
 
-@router.get("/app/{application_id}/repos", response_model=list[GitRepository])
+@router.post(
+    "/app/{application_id}/token",
+    summary="Add a group access token to the app.",
+    dependencies=[OrgManagerPermission],
+)
+def add_group_access_token(
+    session: CurrentSession,
+    current_user: UserToken,
+    application_id: str,
+    gat: GroupAccessToken,
+) -> JSONResponse:
+    try:
+        install = install_group_access_token(
+            session, current_user.organization_id, application_id, gat, aws_config
+        )
+
+        if not install:
+            raise HTTPException(status_code=404, detail="Installation not found.")
+
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content={"message": "Token added."},
+        )
+    except GitProviderAccessTokenError:
+        logger.exception("Error adding token")
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+
+
+@router.delete(
+    "/app/{application_id}/installations/{installation_id}",
+    dependencies=[OrgManagerPermission],
+    summary="Delete app install",
+)
+def delete_app_installation(
+    session: CurrentSession,
+    current_user: UserToken,
+    application_id: str,
+    installation_id: str,
+) -> JSONResponse:
+    handle_group_access_revoke(
+        session,
+        current_user.organization_id,
+        application_id,
+        installation_id,
+        aws_config,
+    )
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={"message": "Installation deleted."},
+    )
+
+
+@router.get(
+    "/app/{application_id}/repos",
+    dependencies=[OrgManagerPermission],
+    response_model=list[GitRepository],
+)
 def get_user_repositories_by_app_id(
     session: CurrentSession,
     current_user: UserToken,
     application_id: str,
 ) -> list[GitRepository]:
-    return fetch_user_repositories_by_app_id(
-        session,
-        current_user.organization_id,
-        current_user.user_id,
-        application_id,
-        aws_config,
-    )
+    try:
+        return fetch_group_repositories_by_app_id(
+            session,
+            current_user.organization_id,
+            current_user.user_id,
+            application_id,
+            aws_config,
+        )
+    except GitProviderAccessTokenError as e:
+        logger.error(f"Error fetching repositories: {e}")
+        # give me a 403 if the user is not authorized to access the installation
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
 
 
 @router.get("/app/callback")
@@ -201,6 +290,47 @@ def clone_git_provider_repo(
     return JSONResponse(
         status_code=status.HTTP_202_ACCEPTED,
         content={"download_url": analysis_download_url},
+    )
+
+
+@router.post(
+    "/app/{application_id}/connect-repos",
+    dependencies=[OrgManagerPermission],
+)
+def connect_git_provider_repo(
+    session: CurrentSession,
+    current_user: UserToken,
+    application_id: str,
+    repos: list[GitRepository],
+) -> JSONResponse:
+    handle_gitlab_events = modal.Function.lookup(
+        "inspector-v2",
+        "handle_gitlab_events",
+        environment_name=settings.MODAL_ENVIRONMENT,
+    )
+
+    repos.sort(key=lambda x: x.installation_id)
+    installation_groups = {
+        k: list(v) for k, v in groupby(repos, key=lambda x: x.installation_id)
+    }
+    for installation_id, repo_group in installation_groups.items():
+        app_install = git_provider_app_installation_by_id(session, installation_id)
+        if (
+            app_install.git_provider_app_id != application_id
+            or app_install.organization_id != current_user.organization_id
+        ):
+            raise HTTPException(status_code=404, detail="Installation not found.")
+        handle_gitlab_events.spawn(
+            installation_id,
+            current_user.organization_id,
+            repos_added=[repo.model_dump() for repo in repo_group],
+            repos_deleted=[],
+            repos_pushed=[],
+        )
+
+    return JSONResponse(
+        status_code=status.HTTP_202_ACCEPTED,
+        content={"message": "Connecting"},
     )
 
 
@@ -622,6 +752,105 @@ def webhook(
         return handle_installation_modified_event(session, body)
 
     logger.info("Unhandled event type: %s", github_event)
+    return JSONResponse(
+        status_code=status.HTTP_202_ACCEPTED, content={"message": "Event ignored"}
+    )
+
+
+def handle_gitlab_push_event(
+    session: CurrentSession,
+    app_id: UUID,
+    installation_id: str,
+    body: dict,
+) -> JSONResponse:
+    repository = body["repository"]
+    project = body["project"]
+    repo_name = repository["name"]
+    repo_id = str(project["id"])
+    full_name = project["path_with_namespace"]
+    default_branch = project["default_branch"]
+    pushed_ref = body["ref"]
+    commit_hash = body["after"]
+    app_install = git_provider_app_installation_by_id(session, installation_id)
+    organization_id = app_install.organization_id
+
+    if pushed_ref != f"refs/heads/{default_branch}":
+        logger.info(
+            "Push event ignored: Not the default branch. Org: %s, Repo: %s, Ref: %s, Install ID: %s",
+            organization_id,
+            repo_name,
+            pushed_ref,
+            installation_id,
+        )
+        return JSONResponse(
+            status_code=status.HTTP_202_ACCEPTED,
+            content={"message": "Push event ignored (not default branch)"},
+        )
+
+    logger.info(
+        "Push event on default branch. Org: %s, Repo: %s, Branch: %s, Install ID: %s",
+        organization_id,
+        repo_name,
+        default_branch,
+        installation_id,
+    )
+
+    if app_install.git_provider_app_id != app_id:
+        raise HTTPException(status_code=404, detail="Installation not found.")
+
+    repos_pushed = [
+        {
+            "id": repo_id,
+            "name": repo_name,
+            "repo_name": repo_name,
+            "full_name": full_name,
+            "commit": commit_hash,
+            "metadata": project,
+            "installation_id": installation_id,
+            "latest_commit": {
+                "commit": {
+                    "id": commit_hash,
+                },
+            },
+        }
+    ]
+    handle_github_events = modal.Function.lookup(
+        "inspector-v2",
+        "handle_gitlab_events",
+        environment_name=settings.MODAL_ENVIRONMENT,
+    )
+    handle_github_events.spawn(
+        installation_id,
+        organization_id,
+        [],
+        [],
+        repos_pushed,
+    )
+    return JSONResponse(
+        status_code=status.HTTP_202_ACCEPTED,
+        content={"ok": ""},
+    )
+
+
+@router.post("/app/webhook")
+def gitlab_webhook(
+    session: CurrentSession,
+    body_data: dict = Depends(_extract_body_and_headers),
+) -> JSONResponse:
+    # TODO: Use install id as the token
+    # TODO: handle token expire events
+    body = body_data["json_body"]
+    headers = body_data["headers"]
+    object_kind = body.get("object_kind")
+    installation_id = headers["x-gitlab-token"]
+    app_install = git_provider_app_installation_by_id(session, installation_id)
+
+    if object_kind == "push":
+        print("Push event")
+        handle_gitlab_push_event(
+            session, app_install.git_provider_app_id, installation_id, body
+        )
+
     return JSONResponse(
         status_code=status.HTTP_202_ACCEPTED, content={"message": "Event ignored"}
     )

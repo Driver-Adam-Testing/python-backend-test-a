@@ -6,3 +6,6 @@ class GitProviderAppRevokeError(Exception):
     ) -> None:
         super().__init__(message)
         self.original_exception = original_exception
+
+
+class GitProviderAccessTokenError(Exception): ...

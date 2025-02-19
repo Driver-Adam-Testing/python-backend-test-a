@@ -10,6 +10,7 @@ import modal
 from onboarding.onboard import (
     connect_unconnected_repos,
     handle_github_events,
+    handle_gitlab_events,
     run_codebase_connection,
 )
 
@@ -660,6 +661,33 @@ def test_handle_github_events() -> None:
     org_id = "org_s76pU1v8LAYhTOWB"
 
     handle_github_events.remote(
+        installation_id,
+        org_id,
+        repos_added,
+        repos_deleted,
+        repos_pushed,
+    )
+
+
+@app.local_entrypoint()
+def test_handle_gitlab_events() -> None:
+    import json
+
+    raw_body = """
+    {
+        "provider_name": "Gitlab Enterprise Self Managed", "provider_kind": "GITLAB_ENTERPRISE_SELF_MANAGED", "repo_name": "serverless-ness", "org": "onthebeach/sub-group", "last_updated": "2023-11-02T17:48:28.000+01:00", "metadata": {"id": 5, "description": null, "name": "serverless-ness", "name_with_namespace": "onthebeach / sub-group / serverless-ness", "path": "serverless-ness", "path_with_namespace": "onthebeach/sub-group/serverless-ness", "created_at": "2025-01-10T12:16:13.533Z", "default_branch": "master", "tag_list": [], "topics": [], "ssh_url_to_repo": "git@driver-gitlab.ngrok.io:onthebeach/sub-group/serverless-ness.git", "http_url_to_repo": "http://driver-gitlab.ngrok.io/onthebeach/sub-group/serverless-ness.git", "web_url": "http://driver-gitlab.ngrok.io/onthebeach/sub-group/serverless-ness", "readme_url": "http://driver-gitlab.ngrok.io/onthebeach/sub-group/serverless-ness/-/blob/master/README.md", "forks_count": 0, "avatar_url": null, "star_count": 0, "last_activity_at": "2025-01-10T12:16:16.256Z", "namespace": {"id": 43, "name": "sub-group", "path": "sub-group", "kind": "group", "full_path": "onthebeach/sub-group", "parent_id": 36, "avatar_url": null, "web_url": "http://driver-gitlab.ngrok.io/groups/onthebeach/sub-group"}, "_links": {"self": "http://driver-gitlab.ngrok.io/api/v4/projects/5", "issues": "http://driver-gitlab.ngrok.io/api/v4/projects/5/issues", "merge_requests": "http://driver-gitlab.ngrok.io/api/v4/projects/5/merge_requests", "repo_branches": "http://driver-gitlab.ngrok.io/api/v4/projects/5/repository/branches", "labels": "http://driver-gitlab.ngrok.io/api/v4/projects/5/labels", "events": "http://driver-gitlab.ngrok.io/api/v4/projects/5/events", "members": "http://driver-gitlab.ngrok.io/api/v4/projects/5/members", "cluster_agents": "http://driver-gitlab.ngrok.io/api/v4/projects/5/cluster_agents"}, "packages_enabled": true, "empty_repo": false, "archived": false, "visibility": "private", "resolve_outdated_diff_discussions": false, "container_expiration_policy": {"cadence": "1d", "enabled": false, "keep_n": 10, "older_than": "90d", "name_regex": ".*", "name_regex_keep": null, "next_run_at": "2025-01-11T12:16:16.323Z"}, "repository_object_format": "sha1", "issues_enabled": true, "merge_requests_enabled": true, "wiki_enabled": true, "jobs_enabled": true, "snippets_enabled": true, "container_registry_enabled": true, "service_desk_enabled": false, "service_desk_address": null, "can_create_merge_request_in": true, "issues_access_level": "enabled", "repository_access_level": "enabled", "merge_requests_access_level": "enabled", "forking_access_level": "enabled", "wiki_access_level": "enabled", "builds_access_level": "enabled", "snippets_access_level": "enabled", "pages_access_level": "private", "analytics_access_level": "enabled", "container_registry_access_level": "enabled", "security_and_compliance_access_level": "private", "releases_access_level": "enabled", "environments_access_level": "enabled", "feature_flags_access_level": "enabled", "infrastructure_access_level": "enabled", "monitor_access_level": "enabled", "model_experiments_access_level": "enabled", "model_registry_access_level": "enabled", "emails_disabled": false, "emails_enabled": true, "shared_runners_enabled": true, "lfs_enabled": true, "creator_id": 35, "import_url": null, "import_type": "gitlab_project", "import_status": "finished", "import_error": null, "open_issues_count": 0, "description_html": "", "updated_at": "2025-01-10T12:16:18.425Z", "ci_default_git_depth": 20, "ci_forward_deployment_enabled": true, "ci_forward_deployment_rollback_allowed": true, "ci_job_token_scope_enabled": false, "ci_separated_caches": true, "ci_allow_fork_pipelines_to_run_in_parent_project": true, "ci_id_token_sub_claim_components": ["project_path", "ref_type", "ref"], "build_git_strategy": "fetch", "keep_latest_artifact": true, "restrict_user_defined_variables": false, "ci_pipeline_variables_minimum_override_role": "maintainer", "runners_token": "GR1348941ebgdPJxxkjPSppzdxZmP", "runner_token_expiration_interval": null, "group_runners_enabled": true, "auto_cancel_pending_pipelines": "enabled", "build_timeout": 3600, "auto_devops_enabled": true, "auto_devops_deploy_strategy": "continuous", "ci_push_repository_for_job_token_allowed": false, "ci_config_path": null, "public_jobs": true, "shared_with_groups": [], "only_allow_merge_if_pipeline_succeeds": false, "allow_merge_on_skipped_pipeline": null, "request_access_enabled": true, "only_allow_merge_if_all_discussions_are_resolved": false, "remove_source_branch_after_merge": true, "printing_merge_request_link_enabled": true, "merge_method": "merge", "squash_option": "default_off", "enforce_auth_checks_on_uploads": true, "suggestion_commit_message": null, "merge_commit_template": null, "squash_commit_template": null, "issue_branch_template": null, "warn_about_potentially_unwanted_characters": true, "autoclose_referenced_issues": true, "approvals_before_merge": 0, "mirror": false, "external_authorization_classification_label": null, "marked_for_deletion_at": null, "marked_for_deletion_on": null, "requirements_enabled": true, "requirements_access_level": "enabled", "security_and_compliance_enabled": true, "pre_receive_secret_detection_enabled": false, "compliance_frameworks": [], "issues_template": null, "merge_requests_template": null, "ci_restrict_pipeline_cancellation_role": "developer", "merge_pipelines_enabled": false, "merge_trains_enabled": false, "merge_trains_skip_train_allowed": false, "only_allow_merge_if_all_status_checks_passed": false, "allow_pipeline_trigger_approve_deployment": false, "prevent_merge_without_jira_issue": false, "permissions": {"project_access": null, "group_access": {"access_level": 40, "notification_level": 3}}}, "latest_commit": {"repository_url": "http://driver-gitlab.ngrok.io/onthebeach/sub-group/serverless-ness.git", "default_branch": "master", "commit": {"id": "049dfd3cf98b69791c4b22a2438daf0a89a7e98f", "message": "Initialized from 'Serverless Framework/JS' project templateTemplate repository: https://gitlab.com/gitlab-org/project-templates/serverless-frameworkCommit SHA: a2a5b57371d276dcc6f529c71aa2e77d43b4db34", "author": "GitLab", "date": "2023-11-02T17:48:28.000+01:00"}}, "default_branch": "master", "installation_id": "1802a3a5-c387-4631-8710-dbc961f39d8c"
+    }
+    """
+    body = json.loads(raw_body)
+
+    installation_id = str(body["installation_id"])
+    repos_added = [body]
+    repos_deleted = []
+    repos_pushed = []
+
+    org_id = "org_s76pU1v8LAYhTOWB"
+
+    handle_gitlab_events.remote(
         installation_id,
         org_id,
         repos_added,

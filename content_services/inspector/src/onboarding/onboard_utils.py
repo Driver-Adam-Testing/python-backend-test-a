@@ -18,6 +18,9 @@ from gitignore_parser import parse_gitignore
 from sqlmodel import Session
 
 
+class AccessTokenError(Exception): ...
+
+
 class RunInProgressError(Exception):
     pass
 
@@ -577,3 +580,24 @@ def delete_file_from_s3(bucket: str, key: str) -> None:
         aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY"),
     )
     s3_client.delete_object(Bucket=bucket, Key=key)
+
+
+def upload_to_s3_with_metadata(
+    zip_content: bytes, metadata: dict, upload_key: str
+) -> bool:
+    import boto3
+
+    s3_client = boto3.client("s3")
+    try:
+        s3_client.put_object(
+            Bucket=os.environ["DROPZONE_BUCKET_NAME"],
+            Key=upload_key,
+            Body=zip_content,
+            ContentType="application/zip",
+            Metadata=metadata,
+        )
+    except Exception as e:
+        print(e)
+        raise Exception(
+            f"Failed uploading codebase version {metadata['version_id']} to {upload_key}."
+        ) from e

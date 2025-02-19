@@ -1,73 +1,47 @@
-import base64
 import hashlib
-import logging
 import os
-import time
 from uuid import UUID
 
-import httpx
-import jwt
 import requests
 from onboarding.onboard_utils import AccessTokenError, upload_to_s3_with_metadata
+from shared.interfaces.aws_client_config import AWSClientConfig
+from shared.secret_management.aws_secret_management import (
+    AWSSecretManagementStrategy,
+    format_secret_name,
+)
 from sqlalchemy.orm import selectinload
 from sqlmodel import Session, select
 
-logger = logging.getLogger(__name__)
 
-
-def generate_jwt() -> str:
-    payload = {
-        "iat": int(time.time()),
-        "exp": int(time.time()) + 600,
-        "iss": os.environ["GH_CLIENT_ID"],
-    }
-    decoded_pem = base64.b64decode(os.environ["GH_CLIENT_PEM_SECRET"])
-    return jwt.encode(payload, decoded_pem, algorithm="RS256")
-
-
-def fetch_app_access_token(installation_id: str) -> str:
-    url = f"https://api.github.com/app/installations/{installation_id}/access_tokens"
-    jwt = generate_jwt()
-    with httpx.Client() as client:
-        headers = {"Accept": "application/json", "Authorization": f"Bearer {jwt}"}
-        response = client.post(url, headers=headers)
-        try:
-            response.raise_for_status()
-        except httpx.HTTPStatusError as e:
-            if e.response.status_code == 404:
-                raise AccessTokenError(
-                    f"GitHub application installation {installation_id} not found."
-                ) from e
-            raise
-        token_data = response.json()
-        if "token" not in token_data:
-            raise AccessTokenError("GitHub application access token not found.")
-        return token_data["token"]
-
-
-def get_github_repo_url(full_repo_name: str) -> str:
-    return f"https://api.github.com/repos/{full_repo_name}"
-
-
-def fetch_default_branch_and_commit(full_repo_name: str, access_token: str) -> str:
-    headers = {"Authorization": f"token {access_token}"}
-    repo_url = get_github_repo_url(full_repo_name=full_repo_name)
-
-    repo = requests.get(repo_url, headers=headers)
-    repo_data = repo.json()
-    logger.info(
-        f"Repo information retrieved from github API (status code {repo.status_code}): {repo_data}"
+def fetch_access_token(installation_id: str) -> str:
+    print(f"Fetching group access token for installation ID {installation_id}")
+    install_key = format_secret_name("GIT_PROVIDER_GAT_INSTALL_SECRET", installation_id)
+    secrets_manager = AWSSecretManagementStrategy(
+        AWSClientConfig(
+            region_name=os.environ["AWS_REGION"],
+            aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
+            aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
+        )
     )
-    default_branch = repo_data["default_branch"]
+    secret_value = secrets_manager.read_secret(install_key)
+    if not secret_value:
+        raise AccessTokenError("Access token not found")
 
-    branch_url = f"{repo_url}/branches/{default_branch}"
-    branch_response = requests.get(branch_url, headers=headers)
-    branch_data = branch_response.json()
-    logger.info(f"Default branch for {full_repo_name} is {default_branch}")
-    logger.info(
-        f"Branch data retrieved from github API (status code {branch_response.status_code}): {branch_data}"
+    group_access_tokens = secret_value["token"]
+
+    return group_access_tokens
+
+
+def download_repo(base_url: str, repo_id: str, commit: str, access_token: str) -> bytes:
+    headers = {"Authorization": f"Bearer {access_token}"}
+    response = requests.get(
+        f"{base_url}/api/v4/projects/{repo_id}/repository/archive.zip?sha={commit}",
+        headers=headers,
+        timeout=120,
+        allow_redirects=True,
     )
-    return branch_data["commit"]["sha"]
+    response.raise_for_status()
+    return response.content
 
 
 def generate_codebase_metadata(
@@ -86,18 +60,11 @@ def generate_codebase_metadata(
     }
 
 
-def download_github_repo_zip(full_name: str, commit: str, access_token: str) -> bytes:
-    headers = {"Authorization": f"token {access_token}"}
-    zip_url = f"https://api.github.com/repos/{full_name}/zipball/{commit}"
-    response = requests.get(zip_url, headers=headers, timeout=120, allow_redirects=True)
-    response.raise_for_status()
-    return response.content
-
-
 def download_and_upload_repo(
     org_id: str, repo: dict, access_token: str, is_push: bool = False
 ) -> str | None:
     from database.db import engine
+    from database.models_v1 import GitProviderAppInstallation
     from database.models_v2 import (
         PrimaryAsset,
         Version,
@@ -108,12 +75,20 @@ def download_and_upload_repo(
     )
     from sqlalchemy.exc import IntegrityError
 
-    if not repo.get("commit"):
-        commit = fetch_default_branch_and_commit(repo["full_name"], access_token)
-    else:
-        commit = repo["commit"]
+    repo_id = repo["metadata"]["id"]
+    repo_name = repo["repo_name"]
+    commit = repo["latest_commit"]["commit"]["id"]
+    installation_id = repo["installation_id"]
+
     try:
         with Session(engine) as session, session.begin():
+            app_install = session.exec(
+                select(GitProviderAppInstallation).where(
+                    GitProviderAppInstallation.id == installation_id
+                )
+            ).one()
+            base_url = app_install.git_provider_app.base_url
+
             if is_push:
                 primary_asset = session.exec(
                     select(PrimaryAsset)
@@ -167,12 +142,12 @@ def download_and_upload_repo(
                             break
                         elif version.status == VersionStatus.GENERATING:
                             print(
-                                f"Version already in generating state for {repo["name"]}, skipping..."
+                                f"Version already in generating state for {repo_name}, skipping..."
                             )
                             return repo
                 elif primary_asset.versions[0].status == VersionStatus.CONNECTING:
                     print(
-                        f"Version already in connecting state for {repo["name"]}, skipping..."
+                        f"Version already in connecting state for {repo_name}, skipping..."
                     )
                     return repo
                 else:
@@ -181,10 +156,11 @@ def download_and_upload_repo(
 
             else:
                 primary_asset = PrimaryAsset(
-                    display_name=repo["name"],
+                    display_name=repo_name,
                     organization_id=org_id,
                     kind=PrimaryAssetKind.CODEBASE,
-                    repository_id=repo["id"],
+                    repository_id=repo_id,
+                    installation_id=installation_id,
                 )
                 session.add(primary_asset)
 
@@ -197,28 +173,28 @@ def download_and_upload_repo(
                 session.add(version)
                 version_id = version.id
                 print(
-                    f"Creating primary asset and version for {repo["name"]}:{commit} for org: {org_id}. Version ID: {version_id}"
+                    f"Creating primary asset and version for {repo_name}:{commit} for org: {org_id}. Version ID: {version_id}"
                 )
     except IntegrityError:
         print(
-            f"Failed to create primary asset and version {repo["name"]}:{commit} for org: {org_id}"
+            f"Failed to create primary asset and version {repo_name}:{commit} for org: {org_id}"
         )
         return repo
-
+    full_repo_name = repo["metadata"]["path_with_namespace"]
     metadata = generate_codebase_metadata(
         org_id,
-        repo["full_name"],
-        repo["id"],
-        "github",
+        full_repo_name,
+        repo_id,
+        "gitlab_enterprise_self_managed",
         version_id,
     )
 
-    zip_content = download_github_repo_zip(repo["full_name"], commit, access_token)
-    logger.info("Repository downloaded successfully. Size: %d bytes", len(zip_content))
+    zip_content = download_repo(base_url, repo_id, commit, access_token)
+    print("Repository downloaded successfully. Size: %d bytes", len(zip_content))
 
-    org_hashed_id = hashlib.sha256(org_id.encode()).hexdigest()[:63]
-    upload_key = f"codebases/{org_hashed_id}/{repo['name']}.zip"
+    org_hashed_id = hashlib.sha256(org_id.encode("utf-8")).hexdigest()[:63]
+    upload_key = f"codebases/{org_hashed_id}/{repo_name}.zip"
     upload_to_s3_with_metadata(zip_content, metadata, upload_key)
-    print(f"Repository {repo['name']} uploaded successfully to {upload_key}.")
+    print(f"Repository {repo_name} uploaded successfully to {upload_key}.")
 
     return None

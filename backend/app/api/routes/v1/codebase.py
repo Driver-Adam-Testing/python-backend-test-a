@@ -21,6 +21,7 @@ from sqlmodel import func, select
 
 from app.api.auth import ContentEditorPermission, ContentReadonlyPermission, UserToken
 from app.api.session import CurrentSession
+from app.core.config import settings
 from app.schemas.codebase_schema import (
     CodebaseAnalysisRequest,
     CodebaseAnalysisResponse,
@@ -197,7 +198,9 @@ def exec_codebase_generation(
             )
             llm_session.commit_event_now(usage_metric)
 
-    inspect_db = modal.Function.lookup("inspector-v2", "inspect_db")
+    inspect_db = modal.Function.lookup(
+        "inspector-v2", "inspect_db", environment_name=settings.MODAL_ENVIRONMENT
+    )
     for version in result:
         inspect_db.spawn(version.id)
     return CodebaseGenerationResponse(call_id="1234")

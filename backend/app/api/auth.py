@@ -78,6 +78,7 @@ UNPROTECTED_PATHS = [
     "/api/v1/git-provider/github/webhook",
     "/api/v1/git-provider/github/callback",
     "/api/v1/git-provider/app/callback",
+    "/api/v1/git-provider/app/webhook",
 ]
 
 security = HTTPBearer()

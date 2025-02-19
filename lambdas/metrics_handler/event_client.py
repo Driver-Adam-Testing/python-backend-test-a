@@ -1,6 +1,6 @@
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime
+from datetime import UTC, datetime
 
 from database.models_v1 import UsageEventType
 from shared.agent.chat_openai import OutputConfig
@@ -37,7 +37,7 @@ def send_event(
         bytes_out=-2512,
         tokens_in=5066,
         tokens_out=452,
-        timestamp=datetime.now(),
+        timestamp=datetime.now(tz=UTC),
         event_metadata=meta,
     )
 

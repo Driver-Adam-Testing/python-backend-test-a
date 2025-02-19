@@ -550,11 +550,12 @@ def run_codebase_connection(
                         f"Created but not committed source content for: {file_path}. Processable: {codebase_stats[file_path]['is_analyzable']}. Stats: {codebase_stats[file_path]}"
                     )
             version = session.get(Version, version_id)
-            if version.status != VersionStatus.GENERATING:
+            version_status = version.status
+            if version_status != VersionStatus.GENERATING:
                 version.status = VersionStatus.CONNECTED
                 session.add(version)
         # Do this check outside the DB session so that the nodes get committed
-        if version.status == VersionStatus.GENERATING:
+        if version_status == VersionStatus.GENERATING:
             print("Inspecting...")
             inspect_db = modal.Function.lookup("inspector-v2", "inspect_db")
             inspect_db.remote(version_id)  # TODO: spawn?

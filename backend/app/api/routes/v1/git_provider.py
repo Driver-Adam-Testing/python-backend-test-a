@@ -300,7 +300,7 @@ def clone_git_provider_repo(
 def connect_git_provider_repo(
     session: CurrentSession,
     current_user: UserToken,
-    application_id: str,
+    application_id: UUID,
     repos: list[GitRepository],
 ) -> JSONResponse:
     handle_gitlab_events = modal.Function.lookup(

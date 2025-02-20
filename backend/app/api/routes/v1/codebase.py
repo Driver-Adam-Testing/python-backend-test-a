@@ -197,6 +197,9 @@ def exec_codebase_generation(
                 ),
             )
             llm_session.commit_event_now(usage_metric)
+        version.status = VersionStatus.GENERATING
+        session.add(version)
+        session.commit()
 
     inspect_db = modal.Function.lookup(
         "inspector-v2", "inspect_db", environment_name=settings.MODAL_ENVIRONMENT

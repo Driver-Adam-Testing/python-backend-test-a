@@ -4,7 +4,15 @@ from abc import ABC
 from typing import Union, get_args, get_origin
 
 from pydantic import BaseModel
-from shared.v3.static.messages.global_message_constants import IMPORTANT
+from shared.v3.globals.constants import (
+    PARSEABLE_CLASS_NAME,
+    PARSEABLE_EXAMPLE_BOOL,
+    PARSEABLE_EXAMPLE_DOCSTRING_KEY,
+    PARSEABLE_EXAMPLE_FLOAT,
+    PARSEABLE_EXAMPLE_INT,
+    PARSEABLE_EXAMPLE_STR,
+)
+from shared.v3.interfaces.llm_message import LlmMessage, MessageKind
 
 
 class LlmParseable(BaseModel, ABC):
@@ -12,13 +20,6 @@ class LlmParseable(BaseModel, ABC):
     A base model that can be used to auto-generate instructions for an LLM
     to produce valid JSON for subclasses.
     """
-
-    parsed_classname: str = None
-
-    def __init__(self, **data: any) -> None:
-        super().__init__(**data)
-        if self.parsed_classname is None:
-            self.parsed_classname = self.__class__.__name__
 
     @staticmethod
     def _is_enum(type_: any) -> bool:
@@ -64,76 +65,52 @@ class LlmParseable(BaseModel, ABC):
             # Generate example for the model and include the field_type's docstring in comments
             example = field_type._generate_example_for_model()
             if field_type.__doc__:
-                example["_docstring"] = field_type.__doc__
+                example[PARSEABLE_EXAMPLE_DOCSTRING_KEY] = field_type.__doc__
             return example
 
         # Basic built-in types
         if field_type is int:
-            return 123
+            return PARSEABLE_EXAMPLE_INT
         if field_type is float:
-            return 3.14
+            return PARSEABLE_EXAMPLE_FLOAT
         if field_type is bool:
-            return True
+            return PARSEABLE_EXAMPLE_BOOL
         if field_type is str:
-            return "example_string"
+            return PARSEABLE_EXAMPLE_STR
 
         # Fallback
-        return "example_value"
+        return PARSEABLE_EXAMPLE_STR
 
     @classmethod
     def _generate_example_for_model(cls) -> dict:
         """
         Generate a dictionary with example values for all fields in the model.
         Pydantic 2 uses `model_fields` which returns a dict of {field_name: FieldInfo}.
-        The `class_name` field is included so that the generated JSON can be parsed
+        The `parseable_class_name` field is included so that the generated JSON can be parsed
         to the correct tool class or response_type.
         """
         example_data = {}
         for field_name, field_info in cls.model_fields.items():
             field_type = field_info.annotation
-            if field_name == "parsed_classname":
-                example_data[field_name] = cls.__name__
-            else:
-                example_data[field_name] = cls._generate_example_value(field_type)
+            example_data[field_name] = cls._generate_example_value(field_type)
+
+        # Ensure parseable_class_name is included in the example data
+        example_data[PARSEABLE_CLASS_NAME] = cls.__name__
+
         return example_data
 
     @classmethod
-    def to_instruction_response_string(cls) -> str:
-        # TODO: validate that cls is a response type first.
+    def to_parsing_description_message(cls) -> LlmMessage:
         """
         Returns the docstring and an example of the JSON it would take to generate it.
 
         Returns:
-            str: A string that can be used to generate the response type.
-        """
-        example_dict = cls._generate_example_for_model()
-        example_json = json.dumps(example_dict, indent=4)
-        return (
-            f"Format your response as a JSON object that can be parsed "
-            f"as {cls.__name__}(pydantic.BaseModel)\n\n"
-            f"{cls.__doc__}\n"
-            f'{IMPORTANT} Set the "parsed_classname" field to "{cls.__name__}"\n'
-            f"Example JSON object:\n"
-            f"{example_json}\n"
-        )
-
-    @classmethod
-    def to_instruction_tool_string(cls) -> str:
-        # TODO validate that cls is a tool first.
-        """
-        Returns the docstring and an example of the JSON it would take to generate it.
-
-        Returns:
-            str: A string that can be used to generate the response type.
+            LlmMessage: A message that can be used to generate the response type.
         """
         example_dict = cls._generate_example_for_model()
         example_json = json.dumps(example_dict, indent=4)
 
-        return (
-            f"Format your response as a JSON object that can be parsed "
-            f"as {cls.__name__}(pydantic.BaseModel)\n"
-            f"{IMPORTANT} To respond with this tool, Set the 'parsed_classname' field to '{cls.__name__}'.\n"
-            f"{cls.__doc__}\n"
-            f"Example JSON object:\n"
-            f"{example_json}\n"
+        return LlmMessage(
+            content=f"{cls.__name__}\n{example_json}\n{cls.__doc__}",
+            message_kind=MessageKind.PARSING_DESCRIPTION,
         )

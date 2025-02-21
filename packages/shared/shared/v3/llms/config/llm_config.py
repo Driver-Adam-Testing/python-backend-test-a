@@ -23,6 +23,7 @@ class ApiKind(str, Enum):
     OPENAI_STRICT = "openai_strict"
     OPENAI_O1 = "openai_o1"
     OPENAI_O3 = "openai_o3"
+    CLAUDE = "claude"
 
 
 class SupportedModels(str, Enum):
@@ -39,6 +40,7 @@ class SupportedModels(str, Enum):
     O1 = "o1"
     O1_MINI = "o1_mini"
     O3_MINI = "o3_mini"
+    CLAUDE_3_SONNET = "claude_3_sonnet"
 
 
 class LlmConfig(BaseModel):
@@ -170,3 +172,7 @@ class LlmConfig(BaseModel):
     @classmethod
     def o3_mini(cls) -> "LlmConfig":
         return cls.from_name(SupportedModels.O3_MINI)
+
+    @classmethod
+    def claude_3_sonnet(cls) -> "LlmConfig":
+        return cls.from_name(SupportedModels.CLAUDE_3_SONNET.value)

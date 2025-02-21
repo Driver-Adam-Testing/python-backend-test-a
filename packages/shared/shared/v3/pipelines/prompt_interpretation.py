@@ -2,6 +2,7 @@ import enum
 
 from pydantic import BaseModel
 from shared.v3.interfaces.llm_message_history import LlmMessageHistory
+from shared.v3.interfaces.llm_parseable import LlmParseable
 from shared.v3.llms.clients.llm_client import LlmClient
 from shared.v3.llms.config.llm_config import LlmConfig
 from shared.v3.pipelines.interfaces.pipeline_request import PipelineExecutionRequest
@@ -9,7 +10,6 @@ from shared.v3.static.messages.global_driver_application_messages import (
     AgenticContextMessage,
     DriverApplicationMessage,
 )
-from shared.v3.utils.parseable import LlmParseable
 
 
 class PromptInterpretation(LlmParseable):

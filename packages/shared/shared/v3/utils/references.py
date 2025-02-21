@@ -1,9 +1,15 @@
+from collections.abc import Iterable
 from uuid import UUID
 
 from pydantic import BaseModel
 
 
+# TODO: make content chunks? so that we have sections of a document that fill in the context of the reference?
 class Reference(BaseModel):
+    """
+    A reference to a node in the graph.
+    """
+
     content: str
     score: float | None = None
     relative_path: str | None = None
@@ -22,8 +28,17 @@ class Reference(BaseModel):
         return hash(self) == hash(other)
 
 
-class ReferenceSet(BaseModel):
+class ReferenceSet(BaseModel, Iterable):
+    """
+    A set of references.
+
+    This class is a wrapper around a set of references. It implements the Iterable interface, so it can be used in for loops.
+    """
+
     references: set[Reference] = set()
 
     def add_reference(self, reference: Reference) -> None:
         self.references.add(reference)
+
+    def __iter__(self):
+        return iter(self.references)

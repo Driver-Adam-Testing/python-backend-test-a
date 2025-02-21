@@ -1,6 +1,5 @@
-from typing import TYPE_CHECKING
-
-import openai
+import anthropic
+from anthropic.types import Message
 from shared.v3.interfaces.llm_message import LlmMessage, MessageKind
 from shared.v3.interfaces.llm_message_history import LlmMessageHistory
 from shared.v3.interfaces.llm_response_type import LlmResponseType
@@ -8,23 +7,19 @@ from shared.v3.interfaces.llm_tool import LlmTool
 from shared.v3.llms.clients.llm_client import LlmClient
 from shared.v3.llms.config.llm_config import LlmConfig
 
-if TYPE_CHECKING:
-    from openai.types.chat import ChatCompletionMessage
 
-
-class OpenAiChatClient(LlmClient):
+class ClaudeClient(LlmClient):
     """
-    A client for OpenAI's Chat models.
+    A client for Anthropic's Claude models.
 
-    This client is designed to work with OpenAI's Chat models, which are designed to
-    use system prompts to guide the model's behavior.
-    They are capable of running tools natively using the tool_call chat response format in OpenAI.
-    response_type is not supported, but can be cast to create parsed responses.
+    This client is designed to work with Anthropic's Claude models, which support
+    system prompts and a messages-based API format. The messages are converted from
+    the shared LlmMessage format to Anthropic's expected format.
     """
 
     def __init__(self, config: LlmConfig) -> None:
         super().__init__(config)
-        self.client = openai.OpenAI()
+        self.client = anthropic.Anthropic()
 
     def generate(
         self,
@@ -36,6 +31,7 @@ class OpenAiChatClient(LlmClient):
         local_message_history = LlmMessageHistory(
             messages=message_history.messages.copy() if message_history else []
         )
+
         if response_type:
             local_message_history.add_message(
                 LlmMessage(
@@ -49,19 +45,14 @@ class OpenAiChatClient(LlmClient):
                 LlmMessage(message_kind=MessageKind.USER, content=prompt)
             )
 
-        completion_kwargs = {
-            "model": self.config.model_id,
-            "messages": local_message_history.to_openai_strict(),
-        }
+        messages, system_message = local_message_history.to_anthropic()
 
-        if tools:
-            processed_tools = [openai.pydantic_function_tool(tool) for tool in tools]
-            completion_kwargs["tools"] = processed_tools
-            completion_kwargs["tool_choice"] = "auto"
+        completion_kwargs = {"model": self.config.model_id, "max_tokens": 4096}
 
-        response: ChatCompletionMessage = (
-            self.client.chat.completions.create(**completion_kwargs).choices[0].message
-        )
-        return LlmMessage.from_openai_chat_completion_message(
-            response, response_type=response_type, tool_list=tools
-        )
+        if system_message:
+            completion_kwargs["system"] = system_message
+
+        completion_kwargs["messages"] = messages
+
+        response: Message = self.client.messages.create(**completion_kwargs)
+        return LlmMessage.from_anthropic_message(response)

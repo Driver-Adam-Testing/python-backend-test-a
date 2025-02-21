@@ -1,6 +1,6 @@
 import enum
 
-from shared.v3.utils.parseable import LlmParseable
+from shared.v3.interfaces.llm_parseable import LlmParseable
 
 
 class InformationSetDefinitionList(LlmParseable):

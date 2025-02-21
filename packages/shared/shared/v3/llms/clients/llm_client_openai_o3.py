@@ -40,19 +40,11 @@ class OpenAiO3SeriesClient(LlmClient):
 
         if response_type:
             local_message_history.add_message(
-                LlmMessage(
-                    message_kind=MessageKind.DEVELOPER,
-                    content=response_type.to_instruction_response_string(),
-                )
+                response_type.to_parsing_description_message()
             )
 
         for tool in tools if tools else []:
-            local_message_history.add_message(
-                LlmMessage(
-                    message_kind=MessageKind.DEVELOPER,
-                    content=tool.to_instruction_tool_string(),
-                )
-            )
+            local_message_history.add_message(tool.to_parsing_description_message())
 
         if prompt:
             local_message_history.add_message(

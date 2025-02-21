@@ -1,31 +1,66 @@
+import json
 from abc import ABC, abstractmethod
 
-from pydantic import BaseModel
 from shared.interfaces.agents.data_scope import DataScope
-from shared.v3.interfaces.llm_message import LlmMessage
-from shared.v3.llms.config.llm_config import LlmConfig
-from shared.v3.utils.parseable import LlmParseable
+from shared.v3.globals.constants import (
+    FORMAT_TOOL_CALL_REQUEST_f_class_name__example_json__docstring,
+)
+from shared.v3.interfaces.llm_message import LlmMessage, MessageKind
+from shared.v3.interfaces.llm_parseable import LlmParseable
 from shared.v3.utils.references import ReferenceSet
 
 
-class LlmToolContext(BaseModel):
-    datascope: DataScope
-    llm_config: LlmConfig
-    tool_call_id: str | None = None
-
-
 class LlmTool(LlmParseable, ABC):
-    _tool_context: LlmToolContext
+    _tool_call_id: str | None = None
+    _tool_datascope: DataScope | None = None
+
     _references: ReferenceSet = ReferenceSet(references=[])
+
+    @property
+    def tool_call_id(self) -> str | None:
+        return self._tool_call_id
+
+    @property
+    def datascope(self) -> DataScope | None:
+        return self._tool_datascope
 
     @property
     def references(self) -> ReferenceSet:
         return self._references
 
+    def execute(
+        self,
+        tool_call_id: str,
+        datascope: DataScope,
+    ) -> LlmMessage:
+        self._tool_call_id = tool_call_id
+        self._tool_datascope = datascope
+        return self._execute()
+
     @abstractmethod
-    def execute(self, tool_context: LlmToolContext) -> LlmMessage:
+    def _execute(self) -> LlmMessage:
         raise NotImplementedError()
 
     @abstractmethod
     def to_message(self) -> LlmMessage:
         raise NotImplementedError()
+
+    @classmethod
+    def to_parsing_description_message(cls) -> LlmMessage:
+        """
+        Returns the docstring and an example of the JSON it would take to generate it.
+
+        Returns:
+            LlmMessage: A message that can be used to generate the response type.
+        """
+        example_dict = cls._generate_example_for_model()
+        example_json = json.dumps(example_dict, indent=4)
+
+        return LlmMessage(
+            content=FORMAT_TOOL_CALL_REQUEST_f_class_name__example_json__docstring.format(
+                class_name=cls.__name__,
+                example_json=example_json,
+                docstring=cls.__doc__,
+            ),
+            message_kind=MessageKind.PARSING_DESCRIPTION,
+        )

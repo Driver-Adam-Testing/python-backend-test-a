@@ -2,6 +2,7 @@ import concurrent.futures
 
 from pydantic import BaseModel
 from shared.v3.interfaces.llm_message_history import LlmMessageHistory
+from shared.v3.interfaces.llm_parseable import LlmParseable
 from shared.v3.llms.clients.llm_client import LlmClient
 from shared.v3.llms.config.llm_config import LlmConfig
 from shared.v3.pipelines.interfaces.pipeline_request import (
@@ -11,7 +12,6 @@ from shared.v3.static.messages.pipeline_abbreviate_page_content_messages import 
     AbbreviatePageContentSystemMessage,
     AbbreviatePageContentUserMessage,
 )
-from shared.v3.utils.parseable import LlmParseable
 
 TEXT_PADDING_WORD_SIZE = 50
 PAGE_CONTENT_CHUNK_WORD_SIZE = 256
@@ -47,32 +47,6 @@ def abbreviate_page_content(
     pipeline_execution_request: PipelineExecutionRequest,
     client: LlmClient | None = None,
 ) -> AbbreviatedPageContentPipelineResponse:
-    """
-    Performance
-    Test 1: (50 each)
-    +------------------+-----------+--------------+------------+
-    |    Client ID     | Best Time | Average Time | Worst Time |
-    +------------------+-----------+--------------+------------+
-    | gpt_4o_mini_chat |    1.25   |     7.58     |   91.92    |
-    |      gpt_4o      |    1.19   |     4.33     |   11.34    |
-    |   gpt_4o_mini    |    1.87   |     3.75     |    8.3     |
-    |     o3_mini      |    4.58   |     8.26     |   19.41    |
-    |     o1_mini      |    8.47   |    13.94     |    34.0    |
-    |        o1        |   12.86   |    23.97     |    43.7    |
-    +------------------+-----------+--------------+------------+
-
-    Test 2: (10 each)
-    +------------------+-----------+--------------+------------+
-    |    Client ID     | Best Time | Average Time | Worst Time |
-    +------------------+-----------+--------------+------------+
-    | gpt_4o_mini_chat |    1.02   |     2.67     |    3.88    |
-    |   gpt_4o_mini    |    1.67   |     3.68     |    5.94    |
-    |      gpt_4o      |    1.88   |     4.78     |   10.96    |
-    |     o3_mini      |    4.78   |     9.11     |   15.97    |
-    |     o1_mini      |   10.49   |    14.35     |   20.82    |
-    |        o1        |    13.5   |    20.99     |   29.87    |
-    +------------------+-----------+--------------+------------+
-    """
     client = client or LlmClient.from_config(LlmConfig.gpt_4o_mini())
 
     def summarize_chunk(

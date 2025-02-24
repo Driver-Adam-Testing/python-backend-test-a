@@ -107,6 +107,20 @@ def download_file_from_s3(
         raise e
 
 
+def is_driverignored(file_path: Path, driverignore: Callable | None) -> bool:
+    if driverignore is None:
+        return False
+
+    # this will be True if the file is directly ignored OR parent directory WITH trailing slash
+    # is contained within the .driverignore
+    if driverignore(file_path):
+        return True
+
+    # Due to bug in gitignore_parser with directories without trailing slashes,
+    # check all parent directories as well
+    return any(driverignore(parent_dir) for parent_dir in file_path.parents)
+
+
 def download_file_from_presigned_url(
     presigned_url: str, download_destination: Path
 ) -> None:
@@ -429,13 +443,7 @@ def run_file_stats_and_reencode(
     file_size_processable = evaluate_file_size_processable(local_path)
     is_binary = evaluate_file_binary(local_path)
     is_blacklisted = is_on_blacklist(local_path)
-    is_ignored = False
-    if driverignore is not None:
-        file_ignored = driverignore(local_path)
-        # Bug in gitignore_parser where it doesn't ignore children of directories with no trailing slash
-        dir_ignored = driverignore(local_path.parent)
-        if file_ignored or dir_ignored:
-            is_ignored = True
+    is_ignored = is_driverignored(local_path, driverignore)
 
     file_stats = {}
 

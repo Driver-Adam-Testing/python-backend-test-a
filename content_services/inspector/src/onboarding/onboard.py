@@ -426,6 +426,7 @@ def run_codebase_connection(
     from onboarding.onboard_utils import (
         create_bucket_if_dne,
         download_file_from_presigned_url,
+        is_driverignored,
         is_on_blacklist,
         load_driverignore,
         run_file_stats_and_reencode,
@@ -528,11 +529,9 @@ def run_codebase_connection(
                     "analyzable_bytes_by_extension": {},
                     "analyzable_sloc_by_extension": {},
                 }
-                is_ignored = (
-                    driverignore(directory) if driverignore is not None else False
-                )
+                directory_path = Path(directory).relative_to(temp_dir)
+                is_ignored = is_driverignored(directory_path, driverignore)
                 if not is_on_blacklist(Path(directory)) and not is_ignored:
-                    directory_path = Path(directory).relative_to(temp_dir)
                     # TODO: add a trailing slash here
                     for file_path in codebase_stats:
                         if str(file_path).startswith(directory):

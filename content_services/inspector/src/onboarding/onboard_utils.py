@@ -118,7 +118,14 @@ def is_driverignored(file_path: Path, driverignore: Callable | None) -> bool:
 
     # Due to bug in gitignore_parser with directories without trailing slashes,
     # check all parent directories as well
-    return any(driverignore(parent_dir) for parent_dir in file_path.parents)
+    for parent_dir in file_path.parents:
+        try:
+            if driverignore(parent_dir):
+                return True
+        except ValueError:
+            # Due to usage of temporary directory, the relative pathing has an error here.
+            pass
+    return False
 
 
 def download_file_from_presigned_url(

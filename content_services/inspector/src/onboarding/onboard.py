@@ -530,7 +530,7 @@ def run_codebase_connection(
                     "analyzable_sloc_by_extension": {},
                 }
                 directory_path = Path(directory).relative_to(temp_dir)
-                is_ignored = is_driverignored(directory_path, driverignore)
+                is_ignored = is_driverignored(Path(directory), driverignore)
                 if not is_on_blacklist(Path(directory)) and not is_ignored:
                     # TODO: add a trailing slash here
                     for file_path in codebase_stats:

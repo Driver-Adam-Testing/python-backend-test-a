@@ -48,8 +48,8 @@ def run_smart_instruction_list(
             ]
         ),
     )
-    response = agent.invoke(iterations=3, debug=True, response_type=ListResponse)
-
+    response = agent.invoke(iterations=3, response_type=ListResponse)
+    print(response)
     return {
         "abbreviated_before": abbreviated_page_content.abbreviated_before
         if abbreviated_page_content.abbreviated_before

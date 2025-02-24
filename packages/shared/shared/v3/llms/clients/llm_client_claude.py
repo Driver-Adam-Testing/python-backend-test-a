@@ -1,11 +1,15 @@
+from typing import TYPE_CHECKING
+
 import anthropic
-from anthropic.types import Message
 from shared.v3.interfaces.llm_message import LlmMessage, MessageKind
 from shared.v3.interfaces.llm_message_history import LlmMessageHistory
 from shared.v3.interfaces.llm_response_type import LlmResponseType
 from shared.v3.interfaces.llm_tool import LlmTool
 from shared.v3.llms.clients.llm_client import LlmClient
 from shared.v3.llms.config.llm_config import LlmConfig
+
+if TYPE_CHECKING:
+    from anthropic.types import Message
 
 
 class ClaudeClient(LlmClient):
@@ -34,11 +38,11 @@ class ClaudeClient(LlmClient):
 
         if response_type:
             local_message_history.add_message(
-                LlmMessage(
-                    message_kind=MessageKind.SYSTEM,
-                    content=response_type.to_parsing_description_message(),
-                )
+                response_type.to_parsing_description_message()
             )
+        if tools:
+            for tool in tools:
+                local_message_history.add_message(tool.to_parsing_description_message())
 
         if prompt:
             local_message_history.add_message(
@@ -47,7 +51,10 @@ class ClaudeClient(LlmClient):
 
         messages, system_message = local_message_history.to_anthropic()
 
-        completion_kwargs = {"model": self.config.model_id, "max_tokens": 4096}
+        completion_kwargs = {
+            "model": self.config.model_id,
+            "max_tokens": self.config.max_output_tokens,
+        }
 
         if system_message:
             completion_kwargs["system"] = system_message
@@ -55,4 +62,6 @@ class ClaudeClient(LlmClient):
         completion_kwargs["messages"] = messages
 
         response: Message = self.client.messages.create(**completion_kwargs)
-        return LlmMessage.from_anthropic_message(response)
+        return LlmMessage.from_anthropic_message(
+            response, response_type=response_type, tool_list=tools
+        )

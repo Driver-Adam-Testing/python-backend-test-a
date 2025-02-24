@@ -46,15 +46,17 @@ def run(input: dict) -> any:
     )
     from shared.pipelines.block_kind_pipelines.list import execute_list_block_agent
     from shared.pipelines.block_kind_pipelines.table import execute_table_block_agent
+
+    # from shared.prompts.block_kind.block_kind_any import BlockKindCopyEditorAny
     from shared.prompts.block_kind.block_kind_code import BlockKindCopyEditorCodeBlock
     from shared.prompts.block_kind.block_kind_diagram import BlockKindCopyEditorDiagram
     from shared.prompts.block_kind.block_kind_list import BlockKindCopyEditorList
     from shared.prompts.block_kind.block_kind_table import BlockKindCopyEditorTable
+    # from shared.prompts.block_kind.block_kind_text import BlockKindCopyEditorText
 
     if isinstance(input, dict):
         input = PipelineInput(**input)
         print(input.model_dump())
-
     # Use the response_format type directly for execution
     if isinstance(input.response_format, BlockKindCopyEditorList):
         return execute_list_block_agent(input).model_dump()
@@ -64,5 +66,8 @@ def run(input: dict) -> any:
         return execute_diagram_block_agent(input).model_dump()
     elif isinstance(input.response_format, BlockKindCopyEditorCodeBlock):
         return execute_code_block_agent(input).model_dump()
-
+    # elif isinstance(input.response_format, BlockKindCopyEditorText):
+    #     return execute_text_block_agent(input).model_dump()
+    # elif isinstance(input.response_format, BlockKindCopyEditorAny):
+    #     return execute_any_block_agent(input).model_dump()
     return execute_sequence(input).model_dump()

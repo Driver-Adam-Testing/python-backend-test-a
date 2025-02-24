@@ -45,7 +45,7 @@ def run_smart_instruction(
             ]
         ),
     )
-    response = agent.invoke(iterations=3, debug=True)
+    response = agent.invoke(iterations=3)
 
     return {
         "abbreviated_before": abbreviated_page_content.abbreviated_before

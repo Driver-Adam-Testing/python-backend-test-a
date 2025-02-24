@@ -54,7 +54,6 @@ class MultiShotLlmClient:
         prompt: str | None = None,
         iterations: int = 1,
         response_type: type[LlmResponseType] | None = None,
-        debug: bool = False,
     ) -> LlmMessage:
         # prompting twice here
         if prompt:
@@ -68,7 +67,6 @@ class MultiShotLlmClient:
                 IterationMessage.from_context(i + 1, iterations)
             )
             response = self.client.generate(
-                prompt=prompt,
                 message_history=self.message_history,
                 tools=self.tools if i < iterations - 1 else None,
                 response_type=response_type,

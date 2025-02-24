@@ -38,10 +38,7 @@ class OpenAiChatClient(LlmClient):
         )
         if response_type:
             local_message_history.add_message(
-                LlmMessage(
-                    message_kind=MessageKind.SYSTEM,
-                    content=response_type.to_parsing_description_message(),
-                )
+                response_type.to_parsing_description_message()
             )
 
         if prompt:

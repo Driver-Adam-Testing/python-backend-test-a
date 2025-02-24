@@ -29,10 +29,10 @@ class LlmMessageHistory:
             in this list represents the chronological order of the conversation so far.
     """
 
-    def __init__(self, messages: list[LlmMessage]):
+    def __init__(self, messages: list[LlmMessage]) -> None:
         self.messages = []
         for message in messages:
-            self.add_message(message, debug=True)
+            self.add_message(message)
 
     def add_message(self, message: LlmMessage, debug: bool = True) -> None:
         """

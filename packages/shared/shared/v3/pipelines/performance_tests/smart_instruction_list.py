@@ -89,13 +89,13 @@ def run_and_time_pipeline() -> None:
         return end_time - start_time
 
     llm_clients = [
-        LlmClient.gpt_4o(),
-        LlmClient.gpt_4o_mini(),
-        LlmClient.gpt_4o_mini_chat(),
-        LlmClient.o1(),
-        LlmClient.o1_mini(),
-        LlmClient.o3_mini(),
-        # LlmClient.claude_3_sonnet(),
+        # LlmClient.gpt_4o(),
+        # LlmClient.gpt_4o_mini(),
+        # LlmClient.gpt_4o_mini_chat(),
+        # LlmClient.o1(),
+        # LlmClient.o1_mini(),
+        # LlmClient.o3_mini(),
+        LlmClient.claude_3_sonnet(),
     ]
 
     for request in pipeline_requests:

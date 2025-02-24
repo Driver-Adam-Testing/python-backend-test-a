@@ -63,7 +63,7 @@ max_output_tokens = 100000
 api_kind = "openai_o3"
 
 [llms.claude_3_sonnet]
-model_id = "claude-3-5-sonnet"
+model_id = "claude-3-5-sonnet-20240620"
 provider = "anthropic"
 max_context_window = 200000
 optimal_context_window = 100000

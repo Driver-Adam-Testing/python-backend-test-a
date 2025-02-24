@@ -116,6 +116,7 @@ def execute_agent_sequence_modal_async(
             user_id=user.subject,
         ),
         response_format=response_format,
+        block_kind=input.block_kind,
     )
     modal_function = Function.lookup("agent", "run")
     instance = modal_function.spawn(pipeline_input)

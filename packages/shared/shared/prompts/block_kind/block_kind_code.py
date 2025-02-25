@@ -12,11 +12,11 @@ class BlockKindCopyEditorCodeBlock(BaseModel):
     The output is expected to be formatted as a list of markdown code blocks, each with a specified language identifier.
 
     Attributes:
-        code_snippets (list[str]): A list containing the code snippets with backticks and language identifier. They will not include definitions that are not present in the source code results.
-        descriptions (list[str]): A corresponding list of descriptions for each code snippet, maintaining the same order. (can be a header, paragraph text, descriptive lists, etc.)
+        code_snippets (list[str]): A list containing the code snippets with code fences with a language identifier. They will not include definitions that are not present in the source code results.
+        descriptions (list[str]): A corresponding list of one sentence descriptions for each code snippet, maintaining the same order.
 
     code_snippets Formatting:
-        - Each code block must be enclosed within code block delimiters (three backticks) with the appropriate language identifier immediately following the opening delimiter.
+        - Each code block must be enclosed within code fences (three backticks) with the appropriate language identifier immediately following the opening delimiter.
         - The code within each block should be syntactically correct and properly indented to ensure readability and accuracy.
         - The language identifier is crucial for syntax highlighting and must be included right after the opening code block delimiter.
     """
@@ -38,5 +38,5 @@ class BlockKindCopyEditorCodeBlock(BaseModel):
         markdown_snippets = []
         for snippet, _ in zip(self.code_snippets, self.descriptions):
             stripped_snippet = snippet.strip()
-            markdown_snippets.append(f"\n{stripped_snippet}\n")
+            markdown_snippets.append(f"{stripped_snippet}")
         return "\n".join(markdown_snippets)

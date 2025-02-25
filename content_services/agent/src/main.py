@@ -47,12 +47,9 @@ def run(input: dict) -> any:
     from shared.pipelines.block_kind_pipelines.list import execute_list_block_agent
     from shared.pipelines.block_kind_pipelines.table import execute_table_block_agent
 
-    if isinstance(input, dict):
-        input = PipelineInput(**input)
-        print(input.model_dump())
-
+    parsed_input = input if isinstance(input, PipelineInput) else PipelineInput(**input)
     # Use the response_format type directly for execution
-    match input.block_kind:
+    match parsed_input.block_kind:
         case BlockKind.LIST:
             return execute_list_block_agent(input).model_dump()
         case BlockKind.TABLE:
@@ -60,8 +57,11 @@ def run(input: dict) -> any:
         case BlockKind.DIAGRAM:
             return execute_diagram_block_agent(input).model_dump()
         case BlockKind.CODE:
+            parsed_input.prompt = f"{parsed_input.prompt}\n\nBe sure to include the language identifiers in the code blocks."
             return execute_code_block_agent(input).model_dump()
+        case BlockKind.TEXT:
+            parsed_input.prompt = f"{parsed_input.prompt}\n\nContent returned should be a single paragraph of text."
         case BlockKind.ANY:
-            pass
+            parsed_input.response_format = None
 
-    return execute_sequence(input).model_dump()
+    return execute_sequence(parsed_input).model_dump()

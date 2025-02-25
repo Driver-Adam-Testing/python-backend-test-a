@@ -1,6 +1,7 @@
 import base64
 import json
 import logging
+import secrets
 
 from database.models_v1 import GitProviderApp, GitProviderAppInstallation
 from shared.interfaces.aws_client_config import AWSClientConfig
@@ -99,11 +100,17 @@ def install_group_access_token(
         organization_id=organization_id,
         misc_metadata={"kind": "group", "name": gat.name},
     )
+    webhook_secret = secrets.token_urlsafe(32)
     # Attempt to write the secret
     app_secret_name = format_secret_name(
         APP_INSTALL_GAT_NAME_PREFIX, str(app_install.id)
     )
-    secret_value = json.dumps(GitProviderAppTokenSecret(token=gat.token).model_dump())
+    # TODO: maybe make this 2 secrets, one for token and one for webhook secret
+    secret_value = json.dumps(
+        GitProviderAppTokenSecret(
+            token=gat.token, secret_token=webhook_secret
+        ).model_dump()
+    )
     try:
         logger.info(f"Writing secret {app_secret_name}")
         secrets_manager.write_secret(app_secret_name, secret_value)

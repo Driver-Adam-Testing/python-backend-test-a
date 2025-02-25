@@ -18,6 +18,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response,
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from shared.interfaces.aws_client_config import AWSClientConfig
+from shared.secret_management.aws_secret_management import (
+    AWSSecretManagementStrategy,
+    format_secret_name,
+)
 from sqlmodel import select
 
 from app.api.auth import (
@@ -41,7 +45,9 @@ from app.schemas.git_provider_schema import (
     CreateGitProviderAppRequest,
     GitRepository,
     GroupAccessToken,
+    WebhookInfo,
 )
+from app.schemas.secret_management_schema import APP_INSTALL_GAT_NAME_PREFIX
 from app.services.gitlab_provider_service import (
     authorize_git_provider,
     clone_git_repository,
@@ -193,6 +199,34 @@ def add_group_access_token(
     except GitProviderAccessTokenError:
         logger.exception("Error adding token")
         raise HTTPException(status_code=403, detail="Insufficient permissions")
+
+
+@router.get(
+    "/app/{application_id}/installations/{installation_id}/webhook",
+    dependencies=[OrgManagerPermission],
+    summary="Get details for setting up a webhook.",
+    response_model=WebhookInfo,
+)
+def get_app_installation_webhook_info(
+    session: CurrentSession,
+    current_user: UserToken,
+    application_id: UUID,
+    installation_id: UUID,
+) -> WebhookInfo:
+    app_install = git_provider_app_installation_by_id(session, installation_id)
+    if app_install.git_provider_app_id != application_id:
+        raise HTTPException(status_code=404, detail="Installation not found.")
+    secret = AWSSecretManagementStrategy(config=aws_config).read_secret(
+        format_secret_name(APP_INSTALL_GAT_NAME_PREFIX, str(installation_id))
+    )
+    webhook_info = WebhookInfo(
+        callback_url=f"{settings.AUTH0_AUDIENCE}/git-provider/app/webhook",
+        custom_headers={"x-driver-token": installation_id},
+        secret_token=secret["secret_token"],
+        ssl_verification=True,
+        triggers=["push events", "Project or group access token events"],
+    )
+    return webhook_info
 
 
 @router.delete(

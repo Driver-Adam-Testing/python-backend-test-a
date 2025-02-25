@@ -297,6 +297,38 @@ def connect_repos_for_installation(github_installation_id: str) -> None:
                     "full_name": repo["full_name"],
                 }
             )
+        page_count = 1
+        max_pages = 100
+        link_header: str = response.headers.get("link")
+        while link_header:
+            page_count += 1
+            if page_count > max_pages:
+                print(
+                    "Max repository pages reached for Github integration, proceeding with just the first {max_pages} pages."
+                )
+                break
+            parts = response.headers["link"].split(",")
+            matches = [
+                re.search(r'<([^>]+)>; rel="([^"]+)"', part.strip()) for part in parts
+            ]
+            has_next = False
+            for match in matches:
+                next_url, rel = match.groups()
+                if rel == "next" and next_url:
+                    has_next = True
+                    response = requests.get(next_url, headers=headers)
+                    response.raise_for_status()
+                    current_repos = response.json()["repositories"]
+                    for repo in current_repos:
+                        repos_added.append(
+                            {
+                                "id": repo["id"],
+                                "name": repo["name"],
+                                "full_name": repo["full_name"],
+                            }
+                        )
+            if not has_next:
+                break
 
         handle_github_events.spawn(
             gh_install_id,
@@ -369,6 +401,39 @@ def connect_unconnected_repos() -> None:
                         "full_name": repo["full_name"],
                     }
                 )
+            page_count = 1
+            max_pages = 100
+            link_header: str = response.headers.get("link")
+            while link_header:
+                page_count += 1
+                if page_count > max_pages:
+                    print(
+                        "Max repository pages reached for Github integration, proceeding with just the first {max_pages} pages."
+                    )
+                    break
+                parts = response.headers["link"].split(",")
+                matches = [
+                    re.search(r'<([^>]+)>; rel="([^"]+)"', part.strip())
+                    for part in parts
+                ]
+                has_next = False
+                for match in matches:
+                    next_url, rel = match.groups()
+                    if rel == "next" and next_url:
+                        has_next = True
+                        response = requests.get(next_url, headers=headers)
+                        response.raise_for_status()
+                        current_repos = response.json()["repositories"]
+                        for repo in current_repos:
+                            repos_added.append(
+                                {
+                                    "id": repo["id"],
+                                    "name": repo["name"],
+                                    "full_name": repo["full_name"],
+                                }
+                            )
+                if not has_next:
+                    break
 
             handle_github_events.spawn(
                 gh_install_id,

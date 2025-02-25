@@ -876,7 +876,21 @@ def gitlab_webhook(
     body = body_data["json_body"]
     headers = body_data["headers"]
     object_kind = body.get("object_kind")
-    installation_id = headers["x-gitlab-token"]
+    installation_id = headers["x-driver-token"]
+    incoming_secret_token = headers["x-gitlab-token"]
+    secret = AWSSecretManagementStrategy(config=aws_config).read_secret(
+        format_secret_name(APP_INSTALL_GAT_NAME_PREFIX, str(installation_id))
+    )
+    if not secret.get("secret_token"):
+        logger.error(f"Secret not found for installation ID {installation_id}")
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+
+    secret_token = secret["secret_token"]
+
+    if secret_token != incoming_secret_token:
+        logger.error(f"Secret token mismatch for installation ID {installation_id}")
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+
     app_install = git_provider_app_installation_by_id(session, installation_id)
 
     if object_kind == "push":

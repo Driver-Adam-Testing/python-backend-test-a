@@ -51,3 +51,12 @@ class GitProviderAppSecret(BaseModel):
 
 class GitProviderAppTokenSecret(BaseModel):
     token: str
+    secret_token: str | None = None
+
+
+class WebhookInfo(BaseModel):
+    callback_url: str
+    custom_headers: dict
+    secret_token: str
+    ssl_verification: bool
+    triggers: list[str]

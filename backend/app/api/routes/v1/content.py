@@ -7,15 +7,9 @@ from fastapi.responses import StreamingResponse
 
 from app.api.auth import ContentEditorPermission, ContentReadonlyPermission, UserToken
 from app.api.session import CurrentSession
-from app.core.logger import logger
 from app.schemas.content_schema import (
-    BatchContentSourceAssociationRequest,
-    BatchContentSourceAssociationResponse,
-    BatchDeleteDocumentSourceResponse,
     ContentSourceResponse,
     ContentTagsResponse,
-    DeleteContentSourcesRequest,
-    DeleteDocumentSourceResponse,
     DownloadContentResponse,
     ExportSingleRequest,
     ListContentInput,
@@ -37,9 +31,7 @@ def list_content(
     latest_version_only: bool = False,
     limit: int | None = 20,
     offset: int | None = 0,
-    content_type_id: Annotated[list[str] | None, Query()] = None,
     content_type_name: Annotated[list[str] | None, Query()] = None,
-    source_content_id: Annotated[list[str] | None, Query()] = None,
     order: int | None = None,
     sort_by: str | None = None,
     sort_direction: str | None = "ASC",
@@ -57,8 +49,6 @@ def list_content(
             limit=limit,
             offset=offset,
             text=text,
-            content_type_id=content_type_id,
-            source_content_id=source_content_id,
             order=order,
             content_type_name=content_type_name,
             sort_by=sort_by,
@@ -171,80 +161,6 @@ def get_document_sources(
     """
     content_service = ContentService(session)
     return content_service.get_content_sources(content_id, user.organization_id)
-
-
-@router.post(
-    "/{content_id}/document-sources/batch/",
-    summary="Associate multiple sources with this content.",
-    dependencies=[ContentEditorPermission],
-)
-def batch_associate_sources(
-    session: CurrentSession,
-    user: UserToken,
-    content_id: UUID,
-    content_source_associations: BatchContentSourceAssociationRequest,
-) -> BatchContentSourceAssociationResponse:
-    """
-    Associate multiple sources with this content.
-
-    Parameters:
-    - session: Current session object
-    - user: Current user object
-    - content_id: UUID of the content
-    - content_source_associations: BatchContentSourceAssociationRequest object containing the list of sources
-
-    Returns:
-    - BatchContentSourceAssociationResponse: Batch source association details
-    """
-    content_service = ContentService(session)
-    return content_service.associate_sources_with_content(
-        user.organization_id, content_id, content_source_associations.sources
-    )
-
-
-@router.delete(
-    "/{content_id}/document-sources/batch/",
-    summary="Disassociate multiple sources from this content",
-    dependencies=[ContentEditorPermission],
-)
-def batch_disassociate_sources(
-    session: CurrentSession,
-    user: UserToken,
-    content_id: UUID,
-    source_content_associations: DeleteContentSourcesRequest,
-) -> BatchDeleteDocumentSourceResponse:
-    """
-    Disassociate multiple sources from this content.
-
-    Parameters:
-    - session: Current session object
-    - user: Current user object
-    - content_id: UUID of the content
-    - source_content_associations: DeleteContentSourcesRequest object containing the list of source IDs
-
-    Returns:
-    - BatchDeleteDocumentSourceResponse: Batch source disassociation details
-    """
-    content_service = ContentService(session)
-    results = []
-    for source_id in source_content_associations.source_ids:
-        try:
-            result = content_service.disassociate_document_source(
-                user.organization_id, content_id, source_id
-            )
-            results.append(result)
-        except Exception as e:
-            logger.error(
-                f"Failed to disassociate source {source_id} from content {content_id}: {e}"
-            )
-            results.append(
-                DeleteDocumentSourceResponse(
-                    document_id=content_id,
-                    source_id=source_id,
-                    message="Failed to disassociate source",
-                )
-            )
-    return BatchDeleteDocumentSourceResponse(results=results)
 
 
 @router.put(

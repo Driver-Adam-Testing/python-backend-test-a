@@ -80,7 +80,6 @@ class FolderTechDocTask(Task):
         async with database_sem:
             # Short Single Sentence
             short_sent_dc = DerivedContent(
-                content_type_id=None,
                 content_kind=ContentKind.SHORT_SENTENCE_DESCRIPTION,
                 node_id=self.db_node_id,
                 relative_path=str(self.node.root_rel_path),
@@ -89,7 +88,6 @@ class FolderTechDocTask(Task):
             )
             # Short Single Paragraph
             short_para_dc = DerivedContent(
-                content_type_id=None,
                 content_kind=ContentKind.SHORT_PARAGRAPH_DESCRIPTION,
                 node_id=self.db_node_id,
                 relative_path=str(self.node.root_rel_path),
@@ -98,7 +96,6 @@ class FolderTechDocTask(Task):
             )
             # Long File Description
             long_desc_dc = DerivedContent(
-                content_type_id=None,
                 content_kind=ContentKind.LONG_DESCRIPTION,
                 node_id=self.db_node_id,
                 relative_path=str(self.node.root_rel_path),
@@ -181,7 +178,6 @@ class FileTechDocTask(Task):
         async with database_sem:
             # Short Single Sentence
             short_sent_dc = DerivedContent(
-                content_type_id=None,
                 content_kind=ContentKind.SHORT_SENTENCE_DESCRIPTION,
                 node_id=self.db_node_id,
                 relative_path=str(self.node.root_rel_path),
@@ -190,7 +186,6 @@ class FileTechDocTask(Task):
             )
             # Short Single Paragraph
             short_para_dc = DerivedContent(
-                content_type_id=None,
                 content_kind=ContentKind.SHORT_PARAGRAPH_DESCRIPTION,
                 node_id=self.db_node_id,
                 relative_path=str(self.node.root_rel_path),
@@ -199,7 +194,6 @@ class FileTechDocTask(Task):
             )
             # Long File Description
             long_desc_dc = DerivedContent(
-                content_type_id=None,
                 content_kind=ContentKind.LONG_DESCRIPTION,
                 node_id=self.db_node_id,
                 relative_path=str(self.node.root_rel_path),
@@ -211,7 +205,6 @@ class FileTechDocTask(Task):
             if len(docs["chunk_descriptions"]) > 1:
                 for i, chunk in enumerate(docs["chunk_descriptions"]):
                     chunk_dc = DerivedContent(
-                        content_type_id=None,
                         content_kind=ContentKind.CHUNK_DESCRIPTIONS,
                         node_id=self.db_node_id,
                         relative_path=str(self.node.root_rel_path),
@@ -307,7 +300,6 @@ class SymbolsTask(Task):
             symbol_dcs = []
             for idx, symbol in enumerate(symbols):
                 symbol_dc = DerivedContent(
-                    content_type_id=None,
                     content_kind=ContentKind.SYMBOL,
                     node_id=self.db_node_id,
                     relative_path=str(self.node.root_rel_path),
@@ -418,7 +410,6 @@ class TopLevelDocsTask(Task):
             dc_contents = []
             for content_kind, dc_docs in top_level_tups:
                 dc = DerivedContent(
-                    content_type_id=None,
                     content_kind=content_kind,
                     node_id=self.db_node_id,
                     relative_path=str(self.node.root_rel_path),
@@ -466,9 +457,7 @@ class EmbeddingTask(Task):
         dependent_tasks: list[Task] | None = None,
     ) -> None:
         if source_code and not all([source_code, db_node_id]):
-            raise ValueError(
-                "If source_code is provided, source_content_id must also be provided"
-            )
+            raise ValueError("If source_code is provided must also be provided")
 
         self.source_code = source_code
         self.db_node_id = db_node_id

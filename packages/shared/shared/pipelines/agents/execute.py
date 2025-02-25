@@ -61,6 +61,12 @@ def execute_sequence(input: PipelineInput) -> PipelineResponse:
         input.scope.organization_id, input.scope.user_id, session_meta
     ) as llm_usage_session:
         for step in input.steps:
+            if (
+                step.step_type == PipelineStepType.COPY_EDITOR
+                or step == input.steps[-1]
+            ):
+                step.response_format = input.response_format
+
             response: PipelineStepResponse = methods[step.step_type](
                 step.into_pipeline_step(
                     sequence_prompt=sequence_prompt,

@@ -16,6 +16,7 @@ def run_agent_copy_editor(
         max_iterations=input.iterations,
         tools=input.tools,
         llm_usage_session=llm_usage_session,
+        response_type=input.response_format,
     )
     for system_prompt in input.create_system_prompts():
         agent.add_message(system_prompt)
@@ -25,6 +26,8 @@ def run_agent_copy_editor(
         agent.add_message(prompts.task.codeblock_syntax_mermaid.MESSAGE)
     agent.add_message(prompts.voice.copy_editor.MESSAGE)
     response = agent.invoke(str(input.prompt))
+    if not isinstance(response, str) and hasattr(response, "to_markdown"):
+        response = response.to_markdown()
 
     return PipelineStepResponse(
         agent_id=agent.agent_id,

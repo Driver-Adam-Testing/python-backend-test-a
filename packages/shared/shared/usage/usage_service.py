@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Literal
 
 import boto3
@@ -56,7 +56,7 @@ class UsageService:
                 bytes_out=0,
                 tokens_in=0,
                 tokens_out=0,
-                timestamp=datetime.now(),
+                timestamp=datetime.now(tz=UTC),
                 event_type=event_type,
                 event_metadata=None,
             )

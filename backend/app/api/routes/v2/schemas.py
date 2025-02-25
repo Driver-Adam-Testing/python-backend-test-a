@@ -59,6 +59,19 @@ class NodeRead(BaseModel):
         from_attributes = True
 
 
+class NodeMetaRead(NodeRead):
+    id: UUID
+    version_id: UUID
+    relative_path: str
+    kind: NodeKind
+    created_at: datetime | None
+    updated_at: datetime | None
+    misc_metadata: dict | None
+
+    class Config:
+        from_attributes = True
+
+
 class TagRead(BaseModel):
     id: UUID
     name: str
@@ -116,7 +129,7 @@ class VersionDetailRead(VersionRead):
 
 class PrimaryAssetDetailRead(PrimaryAssetRead):
     class PrimaryAssetVersionRead(VersionRead):
-        root_node: NodeRead | None
+        root_node: NodeMetaRead | None
 
     versions: list[PrimaryAssetVersionRead] | None
     tags: list[TagRead] | None

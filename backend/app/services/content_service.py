@@ -18,10 +18,7 @@ from sqlmodel import Session, asc, desc, func, or_, select, text
 from app.core.logger import logger
 from app.repositories.base_repository import BaseRepository
 from app.schemas.content_schema import (
-    BatchContentSourceAssociationResponse,
-    ContentSourceAssociationItem,
     ContentTagsResponse,
-    DeleteDocumentSourceResponse,
     DownloadContentResponse,
     ListContentInput,
     ListContentResult,
@@ -42,111 +39,6 @@ class ContentService:
         self.content_repository = BaseRepository(session, DerivedContent)
         self.document_source_repository = BaseRepository(session, DocumentSource)
         self.node_repository = BaseRepository(session, Node)
-
-    def associate_sources_with_content(
-        self: "ContentService",
-        organization_id: str,
-        content_id: UUID,
-        content_source_associations: list[ContentSourceAssociationItem],
-    ) -> BatchContentSourceAssociationResponse:
-        logger.info(
-            f"Associating {len(content_source_associations)} sources with content {content_id} for organization {organization_id}"
-        )
-        primary_asset = self.session.exec(
-            select(PrimaryAsset)
-            .where(PrimaryAsset.id == content_id)
-            .where(PrimaryAsset.organization_id == organization_id)
-        ).first()
-
-        if not primary_asset:
-            logger.error(
-                f"Primary asset for content {content_id} not found or does not belong to organization {organization_id}."
-            )
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Primary asset not found or does not belong to the organization",
-            )
-
-        existing_sources = self.session.exec(
-            select(DocumentSource).where(DocumentSource.document_id == content_id)
-        ).all()
-
-        incoming_source_ids = {
-            source.source_content_id for source in content_source_associations
-        }
-        for source in content_source_associations:
-            if not self.content_repository.exists(source.source_content_id):
-                logger.error(f"Source content {source.source_content_id} not found.")
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Source content not found",
-                )
-
-        for existing_source in existing_sources:
-            if existing_source.source_id not in incoming_source_ids:
-                self.session.delete(existing_source)
-
-        for source in content_source_associations:
-            self.session.merge(
-                DocumentSource(
-                    document_id=content_id,
-                    source_id=source.source_content_id,
-                    include=source.include,
-                )
-            )
-
-        self.session.commit()
-
-        logger.info(
-            f"Source content association with content {content_id} successfully updated"
-        )
-
-        return BatchContentSourceAssociationResponse(
-            content_id=content_id,
-            sources=content_source_associations,
-            message="Source content associated successfully",
-        )
-
-    def disassociate_document_source(
-        self: "ContentService",
-        organization_id: str,
-        content_id: UUID,
-        source_content_id: UUID,
-    ) -> DeleteDocumentSourceResponse:
-        logger.info(
-            f"Disassociating source {source_content_id} from content {content_id} for organization {organization_id}"
-        )
-        content = self.session.exec(
-            select(DerivedContent)
-            .join(Node, onclause=DerivedContent.node_id == Node.id)
-            .join(Version)
-            .join(PrimaryAsset)
-            .where(DerivedContent.id == content_id)
-            .where(PrimaryAsset.organization_id == organization_id)
-        ).first()
-        if not content:
-            logger.error(f"Content {content_id} not found")
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Content not found"
-            )
-        deleted_item = self.document_source_repository.delete_by_pk(
-            document_id=content_id, source_id=source_content_id
-        )
-
-        if not deleted_item:
-            logger.error(
-                f"Source {source_content_id} not found for content {content_id}"
-            )
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Document Source not found",
-            )
-
-        return DeleteDocumentSourceResponse(
-            document_id=deleted_item.document_id,
-            source_id=deleted_item.source_id,
-            message="Document source disassociated successfully",
-        )
 
     def get_list_content(
         self: "ContentService", organization_id: str, search_input: ListContentInput
@@ -171,7 +63,6 @@ class ContentService:
                     id=derived_content.id,
                     organization_id=organization_id,
                     content_name=derived_content.content_kind,
-                    source_content_id=None,
                     codebase_name=None,
                     relative_path=derived_content.relative_path,
                     content=derived_content.content,
@@ -282,14 +173,6 @@ class ContentService:
             ]
             statement = statement.where(or_(*clauses))
 
-        if search_input.source_content_id:
-            clauses = [
-                Node.id.in_(search_input.source_content_id),
-                Version.id.in_(search_input.source_content_id),
-                DerivedContent.id.in_(search_input.source_content_id),
-            ]
-            statement = statement.where(or_(*clauses))
-
         if search_input.order:
             clauses = [
                 DerivedContent.order == search_input.order,
@@ -308,16 +191,8 @@ class ContentService:
                 )
             statement = statement.where(Version.status == search_input.status)
 
-        if search_input.content_type_id:
-            logger.warning("Filtering by content_type_id is deprecated.")
-            statement = statement.where(
-                DerivedContent.content_type_id.in_(search_input.content_type_id)
-            )
-
         if search_input.version_id:
-            statement = statement.where(
-                DerivedContent.version_id.in_(search_input.version_id)
-            )
+            statement = statement.where(Version.id == search_input.version_id)
 
         if search_input.content_type_name:
             logger.info(

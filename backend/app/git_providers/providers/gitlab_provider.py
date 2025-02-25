@@ -9,6 +9,7 @@ from app.git_providers.resources.gitlab_resources import GitLabAPIResources
 from app.git_providers.utils.errors import GitProviderAppRevokeError
 from app.schemas.git_provider_schema import GitRepository
 from app.schemas.secret_management_schema import (
+    APP_INSTALL_GAT_NAME_PREFIX,
     APP_INSTALL_SECRET_NAME_PREFIX,
     APP_SECRET_NAME_PREFIX,
 )
@@ -99,11 +100,29 @@ class GitLabProvider:
 
         return access_token
 
+    def fetch_group_access_token(self, install_id: str) -> str:
+        logger.info(f"Fetching group access token for installation ID {install_id}")
+        install_key = format_secret_name(APP_INSTALL_GAT_NAME_PREFIX, install_id)
+        secret_value = self.secrets_manager.read_secret(install_key)
+        if not secret_value:
+            raise ValueError("Access token not found")
+
+        group_access_token = secret_value["token"]
+
+        return group_access_token
+
     def fetch_repos(
         self, app_installation: GitProviderAppInstallation
     ) -> list[GitRepository]:
         logger.info(f"Fetching repositories for installation ID {app_installation.id}")
         access_token = self.fetch_access_token(str(app_installation.id))
+        return self.api_strategy.fetch_repos(str(app_installation.id), access_token)
+
+    def fetch_group_repos(
+        self, app_installation: GitProviderAppInstallation
+    ) -> list[GitRepository]:
+        logger.info(f"Fetching repositories for installation ID {app_installation.id}")
+        access_token = self.fetch_group_access_token(str(app_installation.id))
         return self.api_strategy.fetch_repos(str(app_installation.id), access_token)
 
     def clone_repository(
@@ -118,9 +137,16 @@ class GitLabProvider:
             f"Cloning repository {repo_info.repo_name} for installation ID {repo_info.installation_id}"
         )
         installation_id = repo_info.installation_id
-        access_token = self.fetch_access_token(installation_id)
-
         repo_id = repo_info.metadata["id"]
+        access_token = self.fetch_group_access_token(installation_id)
+
+        # find the GAT the repo belongs to
+        if not access_token:
+            logger.error(
+                f"Failed to find access token for repository {repo_info.repo_name}"
+            )
+            raise ValueError("Failed to find access token for repository")
+
         latest_commit = repo_info.latest_commit["commit"]["id"]
         logger.info(
             f"Downloading repository {repo_info.repo_name} for installation ID {repo_info.installation_id}"
@@ -173,7 +199,8 @@ class GitLabProvider:
         )
 
         git_provider_cfg = load_provider_config(
-            git_provider_app, app_secret_value["client_secret"]
+            git_provider_app,
+            app_secret_value.get("client_secret", None) if app_secret_value else None,
         )
 
         return cls(git_provider_cfg, secrets_manager)

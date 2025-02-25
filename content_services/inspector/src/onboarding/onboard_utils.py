@@ -7,7 +7,6 @@ from collections.abc import Callable
 from enum import Enum
 from functools import cache
 from pathlib import Path
-from shutil import rmtree
 from urllib.parse import urlparse
 from uuid import UUID
 
@@ -17,6 +16,9 @@ from botocore.client import ClientError
 from database.models_v2 import Version
 from gitignore_parser import parse_gitignore
 from sqlmodel import Session
+
+
+class AccessTokenError(Exception): ...
 
 
 class RunInProgressError(Exception):
@@ -105,6 +107,27 @@ def download_file_from_s3(
         raise e
 
 
+def is_driverignored(file_path: Path, driverignore: Callable | None) -> bool:
+    if driverignore is None:
+        return False
+
+    # this will be True if the file is directly ignored OR parent directory WITH trailing slash
+    # is contained within the .driverignore
+    if driverignore(file_path):
+        return True
+
+    # Due to bug in gitignore_parser with directories without trailing slashes,
+    # check all parent directories as well
+    for parent_dir in file_path.parents:
+        try:
+            if driverignore(parent_dir):
+                return True
+        except ValueError:
+            # Due to usage of temporary directory, the relative pathing has an error here.
+            pass
+    return False
+
+
 def download_file_from_presigned_url(
     presigned_url: str, download_destination: Path
 ) -> None:
@@ -126,35 +149,41 @@ def get_root_directories_in_archive(zip_file: zipfile.ZipFile) -> list:
 
 
 def unpack_archive(
-    archive_path: Path, override_codebase_name: str | None = None
+    archive_path: Path,
+    extraction_path: Path,
+    override_codebase_name: str | None = None,
 ) -> Path:
     # Creating zipfile instance does NOT unpack right away.
     # We can check root dir cases and modify from there BEFORE unpacking
     local_archive = zipfile.ZipFile(archive_path, "r")
     root_dirs = get_root_directories_in_archive(local_archive)
-    extracted_path = None
+
     if len(root_dirs) != 1:
         # Handles both multiple and no roots, extract to an appended root
-        extracted_path = Path(
-            archive_path.stem
-        )  # TODO: this is sensitive if we modify archive name at all
-        extracted_path.mkdir(exist_ok=False)  # don't unpack into an existing dir
-    local_archive.extractall(path=extracted_path)
+        codebase_root = extraction_path / Path(archive_path.stem)
+        codebase_root.mkdir(exist_ok=False)  # don't unpack into an existing dir
+        final_extracted_path = codebase_root
+    else:
+        codebase_root = extraction_path
+        final_extracted_path = extraction_path / Path(root_dirs[0])
+    # Members is used here to filter out __MACOSX files from the zip file
+    local_archive.extractall(
+        path=codebase_root,
+        members=[
+            member
+            for member in local_archive.namelist()
+            if any(member.startswith(root) for root in root_dirs)
+        ],
+    )
 
-    if extracted_path is None:
-        extracted_path = Path(root_dirs[0])
-
-    stripped_extracted_path = Path(re.sub(r"/\.[^/.]+$/", "", str(extracted_path)))
+    # Removes character incompatible with S3 keys
+    stripped_extracted_path = Path(
+        re.sub(r"/\.[^/.]+$/", "", str(final_extracted_path))
+    )
     if override_codebase_name:
-        stripped_extracted_path = Path(override_codebase_name)
+        stripped_extracted_path = extraction_path / Path(override_codebase_name)
 
-    # The container may already have this path unpacked in some instances.
-    if stripped_extracted_path.exists() and stripped_extracted_path != extracted_path:
-        rmtree(stripped_extracted_path)
-
-    os.rename(extracted_path, stripped_extracted_path)
-
-    assert stripped_extracted_path.exists()
+    os.rename(final_extracted_path, stripped_extracted_path)
 
     return stripped_extracted_path
 
@@ -421,13 +450,7 @@ def run_file_stats_and_reencode(
     file_size_processable = evaluate_file_size_processable(local_path)
     is_binary = evaluate_file_binary(local_path)
     is_blacklisted = is_on_blacklist(local_path)
-    is_ignored = False
-    if driverignore is not None:
-        file_ignored = driverignore(local_path)
-        # Bug in gitignore_parser where it doesn't ignore children of directories with no trailing slash
-        dir_ignored = driverignore(local_path.parent)
-        if file_ignored or dir_ignored:
-            is_ignored = True
+    is_ignored = is_driverignored(local_path, driverignore)
 
     file_stats = {}
 
@@ -445,6 +468,16 @@ def run_file_stats_and_reencode(
         file_stats["is_analyzable"] = False
     file_stats["is_blacklisted"] = is_blacklisted
     file_stats["is_ignored"] = is_ignored
+
+    if file_stats["is_analyzable"]:
+        file_type = get_file_type_from_extension(file_stats["extension"])
+        if not file_type:
+            file_type = get_file_type_from_filename(local_path.name)
+        if not file_type:
+            file_type = "Other"
+        file_stats["language"] = file_type
+    else:
+        file_stats["language"] = "N/A"
 
     return file_stats
 
@@ -562,3 +595,24 @@ def delete_file_from_s3(bucket: str, key: str) -> None:
         aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY"),
     )
     s3_client.delete_object(Bucket=bucket, Key=key)
+
+
+def upload_to_s3_with_metadata(
+    zip_content: bytes, metadata: dict, upload_key: str
+) -> bool:
+    import boto3
+
+    s3_client = boto3.client("s3")
+    try:
+        s3_client.put_object(
+            Bucket=os.environ["DROPZONE_BUCKET_NAME"],
+            Key=upload_key,
+            Body=zip_content,
+            ContentType="application/zip",
+            Metadata=metadata,
+        )
+    except Exception as e:
+        print(e)
+        raise Exception(
+            f"Failed uploading codebase version {metadata['version_id']} to {upload_key}."
+        ) from e

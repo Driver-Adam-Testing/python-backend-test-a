@@ -26,6 +26,14 @@ class GitLabOAuthStrategy:
             response.raise_for_status()  # Raises an exception if the HTTP response status is not successful.
             return response.json()
 
+    def token_user(self, token: str) -> dict:
+        url = f"{self.config.base_url}/{self.config.user_endpoint}"
+        headers = {"Authorization": f"Bearer {token}"}
+        with httpx.Client() as client:
+            response = client.get(url, headers=headers)
+            response.raise_for_status()  # Raises an exception if the HTTP response status is not successful.
+            return response.json()
+
     def generate_authorization_url(self, state: str) -> str:
         query_params = {
             "client_id": self.config.client_id,

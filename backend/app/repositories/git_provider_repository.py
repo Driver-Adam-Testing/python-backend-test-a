@@ -25,6 +25,16 @@ def git_provider_app_by_id(
     return session.exec(query).first()
 
 
+def git_provider_app_installation_by_org_id(
+    session: Session, organization_id: str, app_id: str
+) -> list[GitProviderAppInstallation]:
+    query = select(GitProviderAppInstallation).where(
+        GitProviderAppInstallation.git_provider_app_id == app_id,
+        GitProviderAppInstallation.organization_id == organization_id,
+    )
+    return session.exec(query).all()
+
+
 def git_provider_app_installation_by_user_id(
     session: Session, organization_id: str, app_id: str, user_id: str
 ) -> GitProviderAppInstallation | None:
@@ -34,6 +44,15 @@ def git_provider_app_installation_by_user_id(
         GitProviderAppInstallation.organization_id == organization_id,
     )
     return session.exec(query).first()
+
+
+def git_provider_app_installation_by_id(
+    session: Session, installation_id: str
+) -> GitProviderAppInstallation:
+    query = select(GitProviderAppInstallation).where(
+        GitProviderAppInstallation.id == installation_id,
+    )
+    return session.exec(query).one()
 
 
 def delete_git_provider_app_install(

@@ -63,9 +63,17 @@ class OpenAIStrictAgent(AgentBase):
         return response
 
     def _execute_iteration(self) -> str | None:
+        if self.model_config.system_prompts == "none":
+            adjusted_messages = [
+                {**msg, "role": "user"} if msg.get("role") == "system" else msg
+                for msg in self.messages
+            ]
+        else:
+            adjusted_messages = self.messages
+
         completion_kwargs = {
             "model": self.model,
-            "messages": self.messages,
+            "messages": adjusted_messages,
         }
         if (
             self.tools

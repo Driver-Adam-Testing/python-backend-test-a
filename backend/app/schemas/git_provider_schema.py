@@ -28,17 +28,26 @@ class GitProviderAppConfig(BaseModel):
     scope: str | None = None
 
 
+class GroupAccessToken(BaseModel):
+    name: str
+    token: str
+
+
 class CreateGitProviderAppRequest(BaseModel):
     organization_id: str
     name: str
     provider_kind: GitProviderKind
-    shared_provider: bool
+    shared_provider: bool = False
     base_url: str
-    client_id: str
-    client_secret: str
-    redirect_uri: str
-    scopes: list[str] = Field(default_factory=list)
+    client_id: str | None = None
+    client_secret: str | None = None
+    redirect_uri: str | None = None
+    scopes: list[str] | None = Field(default_factory=list)
 
 
 class GitProviderAppSecret(BaseModel):
-    client_secret: str
+    client_secret: str | None = None
+
+
+class GitProviderAppTokenSecret(BaseModel):
+    token: str

@@ -240,7 +240,7 @@ class IrData(BaseModel, abc.ABC):
             llm_to_use = (
                 llm
                 if workers == 1
-                else ChatOpenAI(model="gpt-4o-mini", temperature=0, request_timeout=300)
+                else ChatOpenAI(model="gpt-4o-mini", temperature=0, request_timeout=500)
             )
 
             with FastShutdownThreadPoolExecutor(max_workers=workers) as executor:
@@ -330,7 +330,7 @@ class IrCollection(BaseModel, abc.ABC):
         llm_to_use = (
             llm
             if workers == 1
-            else ChatOpenAI(model="gpt-4o-mini", temperature=0, request_timeout=300)
+            else ChatOpenAI(model="gpt-4o-mini", temperature=0, request_timeout=500)
         )
 
         with FastShutdownThreadPoolExecutor(max_workers=workers) as executor:

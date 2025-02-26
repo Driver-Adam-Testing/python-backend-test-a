@@ -1,7 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import openai
-from database.models_v1 import UsageEventType
 from openai import OpenAI
 
 from shared.agent.agent_base import AgentBase
@@ -50,15 +49,15 @@ class OpenAIStrictAgent(AgentBase):
     def _generate_response(self, completion_kwargs: dict) -> openai.ChatCompletion:
         response = self.client.beta.chat.completions.parse(**completion_kwargs)
 
-        if self.llm_usage_session:
-            usage_metric = self.llm_usage_session.compute_usage(
-                prompts=[str(completion_kwargs.get("messages", ""))],
-                response=response,
-                event_type=UsageEventType.AGENT_PIPELINE_USAGE_DEBIT,
-                model=self.model,
-                provider="OpenAI",
-            )
-            self.llm_usage_session.send_event(usage_metric)
+        # if self.llm_usage_session:
+        #     usage_metric = self.llm_usage_session.compute_usage(
+        #         prompts=[str(completion_kwargs.get("messages", ""))],
+        #         response=response,
+        #         event_type=UsageEventType.AGENT_PIPELINE_USAGE_DEBIT,
+        #         model=self.model,
+        #         provider="OpenAI",
+        #     )
+        #     self.llm_usage_session.send_event(usage_metric)
 
         return response
 

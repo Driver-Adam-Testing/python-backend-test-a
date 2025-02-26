@@ -1,7 +1,7 @@
 import inspect
 import json
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Self, TypeVar
 from uuid import UUID
 
@@ -116,7 +116,7 @@ class LLMUsageSession:
         event_detail["event_metadata"] = {}
         event_detail = json.dumps(event_detail, default=str)
         entry = {
-            "Time": datetime.now(),
+            "Time": datetime.now(tz=UTC),
             "Source": "metrics.client",
             "DetailType": str(UsageEventType(usage_metric.event_type)),
             "Detail": event_detail,
@@ -133,6 +133,12 @@ class LLMUsageSession:
         except Exception as e:
             print(f"Error sending event: {e}")
             raise UsageEventSendError(original_exception=e)
+
+    def commit_event_now(self, usage_metric: UsageMetric) -> None:
+        usage_event = usage_metric.into_usage_event()
+        with Session(engine) as session:
+            session.add(usage_event)
+            session.commit()
 
     def compute_usage(
         self,
@@ -176,7 +182,7 @@ class LLMUsageSession:
             bytes_out=-bytes_out,
             tokens_in=tokens_in,
             tokens_out=tokens_out,
-            timestamp=datetime.now(),
+            timestamp=datetime.now(UTC),
             event_type=event_type.value,
             event_metadata=event_metadata,
         )

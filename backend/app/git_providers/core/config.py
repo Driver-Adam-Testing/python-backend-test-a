@@ -9,9 +9,9 @@ class GitProviderConfig(BaseModel):
     name: str
     provider_kind: GitProviderKind
     base_url: str
-    client_id: str
-    client_secret: str
-    redirect_uri: str
+    client_id: str | None = None
+    client_secret: str | None = None
+    redirect_uri: str | None = None
     token_endpoint: str
     user_endpoint: str
     authorize_endpoint: str

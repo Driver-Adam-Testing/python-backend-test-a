@@ -315,11 +315,10 @@ class ChunkAndEmbedding(SQLModel, table=True):  # type: ignore
 
 class InspectorRun(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    inspection_version_id: UUID | None
     version_id: UUID = Field(
         foreign_key="v2_version.id",
-        nullable=True,  # TODO make non-nullable after migration
-        ondelete="SET NULL",
+        nullable=False,
+        ondelete="CASCADE",
     )
     created_at: None | datetime = Field(
         sa_column=Column(
@@ -335,6 +334,7 @@ class InspectorRun(SQLModel, table=True):
             nullable=False,
         ),
     )
+    version: "Version" = Relationship(back_populates="inspector_runs")
 
 
 class UsageSessionStatus(str, enum.Enum):
@@ -514,9 +514,11 @@ class GitProviderApp(SQLModel, table=True):
     owner_organization_id: str = Field(index=True)
     name: str
     base_url: str
-    client_id: str = Field(index=True, unique=True)
-    redirect_uri: str
-    scopes: str
+    ## This group of fields is used for OAuth
+    client_id: str | None = Field(index=True, unique=True)
+    redirect_uri: str | None
+    scopes: str | None
+    ##
     created_at: None | datetime = Field(
         sa_column=Column(
             DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -547,7 +549,12 @@ class GitProviderAppInstallation(SQLModel, table=True):
         ondelete="CASCADE",
     )
     organization_id: str
-    user_id: str
+    ## This group of fields is used for OAuth
+    user_id: str | None
+    ##
+    misc_metadata: dict | None = Field(
+        sa_column=Column("metadata", JSONB, nullable=True), default=None
+    )
     created_at: None | datetime = Field(
         sa_column=Column(
             DateTime(timezone=True), server_default=func.now(), nullable=False

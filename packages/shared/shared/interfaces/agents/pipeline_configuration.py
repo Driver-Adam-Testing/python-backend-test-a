@@ -3,6 +3,7 @@ import uuid
 
 from pydantic import BaseModel, Field
 from shared.interfaces.agents.agent_configuration import AgentConfiguration
+from shared.interfaces.agents.block_kind import BlockKind
 from shared.interfaces.agents.data_scope import DataScope
 from shared.interfaces.agents.prompt import PromptWithContext
 from shared.interfaces.search import SearchResults
@@ -96,6 +97,8 @@ class PipelineInput(PromptWithContext):
     )
     # TODO: Make this Non-nullable?
     scope: DataScope | None = None
+    response_format: type
+    block_kind: BlockKind | None = None
 
 
 class PipelineStepResponse(BaseModel):

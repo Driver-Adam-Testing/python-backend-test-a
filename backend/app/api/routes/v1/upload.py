@@ -15,9 +15,11 @@ router = APIRouter()
 
 
 @router.post(
-    "/codebase", summary="Upload a codebase", dependencies=[ContentEditorPermission]
+    "/codebase",
+    summary="Create codebase upload URL",
+    dependencies=[ContentEditorPermission],
 )
-def upload_codebase(
+def create_codebase_and_upload_url(
     session: CurrentSession,
     user: UserToken,
     request: UploadCodebaseRequest,
@@ -25,7 +27,7 @@ def upload_codebase(
     """Upload a codebase."""
     logger.info(f"upload_codebase called with request: {request}")
     upload_service = UploadService(session)
-    return upload_service.upload_codebase(user, request)
+    return upload_service.create_codebase_and_upload_url(user, request)
 
 
 @router.post("/pdf", summary="Upload a pdf", dependencies=[ContentEditorPermission])

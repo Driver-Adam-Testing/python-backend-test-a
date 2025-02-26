@@ -81,6 +81,7 @@ class CodebaseService:
         organization_id: str,
         download_url: str,
     ) -> CodebaseAnalysisResponse:
+        # TODO: deprecate Analysis
         validate_codebase_analysis_presigned_url(
             download_url,
             "analysis",
@@ -101,6 +102,7 @@ class CodebaseService:
 
     @staticmethod
     def get_codebase_analysis_results(call_id: str) -> CodebaseAnalysisResult:
+        # TODO: deprecate Analysis
         modal_response = execute_modal_function_call(call_id)
         codebase_analysis_results = CodebaseAnalysisResult(
             call_id=call_id,
@@ -122,6 +124,7 @@ class CodebaseService:
         organization_id: str,
         codebase_object_key: str,
     ) -> None:
+        # TODO: this can be removed, we upload directly to the codebases bucket now in the codebase service
         validate_analyzed_codebase_object_key(
             codebase_object_key,
             organization_id,

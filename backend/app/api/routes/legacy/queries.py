@@ -7,10 +7,6 @@ from app.api.routes.legacy.api_types import (
     GitProvider,
     GitRepository,
 )
-from app.api.routes.legacy.application_note import (
-    ApplicationNoteEditResponse,
-    application_note_edit,
-)
 from app.api.routes.legacy.document_set import DocumentSet, get_document_set
 from app.api.routes.legacy.orm_ops import (
     check_access,
@@ -122,25 +118,6 @@ class Query:
             organization_id=user.organization_id,
             version_id=str(versionId) if versionId else None,
         )
-
-    # @strawberry.field
-    # def symbolSet(
-    #     self, info: Info, sourceContentId: ID, page: int = 1, pageSize: int = 10
-    # ) -> SymbolSetResponse:
-    #     session = info.context.session
-    #     organization_id = info.context.user.organization_id
-    #     if not check_access(
-    #         session, organization_id, source_content_id=str(sourceContentId)
-    #     ):
-    #         raise GraphQLError("Access denied", extensions={"code": "NOT_FOUND"})
-    #     return symbol_set(
-    #         session, str(sourceContentId), organization_id, page, pageSize
-    #     )
-
-    @strawberry.mutation
-    def applicationNoteEdit(self, call_id: ID) -> ApplicationNoteEditResponse:
-        # Assuming access check is performed within the application_note_edit function or not required due to the nature of the mutation.
-        return application_note_edit(str(call_id))
 
     @strawberry.field
     def me(self, info: Info) -> MeResponse:

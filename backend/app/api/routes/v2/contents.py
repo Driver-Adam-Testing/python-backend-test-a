@@ -75,7 +75,6 @@ def create_derived_content(
 
     new_content = DerivedContent(
         node_id=payload.node_id,
-        content_type_id=payload.content_type_id,
         relative_path=payload.relative_path,
         content=payload.content,
         content_name=payload.content_name,

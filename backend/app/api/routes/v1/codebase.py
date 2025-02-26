@@ -1,20 +1,33 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import UUID
 
+import modal
+from database.models_v1 import UsageEventType
 from database.models_v2 import PrimaryAsset, Version
-from database.models_v2_enums import PrimaryAssetKind
+from database.models_v2_enums import PrimaryAssetKind, VersionStatus
 from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from shared.interfaces.usage.event_metadata import (
+    UsageEventMetadata,
+    UsageMetric,
+    UsageSessionMetadata,
+)
+from shared.usage.llm_session import LLMUsageSession
 from shared.usage.usage_service import UsageService
+from shared.usage.utils import bytes_to_sloc
+from sqlalchemy.orm import selectinload
 from sqlmodel import func, select
 
 from app.api.auth import ContentEditorPermission, ContentReadonlyPermission, UserToken
 from app.api.session import CurrentSession
+from app.core.config import settings
 from app.schemas.codebase_schema import (
     CodebaseAnalysisRequest,
     CodebaseAnalysisResponse,
     CodebaseAnalysisResult,
+    CodebaseGenerationRequest,
+    CodebaseGenerationResponse,
     CodebaseOnboardRequest,
 )
 from app.services.codebase_service import CodebaseService
@@ -87,7 +100,7 @@ def get_codebase_versions(
             # Here we treat the version's display_name as the "version" string
             version=version.display_name,
             display_name=version.display_name,
-            created_at=version.created_at if version.created_at else datetime.now(),
+            created_at=version.created_at,
         )
         for version in versions
     ]
@@ -109,6 +122,91 @@ def exec_codebase_analysis(
     return CodebaseService.execute_codebase_analysis(
         user.organization_id, request.download_url
     )
+
+
+@router.post(
+    "/generate",
+    summary="Execute codebase generation",
+    dependencies=[ContentEditorPermission],
+)
+def exec_codebase_generation(
+    session: CurrentSession,
+    user: UserToken,
+    request: CodebaseGenerationRequest,
+) -> CodebaseGenerationResponse:
+    query = (
+        select(Version)
+        .join(PrimaryAsset)
+        .where(
+            Version.id.in_(request.version_ids),
+            Version.status == VersionStatus.CONNECTED,
+            PrimaryAsset.organization_id == user.organization_id,
+        )
+        .options(
+            selectinload(Version.root_node),
+            selectinload(Version.primary_asset),
+        )
+    )
+    result = session.exec(query).all()
+    if len(result) != len(request.version_ids):
+        # Only proceed if all versions are able to be processed
+        raise HTTPException(
+            status_code=404, detail="Versions not found for provided ids"
+        )
+
+    codebase_size_in_bytes = 0
+    for version in result:
+        metadata = (
+            version.root_node.misc_metadata
+        )  # TODO: is this loaded as a dict? Or string?
+        codebase_size_in_bytes += metadata["analyzable_bytes"]
+    usage_balance = UsageService(session).get_usage_balance(user.organization_id)
+    if bytes_to_sloc(codebase_size_in_bytes) > usage_balance.balance:
+        raise HTTPException(
+            status_code=402,
+            detail="Not enough usage balance",
+        )
+
+    for version in result:
+        session_meta = UsageSessionMetadata(
+            content_type="codebase",
+            content_id=str(version.primary_asset_id),
+            content_name=version.primary_asset.display_name,
+            version_id=str(version.id),
+        )
+        with LLMUsageSession(
+            user.organization_id, user.user_id, session_meta
+        ) as llm_session:
+            usage_metric = UsageMetric(
+                session_id=llm_session.session_id,
+                organization_id=user.organization_id,
+                user_id=user.user_id,
+                event_source="codebase_onboarding",  # TODO make enum
+                bytes_in=-codebase_size_in_bytes,
+                bytes_out=0,
+                tokens_in=0,
+                tokens_out=0,
+                timestamp=datetime.now(tz=UTC),
+                event_type=UsageEventType.ONBOARDING_USAGE_DEBIT,
+                event_metadata=UsageEventMetadata(
+                    model="None",
+                    provider="None",
+                    input={},
+                    output="",
+                    sloc=bytes_to_sloc(codebase_size_in_bytes),
+                ),
+            )
+            llm_session.commit_event_now(usage_metric)
+        version.status = VersionStatus.GENERATING
+        session.add(version)
+        session.commit()
+
+    inspect_db = modal.Function.lookup(
+        "inspector-v2", "inspect_db", environment_name=settings.MODAL_ENVIRONMENT
+    )
+    for version in result:
+        inspect_db.spawn(version.id)
+    return CodebaseGenerationResponse(call_id="1234")
 
 
 @router.get(

@@ -17,7 +17,6 @@ class Settings(BaseSettings):
     POSTGRES_PASSWORD: str | None = None
     POSTGRES_DB: str = ""
     ENVIRONMENT: Literal["local", "development", "staging", "production"] = "local"
-    SSL_MODE: str = "" if ENVIRONMENT == "local" else "sslmode=require"
 
     # NOTE: if DATABASE_URL is set, it overrides the other postgres params
     DATABASE_URL: str | None = None
@@ -40,6 +39,11 @@ class Settings(BaseSettings):
                 query=self.SSL_MODE,
             )
             return url
+
+    @computed_field
+    @property
+    def SSL_MODE(self) -> str:
+        return "sslmode=require" if self.ENVIRONMENT != "local" else ""
 
 
 settings = Settings()  # type: ignore

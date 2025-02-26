@@ -19,7 +19,9 @@ async def get_version_by_id(version_id: uuid.UUID) -> Version:
         statement = (
             select(Version)
             .where(Version.id == version_id)
-            .options(selectinload(Version.primary_asset))
+            .options(
+                selectinload(Version.primary_asset), selectinload(Version.root_node)
+            )
         )
         return (await session.exec(statement)).one()
 

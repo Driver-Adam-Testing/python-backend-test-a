@@ -119,7 +119,6 @@ def create_and_embed_pdf_summaries(node_id: str) -> None:
                 cleaned_content = str(result.content.replace("\x00", ""))
 
                 derived_content = DerivedContent(
-                    content_type_id=None,
                     content_kind=content_kind,
                     node_id=node_id,
                     relative_path=node.relative_path,

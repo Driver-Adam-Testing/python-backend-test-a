@@ -2,7 +2,9 @@ from app.git_providers.core.config import GitProviderConfig
 from database.models_v1 import GitProviderApp, GitProviderKind
 
 
-def load_provider_config(app: GitProviderApp, client_secret: str) -> GitProviderConfig:
+def load_provider_config(
+    app: GitProviderApp, client_secret: str | None = None
+) -> GitProviderConfig:
     if app.provider_kind in [
         GitProviderKind.GITLAB_ENTERPRISE_SELF_MANAGED,
     ]:

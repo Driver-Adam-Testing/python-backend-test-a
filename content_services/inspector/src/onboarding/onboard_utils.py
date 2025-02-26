@@ -7,7 +7,6 @@ from collections.abc import Callable
 from enum import Enum
 from functools import cache
 from pathlib import Path
-from shutil import rmtree
 from urllib.parse import urlparse
 from uuid import UUID
 
@@ -126,35 +125,41 @@ def get_root_directories_in_archive(zip_file: zipfile.ZipFile) -> list:
 
 
 def unpack_archive(
-    archive_path: Path, override_codebase_name: str | None = None
+    archive_path: Path,
+    extraction_path: Path,
+    override_codebase_name: str | None = None,
 ) -> Path:
     # Creating zipfile instance does NOT unpack right away.
     # We can check root dir cases and modify from there BEFORE unpacking
     local_archive = zipfile.ZipFile(archive_path, "r")
     root_dirs = get_root_directories_in_archive(local_archive)
-    extracted_path = None
+
     if len(root_dirs) != 1:
         # Handles both multiple and no roots, extract to an appended root
-        extracted_path = Path(
-            archive_path.stem
-        )  # TODO: this is sensitive if we modify archive name at all
-        extracted_path.mkdir(exist_ok=False)  # don't unpack into an existing dir
-    local_archive.extractall(path=extracted_path)
+        codebase_root = extraction_path / Path(archive_path.stem)
+        codebase_root.mkdir(exist_ok=False)  # don't unpack into an existing dir
+        final_extracted_path = codebase_root
+    else:
+        codebase_root = extraction_path
+        final_extracted_path = extraction_path / Path(root_dirs[0])
+    # Members is used here to filter out __MACOSX files from the zip file
+    local_archive.extractall(
+        path=codebase_root,
+        members=[
+            member
+            for member in local_archive.namelist()
+            if any(member.startswith(root) for root in root_dirs)
+        ],
+    )
 
-    if extracted_path is None:
-        extracted_path = Path(root_dirs[0])
-
-    stripped_extracted_path = Path(re.sub(r"/\.[^/.]+$/", "", str(extracted_path)))
+    # Removes character incompatible with S3 keys
+    stripped_extracted_path = Path(
+        re.sub(r"/\.[^/.]+$/", "", str(final_extracted_path))
+    )
     if override_codebase_name:
-        stripped_extracted_path = Path(override_codebase_name)
+        stripped_extracted_path = extraction_path / Path(override_codebase_name)
 
-    # The container may already have this path unpacked in some instances.
-    if stripped_extracted_path.exists() and stripped_extracted_path != extracted_path:
-        rmtree(stripped_extracted_path)
-
-    os.rename(extracted_path, stripped_extracted_path)
-
-    assert stripped_extracted_path.exists()
+    os.rename(final_extracted_path, stripped_extracted_path)
 
     return stripped_extracted_path
 
@@ -445,6 +450,16 @@ def run_file_stats_and_reencode(
         file_stats["is_analyzable"] = False
     file_stats["is_blacklisted"] = is_blacklisted
     file_stats["is_ignored"] = is_ignored
+
+    if file_stats["is_analyzable"]:
+        file_type = get_file_type_from_extension(file_stats["extension"])
+        if not file_type:
+            file_type = get_file_type_from_filename(local_path.name)
+        if not file_type:
+            file_type = "Other"
+        file_stats["language"] = file_type
+    else:
+        file_stats["language"] = "N/A"
 
     return file_stats
 

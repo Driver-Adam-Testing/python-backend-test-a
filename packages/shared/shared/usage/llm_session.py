@@ -134,6 +134,12 @@ class LLMUsageSession:
             print(f"Error sending event: {e}")
             raise UsageEventSendError(original_exception=e)
 
+    def commit_event_now(self, usage_metric: UsageMetric) -> None:
+        usage_event = usage_metric.into_usage_event()
+        with Session(engine) as session:
+            session.add(usage_event)
+            session.commit()
+
     def compute_usage(
         self,
         prompts: list[str],

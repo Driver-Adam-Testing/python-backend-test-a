@@ -35,7 +35,9 @@ def list_primary_assets(
 ) -> ListWithCount[PrimaryAssetDetailRead]:
     query = (
         select(PrimaryAsset)
-        .options(selectinload(PrimaryAsset.versions).selectinload(Version.root_node))
+        .options(
+            selectinload(PrimaryAsset.versions).selectinload(Version.root_node)
+        )  # TODO selecting all the versions will become a problem at some point...
         .where(PrimaryAsset.organization_id == user.organization_id)
     )
 

@@ -22,10 +22,16 @@ class PrimaryAsset(SQLModel, table=True):  # type: ignore
     )
 
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    display_name: str
+    display_name: str = Field(index=True)
     repository_id: str | None
-    organization_id: str
-    kind: PrimaryAssetKind
+    organization_id: str = Field(index=True)
+    kind: PrimaryAssetKind = Field(index=True)
+    installation_id: UUID | None = Field(
+        foreign_key="git_provider_app_installations.id",
+        nullable=True,
+        ondelete="SET NULL",
+        default=None,
+    )
     created_at: None | datetime = Field(
         sa_column=Column(
             DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -75,9 +81,10 @@ class Version(SQLModel, table=True):  # type: ignore
         foreign_key="v2_primary_asset.id",
         nullable=False,
         ondelete="CASCADE",
+        index=True,
     )
     display_name: str
-    status: VersionStatus
+    status: VersionStatus = Field(index=True)
     previous_version_id: UUID | None = Field(
         default=None,
         nullable=True,
@@ -96,6 +103,7 @@ class Version(SQLModel, table=True):  # type: ignore
             server_default=func.now(),
             onupdate=func.now(),
             nullable=False,
+            index=True,
         ),
         default=None,
     )
@@ -115,7 +123,7 @@ class Version(SQLModel, table=True):  # type: ignore
             "viewonly": True,
         }
     )
-    inspector_runs: list["InspectorRun"] = Relationship(
+    inspector_runs: list["InspectorRun"] = Relationship(  # noqa: F821
         back_populates="version",
         passive_deletes="all",
         sa_relationship_kwargs={
@@ -130,6 +138,18 @@ class Node(SQLModel, table=True):  # type: ignore
         Index(
             "ix_version_id_relative_path", "version_id", "relative_path", unique=True
         ),
+        # Index for root_node on a version
+        Index(
+            "idx_node_version_id_relative_path_length",
+            "version_id",
+            func.length("relative_path"),
+        ),
+        # Index for node ancestor searching
+        Index(
+            "ix_node_version_id_relative_path_pattern_ops",
+            "version_id",
+            postgresql_ops={"relative_path": "text_pattern_ops"},
+        ),
     )
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     kind: NodeKind
@@ -137,6 +157,7 @@ class Node(SQLModel, table=True):  # type: ignore
         foreign_key="v2_version.id",
         ondelete="CASCADE",
         nullable=False,
+        index=True,
     )
     relative_path: str = Field(nullable=False, index=True)
 
@@ -205,7 +226,12 @@ class Node(SQLModel, table=True):  # type: ignore
 
 class PrimaryAssetTag(SQLModel, table=True):
     __tablename__ = "v2_primary_asset_tag"
-    tag_id: UUID = Field(primary_key=True, ondelete="CASCADE", foreign_key="tags.id")
+    tag_id: UUID = Field(
+        index=True, primary_key=True, ondelete="CASCADE", foreign_key="tags.id"
+    )
     primary_asset_id: UUID = Field(
-        primary_key=True, ondelete="CASCADE", foreign_key="v2_primary_asset.id"
+        index=True,
+        primary_key=True,
+        ondelete="CASCADE",
+        foreign_key="v2_primary_asset.id",
     )

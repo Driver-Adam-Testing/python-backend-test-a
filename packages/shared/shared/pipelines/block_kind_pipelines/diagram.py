@@ -47,7 +47,7 @@ def execute_diagram_block_agent(input: PipelineInput) -> PipelineResponse:
             prompt_augmentation_input, llm_usage_session
         )
     default_agent_input = PipelineStepConfiguration(
-        step_type=PipelineStepType.SMART_INSTRUCTION,
+        step_type=PipelineStepType.DEFAULT,
         prompt=PromptWithContext(
             prompt=DEFAULT_PROMPT_SUFFIX
             + "\n\n"

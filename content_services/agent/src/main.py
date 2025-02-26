@@ -40,7 +40,7 @@ if os.environ["MODAL_ENVIRONMENT"] != "staging":
 
 @app.function(timeout=3600, **agent_model_config, keep_warm=10)
 def run(input: dict) -> any:
-    from shared.interfaces.agents.pipeline_configuration import PipelineInput
+    from shared.interfaces.agents.pipeline_configuration import BlockKind, PipelineInput
     from shared.pipelines.agents.execute import execute_sequence
     from shared.pipelines.block_kind_pipelines.code import execute_code_block_agent
     from shared.pipelines.block_kind_pipelines.diagram import (
@@ -49,27 +49,21 @@ def run(input: dict) -> any:
     from shared.pipelines.block_kind_pipelines.list import execute_list_block_agent
     from shared.pipelines.block_kind_pipelines.table import execute_table_block_agent
 
-    # from shared.prompts.block_kind.block_kind_any import BlockKindCopyEditorAny
-    from shared.prompts.block_kind.block_kind_code import BlockKindCopyEditorCodeBlock
-    from shared.prompts.block_kind.block_kind_diagram import BlockKindCopyEditorDiagram
-    from shared.prompts.block_kind.block_kind_list import BlockKindCopyEditorList
-    from shared.prompts.block_kind.block_kind_table import BlockKindCopyEditorTable
-    # from shared.prompts.block_kind.block_kind_text import BlockKindCopyEditorText
-
-    if isinstance(input, dict):
-        input = PipelineInput(**input)
-        print(input.model_dump())
+    parsed_input = input if isinstance(input, PipelineInput) else PipelineInput(**input)
     # Use the response_format type directly for execution
-    if isinstance(input.response_format, BlockKindCopyEditorList):
-        return execute_list_block_agent(input).model_dump()
-    elif isinstance(input.response_format, BlockKindCopyEditorTable):
-        return execute_table_block_agent(input).model_dump()
-    elif isinstance(input.response_format, BlockKindCopyEditorDiagram):
-        return execute_diagram_block_agent(input).model_dump()
-    elif isinstance(input.response_format, BlockKindCopyEditorCodeBlock):
-        return execute_code_block_agent(input).model_dump()
-    # elif isinstance(input.response_format, BlockKindCopyEditorText):
-    #     return execute_text_block_agent(input).model_dump()
-    # elif isinstance(input.response_format, BlockKindCopyEditorAny):
-    #     return execute_any_block_agent(input).model_dump()
-    return execute_sequence(input).model_dump()
+    match parsed_input.block_kind:
+        case BlockKind.LIST:
+            return execute_list_block_agent(input).model_dump()
+        case BlockKind.TABLE:
+            return execute_table_block_agent(input).model_dump()
+        case BlockKind.DIAGRAM:
+            return execute_diagram_block_agent(input).model_dump()
+        case BlockKind.CODE:
+            parsed_input.prompt = f"{parsed_input.prompt}\n\nBe sure to include the language identifiers in the code blocks."
+            return execute_code_block_agent(input).model_dump()
+        case BlockKind.TEXT:
+            parsed_input.prompt = f"{parsed_input.prompt}\n\nContent returned should be a single paragraph of text."
+        case BlockKind.ANY:
+            parsed_input.response_format = None
+
+    return execute_sequence(parsed_input).model_dump()

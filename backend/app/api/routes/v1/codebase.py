@@ -154,14 +154,14 @@ def exec_codebase_generation(
             status_code=404, detail="Versions not found for provided ids"
         )
 
-    codebase_size_in_bytes = 0
+    total_codebase_size_in_bytes = 0
     for version in result:
         metadata = (
             version.root_node.misc_metadata
         )  # TODO: is this loaded as a dict? Or string?
-        codebase_size_in_bytes += metadata["analyzable_bytes"]
+        total_codebase_size_in_bytes += metadata["analyzable_bytes"]
     usage_balance = UsageService(session).get_usage_balance(user.organization_id)
-    if bytes_to_sloc(codebase_size_in_bytes) > usage_balance.balance:
+    if bytes_to_sloc(total_codebase_size_in_bytes) > usage_balance.balance:
         raise HTTPException(
             status_code=402,
             detail="Not enough usage balance",
@@ -174,6 +174,8 @@ def exec_codebase_generation(
             content_name=version.primary_asset.display_name,
             version_id=str(version.id),
         )
+        metadata = version.root_node.misc_metadata
+        codebase_size_in_bytes = metadata["analyzable_bytes"]
         with LLMUsageSession(
             user.organization_id, user.user_id, session_meta
         ) as llm_session:

@@ -1,3 +1,5 @@
+import re
+
 from pydantic import BaseModel
 
 PROMPT = """
@@ -12,8 +14,8 @@ class BlockKindCopyEditorDiagram(BaseModel):
     which are expected to be in markdown format.
 
     Attributes:
-        diagram_mermaid (str): A markdown representation of the mermaid diagram.
-        description (str): a description
+        diagram_mermaid (str): A markdown representation of the mermaid diagram. IMPORTANT: Ensure that diagram_mermaid is ONLY a single, code fenced, mermaid block.
+        description (str): a description of the diagram.
 
     Mermaid formatting Instructions:
         - Review any mermaid code blocks in this document and correct any errors preventing them from rendering properly.
@@ -30,19 +32,39 @@ class BlockKindCopyEditorDiagram(BaseModel):
     diagram_mermaid: str
     description: str
 
+    def _extract_mermaid_code(self) -> str:
+        """
+        Uses a regex to find the first fenced Mermaid code block in the diagram_mermaid
+        attribute. Returns just the interior of the code block. If no Mermaid fence is found,
+        returns the entire diagram_mermaid string (as a fallback).
+
+        For example, if the diagram_mermaid string looks like:
+            'Some text before\n```mermaid\ngraph LR; A-->B\n```\nSome text after'
+        Then _extract_mermaid_code() will return: 'graph LR; A-->B'
+        """
+        content = self.diagram_mermaid.strip()
+
+        # This regex captures everything between ```mermaid and the next ```
+        pattern = re.compile(r"(?s)```mermaid(.*?)```")
+        match = pattern.search(content)
+        if match:
+            # Return the code between ```mermaid and ```
+            return match.group(1).strip()
+        # If no match, return the entire string as a fallback
+        return content
+
     def to_markdown(self) -> str:
         """
-        Converts the response into a markdown formatted string suitable for mermaid diagrams.
+        Returns the Mermaid diagram in a markdown fenced code block.
 
-        This method checks if the response already contains the mermaid code block delimiters.
-        If the response is already properly formatted, it returns the response as is.
-        Otherwise, it wraps the response in mermaid code block delimiters to ensure it is
-        correctly formatted for markdown rendering.
-
-        Returns:
-            str: A markdown formatted string containing the mermaid diagram.
+        1) Find the code inside the first Mermaid fence (if it exists).
+        2) Wrap the resulting code in a proper code fence.
         """
-        diagram_mermaid = self.diagram_mermaid.strip()
-        if diagram_mermaid.startswith("```mermaid") and diagram_mermaid.endswith("```"):
-            return diagram_mermaid
-        return f"```mermaid\n{diagram_mermaid}\n```\n{self.description}"
+        code = self._extract_mermaid_code()
+        return f"```mermaid\n{code}\n```"
+
+    def to_mermaid_interior_string(self) -> str:
+        """
+        Returns just the raw mermaid code string (no triple-backtick fences).
+        """
+        return self._extract_mermaid_code()

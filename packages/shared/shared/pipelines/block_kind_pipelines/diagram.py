@@ -18,7 +18,6 @@ from shared.prompts.task.codeblock_syntax_mermaid import (
     PROMPT as CODEBLOCK_SYNTAX_MERMAID_PROMPT,
 )
 from shared.usage.llm_session import LLMUsageSession
-from shared.utils.mermaid_render import is_mermaid_renderable
 
 PROMPT_AUG_PROMPT_SUFFIX = (
     """Generate a comprehensive mermaid diagram as its desired output."""
@@ -71,34 +70,33 @@ def execute_diagram_block_agent(input: PipelineInput) -> PipelineResponse:
     )
     default_response = agent.invoke(str(prompt_augmentation_input.prompt.prompt))
     mermaid_str = default_response.to_mermaid_interior_string()
-    attempts = 0
-    max_attempts = 3
-    try:
-        is_renderable, error_message = is_mermaid_renderable(mermaid_str)
-    except Exception as e:
-        is_renderable = True
-        error_message = str(e)
-        print(error_message)
-    while not is_renderable and attempts < max_attempts:
-        agent = create_agent(
-            scope=input.scope,
-        )
-        mermaid_str = agent.invoke(
-            prompt=f"""
-            The following is a mermaid diagram that is not renderable.
-            Please fix the diagram.
-            {error_message}
-            {CODEBLOCK_SYNTAX_MERMAID_PROMPT}
+    # attempts = 0
+    # max_attempts = 3
+    # try:
+    #     is_renderable, error_message = is_mermaid_renderable(mermaid_str)
+    # except Exception as e:
+    #     is_renderable = True
+    #     error_message = str(e)
+    #     print(error_message)
+    # while not is_renderable and attempts < max_attempts:
+    #     agent = create_agent(
+    #         scope=input.scope,
+    #     )
+    #     mermaid_str = agent.invoke(
+    #         prompt=f"""
+    #         The following is a mermaid diagram that is not renderable.
+    #         Please fix the diagram.
+    #         {error_message}
+    #         {CODEBLOCK_SYNTAX_MERMAID_PROMPT}
 
-            {mermaid_str}
-            """,
-            response_format=BlockKindCopyEditorDiagram,
-        ).to_mermaid_interior_string()
-        is_renderable, error_message = is_mermaid_renderable(mermaid_str)
-        attempts += 1
+    #         {mermaid_str}
+    #         """,
+    #         response_format=BlockKindCopyEditorDiagram,
+    #     ).to_mermaid_interior_string()
+    #     is_renderable, error_message = is_mermaid_renderable(mermaid_str)
+    #     attempts += 1
     response = PipelineResponse(
         step_responses=[
-            response,
             PipelineStepResponse(
                 agent_id=agent.agent_id,
                 agent_result=default_response,

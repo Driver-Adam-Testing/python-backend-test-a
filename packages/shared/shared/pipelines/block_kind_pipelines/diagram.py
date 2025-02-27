@@ -18,6 +18,7 @@ from shared.prompts.task.codeblock_syntax_mermaid import (
     PROMPT as CODEBLOCK_SYNTAX_MERMAID_PROMPT,
 )
 from shared.usage.llm_session import LLMUsageSession
+from shared.utils.mermaid_render import is_mermaid_renderable
 
 PROMPT_AUG_PROMPT_SUFFIX = (
     """Generate a comprehensive mermaid diagram as its desired output."""
@@ -69,32 +70,39 @@ def execute_diagram_block_agent(input: PipelineInput) -> PipelineResponse:
         DEFAULT_PROMPT_SUFFIX + "\n\n" + prompt_augmentation_input.prompt.prompt
     )
     default_response = agent.invoke(str(prompt_augmentation_input.prompt.prompt))
+    # # TESTING Just the failing case
+    # default_response = BlockKindCopyEditorDiagram(
+    #     diagram_mermaid='```mermaid\ndirection LR\nsubgraph FPGA_Sleep_Tracker_System\n    direction TB\n    TopLevelModule["Top Level Module top.sv"]\n    UARTComm["UART Communication"]\n    FIFOBuffer["FIFO Buffering"]\n    AccelDataProc["Accelerometer Data Processing"]\n    NNCore["Neural Network Core"]\n    MemCtrl["Memory Controller"]\nend\n\nTopLevelModule -->|Controls| UARTComm\nTopLevelModule -->|Interfaces| FIFOBuffer\nTopLevelModule -->|Controls| AccelDataProc\nTopLevelModule -->|Controls| NNCore\nTopLevelModule -->|Interfaces| MemCtrl\n\nUARTComm -->|Handles| CommProtocol["Communication Protocol"]\nAccelDataProc -->|Feeds Data| NNCore\nNNCore -->|Writes Predictions| MemCtrl\n```',
+    #     description="This is a diagram of the FPGA Sleep Tracker System.",
+    # )
     mermaid_str = default_response.to_mermaid_interior_string()
-    # attempts = 0
-    # max_attempts = 3
-    # try:
-    #     is_renderable, error_message = is_mermaid_renderable(mermaid_str)
-    # except Exception as e:
-    #     is_renderable = True
-    #     error_message = str(e)
-    #     print(error_message)
-    # while not is_renderable and attempts < max_attempts:
-    #     agent = create_agent(
-    #         scope=input.scope,
-    #     )
-    #     mermaid_str = agent.invoke(
-    #         prompt=f"""
-    #         The following is a mermaid diagram that is not renderable.
-    #         Please fix the diagram.
-    #         {error_message}
-    #         {CODEBLOCK_SYNTAX_MERMAID_PROMPT}
+    attempts = 0
+    max_attempts = 3
+    try:
+        is_renderable, error_message = is_mermaid_renderable(mermaid_str)
+        print(f"is_renderable: {is_renderable}")
+        print(f"error_message: {error_message}")
+    except Exception as e:
+        is_renderable = True
+        error_message = str(e)
+        print(error_message)
+    while not is_renderable and attempts < max_attempts:
+        agent = create_agent(
+            scope=input.scope,
+            response_type=BlockKindCopyEditorDiagram,
+        )
+        mermaid_str = agent.invoke(
+            prompt=f"""
+            The following is a mermaid diagram that is not renderable.
+            Please fix the diagram.
+            {error_message}
+            {CODEBLOCK_SYNTAX_MERMAID_PROMPT}
 
-    #         {mermaid_str}
-    #         """,
-    #         response_format=BlockKindCopyEditorDiagram,
-    #     ).to_mermaid_interior_string()
-    #     is_renderable, error_message = is_mermaid_renderable(mermaid_str)
-    #     attempts += 1
+            {mermaid_str}
+            """,
+        ).to_mermaid_interior_string()
+        is_renderable, error_message = is_mermaid_renderable(mermaid_str)
+        attempts += 1
     response = PipelineResponse(
         step_responses=[
             PipelineStepResponse(

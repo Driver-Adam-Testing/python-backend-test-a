@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
 import openai
-from shared.v3.interfaces.llm_message import LlmMessage, MessageKind
+from shared.v3.interfaces.llm_message import LlmMessage
 from shared.v3.interfaces.llm_message_history import LlmMessageHistory
 from shared.v3.interfaces.llm_tool import LlmTool
 from shared.v3.llms.clients.llm_client import LlmClient
@@ -16,28 +16,21 @@ class OpenAiStrictWithSystemClient(LlmClient):
         super().__init__(config)
         self.client = openai.OpenAI()
 
-    def generate(
+    def _generate(
         self,
-        prompt: str | None = None,
-        response_type: type | None = None,
-        message_history: LlmMessageHistory | None = None,
-        tools: list[LlmTool] | None = None,
+        message_history: LlmMessageHistory,
+        response_type: type | None,
+        tool_types: list[type[LlmTool]] | None,
     ) -> LlmMessage:
-        if message_history is None:
-            message_history = LlmMessageHistory(messages=[])
-
-        if prompt:
-            message_history.add_message(
-                LlmMessage(message_kind=MessageKind.USER, content=prompt)
-            )
-
         completion_kwargs = {
             "model": self.config.model_id,
             "messages": message_history.to_openai_strict(),
         }
 
-        if tools:
-            processed_tools = [openai.pydantic_function_tool(tool) for tool in tools]
+        if tool_types:
+            processed_tools = [
+                openai.pydantic_function_tool(tool) for tool in tool_types
+            ]
             completion_kwargs["tools"] = processed_tools
             completion_kwargs["tool_choice"] = "auto"
 
@@ -49,4 +42,6 @@ class OpenAiStrictWithSystemClient(LlmClient):
             .choices[0]
             .message
         )
-        return LlmMessage.from_openai_parsed_chat_completion_message(response)
+        result = LlmMessage.from_openai_parsed_chat_completion_message(response)
+        message_history.add_message(result)
+        return result

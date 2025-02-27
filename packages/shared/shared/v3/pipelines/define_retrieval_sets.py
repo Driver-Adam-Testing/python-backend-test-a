@@ -78,7 +78,7 @@ def get_retrieval_instructions(
     Please return a list of sets of information that I need to retrieve, and the instructions for retrieval.
     """
 
-    return llm_client.generate(
+    return llm_client.single_shot(
         prompt=prompt,
         response_type=RetrievalSets,
         message_history=LlmMessageHistory(

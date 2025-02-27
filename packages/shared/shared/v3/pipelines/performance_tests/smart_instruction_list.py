@@ -89,12 +89,12 @@ def run_and_time_pipeline() -> None:
         return end_time - start_time
 
     llm_clients = [
-        # LlmClient.gpt_4o(),
-        # LlmClient.gpt_4o_mini(),
-        # LlmClient.gpt_4o_mini_chat(),
-        # LlmClient.o1(),
-        # LlmClient.o1_mini(),
-        # LlmClient.o3_mini(),
+        LlmClient.gpt_4o(),
+        LlmClient.gpt_4o_mini(),
+        LlmClient.gpt_4o_mini_chat(),
+        LlmClient.o1(),
+        LlmClient.o1_mini(),
+        LlmClient.o3_mini(),
         LlmClient.claude_3_sonnet(),
     ]
 
@@ -105,7 +105,6 @@ def run_and_time_pipeline() -> None:
             if client_id not in client_timings:
                 client_timings[client_id] = []
             client_timings[client_id].append(time_taken)
-            input()
 
     table = PrettyTable()
     table.field_names = ["Client ID", "Best Time", "Average Time", "Worst Time"]

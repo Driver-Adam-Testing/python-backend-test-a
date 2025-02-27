@@ -53,7 +53,7 @@ def abbreviate_page_content(
         chunk: str, is_before: bool, index: int
     ) -> SummarizedChunkResponse:
         return SummarizedChunkResponse(
-            content=client.generate(
+            content=client.single_shot(
                 response_type=AbbreviatedDocumentText,
                 message_history=LlmMessageHistory(
                     messages=[

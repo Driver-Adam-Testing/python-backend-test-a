@@ -1,7 +1,6 @@
 from shared.interfaces.agents.data_scope import DataScope
 from shared.v3.interfaces.llm_message_history import LlmMessageHistory
 from shared.v3.llms.clients.llm_client import LlmClient
-from shared.v3.llms.clients.multishot_llm_client import MultiShotLlmClient
 from shared.v3.pipelines.abbreviate_page_content import (
     AbbreviatedPageContentPipelineResponse,
     abbreviate_page_content,
@@ -34,10 +33,10 @@ def run_smart_instruction_list(
             )
         )
     )
-    agent = MultiShotLlmClient(
-        datascope=datascope,
-        config=client.config,
-        tools=[HybridSearchTool],
+    response, message_history, called_tools = client.multi_shot(
+        iterations=3,
+        response_type=ListResponse,
+        tool_types=[HybridSearchTool],
         message_history=LlmMessageHistory(
             messages=[
                 SmartInstructionInputMessage.from_context(
@@ -47,9 +46,11 @@ def run_smart_instruction_list(
                 )
             ]
         ),
+        datascope=datascope,
     )
-    response = agent.invoke(iterations=3, response_type=ListResponse)
     print(response)
+    print(message_history)
+    print(called_tools)
     return {
         "abbreviated_before": abbreviated_page_content.abbreviated_before
         if abbreviated_page_content.abbreviated_before
@@ -59,6 +60,6 @@ def run_smart_instruction_list(
         else "",
         "final_response": response.parsed_content.to_markdown(),
         "references": list(
-            set({ref for tool in agent.called_tools for ref in tool.references})
+            set({ref for tool in called_tools for ref in tool.references})
         ),
     }

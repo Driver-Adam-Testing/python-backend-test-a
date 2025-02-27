@@ -49,7 +49,7 @@ services:
     env_file:
       - .env
     environment:
-      - ENVIRONMENT=${ENVIRONMENT}
+      - ENVIRONMENT=local
       - PYTHONPATH=/app
       - BACKEND_CORS_ORIGINS=${BACKEND_CORS_ORIGINS}
       - USERS_OPEN_REGISTRATION=${USERS_OPEN_REGISTRATION}
@@ -94,11 +94,7 @@ services:
     depends_on:
       - s3
     entrypoint: >
-      /bin/sh -c '
-      /usr/bin/mc alias set s3 http://s3:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}";
-      /usr/bin/mc mb s3/"$${INSPECTOR_BUCKET_NAME}";
-      exit 0;
-      '
+      /bin/sh -c ' /usr/bin/mc alias set s3 http://s3:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}"; /usr/bin/mc mb s3/"$${INSPECTOR_BUCKET_NAME}"; exit 0; '
     env_file: .env
 volumes:
   app-db-data:

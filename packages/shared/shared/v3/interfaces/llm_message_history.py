@@ -51,15 +51,16 @@ class LlmMessageHistory:
                 message addition. Defaults to True.
         """
         # Remove any existing message with the same content, kind, and tool ids
-        self.messages = [
-            m
-            for m in self.messages
-            if not (
-                m.content == message.content
-                and m.message_kind == message.message_kind
-                and m.tool_requests == message.tool_requests
-            )
-        ]
+        # This is sometimes causing issues with tool call ids not being in the correct order.
+        # self.messages = [
+        #     m
+        #     for m in self.messages
+        #     if not (
+        #         m.content == message.content
+        #         and m.message_kind == message.message_kind
+        #         and m.tool_requests == message.tool_requests
+        #     )
+        # ]
 
         if message.message_kind == MessageKind.SYSTEM:
             self.messages.insert(0, message)
@@ -297,17 +298,17 @@ class LlmMessageHistory:
 
         return messages
 
-    def to_anthropic(self) -> tuple[str | None, list[dict]]:
+    def to_anthropic(self) -> tuple[list[dict], str | None]:
         """
         Converts the message history into a format suitable for the Anthropic API.
-        Returns a tuple of (combined system messages, regular messages list).
+        Returns a tuple of (regular messages list, combined system messages).
         System messages are combined into a single string since Anthropic only
         supports one system message.
 
         Returns:
-            tuple[str | None, list[dict]]: A tuple containing:
-                - Combined system message content (or None if no system messages)
+            tuple[list[dict], str | None]: A tuple containing:
                 - List of regular messages in Anthropic format
+                - Combined system message content (or None if no system messages)
         """
         messages = []
         system_messages = []
@@ -344,6 +345,18 @@ class LlmMessageHistory:
                     messages.append(message_dict)
 
         # Combine system messages if any exist
-        combined_system = "\n\n".join(system_messages) if system_messages else None
+        combined_system_message_content = (
+            "\n\n".join(system_messages) if system_messages else None
+        )
 
-        return messages, combined_system
+        return messages, combined_system_message_content
+
+    def copy(self) -> "LlmMessageHistory":
+        """
+        Creates a deep copy of the LlmMessageHistory instance.
+
+        Returns:
+            LlmMessageHistory: A new instance of LlmMessageHistory with copied messages.
+        """
+        copied_messages = [message.copy() for message in self.messages]
+        return LlmMessageHistory(messages=copied_messages)

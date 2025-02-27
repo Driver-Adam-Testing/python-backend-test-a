@@ -56,7 +56,7 @@ class LlmMessage(BaseModel):
     def from_openai_chat_completion_message(
         cls,
         chat_message: ChatCompletionMessage,
-        tool_list: list[type] | None = None,
+        tool_types: list[type] | None = None,
         response_type: type | None = None,
     ) -> "LlmMessage":
         tool_requests = []
@@ -70,7 +70,7 @@ class LlmMessage(BaseModel):
                     parsed_tool=next(
                         (
                             tool.parse_raw(tool_call.function.arguments)
-                            for tool in (tool_list or [])
+                            for tool in (tool_types or [])
                             if tool.__name__ == tool_call.function.name
                         ),
                         None,
@@ -85,8 +85,8 @@ class LlmMessage(BaseModel):
             for content_json in content_as_json:
                 if PARSEABLE_CLASS_NAME in content_json:
                     class_name = content_json[PARSEABLE_CLASS_NAME]
-                    if tool_list:
-                        for tool in tool_list:
+                    if tool_types:
+                        for tool in tool_types:
                             if tool.__name__ == class_name:
                                 tool_requests.append(
                                     cls.ToolCallRequest(
@@ -118,7 +118,7 @@ class LlmMessage(BaseModel):
     def from_anthropic_message(
         cls,
         message: Message | MessageParam,
-        tool_list: list[type] | None = None,
+        tool_types: list[type] | None = None,
         response_type: type | None = None,
     ) -> "LlmMessage":
         """
@@ -154,11 +154,11 @@ class LlmMessage(BaseModel):
                 content_as_json = [content_as_json]
 
             # Handle tool parsing if content contains tool calls
-            if content_as_json and tool_list:
+            if content_as_json and tool_types:
                 for content_json in content_as_json:
                     if PARSEABLE_CLASS_NAME in content_json:
                         class_name = content_json[PARSEABLE_CLASS_NAME]
-                        for tool in tool_list:
+                        for tool in tool_types:
                             if tool.__name__ == class_name:
                                 tool_requests.append(
                                     cls.ToolCallRequest(
@@ -254,19 +254,16 @@ class LlmMessage(BaseModel):
             color_reset = "\033[0m"
             message_color = color_map.get(self.message_kind, "\033[94m")
             print(f"{message_color}{self.message_kind}")
-            if self.content:
-                print(f"Content:{self.content}")
-            if self.tool_requests:
-                print("Tool Requests:")
-                for idx, tool_request in enumerate(self.tool_requests, start=1):
-                    print(f"  {idx}.")
-                    print(f"    {idx} ID:  {tool_request.id}")
-                    print(f"    {idx} Name: {tool_request.name}")
-                    print(f"    {idx} Arguments: {tool_request.arguments}")
-                    if tool_request.parsed_tool:
-                        print(f"    {idx} Parsed Tool: {tool_request.parsed_tool}")
             if self.tool_response:
                 print(f"Tool Response: {self.tool_response}")
+            if self.content:
+                print(f"Content: {self.content}")
+            if self.tool_requests:
+                print("Tool Requests:")
+                for tool_request in self.tool_requests:
+                    print(
+                        f"    {tool_request.id} : {tool_request.name} {tool_request.arguments}"
+                    )
             if self.parsed_content:
                 print(f"Parsed Content: {self.parsed_content}")
             print(color_reset)

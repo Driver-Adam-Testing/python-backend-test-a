@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
 import openai
-from shared.v3.interfaces.llm_message import LlmMessage, MessageKind
+from shared.v3.interfaces.llm_message import LlmMessage
 from shared.v3.interfaces.llm_message_history import LlmMessageHistory
 from shared.v3.interfaces.llm_response_type import LlmResponseType
 from shared.v3.interfaces.llm_tool import LlmTool
@@ -26,39 +26,41 @@ class OpenAiO1SeriesClient(LlmClient):
         super().__init__(config)
         self.client = openai.OpenAI()
 
-    def generate(
+    def _generate(
         self,
-        prompt: str | None = None,
-        response_type: type[LlmResponseType] | None = None,
-        message_history: LlmMessageHistory | None = None,
-        tools: list[LlmTool] | None = None,
+        message_history: LlmMessageHistory,
+        response_type: type[LlmResponseType] | None,
+        tool_types: list[type[LlmTool]] | None,
     ) -> LlmMessage:
+        """
+        This method is used to generate a response from the LLM.
+
+        :param message_history: The message history to use for the generation.
+        :param response_type: The response type to use for the generation.
+        :param tool_types: The tool types to use for the generation.
+        :return: The generated response.
+        """
         # Create a copy of the message history to avoid mutating the original
-        local_message_history = LlmMessageHistory(
-            messages=message_history.messages.copy() if message_history else []
-        )
+        openai_o1_message_history: LlmMessageHistory = message_history.copy()
 
         if response_type:
-            local_message_history.add_message(
+            openai_o1_message_history.add_message(
                 response_type.to_parsing_description_message()
             )
 
-        for tool in tools if tools else []:
-            local_message_history.add_message(tool.to_parsing_description_message())
-
-        if prompt:
-            local_message_history.add_message(
-                LlmMessage(message_kind=MessageKind.USER, content=prompt)
-            )
+        for tool in tool_types if tool_types else []:
+            openai_o1_message_history.add_message(tool.to_parsing_description_message())
 
         completion_kwargs = {
             "model": self.config.model_id,
-            "messages": local_message_history.to_openai_o1(),
+            "messages": message_history.to_openai_o1(),
         }
 
         response: ChatCompletionMessage = (
             self.client.chat.completions.create(**completion_kwargs).choices[0].message
         )
-        return LlmMessage.from_openai_chat_completion_message(
-            response, response_type=response_type, tool_list=tools
+        result = LlmMessage.from_openai_chat_completion_message(
+            response, response_type=response_type, tool_types=tool_types
         )
+        openai_o1_message_history.add_message(result)
+        return result

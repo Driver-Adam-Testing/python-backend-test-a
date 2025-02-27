@@ -1,6 +1,11 @@
 from abc import ABC, abstractmethod
 
-from shared.v3.interfaces.llm_message import LlmMessage
+from shared.interfaces.agents.data_scope import DataScope
+from shared.v3.globals.iteration_messages import (
+    IterationMessage,
+    MultiShotSystemMessage,
+)
+from shared.v3.interfaces.llm_message import LlmMessage, MessageKind
 from shared.v3.interfaces.llm_message_history import LlmMessageHistory
 from shared.v3.interfaces.llm_response_type import LlmResponseType
 from shared.v3.interfaces.llm_tool import LlmTool
@@ -15,26 +20,6 @@ class LlmClient(ABC):
         :param config: The LlmConfig object containing configuration details.
         """
         self.config = config
-
-    # TODO: Should tool messages be handled by the multishot client? It becomes difficult when completion kwargs for strict mode are present, but it's beyond the scope of the llmclient.
-    @abstractmethod
-    def generate(
-        self,
-        prompt: str | None = None,
-        response_type: type[LlmResponseType] | None = None,
-        tools: list[type[LlmTool]] | None = None,
-        message_history: LlmMessageHistory | None = None,
-    ) -> LlmMessage:
-        """
-        Abstract method to generate a response based on the given prompt, response type, tools, and message history using the configured LLM provider.
-
-        :param prompt: The input prompt for the LLM.
-        :param response_type: The type of response expected from the LLM.
-        :param tools: A list of tools that the LLM can use.
-        :param message_history: A history of messages to provide context for the LLM.
-        :return: The generated response from the LLM.
-        """
-        raise NotImplementedError("This method needs to be implemented by subclasses.")
 
     @classmethod
     def from_config(cls, config: LlmConfig) -> "LlmClient":
@@ -109,3 +94,85 @@ class LlmClient(ABC):
     @classmethod
     def claude_3_sonnet(cls) -> "LlmClient":
         return cls.from_config(LlmConfig.claude_3_sonnet())
+
+    @abstractmethod
+    def _generate(
+        self,
+        message_history: LlmMessageHistory,
+        response_type: type[LlmResponseType] | None,
+        tool_types: list[type[LlmTool]] | None,
+    ) -> LlmMessage:
+        """
+        This method is used to generate a response from the LLM.
+
+        :param message_history: The message history to use for the generation.
+        :param response_type: The response type to use for the generation.
+        :param tool_types: The tool types to use for the generation.
+        :return: The generated response.
+
+        this method assumes that the message history contains no model-specific messages.
+        Model-specific messages must be added in the implementation of _generate.
+        The implementation of _generate must copy the message history when appending model-specific messages so that it is not mutated.
+        """
+        raise NotImplementedError("This method needs to be implemented by subclasses.")
+
+    def single_shot(
+        self,
+        prompt: str | None = None,
+        response_type: type[LlmResponseType] | None = None,
+        message_history: LlmMessageHistory | None = None,
+    ) -> LlmMessage:
+        if message_history is None:
+            message_history = LlmMessageHistory()
+        if prompt:
+            message_history.add_message(
+                LlmMessage(message_kind=MessageKind.USER, content=prompt)
+            )
+        return self._generate(
+            message_history=message_history,
+            response_type=response_type,
+            tool_types=None,
+        )
+
+    def multi_shot(
+        self,
+        prompt: str | None = None,
+        iterations: int = 2,
+        response_type: type[LlmResponseType] | None = None,
+        tool_types: list[type[LlmTool]] | None = None,
+        message_history: LlmMessageHistory | None = None,
+        datascope: DataScope | None = None,
+    ) -> tuple[LlmMessage, LlmMessageHistory, list[LlmTool]]:
+        called_tools: list[LlmTool] = []
+        if message_history is None:
+            message_history = LlmMessageHistory()
+        message_history.add_message(MultiShotSystemMessage())
+        if prompt:
+            message_history.add_message(
+                LlmMessage(message_kind=MessageKind.USER, content=prompt)
+            )
+
+        for i in range(iterations):
+            message_history.add_message(
+                IterationMessage.from_context(i + 1, iterations)
+            )
+            response = self._generate(
+                message_history=message_history,
+                response_type=response_type,
+                tool_types=tool_types,
+            )
+            if response.tool_requests:
+                for tool_call in response.tool_requests:
+                    called_tool: LlmTool = tool_call.parsed_tool
+                    called_tools.append(called_tool)
+                    message_history.add_message(
+                        called_tool.execute(
+                            tool_call_id=tool_call.id,
+                            datascope=datascope,
+                        )
+                    )
+            else:
+                return response, message_history, called_tools
+        raise RuntimeError(
+            "Error: The agent invocation did not complete successfully in the allotted iterations."
+        )

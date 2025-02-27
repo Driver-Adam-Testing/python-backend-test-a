@@ -36,6 +36,7 @@ class HybridSearchTool(LlmTool):
 
     def _execute(self) -> LlmMessage:
         search_input = SearchInput(
+            limit=5,
             query=self.search_query,
             algorithm=SearchAlgorithm.HYBRID,
             content_kinds=None,
@@ -45,7 +46,7 @@ class HybridSearchTool(LlmTool):
         results = search_content_without_session(search_input)
 
         if not results.results:
-            return self.to_message()
+            return self.to_tool_call_response_message()
         for result in results.results:
             self._references.add_reference(
                 Reference(
@@ -61,9 +62,9 @@ class HybridSearchTool(LlmTool):
                     chunk_number=result.metadata.get("chunk_number", None),
                 )
             )
-        return self.to_message()
+        return self.to_tool_call_response_message()
 
-    def to_message(self) -> LlmMessage:
+    def to_tool_call_response_message(self) -> LlmMessage:
         if not self._references:
             return LlmMessage(
                 message_kind=MessageKind.TOOL_CALL_RESPONSE,

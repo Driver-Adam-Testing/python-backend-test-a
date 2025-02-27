@@ -68,7 +68,7 @@ def prompt_interpretation_pipeline(
     pi_client = LlmClient.from_config(LlmConfig.from_name("o3_mini"))
 
     def generate_prompt_interpretation() -> PromptInterpretation:
-        return pi_client.generate(
+        return pi_client.single_shot(
             prompt=pipeline_execution_request.original_prompt,
             response_type=PromptInterpretation,
             message_history=LlmMessageHistory(

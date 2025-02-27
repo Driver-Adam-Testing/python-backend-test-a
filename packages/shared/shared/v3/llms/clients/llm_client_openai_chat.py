@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
 import openai
-from shared.v3.interfaces.llm_message import LlmMessage, MessageKind
+from shared.v3.interfaces.llm_message import LlmMessage
 from shared.v3.interfaces.llm_message_history import LlmMessageHistory
 from shared.v3.interfaces.llm_response_type import LlmResponseType
 from shared.v3.interfaces.llm_tool import LlmTool
@@ -26,39 +26,36 @@ class OpenAiChatClient(LlmClient):
         super().__init__(config)
         self.client = openai.OpenAI()
 
-    def generate(
+    def _generate(
         self,
-        prompt: str | None = None,
-        response_type: LlmResponseType | None = None,
-        message_history: LlmMessageHistory | None = None,
-        tools: list[LlmTool] | None = None,
+        message_history: LlmMessageHistory,
+        response_type: type[LlmResponseType] | None,
+        tool_types: list[type[LlmTool]] | None,
     ) -> LlmMessage:
-        local_message_history = LlmMessageHistory(
-            messages=message_history.messages.copy() if message_history else []
-        )
-        if response_type:
-            local_message_history.add_message(
-                response_type.to_parsing_description_message()
-            )
+        openai_message_history: LlmMessageHistory = message_history.copy()
 
-        if prompt:
-            local_message_history.add_message(
-                LlmMessage(message_kind=MessageKind.USER, content=prompt)
+        if response_type:
+            openai_message_history.add_message(
+                response_type.to_parsing_description_message()
             )
 
         completion_kwargs = {
             "model": self.config.model_id,
-            "messages": local_message_history.to_openai_strict(),
+            "messages": openai_message_history.to_openai_strict(),
         }
 
-        if tools:
-            processed_tools = [openai.pydantic_function_tool(tool) for tool in tools]
+        if tool_types:
+            processed_tools = [
+                openai.pydantic_function_tool(tool) for tool in tool_types
+            ]
             completion_kwargs["tools"] = processed_tools
             completion_kwargs["tool_choice"] = "auto"
 
         response: ChatCompletionMessage = (
             self.client.chat.completions.create(**completion_kwargs).choices[0].message
         )
-        return LlmMessage.from_openai_chat_completion_message(
-            response, response_type=response_type, tool_list=tools
+        result = LlmMessage.from_openai_chat_completion_message(
+            response, response_type=response_type, tool_types=tool_types
         )
+        message_history.add_message(result)
+        return result

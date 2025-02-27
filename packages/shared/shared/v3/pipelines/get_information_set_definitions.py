@@ -27,7 +27,7 @@ def get_information_set_definitions(
     2. Determine retrieval methods for each set.
     """
     llm_client = LlmClient.from_config(LlmConfig.from_name("o3_mini"))
-    information_sets_step_1 = llm_client.generate(
+    information_sets_step_1 = llm_client.single_shot(
         response_type=InformationSetDefinitionList,
         message_history=LlmMessageHistory(
             messages=[
@@ -44,7 +44,7 @@ def get_information_set_definitions(
     def fetch_retrieval_parameters(
         information_set: any,
     ) -> InformationSetRetrievalParameters:
-        return llm_client.generate(
+        return llm_client.single_shot(
             response_type=InformationSetRetrievalParameters,
             message_history=LlmMessageHistory(
                 messages=[

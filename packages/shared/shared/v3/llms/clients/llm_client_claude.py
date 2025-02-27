@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
 import anthropic
-from shared.v3.interfaces.llm_message import LlmMessage, MessageKind
+from shared.v3.interfaces.llm_message import LlmMessage
 from shared.v3.interfaces.llm_message_history import LlmMessageHistory
 from shared.v3.interfaces.llm_response_type import LlmResponseType
 from shared.v3.interfaces.llm_tool import LlmTool
@@ -25,31 +25,26 @@ class ClaudeClient(LlmClient):
         super().__init__(config)
         self.client = anthropic.Anthropic()
 
-    def generate(
+    def _generate(
         self,
-        prompt: str | None = None,
-        response_type: LlmResponseType | None = None,
-        message_history: LlmMessageHistory | None = None,
-        tools: list[LlmTool] | None = None,
+        message_history: LlmMessageHistory,
+        response_type: type[LlmResponseType] | None,
+        tool_types: list[type[LlmTool]] | None,
     ) -> LlmMessage:
-        local_message_history = LlmMessageHistory(
-            messages=message_history.messages.copy() if message_history else []
-        )
+        claude_message_history: LlmMessageHistory = message_history.copy()
 
         if response_type:
-            local_message_history.add_message(
-                response_type.to_parsing_description_message()
-            )
-        if tools:
-            for tool in tools:
-                local_message_history.add_message(tool.to_parsing_description_message())
-
-        if prompt:
-            local_message_history.add_message(
-                LlmMessage(message_kind=MessageKind.USER, content=prompt)
+            claude_message_history.add_message(
+                response_type.to_parsing_description_message(),
             )
 
-        messages, system_message = local_message_history.to_anthropic()
+        if tool_types:
+            for tool in tool_types:
+                claude_message_history.add_message(
+                    tool.to_parsing_description_message(),
+                )
+
+        messages, system_message = claude_message_history.to_anthropic()
 
         completion_kwargs = {
             "model": self.config.model_id,
@@ -62,6 +57,9 @@ class ClaudeClient(LlmClient):
         completion_kwargs["messages"] = messages
 
         response: Message = self.client.messages.create(**completion_kwargs)
-        return LlmMessage.from_anthropic_message(
-            response, response_type=response_type, tool_list=tools
+        result = LlmMessage.from_anthropic_message(
+            response, response_type=response_type, tool_types=tool_types
         )
+        message_history.add_message(result)
+
+        return result

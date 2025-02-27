@@ -29,6 +29,7 @@ inspection_image = (
             "tree-sitter==0.24.0",
             "tree-sitter-c==0.23.4",
             "gitignore-parser",
+            "chardet",
         ]
     )
 )
@@ -326,6 +327,14 @@ async def inspect_db(
                 result_loading_config=result_loading_config,
             )
     except Exception as e:
+        exception_type = type(e).__name__
+        exc_tb = e.__traceback__
+        filename = exc_tb.tb_frame.f_code.co_filename
+        line_number = exc_tb.tb_lineno
+        exception_details = (
+            f"Exception type: {exception_type}\nFile: {filename}\nLine: {line_number}"
+        )
+        send_exception_email.remote(exception_details)
         print(f"Error while processing version {version_id}: {e}")
         set_codebase_status_in_container.remote(version_id, "GENERATION_ERROR")
         raise

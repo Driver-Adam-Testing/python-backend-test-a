@@ -44,7 +44,7 @@ class OpenAiO3SeriesClient(LlmClient):
             openai_o3_message_history.add_message(tool.to_parsing_description_message())
 
         completion_kwargs = {
-            "model": self.config.model_id,
+            "model": self.config.llm_model_id,
             "messages": openai_o3_message_history.to_openai_o3(),
         }
 

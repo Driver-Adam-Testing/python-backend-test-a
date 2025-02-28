@@ -16,6 +16,7 @@ class LlmProvider(str, Enum):
     OPENAI = "openai"
     ANTHROPIC = "anthropic"
     GOOGLE = "google"
+    MODAL = "modal"
 
 
 class ApiKind(str, Enum):
@@ -24,6 +25,7 @@ class ApiKind(str, Enum):
     OPENAI_O1 = "openai_o1"
     OPENAI_O3 = "openai_o3"
     CLAUDE = "claude"
+    MODAL = "modal"
 
 
 class SupportedModels(str, Enum):
@@ -40,7 +42,11 @@ class SupportedModels(str, Enum):
     O1 = "o1"
     O1_MINI = "o1_mini"
     O3_MINI = "o3_mini"
-    CLAUDE_3_SONNET = "claude_3_sonnet"
+    CLAUDE_SONNET_3_5 = "claude_sonnet_3_5"
+    CLAUDE_SONNET_3_7 = "claude_sonnet_3_7"
+    CLAUDE_HAIKU_3_5 = "claude_haiku_3_5"
+    GPT_4_5 = "gpt_4_5"
+    MODAL_DEEPSEEK_R1 = "modal_deepseek_r1"
 
 
 class LlmConfig(BaseModel):
@@ -48,10 +54,10 @@ class LlmConfig(BaseModel):
     Represents configuration for a Large Language Model.
     """
 
-    model_name: str = Field(
+    name: str = Field(
         ..., description="Internal name for the model (e.g. 'default', 'chat_gpt4')"
     )
-    model_id: str = Field(
+    llm_model_id: str = Field(
         ..., description="Provider-specific model identifier (e.g. 'gpt-4')"
     )
     provider: LlmProvider = Field(
@@ -109,7 +115,7 @@ class LlmConfig(BaseModel):
         return parsed_toml[key]
 
     @classmethod
-    def from_name(cls, model_name: str = "default") -> "LlmConfig":
+    def from_name(cls, name: str = "default") -> "LlmConfig":
         """
         Loads a configuration for a given model name from the TOML file.
 
@@ -118,22 +124,22 @@ class LlmConfig(BaseModel):
 
         models_dict = cls.from_file(CONFIG_PATH)
 
-        if model_name not in models_dict:
+        if name not in models_dict:
             # If a name is not a direct key, optionally loop to find by "model_id" if you prefer
             for name, details in models_dict.items():
-                if details.get("model_id") == model_name:
-                    model_name = name
+                if details.get("llm_model_id") == name:
+                    name = name
                     break
             else:
                 raise ValueError(
-                    f"Model configuration for '{model_name}' not found in {CONFIG_PATH}."
+                    f"Model configuration for '{name}' not found in {CONFIG_PATH}."
                 )
 
-        details = models_dict[model_name]
+        details = models_dict[name]
         try:
             return cls(
-                model_name=model_name,
-                model_id=details["model_id"],
+                name=name,
+                llm_model_id=details["llm_model_id"],
                 provider=details["provider"],
                 max_context_window=details["max_context_window"],
                 optimal_context_window=details["optimal_context_window"],
@@ -142,7 +148,7 @@ class LlmConfig(BaseModel):
             )
         except KeyError as e:
             raise ValueError(
-                f"Missing required field '{e.args[0]}' for model '{model_name}' in {CONFIG_PATH}."
+                f"Missing required field '{e.args[0]}' for model '{name}' in {CONFIG_PATH}."
             ) from e
 
     @classmethod
@@ -174,5 +180,21 @@ class LlmConfig(BaseModel):
         return cls.from_name(SupportedModels.O3_MINI)
 
     @classmethod
-    def claude_3_sonnet(cls) -> "LlmConfig":
-        return cls.from_name(SupportedModels.CLAUDE_3_SONNET.value)
+    def gpt_4_5(cls) -> "LlmConfig":
+        return cls.from_name(SupportedModels.GPT_4_5)
+
+    @classmethod
+    def claude_sonnet_3_5(cls) -> "LlmConfig":
+        return cls.from_name(SupportedModels.CLAUDE_SONNET_3_5)
+
+    @classmethod
+    def claude_sonnet_3_7(cls) -> "LlmConfig":
+        return cls.from_name(SupportedModels.CLAUDE_SONNET_3_7)
+
+    @classmethod
+    def claude_haiku_3_5(cls) -> "LlmConfig":
+        return cls.from_name(SupportedModels.CLAUDE_HAIKU_3_5)
+
+    @classmethod
+    def modal_deepseek_r1(cls) -> "LlmConfig":
+        return cls.from_name(SupportedModels.MODAL_DEEPSEEK_R1)

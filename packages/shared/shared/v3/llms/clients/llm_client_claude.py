@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
 import anthropic
-from shared.v3.interfaces.llm_message import LlmMessage
+from shared.v3.interfaces.llm_message import LlmMessage, MessageKind
 from shared.v3.interfaces.llm_message_history import LlmMessageHistory
 from shared.v3.interfaces.llm_response_type import LlmResponseType
 from shared.v3.interfaces.llm_tool import LlmTool
@@ -35,7 +35,13 @@ class ClaudeClient(LlmClient):
 
         if response_type:
             claude_message_history.add_message(
-                response_type.to_parsing_description_message(),
+                LlmMessage(
+                    message_kind=MessageKind.SYSTEM,
+                    content="You will always respond in JSON or JSON list format. Your response text must be parseable json. Do not include any text before or after the JSON object.",
+                )
+            )
+            claude_message_history.add_message(
+                response_type.to_parsing_description_message()
             )
 
         if tool_types:
@@ -47,7 +53,7 @@ class ClaudeClient(LlmClient):
         messages, system_message = claude_message_history.to_anthropic()
 
         completion_kwargs = {
-            "model": self.config.model_id,
+            "model": self.config.llm_model_id,
             "max_tokens": self.config.max_output_tokens,
         }
 

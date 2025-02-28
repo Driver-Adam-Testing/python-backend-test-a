@@ -3,11 +3,11 @@ import time
 
 from prettytable import PrettyTable
 from shared.interfaces.agents.data_scope import DataScope
-from shared.v3.llms.clients.llm_client import LlmClient
-from shared.v3.pipelines.abbreviate_page_content import abbreviate_page_content
-from shared.v3.pipelines.interfaces.pipeline_request import (
+from shared.v3.app.pipelines.abbreviate_page_content import abbreviate_page_content
+from shared.v3.app.pipelines.interfaces.pipeline_request import (
     PipelineExecutionRequest,
 )
+from shared.v3.llms.clients.llm_client import LlmClient
 
 BEFORE = [
     "The ADXL355 no-OS driver supports the following devices: ADXL355, ADXL357, and ADXL359. These identifiers are used to initialize the driver with specific part IDs. The ADXL355 is a high-precision, low-power, 3-axis MEMS accelerometer that provides digital outputs suitable for inertial measurement units (IMUs), platform stabilization, robotics, and condition monitoring. It offers selectable measurement ranges of ±2 g, ±4 g, and ±8 g, accommodating various applications. The device boasts an ultralow noise spectral density of approximately 22.5 μg/√Hz and a low 0 g offset drift of around 0.15 mg/°C, ensuring accuracy across a temperature range of -40°C to +125°C. This accelerometer integrates a 20-bit ADC for high-resolution data and supports SPI and I2C interfaces for easy integration. It includes user-programmable high- and low-pass filters, an integrated temperature sensor, and electromechanical self-test features. The ADXL355 operates on a voltage supply range of 2.25 V to 3.6 V and can be powered via internal LDO regulators or an external 1.8 V supply. Encased in a hermetic package for stability, the ADXL355 exhibits low power consumption—200 μA in measurement mode and as low as 21 μA in standby—making it well-suited for battery-operated devices and energy-efficient systems.",

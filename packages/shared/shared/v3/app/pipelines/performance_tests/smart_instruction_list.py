@@ -2,8 +2,8 @@ import time
 
 from prettytable import PrettyTable
 from shared.interfaces.agents.data_scope import DataScope
+from shared.v3.app.pipelines.smart_instruction_list import run_smart_instruction_list
 from shared.v3.llms.clients.llm_client import LlmClient
-from shared.v3.pipelines.smart_instruction_list import run_smart_instruction_list
 
 BEFORE = [
     "",
@@ -92,16 +92,28 @@ def run_and_time_pipeline() -> None:
         LlmClient.gpt_4o(),
         LlmClient.gpt_4o_mini(),
         LlmClient.gpt_4o_mini_chat(),
+        LlmClient.gpt_4_5(),
         LlmClient.o1(),
         LlmClient.o1_mini(),
         LlmClient.o3_mini(),
         LlmClient.claude_3_sonnet(),
     ]
 
-    for request in pipeline_requests:
-        for client in llm_clients:
-            time_taken = process_request(request, client)
-            client_id = client.config.model_name
+    import concurrent.futures
+
+    def process_request_wrapper(args):
+        request, client = args
+        return process_request(request, client), client.config.model_name
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        futures = [
+            executor.submit(process_request_wrapper, (request, client))
+            for request in pipeline_requests
+            for client in llm_clients
+        ]
+
+        for future in concurrent.futures.as_completed(futures):
+            time_taken, client_id = future.result()
             if client_id not in client_timings:
                 client_timings[client_id] = []
             client_timings[client_id].append(time_taken)

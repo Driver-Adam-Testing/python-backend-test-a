@@ -1,5 +1,5 @@
 import json
-from abc import ABC, abstractmethod
+from abc import ABC
 
 from shared.v3.globals.constants import (
     FORMAT_RESPONSE_AS_JSON_f_class_name__example_json__docstring,
@@ -9,9 +9,12 @@ from shared.v3.interfaces.llm_parseable import LlmParseable
 
 
 class LlmResponseType(LlmParseable, ABC):
-    @abstractmethod
+    """
+    This is a base class for all response types.
+    """
+
     def to_markdown(self) -> str:
-        raise NotImplementedError
+        raise str(self)
 
     @classmethod
     def to_parsing_description_message(cls) -> LlmMessage:

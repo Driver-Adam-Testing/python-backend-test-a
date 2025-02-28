@@ -3,7 +3,7 @@ IMPORTANT = "!IMPORTANT!"
 PARSEABLE_CLASS_NAME = "parseable_class_name"
 
 FORMAT_RESPONSE_AS_JSON_f_class_name__example_json__docstring = (
-    "Format your response as a JSON object that can be parsed into a {class_name}(pydantic.BaseModel) instance.\n"
+    "All of your response MUST be formatted as a JSON object. Do not include text before or after the JSON object that can be parsed into a {class_name}(pydantic.BaseModel) instance.\n"
     + "{docstring}\n"
     + IMPORTANT
     + " Set the "

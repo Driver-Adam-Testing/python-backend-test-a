@@ -40,7 +40,7 @@ class OpenAiChatClient(LlmClient):
             )
 
         completion_kwargs = {
-            "model": self.config.model_id,
+            "model": self.config.llm_model_id,
             "messages": openai_message_history.to_openai_strict(),
         }
 

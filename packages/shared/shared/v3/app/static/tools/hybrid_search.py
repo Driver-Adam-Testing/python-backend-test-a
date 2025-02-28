@@ -1,10 +1,6 @@
 from shared.interfaces.search import SearchAlgorithm
 from shared.pipelines.search import SearchInput, search_content_without_session
-from shared.v3.interfaces.llm_message import LlmMessage, MessageKind
-from shared.v3.interfaces.llm_tool import (
-    LlmTool,
-)
-from shared.v3.static.messages.global_message_constants import (
+from shared.v3.app.static.messages.constants import (
     REFERENCE_CONTENT_XML_BEGIN,
     REFERENCE_CONTENT_XML_END,
     REFERENCE_PATH_XML_BEGIN,
@@ -17,6 +13,10 @@ from shared.v3.static.messages.global_message_constants import (
     SEARCH_QUERY_XML_END,
     TOOL_ERROR_XML_BEGIN,
     TOOL_ERROR_XML_END,
+)
+from shared.v3.interfaces.llm_message import LlmMessage, MessageKind
+from shared.v3.interfaces.llm_tool import (
+    LlmTool,
 )
 from shared.v3.utils.references import Reference
 

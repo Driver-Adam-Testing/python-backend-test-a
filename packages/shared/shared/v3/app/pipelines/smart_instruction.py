@@ -1,16 +1,16 @@
 from shared.interfaces.agents.data_scope import DataScope
-from shared.v3.interfaces.llm_message_history import LlmMessageHistory
-from shared.v3.llms.clients.llm_client import LlmClient
-from shared.v3.llms.clients.multishot_llm_client import MultiShotLlmClient
-from shared.v3.pipelines.abbreviate_page_content import (
+from shared.v3.app.pipelines.abbreviate_page_content import (
     AbbreviatedPageContentPipelineResponse,
     abbreviate_page_content,
 )
-from shared.v3.pipelines.interfaces.pipeline_request import PipelineExecutionRequest
-from shared.v3.static.messages.smart_instruction_input_message import (
+from shared.v3.app.pipelines.interfaces.pipeline_request import PipelineExecutionRequest
+from shared.v3.app.static.messages.smart_instruction_input_message import (
     SmartInstructionInputMessage,
 )
-from shared.v3.static.tools.hybrid_search import HybridSearchTool
+from shared.v3.app.static.tools.hybrid_search import HybridSearchTool
+from shared.v3.interfaces.llm_message_history import LlmMessageHistory
+from shared.v3.llms.clients.llm_client import LlmClient
+from shared.v3.llms.clients.multishot_llm_client import MultiShotLlmClient
 
 
 def run_smart_instruction(

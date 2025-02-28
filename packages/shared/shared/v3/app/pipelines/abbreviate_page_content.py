@@ -1,17 +1,17 @@
 import concurrent.futures
 
 from pydantic import BaseModel
+from shared.v3.app.pipelines.interfaces.pipeline_request import (
+    PipelineExecutionRequest,
+)
+from shared.v3.app.static.messages.pipeline_abbreviate_page_content_messages import (
+    AbbreviatePageContentSystemMessage,
+    AbbreviatePageContentUserMessage,
+)
 from shared.v3.interfaces.llm_message_history import LlmMessageHistory
 from shared.v3.interfaces.llm_parseable import LlmParseable
 from shared.v3.llms.clients.llm_client import LlmClient
 from shared.v3.llms.config.llm_config import LlmConfig
-from shared.v3.pipelines.interfaces.pipeline_request import (
-    PipelineExecutionRequest,
-)
-from shared.v3.static.messages.pipeline_abbreviate_page_content_messages import (
-    AbbreviatePageContentSystemMessage,
-    AbbreviatePageContentUserMessage,
-)
 
 TEXT_PADDING_WORD_SIZE = 50
 PAGE_CONTENT_CHUNK_WORD_SIZE = 256

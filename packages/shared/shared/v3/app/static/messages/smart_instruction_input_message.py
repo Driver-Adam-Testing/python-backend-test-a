@@ -1,5 +1,4 @@
-from shared.v3.interfaces.llm_message import LlmMessage, MessageKind
-from shared.v3.static.messages.global_message_constants import (
+from shared.v3.app.static.messages.constants import (
     DOCUMENT_CONTENT_AFTER_CURSOR_XML_BEGIN,
     DOCUMENT_CONTENT_AFTER_CURSOR_XML_END,
     DOCUMENT_CONTENT_BEFORE_CURSOR_XML_BEGIN,
@@ -11,6 +10,7 @@ from shared.v3.static.messages.global_message_constants import (
     USER_SELECTED_TEXT_XML_BEGIN,
     USER_SELECTED_TEXT_XML_END,
 )
+from shared.v3.interfaces.llm_message import LlmMessage, MessageKind
 
 
 class SmartInstructionInputMessage(LlmMessage):

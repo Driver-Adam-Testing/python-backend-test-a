@@ -1,15 +1,15 @@
 import enum
 
 from pydantic import BaseModel
+from shared.v3.app.pipelines.interfaces.pipeline_request import PipelineExecutionRequest
+from shared.v3.app.static.messages.driver_app_messages import (
+    AgenticContextMessage,
+    DriverApplicationMessage,
+)
 from shared.v3.interfaces.llm_parseable import LlmParseable
 from shared.v3.llms.clients.llm_client import LlmClient
 from shared.v3.llms.config.llm_config import LlmConfig
 from shared.v3.messages.llm_message_history import LlmMessageHistory
-from shared.v3.pipelines.interfaces.pipeline_request import PipelineExecutionRequest
-from shared.v3.static.messages.global_driver_application_messages import (
-    AgenticContextMessage,
-    DriverApplicationMessage,
-)
 
 
 class DefineRetrievalSetsPipelineResponse(BaseModel):

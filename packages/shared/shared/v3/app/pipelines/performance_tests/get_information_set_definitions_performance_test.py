@@ -2,13 +2,13 @@ import time
 
 from prettytable import PrettyTable
 from shared.interfaces.agents.data_scope import DataScope
-from shared.v3.llms.clients.llm_client import LlmClient
-from shared.v3.pipelines.get_information_set_definitions import (
+from shared.v3.app.pipelines.get_information_set_definitions import (
     get_information_set_definitions,
 )
-from shared.v3.pipelines.interfaces.pipeline_request import (
+from shared.v3.app.pipelines.interfaces.pipeline_request import (
     PipelineExecutionRequest,
 )
+from shared.v3.llms.clients.llm_client import LlmClient
 
 PROMPTS = [
     "Summarize the project's purpose and target audience in one sentence.",

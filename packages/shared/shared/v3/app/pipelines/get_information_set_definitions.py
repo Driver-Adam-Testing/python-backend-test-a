@@ -1,17 +1,17 @@
 from pydantic import BaseModel
-from shared.v3.interfaces.llm_message_history import LlmMessageHistory
-from shared.v3.llms.clients.llm_client import LlmClient
-from shared.v3.llms.config.llm_config import LlmConfig
-from shared.v3.pipelines.interfaces.pipeline_request import PipelineExecutionRequest
-from shared.v3.static.messages.pipeline_get_information_sets_definitions_messages import (
+from shared.v3.app.pipelines.interfaces.pipeline_request import PipelineExecutionRequest
+from shared.v3.app.static.messages.pipeline_get_information_sets_definitions_messages import (
     GetInformationSetsParametersMessage,
     GetInformationSetsUserMessage,
     InformationSetsSystemMessage,
 )
-from shared.v3.static.response_types.get_information_set_definitions_llm_response import (
+from shared.v3.app.static.response_types.get_information_set_definitions_llm_response import (
     InformationSetDefinitionList,
     InformationSetRetrievalParameters,
 )
+from shared.v3.interfaces.llm_message_history import LlmMessageHistory
+from shared.v3.llms.clients.llm_client import LlmClient
+from shared.v3.llms.config.llm_config import LlmConfig
 
 
 class DefineRetrievalSetsPipelineResponse(BaseModel):

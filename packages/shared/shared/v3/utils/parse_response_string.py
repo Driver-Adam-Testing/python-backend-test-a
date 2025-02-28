@@ -24,10 +24,8 @@ def parse_response_string(str_to_parse: str) -> dict | list:
       - If multiple objects/arrays are found, return them in a list.
     """
 
-    # Optional overall cleanup: replace single quotes with double quotes,
     # remove trailing commas before '}' or ']'.
-    candidate = str_to_parse.replace("'", '"')
-    candidate = re.sub(r",\s*(?=[}\]])", "", candidate)
+    candidate = re.sub(r",\s*(?=[}\]])", "", str_to_parse)
 
     results = []
     decoder = json.JSONDecoder()

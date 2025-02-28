@@ -34,7 +34,7 @@ class LlmMessageHistory:
         for message in messages:
             self.add_message(message)
 
-    def add_message(self, message: LlmMessage, debug: bool = True) -> None:
+    def add_message(self, message: LlmMessage, debug: bool = False) -> None:
         """
         Adds a new LlmMessage to the message history, ensuring that an identical
         message (with the same content, kind, and tool requests) is not already
@@ -66,7 +66,8 @@ class LlmMessageHistory:
             self.messages.insert(0, message)
         else:
             self.messages.append(message)
-        message.to_console(debug)
+        if debug:
+            message.to_console()
 
     def to_openai_strict(self) -> list[ChatCompletionMessageParam]:
         """
@@ -151,10 +152,12 @@ class LlmMessageHistory:
                             content=message.content,
                         )
                     )
-                case MessageKind.ITERATION if not any(
-                    m.message_kind == MessageKind.ITERATION
-                    for m in self.messages[self.messages.index(message) + 1 :]
-                ):
+                case MessageKind.ITERATION:
+                    if any(
+                        m.message_kind == MessageKind.ITERATION
+                        for m in self.messages[self.messages.index(message) + 1 :]
+                    ):
+                        continue
                     message_dict = ChatCompletionUserMessageParam(
                         role="user",
                         content=message.content,
@@ -220,10 +223,12 @@ class LlmMessageHistory:
                         role="developer",
                         content=message.content,
                     )
-                case MessageKind.ITERATION if not any(
-                    m.message_kind == MessageKind.ITERATION
-                    for m in self.messages[self.messages.index(message) + 1 :]
-                ):
+                case MessageKind.ITERATION:
+                    if any(
+                        m.message_kind == MessageKind.ITERATION
+                        for m in self.messages[self.messages.index(message) + 1 :]
+                    ):
+                        continue
                     message_dict = ChatCompletionUserMessageParam(
                         role="user",
                         content=message.content,
@@ -286,10 +291,12 @@ class LlmMessageHistory:
                         role="user",
                         content=message.content,
                     )
-                case MessageKind.ITERATION if not any(
-                    m.message_kind == MessageKind.ITERATION
-                    for m in self.messages[self.messages.index(message) + 1 :]
-                ):
+                case MessageKind.ITERATION:
+                    if any(
+                        m.message_kind == MessageKind.ITERATION
+                        for m in self.messages[self.messages.index(message) + 1 :]
+                    ):
+                        continue
                     message_dict = ChatCompletionUserMessageParam(
                         role="user",
                         content=message.content,
@@ -325,7 +332,7 @@ class LlmMessageHistory:
                         "content": message.content,
                     }
                     messages.append(message_dict)
-                case MessageKind.USER | MessageKind.DEVELOPER | MessageKind.ITERATION:
+                case MessageKind.USER | MessageKind.DEVELOPER:
                     message_dict = {
                         "role": "user",
                         "content": message.content,
@@ -343,6 +350,17 @@ class LlmMessageHistory:
                         "content": message.content,
                     }
                     messages.append(message_dict)
+                case MessageKind.ITERATION:
+                    if any(
+                        m.message_kind == MessageKind.ITERATION
+                        for m in self.messages[self.messages.index(message) + 1 :]
+                    ):
+                        continue
+                    message_dict = {
+                        "role": "user",
+                        "content": message.content,
+                    }
+                    messages.append(message_dict)
 
         # Combine system messages if any exist
         combined_system_message_content = (
@@ -350,6 +368,20 @@ class LlmMessageHistory:
         )
 
         return messages, combined_system_message_content
+
+    def to_string_prompt(self) -> str:
+        """
+        Converts the message history into a string representation.
+
+        Returns:
+            str: A string representation of the message history.
+        """
+        return "\n".join(
+            [
+                str(message.message_kind.value) + "\n" + str(message.content)
+                for message in self.messages
+            ]
+        )
 
     def copy(self) -> "LlmMessageHistory":
         """

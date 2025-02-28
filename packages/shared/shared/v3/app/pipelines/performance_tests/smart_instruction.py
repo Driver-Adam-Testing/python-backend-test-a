@@ -3,8 +3,8 @@ import time
 
 from prettytable import PrettyTable
 from shared.interfaces.agents.data_scope import DataScope
+from shared.v3.app.pipelines.smart_instruction import run_smart_instruction
 from shared.v3.llms.clients.llm_client import LlmClient
-from shared.v3.pipelines.smart_instruction import run_smart_instruction
 
 BEFORE = [
     "",

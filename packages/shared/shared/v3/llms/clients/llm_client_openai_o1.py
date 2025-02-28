@@ -52,8 +52,8 @@ class OpenAiO1SeriesClient(LlmClient):
             openai_o1_message_history.add_message(tool.to_parsing_description_message())
 
         completion_kwargs = {
-            "model": self.config.model_id,
-            "messages": message_history.to_openai_o1(),
+            "model": self.config.llm_model_id,
+            "messages": openai_o1_message_history.to_openai_o1(),
         }
 
         response: ChatCompletionMessage = (
@@ -62,5 +62,5 @@ class OpenAiO1SeriesClient(LlmClient):
         result = LlmMessage.from_openai_chat_completion_message(
             response, response_type=response_type, tool_types=tool_types
         )
-        openai_o1_message_history.add_message(result)
+        message_history.add_message(result)
         return result

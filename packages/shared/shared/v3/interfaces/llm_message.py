@@ -59,8 +59,12 @@ class LlmMessage(BaseModel):
         tool_types: list[type] | None = None,
         response_type: type | None = None,
     ) -> "LlmMessage":
+        try:
+            content_as_json = parse_response_string(chat_message.content)
+        except Exception:
+            content_as_json = None
+
         tool_requests = []
-        content_as_json = None
         if chat_message.tool_calls:
             tool_requests = [
                 cls.ToolCallRequest(
@@ -78,8 +82,7 @@ class LlmMessage(BaseModel):
                 )
                 for tool_call in chat_message.tool_calls
             ]
-        elif chat_message.content:
-            content_as_json = parse_response_string(chat_message.content)
+        elif chat_message.content and content_as_json:
             if isinstance(content_as_json, dict):
                 content_as_json = [content_as_json]
             for content_json in content_as_json:
@@ -115,6 +118,51 @@ class LlmMessage(BaseModel):
         )
 
     @classmethod
+    def from_string(
+        cls,
+        string: str,
+        tool_types: list[type] | None = None,
+        response_type: type | None = None,
+    ) -> "LlmMessage":
+        try:
+            content_as_json = parse_response_string(string)
+        except Exception:
+            content_as_json = None
+
+        if content_as_json:
+            if isinstance(content_as_json, dict):
+                content_as_json = [content_as_json]
+            tool_requests = []
+            for content_json in content_as_json:
+                if PARSEABLE_CLASS_NAME in content_json:
+                    class_name = content_json[PARSEABLE_CLASS_NAME]
+                    if tool_types:
+                        for tool in tool_types:
+                            if tool.__name__ == class_name:
+                                tool_requests.append(
+                                    cls.ToolCallRequest(
+                                        id=content_json.get("id"),
+                                        name=class_name,
+                                        arguments=content_json.get("arguments"),
+                                        parsed_tool=tool(**content_json),
+                                    )
+                                )
+                                break
+            if tool_requests:
+                return cls(
+                    message_kind=MessageKind.TOOL_CALL_REQUEST,
+                    tool_requests=tool_requests,
+                )
+        parsed_content = None
+        if response_type and content_as_json:
+            parsed_content = response_type(**content_as_json[0])
+        return cls(
+            message_kind=MessageKind.ASSISTANT,
+            content=string,
+            parsed_content=parsed_content,
+        )
+
+    @classmethod
     def from_anthropic_message(
         cls,
         message: Message | MessageParam,
@@ -132,28 +180,24 @@ class LlmMessage(BaseModel):
         Returns:
             An LlmMessage instance containing the message content and any parsed data
         """
-        # Handle both Message and MessageParam types
         content = ""
         if isinstance(message, Message):
-            # Message comes from API response
             if message.content and len(message.content) > 0:
                 content = message.content[0].text
         elif isinstance(message, MessageParam):
-            # MessageParam is used for API requests
             content = message.content
-        else:
-            content = str(message)
 
-        # Parse content as JSON if possible
-        content_as_json = None
+        try:
+            content_as_json = parse_response_string(content)
+        except Exception:
+            content_as_json = None
+
         tool_requests = []
 
-        if content:
-            content_as_json = parse_response_string(content)
+        if tool_types and content_as_json:
             if isinstance(content_as_json, dict):
                 content_as_json = [content_as_json]
 
-            # Handle tool parsing if content contains tool calls
             if content_as_json and tool_types:
                 for content_json in content_as_json:
                     if PARSEABLE_CLASS_NAME in content_json:
@@ -162,7 +206,7 @@ class LlmMessage(BaseModel):
                             if tool.__name__ == class_name:
                                 tool_requests.append(
                                     cls.ToolCallRequest(
-                                        id="",  # Anthropic may handle IDs differently
+                                        id="",
                                         name=class_name,
                                         arguments=content,
                                         parsed_tool=tool(**content_json),
@@ -170,7 +214,6 @@ class LlmMessage(BaseModel):
                                 )
                                 break
 
-        # Parse response type if provided and no tool requests were found
         parsed_content = None
         if response_type and not tool_requests and content_as_json:
             try:
@@ -226,44 +269,42 @@ class LlmMessage(BaseModel):
 
     def __hash__(self) -> int:
         """
-        Returns a hash value for the LlmMessage instance.
-
-        :return: An integer hash value.
+        Returns a hash value for the LlmMessage instance for determining equality and uniqueness.
         """
         return hash(
             (
                 self.message_kind,
                 self.content,
                 tuple(tool_request.id for tool_request in self.tool_requests or []),
+                self.tool_response,
             )
         )
 
-    def to_console(self, debug: bool = False) -> None:
-        if debug:
-            color_map = {
-                MessageKind.USER: "\033[38;5;82m",
-                MessageKind.ASSISTANT: "\033[38;5;45m",
-                MessageKind.DEVELOPER: "\033[38;5;196m",
-                MessageKind.SYSTEM: "\033[38;5;93m",
-                MessageKind.TOOL_CALL_RESPONSE: "\033[38;5;208m",
-                MessageKind.TOOL_CALL_REQUEST: "\033[38;5;202m",
-                MessageKind.ITERATION: "\033[38;5;214m",
-                MessageKind.PARSING_DESCRIPTION: "\033[38;5;100m",
-            }
+    def to_console(self) -> None:
+        color_map = {
+            MessageKind.USER: "\033[38;5;82m",
+            MessageKind.ASSISTANT: "\033[38;5;45m",
+            MessageKind.DEVELOPER: "\033[38;5;196m",
+            MessageKind.SYSTEM: "\033[38;5;93m",
+            MessageKind.TOOL_CALL_RESPONSE: "\033[38;5;208m",
+            MessageKind.TOOL_CALL_REQUEST: "\033[38;5;202m",
+            MessageKind.ITERATION: "\033[38;5;214m",
+            MessageKind.PARSING_DESCRIPTION: "\033[38;5;100m",
+        }
 
-            color_reset = "\033[0m"
-            message_color = color_map.get(self.message_kind, "\033[94m")
-            print(f"{message_color}{self.message_kind}")
-            if self.tool_response:
-                print(f"Tool Response: {self.tool_response}")
-            if self.content:
-                print(f"Content: {self.content}")
-            if self.tool_requests:
-                print("Tool Requests:")
-                for tool_request in self.tool_requests:
-                    print(
-                        f"    {tool_request.id} : {tool_request.name} {tool_request.arguments}"
-                    )
-            if self.parsed_content:
-                print(f"Parsed Content: {self.parsed_content}")
-            print(color_reset)
+        color_reset = "\033[0m"
+        message_color = color_map.get(self.message_kind, "\033[94m")
+        print(f"{message_color}{self.message_kind}")
+        if self.tool_response:
+            print(f"Tool Response: {self.tool_response}")
+        if self.content:
+            print(f"Content: {self.content}")
+        if self.tool_requests:
+            print("Tool Requests:")
+            for tool_request in self.tool_requests:
+                print(
+                    f"    {tool_request.id} : {tool_request.name} {tool_request.arguments}"
+                )
+        if self.parsed_content:
+            print(f"Parsed Content: {self.parsed_content}")
+        print(color_reset)

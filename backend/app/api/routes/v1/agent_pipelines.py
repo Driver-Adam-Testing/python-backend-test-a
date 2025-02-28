@@ -201,7 +201,7 @@ def execute_agent_sequence_modal_sync(
 def execute_agent_sequence_v3(
     user: UserToken, session: CurrentSession, input: AgentRunRequest
 ) -> PipelineResponse:
-    from shared.v3.pipelines.smart_instruction import run_smart_instruction
+    from shared.v3.app.pipelines.smart_instruction import run_smart_instruction
 
     result = run_smart_instruction(
         user_prompt=input.prompt,

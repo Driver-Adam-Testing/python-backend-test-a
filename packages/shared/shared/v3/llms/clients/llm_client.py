@@ -58,6 +58,12 @@ class LlmClient(ABC):
                 from shared.v3.llms.clients.llm_client_claude import ClaudeClient
 
                 return ClaudeClient(config)
+            case ApiKind.MODAL:
+                from shared.v3.llms.clients.llm_modal_deepseek import (
+                    LlmModalDeepseekClient,
+                )
+
+                return LlmModalDeepseekClient(config)
             case _:
                 raise ValueError(
                     f"No suitable LlmClient subclass found for provider {config.provider} and API kind {config.api_kind}."
@@ -95,6 +101,26 @@ class LlmClient(ABC):
     def claude_3_sonnet(cls) -> "LlmClient":
         return cls.from_config(LlmConfig.claude_3_sonnet())
 
+    @classmethod
+    def gpt_4_5(cls) -> "LlmClient":
+        return cls.from_config(LlmConfig.gpt_4_5())
+
+    @classmethod
+    def claude_sonnet_3_5(cls) -> "LlmClient":
+        return cls.from_config(LlmConfig.claude_sonnet_3_5())
+
+    @classmethod
+    def claude_sonnet_3_7(cls) -> "LlmClient":
+        return cls.from_config(LlmConfig.claude_sonnet_3_7())
+
+    @classmethod
+    def claude_haiku_3_5(cls) -> "LlmClient":
+        return cls.from_config(LlmConfig.claude_haiku_3_5())
+
+    @classmethod
+    def modal_deepseek_r1(cls) -> "LlmClient":
+        return cls.from_config(LlmConfig.modal_deepseek_r1())
+
     @abstractmethod
     def _generate(
         self,
@@ -123,7 +149,7 @@ class LlmClient(ABC):
         message_history: LlmMessageHistory | None = None,
     ) -> LlmMessage:
         if message_history is None:
-            message_history = LlmMessageHistory()
+            message_history = LlmMessageHistory(messages=[])
         if prompt:
             message_history.add_message(
                 LlmMessage(message_kind=MessageKind.USER, content=prompt)
@@ -156,13 +182,13 @@ class LlmClient(ABC):
             message_history.add_message(
                 IterationMessage.from_context(i + 1, iterations)
             )
-            response = self._generate(
+            response_i = self._generate(
                 message_history=message_history,
                 response_type=response_type,
                 tool_types=tool_types,
             )
-            if response.tool_requests:
-                for tool_call in response.tool_requests:
+            if response_i.tool_requests:
+                for tool_call in response_i.tool_requests:
                     called_tool: LlmTool = tool_call.parsed_tool
                     called_tools.append(called_tool)
                     message_history.add_message(
@@ -172,7 +198,7 @@ class LlmClient(ABC):
                         )
                     )
             else:
-                return response, message_history, called_tools
+                return response_i, called_tools, message_history
         raise RuntimeError(
             "Error: The agent invocation did not complete successfully in the allotted iterations."
         )

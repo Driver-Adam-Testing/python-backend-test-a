@@ -1,18 +1,18 @@
 from shared.interfaces.agents.data_scope import DataScope
-from shared.v3.interfaces.llm_message_history import LlmMessageHistory
-from shared.v3.llms.clients.llm_client import LlmClient
-from shared.v3.pipelines.abbreviate_page_content import (
+from shared.v3.app.pipelines.abbreviate_page_content import (
     AbbreviatedPageContentPipelineResponse,
     abbreviate_page_content,
 )
-from shared.v3.pipelines.interfaces.pipeline_request import PipelineExecutionRequest
-from shared.v3.static.messages.smart_instruction_input_message import (
+from shared.v3.app.pipelines.interfaces.pipeline_request import PipelineExecutionRequest
+from shared.v3.app.static.messages.smart_instruction_input_message import (
     SmartInstructionInputMessage,
 )
-from shared.v3.static.response_types.response_type_list import (
+from shared.v3.app.static.response_types.response_type_list import (
     ListResponse,
 )
-from shared.v3.static.tools.hybrid_search import HybridSearchTool
+from shared.v3.app.static.tools.hybrid_search import HybridSearchTool
+from shared.v3.interfaces.llm_message_history import LlmMessageHistory
+from shared.v3.llms.clients.llm_client import LlmClient
 
 
 def run_smart_instruction_list(
@@ -33,7 +33,7 @@ def run_smart_instruction_list(
             )
         )
     )
-    response, message_history, called_tools = client.multi_shot(
+    response, _, called_tools = client.multi_shot(
         iterations=3,
         response_type=ListResponse,
         tool_types=[HybridSearchTool],
@@ -48,16 +48,7 @@ def run_smart_instruction_list(
         ),
         datascope=datascope,
     )
-    print(response)
-    print(message_history)
-    print(called_tools)
     return {
-        "abbreviated_before": abbreviated_page_content.abbreviated_before
-        if abbreviated_page_content.abbreviated_before
-        else "",
-        "abbreviated_after": abbreviated_page_content.abbreviated_after
-        if abbreviated_page_content.abbreviated_after
-        else "",
         "final_response": response.parsed_content.to_markdown(),
         "references": list(
             set({ref for tool in called_tools for ref in tool.references})

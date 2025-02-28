@@ -4,6 +4,7 @@ import logging.handlers
 from datetime import datetime
 from logging import Formatter, LogRecord
 
+import sentry_sdk
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
@@ -16,10 +17,10 @@ from app.core.config import settings
 
 
 class JsonFormatter(Formatter):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
-    def format(self, record: LogRecord):
+    def format(self, record: LogRecord) -> str:
         json_record = {}
         json_record["level"] = record.levelname
         json_record["timestamp"] = datetime.fromtimestamp(record.created).strftime(
@@ -31,11 +32,12 @@ class JsonFormatter(Formatter):
             json_record["traceback"] = self.formatException(record.exc_info)
         return json.dumps(json_record)
 
+
 def custom_generate_unique_id(route: APIRoute) -> str:
     return f"{route.tags[0]}-{route.name}"
 
 
-def configure_logging():
+def configure_logging() -> None:
     log_level = settings.LOG_LEVEL.upper()
     handler = logging.StreamHandler()
     handler.setFormatter(JsonFormatter())
@@ -44,6 +46,21 @@ def configure_logging():
 
 
 configure_logging()
+
+if settings.ENVIRONMENT == "development":
+    sentry_sdk.init(
+        dsn=settings.SENTRY_DSN,
+        send_default_pii=False,
+        # Set traces_sample_rate to 1.0 to capture 100%
+        # of transactions for tracing. This likely should not be 1.0 in prod!!!
+        traces_sample_rate=1.0,
+        _experiments={
+            # Set continuous_profiling_auto_start to True
+            # to automatically start the profiler on when
+            # possible.
+            "continuous_profiling_auto_start": True,
+        },
+    )
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -71,7 +88,7 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 
 
 @app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
+async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     logging.error("Unhandled exception", exc_info=exc)
     # Return the JSON response with the appropriate status code
     return JSONResponse(

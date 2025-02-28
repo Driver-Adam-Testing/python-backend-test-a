@@ -56,13 +56,14 @@ def handle_github_events(
     # primary assets from models_v2. This should be fixed by consolidating into a single models.py file
     from database.models_v1 import GithubAppInstallation  # noqa: F401
     from database.models_v2 import PrimaryAsset
+    from sqlalchemy.orm import selectinload
+    from sqlmodel import Session, select
+
     from onboarding.gh_ops import (
         download_and_upload_repo,
         fetch_app_access_token,
     )
     from onboarding.onboard_utils import AccessTokenError
-    from sqlalchemy.orm import selectinload
-    from sqlmodel import Session, select
 
     if installation_id is None and (repos_added or repos_pushed):
         raise ValueError(
@@ -141,6 +142,10 @@ def handle_github_events(
         modal.Secret.from_name("aws-inspector-s3"),
         modal.Secret.from_name("db"),
         modal.Secret.from_name("github-app"),
+        # This secret below is usually going to be empty, except in prod, prod where we'll put the full db url
+        # values needed to work with the gitlab proxy (not localhost as for the pg proxy). This will go away
+        # once we deprecate pg-proxy and can use `my-proxy` with the full db url everywhere in our app...
+        modal.Secret.from_name("db-override-hack"),
     ],
     # my-proxy defines the static IP that we share today with "on the beach". Not only does OTB whitelist this IP we also
     # whitelist this IP with ScaleGrid for our DB. Normally we would use pg-proxy but we cant use two proxies at once in
@@ -169,10 +174,11 @@ def handle_gitlab_events(
     # primary assets from models_v2. This should be fixed by consolidating into a single models.py file
     from database.models_v1 import GithubAppInstallation  # noqa: F401
     from database.models_v2 import PrimaryAsset
-    from onboarding import gitlab_ops
-    from onboarding.onboard_utils import AccessTokenError
     from sqlalchemy.orm import selectinload
     from sqlmodel import Session, select
+
+    from onboarding import gitlab_ops
+    from onboarding.onboard_utils import AccessTokenError
 
     if installation_id is None and (repos_added or repos_pushed):
         raise ValueError(
@@ -263,8 +269,9 @@ def connect_repos_for_installation(github_installation_id: str) -> None:
     import requests
     from database.db import engine
     from database.models_v1 import GithubAppInstallation
-    from onboarding.gh_ops import AccessTokenError, fetch_app_access_token
     from sqlmodel import Session, select
+
+    from onboarding.gh_ops import AccessTokenError, fetch_app_access_token
 
     with Session(engine) as session:
         install = session.exec(
@@ -372,8 +379,9 @@ def connect_unconnected_repos() -> None:
     import requests
     from database.db import engine
     from database.models_v1 import GithubAppInstallation
-    from onboarding.gh_ops import AccessTokenError, fetch_app_access_token
     from sqlmodel import Session, select
+
+    from onboarding.gh_ops import AccessTokenError, fetch_app_access_token
 
     with Session(engine) as session:
         gh_app_installs = session.exec(select(GithubAppInstallation)).all()
@@ -493,6 +501,10 @@ def run_codebase_connection(
         Version,
     )
     from database.models_v2_enums import VersionStatus
+    from shared.usage.utils import bytes_to_sloc
+    from sqlalchemy.exc import IntegrityError
+    from sqlmodel import Session, select, update
+
     from onboarding.onboard_utils import (
         create_bucket_if_dne,
         download_file_from_presigned_url,
@@ -502,9 +514,6 @@ def run_codebase_connection(
         run_file_stats_and_reencode,
         unpack_archive,
     )
-    from shared.usage.utils import bytes_to_sloc
-    from sqlalchemy.exc import IntegrityError
-    from sqlmodel import Session, select, update
 
     download_dest = Path(archive_name)
     download_file_from_presigned_url(presigned_url, download_dest)

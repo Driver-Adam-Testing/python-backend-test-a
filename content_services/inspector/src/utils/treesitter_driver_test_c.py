@@ -319,6 +319,8 @@ def globals_test_code() -> str:
         ("foo", (44, 44)),
         # Array
         ("extra_lbits", (48, 49)),
+        ("debugLogVar", (53, 53)),  # Nested in preproc nodes
+        ("hello", (59, 59)),  # Nested in preproc nodes
     ],
 )
 def test_extract_globals(
@@ -331,6 +333,9 @@ def test_extract_globals(
     globals_found = driver_tree.extract_variables()
 
     extracted = [(g.name, (g.start_line, g.end_line)) for g in globals_found]
+
+    for g in globals_found:
+        assert g.name != "localVar"
 
     dupes = [item for item in extracted if extracted.count(item) > 1]
     assert not dupes, f"Found duplicate declarations: {dupes}"

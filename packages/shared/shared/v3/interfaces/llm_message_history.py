@@ -34,7 +34,7 @@ class LlmMessageHistory:
         for message in messages:
             self.add_message(message)
 
-    def add_message(self, message: LlmMessage, debug: bool = False) -> None:
+    def add_message(self, message: LlmMessage, debug: bool = True) -> None:
         """
         Adds a new LlmMessage to the message history, ensuring that an identical
         message (with the same content, kind, and tool requests) is not already

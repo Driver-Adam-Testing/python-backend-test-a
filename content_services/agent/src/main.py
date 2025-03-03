@@ -67,3 +67,57 @@ def run(input: dict) -> any:
             parsed_input.response_format = None
 
     return execute_sequence(parsed_input).model_dump()
+
+
+# # TODO: get the version of this docker container
+# mermaid_cli_image = modal.Image.from_registry("minlag/mermaid-cli", add_python="3.11")
+
+
+# @app.function(timeout=3600, image=mermaid_cli_image, keep_warm=1)
+# def verify_mermaid_render(input: str) -> any:
+#     import tempfile
+#     import subprocess
+
+#     with tempfile.NamedTemporaryFile(mode="w", suffix=".mmd", delete=False) as tmp_file:
+#         tmp_file.write(input)
+#         tmp_file.flush()
+#         mermaid_filepath = tmp_file.name
+
+#     # We don't actually need the output file, but we must give mmdc an output path.
+#     with tempfile.NamedTemporaryFile(suffix=".svg", delete=False) as output_file:
+#         output_path = output_file.name
+
+#     try:
+#         # Try rendering. If mmdc cannot parse the file, it will raise CalledProcessError.
+#         subprocess.check_output(
+#             [
+#                 "mmdc",
+#                 "-i",
+#                 mermaid_filepath,
+#                 "-o",
+#                 output_path,
+#             ],
+#             stderr=subprocess.STDOUT,
+#         )
+#         # If successful, the code is valid
+#         return True, None
+
+#     except subprocess.CalledProcessError as e:
+#         # In case the command fails, capture the output for debugging
+#         error_message = e.output.decode("utf-8", errors="ignore")
+#         print("Mermaid CLI error:", error_message)
+#         return False, error_message
+
+#     finally:
+#         # Clean up: remove temporary files
+#         if os.path.exists(mermaid_filepath):
+#             os.remove(mermaid_filepath)
+#         if os.path.exists(output_path):
+#             os.remove(output_path)
+
+
+# @app.local_entrypoint()
+# def main():
+#     print(
+#         verify_mermaid_render.remote("graph TD UNRENDERABLE (MERMAID) SYNTAX A --> B\n")
+#     )

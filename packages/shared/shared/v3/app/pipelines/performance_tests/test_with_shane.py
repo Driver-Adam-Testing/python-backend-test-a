@@ -12,7 +12,7 @@ class TestWithShaneResponse(LlmResponseType):
 
 
 clients = [
-    LlmClient.modal_deepseek_r1(),
+    LlmClient.claude_sonnet_3_7(),
 ]
 
 

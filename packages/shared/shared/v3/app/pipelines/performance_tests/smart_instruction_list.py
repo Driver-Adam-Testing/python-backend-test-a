@@ -89,31 +89,21 @@ def run_and_time_pipeline() -> None:
         return end_time - start_time
 
     llm_clients = [
-        LlmClient.gpt_4o(),
-        LlmClient.gpt_4o_mini(),
-        LlmClient.gpt_4o_mini_chat(),
+        # LlmClient.claude_sonnet_3_7(),
+        # LlmClient.claude_haiku_3_5(),
+        # LlmClient.gpt_4o(),
+        # LlmClient.gpt_4o_mini(),
+        # LlmClient.gpt_4o_mini_chat(),
         LlmClient.gpt_4_5(),
         LlmClient.o1(),
         LlmClient.o1_mini(),
         LlmClient.o3_mini(),
-        LlmClient.claude_3_sonnet(),
     ]
 
-    import concurrent.futures
-
-    def process_request_wrapper(args):
-        request, client = args
-        return process_request(request, client), client.config.model_name
-
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        futures = [
-            executor.submit(process_request_wrapper, (request, client))
-            for request in pipeline_requests
-            for client in llm_clients
-        ]
-
-        for future in concurrent.futures.as_completed(futures):
-            time_taken, client_id = future.result()
+    for request in pipeline_requests:
+        for client in llm_clients:
+            time_taken = process_request(request, client)
+            client_id = client.config.model_name
             if client_id not in client_timings:
                 client_timings[client_id] = []
             client_timings[client_id].append(time_taken)

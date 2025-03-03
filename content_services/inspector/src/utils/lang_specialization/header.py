@@ -178,6 +178,9 @@ class HeaderDataStructureRawSymbolCollection(RawSymbolCollection):
             if s["kind"] in C_OR_CPP_HEADER_DATA_STRUCTURES and not s[
                 "name"
             ].startswith("__anon"):
+                use_padding = False
+                if s["kind"] == "typedef":
+                    use_padding = True
                 class_raw_symbol_data[s["name"]] = create_raw_symbol_via_ctags(
                     ctags_symbol=s,
                     root_rel_path=root_rel_path,
@@ -186,6 +189,7 @@ class HeaderDataStructureRawSymbolCollection(RawSymbolCollection):
                     scope_relation=None,
                     delimiter="::",
                     is_multi_prompt=is_multi_prompt,
+                    use_padding=use_padding,
                 )
 
         for s in symbols:
@@ -365,7 +369,7 @@ class HeaderDataStructureData(ClassData):
 
     @classmethod
     def user_prompt(cls, symbol: RawSymbolData) -> str:
-        user_prompt = f"{DATA_STRUCTURES_FOUND_USER_PROMPT}{symbol.name}\n\nData Structure Code:\n\n{symbol.symbol_code}"
+        user_prompt = f"{DATA_STRUCTURES_FOUND_USER_PROMPT}{symbol.name}\n\nCode containing Data Structure:\n\n{symbol.symbol_code}"
         if symbol.file_code:
             user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
         return user_prompt

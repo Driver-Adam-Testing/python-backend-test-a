@@ -169,6 +169,8 @@ class HeaderDataStructureRawSymbolCollection(RawSymbolCollection):
         global_method_counts = {}
         class_raw_symbol_data = {}
         for s in symbols:
+            # NOTE: we do a blanket __anon check for anything that could be C++ -
+            # we explicitly do NOT want to process anonymous structs or classes
             if s["kind"] in C_OR_CPP_HEADER_FUNCTIONS and not s["name"].startswith(
                 "__anon"
             ):

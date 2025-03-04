@@ -8,7 +8,7 @@ from database.models_v2_enums import (
     NodeKind,
     PrimaryAssetKind,
 )
-from pydantic import BaseModel
+from pydantic import BaseModel, computed_field
 
 T = TypeVar("T")
 
@@ -42,6 +42,7 @@ class VersionRead(BaseModel):
     created_at: datetime | None
     updated_at: datetime | None
     status: str | None
+    browsable: bool
 
     class Config:
         from_attributes = True
@@ -133,6 +134,12 @@ class PrimaryAssetDetailRead(PrimaryAssetRead):
 
     versions: list[PrimaryAssetVersionRead] | None
     tags: list[TagRead] | None
+
+    @computed_field
+    @property
+    def browsable(self) -> bool:
+        """A primary asset is browsable if any of its versions are browsable."""
+        return any(version.browsable for version in (self.versions or []))
 
 
 class PrimaryAssetTagDetailRead(PrimaryAssetTagRead):

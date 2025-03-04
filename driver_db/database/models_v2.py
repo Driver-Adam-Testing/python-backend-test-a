@@ -131,6 +131,14 @@ class Version(SQLModel, table=True):  # type: ignore
         },
     )
 
+    @property
+    def browsable(self) -> bool:
+        return self.status in {
+            VersionStatus.GENERATING,
+            VersionStatus.GENERATION_ERROR,
+            VersionStatus.GENERATION_COMPLETE,
+        }
+
 
 class Node(SQLModel, table=True):  # type: ignore
     __tablename__ = "v2_node"

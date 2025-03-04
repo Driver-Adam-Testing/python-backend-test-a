@@ -37,11 +37,7 @@ async def try_get_prev_version(version_id: uuid.UUID) -> None | Version:
         stmt = (
             select(Version)
             .where(Version.id == version.previous_version_id)
-            .where(
-                Version.status.in_(
-                    [VersionStatus.GENERATING, VersionStatus.GENERATION_COMPLETE]
-                )
-            )
+            .where(Version.status.in_([VersionStatus.GENERATION_COMPLETE]))
             .options(selectinload(Version.primary_asset))
         )
         previous_version = (await session.exec(stmt)).first()

@@ -22,6 +22,7 @@ from app.api.routes.v2 import (
     contents,
     convenience_endpoints,
     document_sources,
+    generate,
     generation,
     nodes,
     primary_asset_tags,
@@ -69,3 +70,5 @@ if settings.ENVIRONMENT != "production":
 api_router.include_router(
     subscription.router, prefix="/subscription", tags=["subscription"]
 )
+
+api_router.include_router(generation.router, prefix="/generate", tags=["generate"])

@@ -44,21 +44,30 @@ class GitLabAPIResources:
                 default_branch = detailed_project.default_branch
 
                 # Fetch the latest commit from the default branch
-                latest_commit = detailed_project.commits.list(
+                commits = detailed_project.commits.list(
                     ref_name=default_branch, page=1, per_page=1
-                )[0]
+                )
+                if not commits:
+                    logger.warning(
+                        f"GitLab: No commits found for the project {detailed_project.name} for url {repo_url}."
+                    )
+                    continue
+                else:
+                    latest_commit = commits[0]
 
-                # Structure the commit details as JSON
                 commit_info = {
                     "repository_url": repo_url,
                     "default_branch": default_branch,
-                    "commit": {
+                }
+
+                if latest_commit is not None:
+                    commit_info["commit"] = {
                         "id": latest_commit.id,
                         "message": latest_commit.message,
                         "author": latest_commit.author_name,
                         "date": str(latest_commit.committed_date),
-                    },
-                }
+                    }
+
                 git_repo = GitRepository(
                     provider_name=self.provider_kind.name.replace("_", " ").title(),
                     provider_kind=self.provider_kind,
@@ -71,6 +80,7 @@ class GitLabAPIResources:
                     installation_id=str(app_install_id),
                 )
                 repos.append(git_repo)
+
         except gitlab.exceptions.GitlabAuthenticationError:
             logger.error("Authentication failed. Check your access token.")
             raise GitProviderAccessTokenError("Authentication failed.")

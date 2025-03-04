@@ -58,12 +58,6 @@ class LlmClient(ABC):
                 from shared.v3.llms.clients.llm_client_claude import ClaudeClient
 
                 return ClaudeClient(config)
-            case ApiKind.MODAL:
-                from shared.v3.llms.clients.llm_modal_deepseek import (
-                    LlmModalDeepseekClient,
-                )
-
-                return LlmModalDeepseekClient(config)
             case _:
                 raise ValueError(
                     f"No suitable LlmClient subclass found for provider {config.provider} and API kind {config.api_kind}."
@@ -116,10 +110,6 @@ class LlmClient(ABC):
     @classmethod
     def claude_haiku_3_5(cls) -> "LlmClient":
         return cls.from_config(LlmConfig.claude_haiku_3_5())
-
-    @classmethod
-    def modal_deepseek_r1(cls) -> "LlmClient":
-        return cls.from_config(LlmConfig.modal_deepseek_r1())
 
     @abstractmethod
     def _generate(

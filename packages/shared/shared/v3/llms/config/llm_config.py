@@ -16,7 +16,6 @@ class LlmProvider(str, Enum):
     OPENAI = "openai"
     ANTHROPIC = "anthropic"
     GOOGLE = "google"
-    MODAL = "modal"
 
 
 class ApiKind(str, Enum):
@@ -25,7 +24,6 @@ class ApiKind(str, Enum):
     OPENAI_O1 = "openai_o1"
     OPENAI_O3 = "openai_o3"
     CLAUDE = "claude"
-    MODAL = "modal"
 
 
 class SupportedModels(str, Enum):
@@ -46,7 +44,6 @@ class SupportedModels(str, Enum):
     CLAUDE_SONNET_3_7 = "claude_sonnet_3_7"
     CLAUDE_HAIKU_3_5 = "claude_haiku_3_5"
     GPT_4_5 = "gpt_4_5"
-    MODAL_DEEPSEEK_R1 = "modal_deepseek_r1"
 
 
 class LlmConfig(BaseModel):
@@ -194,7 +191,3 @@ class LlmConfig(BaseModel):
     @classmethod
     def claude_haiku_3_5(cls) -> "LlmConfig":
         return cls.from_name(SupportedModels.CLAUDE_HAIKU_3_5)
-
-    @classmethod
-    def modal_deepseek_r1(cls) -> "LlmConfig":
-        return cls.from_name(SupportedModels.MODAL_DEEPSEEK_R1)

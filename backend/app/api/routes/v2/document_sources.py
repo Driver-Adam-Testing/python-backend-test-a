@@ -39,7 +39,10 @@ async def list_document_sources(
         .options(
             selectinload(DocumentSource.source_node)
             .selectinload(Node.version)
-            .selectinload(Version.primary_asset)
+            .selectinload(Version.primary_asset),
+            selectinload(DocumentSource.source_node)
+            .selectinload(Node.version)
+            .selectinload(Version.creator),
         )
         .where(PrimaryAsset.organization_id == user.organization_id)
     )

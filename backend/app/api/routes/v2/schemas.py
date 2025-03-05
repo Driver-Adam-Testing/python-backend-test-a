@@ -124,7 +124,7 @@ class DocumentSourceRead(BaseModel):
 class NodeDetailRead(NodeRead):
     class NodeVersionRead(VersionRead):
         primary_asset: PrimaryAssetRead
-        creator: UserRead
+        creator: UserRead | None
 
     version: NodeVersionRead
 

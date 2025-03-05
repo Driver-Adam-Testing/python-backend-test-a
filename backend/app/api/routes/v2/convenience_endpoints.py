@@ -8,6 +8,7 @@ from database.models_v2 import (
     PrimaryAssetKind,
     UserCache,
     Version,
+    VersionCreator,
 )
 from database.models_v2_enums import VersionStatus
 from fastapi import Body, HTTPException, Path, Response
@@ -117,9 +118,12 @@ def new_page(session: CurrentSession, user: UserToken) -> ContentDetailRead:
         primary_asset_id=new_primary_asset.id,
         display_name="0",
         status=VersionStatus.GENERATION_COMPLETE,
-        creator_id=creator.id,
     )
     session.add(new_version)
+    session.commit()
+
+    new_version_creator = VersionCreator(version_id=new_version.id, user_id=creator.id)
+    session.add(new_version_creator)
     session.commit()
 
     new_node = Node(

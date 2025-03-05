@@ -43,7 +43,7 @@ COPY backend/prestart.sh /app/
 COPY backend/tests-start.sh /app/
 COPY backend/app /app/app
 
-RUN apt-get purge -y --auto-remove build-essential \
+RUN apt-get purge -y --auto-remove build-essential curl \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 

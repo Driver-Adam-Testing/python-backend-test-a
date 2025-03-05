@@ -6,7 +6,7 @@ from database.models_v1 import (
     InspectorRun,
 )
 from database.models_v2 import Node, Version
-from database.models_v2_enums import ContentKind, NodeKind
+from database.models_v2_enums import ContentKind, NodeKind, VersionStatus
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 
@@ -37,6 +37,7 @@ async def try_get_prev_version(version_id: uuid.UUID) -> None | Version:
         stmt = (
             select(Version)
             .where(Version.id == version.previous_version_id)
+            .where(Version.status.in_([VersionStatus.GENERATION_COMPLETE]))
             .options(selectinload(Version.primary_asset))
         )
         previous_version = (await session.exec(stmt)).first()

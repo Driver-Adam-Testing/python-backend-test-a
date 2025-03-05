@@ -106,7 +106,15 @@ class Backend(Construct):
         github_secret = aws_secretsmanager.Secret.from_secret_name_v2(
             self, "GitHubCredentials", secret_name=github_secret_name
         )
-
+        sentry_secret_name = aws_ssm.StringParameter.value_from_lookup(
+            scope,
+            parameter_name="/baseline/infra/v2/pythonBackend/sentryCredentialName",
+        )
+        sentry_secret = aws_secretsmanager.Secret.from_secret_name_v2(
+            self,
+            "SentryCredential",
+            secret_name=sentry_secret_name,
+        )
         openai_secret_name = aws_ssm.StringParameter.value_from_lookup(
             scope, parameter_name="/baseline/infra/v2/pythonBackend/openAIApiKeyName"
         )
@@ -214,6 +222,9 @@ class Backend(Construct):
             "OPENAI_API_KEY": aws_ecs.Secret.from_secrets_manager(
                 openai_secret,
                 "OPENAI_API_KEY",  # TODO unused. can we remove from here without harm?
+            ),
+            "SENTRY_DSN": aws_ecs.Secret.from_secrets_manager(
+                sentry_secret, "SENTRY_DSN"
             ),
         }
 

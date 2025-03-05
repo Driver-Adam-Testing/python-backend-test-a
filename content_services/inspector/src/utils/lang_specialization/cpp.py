@@ -236,7 +236,7 @@ class CppClassData(ClassData):
 
     @classmethod
     def user_prompt(cls, symbol: RawSymbolData) -> str:
-        user_prompt = f"{DATA_STRUCTURES_FOUND_USER_PROMPT}{symbol.name}\n\nData Structure Code:\n\n{symbol.symbol_code}"
+        user_prompt = f"{DATA_STRUCTURES_FOUND_USER_PROMPT}{symbol.name}\n\nCode containing Data Structure:\n\n{symbol.symbol_code}"
         if symbol.file_code:
             user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
         return user_prompt
@@ -286,6 +286,9 @@ class CppClassRawSymbolCollection(RawSymbolCollection):
                     global_method_counts.get(s["name"], 0) + 1
                 )
             if s["kind"] in CPP_DATA_STRUCTURES and not s["name"].startswith("__anon"):
+                use_padding = False
+                if s["kind"] == "typedef":
+                    use_padding = True
                 class_raw_symbol_data[s["name"]] = create_raw_symbol_via_ctags(
                     ctags_symbol=s,
                     root_rel_path=root_rel_path,
@@ -294,6 +297,7 @@ class CppClassRawSymbolCollection(RawSymbolCollection):
                     scope_relation=None,
                     delimiter="::",
                     is_multi_prompt=is_multi_prompt,
+                    use_padding=use_padding,
                 )
 
         for s in symbols:

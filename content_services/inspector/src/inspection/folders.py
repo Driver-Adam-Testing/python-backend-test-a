@@ -6,12 +6,10 @@ from typing import Any
 
 from utils.dag import LiteNode, NodeKind
 from utils.io import get_prompt_template
-from utils.llm import chunk_str, num_tokens_from_messages_open_ai
 from utils.models import ChatOpenAI
 from utils.threadpool import FastShutdownThreadPoolExecutor
 
 PARENT_PATH = Path(__file__).parent
-MAX_TOKENS_FOR_PRIORITY_ORDERING = 10_000
 
 
 @dataclass(frozen=True)
@@ -21,19 +19,7 @@ class ContentDocs:
 
 class AggregationState(Enum):
     CHILD_LIST = auto()
-    SINGLE_CHUNK = auto()
     MANY_CHUNKS = auto()
-
-
-def folder_item_priority_ordering(
-    llm: ChatOpenAI,
-    raw_list_str: str,
-) -> str:
-    system_prompt = get_prompt_template(
-        PARENT_PATH / "prompt_templates/folders/item_priority_ordering.txt"
-    )
-    human_prompt = raw_list_str
-    return llm.generate_response(system_prompt, human_prompt)
 
 
 def folder_chunk_description(
@@ -96,19 +82,6 @@ def folder_single_paragraph_from_child_list(
     return llm.generate_response(system_prompt, human_prompt)
 
 
-def folder_long_from_chunk_descriptions(
-    llm: ChatOpenAI,
-    folder_name: str,
-    codebase_name: str,
-    data: str,
-) -> str:
-    system_prompt = get_prompt_template(
-        PARENT_PATH / "prompt_templates/folders/long_from_chunk_descriptions.txt"
-    )
-    human_prompt = data
-    return llm.generate_response(system_prompt, human_prompt)
-
-
 def folder_single_sentence_from_chunk_descriptions(
     llm: ChatOpenAI,
     folder_name: str,
@@ -137,56 +110,6 @@ def folder_single_paragraph_from_chunk_descriptions(
     return llm.generate_response(system_prompt, human_prompt)
 
 
-def folder_long_from_long_descriptions(
-    llm: ChatOpenAI,
-    folder_name: str,
-    codebase_name: str,
-    data: str,
-) -> str:
-    system_prompt = get_prompt_template(
-        PARENT_PATH / "prompt_templates/folders/long_from_long_descriptions.txt"
-    )
-    human_prompt = ""
-    human_prompt += (
-        f"Folder `{folder_name}` in codebase `{codebase_name}` content:\n\n{data}\n\n"
-    )
-    return llm.generate_response(system_prompt, human_prompt)
-
-
-def folder_single_sentence_from_long_descriptions(
-    llm: ChatOpenAI,
-    folder_name: str,
-    codebase_name: str,
-    data: str,
-) -> str:
-    system_prompt = get_prompt_template(
-        PARENT_PATH
-        / "prompt_templates/folders/single_sentence_from_long_descriptions.txt"
-    )
-    human_prompt = ""
-    human_prompt += (
-        f"Folder `{folder_name}` in codebase `{codebase_name}` content:\n\n{data}\n\n"
-    )
-    return llm.generate_response(system_prompt, human_prompt)
-
-
-def folder_single_paragraph_from_long_descriptions(
-    llm: ChatOpenAI,
-    folder_name: str,
-    codebase_name: str,
-    data: str,
-) -> str:
-    system_prompt = get_prompt_template(
-        PARENT_PATH
-        / "prompt_templates/folders/single_paragraph_from_long_descriptions.txt"
-    )
-    human_prompt = ""
-    human_prompt += (
-        f"Folder `{folder_name}` in codebase `{codebase_name}` content:\n\n{data}\n\n"
-    )
-    return llm.generate_response(system_prompt, human_prompt)
-
-
 def _return_with_simple_message(message: str, folder_node: LiteNode) -> dict[str, any]:
     long_description = message
     short_descriptions = {
@@ -212,6 +135,8 @@ def comprehend_folder_top_down(
     redundant_folder_flag: bool = False,
     use_async: bool = False,
 ) -> dict[str, any]:
+    from shared.chunking.text_splitter import split_text
+
     folder_name = node.root_rel_path.name
     print(
         f"Incorporating `{node.root_rel_path}` for repo `{codebase_name}` ({len(child_nodes_to_docs)} child nodes)"
@@ -229,7 +154,13 @@ def comprehend_folder_top_down(
     # Base all content generation on a list of all child single sentence descriptions.
     print(f"Aggregating child info for folder `{folder_name}`")
     child_single_sentence_descriptions = {
-        k: v["short"]["single_sentence"] for k, v in child_nodes_to_docs.items()
+        k: v["short"]["single_sentence"]
+        for k, v in dict(
+            sorted(
+                child_nodes_to_docs.items(),
+                key=lambda x: str(x[0].root_rel_path).lower(),
+            )
+        ).items()
     }
     child_folder_list = ""
     child_file_list = ""
@@ -240,96 +171,75 @@ def comprehend_folder_top_down(
             child_folder_list += f"- **{k.root_rel_path.name}**: {v}\n"
     if child_folder_list:
         folder_prefix = "## Folders\n"
-        folder_list_tokens = num_tokens_from_messages_open_ai(
-            [child_folder_list], llm.model
-        )
-        if folder_list_tokens < MAX_TOKENS_FOR_PRIORITY_ORDERING:
-            child_folder_list_finalized = folder_item_priority_ordering(
-                llm=llm, raw_list_str=f"{folder_prefix}{child_folder_list}"
-            )
-        else:
-            child_folder_list_finalized = f"{folder_prefix}{child_folder_list}"
+        child_folder_list_finalized = f"{folder_prefix}{child_folder_list}"
     else:
         child_folder_list_finalized = ""
     if child_file_list:
         file_prefix = "## Files\n"
-        file_list_tokens = num_tokens_from_messages_open_ai(
-            [child_file_list], llm.model
-        )
-        if file_list_tokens < MAX_TOKENS_FOR_PRIORITY_ORDERING:
-            child_file_list_finalized = folder_item_priority_ordering(
-                llm=llm, raw_list_str=f"{file_prefix}{child_file_list}"
-            )
-        else:
-            child_file_list_finalized = f"{file_prefix}{child_file_list}"
+        child_file_list_finalized = f"{file_prefix}{child_file_list}"
     else:
         child_file_list_finalized = ""
-    completed_child_lists = f"{child_folder_list_finalized}\n{child_file_list_finalized}"
+    completed_child_lists = (
+        f"{child_folder_list_finalized}\n{child_file_list_finalized}"
+    )
 
     # Proceed according to child list content length relative to chunk size.
     print(f"Checking if compression is required for folder `{folder_name}` content...")
-    list_chunks: list[str] = chunk_str(
-        chunk_size=chunk_size, chunk_overlap=chunk_overlap, str_in=completed_child_lists
+    list_chunks: list[str] = split_text(
+        text=completed_child_lists,
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
     )
     if len(list_chunks) > 1:
-        # For 128k+ token context window models, egregiously large number of children.
-        # Fall back to original compression loop approach in this case.
-        print(f"Aggregating and incorporating child info for folder `{folder_name}`")
-        child_content = ""
-        for k, v in child_nodes_to_docs.items():
-            entity = "File" if k.kind == NodeKind.FILE else "Folder"
-            long = v["long"]
-            child_content += (
-                f"{entity} `{k.root_rel_path.name}` description:\n\n{long}\n\n"
-            )
-        chunks: list[str] = chunk_str(
-            chunk_size=chunk_size, chunk_overlap=chunk_overlap, str_in=child_content
+        chunk_texts = [c.text for c in list_chunks]
+        aggregation_state = AggregationState.MANY_CHUNKS
+        print(
+            f"Number of initial chunks for folder `{folder_name}`: {len(list_chunks)}"
         )
-        num_chunks = len(chunks)
-        # TODO: Consider parity with file content generation where there is a
-        # TODO: check against a max number of chunks.
-        if num_chunks > 1:
-            aggregation_state = AggregationState.MANY_CHUNKS
-            print(f"Number of initial chunks for folder `{folder_name}`: {num_chunks}")
-            print(f"Processing {len(chunks)} chunks for folder `{folder_name}` ...")
-            if use_async:
-                with FastShutdownThreadPoolExecutor(
-                    max_workers=max_workers
-                ) as executor:
-                    futures = {
-                        executor.submit(
-                            folder_chunk_description,
-                            llm,
-                            folder_name,
-                            codebase_name,
-                            c_str,
-                        ): idx
-                        for idx, c_str in enumerate(chunks)
-                    }
-                    # Make sure the original chunk order is preserved.
-                    results = []
-                    for idx, future in enumerate(
-                        concurrent.futures.as_completed(futures.keys())
-                    ):
-                        res = future.result()
-                        if res is not None:
-                            print(
-                                f"Processed {idx}/{num_chunks-1} initial chunks for folder `{folder_name}`"
-                            )
-                            results.append((futures[future], res))
-                    chunk_detailed_descriptions: list[str] = [
-                        r for (_idx, r) in sorted(results, key=lambda tup: tup[0])
-                    ]
-
+        if use_async:
+            with FastShutdownThreadPoolExecutor(max_workers=max_workers) as executor:
+                futures = {
+                    executor.submit(
+                        folder_chunk_description,
+                        llm,
+                        folder_name,
+                        codebase_name,
+                        c_str,
+                    ): idx
+                    for idx, c_str in enumerate(chunk_texts)
+                }
+                # Make sure the original chunk order is preserved.
+                results = []
+                for idx, future in enumerate(
+                    concurrent.futures.as_completed(futures.keys())
+                ):
+                    res = future.result()
+                    if res is not None:
+                        print(
+                            f"Processed {idx}/{len(list_chunks)-1} initial chunks for folder `{folder_name}`"
+                        )
+                        results.append((futures[future], res))
+                chunk_detailed_descriptions: list[str] = [
+                    r for (_idx, r) in sorted(results, key=lambda tup: tup[0])
+                ]
                 aggregated_descriptions = ""
                 for idx, c_str in enumerate(chunk_detailed_descriptions, start=1):
                     aggregated_descriptions += f"Folder content subset {idx} description for folder {folder_name}:\n\n{c_str}\n\n"
                 compression_idx = 0
-                while len(aggregated_descriptions) >= chunk_size:
-                    chunks = chunk_str(
+                while (
+                    len(
+                        split_text(
+                            text=aggregated_descriptions,
+                            chunk_size=chunk_size,
+                            chunk_overlap=chunk_overlap,
+                        )
+                    )
+                    > 1
+                ):
+                    chunks = split_text(
+                        text=aggregated_descriptions,
                         chunk_size=chunk_size,
                         chunk_overlap=chunk_overlap,
-                        str_in=aggregated_descriptions,
                     )
                     with FastShutdownThreadPoolExecutor(
                         max_workers=max_workers
@@ -343,7 +253,7 @@ def comprehend_folder_top_down(
                                 codebase_name,
                                 c_str,
                             ): idx
-                            for idx, c_str in enumerate(chunks)
+                            for idx, c_str in enumerate([c.text for c in chunks])
                         }
                         # Make sure the original chunk order is preserved.
                         results = []
@@ -375,10 +285,6 @@ def comprehend_folder_top_down(
                             )
                         else:
                             print(
-                                f"Compression loop max iteration ({compression_loop_max_itr}) "
-                                f"reached for folder `{folder_name}`"
-                            )
-                            print(
                                 f"WARNING: Compression loop max iteration ({compression_loop_max_itr}) "
                                 f"reached for folder `{folder_name}`"
                             )
@@ -387,14 +293,49 @@ def comprehend_folder_top_down(
                                 message=description,
                                 folder_node=node,
                             )
-
-                print(f"`chunk_detailed_descriptions`: {chunk_detailed_descriptions}")
-                data = aggregated_descriptions
-            else:
+            print(f"`chunk_detailed_descriptions`: {chunk_detailed_descriptions}")
+            data = aggregated_descriptions
+        else:
+            chunk_detailed_descriptions = []
+            for idx, c_str in enumerate(chunk_texts):
+                chunk_detailed_descriptions.append(
+                    folder_chunk_description(
+                        llm=llm,
+                        folder_name=folder_name,
+                        codebase_name=codebase_name,
+                        description_chunk=c_str,
+                    )
+                )
+                print(
+                    f"Initial folder child content chunk {idx + 1}/{len(list_chunks)} processed for folder `{folder_name}`"
+                )
+            # Compression steps, if needed.
+            aggregated_descriptions = ""
+            for idx, c_str in enumerate(chunk_detailed_descriptions, start=1):
+                aggregated_descriptions += f"Folder content subset {idx} description for folder {folder_name}:\n\n{c_str}\n\n"
+            compression_idx = 0
+            while (
+                len(
+                    split_text(
+                        text=aggregated_descriptions,
+                        chunk_size=chunk_size,
+                        chunk_overlap=chunk_overlap,
+                    )
+                )
+                > 1
+            ):
+                chunks = split_text(
+                    text=aggregated_descriptions,
+                    chunk_size=chunk_size,
+                    chunk_overlap=chunk_overlap,
+                )
+                print(
+                    f"Compressing {len(chunks)} chunk descriptions for folder `{folder_name}`"
+                )
                 chunk_detailed_descriptions = []
-                for idx, c_str in enumerate(chunks):
+                for idx, c_str in enumerate([c.text for c in chunks]):
                     chunk_detailed_descriptions.append(
-                        folder_chunk_description(
+                        folder_compress_chunks(
                             llm=llm,
                             folder_name=folder_name,
                             codebase_name=codebase_name,
@@ -402,65 +343,29 @@ def comprehend_folder_top_down(
                         )
                     )
                     print(
-                        f"Initial folder child content chunk {idx + 1}/{num_chunks} processed for folder `{folder_name}`"
+                        f"Compression chunk {idx + 1}/{len(chunks)} for compression iteration "
+                        f"{compression_idx + 1} processed for folder `{folder_name}`"
                     )
-                    print(
-                        f"Initial folder child content chunk {idx + 1}/{num_chunks} processed for folder `{folder_name}`"
-                    )
-                # Compression steps, if needed.
                 aggregated_descriptions = ""
                 for idx, c_str in enumerate(chunk_detailed_descriptions, start=1):
                     aggregated_descriptions += f"Folder content subset {idx} description for folder {folder_name}:\n\n{c_str}\n\n"
-                compression_idx = 0
-                while len(aggregated_descriptions) >= chunk_size:
-                    chunks = chunk_str(
-                        chunk_size=chunk_size,
-                        chunk_overlap=chunk_overlap,
-                        str_in=aggregated_descriptions,
-                    )
-                    print(
-                        f"Compressing {len(chunks)} chunk descriptions for folder `{folder_name}`"
-                    )
-                    print(
-                        f"Compressing {len(chunks)} chunk descriptions for folder `{folder_name}`"
-                    )
-                    chunk_detailed_descriptions = []
-                    for idx, c_str in enumerate(chunks):
-                        chunk_detailed_descriptions.append(
-                            folder_compress_chunks(
-                                llm=llm,
-                                folder_name=folder_name,
-                                codebase_name=codebase_name,
-                                description_chunk=c_str,
-                            )
+                compression_idx += 1
+                if compression_idx >= compression_loop_max_itr:
+                    if raise_hard_errors:
+                        raise RuntimeError(
+                            f"Compression loop max iteration ({compression_loop_max_itr}) reached for folder `{folder_name}`"
                         )
+                    else:
                         print(
-                            f"Compression chunk {idx + 1}/{num_chunks} for compression iteration "
-                            f"{compression_idx + 1} processed for folder `{folder_name}`"
+                            f"WARNING: Compression loop max iteration ({compression_loop_max_itr}) reached for folder `{folder_name}`"
                         )
-                    aggregated_descriptions = ""
-                    for idx, c_str in enumerate(chunk_detailed_descriptions, start=1):
-                        aggregated_descriptions += f"Folder content subset {idx} description for folder {folder_name}:\n\n{c_str}\n\n"
-                    compression_idx += 1
-                    if compression_idx >= compression_loop_max_itr:
-                        if raise_hard_errors:
-                            raise RuntimeError(
-                                f"Compression loop max iteration ({compression_loop_max_itr}) reached for folder `{folder_name}`"
-                            )
-                        else:
-                            print(
-                                f"WARNING: Compression loop max iteration ({compression_loop_max_itr}) reached for folder `{folder_name}`"
-                            )
-                            description = "Folder ontents too large to process."
-                            return _return_with_simple_message(
-                                message=description,
-                                folder_node=node,
-                            )
-                print(f"`chunk_detailed_descriptions`: {chunk_detailed_descriptions}")
-                data = aggregated_descriptions
-        else:  # just a single aggregated chunk
-            aggregation_state = AggregationState.SINGLE_CHUNK
-            data = child_content
+                        description = "Folder contents too large to process."
+                        return _return_with_simple_message(
+                            message=description,
+                            folder_node=node,
+                        )
+            print(f"`chunk_detailed_descriptions`: {chunk_detailed_descriptions}")
+            data = aggregated_descriptions
     else:  # child list is small enough
         aggregation_state = AggregationState.CHILD_LIST
         data = completed_child_lists
@@ -472,9 +377,6 @@ def comprehend_folder_top_down(
         case AggregationState.MANY_CHUNKS:
             single_sentence_fn = folder_single_sentence_from_chunk_descriptions
             single_paragraph_fn = folder_single_paragraph_from_chunk_descriptions
-        case AggregationState.SINGLE_CHUNK:
-            single_sentence_fn = folder_single_sentence_from_long_descriptions
-            single_paragraph_fn = folder_single_paragraph_from_long_descriptions
         case AggregationState.CHILD_LIST:
             single_sentence_fn = folder_single_sentence_from_child_list
             single_paragraph_fn = folder_single_paragraph_from_child_list

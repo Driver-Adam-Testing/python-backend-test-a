@@ -59,6 +59,12 @@ class NodeRead(BaseModel):
         from_attributes = True
 
 
+class UserRead(BaseModel):
+    id: str
+    full_name: str
+    email: str
+
+
 class NodeMetaRead(NodeRead):
     id: UUID
     version_id: UUID
@@ -118,6 +124,7 @@ class DocumentSourceRead(BaseModel):
 class NodeDetailRead(NodeRead):
     class NodeVersionRead(VersionRead):
         primary_asset: PrimaryAssetRead
+        creator: UserRead
 
     version: NodeVersionRead
 
@@ -125,11 +132,13 @@ class NodeDetailRead(NodeRead):
 class VersionDetailRead(VersionRead):
     primary_asset: PrimaryAssetRead
     root_node: NodeRead | None
+    creator: UserRead | None
 
 
 class PrimaryAssetDetailRead(PrimaryAssetRead):
     class PrimaryAssetVersionRead(VersionRead):
         root_node: NodeMetaRead | None
+        creator: UserRead | None
 
     versions: list[PrimaryAssetVersionRead] | None
     tags: list[TagRead] | None

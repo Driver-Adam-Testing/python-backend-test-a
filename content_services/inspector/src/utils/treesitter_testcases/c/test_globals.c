@@ -47,3 +47,18 @@ extern __attribute__((visibility("hidden"))) int foo;
 #define LEN 2
 local const int extra_lbits[LEN] /* extra bits for each length code */
    = {0,0};
+
+#if defined(ENABLE_DEBUG)
+  #ifdef LOGGING
+    int debugLogVar;
+  #endif
+#endif
+
+#ifndef SRC_AD469X_H_
+#define SRC_AD469X_H_
+int hello = 5;
+#endif
+
+void someFunction() {
+    int localVar; // Should NOT be matched
+}

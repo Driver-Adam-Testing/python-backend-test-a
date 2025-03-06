@@ -105,10 +105,16 @@ class ContentRead(BaseModel):
     created_at: datetime | None
     updated_at: datetime | None
 
+    class Config:
+        from_attributes = True
+
 
 class DocumentSourceRead(BaseModel):
     page_node_id: UUID | None
     source_node_id: UUID | None
+
+    class Config:
+        from_attributes = True
 
 
 #######################
@@ -122,10 +128,16 @@ class NodeDetailRead(NodeRead):
 
     version: NodeVersionRead
 
+    class Config:
+        from_attributes = True
+
 
 class VersionDetailRead(VersionRead):
     primary_asset: PrimaryAssetRead
     root_node: NodeRead | None
+
+    class Config:
+        from_attributes = True
 
 
 class PrimaryAssetDetailRead(PrimaryAssetRead):
@@ -141,6 +153,9 @@ class PrimaryAssetDetailRead(PrimaryAssetRead):
         """A primary asset is browsable if any of its versions are browsable."""
         return any(version.browsable for version in (self.versions or []))
 
+    class Config:
+        from_attributes = True
+
 
 class PrimaryAssetTagDetailRead(PrimaryAssetTagRead):
     primary_asset: PrimaryAssetRead
@@ -148,6 +163,9 @@ class PrimaryAssetTagDetailRead(PrimaryAssetTagRead):
 
 class ContentDetailRead(ContentRead):
     node: NodeDetailRead
+
+    class Config:
+        from_attributes = True
 
 
 class DocumentSourceDetailRead(DocumentSourceRead):

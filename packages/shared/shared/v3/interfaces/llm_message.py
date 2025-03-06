@@ -233,40 +233,6 @@ class LlmMessage(BaseModel):
             parsed_content=parsed_content,
         )
 
-    @staticmethod
-    def combine_messages(messages: list["LlmMessage"]) -> "LlmMessage":
-        """
-        Combines the content of a list of LlmMessage instances into a single LlmMessage.
-
-        :param messages: A list of LlmMessage instances.
-        :return: A single LlmMessage containing the combined content of all messages.
-        """
-        combined_content = ""
-        message_kinds = {message.message_kind for message in messages}
-
-        for message in messages:
-            combined_content += f"<{message.__class__.__name__}>{message.content}</{message.__class__.__name__}>\n\n"
-
-        match message_kinds:
-            case _ if MessageKind.USER in message_kinds:
-                combined_message_kind = MessageKind.USER
-            case _ if MessageKind.ITERATION in message_kinds:
-                combined_message_kind = MessageKind.USER
-            case _ if MessageKind.ASSISTANT in message_kinds:
-                combined_message_kind = MessageKind.ASSISTANT
-            case _ if MessageKind.DEVELOPER in message_kinds:
-                combined_message_kind = MessageKind.DEVELOPER
-            case _ if MessageKind.SYSTEM in message_kinds:
-                combined_message_kind = MessageKind.SYSTEM
-            case _:
-                combined_message_kind = (
-                    message_kinds.pop() if len(message_kinds) == 1 else MessageKind.USER
-                )
-
-        return LlmMessage(
-            message_kind=combined_message_kind, content=combined_content.strip()
-        )
-
     def __hash__(self) -> int:
         """
         Returns a hash value for the LlmMessage instance for determining equality and uniqueness.
@@ -280,7 +246,7 @@ class LlmMessage(BaseModel):
             )
         )
 
-    def to_console(self) -> None:
+    def print_to_console(self) -> None:
         color_map = {
             MessageKind.USER: "\033[38;5;82m",
             MessageKind.ASSISTANT: "\033[38;5;45m",
@@ -306,5 +272,5 @@ class LlmMessage(BaseModel):
                     f"    {tool_request.id} : {tool_request.name} {tool_request.arguments}"
                 )
         if self.parsed_content:
-            print(f"Parsed Content: {self.parsed_content}")
+            print(f"Parsed Content: \n{self.parsed_content.model_dump()}")
         print(color_reset)

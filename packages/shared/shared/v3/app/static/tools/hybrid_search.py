@@ -40,8 +40,8 @@ class HybridSearchTool(LlmTool):
             query=self.search_query,
             algorithm=SearchAlgorithm.HYBRID,
             content_kinds=None,
-            organization_id=self.datascope.organization_id,
-            node_ids=self.datascope.node_ids,
+            organization_id=self.datasource.organization_id,
+            node_ids=self.datasource.node_ids,
         )
         results = search_content_without_session(search_input)
 
@@ -83,3 +83,8 @@ class HybridSearchTool(LlmTool):
                 id=self.tool_call_id or None, name="HybridSearchTool"
             ),
         )
+
+    def to_status_string(self) -> str:
+        if self._references:
+            return f"Found {len(self._references)} references for {self.search_query}\n"
+        return f"Searching {self.search_query}...\n"

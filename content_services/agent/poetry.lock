@@ -128,20 +128,6 @@ files = [
 frozenlist = ">=1.1.0"
 
 [[package]]
-name = "aiostream"
-version = "0.5.2"
-description = "Generator-based operators for asynchronous iteration"
-optional = false
-python-versions = ">=3.8"
-files = [
-    {file = "aiostream-0.5.2-py3-none-any.whl", hash = "sha256:054660370be9d37f6fe3ece3851009240416bd082e469fd90cc8673d3818cf71"},
-    {file = "aiostream-0.5.2.tar.gz", hash = "sha256:b71b519a2d66c38f0872403ab86417955b77352f08d9ad02ad46fc3926b389f4"},
-]
-
-[package.dependencies]
-typing-extensions = "*"
-
-[[package]]
 name = "alembic"
 version = "1.14.1"
 description = "A database migration tool for SQLAlchemy."
@@ -1167,29 +1153,29 @@ files = [
 
 [[package]]
 name = "modal"
-version = "0.64.235"
+version = "0.73.90"
 description = "Python client library for Modal"
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.9"
 files = [
-    {file = "modal-0.64.235-py3-none-any.whl", hash = "sha256:01a4a14570ac38924797737c62af3f9ebeaeac7cd5f9bfcc5097b69c2bce5ecf"},
+    {file = "modal-0.73.90-py3-none-any.whl", hash = "sha256:d961b817fc48c69f19b1bf8f4c887e5aa2b15b446f0773e900a672218a83ffde"},
+    {file = "modal-0.73.90.tar.gz", hash = "sha256:70358850538e0d2bc20f3055414e50d36f2fea821dbb0b1de20282fd8d652c4f"},
 ]
 
 [package.dependencies]
 aiohttp = "*"
-aiostream = ">=0.5.2,<0.6.0"
 certifi = "*"
 click = ">=8.1.0"
 fastapi = "*"
 grpclib = "0.4.7"
-protobuf = ">=3.19,<4.24.0 || >4.24.0,<5.0"
+protobuf = ">=3.19,<4.24.0 || >4.24.0,<6.0"
 rich = ">=12.0.0"
-synchronicity = ">=0.8.2,<0.9.0"
+synchronicity = ">=0.9.10,<0.10.0"
 toml = "*"
 typer = ">=0.9"
 types-certifi = "*"
 types-toml = "*"
-typing-extensions = ">=4.6,<5.0"
+typing_extensions = ">=4.6,<5.0"
 watchfiles = "*"
 
 [[package]]
@@ -2164,7 +2150,7 @@ anthropic = "^0.31.2"
 boto3 = "^1.34.149"
 database = {path = "../../driver_db", develop = true}
 markdown = "^3.6"
-modal = "^0.64.61"
+modal = "^0.73.74"
 openai = "^1.42.0"
 pymupdf = "^1.24.9"
 rank-bm25 = "^0.2.2"
@@ -2419,17 +2405,18 @@ sanic = ["sanic (>=20.12.2)"]
 
 [[package]]
 name = "synchronicity"
-version = "0.8.3"
+version = "0.9.11"
 description = "Export blocking and async library versions from a single async implementation"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "synchronicity-0.8.3-py3-none-any.whl", hash = "sha256:1a64e75b527edb2cfe3a4e3891b5c736ba0164979d1369c9d74917871dd4913a"},
+    {file = "synchronicity-0.9.11-py3-none-any.whl", hash = "sha256:231129654d2f56b1aa148e85ebd8545231be135771f6d2196d414175b1594ef6"},
+    {file = "synchronicity-0.9.11.tar.gz", hash = "sha256:cb5dbbcb43d637e516ae50db05a776da51a705d1e1a9c0e301f6049afc3c2cae"},
 ]
 
 [package.dependencies]
-sigtools = "4.0.1"
-typing-extensions = ">=4.6"
+sigtools = ">=4.0.1"
+typing-extensions = ">=4.12.2"
 
 [[package]]
 name = "tabula-py"

@@ -1,4 +1,4 @@
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -40,5 +40,8 @@ class ReferenceSet(BaseModel, Iterable):
     def add_reference(self, reference: Reference) -> None:
         self.references.add(reference)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Reference]:
         return iter(self.references)
+
+    def __len__(self) -> int:
+        return len(self.references)

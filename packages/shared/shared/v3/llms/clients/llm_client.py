@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
+from collections.abc import AsyncGenerator
 
-from shared.interfaces.agents.data_scope import DataScope
 from shared.v3.globals.iteration_messages import (
     IterationMessage,
     MultiShotSystemMessage,
@@ -10,6 +10,7 @@ from shared.v3.interfaces.llm_message_history import LlmMessageHistory
 from shared.v3.interfaces.llm_response_type import LlmResponseType
 from shared.v3.interfaces.llm_tool import LlmTool
 from shared.v3.llms.config.llm_config import ApiKind, LlmConfig
+from shared.v3.utils.datasource import DataSource
 
 
 class LlmClient(ABC):
@@ -43,6 +44,7 @@ class LlmClient(ABC):
 
                 return OpenAiO1SeriesClient(config)
             case ApiKind.OPENAI_O3:
+                # TODO: this might be the same as CHAT WITH TOOLS
                 from shared.v3.llms.clients.llm_client_openai_o3 import (
                     OpenAiO3SeriesClient,
                 )
@@ -132,6 +134,18 @@ class LlmClient(ABC):
         """
         raise NotImplementedError("This method needs to be implemented by subclasses.")
 
+    async def _generate_stream(
+        self,
+        message_history: LlmMessageHistory,
+        response_type: type[LlmResponseType] | None,
+        tool_types: list[type[LlmTool]] | None,
+    ) -> AsyncGenerator[LlmMessage, None]:
+        yield self._generate(
+            message_history=message_history,
+            response_type=response_type,
+            tool_types=tool_types,
+        )
+
     def single_shot(
         self,
         prompt: str | None = None,
@@ -157,8 +171,8 @@ class LlmClient(ABC):
         response_type: type[LlmResponseType] | None = None,
         tool_types: list[type[LlmTool]] | None = None,
         message_history: LlmMessageHistory | None = None,
-        datascope: DataScope | None = None,
-    ) -> tuple[LlmMessage, LlmMessageHistory, list[LlmTool]]:
+        datasource: DataSource | None = None,
+    ) -> tuple[LlmMessage, list[LlmTool], LlmMessageHistory]:
         called_tools: list[LlmTool] = []
         if message_history is None:
             message_history = LlmMessageHistory()
@@ -184,7 +198,7 @@ class LlmClient(ABC):
                     message_history.add_message(
                         called_tool.execute(
                             tool_call_id=tool_call.id,
-                            datascope=datascope,
+                            datasource=datasource,
                         )
                     )
             else:
@@ -192,3 +206,55 @@ class LlmClient(ABC):
         raise RuntimeError(
             "Error: The agent invocation did not complete successfully in the allotted iterations."
         )
+
+    async def multi_shot_stream(
+        self,
+        prompt: str | None = None,
+        iterations: int = 2,
+        response_type: type[LlmResponseType] | None = None,
+        tool_types: list[type[LlmTool]] | None = None,
+        message_history: LlmMessageHistory | None = None,
+        datasource: DataSource | None = None,
+    ) -> AsyncGenerator[LlmMessage, None] | AsyncGenerator[str, None]:
+        called_tools: list[LlmTool] = []
+        if message_history is None:
+            message_history = LlmMessageHistory()
+        message_history.add_message(MultiShotSystemMessage())
+        if prompt:
+            message_history.add_message(
+                LlmMessage(message_kind=MessageKind.USER, content=prompt)
+            )
+        halt = False
+        for i in range(iterations):
+            if halt:
+                break
+            message_history.add_message(
+                IterationMessage.from_context(i + 1, iterations)
+            )
+            response_i = self._generate_stream(
+                message_history=message_history,
+                response_type=response_type,
+                tool_types=tool_types,
+            )
+            async for chunk in response_i:
+                if (
+                    isinstance(chunk, LlmMessage)
+                    and chunk.message_kind == MessageKind.TOOL_CALL_REQUEST
+                ):
+                    message_history.add_message(chunk)
+                    for tool_call in chunk.tool_requests:
+                        called_tool: LlmTool = tool_call.parsed_tool
+                        called_tools.append(called_tool)
+                        yield called_tool.to_status_string()
+                        tool_response = called_tool.execute(
+                            tool_call_id=tool_call.id,
+                            datasource=datasource,
+                        )
+                        yield called_tool.to_status_string()
+                        message_history.add_message(tool_response)
+                elif isinstance(chunk, str | LlmMessage):
+                    yield chunk
+                    halt = True
+                else:
+                    raise ValueError(f"Unexpected type: {type(chunk)}")
+        yield "GENERATION_COMPLETE"

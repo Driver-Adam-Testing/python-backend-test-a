@@ -40,6 +40,7 @@ class OpenAiO3SeriesClient(LlmClient):
                 response_type.to_parsing_description_message()
             )
 
+        # TODO: o3 Mini HAS tool parsing using the sdk
         for tool in tool_types if tool_types else []:
             openai_o3_message_history.add_message(tool.to_parsing_description_message())
 

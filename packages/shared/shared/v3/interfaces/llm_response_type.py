@@ -14,7 +14,7 @@ class LlmResponseType(LlmParseable, ABC):
     """
 
     def to_markdown(self) -> str:
-        raise str(self)
+        return str(self)
 
     @classmethod
     def to_parsing_description_message(cls) -> LlmMessage:

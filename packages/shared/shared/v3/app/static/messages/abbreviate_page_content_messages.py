@@ -13,7 +13,6 @@ from shared.v3.interfaces.llm_message import LlmMessage, MessageKind
 
 
 class AbbreviatePageContentSystemMessage(LlmMessage):
-    # TODO: Shorten this message.
     content: str = (
         "You are an expert in converting document sections into relevant, information dense, terse context for agentic systems. "
         "A user selects part of a document (which might be very large or very short) and provides unformatted surrounding text—from both before and after the selection. "

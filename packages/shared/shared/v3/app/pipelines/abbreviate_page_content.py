@@ -1,10 +1,7 @@
 import concurrent.futures
 
 from pydantic import BaseModel
-from shared.v3.app.pipelines.interfaces.pipeline_request import (
-    PipelineExecutionRequest,
-)
-from shared.v3.app.static.messages.pipeline_abbreviate_page_content_messages import (
+from shared.v3.app.static.messages.abbreviate_page_content_messages import (
     AbbreviatePageContentSystemMessage,
     AbbreviatePageContentUserMessage,
 )
@@ -44,7 +41,10 @@ class SummarizedChunkResponse(BaseModel):
 
 
 def abbreviate_page_content(
-    pipeline_execution_request: PipelineExecutionRequest,
+    user_prompt: str,
+    page_content_before_cursor: str = "",
+    page_content_after_cursor: str = "",
+    selected_text: str = "\n",
     client: LlmClient | None = None,
 ) -> AbbreviatedPageContentPipelineResponse:
     client = client or LlmClient.from_config(LlmConfig.gpt_4o_mini())
@@ -59,10 +59,10 @@ def abbreviate_page_content(
                     messages=[
                         AbbreviatePageContentSystemMessage(),
                         AbbreviatePageContentUserMessage.from_context(
-                            prompt=pipeline_execution_request.original_prompt,
+                            prompt=user_prompt,
                             page_content=chunk,
                             before=is_before,
-                            selected_text=pipeline_execution_request.selected_text,
+                            selected_text=selected_text,
                         ),
                     ]
                 ),
@@ -108,10 +108,10 @@ def abbreviate_page_content(
     abbreviated_after = ""
 
     before_chunks, before_untouched_words = create_chunks(
-        pipeline_execution_request.text_before_selection, True
+        page_content_before_cursor, True
     )
     after_chunks, after_untouched_words = create_chunks(
-        pipeline_execution_request.text_after_selection, False
+        page_content_after_cursor, False
     )
 
     with concurrent.futures.ThreadPoolExecutor() as executor:

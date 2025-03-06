@@ -1,18 +1,18 @@
 import json
 from abc import ABC, abstractmethod
 
-from shared.interfaces.agents.data_scope import DataScope
 from shared.v3.globals.constants import (
     FORMAT_TOOL_CALL_REQUEST_f_class_name__example_json__docstring,
 )
 from shared.v3.interfaces.llm_message import LlmMessage, MessageKind
 from shared.v3.interfaces.llm_parseable import LlmParseable
+from shared.v3.utils.datasource import DataSource
 from shared.v3.utils.references import ReferenceSet
 
 
 class LlmTool(LlmParseable, ABC):
     _tool_call_id: str | None = None
-    _tool_datascope: DataScope | None = None
+    _tool_datasource: DataSource | None = None
 
     _references: ReferenceSet = ReferenceSet(references=[])
 
@@ -21,8 +21,8 @@ class LlmTool(LlmParseable, ABC):
         return self._tool_call_id
 
     @property
-    def datascope(self) -> DataScope | None:
-        return self._tool_datascope
+    def datasource(self) -> DataSource | None:
+        return self._tool_datasource
 
     @property
     def references(self) -> ReferenceSet:
@@ -31,10 +31,10 @@ class LlmTool(LlmParseable, ABC):
     def execute(
         self,
         tool_call_id: str,
-        datascope: DataScope,
+        datasource: DataSource,
     ) -> LlmMessage:
         self._tool_call_id = tool_call_id
-        self._tool_datascope = datascope
+        self._tool_datasource = datasource
         return self._execute()
 
     @abstractmethod
@@ -64,3 +64,6 @@ class LlmTool(LlmParseable, ABC):
             ),
             message_kind=MessageKind.PARSING_DESCRIPTION,
         )
+
+    def to_status_string(self) -> str:
+        return f"Calling {self.__class__.__name__}\n"

@@ -1,6 +1,12 @@
 # Prompt Strings
 IMPORTANT = "!IMPORTANT!"
+NEWLINE = "\n"
 PARSEABLE_CLASS_NAME = "parseable_class_name"
+PARSEABLE_EXAMPLE_INT = 123
+PARSEABLE_EXAMPLE_FLOAT = 3.14
+PARSEABLE_EXAMPLE_BOOL = True
+PARSEABLE_EXAMPLE_STR = "example_string"
+PARSEABLE_EXAMPLE_DOCSTRING_KEY = "_docstring"
 
 FORMAT_RESPONSE_AS_JSON_f_class_name__example_json__docstring = (
     "All of your response MUST be formatted as a JSON object. Do not include text before or after the JSON object that can be parsed into a {class_name}(pydantic.BaseModel) instance.\n"
@@ -21,10 +27,3 @@ FORMAT_TOOL_CALL_REQUEST_f_class_name__example_json__docstring = (
     + " field to '{class_name}'"
     + "\nHere is an example of the JSON object's schema:\n{example_json}"
 )
-
-
-PARSEABLE_EXAMPLE_INT = 123
-PARSEABLE_EXAMPLE_FLOAT = 3.14
-PARSEABLE_EXAMPLE_BOOL = True
-PARSEABLE_EXAMPLE_STR = "example_string"
-PARSEABLE_EXAMPLE_DOCSTRING_KEY = "_docstring"

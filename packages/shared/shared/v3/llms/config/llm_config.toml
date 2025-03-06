@@ -68,7 +68,7 @@ provider = "openai"
 max_context_window = 200000
 optimal_context_window = 100000
 max_output_tokens = 100000
-api_kind = "openai_o3"
+api_kind = "openai_chat_with_tools"
 
 [llms.claude_sonnet_3_5]
 llm_model_id = "claude-3-5-sonnet-20241022"

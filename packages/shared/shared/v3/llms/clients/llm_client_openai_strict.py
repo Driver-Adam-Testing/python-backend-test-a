@@ -48,28 +48,3 @@ class OpenAiStrictWithSystemClient(LlmClient):
         result = LlmMessage.from_openai_parsed_chat_completion_message(response)
         message_history.add_message(result)
         return result
-
-
-def print_message_from_chat_completion_params(completion_kwargs: dict) -> None:
-    sent_messages = completion_kwargs.get("messages", [])
-    print(len(sent_messages))
-    for i, message in enumerate(sent_messages):
-        print("--------------------------------")
-        print(f"Message {i}: {message['role']}")
-        content = message.get("content", "")
-        if content:
-            print(f" content: {content[:100]}")
-        else:
-            pass
-
-        tool_calls = message.get("tool_calls", "")
-        if tool_calls:
-            print(f" tool_calls: {tool_calls}")
-        else:
-            pass
-
-        tool_call_id = message.get("tool_call_id", "")
-        if tool_call_id:
-            print(f" tool_call_id: {tool_call_id}")
-        else:
-            pass

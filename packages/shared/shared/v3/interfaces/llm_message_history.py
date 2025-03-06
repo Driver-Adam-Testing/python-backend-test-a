@@ -29,10 +29,13 @@ class LlmMessageHistory:
             in this list represents the chronological order of the conversation so far.
     """
 
-    def __init__(self, messages: list[LlmMessage]) -> None:
+    def __init__(
+        self, messages: list[LlmMessage] | None = None, debug: bool = True
+    ) -> None:
         self.messages = []
-        for message in messages:
-            self.add_message(message)
+        if messages:
+            for message in messages:
+                self.add_message(message, debug=debug)
 
     def add_message(self, message: LlmMessage, debug: bool = True) -> None:
         """
@@ -50,24 +53,13 @@ class LlmMessageHistory:
             debug (bool, optional): If True, prints debug information about the
                 message addition. Defaults to True.
         """
-        # Remove any existing message with the same content, kind, and tool ids
-        # This is sometimes causing issues with tool call ids not being in the correct order.
-        # self.messages = [
-        #     m
-        #     for m in self.messages
-        #     if not (
-        #         m.content == message.content
-        #         and m.message_kind == message.message_kind
-        #         and m.tool_requests == message.tool_requests
-        #     )
-        # ]
-
+        # TODO: Make sure to check the message hashes for duplicates
         if message.message_kind == MessageKind.SYSTEM:
             self.messages.insert(0, message)
         else:
             self.messages.append(message)
         if debug:
-            message.to_console()
+            message.print_to_console()
 
     def to_openai_strict(self) -> list[ChatCompletionMessageParam]:
         """
@@ -391,4 +383,4 @@ class LlmMessageHistory:
             LlmMessageHistory: A new instance of LlmMessageHistory with copied messages.
         """
         copied_messages = [message.copy() for message in self.messages]
-        return LlmMessageHistory(messages=copied_messages)
+        return LlmMessageHistory(messages=copied_messages, debug=False)

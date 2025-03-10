@@ -51,6 +51,13 @@ class PrimaryAsset(SQLModel, table=True):  # type: ignore
         sa_column=Column(DateTime(timezone=True), nullable=True),
         default=None,
     )
+    most_recent_version: Optional["Version"] = Relationship(
+        sa_relationship_kwargs={
+            "primaryjoin": "and_(Version.primary_asset_id==PrimaryAsset.id, Version.previous_version_id.is_(None))",
+            "order_by": "desc(Version.updated_at)",
+            "uselist": False,
+        }
+    )
     versions: list["Version"] = Relationship(
         back_populates="primary_asset",
         sa_relationship_kwargs={

@@ -43,7 +43,7 @@ async def chat_websocket(websocket: WebSocket) -> None:
     try:
         payload = verify_token(token)
     except Exception as e:
-        await websocket.send_text(f"Unauthorized: {e.detail}")
+        await websocket.send_text(f"Unauthorized: {e}")
         await websocket.close()
         return
 
@@ -74,7 +74,7 @@ async def chat_websocket(websocket: WebSocket) -> None:
                 message_kind=MessageKind.USER, content=user_message_text
             )
             message_history.add_message(user_message)
-
+            print(setup_message.node_ids)
             async for chunk in run_chat_pipeline(
                 message_history=message_history,
                 datasource=DataSource.from_node_ids(

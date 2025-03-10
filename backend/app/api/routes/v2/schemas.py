@@ -8,7 +8,7 @@ from database.models_v2_enums import (
     NodeKind,
     PrimaryAssetKind,
 )
-from pydantic import BaseModel
+from pydantic import BaseModel, computed_field
 
 T = TypeVar("T")
 
@@ -42,6 +42,7 @@ class VersionRead(BaseModel):
     created_at: datetime | None
     updated_at: datetime | None
     status: str | None
+    browsable: bool
 
     class Config:
         from_attributes = True
@@ -110,10 +111,16 @@ class ContentRead(BaseModel):
     created_at: datetime | None
     updated_at: datetime | None
 
+    class Config:
+        from_attributes = True
+
 
 class DocumentSourceRead(BaseModel):
     page_node_id: UUID | None
     source_node_id: UUID | None
+
+    class Config:
+        from_attributes = True
 
 
 #######################
@@ -128,11 +135,17 @@ class NodeDetailRead(NodeRead):
 
     version: NodeVersionRead
 
+    class Config:
+        from_attributes = True
+
 
 class VersionDetailRead(VersionRead):
     primary_asset: PrimaryAssetRead
     root_node: NodeRead | None
     creator: UserRead | None
+
+    class Config:
+        from_attributes = True
 
 
 class PrimaryAssetDetailRead(PrimaryAssetRead):
@@ -143,6 +156,15 @@ class PrimaryAssetDetailRead(PrimaryAssetRead):
     versions: list[PrimaryAssetVersionRead] | None
     tags: list[TagRead] | None
 
+    @computed_field
+    @property
+    def browsable(self) -> bool:
+        """A primary asset is browsable if any of its versions are browsable."""
+        return any(version.browsable for version in (self.versions or []))
+
+    class Config:
+        from_attributes = True
+
 
 class PrimaryAssetTagDetailRead(PrimaryAssetTagRead):
     primary_asset: PrimaryAssetRead
@@ -150,6 +172,9 @@ class PrimaryAssetTagDetailRead(PrimaryAssetTagRead):
 
 class ContentDetailRead(ContentRead):
     node: NodeDetailRead
+
+    class Config:
+        from_attributes = True
 
 
 class DocumentSourceDetailRead(DocumentSourceRead):

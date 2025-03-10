@@ -19,9 +19,6 @@ from app.api.routes.v2.router import router
 from app.api.routes.v2.schemas import (
     ContentDetailRead,
     DerivedContentUpdate,
-    NodeDetailRead,
-    PrimaryAssetRead,
-    UserRead,
 )
 from app.api.session import CurrentSession
 
@@ -75,7 +72,7 @@ def edit_page_CONVENIENCE_METHOD(
     return Response(status_code=202)
 
 
-@router.post("/new_page", response_model=None)
+@router.post("/new_page", response_model=ContentDetailRead)
 def new_page(session: CurrentSession, user: UserToken) -> ContentDetailRead:
     # Find all PrimaryAssetRows with the name "Untitled Page X" where X is any number for the user's organization
     existing_assets = session.exec(
@@ -147,45 +144,7 @@ def new_page(session: CurrentSession, user: UserToken) -> ContentDetailRead:
     # Ensure the node relationship is populated
     new_derived_content.node = new_node
 
-    # Return a ContentDetailRead object
-    return ContentDetailRead(
-        id=new_derived_content.id,
-        node_id=new_derived_content.node_id,
-        content=new_derived_content.content,
-        content_kind=new_derived_content.content_kind,
-        misc_metadata=new_derived_content.misc_metadata,
-        created_at=new_derived_content.created_at,
-        updated_at=new_derived_content.updated_at,
-        node=NodeDetailRead(
-            id=new_node.id,
-            version_id=new_node.version_id,
-            relative_path=new_node.relative_path,
-            kind=new_node.kind,
-            created_at=new_node.created_at,
-            updated_at=new_node.updated_at,
-            version=NodeDetailRead.NodeVersionRead(
-                id=new_version.id,
-                primary_asset_id=new_version.primary_asset_id,
-                display_name=new_version.display_name,
-                created_at=new_version.created_at,
-                updated_at=new_version.updated_at,
-                status=new_version.status,
-                primary_asset=PrimaryAssetRead(
-                    id=new_primary_asset.id,
-                    organization_id=new_primary_asset.organization_id,
-                    kind=new_primary_asset.kind,
-                    display_name=new_primary_asset.display_name,
-                    created_at=new_primary_asset.created_at,
-                    updated_at=new_primary_asset.updated_at,
-                ),
-                creator=UserRead(
-                    id=creator.id,
-                    full_name=creator.full_name,
-                    email=creator.email,
-                ),
-            ),
-        ),
-    )
+    return ContentDetailRead.model_validate(new_derived_content)
 
 
 @router.post("/new_template", response_model=ContentDetailRead)
@@ -222,65 +181,31 @@ def new_template(
     session.commit()
 
     new_version = Version(
-        primary_asset_id=new_primary_asset.id,
         display_name="0",
         status=VersionStatus.GENERATION_COMPLETE,
     )
+    new_version.primary_asset = new_primary_asset
     session.add(new_version)
     session.commit()
 
     new_node = Node(
-        version_id=new_version.id, relative_path="template", kind=NodeKind.OTHER
+        relative_path="template",
+        kind=NodeKind.OTHER,
     )
+    new_node.version = new_version
     session.add(new_node)
     session.commit()
 
     new_derived_content = DerivedContent(
         content_kind="template",
-        node_id=new_node.id,
         relative_path="template",
         content="",
         content_name=new_display_name,
         misc_metadata={},
     )
+    new_derived_content.node = new_node
     session.add(new_derived_content)
     session.commit()
     session.refresh(new_derived_content)
 
-    # Ensure the node relationship is populated
-    new_derived_content.node = new_node
-
-    # Return a ContentDetailRead object
-    return ContentDetailRead(
-        id=new_derived_content.id,
-        node_id=new_derived_content.node_id,
-        content=new_derived_content.content,
-        content_kind=new_derived_content.content_kind,
-        misc_metadata=new_derived_content.misc_metadata,
-        created_at=new_derived_content.created_at,
-        updated_at=new_derived_content.updated_at,
-        node=NodeDetailRead(
-            id=new_node.id,
-            version_id=new_node.version_id,
-            relative_path=new_node.relative_path,
-            kind=new_node.kind,
-            created_at=new_node.created_at,
-            updated_at=new_node.updated_at,
-            version=NodeDetailRead.NodeVersionRead(
-                id=new_version.id,
-                primary_asset_id=new_version.primary_asset_id,
-                display_name=new_version.display_name,
-                created_at=new_version.created_at,
-                updated_at=new_version.updated_at,
-                status=new_version.status,
-                primary_asset=PrimaryAssetRead(
-                    id=new_primary_asset.id,
-                    organization_id=new_primary_asset.organization_id,
-                    kind=new_primary_asset.kind,
-                    display_name=new_primary_asset.display_name,
-                    created_at=new_primary_asset.created_at,
-                    updated_at=new_primary_asset.updated_at,
-                ),
-            ),
-        ),
-    )
+    return ContentDetailRead.model_validate(new_derived_content)

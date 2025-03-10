@@ -1,7 +1,15 @@
 from uuid import UUID
 
 from database.models_v1 import DerivedContent
-from database.models_v2 import Node, NodeKind, PrimaryAsset, PrimaryAssetKind, Version
+from database.models_v2 import (
+    Node,
+    NodeKind,
+    PrimaryAsset,
+    PrimaryAssetKind,
+    UserCache,
+    Version,
+    VersionCreator,
+)
 from database.models_v2_enums import VersionStatus
 from fastapi import Body, HTTPException, Path, Response
 from sqlmodel import select
@@ -94,12 +102,25 @@ def new_page(session: CurrentSession, user: UserToken) -> ContentDetailRead:
     session.add(new_primary_asset)
     session.commit()
 
+    creator = session.exec(
+        select(UserCache).where(UserCache.id == user.user_id)
+    ).one_or_none()
+    if creator is None:
+        creator = UserCache(id=user.user_id, full_name=user.full_name, email=user.email)
+        session.add(creator)
+        session.commit()
+        session.refresh(creator)
+
     new_version = Version(
         primary_asset_id=new_primary_asset.id,
         display_name="0",
         status=VersionStatus.GENERATION_COMPLETE,
     )
     session.add(new_version)
+    session.commit()
+
+    new_version_creator = VersionCreator(version_id=new_version.id, user_id=creator.id)
+    session.add(new_version_creator)
     session.commit()
 
     new_node = Node(

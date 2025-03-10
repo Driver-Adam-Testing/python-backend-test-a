@@ -5,8 +5,9 @@ from typing import Optional
 from uuid import UUID
 
 from database.models_v2_enums import NodeKind, PrimaryAssetKind, VersionStatus
-from sqlalchemy import Column, DateTime, Index, func
+from sqlalchemy import Column, DateTime, Index, desc, event, func, text
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.engine import Connection
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -51,19 +52,27 @@ class PrimaryAsset(SQLModel, table=True):  # type: ignore
         sa_column=Column(DateTime(timezone=True), nullable=True),
         default=None,
     )
+    most_recent_version_id: UUID | None = Field(
+        default=None,
+        foreign_key="v2_version.id",
+        index=True,
+        nullable=True,
+    )
     most_recent_version: Optional["Version"] = Relationship(
         sa_relationship_kwargs={
-            "primaryjoin": "Version.primary_asset_id==PrimaryAsset.id",
-            "order_by": "desc(Version.updated_at)",
+            "foreign_keys": "[PrimaryAsset.most_recent_version_id]",
+            "primaryjoin": "PrimaryAsset.most_recent_version_id == Version.id",
             "uselist": False,
-        }
+        },
     )
     versions: list["Version"] = Relationship(
         back_populates="primary_asset",
         sa_relationship_kwargs={
             "passive_deletes": True,
             "cascade": "all, delete-orphan",
+            "foreign_keys": "[Version.primary_asset_id]",
             "order_by": "desc(Version.updated_at)",
+            "primaryjoin": "PrimaryAsset.id == Version.primary_asset_id",
         },
     )
     tags: list["Tag"] = Relationship(  # noqa: F821
@@ -80,6 +89,11 @@ class Version(SQLModel, table=True):  # type: ignore
             "primary_asset_id",
             "display_name",
             unique=True,
+        ),
+        Index(
+            "ix_version_primary_asset_id_updated_at_desc",
+            "primary_asset_id",
+            desc("updated_at"),
         ),
     )
 
@@ -114,7 +128,12 @@ class Version(SQLModel, table=True):  # type: ignore
         ),
         default=None,
     )
-    primary_asset: "PrimaryAsset" = Relationship(back_populates="versions")
+    primary_asset: "PrimaryAsset" = Relationship(
+        back_populates="versions",
+        sa_relationship_kwargs={
+            "foreign_keys": "[Version.primary_asset_id]",
+        },
+    )
     nodes: list["Node"] = Relationship(
         back_populates="version",
         sa_relationship_kwargs={
@@ -149,6 +168,83 @@ class Version(SQLModel, table=True):  # type: ignore
             VersionStatus.GENERATION_ERROR,
             VersionStatus.GENERATION_COMPLETE,
         }
+
+
+@event.listens_for(Version, "after_delete")
+def update_most_recent_version_id_on_delete(
+    mapper,  # noqa: ANN001
+    connection: Connection,
+    target: Version,
+) -> None:
+    """
+    Whenever a Version row is deleted, if it was the most_recent_version_id on
+    its PrimaryAsset, reassign the most_recent_version_id to the version with
+    the next-highest updated_at (if any).
+    """
+    current_most_recent_id = connection.execute(
+        text(
+            "SELECT most_recent_version_id FROM v2_primary_asset WHERE id = :asset_id"
+        ),
+        {"asset_id": str(target.primary_asset_id)},
+    ).scalar()
+
+    # If the deleted Version is not the most recent one registered on the asset, do nothing.
+    if str(current_most_recent_id) != str(target.id):
+        return
+
+    # Find the next-latest version for this asset, by updated_at DESC
+    next_version_id = connection.execute(
+        text(
+            """
+            SELECT id
+            FROM v2_version
+            WHERE primary_asset_id = :asset_id
+            ORDER BY updated_at DESC
+            LIMIT 1
+        """
+        ),
+        {"asset_id": str(target.primary_asset_id)},
+    ).scalar()
+
+    connection.execute(
+        text(
+            """
+            UPDATE v2_primary_asset
+            SET most_recent_version_id = :next_id
+            WHERE id = :asset_id
+        """
+        ),
+        {
+            "next_id": str(next_version_id) if next_version_id else None,
+            "asset_id": str(target.primary_asset_id),
+        },
+    )
+
+
+# Example uses "after_insert" at the mapper level:
+@event.listens_for(Version, "after_insert")
+def update_most_recent_version_id(
+    mapper,  # noqa: ANN001
+    connection: Connection,
+    target: Version,
+) -> None:
+    """
+    Whenever a new Version row is inserted, set the primary_asset's
+    most_recent_version_id to this new version's ID.
+    """
+    connection.execute(
+        text(
+            """
+            UPDATE v2_primary_asset
+            SET most_recent_version_id = :version_id
+            WHERE id = :asset_id
+        """
+        ),
+        {
+            "version_id": str(target.id),
+            "asset_id": str(target.primary_asset_id),
+        },
+    )
 
 
 class Node(SQLModel, table=True):  # type: ignore

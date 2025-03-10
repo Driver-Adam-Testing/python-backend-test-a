@@ -52,16 +52,9 @@ class PrimaryAsset(SQLModel, table=True):  # type: ignore
         sa_column=Column(DateTime(timezone=True), nullable=True),
         default=None,
     )
-    most_recent_version_id: UUID | None = Field(
-        default=None,
-        foreign_key="v2_version.id",
-        index=True,
-        nullable=True,
-    )
     most_recent_version: Optional["Version"] = Relationship(
         sa_relationship_kwargs={
-            "foreign_keys": "[PrimaryAsset.most_recent_version_id]",
-            "primaryjoin": "PrimaryAsset.most_recent_version_id == Version.id",
+            "primaryjoin": "and_(PrimaryAsset.id == Version.primary_asset_id, Version.is_head == True)",
             "uselist": False,
         },
     )
@@ -96,6 +89,7 @@ class Version(SQLModel, table=True):  # type: ignore
             desc("updated_at"),
         ),
     )
+    is_head: bool = Field(default=False)
 
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     primary_asset_id: UUID = Field(
@@ -171,28 +165,23 @@ class Version(SQLModel, table=True):  # type: ignore
 
 
 @event.listens_for(Version, "after_delete")
-def update_most_recent_version_id_on_delete(
+def update_is_head_on_delete(
     mapper,  # noqa: ANN001
     connection: Connection,
     target: Version,
 ) -> None:
     """
-    Whenever a Version row is deleted, if it was the most_recent_version_id on
-    its PrimaryAsset, reassign the most_recent_version_id to the version with
+    Whenever a Version row is deleted, if it was marked as is_head on
+    its PrimaryAsset, reassign the is_head to the version with
     the next-highest updated_at (if any).
     """
-    current_most_recent_id = connection.execute(
-        text(
-            "SELECT most_recent_version_id FROM v2_primary_asset WHERE id = :asset_id"
-        ),
-        {"asset_id": str(target.primary_asset_id)},
-    ).scalar()
 
-    # If the deleted Version is not the most recent one registered on the asset, do nothing.
-    if str(current_most_recent_id) != str(target.id):
+    # Only proceed if the version being deleted was is_head
+    # (otherwise, there's no need to update anything)
+    if not getattr(target, "is_head", False):
         return
 
-    # Find the next-latest version for this asset, by updated_at DESC
+    # Find the next-latest version for this asset by updated_at DESC
     next_version_id = connection.execute(
         text(
             """
@@ -206,44 +195,50 @@ def update_most_recent_version_id_on_delete(
         {"asset_id": str(target.primary_asset_id)},
     ).scalar()
 
-    connection.execute(
-        text(
+    # If a next version exists, mark it as is_head
+    if next_version_id:
+        connection.execute(
+            text(
+                """
+                UPDATE v2_version
+                SET is_head = TRUE
+                WHERE id = :next_id
             """
-            UPDATE v2_primary_asset
-            SET most_recent_version_id = :next_id
-            WHERE id = :asset_id
-        """
-        ),
-        {
-            "next_id": str(next_version_id) if next_version_id else None,
-            "asset_id": str(target.primary_asset_id),
-        },
-    )
+            ),
+            {"next_id": str(next_version_id)},
+        )
 
 
-# Example uses "after_insert" at the mapper level:
 @event.listens_for(Version, "after_insert")
-def update_most_recent_version_id(
+def set_is_head_on_insert(
     mapper,  # noqa: ANN001
     connection: Connection,
     target: Version,
 ) -> None:
     """
-    Whenever a new Version row is inserted, set the primary_asset's
-    most_recent_version_id to this new version's ID.
+    Whenever a new Version row is inserted, set the is_head flag
+    to this new version's ID.
     """
     connection.execute(
         text(
             """
-            UPDATE v2_primary_asset
-            SET most_recent_version_id = :version_id
-            WHERE id = :asset_id
+            UPDATE v2_version
+            SET is_head = FALSE
+            WHERE primary_asset_id = :asset_id
         """
         ),
-        {
-            "version_id": str(target.id),
-            "asset_id": str(target.primary_asset_id),
-        },
+        {"asset_id": str(target.primary_asset_id)},
+    )
+
+    connection.execute(
+        text(
+            """
+            UPDATE v2_version
+            SET is_head = TRUE
+            WHERE id = :version_id
+        """
+        ),
+        {"version_id": str(target.id)},
     )
 
 

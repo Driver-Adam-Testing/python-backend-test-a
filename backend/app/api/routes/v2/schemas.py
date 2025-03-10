@@ -65,6 +65,9 @@ class UserRead(BaseModel):
     full_name: str
     email: str
 
+    class Config:
+        from_attributes = True
+
 
 class NodeMetaRead(NodeRead):
     id: UUID

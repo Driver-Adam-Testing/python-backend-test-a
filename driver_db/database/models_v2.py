@@ -115,6 +115,10 @@ class Version(SQLModel, table=True):  # type: ignore
             "passive_deletes": True,
         },
     )
+    creator: "UserCache" = Relationship(
+        back_populates="created_versions",
+        sa_relationship_kwargs={"secondary": "version_creator"},
+    )
     root_node: Optional["Node"] = Relationship(
         sa_relationship_kwargs={
             "primaryjoin": "and_(Version.id == Node.version_id)",
@@ -243,3 +247,24 @@ class PrimaryAssetTag(SQLModel, table=True):
         ondelete="CASCADE",
         foreign_key="v2_primary_asset.id",
     )
+
+
+class UserCache(SQLModel, table=True):
+    __tablename__ = "user_cache"
+    id: str = Field(
+        primary_key=True
+    )  # This is the auth0 ID in the form "auth0|1234567890"?
+    full_name: str
+    email: str
+    created_versions: list["Version"] = Relationship(
+        back_populates="creator",
+        sa_relationship_kwargs={"secondary": "version_creator"},
+    )
+
+
+class VersionCreator(SQLModel, table=True):
+    __tablename__ = "version_creator"
+    version_id: UUID = Field(
+        index=True, primary_key=True, ondelete="CASCADE", foreign_key="v2_version.id"
+    )
+    user_id: str = Field(index=True, ondelete="CASCADE", foreign_key="user_cache.id")

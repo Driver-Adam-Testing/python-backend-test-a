@@ -1,9 +1,9 @@
 import asyncio
 import json
-from collections.abc import AsyncGenerator
 from datetime import datetime
 from uuid import UUID
 
+from database.models_v1 import DocumentSource
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -17,11 +17,14 @@ from shared.v3.app.static.messages.driver_app_messages import (
     OverviewOfDriverMessage,
 )
 from shared.v3.utils.datasource import DataSource
+from sqlmodel import select
 
 from app.api.auth import (
     User,
+    UserToken,
     verify_token,
 )
+from app.api.session import CurrentSession
 
 router = APIRouter()
 
@@ -98,11 +101,38 @@ async def chat_websocket(websocket: WebSocket) -> None:
         print("Client disconnected during pipeline")
 
 
-@router.post("/")
-async def create_streaming_post() -> StreamingResponse:
-    async def generator() -> AsyncGenerator[str, None]:
-        for _ in range(10):
-            yield "worked"
-            await asyncio.sleep(1)
+class ChatRequest(BaseModel):
+    user_prompt: str
+    page_id: UUID
+    thread_id: UUID | None = None
 
-    return StreamingResponse(generator(), media_type="text/plain")
+
+@router.post("/")
+async def create_streaming_post(
+    session: CurrentSession,
+    user: UserToken,
+    payload: ChatRequest,
+) -> StreamingResponse:
+    node_ids = session.exec(
+        select(DocumentSource.source_node_id).where(
+            DocumentSource.page_node_id == payload.page_id,
+        )
+    ).all()
+    message_history = LlmMessageHistory()
+    message_history.add_message(OverviewOfDriverMessage())
+    message_history.add_message(HowDriverWorksMessage())
+    message_history.add_message(ContentStructureMessage())
+    message_history.add_message(ChatContextMessage())
+    message_history.add_message(DriverApplicationMessage())
+    message_history.add_message(
+        LlmMessage(message_kind=MessageKind.USER, content=payload.user_prompt)
+    )
+    return StreamingResponse(
+        run_chat_pipeline(
+            message_history,
+            DataSource.from_node_ids(
+                node_ids=node_ids, organization_id=user.organization_id
+            ),
+        ),
+        media_type="text/plain",
+    )

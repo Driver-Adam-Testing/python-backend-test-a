@@ -103,19 +103,20 @@ async def chat_websocket(websocket: WebSocket) -> None:
 
 class ChatRequest(BaseModel):
     user_prompt: str
-    page_id: UUID
+    # page_id: UUID
     thread_id: UUID | None = None
 
 
-@router.post("/")
+@router.post("/{page_id}")
 async def create_streaming_post(
     session: CurrentSession,
     user: UserToken,
+    page_id: UUID,
     payload: ChatRequest,
 ) -> StreamingResponse:
     node_ids = session.exec(
         select(DocumentSource.source_node_id).where(
-            DocumentSource.page_node_id == payload.page_id,
+            DocumentSource.page_node_id == page_id,
         )
     ).all()
     message_history = LlmMessageHistory()

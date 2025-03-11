@@ -1,9 +1,11 @@
 import asyncio
 import json
+from collections.abc import AsyncGenerator
 from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from shared.v3 import LlmMessage, LlmMessageHistory, MessageKind
 from shared.v3.app.pipelines.chat import run_chat_pipeline
@@ -94,3 +96,13 @@ async def chat_websocket(websocket: WebSocket) -> None:
             datetime.now() - start_time,
         )
         print("Client disconnected during pipeline")
+
+
+@router.post("/")
+async def create_streaming_post() -> StreamingResponse:
+    async def generator() -> AsyncGenerator[str, None]:
+        for _ in range(10):
+            yield "worked"
+            await asyncio.sleep(1)
+
+    return StreamingResponse(generator(), media_type="text/plain")

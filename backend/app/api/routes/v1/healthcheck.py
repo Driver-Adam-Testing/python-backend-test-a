@@ -1,12 +1,14 @@
-from typing import Any
 from fastapi import APIRouter
 from pydantic import BaseModel
 
 router = APIRouter()
 
+
 class HealthCheck(BaseModel):
     """Response model to validate and return when performing a health check."""
+
     status: str = "OK"
+
 
 @router.get(
     "/",
@@ -24,3 +26,8 @@ def get_health() -> HealthCheck:
         HealthCheck: Returns a JSON response with the health status
     """
     return HealthCheck(status="OK")
+
+
+@router.get("/sentry-debug")
+async def trigger_error() -> None:
+    1 / 0  # noqa: B018

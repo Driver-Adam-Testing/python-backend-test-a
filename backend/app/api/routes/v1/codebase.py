@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import UUID
 
 import modal
@@ -21,6 +21,7 @@ from sqlmodel import func, select
 
 from app.api.auth import ContentEditorPermission, ContentReadonlyPermission, UserToken
 from app.api.session import CurrentSession
+from app.core.config import settings
 from app.schemas.codebase_schema import (
     CodebaseAnalysisRequest,
     CodebaseAnalysisResponse,
@@ -99,7 +100,7 @@ def get_codebase_versions(
             # Here we treat the version's display_name as the "version" string
             version=version.display_name,
             display_name=version.display_name,
-            created_at=version.created_at if version.created_at else datetime.now(),
+            created_at=version.created_at,
         )
         for version in versions
     ]
@@ -153,14 +154,14 @@ def exec_codebase_generation(
             status_code=404, detail="Versions not found for provided ids"
         )
 
-    codebase_size_in_bytes = 0
+    total_codebase_size_in_bytes = 0
     for version in result:
         metadata = (
             version.root_node.misc_metadata
         )  # TODO: is this loaded as a dict? Or string?
-        codebase_size_in_bytes += metadata["analyzable_bytes"]
+        total_codebase_size_in_bytes += metadata["analyzable_bytes"]
     usage_balance = UsageService(session).get_usage_balance(user.organization_id)
-    if bytes_to_sloc(codebase_size_in_bytes) > usage_balance.balance:
+    if bytes_to_sloc(total_codebase_size_in_bytes) > usage_balance.balance:
         raise HTTPException(
             status_code=402,
             detail="Not enough usage balance",
@@ -173,6 +174,8 @@ def exec_codebase_generation(
             content_name=version.primary_asset.display_name,
             version_id=str(version.id),
         )
+        metadata = version.root_node.misc_metadata
+        codebase_size_in_bytes = metadata["analyzable_bytes"]
         with LLMUsageSession(
             user.organization_id, user.user_id, session_meta
         ) as llm_session:
@@ -185,7 +188,7 @@ def exec_codebase_generation(
                 bytes_out=0,
                 tokens_in=0,
                 tokens_out=0,
-                timestamp=datetime.now(tz=datetime.UTC),
+                timestamp=datetime.now(tz=UTC),
                 event_type=UsageEventType.ONBOARDING_USAGE_DEBIT,
                 event_metadata=UsageEventMetadata(
                     model="None",
@@ -196,8 +199,13 @@ def exec_codebase_generation(
                 ),
             )
             llm_session.commit_event_now(usage_metric)
+        version.status = VersionStatus.GENERATING
+        session.add(version)
+        session.commit()
 
-    inspect_db = modal.Function.lookup("inspector-v2", "inspect_db")
+    inspect_db = modal.Function.lookup(
+        "inspector-v2", "inspect_db", environment_name=settings.MODAL_ENVIRONMENT
+    )
     for version in result:
         inspect_db.spawn(version.id)
     return CodebaseGenerationResponse(call_id="1234")

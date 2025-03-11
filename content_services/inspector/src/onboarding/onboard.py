@@ -12,7 +12,6 @@ from database.models_v2_enums import (
     NodeKind,
     VersionStatus,
 )
-from onboarding.gh_ops import AccessTokenError
 
 image = (
     modal.Image.debian_slim(python_version="3.12")
@@ -57,12 +56,14 @@ def handle_github_events(
     # primary assets from models_v2. This should be fixed by consolidating into a single models.py file
     from database.models_v1 import GithubAppInstallation  # noqa: F401
     from database.models_v2 import PrimaryAsset
+    from sqlalchemy.orm import selectinload
+    from sqlmodel import Session, select
+
     from onboarding.gh_ops import (
         download_and_upload_repo,
         fetch_app_access_token,
     )
-    from sqlalchemy.orm import selectinload
-    from sqlmodel import Session, select
+    from onboarding.onboard_utils import AccessTokenError
 
     if installation_id is None and (repos_added or repos_pushed):
         raise ValueError(
@@ -141,6 +142,121 @@ def handle_github_events(
         modal.Secret.from_name("aws-inspector-s3"),
         modal.Secret.from_name("db"),
         modal.Secret.from_name("github-app"),
+        # This secret below is usually going to be empty, except in prod, prod where we'll put the full db url
+        # values needed to work with the gitlab proxy (not localhost as for the pg proxy). This will go away
+        # once we deprecate pg-proxy and can use `my-proxy` with the full db url everywhere in our app...
+        modal.Secret.from_name("db-override-hack"),
+    ],
+    # my-proxy defines the static IP that we share today with "on the beach". Not only does OTB whitelist this IP we also
+    # whitelist this IP with ScaleGrid for our DB. Normally we would use pg-proxy but we cant use two proxies at once in
+    # modal and that proxy is only good for the postgres port.
+    proxy=(
+        modal.Proxy.from_name("my-proxy", environment_name="prod")
+        if os.environ.get("MODAL_ENVIRONMENT") != "staging"
+        else None
+    ),
+    timeout=60 * 60,
+    region="us-east",
+    concurrency_limit=5,
+)
+def handle_gitlab_events(
+    installation_id: str | None,
+    org_id: str,
+    repos_added: list[dict],
+    repos_deleted: list[dict],
+    repos_pushed: list[dict],
+) -> None:
+    from database.db import (
+        engine,  # We defer the import since we'll have the secrets set here
+    )
+
+    # TODO Import is a dummy import to avoid the issue with importing
+    # primary assets from models_v2. This should be fixed by consolidating into a single models.py file
+    from database.models_v1 import GithubAppInstallation  # noqa: F401
+    from database.models_v2 import PrimaryAsset
+    from sqlalchemy.orm import selectinload
+    from sqlmodel import Session, select
+
+    from onboarding import gitlab_ops
+    from onboarding.onboard_utils import AccessTokenError
+
+    if installation_id is None and (repos_added or repos_pushed):
+        raise ValueError(
+            "Installation ID is required for added or pushed repos. It only can be null for delete-only events"
+        )
+
+    if repos_deleted:
+        with Session(engine) as session, session.begin():
+            for repo in repos_deleted:
+                primary_asset = session.exec(
+                    select(PrimaryAsset)
+                    .where(
+                        PrimaryAsset.repository_id == str(repo["id"]),
+                        PrimaryAsset.organization_id == org_id,
+                    )
+                    .options(selectinload(PrimaryAsset.versions))
+                ).first()
+
+                if not primary_asset:
+                    print(f"Primary asset for repo {repo['name']} not found.")
+                    continue
+
+                if all(
+                    v.status
+                    in {
+                        VersionStatus.CONNECTED,
+                        VersionStatus.CONNECTING,
+                        VersionStatus.CONNECTION_FAILED,
+                    }
+                    for v in primary_asset.versions
+                ):
+                    print(
+                        f"Deleting primary asset {primary_asset.id} for repo {repo['name']}"
+                    )
+                    session.delete(primary_asset)
+                else:
+                    print(
+                        f"Primary asset {primary_asset.id} for repo {repo['name']} has versions with tech docs. Not deleting."
+                    )
+
+    if not repos_added and not repos_pushed:
+        return
+
+    # Fetch token for additions/updates
+    try:
+        token = gitlab_ops.fetch_access_token(installation_id=installation_id)
+    except AccessTokenError:
+        print(f"GitLab installation {installation_id} not found.")
+        raise
+
+    errant_repos = []
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        futures = [
+            executor.submit(gitlab_ops.download_and_upload_repo, org_id, repo, token)
+            for repo in repos_added
+        ]
+        wait(futures)
+        for f in futures:
+            if f.result():
+                errant_repos.append(f.result())
+
+    for repo in repos_pushed:
+        repo_name_or_none = gitlab_ops.download_and_upload_repo(
+            org_id=org_id,
+            repo=repo,
+            access_token=token,
+            is_push=True,
+        )
+        if repo_name_or_none is not None:
+            errant_repos.append(repo_name_or_none)
+
+
+@app.function(
+    image=image,
+    secrets=[
+        modal.Secret.from_name("aws-inspector-s3"),
+        modal.Secret.from_name("db"),
+        modal.Secret.from_name("github-app"),
     ],
     proxy=modal.Proxy.from_name("pg-proxy")
     if os.environ["MODAL_ENVIRONMENT"] != "staging"
@@ -153,8 +269,9 @@ def connect_repos_for_installation(github_installation_id: str) -> None:
     import requests
     from database.db import engine
     from database.models_v1 import GithubAppInstallation
-    from onboarding.gh_ops import fetch_app_access_token
     from sqlmodel import Session, select
+
+    from onboarding.gh_ops import AccessTokenError, fetch_app_access_token
 
     with Session(engine) as session:
         install = session.exec(
@@ -192,6 +309,38 @@ def connect_repos_for_installation(github_installation_id: str) -> None:
                     "full_name": repo["full_name"],
                 }
             )
+        page_count = 1
+        max_pages = 100
+        link_header: str = response.headers.get("link")
+        while link_header:
+            page_count += 1
+            if page_count > max_pages:
+                print(
+                    "Max repository pages reached for Github integration, proceeding with just the first {max_pages} pages."
+                )
+                break
+            parts = response.headers["link"].split(",")
+            matches = [
+                re.search(r'<([^>]+)>; rel="([^"]+)"', part.strip()) for part in parts
+            ]
+            has_next = False
+            for match in matches:
+                next_url, rel = match.groups()
+                if rel == "next" and next_url:
+                    has_next = True
+                    response = requests.get(next_url, headers=headers)
+                    response.raise_for_status()
+                    current_repos = response.json()["repositories"]
+                    for repo in current_repos:
+                        repos_added.append(
+                            {
+                                "id": repo["id"],
+                                "name": repo["name"],
+                                "full_name": repo["full_name"],
+                            }
+                        )
+            if not has_next:
+                break
 
         handle_github_events.spawn(
             gh_install_id,
@@ -230,8 +379,9 @@ def connect_unconnected_repos() -> None:
     import requests
     from database.db import engine
     from database.models_v1 import GithubAppInstallation
-    from onboarding.gh_ops import fetch_app_access_token
     from sqlmodel import Session, select
+
+    from onboarding.gh_ops import AccessTokenError, fetch_app_access_token
 
     with Session(engine) as session:
         gh_app_installs = session.exec(select(GithubAppInstallation)).all()
@@ -264,6 +414,39 @@ def connect_unconnected_repos() -> None:
                         "full_name": repo["full_name"],
                     }
                 )
+            page_count = 1
+            max_pages = 100
+            link_header: str = response.headers.get("link")
+            while link_header:
+                page_count += 1
+                if page_count > max_pages:
+                    print(
+                        "Max repository pages reached for Github integration, proceeding with just the first {max_pages} pages."
+                    )
+                    break
+                parts = response.headers["link"].split(",")
+                matches = [
+                    re.search(r'<([^>]+)>; rel="([^"]+)"', part.strip())
+                    for part in parts
+                ]
+                has_next = False
+                for match in matches:
+                    next_url, rel = match.groups()
+                    if rel == "next" and next_url:
+                        has_next = True
+                        response = requests.get(next_url, headers=headers)
+                        response.raise_for_status()
+                        current_repos = response.json()["repositories"]
+                        for repo in current_repos:
+                            repos_added.append(
+                                {
+                                    "id": repo["id"],
+                                    "name": repo["name"],
+                                    "full_name": repo["full_name"],
+                                }
+                            )
+                if not has_next:
+                    break
 
             handle_github_events.spawn(
                 gh_install_id,
@@ -318,17 +501,19 @@ def run_codebase_connection(
         Version,
     )
     from database.models_v2_enums import VersionStatus
+    from shared.usage.utils import bytes_to_sloc
+    from sqlalchemy.exc import IntegrityError
+    from sqlmodel import Session, select, update
+
     from onboarding.onboard_utils import (
         create_bucket_if_dne,
         download_file_from_presigned_url,
+        is_driverignored,
         is_on_blacklist,
         load_driverignore,
         run_file_stats_and_reencode,
         unpack_archive,
     )
-    from shared.usage.utils import bytes_to_sloc
-    from sqlalchemy.exc import IntegrityError
-    from sqlmodel import Session, select, update
 
     download_dest = Path(archive_name)
     download_file_from_presigned_url(presigned_url, download_dest)
@@ -423,11 +608,9 @@ def run_codebase_connection(
                     "analyzable_bytes_by_extension": {},
                     "analyzable_sloc_by_extension": {},
                 }
-                is_ignored = (
-                    driverignore(directory) if driverignore is not None else False
-                )
+                directory_path = Path(directory).relative_to(temp_dir)
+                is_ignored = is_driverignored(Path(directory), driverignore)
                 if not is_on_blacklist(Path(directory)) and not is_ignored:
-                    directory_path = Path(directory).relative_to(temp_dir)
                     # TODO: add a trailing slash here
                     for file_path in codebase_stats:
                         if str(file_path).startswith(directory):
@@ -501,9 +684,14 @@ def run_codebase_connection(
                         directory_stats["analyzable_sloc_by_extension"][ext] = (
                             bytes_to_sloc(bytes)
                         )
+                    relative_path = (
+                        str(directory_path)
+                        if str(directory_path).endswith("/")
+                        else f"{directory_path}/"
+                    )
                     dir_node = Node(
                         version_id=version_id,
-                        relative_path=str(directory_path),
+                        relative_path=relative_path,
                         kind=NodeKind.CODEBASE_DIRECTORY,
                         misc_metadata=directory_stats,
                     )
@@ -545,14 +733,16 @@ def run_codebase_connection(
                         f"Created but not committed source content for: {file_path}. Processable: {codebase_stats[file_path]['is_analyzable']}. Stats: {codebase_stats[file_path]}"
                     )
             version = session.get(Version, version_id)
-            if version.status == VersionStatus.GENERATING:
-                print("Inspecting...")
-                inspect_db = modal.Function.lookup("inspector-v2", "inspect_db")
-                inspect_db.remote(version_id)  # TODO: spawn?
-                print("Inspection complete")
-            else:
+            version_status = version.status
+            if version_status != VersionStatus.GENERATING:
                 version.status = VersionStatus.CONNECTED
                 session.add(version)
+        # Do this check outside the DB session so that the nodes get committed
+        if version_status == VersionStatus.GENERATING:
+            print("Inspecting...")
+            inspect_db = modal.Function.lookup("inspector-v2", "inspect_db")
+            inspect_db.remote(version_id)  # TODO: spawn?
+            print("Inspection complete")
 
     print(
         f"Codebase connection complete for codebase: {codebase_name} (cb id: {primary_asset_id}). "

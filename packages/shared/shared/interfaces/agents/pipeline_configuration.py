@@ -47,7 +47,7 @@ class PipelineStepConfiguration(AgentConfiguration):
                 "interface.technical_context_interface",
                 "task.selected_text",
             ]
-            new_step.iterations = 3
+            new_step.iterations = 4
 
         if new_step.step_type == PipelineStepType.EDIT_DOCUMENT:
             new_step.tool_names = ["SearchTool", "OpenFileTool"]

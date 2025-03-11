@@ -198,77 +198,114 @@ class CDriverTree(DriverTree):
     def extract_data_structures(self) -> list[RawTreeSitterSymbolData]:
         """
         Extract struct, union, and enum tags and typedefs, ignoring forward declarations.
-        Note the usage of 'translation_unit' to ensure we only match top-level declarations and so that we don't
-        double-count typedefs that have a struct (or other kind of tag) within them.
 
         Note: we can mine the following tests for more cases to implement:
         https://github.com/tree-sitter/tree-sitter-c/blob/master/test/corpus/declarations.txt
         """
 
         query_str = """
-            (translation_unit
+        (
+          [
+            ; Typedef variants
+            ;; struct typedef
+            (type_definition
+              type: (struct_specifier)
+              declarator: (type_identifier) @struct.name
+            ) @struct.typedef
+
+            ;; union typedef
+            (type_definition
+              type: (union_specifier)
+              declarator: (type_identifier) @union.name
+            ) @union.typedef
+
+            ;; enum typedef
+            (type_definition
+              type: (enum_specifier)
+              declarator: (type_identifier) @enum.name
+            ) @enum.typedef
+
+            ; Direct declarations (wrapped in declaration)
+            (declaration
               [
-                ; Typedef variants
-                (type_definition
-                  type: [
-                    (struct_specifier)
-                    (union_specifier)
-                    (enum_specifier)
-                  ]
-                  declarator: (type_identifier) @struct.name @union.name @enum.name
-                ) @struct.typedef @union.typedef @enum.typedef
-
-                ; Direct declarations
-                (declaration
-                  [
-                    (struct_specifier
-                      (type_identifier)? @struct.name
-                      (field_declaration_list) @struct.body
-                    ) @struct.definition
-
-                    (union_specifier
-                      (type_identifier)? @union.name
-                      (field_declaration_list) @union.body
-                    ) @union.definition
-
-                    (enum_specifier
-                      (type_identifier)? @enum.name
-                      (enumerator_list) @enum.body
-                    ) @enum.definition
-                  ]
-                )
-
-                ; Bare specifiers
                 (struct_specifier
-                  (type_identifier)? @struct.name
-                  (field_declaration_list) @struct.body
-                ) @struct.definition
+                  (type_identifier)? @declared_struct.name
+                  (field_declaration_list) @declared_struct.body
+                ) @declared_struct.definition
 
                 (union_specifier
-                  (type_identifier)? @union.name
-                  (field_declaration_list) @union.body
-                ) @union.definition
+                  (type_identifier)? @declared_union.name
+                  (field_declaration_list) @declared_union.body
+                ) @declared_union.definition
 
                 (enum_specifier
-                  (type_identifier)? @enum.name
-                  (enumerator_list) @enum.body
-                ) @enum.definition
+                  (type_identifier)? @declared_enum.name
+                  (enumerator_list) @declared_enum.body
+                ) @declared_enum.definition
               ]
             )
+
+            ; Bare specifiers (exclude in post-processing if they're inside a type_definition or declaration)
+            (struct_specifier
+              (type_identifier)? @struct.name
+              (field_declaration_list) @struct.body
+            ) @struct.definition
+
+            (union_specifier
+              (type_identifier)? @union.name
+              (field_declaration_list) @union.body
+            ) @union.definition
+
+            (enum_specifier
+              (type_identifier)? @enum.name
+              (enumerator_list) @enum.body
+            ) @enum.definition
+          ]
+        )
         """
 
         query = self.tree_sitter_lang.query(query_str)
         matches = query.matches(self.tree.root_node)
         results = []
 
+        def has_ancestor(node: tree_sitter.Node, types: set) -> bool:
+            """Check if node has any ancestor of given types."""
+            parent = node.parent
+            while parent:
+                if parent.type in types:
+                    return True
+                parent = parent.parent
+            return False
+
         for _pattern_idx, captures_dict in matches:
             match captures_dict:
                 case {"struct.definition": [data_structure_node], **rest}:
+                    # Skip bare struct/union/enum definitions inside type_definition or declaration
+                    if has_ancestor(
+                        data_structure_node, {"type_definition", "declaration"}
+                    ):
+                        continue
                     name_nodes = rest.get("struct.name", [])
                 case {"union.definition": [data_structure_node], **rest}:
+                    # Skip bare struct/union/enum definitions inside type_definition or declaration
+                    if has_ancestor(
+                        data_structure_node, {"type_definition", "declaration"}
+                    ):
+                        continue
                     name_nodes = rest.get("union.name", [])
                 case {"enum.definition": [data_structure_node], **rest}:
+                    # Skip bare struct/union/enum definitions inside type_definition or declaration
+                    if has_ancestor(
+                        data_structure_node, {"type_definition", "declaration"}
+                    ):
+                        continue
                     name_nodes = rest.get("enum.name", [])
+                case {"declared_struct.definition": [data_structure_node], **rest}:
+                    name_nodes = rest.get("declared_struct.name", [])
+                case {"declared_union.definition": [data_structure_node], **rest}:
+                    name_nodes = rest.get("declared_union.name", [])
+                case {"declared_enum.definition": [data_structure_node], **rest}:
+                    name_nodes = rest.get("declared_enum.name", [])
                 case {"struct.typedef": [data_structure_node], **rest}:
                     name_nodes = rest.get("struct.name", [])
                 case {"union.typedef": [data_structure_node], **rest}:
@@ -303,15 +340,32 @@ class CDriverTree(DriverTree):
     def extract_variables(self) -> list[RawTreeSitterSymbolData]:
         query = self.tree_sitter_lang.query(
             """
-            (translation_unit
-                (declaration) @global_var)
+            (declaration) @global_var
             """
         )
         matches = query.matches(self.tree.root_node)
 
+        def is_top_level_or_preprocessor_wrapped(node: tree_sitter.Node) -> bool:
+            """
+            Returns True if the node is under translation_unit (top level)
+            with only preprocessor nodes in between.
+            """
+            parent = node.parent
+            while parent:
+                if parent.type == "translation_unit":
+                    return True
+                if not parent.type.startswith("preproc_"):
+                    return False  # If there's a non-preprocessor ancestor before translation_unit, it's not global
+                parent = parent.parent
+            return False
+
         variables = []
         for _pattern_index, captures_by_name in matches:
             decl_node = captures_by_name["global_var"][0]
+
+            if not is_top_level_or_preprocessor_wrapped(decl_node):
+                continue
+
             start_line, end_line = self.get_node_line_range(decl_node)
 
             if any(child.type == "function_declarator" for child in decl_node.children):

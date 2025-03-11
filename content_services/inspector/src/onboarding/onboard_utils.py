@@ -18,6 +18,9 @@ from gitignore_parser import parse_gitignore
 from sqlmodel import Session
 
 
+class AccessTokenError(Exception): ...
+
+
 class RunInProgressError(Exception):
     pass
 
@@ -102,6 +105,27 @@ def download_file_from_s3(
         s3_bucket.download_file(str(s3_path_to_file), download_destination)
     except Exception as e:
         raise e
+
+
+def is_driverignored(file_path: Path, driverignore: Callable | None) -> bool:
+    if driverignore is None:
+        return False
+
+    # this will be True if the file is directly ignored OR parent directory WITH trailing slash
+    # is contained within the .driverignore
+    if driverignore(file_path):
+        return True
+
+    # Due to bug in gitignore_parser with directories without trailing slashes,
+    # check all parent directories as well
+    for parent_dir in file_path.parents:
+        try:
+            if driverignore(parent_dir):
+                return True
+        except ValueError:
+            # Due to usage of temporary directory, the relative pathing has an error here.
+            pass
+    return False
 
 
 def download_file_from_presigned_url(
@@ -426,13 +450,7 @@ def run_file_stats_and_reencode(
     file_size_processable = evaluate_file_size_processable(local_path)
     is_binary = evaluate_file_binary(local_path)
     is_blacklisted = is_on_blacklist(local_path)
-    is_ignored = False
-    if driverignore is not None:
-        file_ignored = driverignore(local_path)
-        # Bug in gitignore_parser where it doesn't ignore children of directories with no trailing slash
-        dir_ignored = driverignore(local_path.parent)
-        if file_ignored or dir_ignored:
-            is_ignored = True
+    is_ignored = is_driverignored(local_path, driverignore)
 
     file_stats = {}
 
@@ -577,3 +595,24 @@ def delete_file_from_s3(bucket: str, key: str) -> None:
         aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY"),
     )
     s3_client.delete_object(Bucket=bucket, Key=key)
+
+
+def upload_to_s3_with_metadata(
+    zip_content: bytes, metadata: dict, upload_key: str
+) -> bool:
+    import boto3
+
+    s3_client = boto3.client("s3")
+    try:
+        s3_client.put_object(
+            Bucket=os.environ["DROPZONE_BUCKET_NAME"],
+            Key=upload_key,
+            Body=zip_content,
+            ContentType="application/zip",
+            Metadata=metadata,
+        )
+    except Exception as e:
+        print(e)
+        raise Exception(
+            f"Failed uploading codebase version {metadata['version_id']} to {upload_key}."
+        ) from e

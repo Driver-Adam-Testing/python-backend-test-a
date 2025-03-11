@@ -3,7 +3,9 @@ import logging
 import logging.handlers
 from datetime import datetime
 from logging import Formatter, LogRecord
+from typing import Literal
 
+import sentry_sdk
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
@@ -13,6 +15,8 @@ from app.api.auth import AuthMiddleware
 from app.api.logging_middleware import LoggingMiddleware
 from app.api.main import api_router
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class JsonFormatter(Formatter):
@@ -44,7 +48,53 @@ def configure_logging() -> None:
     logging.info(f"Log Level set to {log_level}")
 
 
+def configure_sentry(
+    environment: Literal["local", "development", "staging", "production"], dsn: str
+) -> None:
+    match environment:
+        case "local":
+            pass
+
+        case "development":
+            sentry_sdk.init(
+                dsn=dsn,
+                environment="development",
+                send_default_pii=False,
+                traces_sample_rate=1.0,
+                _experiments={
+                    "continuous_profiling_auto_start": True,
+                },
+            )
+        case "staging":
+            sentry_sdk.init(
+                dsn=dsn,
+                environment="staging",
+                send_default_pii=False,
+                traces_sample_rate=0.5,  # Arbitrarily set, but tests dialing down the rate
+                _experiments={
+                    "continuous_profiling_auto_start": True,
+                },
+            )
+        case "production":
+            sentry_sdk.init(
+                dsn=dsn,
+                environment="production",
+                send_default_pii=False,
+                traces_sample_rate=0.1,
+                _experiments={
+                    "continuous_profiling_auto_start": False,
+                },
+            )
+        case _:
+            logger.warning(
+                "Unrecognized environment '%s'; Sentry is not configured",
+                environment,
+            )
+
+
 configure_logging()
+
+configure_sentry(settings.ENVIRONMENT, settings.SENTRY_DSN)
 
 app = FastAPI(
     title=settings.PROJECT_NAME,

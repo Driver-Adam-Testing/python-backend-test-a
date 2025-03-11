@@ -32,6 +32,7 @@ pypandoc-binary = "^1.14"
 python-gitlab = "^5.6.0"
 pyjwt = "^2.10.1"
 email-validator = "^2.1.0.post1"
+sentry-sdk = {version = "^2.22.0", extras = ["fastapi"]}
 
 
 [tool.poetry.group.dev.dependencies]

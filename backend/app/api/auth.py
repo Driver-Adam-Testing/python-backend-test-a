@@ -78,6 +78,7 @@ UNPROTECTED_PATHS = [
     "/api/v1/git-provider/github/webhook",
     "/api/v1/git-provider/github/callback",
     "/api/v1/git-provider/app/callback",
+    "/api/v1/git-provider/app/webhook",
 ]
 
 security = HTTPBearer()
@@ -123,6 +124,8 @@ class User(BaseModel):
     organization_name: str = Field(..., alias="org_name")
     authorized_party: str = Field(..., alias="azp")
     permissions: list[str] = Field()
+    email: str = Field(..., alias="user_email")
+    full_name: str = Field(..., alias="user_full_name")
 
 
 class M2M(BaseModel):

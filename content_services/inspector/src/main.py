@@ -10,6 +10,7 @@ import modal
 from onboarding.onboard import (
     connect_unconnected_repos,
     handle_github_events,
+    handle_gitlab_events,
     run_codebase_connection,
 )
 
@@ -25,9 +26,10 @@ inspection_image = (
             "pydantic>=2.8.2",
             "tiktoken",
             "/shared_pkg",
-            "tree-sitter>=0.24.0",
-            "tree-sitter-c>=0.23.4",
+            "tree-sitter==0.24.0",
+            "tree-sitter-c==0.23.4",
             "gitignore-parser",
+            "chardet",
         ]
     )
 )
@@ -157,163 +159,187 @@ async def inspect_db(
         try_get_prev_version,
     )
 
-    # Get the Version and check if it has previous_version_id
-    version = await get_version_by_id(version_id)
-    org_id = version.primary_asset.organization_id
-    org_hashed_id = hashlib.sha256(org_id.encode()).hexdigest()[:63]
+    try:
+        # Get the Version and check if it has previous_version_id
+        version = await get_version_by_id(version_id)
+        org_id = version.primary_asset.organization_id
+        org_hashed_id = hashlib.sha256(org_id.encode()).hexdigest()[:63]
 
-    previous_version = await try_get_prev_version(version_id)
-    previous_version_id = previous_version.id if previous_version else None
+        previous_version = await try_get_prev_version(version_id)
+        previous_version_id = previous_version.id if previous_version else None
 
-    codebase_name = version.primary_asset.display_name
+        codebase_name = version.primary_asset.display_name
 
-    result_loading_config = await get_result_loading_config(
-        inspection_mode, version_id, previous_version_id
-    )
-    print("Result loading config: ", result_loading_config)
-
-    run_id = await create_inspector_run(version_id)
-
-    # Get content records for version_id
-    db_file_nodes = await get_analyzable_nodes_by_version_id(
-        version_id, {DbNodeKind.CODEBASE_FILE}
-    )
-
-    db_all_codebase_nodes = await get_analyzable_nodes_by_version_id(
-        version_id, {DbNodeKind.CODEBASE_FILE, DbNodeKind.CODEBASE_DIRECTORY}
-    )
-
-    # Get content records for previous_version_id if available
-    if previous_version is not None:
-        db_previous_file_nodes = await get_analyzable_nodes_by_version_id(
-            previous_version_id, {DbNodeKind.CODEBASE_FILE}
+        result_loading_config = await get_result_loading_config(
+            inspection_mode, version_id, previous_version_id
         )
-    # Download s3 for version_id (and previous if available)
-    s3_client = boto3.client("s3", endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL"))
-    with (
-        tempfile.TemporaryDirectory() as download_dir,
-        tempfile.TemporaryDirectory() as previous_download_dir,
-    ):
-        download_root = Path(download_dir)
-        file_paths = []
-        if version.status == VersionStatus.CONNECTED:
-            # TODO: check usage before switching to generating
-            # if it's in the connected state, must upload the individual files to S3
-            download_archive_key = (
-                f"{version.primary_asset_id}/{version_id}/{version_id}_source.zip"
-            )
-            download_path = Path(download_dir) / f"{version_id}.zip"
-            print(f"downloading zip to {download_path}")
-            s3_client.download_file(org_hashed_id, download_archive_key, download_path)
+        print("Result loading config: ", result_loading_config)
 
-            extracted_path = unpack_archive(
-                archive_path=download_path,
-                override_codebase_name=codebase_name,
-                extraction_path=download_dir,
-            )
-            print(f"Extracted archive to {extracted_path}")
-            for root, _, files in os.walk(extracted_path):
-                for filename in files:
-                    local_path = Path(root) / filename
-                    trimmed_path = local_path.relative_to(download_dir)
-                    for node in db_file_nodes:
-                        if node.relative_path == str(trimmed_path):
-                            reencode_file(local_path)
+        run_id = await create_inspector_run(version_id)
 
-                            s3_client.upload_file(
-                                local_path,
-                                org_hashed_id,
-                                f"{version.primary_asset_id}/{version_id}/{node.relative_path}",
-                            )
-                            print(
-                                f"uploading {trimmed_path} to s3 at {version.primary_asset_id}/{version_id}/{node.relative_path}"
-                            )
-                            file_paths.append(local_path)
-            set_codebase_status(version_id, VersionStatus.GENERATING)
-
-        else:
-            print("Downloading all source files for codebase from s3...")
-            for db_file_node in db_file_nodes:
-                download_abs_path = download_source_file(
-                    s3_client=s3_client,
-                    bucket_name=org_hashed_id,
-                    primary_asset_id=str(version.primary_asset.id),
-                    version_id=str(version_id),
-                    node_rel_path=db_file_node.relative_path,
-                    download_root=download_root,
-                )
-                file_paths.append(download_abs_path)
-            print("Download complete")
-
-        codebase_dag: FileTreeDag = build_dag(
-            root_path=download_root, file_paths=file_paths
+        # Get content records for version_id
+        db_file_nodes = await get_analyzable_nodes_by_version_id(
+            version_id, {DbNodeKind.CODEBASE_FILE}
         )
 
-        print("======= Nodes from current codebase processed =======")
-        for node in codebase_dag.topological_sort():
-            print(node.root_rel_path, node.status)
+        db_all_codebase_nodes = await get_analyzable_nodes_by_version_id(
+            version_id, {DbNodeKind.CODEBASE_FILE, DbNodeKind.CODEBASE_DIRECTORY}
+        )
 
+        # Get content records for previous_version_id if available
         if previous_version is not None:
-            previous_download_root = Path(previous_download_dir)
-            previous_file_paths = []
-            print("Downloading all source files for previous codebase from s3...")
-            for db_previous_file_node in db_previous_file_nodes:
-                download_abs_path = download_source_file(
-                    s3_client=s3_client,
-                    bucket_name=org_hashed_id,
-                    primary_asset_id=str(previous_version.primary_asset.id),
-                    version_id=str(previous_version.id),
-                    node_rel_path=db_previous_file_node.relative_path,
-                    download_root=previous_download_root,
-                )
-                previous_file_paths.append(download_abs_path)
-            print("Download complete for new version of code")
-
-            previous_codebase_dag: FileTreeDag = build_dag(
-                root_path=previous_download_root,
-                file_paths=previous_file_paths,
+            db_previous_file_nodes = await get_analyzable_nodes_by_version_id(
+                previous_version_id, {DbNodeKind.CODEBASE_FILE}
             )
-            print("======= Nodes from previous codebase =======")
-            for node in previous_codebase_dag.topological_sort():
+        # Download s3 for version_id (and previous if available)
+        s3_client = boto3.client(
+            "s3", endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL")
+        )
+        with (
+            tempfile.TemporaryDirectory() as download_dir,
+            tempfile.TemporaryDirectory() as previous_download_dir,
+        ):
+            download_root = Path(download_dir)
+            file_paths = []
+            if (
+                version.status == VersionStatus.CONNECTED
+                or version.status == VersionStatus.GENERATING
+            ):
+                # TODO: check usage before switching to generating
+                # if it's in the connected state, must upload the individual files to S3
+                download_archive_key = (
+                    f"{version.primary_asset_id}/{version_id}/{version_id}_source.zip"
+                )
+                download_path = Path(download_dir) / f"{version_id}.zip"
+                print(f"downloading zip to {download_path}")
+                s3_client.download_file(
+                    org_hashed_id, download_archive_key, download_path
+                )
+
+                extracted_path = unpack_archive(
+                    archive_path=download_path,
+                    override_codebase_name=codebase_name,
+                    extraction_path=download_dir,
+                )
+                print(f"Extracted archive to {extracted_path}")
+                for root, _, files in os.walk(extracted_path):
+                    for filename in files:
+                        local_path = Path(root) / filename
+                        trimmed_path = local_path.relative_to(download_dir)
+                        for node in db_file_nodes:
+                            if node.relative_path == str(trimmed_path):
+                                reencode_file(local_path)
+
+                                s3_client.upload_file(
+                                    local_path,
+                                    org_hashed_id,
+                                    f"{version.primary_asset_id}/{version_id}/{node.relative_path}",
+                                )
+                                print(
+                                    f"uploading {trimmed_path} to s3 at {version.primary_asset_id}/{version_id}/{node.relative_path}"
+                                )
+                                file_paths.append(local_path)
+                if version.status == VersionStatus.CONNECTED:
+                    set_codebase_status(version_id, VersionStatus.GENERATING)
+
+            else:
+                print("Downloading all source files for codebase from s3...")
+                for db_file_node in db_file_nodes:
+                    download_abs_path = download_source_file(
+                        s3_client=s3_client,
+                        bucket_name=org_hashed_id,
+                        primary_asset_id=str(version.primary_asset.id),
+                        version_id=str(version_id),
+                        node_rel_path=db_file_node.relative_path,
+                        download_root=download_root,
+                    )
+                    file_paths.append(download_abs_path)
+                print("Download complete")
+
+            codebase_dag: FileTreeDag = build_dag(
+                root_path=download_root, file_paths=file_paths
+            )
+
+            print("======= Nodes from current codebase processed =======")
+            for node in codebase_dag.topological_sort():
                 print(node.root_rel_path, node.status)
 
-            diff_dag = codebase_dag.compute_diff(previous_codebase_dag)
-            print("Diff dag computed")
+            if previous_version is not None:
+                previous_download_root = Path(previous_download_dir)
+                previous_file_paths = []
+                print("Downloading all source files for previous codebase from s3...")
+                for db_previous_file_node in db_previous_file_nodes:
+                    download_abs_path = download_source_file(
+                        s3_client=s3_client,
+                        bucket_name=org_hashed_id,
+                        primary_asset_id=str(previous_version.primary_asset.id),
+                        version_id=str(previous_version.id),
+                        node_rel_path=db_previous_file_node.relative_path,
+                        download_root=previous_download_root,
+                    )
+                    previous_file_paths.append(download_abs_path)
+                print("Download complete for new version of code")
 
-            print("======= Nodes from diff dag =======")
-            for node in diff_dag.topological_sort():
-                print(node.root_rel_path, node.status)
+                previous_codebase_dag: FileTreeDag = build_dag(
+                    root_path=previous_download_root,
+                    file_paths=previous_file_paths,
+                )
+                print("======= Nodes from previous codebase =======")
+                for node in previous_codebase_dag.topological_sort():
+                    print(node.root_rel_path, node.status)
 
-        if previous_version is not None:
-            sorted_nodes = diff_dag.topological_sort()
-        else:
-            sorted_nodes = codebase_dag.topological_sort()
-        path_to_db_node_id = {
-            Path(db_node.relative_path): db_node.id for db_node in db_all_codebase_nodes
-        }
+                diff_dag = codebase_dag.compute_diff(previous_codebase_dag)
+                print("Diff dag computed")
 
-        print("======= Nodes being processed  =======")
-        for node in sorted_nodes:
-            print(node.root_rel_path, node.status, node.kind)
+                print("======= Nodes from diff dag =======")
+                for node in diff_dag.topological_sort():
+                    print(node.root_rel_path, node.status)
 
-        nodes_with_id: list[tuple[Node, uuid.UUID | None]] = [
-            (node, path_to_db_node_id[node.root_rel_path])
-            for node in sorted_nodes
-            if node.root_rel_path != Path(".")
-        ]
+            if previous_version is not None:
+                sorted_nodes = diff_dag.topological_sort()
+            else:
+                sorted_nodes = codebase_dag.topological_sort()
+            path_to_db_node_id = {
+                Path(db_node.relative_path): db_node.id
+                for db_node in db_all_codebase_nodes
+            }
 
-        print("======= Nodes with source content id =======")
-        for node, sc_id in nodes_with_id:
-            print(node.root_rel_path, sc_id)
+            print("======= Nodes being processed  =======")
+            for node in sorted_nodes:
+                print(node.root_rel_path, node.status, node.kind)
 
-        await inspect_files(
-            version_id=version_id,
-            codebase_root=download_root,
-            nodes_with_id=nodes_with_id,
-            codebase_name=codebase_name,
-            run_id=run_id,
-            result_loading_config=result_loading_config,
+            nodes_with_id: list[tuple[Node, uuid.UUID | None]] = [
+                (node, path_to_db_node_id[node.root_rel_path])
+                for node in sorted_nodes
+                if node.root_rel_path != Path(".")
+            ]
+
+            print("======= Nodes with source content id =======")
+            for node, sc_id in nodes_with_id:
+                print(node.root_rel_path, sc_id)
+
+            await inspect_files(
+                version_id=version_id,
+                codebase_root=download_root,
+                nodes_with_id=nodes_with_id,
+                codebase_name=codebase_name,
+                run_id=run_id,
+                result_loading_config=result_loading_config,
+            )
+    except Exception as e:
+        exception_type = type(e).__name__
+        exc_tb = e.__traceback__
+        filename = exc_tb.tb_frame.f_code.co_filename
+        line_number = exc_tb.tb_lineno
+        exception_details = (
+            f"Exception type: {exception_type}\nFile: {filename}\nLine: {line_number}"
         )
+        send_exception_email.remote(exception_details)
+        print(f"Error while processing version {version_id}: {e}")
+        set_codebase_status_in_container.remote(version_id, "GENERATION_ERROR")
+        raise
+    else:
+        set_codebase_status_in_container.remote(version_id, "GENERATION_COMPLETE")
 
 
 def hash_file(file_path: Path) -> str:
@@ -644,6 +670,33 @@ def test_handle_github_events() -> None:
     org_id = "org_s76pU1v8LAYhTOWB"
 
     handle_github_events.remote(
+        installation_id,
+        org_id,
+        repos_added,
+        repos_deleted,
+        repos_pushed,
+    )
+
+
+@app.local_entrypoint()
+def test_handle_gitlab_events() -> None:
+    import json
+
+    raw_body = """
+    {
+        "provider_name": "Gitlab Enterprise Self Managed", "provider_kind": "GITLAB_ENTERPRISE_SELF_MANAGED", "repo_name": "serverless-ness", "org": "onthebeach/sub-group", "last_updated": "2023-11-02T17:48:28.000+01:00", "metadata": {"id": 5, "description": null, "name": "serverless-ness", "name_with_namespace": "onthebeach / sub-group / serverless-ness", "path": "serverless-ness", "path_with_namespace": "onthebeach/sub-group/serverless-ness", "created_at": "2025-01-10T12:16:13.533Z", "default_branch": "master", "tag_list": [], "topics": [], "ssh_url_to_repo": "git@driver-gitlab.ngrok.io:onthebeach/sub-group/serverless-ness.git", "http_url_to_repo": "http://driver-gitlab.ngrok.io/onthebeach/sub-group/serverless-ness.git", "web_url": "http://driver-gitlab.ngrok.io/onthebeach/sub-group/serverless-ness", "readme_url": "http://driver-gitlab.ngrok.io/onthebeach/sub-group/serverless-ness/-/blob/master/README.md", "forks_count": 0, "avatar_url": null, "star_count": 0, "last_activity_at": "2025-01-10T12:16:16.256Z", "namespace": {"id": 43, "name": "sub-group", "path": "sub-group", "kind": "group", "full_path": "onthebeach/sub-group", "parent_id": 36, "avatar_url": null, "web_url": "http://driver-gitlab.ngrok.io/groups/onthebeach/sub-group"}, "_links": {"self": "http://driver-gitlab.ngrok.io/api/v4/projects/5", "issues": "http://driver-gitlab.ngrok.io/api/v4/projects/5/issues", "merge_requests": "http://driver-gitlab.ngrok.io/api/v4/projects/5/merge_requests", "repo_branches": "http://driver-gitlab.ngrok.io/api/v4/projects/5/repository/branches", "labels": "http://driver-gitlab.ngrok.io/api/v4/projects/5/labels", "events": "http://driver-gitlab.ngrok.io/api/v4/projects/5/events", "members": "http://driver-gitlab.ngrok.io/api/v4/projects/5/members", "cluster_agents": "http://driver-gitlab.ngrok.io/api/v4/projects/5/cluster_agents"}, "packages_enabled": true, "empty_repo": false, "archived": false, "visibility": "private", "resolve_outdated_diff_discussions": false, "container_expiration_policy": {"cadence": "1d", "enabled": false, "keep_n": 10, "older_than": "90d", "name_regex": ".*", "name_regex_keep": null, "next_run_at": "2025-01-11T12:16:16.323Z"}, "repository_object_format": "sha1", "issues_enabled": true, "merge_requests_enabled": true, "wiki_enabled": true, "jobs_enabled": true, "snippets_enabled": true, "container_registry_enabled": true, "service_desk_enabled": false, "service_desk_address": null, "can_create_merge_request_in": true, "issues_access_level": "enabled", "repository_access_level": "enabled", "merge_requests_access_level": "enabled", "forking_access_level": "enabled", "wiki_access_level": "enabled", "builds_access_level": "enabled", "snippets_access_level": "enabled", "pages_access_level": "private", "analytics_access_level": "enabled", "container_registry_access_level": "enabled", "security_and_compliance_access_level": "private", "releases_access_level": "enabled", "environments_access_level": "enabled", "feature_flags_access_level": "enabled", "infrastructure_access_level": "enabled", "monitor_access_level": "enabled", "model_experiments_access_level": "enabled", "model_registry_access_level": "enabled", "emails_disabled": false, "emails_enabled": true, "shared_runners_enabled": true, "lfs_enabled": true, "creator_id": 35, "import_url": null, "import_type": "gitlab_project", "import_status": "finished", "import_error": null, "open_issues_count": 0, "description_html": "", "updated_at": "2025-01-10T12:16:18.425Z", "ci_default_git_depth": 20, "ci_forward_deployment_enabled": true, "ci_forward_deployment_rollback_allowed": true, "ci_job_token_scope_enabled": false, "ci_separated_caches": true, "ci_allow_fork_pipelines_to_run_in_parent_project": true, "ci_id_token_sub_claim_components": ["project_path", "ref_type", "ref"], "build_git_strategy": "fetch", "keep_latest_artifact": true, "restrict_user_defined_variables": false, "ci_pipeline_variables_minimum_override_role": "maintainer", "runners_token": "GR1348941ebgdPJxxkjPSppzdxZmP", "runner_token_expiration_interval": null, "group_runners_enabled": true, "auto_cancel_pending_pipelines": "enabled", "build_timeout": 3600, "auto_devops_enabled": true, "auto_devops_deploy_strategy": "continuous", "ci_push_repository_for_job_token_allowed": false, "ci_config_path": null, "public_jobs": true, "shared_with_groups": [], "only_allow_merge_if_pipeline_succeeds": false, "allow_merge_on_skipped_pipeline": null, "request_access_enabled": true, "only_allow_merge_if_all_discussions_are_resolved": false, "remove_source_branch_after_merge": true, "printing_merge_request_link_enabled": true, "merge_method": "merge", "squash_option": "default_off", "enforce_auth_checks_on_uploads": true, "suggestion_commit_message": null, "merge_commit_template": null, "squash_commit_template": null, "issue_branch_template": null, "warn_about_potentially_unwanted_characters": true, "autoclose_referenced_issues": true, "approvals_before_merge": 0, "mirror": false, "external_authorization_classification_label": null, "marked_for_deletion_at": null, "marked_for_deletion_on": null, "requirements_enabled": true, "requirements_access_level": "enabled", "security_and_compliance_enabled": true, "pre_receive_secret_detection_enabled": false, "compliance_frameworks": [], "issues_template": null, "merge_requests_template": null, "ci_restrict_pipeline_cancellation_role": "developer", "merge_pipelines_enabled": false, "merge_trains_enabled": false, "merge_trains_skip_train_allowed": false, "only_allow_merge_if_all_status_checks_passed": false, "allow_pipeline_trigger_approve_deployment": false, "prevent_merge_without_jira_issue": false, "permissions": {"project_access": null, "group_access": {"access_level": 40, "notification_level": 3}}}, "latest_commit": {"repository_url": "http://driver-gitlab.ngrok.io/onthebeach/sub-group/serverless-ness.git", "default_branch": "master", "commit": {"id": "049dfd3cf98b69791c4b22a2438daf0a89a7e98f", "message": "Initialized from 'Serverless Framework/JS' project templateTemplate repository: https://gitlab.com/gitlab-org/project-templates/serverless-frameworkCommit SHA: a2a5b57371d276dcc6f529c71aa2e77d43b4db34", "author": "GitLab", "date": "2023-11-02T17:48:28.000+01:00"}}, "default_branch": "master", "installation_id": "1802a3a5-c387-4631-8710-dbc961f39d8c"
+    }
+    """
+    body = json.loads(raw_body)
+
+    installation_id = str(body["installation_id"])
+    repos_added = [body]
+    repos_deleted = []
+    repos_pushed = []
+
+    org_id = "org_s76pU1v8LAYhTOWB"
+
+    handle_gitlab_events.remote(
         installation_id,
         org_id,
         repos_added,

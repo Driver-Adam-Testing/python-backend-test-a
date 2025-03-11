@@ -43,40 +43,7 @@ COPY backend/prestart.sh /app/
 COPY backend/tests-start.sh /app/
 COPY backend/app /app/app
 
-# # Install Node.js and Mermaid CLI --- FOR MERMAID CLI
-# RUN apt-get update && apt-get install -y curl gnupg \
-#     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-#     && apt-get install -y nodejs \
-#     # Debug: check node & npm
-#     && node -v \
-#     && npm -v \
-#     # Now install Mermaid CLI
-#     && npm install -g @mermaid-js/mermaid-cli
-
-# # Aaaaand we need a headless browser to render the diagrams
-# # Here's a list of dependencies that are required by puppeteer
-# RUN apt-get update && apt-get install -y \
-#     libglib2.0-0 \
-#     libx11-6 \
-#     libx11-xcb1 \
-#     libxcomposite1 \
-#     libxcursor1 \
-#     libxdamage1 \
-#     libxext6 \
-#     libxi6 \
-#     libxtst6 \
-#     libnss3 \
-#     libxrandr2 \
-#     libatk1.0-0 \
-#     libatk-bridge2.0-0 \
-#     libpangocairo-1.0-0 \
-#     libgtk-3-0 \
-#     libdrm2 \
-#     libgbm1 \
-#     xdg-utils \
-#     libasound2
-
-RUN apt-get purge -y --auto-remove build-essential \
+RUN apt-get purge -y --auto-remove build-essential curl \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 

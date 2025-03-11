@@ -58,6 +58,8 @@ class Settings(BaseSettings):
 
     MODAL_ENVIRONMENT: str = DEFAULT_SECRET
 
+    SENTRY_DSN: str | None = None
+
     LOG_LEVEL: str = "INFO"
 
     BACKEND_CORS_ORIGINS: Annotated[

@@ -124,6 +124,8 @@ class User(BaseModel):
     organization_name: str = Field(..., alias="org_name")
     authorized_party: str = Field(..., alias="azp")
     permissions: list[str] = Field()
+    email: str = Field(..., alias="user_email")
+    full_name: str = Field(..., alias="user_full_name")
 
 
 class M2M(BaseModel):

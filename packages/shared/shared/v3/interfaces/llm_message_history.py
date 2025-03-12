@@ -1,3 +1,7 @@
+from uuid import UUID, uuid4
+
+from database.db import get_session
+from database.models_v2 import RuntimeLlmMessageHistory
 from openai.types.chat import (
     ChatCompletionAssistantMessageParam,
     ChatCompletionDeveloperMessageParam,
@@ -12,52 +16,109 @@ from openai.types.chat.chat_completion_message_tool_call_param import (
 )
 from shared.v3.interfaces.llm_message import LlmMessage
 from shared.v3.interfaces.llm_message_kind import MessageKind
+from sqlalchemy.orm import selectinload
+from sqlmodel import select
 
 
 class LlmMessageHistory:
     """
     LlmMessageHistory is a container for sequential LlmMessage objects that represent
-    a conversation or a sequence of instructions and responses. Each LlmMessage
-    instance can have a message kind (e.g., system, user, assistant, developer, tool
-    call request, or tool call response). This class allows adding new messages,
-    removing duplicates, and converting the entire message history into different
-    representations suitable for various OpenAI models and APIs.
-
-    Attributes:
-        messages (list[LlmMessage]): A list of messages, each of which may be from
-            a user, an assistant, or other message kinds. The order of the messages
-            in this list represents the chronological order of the conversation so far.
+    a conversation or a sequence of instructions and responses.
     """
 
     def __init__(
-        self, messages: list[LlmMessage] | None = None, debug: bool = True
+        self,
+        messages: list[LlmMessage] | None = None,
+        debug: bool = True,
+        id: UUID | None = None,
+        organization_id: str | None = None,
+        user_id: str | None = None,
     ) -> None:
         self.messages = []
+        self.debug = debug
+        self.id = id
+        self.organization_id = organization_id
+        self.user_id = user_id
         if messages:
             for message in messages:
                 self.add_message(message, debug=debug)
 
+    @classmethod
+    def load(cls, message_history_id: UUID) -> "LlmMessageHistory":
+        """
+        Loads the message history from the database.
+        """
+        with get_session() as session:
+            # Note: we filter on the primary key 'id'
+            runtime_llm_message_history = session.exec(
+                select(RuntimeLlmMessageHistory)
+                .filter(RuntimeLlmMessageHistory.id == message_history_id)
+                .options(selectinload(RuntimeLlmMessageHistory.messages))
+            ).first()
+            if runtime_llm_message_history:
+                return cls.from_runtime_llm_message_history(runtime_llm_message_history)
+            else:
+                raise ValueError(
+                    f"Message history with id {message_history_id} not found"
+                )
+
+    def save(self) -> None:
+        """
+        Saves the message history to the database.
+        If this is a new history, creates it; otherwise, only appends new messages.
+        """
+        with get_session() as session:
+            if self.id is None:
+                # Create new persistent history
+                self.id = uuid4()
+                persistent_history = self.to_persistent_llm_message_history()
+                session.add(persistent_history)
+
+            persistent_history: RuntimeLlmMessageHistory | None = session.exec(
+                select(RuntimeLlmMessageHistory)
+                .where(RuntimeLlmMessageHistory.id == self.id)
+                .options(selectinload(RuntimeLlmMessageHistory.messages))
+            ).first()
+            if persistent_history is None:
+                raise ValueError(f"Message history with id {self.id} not found in DB")
+            existing_hashes = {
+                msg.llm_message_hash for msg in persistent_history.messages
+            }
+            for message in self.messages:
+                if hash(message) not in existing_hashes:
+                    persistent_history.messages.append(
+                        message.to_persistent_llm_message()
+                    )
+        session.commit()
+
+    @classmethod
+    def from_runtime_llm_message_history(
+        cls, runtime_llm_message_history: RuntimeLlmMessageHistory
+    ) -> "LlmMessageHistory":
+        messages = [
+            LlmMessage.from_runtime_llm_message(message)
+            for message in runtime_llm_message_history.messages
+        ]
+        return cls(
+            messages=messages,
+            id=runtime_llm_message_history.id,
+            organization_id=runtime_llm_message_history.organization_id,
+            user_id=runtime_llm_message_history.user_id,
+        )
+
+    def to_persistent_llm_message_history(self) -> RuntimeLlmMessageHistory:
+        return RuntimeLlmMessageHistory(
+            id=self.id,
+            messages=[message.to_persistent_llm_message() for message in self.messages],
+            organization_id=self.organization_id,
+            user_id=self.user_id,
+        )
+
     def add_message(self, message: LlmMessage, debug: bool = True) -> None:
         """
-        Adds a new LlmMessage to the message history, ensuring that an identical
-        message (with the same content, kind, and tool requests) is not already
-        present. If the message is of kind SYSTEM, it is inserted at the start of
-        the list; otherwise, it is appended at the end.
-
-        Duplicate messages are removed by comparing their content, their message kind,
-        and any associated tool requests. This method also calls the to_console method
-        on the new message to optionally print a debug output.
-
-        Args:
-            message (LlmMessage): The new message to add to the history.
-            debug (bool, optional): If True, prints debug information about the
-                message addition. Defaults to True.
+        Adds a new LlmMessage to the history. SYSTEM messages are inserted at the start.
         """
-        # TODO: Make sure to check the message hashes for duplicates
-        if message.message_kind == MessageKind.SYSTEM:
-            self.messages.insert(0, message)
-        else:
-            self.messages.append(message)
+        self.messages.append(message)
         if debug:
             message.print_to_console()
 
@@ -360,20 +421,6 @@ class LlmMessageHistory:
         )
 
         return messages, combined_system_message_content
-
-    def to_string_prompt(self) -> str:
-        """
-        Converts the message history into a string representation.
-
-        Returns:
-            str: A string representation of the message history.
-        """
-        return "\n".join(
-            [
-                str(message.message_kind.value) + "\n" + str(message.content)
-                for message in self.messages
-            ]
-        )
 
     def copy(self) -> "LlmMessageHistory":
         """

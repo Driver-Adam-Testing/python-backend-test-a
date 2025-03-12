@@ -1,4 +1,7 @@
+from typing import TYPE_CHECKING, Optional
+
 from anthropic.types import Message, MessageParam
+from database.models_v2 import RuntimeLlmMessage
 from openai.types.chat import ChatCompletionMessage, ParsedChatCompletionMessage
 from pydantic import BaseModel
 from shared.v3.globals.constants import PARSEABLE_CLASS_NAME
@@ -6,6 +9,10 @@ from shared.v3.interfaces.llm_message_kind import MessageKind
 from shared.v3.utils.parse_response_string import (
     parse_response_string,
 )
+
+if TYPE_CHECKING:
+    from shared.v3.interfaces.llm_response_type import LlmResponseType
+    from shared.v3.interfaces.llm_tool import LlmTool
 
 
 class LlmMessage(BaseModel):
@@ -24,6 +31,18 @@ class LlmMessage(BaseModel):
     parsed_content: BaseModel | None = None
     tool_response: ToolCallResponse | None = None
     tool_requests: list[ToolCallRequest] = []
+
+    @classmethod
+    def from_runtime_llm_message(
+        cls, runtime_llm_message: RuntimeLlmMessage
+    ) -> "LlmMessage":
+        return cls(**runtime_llm_message.llm_message_json)
+
+    def to_persistent_llm_message(self) -> RuntimeLlmMessage:
+        return RuntimeLlmMessage(
+            llm_message_json=self.model_dump(),
+            llm_message_hash=hash(self),
+        )
 
     @classmethod
     def from_openai_parsed_chat_completion_message(
@@ -56,8 +75,8 @@ class LlmMessage(BaseModel):
     def from_openai_chat_completion_message(
         cls,
         chat_message: ChatCompletionMessage,
-        tool_types: list[type] | None = None,
-        response_type: type | None = None,
+        tool_types: list["LlmTool"] | None = None,
+        response_type: Optional["LlmResponseType"] = None,
     ) -> "LlmMessage":
         try:
             content_as_json = parse_response_string(chat_message.content)
@@ -121,8 +140,8 @@ class LlmMessage(BaseModel):
     def from_string(
         cls,
         string: str,
-        tool_types: list[type] | None = None,
-        response_type: type | None = None,
+        tool_types: list["LlmTool"] | None = None,
+        response_type: Optional["LlmResponseType"] = None,
     ) -> "LlmMessage":
         try:
             content_as_json = parse_response_string(string)
@@ -166,8 +185,8 @@ class LlmMessage(BaseModel):
     def from_anthropic_message(
         cls,
         message: Message | MessageParam,
-        tool_types: list[type] | None = None,
-        response_type: type | None = None,
+        tool_types: list["LlmTool"] | None = None,
+        response_type: Optional["LlmResponseType"] = None,
     ) -> "LlmMessage":
         """
         Creates an LlmMessage instance from an Anthropic message response.
@@ -237,14 +256,7 @@ class LlmMessage(BaseModel):
         """
         Returns a hash value for the LlmMessage instance for determining equality and uniqueness.
         """
-        return hash(
-            (
-                self.message_kind,
-                self.content,
-                tuple(tool_request.id for tool_request in self.tool_requests or []),
-                self.tool_response,
-            )
-        )
+        return hash(str(self.model_dump()))
 
     def print_to_console(self) -> None:
         color_map = {

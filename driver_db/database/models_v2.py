@@ -5,7 +5,15 @@ from typing import Optional
 from uuid import UUID
 
 from database.models_v2_enums import NodeKind, PrimaryAssetKind, VersionStatus
-from sqlalchemy import Column, DateTime, Index, func
+from sqlalchemy import (
+    Column,
+    Computed,
+    DateTime,
+    Index,
+    Integer,
+    desc,
+    func,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -51,12 +59,21 @@ class PrimaryAsset(SQLModel, table=True):  # type: ignore
         sa_column=Column(DateTime(timezone=True), nullable=True),
         default=None,
     )
+    most_recent_version: Optional["Version"] = Relationship(
+        sa_relationship_kwargs={
+            "primaryjoin": "PrimaryAsset.id == Version.primary_asset_id",
+            "uselist": False,
+            "order_by": "desc(Version.updated_at)",
+        },
+    )
     versions: list["Version"] = Relationship(
         back_populates="primary_asset",
         sa_relationship_kwargs={
             "passive_deletes": True,
             "cascade": "all, delete-orphan",
+            "foreign_keys": "[Version.primary_asset_id]",
             "order_by": "desc(Version.updated_at)",
+            "primaryjoin": "PrimaryAsset.id == Version.primary_asset_id",
         },
     )
     tags: list["Tag"] = Relationship(  # noqa: F821
@@ -73,6 +90,11 @@ class Version(SQLModel, table=True):  # type: ignore
             "primary_asset_id",
             "display_name",
             unique=True,
+        ),
+        Index(
+            "ix_version_primary_asset_id_updated_at_desc",
+            "primary_asset_id",
+            desc("updated_at"),
         ),
     )
 
@@ -107,7 +129,12 @@ class Version(SQLModel, table=True):  # type: ignore
         ),
         default=None,
     )
-    primary_asset: "PrimaryAsset" = Relationship(back_populates="versions")
+    primary_asset: "PrimaryAsset" = Relationship(
+        back_populates="versions",
+        sa_relationship_kwargs={
+            "foreign_keys": "[Version.primary_asset_id]",
+        },
+    )
     nodes: list["Node"] = Relationship(
         back_populates="version",
         sa_relationship_kwargs={
@@ -121,8 +148,7 @@ class Version(SQLModel, table=True):  # type: ignore
     )
     root_node: Optional["Node"] = Relationship(
         sa_relationship_kwargs={
-            "primaryjoin": "and_(Version.id == Node.version_id)",
-            "order_by": "func.length(Node.relative_path)",
+            "primaryjoin": "and_(Version.id == Node.version_id, Node.depth == 0)",
             "uselist": False,
             "viewonly": True,
         }
@@ -172,8 +198,16 @@ class Node(SQLModel, table=True):  # type: ignore
         index=True,
     )
     relative_path: str = Field(nullable=False, index=True)
-
-    # TODO: enforce data structure with field_validator when misc_metadata is populated
+    depth: int = Field(
+        sa_column=Column(
+            Integer,
+            Computed(
+                "length(trim(trailing '/' from relative_path)) - length(replace(trim(trailing '/' from relative_path), '/', ''))",
+                persisted=True,
+            ),
+            index=True,
+        )
+    )
     misc_metadata: dict | None = Field(  # type: ignore
         sa_column=Column(JSONB, nullable=True), default=None
     )

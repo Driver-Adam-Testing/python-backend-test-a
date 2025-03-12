@@ -55,6 +55,7 @@ class NodeRead(BaseModel):
     kind: NodeKind
     created_at: datetime | None
     updated_at: datetime | None
+    depth: int
 
     class Config:
         from_attributes = True
@@ -77,6 +78,7 @@ class NodeMetaRead(NodeRead):
     created_at: datetime | None
     updated_at: datetime | None
     misc_metadata: dict | None
+    depth: int
 
     class Config:
         from_attributes = True
@@ -157,6 +159,7 @@ class PrimaryAssetDetailRead(PrimaryAssetRead):
         creator: UserRead | None
 
     most_recent_version: PrimaryAssetVersionRead | None
+    versions: list[PrimaryAssetVersionRead]
     tags: list[TagRead] | None
 
     @computed_field

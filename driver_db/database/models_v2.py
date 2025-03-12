@@ -5,7 +5,17 @@ from typing import Optional
 from uuid import UUID
 
 from database.models_v2_enums import NodeKind, PrimaryAssetKind, VersionStatus
-from sqlalchemy import Column, DateTime, Index, desc, event, func, text
+from sqlalchemy import (
+    Column,
+    Computed,
+    DateTime,
+    Index,
+    Integer,
+    desc,
+    event,
+    func,
+    text,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.engine import Connection
 from sqlmodel import Field, Relationship, SQLModel
@@ -141,8 +151,7 @@ class Version(SQLModel, table=True):  # type: ignore
     )
     root_node: Optional["Node"] = Relationship(
         sa_relationship_kwargs={
-            "primaryjoin": "and_(Version.id == Node.version_id)",
-            "order_by": "func.length(Node.relative_path)",
+            "primaryjoin": "and_(Version.id == Node.version_id, Node.depth == 0)",
             "uselist": False,
             "viewonly": True,
         }
@@ -270,8 +279,16 @@ class Node(SQLModel, table=True):  # type: ignore
         index=True,
     )
     relative_path: str = Field(nullable=False, index=True)
-
-    # TODO: enforce data structure with field_validator when misc_metadata is populated
+    depth: int = Field(
+        sa_column=Column(
+            Integer,
+            Computed(
+                "length(trim(trailing '/' from relative_path)) - length(replace(trim(trailing '/' from relative_path), '/', ''))",
+                persisted=True,
+            ),
+            index=True,
+        )
+    )
     misc_metadata: dict | None = Field(  # type: ignore
         sa_column=Column(JSONB, nullable=True), default=None
     )

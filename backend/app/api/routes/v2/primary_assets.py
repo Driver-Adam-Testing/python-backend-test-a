@@ -39,6 +39,8 @@ def list_primary_assets(
             selectinload(PrimaryAsset.most_recent_version).selectinload(
                 Version.root_node
             ),
+            selectinload(PrimaryAsset.versions).selectinload(Version.creator),
+            selectinload(PrimaryAsset.versions).selectinload(Version.root_node),
             selectinload(PrimaryAsset.most_recent_version).selectinload(
                 Version.creator
             ),

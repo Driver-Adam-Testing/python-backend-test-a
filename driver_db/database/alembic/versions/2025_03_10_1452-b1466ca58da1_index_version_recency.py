@@ -34,10 +34,17 @@ def upgrade():
         """
         UPDATE v2_version
         SET is_head = TRUE
-        WHERE NOT EXISTS (
-            SELECT 1
-            FROM v2_version AS child
-            WHERE child.previous_version_id = v2_version.id
+        WHERE id IN (
+            SELECT id
+            FROM (
+                SELECT id,
+                       ROW_NUMBER() OVER (
+                           PARTITION BY primary_asset_id
+                           ORDER BY updated_at DESC
+                       ) AS rn
+                FROM v2_version
+            ) AS sub
+            WHERE sub.rn = 1
         )
         """
     )

@@ -145,8 +145,10 @@ class NodeDetailRead(NodeRead):
 
 
 class VersionDetailRead(VersionRead):
-    primary_asset: PrimaryAssetRead
-    root_node: NodeRead | None
+    class VersionNodeRead(BaseModel):
+        id: UUID
+
+    root_node: VersionNodeRead | None
     creator: UserRead | None
 
     class Config:

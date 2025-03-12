@@ -34,7 +34,6 @@ def list_versions(
         .where(PrimaryAsset.organization_id == user.organization_id)
         .options(
             selectinload(Version.root_node),
-            selectinload(Version.primary_asset),
             selectinload(Version.creator),
         )
     )

@@ -12,12 +12,9 @@ from sqlalchemy import (
     Index,
     Integer,
     desc,
-    event,
     func,
-    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.engine import Connection
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -64,8 +61,9 @@ class PrimaryAsset(SQLModel, table=True):  # type: ignore
     )
     most_recent_version: Optional["Version"] = Relationship(
         sa_relationship_kwargs={
-            "primaryjoin": "and_(PrimaryAsset.id == Version.primary_asset_id, Version.is_head == True)",
+            "primaryjoin": "PrimaryAsset.id == Version.primary_asset_id",
             "uselist": False,
+            "order_by": "desc(Version.updated_at)",
         },
     )
     versions: list["Version"] = Relationship(
@@ -99,7 +97,6 @@ class Version(SQLModel, table=True):  # type: ignore
             desc("updated_at"),
         ),
     )
-    is_head: bool = Field(default=False)
 
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     primary_asset_id: UUID = Field(
@@ -171,84 +168,6 @@ class Version(SQLModel, table=True):  # type: ignore
             VersionStatus.GENERATION_ERROR,
             VersionStatus.GENERATION_COMPLETE,
         }
-
-
-@event.listens_for(Version, "after_delete")
-def update_is_head_on_delete(
-    mapper,  # noqa: ANN001
-    connection: Connection,
-    target: Version,
-) -> None:
-    """
-    Whenever a Version row is deleted, if it was marked as is_head on
-    its PrimaryAsset, reassign the is_head to the version with
-    the next-highest updated_at (if any).
-    """
-
-    # Only proceed if the version being deleted was is_head
-    # (otherwise, there's no need to update anything)
-    if not getattr(target, "is_head", False):
-        return
-
-    # Find the next-latest version for this asset by updated_at DESC
-    next_version_id = connection.execute(
-        text(
-            """
-            SELECT id
-            FROM v2_version
-            WHERE primary_asset_id = :asset_id
-            ORDER BY updated_at DESC
-            LIMIT 1
-        """
-        ),
-        {"asset_id": str(target.primary_asset_id)},
-    ).scalar()
-
-    # If a next version exists, mark it as is_head
-    if next_version_id:
-        connection.execute(
-            text(
-                """
-                UPDATE v2_version
-                SET is_head = TRUE
-                WHERE id = :next_id
-            """
-            ),
-            {"next_id": str(next_version_id)},
-        )
-
-
-@event.listens_for(Version, "after_insert")
-def set_is_head_on_insert(
-    mapper,  # noqa: ANN001
-    connection: Connection,
-    target: Version,
-) -> None:
-    """
-    Whenever a new Version row is inserted, set the is_head flag
-    to this new version's ID.
-    """
-    connection.execute(
-        text(
-            """
-            UPDATE v2_version
-            SET is_head = FALSE
-            WHERE primary_asset_id = :asset_id
-        """
-        ),
-        {"asset_id": str(target.primary_asset_id)},
-    )
-
-    connection.execute(
-        text(
-            """
-            UPDATE v2_version
-            SET is_head = TRUE
-            WHERE id = :version_id
-        """
-        ),
-        {"version_id": str(target.id)},
-    )
 
 
 class Node(SQLModel, table=True):  # type: ignore

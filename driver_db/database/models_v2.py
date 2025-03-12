@@ -64,6 +64,7 @@ class PrimaryAsset(SQLModel, table=True):  # type: ignore
             "primaryjoin": "PrimaryAsset.id == Version.primary_asset_id",
             "uselist": False,
             "order_by": "desc(Version.updated_at)",
+            "cascade": "all, delete-orphan",
         },
     )
     versions: list["Version"] = Relationship(

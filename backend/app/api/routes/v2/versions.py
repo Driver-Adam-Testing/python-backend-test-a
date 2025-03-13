@@ -2,6 +2,7 @@ from uuid import UUID
 
 from database.models_v2 import PrimaryAsset, Version
 from fastapi import Body, HTTPException, Path, Request
+from sqlalchemy.orm import selectinload
 from sqlmodel import func, select
 
 from app.api.auth import UserToken
@@ -11,21 +12,31 @@ from app.api.routes.v2.query_utils import (
     apply_sorting_to_query,
 )
 from app.api.routes.v2.router import router
-from app.api.routes.v2.schemas import ListWithCount, VersionCreate, VersionUpdate
+from app.api.routes.v2.schemas import (
+    ListWithCount,
+    VersionCreate,
+    VersionDetailRead,
+    VersionUpdate,
+)
 from app.api.session import CurrentSession
 
 
-@router.get("/versions", response_model=ListWithCount[Version])
+@router.get("/versions", response_model=ListWithCount[VersionDetailRead])
 def list_versions(
     request: Request,
     session: CurrentSession,
     user: UserToken,
     pagination: Pagination,
-) -> ListWithCount[Version]:
+) -> ListWithCount[VersionDetailRead]:
     query = (
         select(Version)
         .join(PrimaryAsset)
         .where(PrimaryAsset.organization_id == user.organization_id)
+        .options(
+            selectinload(Version.root_node),
+            selectinload(Version.primary_asset),
+            selectinload(Version.creator),
+        )
     )
 
     filters = dict(request.query_params)

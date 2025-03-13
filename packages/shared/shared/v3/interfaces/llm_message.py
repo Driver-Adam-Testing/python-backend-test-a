@@ -1,3 +1,4 @@
+import json
 from typing import TYPE_CHECKING, Optional
 
 from anthropic.types import Message, MessageParam
@@ -33,12 +34,12 @@ class LlmMessage(BaseModel):
     tool_requests: list[ToolCallRequest] = []
 
     @classmethod
-    def from_runtime_llm_message(
+    def from_persistent_llm_message(
         cls, runtime_llm_message: RuntimeLlmMessage
     ) -> "LlmMessage":
         return cls(**runtime_llm_message.llm_message_json)
 
-    def to_runtime_llm_message(self) -> RuntimeLlmMessage:
+    def to_persistent_llm_message(self) -> RuntimeLlmMessage:
         return RuntimeLlmMessage(
             llm_message_json=self.model_dump(),
             llm_message_hash=hash(self),
@@ -92,7 +93,7 @@ class LlmMessage(BaseModel):
                     arguments=tool_call.function.arguments,
                     parsed_tool=next(
                         (
-                            tool.parse_raw(tool_call.function.arguments)
+                            tool(**json.loads(tool_call.function.arguments))
                             for tool in (tool_types or [])
                             if tool.__name__ == tool_call.function.name
                         ),
@@ -252,12 +253,6 @@ class LlmMessage(BaseModel):
             parsed_content=parsed_content,
         )
 
-    def __hash__(self) -> int:
-        """
-        Returns a hash value for the LlmMessage instance for determining equality and uniqueness.
-        """
-        return hash(str(self.model_dump()))
-
     def print_to_console(self) -> None:
         color_map = {
             MessageKind.USER: "\033[38;5;82m",
@@ -286,3 +281,6 @@ class LlmMessage(BaseModel):
         if self.parsed_content:
             print(f"Parsed Content: \n{self.parsed_content.model_dump()}")
         print(color_reset)
+
+    def __hash__(self) -> int:
+        return hash(str([self.message_kind, self.content, self.tool_requests]))

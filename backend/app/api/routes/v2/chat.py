@@ -1,3 +1,4 @@
+import json
 from uuid import UUID
 
 from database.models_v1 import DocumentSource
@@ -16,6 +17,7 @@ from shared.v3.app.static.messages.driver_app_messages import (
     OverviewOfDriverMessage,
 )
 from shared.v3.utils.datasource import DataSource
+from shared.v3.utils.encoder import UUIDEncoder, uuid_decoder_hook
 from sqlalchemy.orm import selectinload
 from sqlmodel import select
 
@@ -27,7 +29,8 @@ from app.api.session import CurrentSession
 router = APIRouter()
 
 
-class ChatSetupRequest(BaseModel):
+class ChatRequest(BaseModel):
+    user_prompt: str
     source_node_ids: list[UUID] | None = None
     page_node_id: UUID | None = None
     llm_session_id: UUID | None = None
@@ -37,7 +40,7 @@ class ChatSetupRequest(BaseModel):
 async def create_streaming_post(
     session: CurrentSession,
     user: UserToken,
-    payload: ChatSetupRequest,
+    payload: ChatRequest,
 ) -> StreamingResponse:
     source_node_ids: list[UUID] | None = payload.source_node_ids
     page_node_id: UUID | None = payload.page_node_id
@@ -51,9 +54,6 @@ async def create_streaming_post(
                 DocumentSource.page_node_id == page_node_id
             )
         ).all()
-    datasource = DataSource.from_node_ids(
-        node_ids=source_node_ids, organization_id=user.organization_id
-    )
     if llm_session_id:
         llm_session = session.exec(
             select(RuntimeLlmSession)
@@ -69,12 +69,18 @@ async def create_streaming_post(
             id=llm_session_id,
             user_id=user.user_id,
             organization_id=user.organization_id,
-            node_ids=source_node_ids,
+            source_node_ids_str=json.dumps(source_node_ids, cls=UUIDEncoder),
             page_node_id=page_node_id,
         )
         session.add(llm_session)
         session.commit()
         session.refresh(llm_session)
+    datasource = DataSource.from_node_ids(
+        node_ids=json.loads(
+            llm_session.source_node_ids_str, object_hook=uuid_decoder_hook
+        ),
+        organization_id=user.organization_id,
+    )
     for message_history in llm_session.message_histories:
         if message_history.pipeline_kind == LlmPipelineKind.CHAT:
             chat_message_history = LlmMessageHistory.from_runtime_llm_message_history(
@@ -95,6 +101,7 @@ async def create_streaming_post(
     )
     return StreamingResponse(
         run_chat_pipeline(
+            str(llm_session.id),
             chat_message_history,
             datasource,
         ),

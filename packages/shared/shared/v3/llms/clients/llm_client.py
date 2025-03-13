@@ -221,7 +221,7 @@ class LlmClient(ABC):
         tool_types: list[type[LlmTool]] | None = None,
         message_history: LlmMessageHistory | None = None,
         datasource: DataSource | None = None,
-    ) -> AsyncGenerator[LlmMessage, None] | AsyncGenerator[str, None]:
+    ) -> AsyncGenerator[LlmStreamResponse, None]:
         called_tools: list[LlmTool] = []
         if message_history is None:
             message_history = LlmMessageHistory()
@@ -274,7 +274,3 @@ class LlmClient(ABC):
                     halt_iterator = True
                 else:
                     raise ValueError(f"Unexpected type: {type(chunk)}")
-        yield LlmStreamResponse(
-            kind=LlmStreamResponseKind.END,
-            content="",
-        )

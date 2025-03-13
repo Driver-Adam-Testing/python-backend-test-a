@@ -123,9 +123,12 @@ class OpenAiChatClient(LlmClient):
                 message_kind=MessageKind.TOOL_CALL_REQUEST,
                 content=None,
             )
-
-        if response_type:
-            yield LlmMessage.from_string(
-                string=final_content,
-                response_type=response_type,
+        else:
+            final_response = LlmMessage(
+                message_kind=MessageKind.ASSISTANT,
+                content=final_content,
+                parsed_content=response_type(**json.loads(final_content))
+                if response_type
+                else None,
             )
+            yield final_response

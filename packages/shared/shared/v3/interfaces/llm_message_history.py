@@ -1,4 +1,4 @@
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from database.db import get_session
 from database.models_v2 import RuntimeLlmMessageHistory
@@ -36,13 +36,15 @@ class LlmMessageHistory:
         debug: bool = True,
     ) -> None:
         self.id = id
-        self.messages = []
+        self.messages: list[LlmMessage] = []
         self.debug = debug
         self.llm_session_id = llm_session_id
         self.pipeline_kind = pipeline_kind
         if messages:
             for message in messages:
                 self.add_message(message, debug=debug)
+        if self.llm_session_id is not None:
+            self.save()
 
     @classmethod
     def load(cls, message_history_id: UUID) -> "LlmMessageHistory":
@@ -71,25 +73,25 @@ class LlmMessageHistory:
         with get_session() as session:
             if self.id is None:
                 # Create new persistent history
-                self.id = uuid4()
                 persistent_history = self.to_persistent_llm_message_history()
                 session.add(persistent_history)
-
-            persistent_history: RuntimeLlmMessageHistory | None = session.exec(
-                select(RuntimeLlmMessageHistory)
-                .where(RuntimeLlmMessageHistory.id == self.id)
-                .options(selectinload(RuntimeLlmMessageHistory.messages))
-            ).first()
-            if persistent_history is None:
-                raise ValueError(f"Message history with id {self.id} not found in DB")
+                session.commit()
+                session.refresh(persistent_history)
+                self.id = persistent_history.id
+            else:
+                persistent_history = session.exec(
+                    select(RuntimeLlmMessageHistory)
+                    .where(RuntimeLlmMessageHistory.id == self.id)
+                    .options(selectinload(RuntimeLlmMessageHistory.messages))
+                ).first()
             existing_hashes = {
                 msg.llm_message_hash for msg in persistent_history.messages
             }
             for message in self.messages:
                 if hash(message) not in existing_hashes:
-                    persistent_history.messages.append(
-                        message.to_persistent_llm_message()
-                    )
+                    persistent_message = message.to_persistent_llm_message()
+                    persistent_message.message_history_id = self.id
+                    session.add(persistent_message)
         session.commit()
 
     @classmethod
@@ -111,7 +113,7 @@ class LlmMessageHistory:
         return RuntimeLlmMessageHistory(
             id=self.id,
             messages=[message.to_persistent_llm_message() for message in self.messages],
-            llm_session_id=self.session_id,
+            llm_session_id=self.llm_session_id,
             pipeline_kind=self.pipeline_kind,
         )
 
@@ -122,6 +124,13 @@ class LlmMessageHistory:
         if hash(message) in {hash(m) for m in self.messages}:
             return
         self.messages.append(message)
+        if self.llm_session_id and self.id:
+            pm = message.to_persistent_llm_message()
+            pm.message_history_id = self.id
+            with get_session() as session:
+                session.add(pm)
+                session.commit()
+                session.refresh(pm)
         if debug:
             message.print_to_console()
 

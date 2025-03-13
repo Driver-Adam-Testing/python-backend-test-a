@@ -83,6 +83,7 @@ class PrimaryAsset(SQLModel, table=True):  # type: ignore
             "foreign_keys": "[Version.primary_asset_id]",
             "order_by": "desc(Version.updated_at)",
             "primaryjoin": "PrimaryAsset.id == Version.primary_asset_id",
+            "overlaps": "most_recent_version",
         },
     )
     tags: list["Tag"] = Relationship(
@@ -142,6 +143,7 @@ class Version(SQLModel, table=True):  # type: ignore
         back_populates="versions",
         sa_relationship_kwargs={
             "foreign_keys": "[Version.primary_asset_id]",
+            "overlaps": "most_recent_version",
         },
     )
     nodes: list["Node"] = Relationship(
@@ -318,10 +320,7 @@ class RuntimeLlmSession(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     user_id: str = Field(index=True)
     organization_id: str = Field(index=True)
-    node_ids: list[UUID] | None = Field(
-        sa_column=Column(JSONB, nullable=True),
-        default=None,
-    )
+    source_node_ids_str: str | None = Field(nullable=True, default=None)
     page_node_id: UUID | None = Field(nullable=True, default=None)
     created_at: None | datetime = Field(
         sa_column=Column(

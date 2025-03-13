@@ -6,6 +6,10 @@ from shared.v3.globals.constants import (
 )
 from shared.v3.interfaces.llm_message import LlmMessage, MessageKind
 from shared.v3.interfaces.llm_parseable import LlmParseable
+from shared.v3.interfaces.llm_stream_response import (
+    LlmStreamResponse,
+    LlmStreamResponseKind,
+)
 from shared.v3.utils.datasource import DataSource
 from shared.v3.utils.references import ReferenceSet
 
@@ -65,5 +69,8 @@ class LlmTool(LlmParseable, ABC):
             message_kind=MessageKind.PARSING_DESCRIPTION,
         )
 
-    def to_status_string(self) -> str:
-        return f"Calling {self.__class__.__name__}\n"
+    def to_status_stream_response(self) -> LlmStreamResponse:
+        return LlmStreamResponse(
+            kind=LlmStreamResponseKind.TOOL_STATUS_UPDATE,
+            content=f"Calling {self.__class__.__name__}\n",
+        )

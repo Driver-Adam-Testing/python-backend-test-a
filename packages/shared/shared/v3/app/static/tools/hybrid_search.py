@@ -15,6 +15,10 @@ from shared.v3.app.static.messages.constants import (
     TOOL_ERROR_XML_END,
 )
 from shared.v3.interfaces.llm_message import LlmMessage, MessageKind
+from shared.v3.interfaces.llm_stream_response import (
+    LlmStreamResponse,
+    LlmStreamResponseKind,
+)
 from shared.v3.interfaces.llm_tool import (
     LlmTool,
 )
@@ -84,7 +88,13 @@ class HybridSearchTool(LlmTool):
             ),
         )
 
-    def to_status_string(self) -> str:
+    def to_status_stream_response(self) -> LlmStreamResponse:
         if self._references:
-            return f"Found {len(self._references)} references for {self.search_query}\n"
-        return f"Searching {self.search_query}...\n"
+            return LlmStreamResponse(
+                kind=LlmStreamResponseKind.TOOL_STATUS_UPDATE,
+                content=f"Found {len(self._references)} references for {self.search_query}\n",
+            )
+        return LlmStreamResponse(
+            kind=LlmStreamResponseKind.TOOL_STATUS_UPDATE,
+            content=f"Searching: {self.search_query}...\n",
+        )

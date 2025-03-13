@@ -8,6 +8,7 @@ from shared.v3.utils.references import Reference, ReferenceSet
 
 __all__ = [
     "LlmMessage",
+    "LlmMessageKind",
     "LlmMessageHistory",
     "LlmClient",
     "DataSource",

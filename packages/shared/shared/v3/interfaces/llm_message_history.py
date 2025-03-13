@@ -2,6 +2,7 @@ from uuid import UUID, uuid4
 
 from database.db import get_session
 from database.models_v2 import RuntimeLlmMessageHistory
+from database.models_v2_enums import LlmPipelineKind
 from openai.types.chat import (
     ChatCompletionAssistantMessageParam,
     ChatCompletionDeveloperMessageParam,
@@ -29,16 +30,16 @@ class LlmMessageHistory:
     def __init__(
         self,
         messages: list[LlmMessage] | None = None,
-        debug: bool = True,
         id: UUID | None = None,
-        organization_id: str | None = None,
-        user_id: str | None = None,
+        llm_session_id: UUID | None = None,
+        pipeline_kind: LlmPipelineKind | None = LlmPipelineKind.DEFAULT,
+        debug: bool = True,
     ) -> None:
+        self.id = id
         self.messages = []
         self.debug = debug
-        self.id = id
-        self.organization_id = organization_id
-        self.user_id = user_id
+        self.llm_session_id = llm_session_id
+        self.pipeline_kind = pipeline_kind
         if messages:
             for message in messages:
                 self.add_message(message, debug=debug)
@@ -102,22 +103,24 @@ class LlmMessageHistory:
         return cls(
             messages=messages,
             id=runtime_llm_message_history.id,
-            organization_id=runtime_llm_message_history.organization_id,
-            user_id=runtime_llm_message_history.user_id,
+            llm_session_id=runtime_llm_message_history.llm_session_id,
+            pipeline_kind=runtime_llm_message_history.pipeline_kind,
         )
 
     def to_persistent_llm_message_history(self) -> RuntimeLlmMessageHistory:
         return RuntimeLlmMessageHistory(
             id=self.id,
             messages=[message.to_persistent_llm_message() for message in self.messages],
-            organization_id=self.organization_id,
-            user_id=self.user_id,
+            llm_session_id=self.session_id,
+            pipeline_kind=self.pipeline_kind,
         )
 
     def add_message(self, message: LlmMessage, debug: bool = True) -> None:
         """
         Adds a new LlmMessage to the history. SYSTEM messages are inserted at the start.
         """
+        if hash(message) in {hash(m) for m in self.messages}:
+            return
         self.messages.append(message)
         if debug:
             message.print_to_console()

@@ -38,7 +38,7 @@ class LlmMessage(BaseModel):
     ) -> "LlmMessage":
         return cls(**runtime_llm_message.llm_message_json)
 
-    def to_persistent_llm_message(self) -> RuntimeLlmMessage:
+    def to_runtime_llm_message(self) -> RuntimeLlmMessage:
         return RuntimeLlmMessage(
             llm_message_json=self.model_dump(),
             llm_message_hash=hash(self),

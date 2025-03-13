@@ -1,10 +1,9 @@
-import asyncio
-import json
-from datetime import datetime
 from uuid import UUID
 
 from database.models_v1 import DocumentSource
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from database.models_v2 import RuntimeLlmMessageHistory, RuntimeLlmSession
+from database.models_v2_enums import LlmPipelineKind
+from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from shared.v3 import LlmMessage, LlmMessageHistory, MessageKind
@@ -17,12 +16,11 @@ from shared.v3.app.static.messages.driver_app_messages import (
     OverviewOfDriverMessage,
 )
 from shared.v3.utils.datasource import DataSource
+from sqlalchemy.orm import selectinload
 from sqlmodel import select
 
 from app.api.auth import (
-    User,
     UserToken,
-    verify_token,
 )
 from app.api.session import CurrentSession
 
@@ -30,109 +28,75 @@ router = APIRouter()
 
 
 class ChatSetupRequest(BaseModel):
-    node_ids: list[UUID]
-
-
-@router.websocket("/websocket")
-async def chat_websocket(websocket: WebSocket) -> None:
-    start_time = datetime.now()
-    print("Chat websocket connected at", start_time)
-    await websocket.accept()
-
-    auth_header = websocket.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
-        await websocket.close(code=4401)  # 4401 = Unauthorized in WS context
-        return
-
-    token = auth_header[len("Bearer ") :]
-    try:
-        payload = verify_token(token)
-    except Exception as e:
-        await websocket.send_text(f"Unauthorized: {e}")
-        await websocket.close()
-        return
-
-    user = User(**payload)
-    organization_id = user.organization_id
-
-    try:
-        setup_text = await websocket.receive_text()
-        setup_message = ChatSetupRequest(**json.loads(setup_text))
-    except WebSocketDisconnect:
-        print("Client disconnected before sending setup data")
-        return
-
-    message_history = LlmMessageHistory()
-    message_history.add_message(OverviewOfDriverMessage())
-    message_history.add_message(HowDriverWorksMessage())
-    message_history.add_message(ContentStructureMessage())
-    message_history.add_message(ChatContextMessage())
-    message_history.add_message(DriverApplicationMessage())
-
-    try:
-        while True:
-            user_message_text = await websocket.receive_text()
-            if user_message_text == "KEEP_ALIVE":
-                continue
-
-            user_message = LlmMessage(
-                message_kind=MessageKind.USER, content=user_message_text
-            )
-            message_history.add_message(user_message)
-            print(setup_message.node_ids)
-            async for chunk in run_chat_pipeline(
-                message_history=message_history,
-                datasource=DataSource.from_node_ids(
-                    setup_message.node_ids, organization_id=organization_id
-                ),
-            ):
-                if isinstance(chunk, str):
-                    await websocket.send_text(chunk)
-                else:
-                    message_history.add_message(chunk)
-                await asyncio.sleep(0.01)  # Add a small sleep to prevent 100% CPU usage
-    except WebSocketDisconnect:
-        print(
-            "Chat websocket disconnected at",
-            datetime.now(),
-            "open for",
-            datetime.now() - start_time,
-        )
-        print("Client disconnected during pipeline")
-
-
-class ChatRequest(BaseModel):
-    user_prompt: str
-    page_id: UUID
-    thread_id: UUID | None = None
+    source_node_ids: list[UUID] | None = None
+    page_node_id: UUID | None = None
+    llm_session_id: UUID | None = None
 
 
 @router.post("/")
 async def create_streaming_post(
     session: CurrentSession,
     user: UserToken,
-    payload: ChatRequest,
+    payload: ChatSetupRequest,
 ) -> StreamingResponse:
-    node_ids = session.exec(
-        select(DocumentSource.source_node_id).where(
-            DocumentSource.page_node_id == payload.page_id,
+    source_node_ids: list[UUID] | None = payload.source_node_ids
+    page_node_id: UUID | None = payload.page_node_id
+    llm_session_id: UUID | None = payload.llm_session_id
+    chat_message_history: LlmMessageHistory | None = None
+    llm_session: RuntimeLlmSession | None = None
+    # TODO: Do this in a Datasource to verify the node_ids can be accessed by the page and that the org_id is correct
+    if source_node_ids is None and page_node_id is not None:
+        source_node_ids = session.exec(
+            select(DocumentSource.source_node_id).where(
+                DocumentSource.page_node_id == page_node_id
+            )
+        ).all()
+    datasource = DataSource.from_node_ids(
+        node_ids=source_node_ids, organization_id=user.organization_id
+    )
+    if llm_session_id:
+        llm_session = session.exec(
+            select(RuntimeLlmSession)
+            .where(RuntimeLlmSession.id == llm_session_id)
+            .options(
+                selectinload(RuntimeLlmSession.message_histories).selectinload(
+                    RuntimeLlmMessageHistory.messages
+                ),
+            )
+        ).first()
+    if llm_session is None:
+        llm_session = RuntimeLlmSession(
+            id=llm_session_id,
+            user_id=user.user_id,
+            organization_id=user.organization_id,
+            node_ids=source_node_ids,
+            page_node_id=page_node_id,
         )
-    ).all()
-    message_history = LlmMessageHistory()
-    message_history.add_message(OverviewOfDriverMessage())
-    message_history.add_message(HowDriverWorksMessage())
-    message_history.add_message(ContentStructureMessage())
-    message_history.add_message(ChatContextMessage())
-    message_history.add_message(DriverApplicationMessage())
-    message_history.add_message(
+        session.add(llm_session)
+        session.commit()
+        session.refresh(llm_session)
+    for message_history in llm_session.message_histories:
+        if message_history.pipeline_kind == LlmPipelineKind.CHAT:
+            chat_message_history = LlmMessageHistory.from_runtime_llm_message_history(
+                message_history
+            )
+    if chat_message_history is None:
+        chat_message_history = LlmMessageHistory(
+            llm_session_id=llm_session.id,
+            pipeline_kind=LlmPipelineKind.CHAT,
+        )
+        chat_message_history.add_message(DriverApplicationMessage())
+        chat_message_history.add_message(ContentStructureMessage())
+        chat_message_history.add_message(ChatContextMessage())
+        chat_message_history.add_message(HowDriverWorksMessage())
+        chat_message_history.add_message(OverviewOfDriverMessage())
+    chat_message_history.add_message(
         LlmMessage(message_kind=MessageKind.USER, content=payload.user_prompt)
     )
     return StreamingResponse(
         run_chat_pipeline(
-            message_history,
-            DataSource.from_node_ids(
-                node_ids=node_ids, organization_id=user.organization_id
-            ),
+            chat_message_history,
+            datasource,
         ),
         media_type="text/plain",
     )

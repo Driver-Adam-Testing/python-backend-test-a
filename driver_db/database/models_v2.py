@@ -1,10 +1,15 @@
 import hashlib
 import uuid
 from datetime import datetime
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 from uuid import UUID
 
-from database.models_v2_enums import NodeKind, PrimaryAssetKind, VersionStatus
+from database.models_v2_enums import (
+    LlmPipelineKind,
+    NodeKind,
+    PrimaryAssetKind,
+    VersionStatus,
+)
 from sqlalchemy import (
     Column,
     Computed,
@@ -16,6 +21,9 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import Field, Relationship, SQLModel
+
+if TYPE_CHECKING:
+    from database.models_v2 import Tag
 
 
 class PrimaryAsset(SQLModel, table=True):  # type: ignore
@@ -77,7 +85,7 @@ class PrimaryAsset(SQLModel, table=True):  # type: ignore
             "primaryjoin": "PrimaryAsset.id == Version.primary_asset_id",
         },
     )
-    tags: list["Tag"] = Relationship(  # noqa: F821
+    tags: list["Tag"] = Relationship(
         back_populates="primary_assets",
         sa_relationship_kwargs={"secondary": "v2_primary_asset_tag"},
     )
@@ -305,19 +313,53 @@ class VersionCreator(SQLModel, table=True):
     user_id: str = Field(index=True, ondelete="CASCADE", foreign_key="user_cache.id")
 
 
-class RuntimeLlmMessageHistory(SQLModel, table=True):
-    __tablename__ = "v2_runtime_llm_message_history"
+class RuntimeLlmSession(SQLModel, table=True):
+    __tablename__ = "v2_runtime_llm_session"
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     user_id: str = Field(index=True)
     organization_id: str = Field(index=True)
+    node_ids: list[UUID] | None = Field(
+        sa_column=Column(JSONB, nullable=True),
+        default=None,
+    )
+    page_node_id: UUID | None = Field(nullable=True, default=None)
     created_at: None | datetime = Field(
         sa_column=Column(
             DateTime(timezone=True), server_default=func.now(), nullable=False
         ),
         default=None,
     )
+    updated_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
+        ),
+        default=None,
+    )
+    message_histories: list["RuntimeLlmMessageHistory"] = Relationship(
+        back_populates="llm_session",
+    )
+
+
+class RuntimeLlmMessageHistory(SQLModel, table=True):
+    __tablename__ = "v2_runtime_llm_message_history"
+    id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    llm_session_id: UUID = Field(
+        index=True,
+        nullable=False,
+        ondelete="CASCADE",
+        foreign_key="v2_runtime_llm_session.id",
+    )
+    pipeline_kind: str = Field(
+        index=True, nullable=False, default=LlmPipelineKind.DEFAULT
+    )
     messages: list["RuntimeLlmMessage"] = Relationship(
         back_populates="message_history",
+    )
+    llm_session: "RuntimeLlmSession" = Relationship(
+        back_populates="message_histories",
     )
 
 

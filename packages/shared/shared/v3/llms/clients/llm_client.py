@@ -8,6 +8,10 @@ from shared.v3.globals.iteration_messages import (
 from shared.v3.interfaces.llm_message import LlmMessage, MessageKind
 from shared.v3.interfaces.llm_message_history import LlmMessageHistory
 from shared.v3.interfaces.llm_response_type import LlmResponseType
+from shared.v3.interfaces.llm_stream_response import (
+    LlmStreamResponse,
+    LlmStreamResponseKind,
+)
 from shared.v3.interfaces.llm_tool import LlmTool
 from shared.v3.llms.config.llm_config import ApiKind, LlmConfig
 from shared.v3.utils.datasource import DataSource
@@ -207,6 +211,8 @@ class LlmClient(ABC):
             "Error: The agent invocation did not complete successfully in the allotted iterations."
         )
 
+    # TODO: This is bringing up: do these generations return an LlmMessage, or do they append the message_history?
+    # Since this is yielding LlmStreamResponse, but the final assistant message doesn't make sense to redundantly return as a full message
     async def multi_shot_stream(
         self,
         prompt: str | None = None,
@@ -224,9 +230,9 @@ class LlmClient(ABC):
             message_history.add_message(
                 LlmMessage(message_kind=MessageKind.USER, content=prompt)
             )
-        halt = False
+        halt_iterator = False
         for i in range(iterations):
-            if halt:
+            if halt_iterator:
                 break
             message_history.add_message(
                 IterationMessage.from_context(i + 1, iterations)
@@ -245,16 +251,30 @@ class LlmClient(ABC):
                     for tool_call in chunk.tool_requests:
                         called_tool: LlmTool = tool_call.parsed_tool
                         called_tools.append(called_tool)
-                        yield called_tool.to_status_string()
+                        yield called_tool.to_status_stream_response()
                         tool_response = called_tool.execute(
                             tool_call_id=tool_call.id,
                             datasource=datasource,
                         )
-                        yield called_tool.to_status_string()
+                        yield called_tool.to_status_stream_response()
                         message_history.add_message(tool_response)
-                elif isinstance(chunk, str | LlmMessage):
-                    yield chunk
-                    halt = True
+                elif isinstance(chunk, str):
+                    yield LlmStreamResponse(
+                        kind=LlmStreamResponseKind.RESPONSE_CHUNK,
+                        content=chunk,
+                    )
+                    halt_iterator = True
+                elif isinstance(chunk, LlmMessage):
+                    message_history.add_message(chunk)
+                    yield LlmStreamResponse(
+                        kind=LlmStreamResponseKind.RESPONSE_FULL,
+                        full_message=chunk,
+                        content=chunk.content,
+                    )
+                    halt_iterator = True
                 else:
                     raise ValueError(f"Unexpected type: {type(chunk)}")
-        yield "GENERATION_COMPLETE"
+        yield LlmStreamResponse(
+            kind=LlmStreamResponseKind.END,
+            content="",
+        )

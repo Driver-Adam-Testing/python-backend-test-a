@@ -17,8 +17,7 @@ from shared.v3.app.static.messages.driver_app_messages import (
     OverviewOfDriverMessage,
 )
 from shared.v3.utils.datasource import DataSource
-from shared.v3.utils.encoder import UUIDEncoder, uuid_decoder_hook
-from sqlalchemy.orm import selectinload
+from shared.v3.utils.encoder import UUIDEncoder
 from sqlmodel import select
 
 from app.api.auth import (
@@ -47,6 +46,7 @@ async def create_streaming_post(
     llm_session_id: UUID | None = payload.llm_session_id
     chat_message_history: LlmMessageHistory | None = None
     llm_session: RuntimeLlmSession | None = None
+    chat_message_history_id: UUID | None = None
     # TODO: Do this in a Datasource to verify the node_ids can be accessed by the page and that the org_id is correct
     if source_node_ids is None and page_node_id is not None:
         source_node_ids = session.exec(
@@ -54,17 +54,11 @@ async def create_streaming_post(
                 DocumentSource.page_node_id == page_node_id
             )
         ).all()
-    if llm_session_id:
-        llm_session = session.exec(
-            select(RuntimeLlmSession)
-            .where(RuntimeLlmSession.id == llm_session_id)
-            .options(
-                selectinload(RuntimeLlmSession.message_histories).selectinload(
-                    RuntimeLlmMessageHistory.messages
-                ),
-            )
-        ).first()
-    if llm_session is None:
+    datasource = DataSource.from_node_ids(
+        node_ids=source_node_ids,
+        organization_id=user.organization_id,
+    )
+    if llm_session_id is None:
         llm_session = RuntimeLlmSession(
             id=llm_session_id,
             user_id=user.user_id,
@@ -75,33 +69,41 @@ async def create_streaming_post(
         session.add(llm_session)
         session.commit()
         session.refresh(llm_session)
-    datasource = DataSource.from_node_ids(
-        node_ids=json.loads(
-            llm_session.source_node_ids_str, object_hook=uuid_decoder_hook
-        ),
-        organization_id=user.organization_id,
-    )
-    for message_history in llm_session.message_histories:
-        if message_history.pipeline_kind == LlmPipelineKind.CHAT:
-            chat_message_history = LlmMessageHistory.from_runtime_llm_message_history(
-                message_history
-            )
-    if chat_message_history is None:
+        llm_session_id = llm_session.id
         chat_message_history = LlmMessageHistory(
-            llm_session_id=llm_session.id,
+            messages=[
+                DriverApplicationMessage(),
+                ContentStructureMessage(),
+                HowDriverWorksMessage(),
+                OverviewOfDriverMessage(),
+                ChatContextMessage(),
+            ],
+            llm_session_id=llm_session_id,
             pipeline_kind=LlmPipelineKind.CHAT,
         )
-        chat_message_history.add_message(DriverApplicationMessage())
-        chat_message_history.add_message(ContentStructureMessage())
-        chat_message_history.add_message(ChatContextMessage())
-        chat_message_history.add_message(HowDriverWorksMessage())
-        chat_message_history.add_message(OverviewOfDriverMessage())
+        chat_message_history_id = chat_message_history.id
+    else:
+        chat_message_history_id = session.exec(
+            select(RuntimeLlmMessageHistory.id).where(
+                RuntimeLlmMessageHistory.llm_session_id == llm_session_id,
+                RuntimeLlmMessageHistory.pipeline_kind == LlmPipelineKind.CHAT,
+            )
+        ).first()
+        if chat_message_history_id is None:
+            raise Exception(
+                f"Failed to find chat message history for llm session {llm_session_id}"
+            )
+        chat_message_history = LlmMessageHistory.from_db(
+            message_history_id=chat_message_history_id
+        )
+
     chat_message_history.add_message(
         LlmMessage(message_kind=MessageKind.USER, content=payload.user_prompt)
     )
+    print([m.message_kind for m in chat_message_history.messages])
     return StreamingResponse(
         run_chat_pipeline(
-            str(llm_session.id),
+            llm_session_id,
             chat_message_history,
             datasource,
         ),

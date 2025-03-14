@@ -78,11 +78,12 @@ class OpenAiChatClient(LlmClient):
         completion_kwargs = self._make_kwargs(
             openai_message_history, response_type, tool_types
         )
-
+        print(completion_kwargs)
         stream = await self.async_client.chat.completions.create(
             **completion_kwargs,
             stream=True,
         )
+
         tool_calls: list[dict] = []
         final_content = ""
         async for chunk in stream:
@@ -102,6 +103,7 @@ class OpenAiChatClient(LlmClient):
                 tool_calls[delta.tool_calls[0].index]["arguments"] += delta.tool_calls[
                     0
                 ].function.arguments
+
         if tool_calls:
             yield LlmMessage(
                 tool_requests=[

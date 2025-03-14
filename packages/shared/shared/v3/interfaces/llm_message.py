@@ -37,7 +37,10 @@ class LlmMessage(BaseModel):
     def from_persistent_llm_message(
         cls, runtime_llm_message: RuntimeLlmMessage
     ) -> "LlmMessage":
-        return cls(**runtime_llm_message.llm_message_json)
+        message = cls(**runtime_llm_message.llm_message_json)
+        print("message PRINTOUT")
+        print(message.message_kind)
+        return message
 
     def to_persistent_llm_message(self) -> RuntimeLlmMessage:
         return RuntimeLlmMessage(
@@ -283,4 +286,12 @@ class LlmMessage(BaseModel):
         print(color_reset)
 
     def __hash__(self) -> int:
-        return hash(str([self.message_kind, self.content, self.tool_requests]))
+        return hash(
+            str(
+                [
+                    self.message_kind,
+                    self.content,
+                    [(r.name, r.arguments, r.id) for r in self.tool_requests],
+                ]
+            )
+        )

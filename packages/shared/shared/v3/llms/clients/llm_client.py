@@ -265,6 +265,7 @@ class LlmClient(ABC):
                     )
                     halt_iterator = True
                 elif isinstance(chunk, LlmMessage):
+                    print("chunk", chunk.message_kind, chunk.tool_requests)
                     message_history.add_message(chunk)
                     yield LlmStreamResponse(
                         kind=LlmStreamResponseKind.RESPONSE_FULL,

@@ -32,90 +32,59 @@ class LlmMessageHistory:
         messages: list[LlmMessage] | None = None,
         id: UUID | None = None,
         llm_session_id: UUID | None = None,
-        pipeline_kind: LlmPipelineKind | None = LlmPipelineKind.DEFAULT,
+        pipeline_kind: LlmPipelineKind = LlmPipelineKind.DEFAULT,
         debug: bool = True,
     ) -> None:
         self.id = id
-        self.messages: list[LlmMessage] = []
-        self.debug = debug
         self.llm_session_id = llm_session_id
         self.pipeline_kind = pipeline_kind
+        self.debug = debug
+
+        if id is None and llm_session_id is not None:
+            with get_session() as session:
+                llm_message_history = RuntimeLlmMessageHistory(
+                    llm_session_id=llm_session_id,
+                    pipeline_kind=pipeline_kind,
+                )
+                session.add(llm_message_history)
+                session.commit()
+                session.refresh(llm_message_history)
+                self.id = llm_message_history.id
+
+        self.messages: list[LlmMessage] = []
         if messages:
             for message in messages:
                 self.add_message(message, debug=debug)
-        if self.llm_session_id is not None:
-            self.save()
 
     @classmethod
-    def load(cls, message_history_id: UUID) -> "LlmMessageHistory":
+    def from_db(
+        cls,
+        message_history_id: UUID,
+    ) -> "LlmMessageHistory":
         """
         Loads the message history from the database.
         """
         with get_session() as session:
-            # Note: we filter on the primary key 'id'
-            runtime_llm_message_history = session.exec(
+            runtime_llm_message_history: RuntimeLlmMessageHistory = session.exec(
                 select(RuntimeLlmMessageHistory)
-                .filter(RuntimeLlmMessageHistory.id == message_history_id)
+                .where(RuntimeLlmMessageHistory.id == message_history_id)
                 .options(selectinload(RuntimeLlmMessageHistory.messages))
             ).first()
-            if runtime_llm_message_history:
-                return cls.from_runtime_llm_message_history(runtime_llm_message_history)
-            else:
+            if runtime_llm_message_history is None:
                 raise ValueError(
                     f"Message history with id {message_history_id} not found"
                 )
-
-    def save(self) -> None:
-        """
-        Saves the message history to the database.
-        If this is a new history, creates it; otherwise, only appends new messages.
-        """
-        with get_session() as session:
-            if self.id is None:
-                # Create new persistent history
-                persistent_history = self.to_persistent_llm_message_history()
-                session.add(persistent_history)
-                session.commit()
-                session.refresh(persistent_history)
-                self.id = persistent_history.id
-            else:
-                persistent_history = session.exec(
-                    select(RuntimeLlmMessageHistory)
-                    .where(RuntimeLlmMessageHistory.id == self.id)
-                    .options(selectinload(RuntimeLlmMessageHistory.messages))
-                ).first()
-            existing_hashes = {
-                msg.llm_message_hash for msg in persistent_history.messages
-            }
-            for message in self.messages:
-                if hash(message) not in existing_hashes:
-                    persistent_message = message.to_persistent_llm_message()
-                    persistent_message.message_history_id = self.id
-                    session.add(persistent_message)
-        session.commit()
-
-    @classmethod
-    def from_runtime_llm_message_history(
-        cls, runtime_llm_message_history: RuntimeLlmMessageHistory
-    ) -> "LlmMessageHistory":
-        messages = [
-            LlmMessage.from_runtime_llm_message(message)
-            for message in runtime_llm_message_history.messages
-        ]
-        return cls(
-            messages=messages,
-            id=runtime_llm_message_history.id,
-            llm_session_id=runtime_llm_message_history.llm_session_id,
-            pipeline_kind=runtime_llm_message_history.pipeline_kind,
-        )
-
-    def to_persistent_llm_message_history(self) -> RuntimeLlmMessageHistory:
-        return RuntimeLlmMessageHistory(
-            id=self.id,
-            messages=[message.to_persistent_llm_message() for message in self.messages],
-            llm_session_id=self.llm_session_id,
-            pipeline_kind=self.pipeline_kind,
-        )
+            message_history = cls(
+                messages=[],
+                id=runtime_llm_message_history.id,
+                llm_session_id=runtime_llm_message_history.llm_session_id,
+                pipeline_kind=runtime_llm_message_history.pipeline_kind,
+            )
+            message_history.messages = [
+                LlmMessage(**message.llm_message_json)
+                for message in runtime_llm_message_history.messages
+            ]
+            return message_history
 
     def add_message(self, message: LlmMessage, debug: bool = True) -> None:
         """
@@ -168,7 +137,9 @@ class LlmMessageHistory:
                         ChatCompletionAssistantMessageParam(
                             role="assistant",
                             content=message.content,
-                            tool_calls=message.tool_requests,
+                            tool_calls=message.tool_requests
+                            if len(message.tool_requests) > 0
+                            else None,
                         )
                     )
                 case MessageKind.DEVELOPER:
@@ -441,5 +412,5 @@ class LlmMessageHistory:
         Returns:
             LlmMessageHistory: A new instance of LlmMessageHistory with copied messages.
         """
-        copied_messages = [message.copy() for message in self.messages]
+        copied_messages = [message.model_copy() for message in self.messages]
         return LlmMessageHistory(messages=copied_messages, debug=False)

@@ -356,6 +356,7 @@ class RuntimeLlmMessageHistory(SQLModel, table=True):
     )
     messages: list["RuntimeLlmMessage"] = Relationship(
         back_populates="message_history",
+        sa_relationship_kwargs={"order_by": "RuntimeLlmMessage.created_at"},
     )
     llm_session: "RuntimeLlmSession" = Relationship(
         back_populates="message_histories",

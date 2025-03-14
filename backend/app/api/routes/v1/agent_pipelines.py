@@ -1,4 +1,3 @@
-import uuid
 from uuid import UUID
 
 from fastapi import APIRouter
@@ -11,7 +10,6 @@ from shared.interfaces.agents.pipeline_configuration import (
     PipelineInput,
     PipelineResponse,
     PipelineStepConfiguration,
-    PipelineStepResponse,
     PipelineStepType,
     PromptWithContext,
 )
@@ -191,32 +189,3 @@ def execute_agent_sequence_modal_sync(
     modal_function = Function.lookup("agent", "run")
     result = modal_function.remote(pipeline_input)
     return result
-
-
-@router.post(
-    "/",
-    summary="Execute Agent Sequence with V3",
-    dependencies=[ContentEditorPermission],
-)
-def execute_agent_sequence_v3(
-    user: UserToken, session: CurrentSession, input: AgentRunRequest
-) -> PipelineResponse:
-    from shared.v3.app.pipelines.smart_instruction import run_smart_instruction
-
-    result = run_smart_instruction(
-        user_prompt=input.prompt,
-        text_after_instruction=input.context["after_selected_text"],
-        text_before_instruction=input.context["before_selected_text"],
-        datascope=DataScope(
-            node_ids=input.node_ids,
-            organization_id=user.organization_id,
-            user_id=user.subject,
-        ),
-    )
-
-    return PipelineResponse(
-        step_responses=[
-            PipelineStepResponse(agent_id=uuid.uuid4(), agent_result=str(result))
-        ],
-        final_result=str(result["final_response"]),
-    )

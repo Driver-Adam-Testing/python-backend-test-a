@@ -45,7 +45,6 @@ class CopyEditorSystemMessage(LlmMessage):
 
 class CopyEditorUserMessage(LlmMessage):
     message_kind: MessageKind = MessageKind.USER
-    content: str = "Here is the text to edit: "
 
     @classmethod
     def from_context(

@@ -1,6 +1,4 @@
-from __future__ import annotations
-
-from typing import TYPE_CHECKING
+import uuid
 
 from database.db import get_session
 from database.models_v2 import Node, PrimaryAsset, Version
@@ -8,19 +6,18 @@ from pydantic import BaseModel, Field, PrivateAttr
 from sqlalchemy.orm import selectinload
 from sqlmodel import select
 
-if TYPE_CHECKING:
-    from uuid import UUID
-
 
 class DataSource(BaseModel):
-    node_ids: list[UUID] = Field(default_factory=list)
+    node_ids: list[uuid.UUID] = Field(default_factory=list)
     organization_id: str
 
     # Cache for the Node objects so we don't re-fetch on every property access
     _cached_nodes: list[Node] | None = PrivateAttr(default=None)
 
     @classmethod
-    def from_node_ids(cls, node_ids: list[UUID], organization_id: str) -> DataSource:
+    def from_node_ids(
+        cls, node_ids: list[uuid.UUID], organization_id: str
+    ) -> "DataSource":
         """
         Factory that constructs a DataSource directly from node_ids & organization_id.
         """
@@ -44,7 +41,9 @@ class DataSource(BaseModel):
             return datasource
 
     @classmethod
-    def from_page_id(cls, page_node_id: UUID, organization_id: str) -> DataSource:
+    def from_page_id(
+        cls, page_node_id: uuid.UUID, organization_id: str
+    ) -> "DataSource":
         """
         Example of pulling node_ids from DocumentSource (legacy usage).
         """

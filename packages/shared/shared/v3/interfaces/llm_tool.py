@@ -6,15 +6,23 @@ from shared.v3.globals.constants import (
 )
 from shared.v3.interfaces.llm_message import LlmMessage, MessageKind
 from shared.v3.interfaces.llm_parseable import LlmParseable
-from shared.v3.interfaces.llm_stream_response import (
-    LlmStreamResponse,
-    LlmStreamResponseKind,
-)
 from shared.v3.utils.datasource import DataSource
 from shared.v3.utils.references import ReferenceSet
 
 
 class LlmTool(LlmParseable, ABC):
+    """
+    A tool that can be called by an LLM.
+    """
+
+    class LlmToolStatusString(str):
+        """
+        A status message for a tool.
+        """
+
+        def __str__(self) -> str:
+            return self.value
+
     _tool_call_id: str | None = None
     _tool_datasource: DataSource | None = None
 
@@ -32,6 +40,10 @@ class LlmTool(LlmParseable, ABC):
     def references(self) -> ReferenceSet:
         return self._references
 
+    @property
+    def status(self) -> LlmToolStatusString:
+        return f"Tool called: {self.__class__.__name__}\n"
+
     def execute(
         self,
         tool_call_id: str,
@@ -39,14 +51,17 @@ class LlmTool(LlmParseable, ABC):
     ) -> LlmMessage:
         self._tool_call_id = tool_call_id
         self._tool_datasource = datasource
-        return self._execute()
+        self._execute()
+        return self.to_tool_call_response_message()
 
     @abstractmethod
-    def _execute(self) -> LlmMessage:
+    def _execute(self) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    def to_tool_call_response_message(self) -> LlmMessage:
+    def to_tool_call_response_message(
+        self, token_limit: int | None = None
+    ) -> LlmMessage:
         raise NotImplementedError()
 
     @classmethod
@@ -67,10 +82,4 @@ class LlmTool(LlmParseable, ABC):
                 docstring=cls.__doc__,
             ),
             message_kind=MessageKind.PARSING_DESCRIPTION,
-        )
-
-    def to_status_stream_response(self) -> LlmStreamResponse:
-        return LlmStreamResponse(
-            kind=LlmStreamResponseKind.TOOL_STATUS_UPDATE,
-            content=f"Calling {self.__class__.__name__}\n",
         )

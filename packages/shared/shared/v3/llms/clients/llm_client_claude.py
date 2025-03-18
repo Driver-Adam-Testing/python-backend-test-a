@@ -30,7 +30,7 @@ class ClaudeClient(LlmClient):
         message_history: LlmMessageHistory,
         response_type: type[LlmResponseType] | None,
         tool_types: list[type[LlmTool]] | None,
-    ) -> LlmMessage:
+    ) -> None:
         claude_message_history: LlmMessageHistory = message_history.copy()
 
         if response_type:
@@ -67,5 +67,3 @@ class ClaudeClient(LlmClient):
             response, response_type=response_type, tool_types=tool_types
         )
         message_history.add_message(result)
-
-        return result

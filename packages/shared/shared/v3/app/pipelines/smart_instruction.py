@@ -26,7 +26,7 @@ def run_smart_instruction(
     text_after_instruction: str,
     datasource: DataSource,
     block_kind: BlockKind = BlockKind.ANY,
-    client: LlmClient = LlmClient.gpt_4o_mini(),
+    client: LlmClient = LlmClient.o3_mini(),
 ) -> SmartInstructionPipelineResponse:
     abbreviated_page_content = abbreviate_page_content(
         user_prompt=user_prompt,

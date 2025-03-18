@@ -1,7 +1,10 @@
 from uuid import UUID
 
 from database.db import get_session
-from database.models_v2 import RuntimeLlmMessageHistory
+from database.models_v2 import (
+    RuntimeLlmMessage,
+    RuntimeLlmMessageHistory,
+)
 from database.models_v2_enums import LlmPipelineKind
 from openai.types.chat import (
     ChatCompletionAssistantMessageParam,
@@ -18,7 +21,7 @@ from openai.types.chat.chat_completion_message_tool_call_param import (
 from shared.v3.interfaces.llm_message import LlmMessage
 from shared.v3.interfaces.llm_message_kind import MessageKind
 from sqlalchemy.orm import selectinload
-from sqlmodel import select
+from sqlmodel import delete, select
 
 
 class LlmMessageHistory:
@@ -86,22 +89,44 @@ class LlmMessageHistory:
             ]
             return message_history
 
-    def add_message(self, message: LlmMessage, debug: bool = True) -> None:
+    def add_message(
+        self, message: LlmMessage, debug: bool = True
+    ) -> "LlmMessageHistory":
         """
-        Adds a new LlmMessage to the history. SYSTEM messages are inserted at the start.
+        Adds a new LlmMessage to the history.
         """
         if hash(message) in {hash(m) for m in self.messages}:
             return
         self.messages.append(message)
-        if self.llm_session_id and self.id:
-            pm = message.to_persistent_llm_message()
-            pm.message_history_id = self.id
+        if self.llm_session_id and self.id and message.persist:
+            pm = RuntimeLlmMessage(
+                llm_message_json=message.model_dump(),
+                llm_message_hash=hash(message),
+                message_history_id=self.id,
+            )
             with get_session() as session:
                 session.add(pm)
                 session.commit()
                 session.refresh(pm)
         if debug:
             message.print_to_console()
+        return self
+
+    def remove_message(self, message: LlmMessage) -> None:
+        """
+        Removes a LlmMessage from the history.
+        """
+        self.messages.remove(message)
+        if self.llm_session_id and self.id and message.persist:
+            with get_session() as session:
+                session.exec(
+                    delete(RuntimeLlmMessage)
+                    .where(
+                        RuntimeLlmMessage.llm_message_json == message.model_dump_json()
+                    )
+                    .where(RuntimeLlmMessage.message_history_id == self.id)
+                )
+                session.commit()
 
     def to_openai_strict(self) -> list[ChatCompletionMessageParam]:
         """
@@ -189,11 +214,6 @@ class LlmMessageHistory:
                         )
                     )
                 case MessageKind.ITERATION:
-                    if any(
-                        m.message_kind == MessageKind.ITERATION
-                        for m in self.messages[self.messages.index(message) + 1 :]
-                    ):
-                        continue
                     message_dict = ChatCompletionUserMessageParam(
                         role="user",
                         content=message.content,
@@ -260,11 +280,6 @@ class LlmMessageHistory:
                         content=message.content,
                     )
                 case MessageKind.ITERATION:
-                    if any(
-                        m.message_kind == MessageKind.ITERATION
-                        for m in self.messages[self.messages.index(message) + 1 :]
-                    ):
-                        continue
                     message_dict = ChatCompletionUserMessageParam(
                         role="user",
                         content=message.content,
@@ -328,11 +343,6 @@ class LlmMessageHistory:
                         content=message.content,
                     )
                 case MessageKind.ITERATION:
-                    if any(
-                        m.message_kind == MessageKind.ITERATION
-                        for m in self.messages[self.messages.index(message) + 1 :]
-                    ):
-                        continue
                     message_dict = ChatCompletionUserMessageParam(
                         role="user",
                         content=message.content,
@@ -387,11 +397,6 @@ class LlmMessageHistory:
                     }
                     messages.append(message_dict)
                 case MessageKind.ITERATION:
-                    if any(
-                        m.message_kind == MessageKind.ITERATION
-                        for m in self.messages[self.messages.index(message) + 1 :]
-                    ):
-                        continue
                     message_dict = {
                         "role": "user",
                         "content": message.content,
@@ -405,6 +410,29 @@ class LlmMessageHistory:
 
         return messages, combined_system_message_content
 
+    def _remove_iteration_messages(self) -> None:
+        """
+        Removes all iteration messages from the message history.
+        """
+        for message in self.messages:
+            if message.message_kind == MessageKind.ITERATION:
+                self.remove_message(message)
+
+    def _remove_parsing_description_messages(self) -> None:
+        """
+        Removes all parsing description messages from the message history.
+        """
+        for message in self.messages:
+            if message.message_kind == MessageKind.PARSING_DESCRIPTION:
+                self.remove_message(message)
+
+    def clean(self) -> None:
+        """
+        Removes all iteration and parsing description messages from the message history.
+        """
+        self._remove_iteration_messages()
+        self._remove_parsing_description_messages()
+
     def copy(self) -> "LlmMessageHistory":
         """
         Creates a deep copy of the LlmMessageHistory instance.
@@ -414,3 +442,9 @@ class LlmMessageHistory:
         """
         copied_messages = [message.model_copy() for message in self.messages]
         return LlmMessageHistory(messages=copied_messages, debug=False)
+
+    def last(self) -> LlmMessage:
+        """
+        Returns the last message in the message history.
+        """
+        return self.messages[-1]

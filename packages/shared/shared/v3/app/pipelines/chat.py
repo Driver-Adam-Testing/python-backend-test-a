@@ -5,8 +5,10 @@ from uuid import UUID
 from shared.v3.app.static.tools.hybrid_search import HybridSearchTool
 from shared.v3.interfaces.llm_message_history import LlmMessageHistory
 from shared.v3.interfaces.llm_stream_response import (
+    EndSessionStreamResponse,
     LlmStreamResponse,
     LlmStreamResponseKind,
+    StartSessionStreamResponse,
 )
 from shared.v3.llms.clients.llm_client import LlmClient
 from shared.v3.utils.datasource import DataSource
@@ -19,10 +21,18 @@ async def run_chat_pipeline(
     datasource: DataSource,
     llm_client: LlmClient = LlmClient.o3_mini(),
 ) -> AsyncGenerator[LlmStreamResponse, None]:
+    """
+    Run the chat pipeline.
+
+    :param llm_session_id: The ID of the LLM session.
+    :param message_history: The message history.
+    :param datasource: The datasource.
+    :param llm_client: The LLM client.
+    """
     yield json.dumps(
-        LlmStreamResponse(
+        StartSessionStreamResponse(
             kind=LlmStreamResponseKind.START_SESSION,
-            session_id=llm_session_id,
+            llm_session_id=llm_session_id,
         ).model_dump(),
         cls=UUIDEncoder,
     )
@@ -31,11 +41,12 @@ async def run_chat_pipeline(
         message_history=message_history,
         datasource=datasource,
     ):
-        yield json.dumps(chunk.model_dump())
+        yield json.dumps(chunk.model_dump(), cls=UUIDEncoder)
+
     yield json.dumps(
-        LlmStreamResponse(
+        EndSessionStreamResponse(
             kind=LlmStreamResponseKind.END_SESSION,
-            session_id=llm_session_id,
+            llm_session_id=llm_session_id,
         ).model_dump(),
         cls=UUIDEncoder,
     )

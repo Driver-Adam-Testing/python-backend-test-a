@@ -15,10 +15,6 @@ from shared.v3.app.static.messages.constants import (
     TOOL_ERROR_XML_END,
 )
 from shared.v3.interfaces.llm_message import LlmMessage, MessageKind
-from shared.v3.interfaces.llm_stream_response import (
-    LlmStreamResponse,
-    LlmStreamResponseKind,
-)
 from shared.v3.interfaces.llm_tool import (
     LlmTool,
 )
@@ -38,9 +34,9 @@ class HybridSearchTool(LlmTool):
 
     search_query: str
 
-    def _execute(self) -> LlmMessage:
+    def _execute(self) -> None:
         search_input = SearchInput(
-            limit=5,
+            limit=10,
             query=self.search_query,
             algorithm=SearchAlgorithm.HYBRID,
             content_kinds=None,
@@ -50,7 +46,7 @@ class HybridSearchTool(LlmTool):
         results = search_content_without_session(search_input)
 
         if not results.results:
-            return self.to_tool_call_response_message()
+            return
         for result in results.results:
             self._references.add_reference(
                 Reference(
@@ -66,7 +62,6 @@ class HybridSearchTool(LlmTool):
                     chunk_number=result.metadata.get("chunk_number", None),
                 )
             )
-        return self.to_tool_call_response_message()
 
     def to_tool_call_response_message(self) -> LlmMessage:
         if not self._references:
@@ -88,13 +83,8 @@ class HybridSearchTool(LlmTool):
             ),
         )
 
-    def to_status_stream_response(self) -> LlmStreamResponse:
+    @property
+    def status(self) -> LlmTool.LlmToolStatusString:
         if self._references:
-            return LlmStreamResponse(
-                kind=LlmStreamResponseKind.TOOL_STATUS_UPDATE,
-                content=f"Found {len(self._references)} references for {self.search_query}\n",
-            )
-        return LlmStreamResponse(
-            kind=LlmStreamResponseKind.TOOL_STATUS_UPDATE,
-            content=f"Searching: {self.search_query}...\n",
-        )
+            return f"Found {len(self._references)} references for {self.search_query}\n"
+        return f"Searching: {self.search_query}...\n"

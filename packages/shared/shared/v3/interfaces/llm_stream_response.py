@@ -15,5 +15,33 @@ class LlmStreamResponseKind(str, enum.Enum):
 
 class LlmStreamResponse(BaseModel):
     kind: LlmStreamResponseKind
-    content: str | None = None
-    session_id: UUID | None = None
+
+
+class StartSessionStreamResponse(LlmStreamResponse):
+    kind: LlmStreamResponseKind = LlmStreamResponseKind.START_SESSION
+    llm_session_id: UUID
+
+
+class EndSessionStreamResponse(LlmStreamResponse):
+    kind: LlmStreamResponseKind = LlmStreamResponseKind.END_SESSION
+    llm_session_id: UUID
+
+
+class ResponseChunkStreamResponse(LlmStreamResponse):
+    kind: LlmStreamResponseKind = LlmStreamResponseKind.RESPONSE_CHUNK
+    content: str
+
+
+class ToolStatusUpdateStreamResponse(LlmStreamResponse):
+    kind: LlmStreamResponseKind = LlmStreamResponseKind.TOOL_STATUS_UPDATE
+    content: str
+
+
+class ErrorStreamResponse(LlmStreamResponse):
+    kind: LlmStreamResponseKind = LlmStreamResponseKind.ERROR
+    error_message: str
+
+
+class ResponseFullStreamResponse(LlmStreamResponse):
+    kind: LlmStreamResponseKind = LlmStreamResponseKind.RESPONSE_FULL
+    content: str

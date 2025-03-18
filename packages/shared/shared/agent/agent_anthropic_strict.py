@@ -9,7 +9,7 @@ class AnthropicStrictAgent(AgentBase):
     def __init__(self, *args, **kwargs):
         response_format = kwargs.pop("response_format", None)
         self.response_format = response_format
-        self.client = Anthropic()
+        self.client: Anthropic = Anthropic()
         super().__init__(*args, **kwargs)
 
     def _execute_tool_calls(self, tool_calls):

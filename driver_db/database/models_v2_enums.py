@@ -199,3 +199,10 @@ def get_file_type(extension: str) -> FileTypeEnum:
         ".driver_page": FileTypeEnum.DRIVER_PAGE,
     }
     return extension_map.get(extension, FileTypeEnum.UNKNOWN)
+
+
+class LlmPipelineKind(str, enum.Enum):
+    DEFAULT = "DEFAULT"
+    CHAT = "CHAT"
+    PAGE_CONTEXT_ABBREVIATION = "PAGE_CONTEXT_ABBREVIATION"
+    SMART_INSTRUCTION_MAIN_LOOP = "SMART_INSTRUCTION_MAIN_LOOP"

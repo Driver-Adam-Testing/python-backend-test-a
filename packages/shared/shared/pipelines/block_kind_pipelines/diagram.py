@@ -69,32 +69,42 @@ def execute_diagram_block_agent(input: PipelineInput) -> PipelineResponse:
         DEFAULT_PROMPT_SUFFIX + "\n\n" + prompt_augmentation_input.prompt.prompt
     )
     default_response = agent.invoke(str(prompt_augmentation_input.prompt.prompt))
-    mermaid_str = default_response.to_mermaid_interior_string()
-    # attempts = 0
-    # max_attempts = 3
-    # try:
-    #     is_renderable, error_message = is_mermaid_renderable(mermaid_str)
-    # except Exception as e:
-    #     is_renderable = True
-    #     error_message = str(e)
-    #     print(error_message)
-    # while not is_renderable and attempts < max_attempts:
-    #     agent = create_agent(
-    #         scope=input.scope,
-    #     )
-    #     mermaid_str = agent.invoke(
-    #         prompt=f"""
-    #         The following is a mermaid diagram that is not renderable.
-    #         Please fix the diagram.
-    #         {error_message}
-    #         {CODEBLOCK_SYNTAX_MERMAID_PROMPT}
 
-    #         {mermaid_str}
-    #         """,
-    #         response_format=BlockKindCopyEditorDiagram,
-    #     ).to_mermaid_interior_string()
-    #     is_renderable, error_message = is_mermaid_renderable(mermaid_str)
-    #     attempts += 1
+    mermaid_str = default_response.to_mermaid_interior_string()
+    attempts = 0
+    max_attempts = 3
+    try:
+        from modal import Function
+
+        check_mermaid_syntax = Function.from_name(
+            "mermaid-syntax-check", "check_mermaid_syntax", environment_name="neil"
+        )
+        print(check_mermaid_syntax.remote(mermaid_str))
+        status, error_message = check_mermaid_syntax.remote(mermaid_str)
+        is_renderable = status == "ok"
+        print(f"is_renderable: {is_renderable}")
+        print(f"error_message: {error_message}")
+    except Exception as e:
+        is_renderable = True
+        error_message = str(e)
+        print(error_message)
+    while not is_renderable and attempts < max_attempts:
+        agent = create_agent(
+            scope=input.scope,
+            response_type=BlockKindCopyEditorDiagram,
+        )
+        mermaid_str = agent.invoke(
+            prompt=f"""
+            The following is a mermaid diagram that is not renderable.
+            Please fix the diagram.
+            {error_message}
+            {CODEBLOCK_SYNTAX_MERMAID_PROMPT}
+
+            {mermaid_str}
+            """,
+        ).to_mermaid_interior_string()
+        is_renderable, error_message = check_mermaid_syntax.remote(mermaid_str)
+        attempts += 1
     response = PipelineResponse(
         step_responses=[
             PipelineStepResponse(

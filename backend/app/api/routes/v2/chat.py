@@ -7,7 +7,7 @@ from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from shared.v3 import LlmMessage, LlmMessageHistory, MessageKind
-from shared.v3.app.pipelines.chat import run_chat_pipeline
+from shared.v3.app.pipelines.chat import run_chat_pipeline, run_chat_pipeline_sync
 from shared.v3.app.static.messages.driver_app_messages import (
     ChatContextMessage,
     ContentStructureMessage,
@@ -17,6 +17,7 @@ from shared.v3.app.static.messages.driver_app_messages import (
 )
 from shared.v3.utils.datasource import DataSource
 from shared.v3.utils.encoder import UUIDEncoder
+from shared.v3.utils.references import ReferenceSet
 from sqlmodel import select
 
 from app.api.auth import (
@@ -120,4 +121,92 @@ async def create_streaming_post(
             datasource,
         ),
         media_type="text/plain",
+    )
+
+
+class SyncChatResponse(BaseModel):
+    response: str
+    llm_session_id: UUID
+    references: ReferenceSet
+
+
+@router.post("/sync")
+def run_chat_pipeline_sync_post(
+    session: CurrentSession,
+    user: UserToken,
+    payload: ChatRequest,
+) -> SyncChatResponse:
+    """
+    Run the chat pipeline synchronously.
+
+    :param llm_session_id: The ID of the LLM session.
+    :param message_history: The message history.
+    :param datasource: The datasource.
+    :param llm_client: The LLM client.
+    :return: The final response as a string.
+    """
+    source_node_ids: list[UUID] | None = payload.source_node_ids
+    page_node_id: UUID | None = payload.page_node_id
+    llm_session_id: UUID | None = payload.llm_session_id
+    chat_message_history: LlmMessageHistory | None = None
+    llm_session: RuntimeLlmSession | None = None
+    chat_message_history_id: UUID | None = None
+
+    if llm_session_id:
+        llm_session = session.exec(
+            select(RuntimeLlmSession).where(RuntimeLlmSession.id == llm_session_id)
+        ).first()
+        if llm_session is None:
+            raise Exception(f"Failed to find llm session {llm_session_id}")
+        chat_message_history_id = session.exec(
+            select(RuntimeLlmMessageHistory.id).where(
+                RuntimeLlmMessageHistory.llm_session_id == llm_session_id,
+                RuntimeLlmMessageHistory.pipeline_kind == LlmPipelineKind.CHAT,
+            )
+        ).first()
+        if chat_message_history_id is None:
+            raise Exception(
+                f"Failed to find chat message history for llm session {llm_session_id}"
+            )
+        chat_message_history = LlmMessageHistory.from_db(
+            message_history_id=chat_message_history_id
+        )
+
+    datasource = get_datasource(source_node_ids, page_node_id, llm_session, user)
+
+    if llm_session_id is None:
+        llm_session = RuntimeLlmSession(
+            id=llm_session_id,
+            user_id=user.user_id,
+            organization_id=user.organization_id,
+            source_node_ids_str=json.dumps(datasource.node_ids, cls=UUIDEncoder),
+            page_node_id=page_node_id,
+        )
+        session.add(llm_session)
+        session.commit()
+        session.refresh(llm_session)
+        llm_session_id = llm_session.id
+        chat_message_history = LlmMessageHistory(
+            messages=[
+                DriverApplicationMessage(),
+                ContentStructureMessage(),
+                HowDriverWorksMessage(),
+                OverviewOfDriverMessage(),
+                ChatContextMessage(),
+            ],
+            llm_session_id=llm_session_id,
+            pipeline_kind=LlmPipelineKind.CHAT,
+        )
+        chat_message_history_id = chat_message_history.id
+    chat_message_history.add_message(
+        LlmMessage(message_kind=MessageKind.USER, content=payload.user_prompt)
+    )
+    response = run_chat_pipeline_sync(
+        message_history=chat_message_history,
+        datasource=datasource,
+    )
+    return SyncChatResponse(
+        response=response.message,
+        llm_session_id=llm_session_id,
+        references=response.references,
     )

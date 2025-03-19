@@ -37,6 +37,12 @@ class ReferenceSet(BaseModel, Iterable):
 
     references: set[Reference] = set()
 
+    @classmethod
+    def from_list_of_reference_sets(
+        cls, reference_sets: list["ReferenceSet"]
+    ) -> "ReferenceSet":
+        return cls(references=set().union(*[r.references for r in reference_sets]))
+
     def add_reference(self, reference: Reference) -> None:
         self.references.add(reference)
 

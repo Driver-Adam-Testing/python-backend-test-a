@@ -159,7 +159,6 @@ class PrimaryAssetDetailRead(PrimaryAssetRead):
         creator: UserRead | None
 
     most_recent_version: PrimaryAssetVersionRead | None
-    versions: list[PrimaryAssetVersionRead]
     tags: list[TagRead] | None
 
     @computed_field

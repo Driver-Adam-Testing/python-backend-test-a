@@ -1,7 +1,9 @@
 import enum
+import json
 from uuid import UUID
 
 from pydantic import BaseModel
+from shared.v3.utils.encoder import UUIDEncoder
 
 
 class LlmStreamResponseKind(str, enum.Enum):
@@ -15,6 +17,17 @@ class LlmStreamResponseKind(str, enum.Enum):
 
 class LlmStreamResponse(BaseModel):
     kind: LlmStreamResponseKind
+
+    def to_sse(self) -> str:
+        """
+        Convert the response to an SSE-formatted string.
+        """
+        # Use json.dumps with your custom encoder if necessary.
+        payload = json.dumps(self.model_dump(), cls=UUIDEncoder)
+        return f"data: {payload}\n\n"
+
+    def __str__(self) -> str:
+        return self.to_sse()
 
 
 class StartSessionStreamResponse(LlmStreamResponse):

@@ -120,7 +120,7 @@ async def create_streaming_post(
             chat_message_history,
             datasource,
         ),
-        media_type="text/plain",
+        media_type="text/event-stream",
     )
 
 

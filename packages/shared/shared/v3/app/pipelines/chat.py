@@ -1,4 +1,3 @@
-import json
 from collections.abc import AsyncGenerator
 from uuid import UUID
 
@@ -13,7 +12,6 @@ from shared.v3.interfaces.llm_stream_response import (
 )
 from shared.v3.llms.clients.llm_client import LlmClient
 from shared.v3.utils.datasource import DataSource
-from shared.v3.utils.encoder import UUIDEncoder
 from shared.v3.utils.references import ReferenceSet
 
 
@@ -31,27 +29,21 @@ async def run_chat_pipeline(
     :param datasource: The datasource.
     :param llm_client: The LLM client.
     """
-    yield json.dumps(
-        StartSessionStreamResponse(
-            kind=LlmStreamResponseKind.START_SESSION,
-            llm_session_id=llm_session_id,
-        ).model_dump(),
-        cls=UUIDEncoder,
-    )
+    yield StartSessionStreamResponse(
+        kind=LlmStreamResponseKind.START_SESSION,
+        llm_session_id=llm_session_id,
+    ).to_sse()
     async for chunk in llm_client.multi_shot_stream(
         tool_types=[HybridSearchTool],
         message_history=message_history,
         datasource=datasource,
     ):
-        yield json.dumps(chunk.model_dump(), cls=UUIDEncoder)
+        yield chunk.to_sse()
 
-    yield json.dumps(
-        EndSessionStreamResponse(
-            kind=LlmStreamResponseKind.END_SESSION,
-            llm_session_id=llm_session_id,
-        ).model_dump(),
-        cls=UUIDEncoder,
-    )
+    yield EndSessionStreamResponse(
+        kind=LlmStreamResponseKind.END_SESSION,
+        llm_session_id=llm_session_id,
+    ).to_sse()
 
 
 class SyncChatPipelineResponse(BaseModel):

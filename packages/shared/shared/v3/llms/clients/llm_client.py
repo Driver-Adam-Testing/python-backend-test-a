@@ -271,6 +271,7 @@ class LlmClient(ABC):
             )
 
             async for chunk in response_stream:
+                print(f"chunk: {chunk}")
                 # If it's a tool call request, handle tool execution
                 if (
                     isinstance(chunk, LlmMessage)

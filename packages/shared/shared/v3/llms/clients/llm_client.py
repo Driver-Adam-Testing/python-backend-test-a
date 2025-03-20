@@ -252,7 +252,10 @@ class LlmClient(ABC):
                 LlmMessage(message_kind=MessageKind.USER, content=prompt)
             )
         should_continue = True
-
+        yield ToolStatusUpdateStreamResponse(
+            kind=LlmStreamResponseKind.TOOL_STATUS_UPDATE,
+            content="Starting multi-shot. Generic debug message",
+        )
         for iteration_index in range(iterations):
             if not should_continue:
                 break

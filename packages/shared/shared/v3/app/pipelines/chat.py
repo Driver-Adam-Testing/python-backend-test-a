@@ -35,6 +35,7 @@ async def run_chat_pipeline(
         tool_types=[HybridSearchTool],
         message_history=message_history,
         datasource=datasource,
+        iterations=3,
     ):
         yield chunk.to_sse()
 

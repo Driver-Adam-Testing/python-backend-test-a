@@ -16,6 +16,10 @@ from shared.v3.app.static.messages.driver_app_messages import (
     OverviewOfDriverMessage,
 )
 from shared.v3.app.static.tools.hybrid_search import HybridSearchTool
+from shared.v3.globals.datasource_messages import (
+    DataSourceMessage,
+    DataSourceSystemMessage,
+)
 from shared.v3.utils.datasource import DataSource
 from shared.v3.utils.encoder import UUIDEncoder
 from sqlmodel import select
@@ -106,6 +110,8 @@ async def create_streaming_post(
                 HowDriverWorksMessage(),
                 OverviewOfDriverMessage(),
                 ChatContextMessage(),
+                DataSourceSystemMessage(),
+                DataSourceMessage.from_context(datasource=datasource),
             ],
             llm_session_id=llm_session_id,
             pipeline_kind=LlmPipelineKind.CHAT,

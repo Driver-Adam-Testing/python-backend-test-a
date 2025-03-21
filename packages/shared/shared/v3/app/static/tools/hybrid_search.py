@@ -90,7 +90,7 @@ class HybridSearchTool(LlmTool):
             sorted_results = sorted(combined_results, key=lambda x: x[1], reverse=True)
 
             # Limit to top 10
-            top_results = sorted_results[:10]
+            top_results = sorted_results[:15]
 
             for chunk, combo_score, node_id in top_results:
                 # Safely extract metadata from chunk's related objects

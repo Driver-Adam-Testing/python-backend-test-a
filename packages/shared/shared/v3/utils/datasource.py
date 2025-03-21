@@ -112,41 +112,6 @@ class DataSource(BaseModel):
                 self._cached_nodes = list(id_to_node.values())
         return self._cached_nodes
 
-    @property
-    def tree(self) -> dict:
-        """
-        Returns a tree structure of the DataSource's contents.
-        """
-
-        tree = {
-            "children": {},
-        }
-        for node in self.nodes:
-            parts = node.relative_path.strip("/").split("/")
-            current = tree
-            for i, part in enumerate(parts):
-                if i == len(parts) - 1:
-                    if node.kind == NodeKind.CODEBASE_DIRECTORY:
-                        current.setdefault("children", {})
-                        if part not in current["children"]:
-                            current["children"][part] = {
-                                "node": node,
-                                "children": {},
-                            }
-                        else:
-                            current["children"][part]["node"] = node
-                    else:
-                        current.setdefault("files", []).append((part, node))
-                else:
-                    current.setdefault("children", {})
-                    if part not in current["children"]:
-                        current["children"][part] = {
-                            "node": None,
-                            "children": {},
-                        }
-                    current = current["children"][part]
-        return tree
-
     def human_readable_summary(self) -> str:
         """
         Creates a simple summary of this DataSource by listing the relative_path
@@ -168,11 +133,13 @@ class DataSource(BaseModel):
         no limit is applied.
         """
         description = ""
-        tree_depth = 1
+        tree_depth = 2
         while True:
-            description = self.describe_contents(tree_depth=tree_depth)
-            if len(description) <= token_limit:
-                description = description
+            new_description = self.describe_contents(tree_depth=tree_depth)
+            if description == new_description:
+                break
+            if len(new_description) <= token_limit:
+                description = new_description
             else:
                 break
             tree_depth += 1
@@ -266,4 +233,15 @@ if __name__ == "__main__":
     ds = DataSource.from_page_id(
         "589a0ebe-8650-4e63-9470-e8a47dc69494", "org_s76pU1v8LAYhTOWB"
     )
+    print(ds.describe_contents_token_limit(token_limit=500))
+    input("500 characters\n\nPress Enter to continue...")
+    print(ds.describe_contents_token_limit(token_limit=1000))
+    input("1000 characters\n\nPress Enter to continue...")
     print(ds.describe_contents_token_limit(token_limit=2000))
+    input("2000 characters\n\nPress Enter to continue...")
+    print(ds.describe_contents_token_limit(token_limit=4000))
+    input("4000 characters\n\nPress Enter to continue...")
+    print(ds.describe_contents_token_limit(token_limit=7500))
+    input("7500 characters\n\nPress Enter to continue...")
+    print(ds.describe_contents_token_limit(token_limit=20000))
+    input("100000 characters\n\nPress Enter to continue...")

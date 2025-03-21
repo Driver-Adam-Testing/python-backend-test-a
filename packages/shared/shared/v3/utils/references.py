@@ -47,7 +47,7 @@ class ReferenceSet(BaseModel, Iterable):
         self.references.add(reference)
 
     def __iter__(self) -> Iterator[Reference]:
-        return iter(self.references)
+        return iter(sorted(self.references, key=lambda r: r.score or 0, reverse=True))
 
     def __len__(self) -> int:
         return len(self.references)

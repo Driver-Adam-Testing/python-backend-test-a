@@ -6,6 +6,7 @@ from database.models_v1 import DocumentSource
 from database.models_v2 import Node, PrimaryAsset, Version
 from database.models_v2_enums import NodeKind
 from pydantic import BaseModel, Field, PrivateAttr
+from sqlalchemy.orm import selectinload
 from sqlmodel import and_, or_, select
 
 
@@ -85,7 +86,9 @@ class DataSource(BaseModel):
             with get_session() as session:
                 # Load all ancestors in a single query
                 ancestors = session.exec(
-                    select(Node).where(Node.id.in_(self.node_ids))
+                    select(Node)
+                    .options(selectinload(Node.version))
+                    .where(Node.id.in_(self.node_ids))
                 ).all()
 
                 # Build a set of conditions for any ancestor's version/path

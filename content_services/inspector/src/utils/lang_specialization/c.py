@@ -291,7 +291,7 @@ class CDataStructureRawSymbolCollection(RawSymbolCollection):
         data_structure_raw_symbol_data = {}
         is_large_file = code_requires_multi_prompt(code)
 
-        for ts_symbol in driver_tree.extract_data_structures():
+        for ts_symbol in driver_tree.extract_data_structure_definitions():
             if ts_symbol.name is not None:
                 raw_symbol_data = RawSymbolData.from_tree_sitter_raw_symbol(
                     ts_symbol=ts_symbol,
@@ -333,7 +333,7 @@ class CFunctionRawSymbolCollection(RawSymbolCollection):
         function_raw_symbol_data = {}
         is_large_file = code_requires_multi_prompt(code)
 
-        for ts_symbol in driver_tree.extract_functions():
+        for ts_symbol in driver_tree.extract_function_definitions():
             if ts_symbol.name is not None:
                 raw_symbol_data = RawSymbolData.from_tree_sitter_raw_symbol(
                     ts_symbol=ts_symbol,

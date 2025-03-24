@@ -15,7 +15,7 @@ class DataSourceMessage(LlmMessage):
         Build a DataSourceMessage that includes human-readable information about
         the provided DataSource for iteration-based usage.
         """
-        summary = datasource.describe_contents_token_limit(token_limit=4000)
+        summary = datasource.describe_contents_char_limit(char_limit=4000)
         content = (
             "This message describes a specific DataSource. Here is the information it can use:\n"
             f"{summary}\n"

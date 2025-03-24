@@ -129,7 +129,7 @@ class DataSource(BaseModel):
         lines = [f"- {p}" for p in paths]
         return "\n".join(lines)
 
-    def describe_contents_token_limit(self, token_limit: int) -> str:
+    def describe_contents_char_limit(self, char_limit: int) -> str:
         """
         Describes the contents of this DataSource by grouping nodes by version,
         and limiting how many folders deep we go (tree_depth). If tree_depth is None,
@@ -141,7 +141,7 @@ class DataSource(BaseModel):
             new_description = self.describe_contents(tree_depth=tree_depth)
             if description == new_description:
                 break
-            if len(new_description) <= token_limit:
+            if len(new_description) <= char_limit:
                 description = new_description
             else:
                 break
@@ -232,19 +232,19 @@ class DataSource(BaseModel):
         return "\n".join(summary_lines)
 
 
-if __name__ == "__main__":
-    ds = DataSource.from_page_id(
-        "589a0ebe-8650-4e63-9470-e8a47dc69494", "org_s76pU1v8LAYhTOWB"
-    )
-    print(ds.describe_contents_token_limit(token_limit=500))
-    input("500 characters\n\nPress Enter to continue...")
-    print(ds.describe_contents_token_limit(token_limit=1000))
-    input("1000 characters\n\nPress Enter to continue...")
-    print(ds.describe_contents_token_limit(token_limit=2000))
-    input("2000 characters\n\nPress Enter to continue...")
-    print(ds.describe_contents_token_limit(token_limit=4000))
-    input("4000 characters\n\nPress Enter to continue...")
-    print(ds.describe_contents_token_limit(token_limit=7500))
-    input("7500 characters\n\nPress Enter to continue...")
-    print(ds.describe_contents_token_limit(token_limit=20000))
-    input("100000 characters\n\nPress Enter to continue...")
+# if __name__ == "__main__":
+#     ds = DataSource.from_page_id(
+#         "589a0ebe-8650-4e63-9470-e8a47dc69494", "org_s76pU1v8LAYhTOWB"
+#     )
+#     print(ds.describe_contents_char_limit(char_limit=500))
+#     input("500 characters\n\nPress Enter to continue...")
+#     print(ds.describe_contents_char_limit(char_limit=1000))
+#     input("1000 characters\n\nPress Enter to continue...")
+#     print(ds.describe_contents_char_limit(char_limit=2000))
+#     input("2000 characters\n\nPress Enter to continue...")
+#     print(ds.describe_contents_char_limit(char_limit=4000))
+#     input("4000 characters\n\nPress Enter to continue...")
+#     print(ds.describe_contents_char_limit(char_limit=7500))
+#     input("7500 characters\n\nPress Enter to continue...")
+#     print(ds.describe_contents_char_limit(char_limit=20000))
+#     input("20000 characters\n\nPress Enter to continue...")

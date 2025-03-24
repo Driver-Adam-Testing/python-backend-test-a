@@ -59,9 +59,7 @@ class LlmTool(LlmParseable, ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def to_tool_call_response_message(
-        self, token_limit: int | None = None
-    ) -> LlmMessage:
+    def to_tool_call_response_message(self) -> LlmMessage:
         raise NotImplementedError()
 
     @classmethod

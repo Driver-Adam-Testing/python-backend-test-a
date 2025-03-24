@@ -92,6 +92,7 @@ class LlmMessageHistory:
     def add_message(
         self, message: LlmMessage, debug: bool = True
     ) -> "LlmMessageHistory":
+        # TODO: Would it make sense to automatically yield messages that make sense to yield here? Ignore them if we aren't in a streaming context?
         """
         Adds a new LlmMessage to the history.
         """

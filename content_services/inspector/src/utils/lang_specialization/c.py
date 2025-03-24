@@ -165,7 +165,7 @@ class CIncludeRawSymbolCollection(RawSymbolCollection):
 
     @classmethod
     def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
-        driver_tree = CDriverTree.from_code(code)
+        driver_tree = CDriverTree.from_code(code, root_rel_path)
         is_large_file = code_requires_multi_prompt(code)
 
         import_dict = {}
@@ -287,7 +287,7 @@ class CDataStructureRawSymbolCollection(RawSymbolCollection):
 
     @classmethod
     def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
-        driver_tree = CDriverTree.from_code(code)
+        driver_tree = CDriverTree.from_code(code, root_rel_path)
         data_structure_raw_symbol_data = {}
         is_large_file = code_requires_multi_prompt(code)
 
@@ -329,7 +329,7 @@ class CFunctionRawSymbolCollection(RawSymbolCollection):
 
     @classmethod
     def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
-        driver_tree = CDriverTree.from_code(code)
+        driver_tree = CDriverTree.from_code(code, root_rel_path)
         function_raw_symbol_data = {}
         is_large_file = code_requires_multi_prompt(code)
 
@@ -370,7 +370,7 @@ class CVariableRawSymbolCollection(RawSymbolCollection):
 
     @classmethod
     def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
-        driver_tree = CDriverTree.from_code(code)
+        driver_tree = CDriverTree.from_code(code, root_rel_path)
         variable_raw_symbol_data = {}
         is_large_file = code_requires_multi_prompt(code)
 

@@ -96,7 +96,17 @@ class RawTreeSitterSymbolData(BaseModel):
     name: str | None
     start_line: int
     end_line: int
+    start_byte: int
+    end_byte: int
+    file_path: Path
     symbol_kind: SymbolKind
+
+    class Config:
+        """
+        This gives us __hash__!
+        """
+
+        frozen = True
 
 
 class RawSymbolData(BaseModel):

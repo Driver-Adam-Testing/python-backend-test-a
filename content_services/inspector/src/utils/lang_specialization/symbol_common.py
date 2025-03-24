@@ -67,7 +67,10 @@ class ParserKind(Enum):
 class SymbolKind(Enum):
     VARIABLE = auto()
     CALLABLE = auto()
+    CALLABLE_DECLARATION = auto()
+    CALL = auto()
     DATA_STRUCTURE = auto()
+    DATA_STRUCTURE_INSTANCE = auto()
     CLASS = auto()
     INTERFACE = auto()
     MODULE = auto()

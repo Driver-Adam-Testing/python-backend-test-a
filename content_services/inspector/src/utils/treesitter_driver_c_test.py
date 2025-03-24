@@ -74,7 +74,10 @@ def test_extract_import_line_numbers(imports_c_code: str) -> None:
 @pytest.fixture(scope="module")
 def functions_test_code() -> str:
     file_path = (
-        pathlib.Path(__file__).parent / "treesitter_testcases" / "c" / "test_funcs.c"
+        pathlib.Path(__file__).parent
+        / "treesitter_testcases"
+        / "c"
+        / "test_func_defs.c"
     )
     with open(file_path, encoding="utf-8") as f:
         return f.read()
@@ -97,14 +100,14 @@ def functions_test_code() -> str:
         ("main", (56, 96)),
     ],
 )
-def test_extract_function_properties(
+def test_extract_function_defs(
     functions_test_code: str,
     expected_function_name: str,
     expected_line_range: tuple[int, int],
 ) -> None:
     driver_tree = CDriverTree.from_code(functions_test_code)
 
-    functions = driver_tree.extract_functions()
+    functions = driver_tree.extract_function_definitions()
 
     extracted = [(f.name, (f.start_line, f.end_line)) for f in functions]
 
@@ -148,7 +151,7 @@ def test_extract_enums(
 ) -> None:
     driver_tree = CDriverTree.from_code(enums_test_code)
 
-    data_structs = driver_tree.extract_data_structures()
+    data_structs = driver_tree.extract_data_structure_definitions()
 
     extracted = [
         (data_struct.name, (data_struct.start_line, data_struct.end_line))
@@ -196,7 +199,7 @@ def test_extract_structs(
 ) -> None:
     driver_tree = CDriverTree.from_code(structs_test_code)
 
-    data_structs = driver_tree.extract_data_structures()
+    data_structs = driver_tree.extract_data_structure_definitions()
 
     extracted = [
         (data_struct.name, (data_struct.start_line, data_struct.end_line))
@@ -248,7 +251,7 @@ def test_extract_unions(
 ) -> None:
     driver_tree = CDriverTree.from_code(unions_test_code)
 
-    data_structs = driver_tree.extract_data_structures()
+    data_structs = driver_tree.extract_data_structure_definitions()
 
     extracted = [
         (data_struct.name, (data_struct.start_line, data_struct.end_line))
@@ -341,6 +344,128 @@ def test_extract_globals(
     assert not dupes, f"Found duplicate declarations: {dupes}"
 
     assert (expected_global_name, expected_line_range) in extracted, (
-        f"Expected globals ({expected_global_name}, {expected_line_range}) "
+        f"Expected global ({expected_global_name}, {expected_line_range}) "
         f"not found in extracted globals: {extracted}"
     )
+
+
+@pytest.fixture(scope="module")
+def function_call_test_code() -> str:
+    file_path = (
+        pathlib.Path(__file__).parent
+        / "treesitter_testcases"
+        / "c"
+        / "test_func_calls.c"
+    )
+    with open(file_path, encoding="utf-8") as f:
+        return f.read()
+
+
+@pytest.mark.parametrize(
+    "expected_function_call_name, expected_line_range",
+    [
+        ("max", (2, 2)),
+        ("strlen", (2, 2)),
+        # Turns out sizeof is NOT a function, but a compile-time operator, so it shouldn't be found
+        # ("sizeof", (2, 2)),
+        ("printf", (3, 3)),
+        ("strlen", (3, 3)),
+        ("is_valid", (7, 7)),
+        ("process", (8, 8)),
+        ("handle_error", (10, 10)),
+    ],
+)
+def test_extract_function_calls(
+    function_call_test_code: str,
+    expected_function_call_name: str,
+    expected_line_range: tuple[int, int],
+) -> None:
+    driver_tree = CDriverTree.from_code(function_call_test_code)
+    calls_found = driver_tree.extract_function_calls()
+    extracted = [(c.name, (c.start_line, c.end_line)) for c in calls_found]
+
+    dupes = [item for item in extracted if extracted.count(item) > 1]
+    assert not dupes, f"Found duplicate calls: {dupes}"
+
+    assert (expected_function_call_name, expected_line_range) in extracted, (
+        f"Expected call ({expected_function_call_name}, {expected_line_range}) "
+        f"not found in extracted function calls: {extracted}"
+    )
+
+
+@pytest.fixture(scope="module")
+def function_declaration_test_code() -> str:
+    file_path = (
+        pathlib.Path(__file__).parent
+        / "treesitter_testcases"
+        / "c"
+        / "test_func_declarations.c"
+    )
+    with open(file_path, encoding="utf-8") as f:
+        return f.read()
+
+
+class TestDelcarations:
+    @pytest.mark.parametrize(
+        "expected_function_name, expected_line_range",
+        [
+            ("__mmap", (5, 5)),
+            ("__munmap", (6, 6)),
+            ("__mremap", (7, 7)),
+            ("__madvise", (8, 8)),
+            ("createClusterNode", (9, 9)),
+            ("clusterAddNode", (10, 10)),
+            ("clusterAcceptHandler", (11, 11)),
+            ("clusterReadHandler", (12, 12)),
+            ("complex_function", (26, 26)),
+        ],
+    )
+    def test_extract_function_declarations(
+        self,
+        function_declaration_test_code: str,
+        expected_function_name: str,
+        expected_line_range: tuple[int, int],
+    ) -> None:
+        driver_tree = CDriverTree.from_code(function_declaration_test_code)
+        declarations = driver_tree.extract_function_declarations()
+
+        extracted = [
+            (decl.name, (decl.start_line, decl.end_line)) for decl in declarations
+        ]
+
+        dupes = [item for item in extracted if extracted.count(item) > 1]
+        assert not dupes, f"Found duplicate declarations: {dupes}"
+
+        assert (expected_function_name, expected_line_range) in extracted, (
+            f"Expected declaration ({expected_function_name}, {expected_line_range}) "
+            f"not found in extracted function declarations: {extracted}"
+        )
+
+    def test_declarations_not_definitions(
+        self, function_declaration_test_code: str
+    ) -> None:
+        """Test that function definitions are not included in function declarations."""
+        driver_tree = CDriverTree.from_code(function_declaration_test_code)
+        declarations = driver_tree.extract_function_declarations()
+
+        # Check that 'some_function' (which is a definition, not just a declaration) is not included
+        function_names = [decl.name for decl in declarations]
+        assert (
+            "some_function" not in function_names
+        ), "Found function definition 'some_function' in function declarations"
+
+    def test_non_function_declarations_excluded(
+        self, function_declaration_test_code: str
+    ) -> None:
+        """Test that non-function declarations are not included."""
+        driver_tree = CDriverTree.from_code(function_declaration_test_code)
+        declarations = driver_tree.extract_function_declarations()
+
+        # Check that variable declarations and typedefs are not included
+        function_names = [decl.name for decl in declarations]
+        assert (
+            "not_a_function" not in function_names
+        ), "Found variable 'not_a_function' in function declarations"
+        assert (
+            "signal_handler_t" not in function_names
+        ), "Found typedef 'signal_handler_t' in function declarations"

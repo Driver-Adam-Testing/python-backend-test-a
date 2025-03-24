@@ -34,11 +34,6 @@ class InlineEditRequest(BaseModel):
     node_ids: list[UUID]
 
 
-class ChatRequest(BaseModel):
-    prompt: str
-    node_ids: list[UUID]
-
-
 @router.post(
     "/smart_instruction",
     summary="Generate smart instruction",

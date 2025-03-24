@@ -24,4 +24,7 @@ else
     echo "uvicorn: There is no script $PRE_START_PATH"
 fi
 
-exec uvicorn --reload --host $HOST --port $PORT --log-level $LOG_LEVEL --reload-dir /packages --reload-dir /driver_db --ws-ping-interval 20 --ws-ping-timeout 60 "$APP_MODULE"
+# If you want to test multiple workers, reload needs to be disabled
+# exec uvicorn --host $HOST --port $PORT --log-level $LOG_LEVEL --workers 10 "$APP_MODULE"
+
+exec uvicorn --reload --host $HOST --port $PORT --log-level $LOG_LEVEL --reload-dir /packages --reload-dir /driver_db "$APP_MODULE"

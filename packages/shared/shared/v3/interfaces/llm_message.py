@@ -2,7 +2,6 @@ import json
 from typing import TYPE_CHECKING, Optional
 
 from anthropic.types import Message, MessageParam
-from database.models_v2 import RuntimeLlmMessage
 from openai.types.chat import ChatCompletionMessage, ParsedChatCompletionMessage
 from pydantic import BaseModel
 from shared.v3.globals.constants import PARSEABLE_CLASS_NAME
@@ -26,6 +25,7 @@ class LlmMessage(BaseModel):
     class ToolCallResponse(BaseModel):
         name: str
         id: str | None
+        # TODO: add executed tool? so I can get references to the message history? Parse these jit?
 
     message_kind: MessageKind
     content: str | None = None
@@ -33,20 +33,12 @@ class LlmMessage(BaseModel):
     tool_response: ToolCallResponse | None = None
     tool_requests: list[ToolCallRequest] = []
 
-    @classmethod
-    def from_persistent_llm_message(
-        cls, runtime_llm_message: RuntimeLlmMessage
-    ) -> "LlmMessage":
-        message = cls(**runtime_llm_message.llm_message_json)
-        print("message PRINTOUT")
-        print(message.message_kind)
-        return message
-
-    def to_persistent_llm_message(self) -> RuntimeLlmMessage:
-        return RuntimeLlmMessage(
-            llm_message_json=self.model_dump(),
-            llm_message_hash=hash(self),
-        )
+    @property
+    def persist(self) -> bool:
+        return self.message_kind not in [
+            MessageKind.ITERATION,
+            MessageKind.PARSING_DESCRIPTION,
+        ]
 
     @classmethod
     def from_openai_parsed_chat_completion_message(

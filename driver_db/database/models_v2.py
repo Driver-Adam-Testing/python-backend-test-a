@@ -246,16 +246,6 @@ class Node(SQLModel, table=True):  # type: ignore
         },
     )
 
-    parent_node: Optional["Node"] = Relationship(
-        sa_relationship_kwargs={
-            "primaryjoin": "and_(Node.version_id == foreign(Node.version_id), Node.version_id == remote(Node.version_id), Node.relative_path != remote(Node.relative_path), Node.relative_path.like(remote(Node.relative_path) + '%'))",
-            "uselist": False,
-            "viewonly": True,
-            "lazy": "select",
-            "remote_side": "[Node.version_id]",
-            "order_by": "desc(func.length(Node.relative_path))",
-        }
-    )
     document_sources: list["DocumentSource"] = Relationship(  # noqa: F821
         back_populates="source_node",
         sa_relationship_kwargs={

@@ -15,6 +15,11 @@ from shared.v3.app.static.messages.driver_app_messages import (
     HowDriverWorksMessage,
     OverviewOfDriverMessage,
 )
+from shared.v3.app.static.tools.hybrid_search import HybridSearchTool
+from shared.v3.globals.datasource_messages import (
+    DataSourceMessage,
+    DataSourceSystemMessage,
+)
 from shared.v3.utils.datasource import DataSource
 from shared.v3.utils.encoder import UUIDEncoder
 from sqlmodel import select
@@ -105,6 +110,8 @@ async def create_streaming_post(
                 HowDriverWorksMessage(),
                 OverviewOfDriverMessage(),
                 ChatContextMessage(),
+                DataSourceSystemMessage(),
+                DataSourceMessage.from_context(datasource=datasource),
             ],
             llm_session_id=llm_session_id,
             pipeline_kind=LlmPipelineKind.CHAT,
@@ -119,5 +126,30 @@ async def create_streaming_post(
             chat_message_history,
             datasource,
         ),
-        media_type="text/plain",
+        media_type="text/event-stream",
     )
+
+
+class HybridSearchRequest(BaseModel):
+    search_query: str
+    source_node_ids: list[UUID] | None = None
+    page_node_id: UUID | None = None
+    llm_session_id: UUID | None = None
+
+
+@router.post("/hybrid-search")
+async def hybrid_search(
+    session: CurrentSession,
+    user: UserToken,
+    payload: HybridSearchRequest,
+) -> dict:
+    datasource = get_datasource(
+        payload.source_node_ids, payload.page_node_id, payload.llm_session_id, user
+    )
+    print(len(datasource.nodes))
+    hybrid_search_tool = HybridSearchTool(
+        search_query=payload.search_query,
+        datasource=datasource,
+    )
+    hybrid_search_tool.execute(None, datasource)
+    return {"results": [r.model_dump() for r in hybrid_search_tool.references]}

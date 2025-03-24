@@ -1,7 +1,9 @@
 import enum
+import json
 from uuid import UUID
 
 from pydantic import BaseModel
+from shared.v3.utils.encoder import UUIDEncoder
 
 
 class LlmStreamResponseKind(str, enum.Enum):
@@ -15,5 +17,44 @@ class LlmStreamResponseKind(str, enum.Enum):
 
 class LlmStreamResponse(BaseModel):
     kind: LlmStreamResponseKind
-    content: str | None = None
-    session_id: UUID | None = None
+
+    def to_sse(self) -> str:
+        """
+        Convert the response to an SSE-formatted string.
+        """
+        # Use json.dumps with your custom encoder if necessary.
+        payload = json.dumps(self.model_dump(), cls=UUIDEncoder)
+        return f"data: {payload}\n\n"
+
+    def __str__(self) -> str:
+        return self.to_sse()
+
+
+class StartSessionStreamResponse(LlmStreamResponse):
+    kind: LlmStreamResponseKind = LlmStreamResponseKind.START_SESSION
+    llm_session_id: UUID
+
+
+class EndSessionStreamResponse(LlmStreamResponse):
+    kind: LlmStreamResponseKind = LlmStreamResponseKind.END_SESSION
+    llm_session_id: UUID
+
+
+class ResponseChunkStreamResponse(LlmStreamResponse):
+    kind: LlmStreamResponseKind = LlmStreamResponseKind.RESPONSE_CHUNK
+    content: str
+
+
+class ToolStatusUpdateStreamResponse(LlmStreamResponse):
+    kind: LlmStreamResponseKind = LlmStreamResponseKind.TOOL_STATUS_UPDATE
+    content: str
+
+
+class ErrorStreamResponse(LlmStreamResponse):
+    kind: LlmStreamResponseKind = LlmStreamResponseKind.ERROR
+    error_message: str
+
+
+class ResponseFullStreamResponse(LlmStreamResponse):
+    kind: LlmStreamResponseKind = LlmStreamResponseKind.RESPONSE_FULL
+    content: str

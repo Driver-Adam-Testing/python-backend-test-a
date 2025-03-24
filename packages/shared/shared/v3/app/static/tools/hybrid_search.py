@@ -1,5 +1,10 @@
-from shared.interfaces.search import SearchAlgorithm
-from shared.pipelines.search import SearchInput, search_content_without_session
+from database.db import get_session
+from database.models_v1 import ChunkAndEmbedding, DerivedContent
+from shared.embedding.text_embedder import batch_embed_text
+from shared.pipelines.search import (
+    get_bm25_scores,
+    overall_score,
+)
 from shared.v3.app.static.messages.constants import (
     REFERENCE_CONTENT_XML_BEGIN,
     REFERENCE_CONTENT_XML_END,
@@ -15,14 +20,12 @@ from shared.v3.app.static.messages.constants import (
     TOOL_ERROR_XML_END,
 )
 from shared.v3.interfaces.llm_message import LlmMessage, MessageKind
-from shared.v3.interfaces.llm_stream_response import (
-    LlmStreamResponse,
-    LlmStreamResponseKind,
-)
 from shared.v3.interfaces.llm_tool import (
     LlmTool,
 )
 from shared.v3.utils.references import Reference
+from sqlalchemy.orm import selectinload
+from sqlmodel import select, text
 
 
 class HybridSearchTool(LlmTool):
@@ -30,7 +33,8 @@ class HybridSearchTool(LlmTool):
     HybridSearchTool performs a hybrid search combining keyword and semantic search
     within a content repository of code and technical documentation.
 
-    If you do not have external information, you can use this tool to search the codebase.
+    You can use this tool to search the codebase and files to obtain context for your response.
+    Consider using keywords and descriptions of the documentation information or source code snippets you're looking for.
 
     Attributes:
         search_query (str): The query string.
@@ -38,35 +42,81 @@ class HybridSearchTool(LlmTool):
 
     search_query: str
 
-    def _execute(self) -> LlmMessage:
-        search_input = SearchInput(
-            limit=5,
-            query=self.search_query,
-            algorithm=SearchAlgorithm.HYBRID,
-            content_kinds=None,
-            organization_id=self.datasource.organization_id,
-            node_ids=self.datasource.node_ids,
-        )
-        results = search_content_without_session(search_input)
+    def _execute(self) -> None:
+        print(len(self.datasource.nodes))
+        embedded_query: list[float] = batch_embed_text([self.search_query])[0]
 
-        if not results.results:
-            return self.to_tool_call_response_message()
-        for result in results.results:
-            self._references.add_reference(
-                Reference(
-                    content=result.content,
-                    score=result.score,
-                    version_display_name=result.version_display_name,
-                    relative_path=result.relative_path,
-                    version_id=result.version_id,
-                    node_id=result.node_id,
-                    metadata=result.metadata,
-                    tool_call_id=self.tool_call_id,
-                    chunk_id=result.metadata.get("chunk_id", None),
-                    chunk_number=result.metadata.get("chunk_number", None),
+        with get_session() as session:
+            session.exec(text("set ivfflat.probes = 38;"))
+            results = session.exec(
+                select(
+                    ChunkAndEmbedding,
+                    ChunkAndEmbedding.text_embedding_3_small.l2_distance(
+                        embedded_query
+                    ).label("semantic_score"),
+                    DerivedContent.node_id.label("node_id"),
                 )
-            )
-        return self.to_tool_call_response_message()
+                .join(DerivedContent, ChunkAndEmbedding.content_id == DerivedContent.id)
+                .options(selectinload(ChunkAndEmbedding.content))
+                .where(
+                    DerivedContent.node_id.in_(
+                        [node.id for node in self.datasource.nodes]
+                    )
+                )
+                .order_by("semantic_score")
+                .limit(50)
+            ).all()
+
+            if not results:
+                return
+
+            chunks, semantic_scores, node_ids = zip(*results)
+
+            # Compute BM25 scores
+            texts_for_bm25 = [chunk.text for chunk in chunks]
+            bm25_scores = get_bm25_scores(self.search_query, texts_for_bm25)
+
+            # Combine scores
+            combined_results = []
+            for chunk, bm25_score, sem_score, node_id in zip(
+                chunks, bm25_scores, semantic_scores, node_ids
+            ):
+                combo_score = overall_score(
+                    semantic_score=sem_score, bm25_score=bm25_score
+                )
+                combined_results.append((chunk, combo_score, node_id))
+
+            # Sort by combined score descending
+            sorted_results = sorted(combined_results, key=lambda x: x[1], reverse=True)
+
+            # Limit to top 10
+            top_results = sorted_results[:15]
+
+            for chunk, combo_score, node_id in top_results:
+                # Safely extract metadata from chunk's related objects
+                node = next(
+                    (node for node in self.datasource.nodes if node.id == node_id), None
+                )
+                if not node:
+                    continue
+
+                rel_path = node.relative_path
+                ver_id = node.version_id
+
+                # Create a Reference object for each chunk
+                ref = Reference(
+                    content=chunk.text,
+                    score=combo_score,
+                    relative_path=rel_path,
+                    version_display_name=str(ver_id),
+                    version_id=ver_id,
+                    node_id=node_id,
+                    chunk_id=chunk.id,
+                    chunk_number=chunk.chunk_number,
+                    metadata={},
+                    tool_call_id=self.tool_call_id,
+                )
+                self._references.add_reference(ref)
 
     def to_tool_call_response_message(self) -> LlmMessage:
         if not self._references:
@@ -88,13 +138,8 @@ class HybridSearchTool(LlmTool):
             ),
         )
 
-    def to_status_stream_response(self) -> LlmStreamResponse:
+    @property
+    def status(self) -> LlmTool.LlmToolStatusString:
         if self._references:
-            return LlmStreamResponse(
-                kind=LlmStreamResponseKind.TOOL_STATUS_UPDATE,
-                content=f"Found {len(self._references)} references for {self.search_query}\n",
-            )
-        return LlmStreamResponse(
-            kind=LlmStreamResponseKind.TOOL_STATUS_UPDATE,
-            content=f"Searching: {self.search_query}...\n",
-        )
+            return f"Found {len(self._references)} references for {self.search_query}\n"
+        return f"Searching: {self.search_query}...\n"

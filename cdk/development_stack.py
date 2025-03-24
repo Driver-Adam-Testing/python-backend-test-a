@@ -18,7 +18,11 @@ class DevelopmentStack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs: any) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        cors_origins = "https://app.dev.driverai.com,https://labs.dev.driverai.com,https://app2.dev.driverai.com,http://localhost:3000,https://app.beta.driverai.com"
+        cors_origins = (
+            "https://app.dev.driverai.com,https://labs.dev.driverai.com,"
+            "https://app2.dev.driverai.com,http://localhost:3000,https://app.beta.driverai.com,"
+            "https://prndl.driverai.com"
+        )
 
         self.metrics_lambda = MetricsLambda(
             self,

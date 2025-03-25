@@ -4,6 +4,12 @@ from typing import Self
 
 from utils.lang_specialization.symbol_common import RawTreeSitterSymbolData, SymbolKind
 
+RESET = "\033[0m"
+BLUE = "\033[94m"
+GREEN = "\033[92m"
+YELLOW = "\033[93m"
+CYAN = "\033[96m"
+
 
 def is_definition(sym: RawTreeSitterSymbolData) -> bool:
     """
@@ -57,8 +63,16 @@ class ParsedProject:
         file_to_syms: dict[Path, list[RawTreeSitterSymbolData]] = {}
         raw_includes: dict[Path, list[str]] = {}
 
-        for fpath in file_paths:
-            symbols, includes = parse_c_file(fpath)
+        total = len(file_paths)
+        for i, fpath in enumerate(file_paths, 1):
+            print(f"[{i}/{total}] Parsing {fpath}...", end="", flush=True)
+            try:
+                symbols, includes = parse_c_file(fpath)
+                print(" done.")
+            except Exception as e:
+                print(f" failed: {e}")
+                symbols = []
+                includes = []
             file_to_syms[fpath] = symbols
             raw_includes[fpath] = includes
 
@@ -115,6 +129,7 @@ class ParsedProjectWithVisibility:
                     dfs(inc_path, visited)
 
         for fpath in parsed.file_to_symbols:
+            print(f"Resolving visibility for {fpath}...", flush=True)
             visited: set[Path] = set()
             dfs(fpath.resolve(), visited)
             visibility_map[fpath] = visited
@@ -301,6 +316,51 @@ class ReifiedProjectIndex:
             return []
         return symbol.usages
 
+    def print_summary(self, files: list[Path] | None = None) -> None:
+        targets = files if files else sorted(self.file_to_symbols.keys())
+
+        for fpath in targets:
+            reified_syms = self.file_to_symbols.get(fpath)
+            if reified_syms is None:
+                print(f"{YELLOW}No symbols found for {fpath}{RESET}")
+                continue
+
+            print(f"{BLUE}File: {fpath}{RESET}")
+            for sym in reified_syms:
+                name = sym.raw.name
+                lines = f"[lines {sym.raw.start_line}-{sym.raw.end_line}]"
+                sym_file_path = sym.raw.file_path
+
+                if sym.is_definition:
+                    usage_count = len(sym.usages)
+                    print(
+                        f"{GREEN}  DEF: {name} {lines} in {sym_file_path} "
+                        f"has {usage_count} usage(s){RESET}"
+                    )
+                    for usage_sym in sym.usages:
+                        usage_name = usage_sym.raw.name
+                        usage_lines = f"[lines {usage_sym.raw.start_line}-{usage_sym.raw.end_line}]"
+                        usage_file_path = usage_sym.raw.file_path
+                        print(
+                            f"{YELLOW}    USAGE: {usage_name} {usage_lines} "
+                            f"in {usage_file_path}{RESET}"
+                        )
+                else:
+                    if sym.definition:
+                        def_name = sym.definition.raw.name
+                        def_lines = f"[lines {sym.definition.raw.start_line}-{sym.definition.raw.end_line}]"
+                        def_file_path = sym.definition.raw.file_path
+                        print(
+                            f"{CYAN}  USE: {name} {lines} in {sym_file_path} "
+                            f"-> definition: {def_name} {def_lines} in {def_file_path}{RESET}"
+                        )
+                    else:
+                        print(
+                            f"{CYAN}  USE: {name} {lines} in {sym_file_path} "
+                            "-> definition: None"
+                            f"{RESET}"
+                        )
+
 
 def build_c_project_index(
     file_paths: list[Path], user_include_dirs: set[Path] | None
@@ -312,73 +372,74 @@ def build_c_project_index(
       3) Link usage -> definition (LinkedProject)
       4) Add definition -> usage (ReifiedProjectIndex)
     """
+    print("==> Parsing files...")
     parsed = ParsedProject.from_files(file_paths)
+    print("==> Resolving includes and visibility...")
     project_vis = ParsedProjectWithVisibility.from_parsed_project(
         parsed, user_include_dirs=user_include_dirs
     )
+    print("==> Linking symbols...")
     linked = LinkedProject.from_parsed_project_with_visibility(project_vis)
+    print("==> Reifying symbol graph...")
     reified = ReifiedProjectIndex.from_linked_project(linked)
+    print("==> Done building index.")
     return reified
 
 
-# ANSI color codes
-RESET = "\033[0m"
-BLUE = "\033[94m"
-GREEN = "\033[92m"
-YELLOW = "\033[93m"
-CYAN = "\033[96m"
+def get_git_commit_hash(repo_path: Path) -> str:
+    import subprocess
+
+    return (
+        subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=repo_path)
+        .decode("utf-8")
+        .strip()
+    )
 
 
 def main() -> None:
-    project_root = Path("/Users/andrewmark/projects/c_test")
-    file_paths = list((project_root / "src").glob("*.c")) + list(
-        (project_root / "include").glob("*.h")
-    )
+    import pickle
+    import subprocess
 
-    final_index = build_c_project_index(
-        file_paths, user_include_dirs={project_root / "include"}
-    )
+    project_root = Path("/Users/andrewmark/projects/no-OS")
+    # project_root = Path("/Users/andrewmark/projects/c_test")
 
-    for fpath, reified_syms in final_index.file_to_symbols.items():
-        print(f"{BLUE}File: {fpath}{RESET}")
-        for sym in reified_syms:
-            name = sym.raw.name
-            lines = f"[lines {sym.raw.start_line}-{sym.raw.end_line}]"
-            sym_file_path = sym.raw.file_path
+    cache_dir = project_root / ".symbol_index_cache"
+    cache_dir.mkdir(exist_ok=True)
 
-            if sym.is_definition:
-                usage_count = len(sym.usages)
-                print(
-                    f"{GREEN}  DEF: {name} {lines} in {sym_file_path} "
-                    f"has {usage_count} usage(s){RESET}"
-                )
-                # usages locations
-                for usage_sym in sym.usages:
-                    usage_name = usage_sym.raw.name
-                    usage_lines = (
-                        f"[lines {usage_sym.raw.start_line}-{usage_sym.raw.end_line}]"
-                    )
-                    usage_file_path = usage_sym.raw.file_path
-                    print(
-                        f"{YELLOW}    USAGE: {usage_name} {usage_lines} "
-                        f"in {usage_file_path}{RESET}"
-                    )
-            else:
-                # If it's a usage, show the definition location if resolved
-                if sym.definition:
-                    def_name = sym.definition.raw.name
-                    def_lines = f"[lines {sym.definition.raw.start_line}-{sym.definition.raw.end_line}]"
-                    def_file_path = sym.definition.raw.file_path
-                    print(
-                        f"{CYAN}  USE: {name} {lines} in {sym_file_path} "
-                        f"-> definition: {def_name} {def_lines} in {def_file_path}{RESET}"
-                    )
-                else:
-                    print(
-                        f"{CYAN}  USE: {name} {lines} in {sym_file_path} "
-                        "-> definition: None"
-                        f"{RESET}"
-                    )
+    try:
+        commit_hash = get_git_commit_hash(project_root)
+    except subprocess.CalledProcessError:
+        commit_hash = "unknown"
+
+    cache_path = cache_dir / f"{commit_hash}.pkl"
+
+    if cache_path.exists():
+        print(f"Loading cached symbol index for commit {commit_hash}")
+        with cache_path.open("rb") as f:
+            index: ReifiedProjectIndex = pickle.load(f)
+    else:
+        file_paths = (
+            list((project_root / "drivers/dac/ad5421").rglob("*.c"))
+            + list((project_root / "drivers/dac/ad5421").rglob("*.h"))
+            + list((project_root / "drivers/api").rglob("*.c"))
+            + list((project_root / "util").rglob("*.c"))
+            + list((project_root / "include").rglob("*.h"))
+        )
+
+        include_dirs = {project_root / "drivers/dac/ad5421", project_root / "include"}
+
+        index = build_c_project_index(file_paths, user_include_dirs=include_dirs)
+
+        print(f"Caching symbol index for commit {commit_hash}")
+        with cache_path.open("wb") as f:
+            pickle.dump(index, f)
+
+    # You can pass in a specific file or set of files here to examine
+    focus_files: list[Path] | None = [
+        project_root / "drivers" / "dac" / "ad5421" / "ad5421.c"
+    ]
+
+    index.print_summary(focus_files)
 
 
 if __name__ == "__main__":

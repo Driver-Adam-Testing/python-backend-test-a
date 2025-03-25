@@ -104,30 +104,36 @@ def create_and_embed_pdf_summaries(node_id: str) -> None:
         pdf_content = io.BytesIO(response.content)
         pdf_content.name = node.relative_path.split("/")[-1]
         results = run_process_pdf(pdf_content)
-        embeds = []
         futures = {}
-        results_embeds = []
+        results_splits_embeds = []
         print("Embedding pdf content...")
         with concurrent.futures.ThreadPoolExecutor(max_workers=30) as executor:
             for result in results:
+                # Remove NUL characters from the content
                 cleaned_content = str(result.content.replace("\x00", ""))
                 splits = split_text(cleaned_content)
                 if not splits:
-                    results_embeds = [(result, None)]
-                futures[executor.submit(batch_embed_text, splits)] = result
+                    results_splits_embeds.append([(result, None, None)])
+                else:
+                    futures[executor.submit(batch_embed_text, splits)] = [
+                        result,
+                        splits,
+                    ]
             for future in concurrent.futures.as_completed(futures):
-                result = futures[future]
+                result, splits = futures[future]
                 try:
                     embeds = future.result()
                 except Exception as e:
                     print("Could not embed: ")
                     print(str(splits))
                     raise e
-                results_embeds.append((result, embeds))
+                results_splits_embeds.append((result, splits, embeds))
 
         print("persisting to database...")
 
-        def persist_to_db(result: ProcessedPdfFileContent, embeds: list) -> None:
+        def persist_to_db(
+            result: ProcessedPdfFileContent, splits: list, embeds: list
+        ) -> None:
             with Session(engine) as session:
                 content_kind = result.content_type.value
 
@@ -157,7 +163,6 @@ def create_and_embed_pdf_summaries(node_id: str) -> None:
                 session.commit()
                 session.refresh(derived_content)
                 if embeds:
-                    splits = split_text(cleaned_content)
                     for i, split in enumerate(splits):
                         session.add(
                             ChunkAndEmbedding(
@@ -171,9 +176,12 @@ def create_and_embed_pdf_summaries(node_id: str) -> None:
                     session.commit()
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-            for result, embeds in results_embeds:
-                executor.submit(persist_to_db, result, embeds)
-            for future in concurrent.futures.as_completed(futures):
+            db_futures = []
+            for result, splits, embeds in results_splits_embeds:
+                db_futures.append(
+                    executor.submit(persist_to_db, result, splits, embeds)
+                )
+            for future in concurrent.futures.as_completed(db_futures):
                 try:
                     future.result()
                 except Exception as e:

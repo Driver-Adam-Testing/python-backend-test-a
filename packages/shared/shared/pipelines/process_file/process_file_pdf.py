@@ -59,7 +59,7 @@ For all images, include any text visible in the image verbatim. Point out any un
 assistant = client.beta.assistants.create(
     name="PDF Summarizer",
     instructions="You are an expert microprocessors and hardware engineer, as well as a technical writer.",
-    model="gpt-4o-mini-2024-07-18",
+    model="gpt-4o-mini",
     tools=[{"type": "file_search"}],
 )
 
@@ -75,7 +75,7 @@ class SummaryValidation(BaseModel):
 
 def validate_summary(summary: str) -> bool:
     agent = OpenAIStrictAgent(
-        model="gpt-4o-mini-2024-07-18",
+        model="gpt-4o-mini",
         response_format=SummaryValidation,
         scope=DataScope(organization_id="no-org", node_ids=[], user_id="pdf-inspector"),
         log=False,
@@ -125,7 +125,8 @@ def summarize_images(images: list[io.BytesIO], prompt: str | None) -> str:
         elif file_extension == "webp":
             image_media_type = "image/webp"
         else:
-            raise ValueError(f"Unsupported image type: {file_extension}")
+            print(f"Unsupported image type: {file_extension}")
+            continue
 
         encoded_images.append(
             {
@@ -238,7 +239,7 @@ def run_process_pdf(file_content: io.BytesIO) -> list[ProcessedPdfFileContent]:
 
     pages = split_pdf_into_pages(file_content=file_content)
     print(f"PDF whole summary: {whole_file_summary}")
-    with concurrent.futures.ThreadPoolExecutor(max_workers=15) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=150) as executor:
         futures = []
         for index, page_content in enumerate(pages):
             try:

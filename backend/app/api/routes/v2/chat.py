@@ -13,6 +13,7 @@ from shared.v3.app.static.messages.driver_app_messages import (
     ContentStructureMessage,
     DriverApplicationMessage,
     HowDriverWorksMessage,
+    PromptGuidelinesMessage,
 )
 from shared.v3.globals.datasource_messages import (
     DataSourceMessage,
@@ -104,12 +105,13 @@ async def create_streaming_post(
         llm_session_id = llm_session.id
         chat_message_history = LlmMessageHistory(
             messages=[
+                ChatContextMessage(),
                 DriverApplicationMessage(),
                 ContentStructureMessage(),
                 HowDriverWorksMessage(),
-                ChatContextMessage(),
                 DataSourceSystemMessage(),
                 DataSourceTuningSystemMessage(),
+                PromptGuidelinesMessage(),
                 DataSourceMessage.from_context(datasource=datasource),
             ],
             llm_session_id=llm_session_id,

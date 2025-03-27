@@ -141,5 +141,6 @@ class HybridSearchTool(LlmTool):
     @property
     def status(self) -> LlmTool.LlmToolStatusString:
         if self._references:
-            return f"Found {len(self._references)} references for {self.search_query}\n"
+            unique_short_paths = {ref.short_path for ref in self.references}
+            return f"Found references for {self.search_query}\n{"\n".join(unique_short_paths)}"
         return f"Searching: {self.search_query}...\n"

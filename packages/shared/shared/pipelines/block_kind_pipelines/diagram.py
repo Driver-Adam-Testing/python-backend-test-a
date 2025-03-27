@@ -77,7 +77,8 @@ def execute_diagram_block_agent(input: PipelineInput) -> PipelineResponse:
         from modal import Function
 
         check_mermaid_syntax = Function.from_name(
-            "mermaid-syntax-check", "check_mermaid_syntax", environment_name="neil"
+            "mermaid-syntax-check",
+            "check_mermaid_syntax",
         )
         print(check_mermaid_syntax.remote(mermaid_str))
         status, error_message = check_mermaid_syntax.remote(mermaid_str)

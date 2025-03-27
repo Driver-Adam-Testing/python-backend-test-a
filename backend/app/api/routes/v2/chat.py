@@ -13,12 +13,12 @@ from shared.v3.app.static.messages.driver_app_messages import (
     ContentStructureMessage,
     DriverApplicationMessage,
     HowDriverWorksMessage,
-    OverviewOfDriverMessage,
+    PromptGuidelinesMessage,
 )
-from shared.v3.app.static.tools.hybrid_search import HybridSearchTool
 from shared.v3.globals.datasource_messages import (
     DataSourceMessage,
     DataSourceSystemMessage,
+    DataSourceTuningSystemMessage,
 )
 from shared.v3.utils.datasource import DataSource
 from shared.v3.utils.encoder import UUIDEncoder
@@ -105,12 +105,13 @@ async def create_streaming_post(
         llm_session_id = llm_session.id
         chat_message_history = LlmMessageHistory(
             messages=[
+                ChatContextMessage(),
                 DriverApplicationMessage(),
                 ContentStructureMessage(),
                 HowDriverWorksMessage(),
-                OverviewOfDriverMessage(),
-                ChatContextMessage(),
                 DataSourceSystemMessage(),
+                DataSourceTuningSystemMessage(),
+                PromptGuidelinesMessage(),
                 DataSourceMessage.from_context(datasource=datasource),
             ],
             llm_session_id=llm_session_id,
@@ -137,19 +138,19 @@ class HybridSearchRequest(BaseModel):
     llm_session_id: UUID | None = None
 
 
-@router.post("/hybrid-search")
-async def hybrid_search(
-    session: CurrentSession,
-    user: UserToken,
-    payload: HybridSearchRequest,
-) -> dict:
-    datasource = get_datasource(
-        payload.source_node_ids, payload.page_node_id, payload.llm_session_id, user
-    )
-    print(len(datasource.nodes))
-    hybrid_search_tool = HybridSearchTool(
-        search_query=payload.search_query,
-        datasource=datasource,
-    )
-    hybrid_search_tool.execute(None, datasource)
-    return {"results": [r.model_dump() for r in hybrid_search_tool.references]}
+# @router.post("/hybrid-search")
+# async def hybrid_search(
+#     session: CurrentSession,
+#     user: UserToken,
+#     payload: HybridSearchRequest,
+# ) -> dict:
+#     datasource = get_datasource(
+#         payload.source_node_ids, payload.page_node_id, payload.llm_session_id, user
+#     )
+#     print(len(datasource.nodes))
+#     hybrid_search_tool = HybridSearchTool(
+#         search_query=payload.search_query,
+#         datasource=datasource,
+#     )
+#     hybrid_search_tool.execute(None, datasource)
+#     return {"results": [r.model_dump() for r in hybrid_search_tool.references]}

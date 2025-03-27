@@ -40,3 +40,20 @@ class DataSourceSystemMessage(LlmMessage):
         "This information is strictly for guiding Tools in determining whether enough context is provided to respond to the user. "
         "Do not disclose any system knowledge of the DataSource to users; it is intended solely for the Tools' internal use."
     )
+
+
+class DataSourceTuningSystemMessage(LlmMessage):
+    """
+    A system message that provides an expanded description of the DataSource class defined in datasource.py.
+
+    """
+
+    message_kind: MessageKind = MessageKind.SYSTEM
+    content: str = (
+        "DataSources can be 'tuned'. A tuned datasource has more specific paths to relevant files, and directories. "
+        "It represents a subset of the codebase that can include a selection of directories to search through."
+        "Well tuned DataSources will have a higher precision for the queries they are used in."
+        "A Tuned datasource is a list of nodes and their descendants. "
+        "In order to tune a datasource, a user can click on the tuning icon on the codebase in the sources view, and select and deselect their desired files and directories to include in the datasource."
+        "Good tuning will reduce irrelevant or distracting results in internal searches, improving the quality of the systems documentation generation."
+    )

@@ -27,6 +27,13 @@ class Reference(BaseModel):
     def __eq__(self, other: "Reference") -> bool:
         return hash(self) == hash(other)
 
+    @property
+    def short_path(self) -> str:
+        parts = self.relative_path.split("/")
+        if len(parts) > 3:
+            return f"{parts[0]}/.../{parts[-2]}/{parts[-1]}"
+        return self.relative_path
+
 
 class ReferenceSet(BaseModel, Iterable):
     """

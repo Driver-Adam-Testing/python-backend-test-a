@@ -1,5 +1,6 @@
 import abc
 import asyncio
+import concurrent
 import hashlib
 import json
 from abc import ABC, abstractmethod
@@ -308,26 +309,67 @@ class TaskManager:
     def load_persisted_results(
         self, result_loading_config: list[tuple[str, set[NodeStatus]]]
     ) -> None:
-        print("Loading persisted results for resumption...")
         flattened_tasks = self.tasks
-        print("Total tasks:", len(flattened_tasks))
 
-        loaded_results = {}
+        task_by_id: dict[str, Task] = {t.hashed_stable_id: t for t in flattened_tasks}
+        print("Loading persisted results for resumption (threadpool in sync method)...")
+
+        needed: list[tuple[str, str]] = []
         for run_id, node_statuses in result_loading_config:
-            persisted_results = self.persistence.load_all_results(run_id)
-            for task in flattened_tasks:
-                if (
-                    task.node.status in node_statuses
-                    and task.hashed_stable_id in persisted_results
-                ):
-                    print(f"Using results for task '{task.task_name}' from storage")
-                    # Note that potential overwriting here is intentional.
-                    loaded_results[task] = persisted_results[task.hashed_stable_id]
+            for t in flattened_tasks:
+                if t.node.status in node_statuses:
+                    needed.append((run_id, t.hashed_stable_id))
 
+        loaded_results: dict[Task, TaskResult] = {}
+        with ThreadPoolExecutor(max_workers=25) as pool:
+            future_map = {
+                pool.submit(self.persistence.load_task_result, run_id, task_id): (
+                    run_id,
+                    task_id,
+                )
+                for (run_id, task_id) in needed
+            }
+
+            for future in concurrent.futures.as_completed(future_map):
+                run_id, task_id = future_map[future]
+                try:
+                    result = future.result()
+                    if result and task_id in task_by_id:
+                        loaded_results[task_by_id[task_id]] = result
+                except Exception as e:
+                    print(
+                        f"Failed to load S3 result for {task_id} from run {run_id}: {e}"
+                    )
         self.task_results.update(loaded_results)
         print(
             f"Loaded results successfully for {len(loaded_results)} tasks from storage"
         )
+
+    # This is non-parallelized code we previously used for reference. Consider deleting...
+
+    # def load_persisted_results(
+    #     self, result_loading_config: list[tuple[str, set[NodeStatus]]]
+    # ) -> None:
+    #     print("Loading persisted results for resumption...")
+    #     flattened_tasks = self.tasks
+    #     print("Total tasks:", len(flattened_tasks))
+    #
+    #     loaded_results = {}
+    #     for run_id, node_statuses in result_loading_config:
+    #         persisted_results = self.persistence.load_all_results(run_id)
+    #         for task in flattened_tasks:
+    #             if (
+    #                 task.node.status in node_statuses
+    #                 and task.hashed_stable_id in persisted_results
+    #             ):
+    #                 print(f"Using results for task '{task.task_name}' from storage")
+    #                 # Note that potential overwriting here is intentional.
+    #                 loaded_results[task] = persisted_results[task.hashed_stable_id]
+    #
+    #     self.task_results.update(loaded_results)
+    #     print(
+    #         f"Loaded results successfully for {len(loaded_results)} tasks from storage"
+    #     )
 
     async def _schedule_and_await_task(self, task: type[Task]) -> asyncio.Task:
         asynctask = self._schedule_task(task)

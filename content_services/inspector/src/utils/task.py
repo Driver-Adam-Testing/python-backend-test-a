@@ -312,34 +312,37 @@ class TaskManager:
         flattened_tasks = self.tasks
 
         task_by_id: dict[str, Task] = {t.hashed_stable_id: t for t in flattened_tasks}
-        print("Loading persisted results for resumption (threadpool in sync method)...")
-
-        needed: list[tuple[str, str]] = []
-        for run_id, node_statuses in result_loading_config:
-            for t in flattened_tasks:
-                if t.node.status in node_statuses:
-                    needed.append((run_id, t.hashed_stable_id))
+        print(
+            "Loading persisted results for resumption (threadpool, preserving order)..."
+        )
 
         loaded_results: dict[Task, TaskResult] = {}
-        with ThreadPoolExecutor(max_workers=25) as pool:
-            future_map = {
-                pool.submit(self.persistence.load_task_result, run_id, task_id): (
-                    run_id,
-                    task_id,
-                )
-                for (run_id, task_id) in needed
-            }
 
-            for future in concurrent.futures.as_completed(future_map):
-                run_id, task_id = future_map[future]
-                try:
-                    result = future.result()
-                    if result and task_id in task_by_id:
-                        loaded_results[task_by_id[task_id]] = result
-                except Exception as e:
-                    print(
-                        f"Failed to load S3 result for {task_id} from run {run_id}: {e}"
-                    )
+        for run_id, node_statuses in result_loading_config:
+            needed: list[str] = [
+                t.hashed_stable_id
+                for t in flattened_tasks
+                if t.node.status in node_statuses
+            ]
+
+            with ThreadPoolExecutor(max_workers=25) as pool:
+                future_map = {
+                    pool.submit(
+                        self.persistence.load_task_result, run_id, task_id
+                    ): task_id
+                    for task_id in needed
+                }
+
+                for future in concurrent.futures.as_completed(future_map):
+                    task_id = future_map[future]
+                    try:
+                        result = future.result()
+                        if result and task_id in task_by_id:
+                            loaded_results[task_by_id[task_id]] = result
+                    except Exception as e:
+                        print(
+                            f"Failed to load S3 result for {task_id} from run {run_id}: {e}"
+                        )
         self.task_results.update(loaded_results)
         print(
             f"Loaded results successfully for {len(loaded_results)} tasks from storage"

@@ -16,12 +16,15 @@ LOG_LEVEL=${LOG_LEVEL:-info}
 
 # If there's a prestart.sh script in the /app directory or other path specified, run it before starting
 PRE_START_PATH=${PRE_START_PATH:-/app/prestart.sh}
-echo "Checking for script in $PRE_START_PATH"
+echo "uvicorn: Checking for script in $PRE_START_PATH"
 if [ -f $PRE_START_PATH ] ; then
-    echo "Running script $PRE_START_PATH"
+    echo "uvicorn: Running script $PRE_START_PATH"
     . "$PRE_START_PATH"
 else
-    echo "There is no script $PRE_START_PATH"
+    echo "uvicorn: There is no script $PRE_START_PATH"
 fi
+
+# If you want to test multiple workers, reload needs to be disabled
+# exec uvicorn --host $HOST --port $PORT --log-level $LOG_LEVEL --workers 10 "$APP_MODULE"
 
 exec uvicorn --reload --host $HOST --port $PORT --log-level $LOG_LEVEL --reload-dir /packages --reload-dir /driver_db "$APP_MODULE"

@@ -1,0 +1,95 @@
+[llms.default]
+llm_model_id = "gpt-4o"
+provider = "openai"
+max_context_window = 128000
+optimal_context_window = 64000
+max_output_tokens = 16384
+api_kind = "openai_strict"
+
+[llms.gpt_4_5]
+llm_model_id = "gpt-4.5-preview"
+provider = "openai"
+max_context_window = 128000
+optimal_context_window = 64000
+max_output_tokens = 16384
+api_kind = "openai_strict"
+
+[llms.gpt_4o]
+llm_model_id = "gpt-4o"
+provider = "openai"
+max_context_window = 128000
+optimal_context_window = 64000
+max_output_tokens = 16384
+api_kind = "openai_strict"
+
+[llms.gpt_4o_chat]
+llm_model_id = "gpt-4o"
+provider = "openai"
+max_context_window = 128000
+optimal_context_window = 64000
+max_output_tokens = 16384
+api_kind = "openai_chat_with_tools"
+
+[llms.gpt_4o_mini]
+llm_model_id = "gpt-4o-mini"
+provider = "openai"
+max_context_window = 128000
+optimal_context_window = 64000
+max_output_tokens = 16384
+api_kind = "openai_strict"
+
+[llms.gpt_4o_mini_chat]
+llm_model_id = "gpt-4o-mini"
+provider = "openai"
+max_context_window = 128000
+optimal_context_window = 64000
+max_output_tokens = 16384
+api_kind = "openai_chat_with_tools"
+
+[llms.o1]
+llm_model_id = "o1"
+provider = "openai"
+max_context_window = 200000
+optimal_context_window = 100000
+max_output_tokens = 100000
+api_kind = "openai_o1"
+
+[llms.o1_mini]
+llm_model_id = "o1-mini"
+provider = "openai"
+max_context_window = 128000
+optimal_context_window = 64000
+max_output_tokens = 65536
+api_kind = "openai_o1"
+
+[llms.o3_mini]
+llm_model_id = "o3-mini"
+provider = "openai"
+max_context_window = 200000
+optimal_context_window = 100000
+max_output_tokens = 100000
+api_kind = "openai_chat_with_tools"
+
+[llms.claude_sonnet_3_5]
+llm_model_id = "claude-3-5-sonnet-20241022"
+provider = "anthropic"
+max_context_window = 200000
+optimal_context_window = 100000
+max_output_tokens = 8192
+api_kind = "claude"
+
+[llms.claude_sonnet_3_7]
+llm_model_id = "claude-3-7-sonnet-20250219"
+provider = "anthropic"
+max_context_window = 200000
+optimal_context_window = 100000
+max_output_tokens = 64000
+api_kind = "claude"
+
+[llms.claude_haiku_3_5]
+llm_model_id = "claude-3-5-haiku-20241022"
+provider = "anthropic"
+max_context_window = 200000
+optimal_context_window = 100000
+max_output_tokens = 8192
+api_kind = "claude"

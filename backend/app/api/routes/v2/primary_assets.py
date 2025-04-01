@@ -36,9 +36,14 @@ def list_primary_assets(
     query = (
         select(PrimaryAsset)
         .options(
-            selectinload(PrimaryAsset.versions).selectinload(Version.root_node),
-            selectinload(PrimaryAsset.versions).selectinload(Version.creator),
-        )  # TODO selecting all the versions will become a problem at some point...
+            selectinload(PrimaryAsset.most_recent_version),
+            selectinload(PrimaryAsset.most_recent_version).selectinload(
+                Version.root_node
+            ),
+            selectinload(PrimaryAsset.most_recent_version).selectinload(
+                Version.creator
+            ),
+        )
         .where(PrimaryAsset.organization_id == user.organization_id)
     )
 

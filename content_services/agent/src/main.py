@@ -11,6 +11,7 @@ app = modal.App("agent")
 
 image = (
     modal.Image.debian_slim(python_version="3.12")
+    .apt_install("nodejs", "npm")
     .copy_local_dir("../../driver_db/", remote_path="/driver_db")
     .copy_local_dir(local_path="../../packages/shared", remote_path="/packages/shared")
     .poetry_install_from_file("pyproject.toml")

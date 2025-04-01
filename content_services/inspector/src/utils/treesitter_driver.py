@@ -45,11 +45,19 @@ class DriverTree(ABC):
         pass
 
     @abstractmethod
-    def extract_functions(self) -> list[RawTreeSitterSymbolData]:
+    def extract_function_definitions(self) -> list[RawTreeSitterSymbolData]:
         pass
 
     @abstractmethod
-    def extract_data_structures(self) -> list[RawTreeSitterSymbolData]:
+    def extract_data_structure_definitions(self) -> list[RawTreeSitterSymbolData]:
+        pass
+
+    @abstractmethod
+    def extract_function_calls(self) -> list[RawTreeSitterSymbolData]:
+        pass
+
+    @abstractmethod
+    def extract_data_structure_instances(self) -> list[RawTreeSitterSymbolData]:
         pass
 
     @abstractmethod
@@ -57,17 +65,17 @@ class DriverTree(ABC):
         pass
 
     def get_node_line_range(self, node: tree_sitter.Node) -> tuple[int, int]:
+        """Returns the 1-based line range of a Tree-sitter node."""
         # Syntax nodes store their position in the source code both in raw bytes and row/column coordinates.
-        # In a point, rows and columns are zero-based.
-        # The row field represents the number of newlines before a given position
+        # In a point (row, column), rows and columns are zero-based.
+        # The row field represents the number of newlines before a given position, while the column is the byte offset
+        # from the start of the row.
         # See: https://tree-sitter.github.io/tree-sitter/using-parsers/2-basic-parsing.html?highlight=row#syntax-nodes
 
-        start_line = (
-            self.tree.root_node.start_point.row + node.start_point.row + 1
-        )  # Make it 1-based, as in editors
-        end_line = self.tree.root_node.start_point.row + node.end_point.row + 1
+        start_line = node.start_point.row + 1  # Convert 0-based row to 1-based
+        end_line = node.end_point.row + 1
 
-        # Check if the last byte in the node's span is a newline; it seems sometimes the node includes it, so we adjust
+        # Check if the last byte in the node's span is a newline; adjust if needed
         if self.source_bytes[node.end_byte - 1 : node.end_byte] == b"\n":
             end_line -= 1
 
@@ -172,7 +180,7 @@ class CDriverTree(DriverTree):
 
         return sorted_includes
 
-    def extract_functions(self) -> list[RawTreeSitterSymbolData]:
+    def extract_function_definitions(self) -> list[RawTreeSitterSymbolData]:
         query = self.tree_sitter_lang.query("(function_definition) @function_def")
         matches = query.matches(self.tree.root_node)
         functions = []
@@ -195,7 +203,7 @@ class CDriverTree(DriverTree):
         sorted_functions = sorted(functions, key=lambda x: x.start_line)
         return sorted_functions
 
-    def extract_data_structures(self) -> list[RawTreeSitterSymbolData]:
+    def extract_data_structure_definitions(self) -> list[RawTreeSitterSymbolData]:
         """
         Extract struct, union, and enum tags and typedefs, ignoring forward declarations.
 
@@ -396,6 +404,83 @@ class CDriverTree(DriverTree):
         sorted_vars = sorted(variables, key=lambda x: x.start_line)
         return sorted_vars
 
+    # TODO we really need to swap to byte position since we often have
+    # multiple calls per line to disambiguate
+
+    def extract_function_calls(self) -> list[RawTreeSitterSymbolData]:
+        query = self.tree_sitter_lang.query("(call_expression) @call")
+        matches = query.matches(self.tree.root_node)
+        function_calls = []
+
+        for _pattern_index, captures_by_name in matches:
+            call_node = captures_by_name["call"][0]
+
+            # Extract function name (identifier within call_expression)
+            identifier_node = call_node.child_by_field_name("function")
+            if identifier_node is None or identifier_node.type != "identifier":
+                continue  # Skip if we can't find a valid function name
+
+            func_name = identifier_node.text.decode("utf-8")
+
+            start_line, end_line = self.get_node_line_range(call_node)
+
+            func_call = RawTreeSitterSymbolData(
+                name=func_name,
+                start_line=start_line,
+                end_line=end_line,
+                symbol_kind=SymbolKind.CALL,
+            )
+
+            function_calls.append(func_call)
+
+        # Sort the calls by their start line
+        sorted_calls = sorted(function_calls, key=lambda x: x.start_line)
+        return sorted_calls
+
+    def extract_data_structure_instances(self) -> list[RawTreeSitterSymbolData]:
+        pass
+
+    def extract_function_declarations(self) -> list[RawTreeSitterSymbolData]:
+        """Extract all function declarations (not definitions) in the C code."""
+        query = self.tree_sitter_lang.query("(declaration) @declaration")
+        matches = query.matches(self.tree.root_node)
+        declarations = []
+
+        for _pattern_index, captures_by_name in matches:
+            declaration_node = captures_by_name["declaration"][0]
+
+            declarator_node = declaration_node.child_by_field_name("declarator")
+            if not declarator_node:
+                continue
+
+            # Ensure it's a function declarator implicitly by calling this and having it return something
+            func_name, params_node = get_function_name_and_params(declarator_node)
+            if func_name is None:
+                continue
+
+            # Function declaration should not have a body
+            has_body = any(
+                child.type == "compound_statement"
+                for child in declaration_node.children
+            )
+            if has_body:
+                continue
+
+            start_line, end_line = self.get_node_line_range(declaration_node)
+            func = RawTreeSitterSymbolData(
+                name=func_name,
+                start_line=start_line,
+                end_line=end_line,
+                symbol_kind=SymbolKind.CALLABLE_DECLARATION,
+                # start_byte=declaration_node.start_byte,
+                # end_byte=declaration_node.end_byte,
+                # params_list_node=params_node,
+            )
+            declarations.append(func)
+
+        sorted_declarations = sorted(declarations, key=lambda x: x.start_line)
+        return sorted_declarations
+
 
 if __name__ == "__main__":
     """
@@ -410,6 +495,6 @@ if __name__ == "__main__":
 Point2, *Point2Ptr;
 """
     driver_tree = CDriverTree.from_code(code)
-    data_structures = driver_tree.extract_data_structures()
+    data_structures = driver_tree.extract_data_structure_definitions()
     print(driver_tree.tree.root_node.children)
     print(data_structures)

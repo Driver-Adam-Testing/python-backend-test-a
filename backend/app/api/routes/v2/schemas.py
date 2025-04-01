@@ -55,6 +55,7 @@ class NodeRead(BaseModel):
     kind: NodeKind
     created_at: datetime | None
     updated_at: datetime | None
+    depth: int
 
     class Config:
         from_attributes = True
@@ -77,6 +78,7 @@ class NodeMetaRead(NodeRead):
     created_at: datetime | None
     updated_at: datetime | None
     misc_metadata: dict | None
+    depth: int
 
     class Config:
         from_attributes = True
@@ -156,14 +158,14 @@ class PrimaryAssetDetailRead(PrimaryAssetRead):
         root_node: NodeMetaRead | None
         creator: UserRead | None
 
-    versions: list[PrimaryAssetVersionRead] | None
+    most_recent_version: PrimaryAssetVersionRead | None
     tags: list[TagRead] | None
 
     @computed_field
     @property
     def browsable(self) -> bool:
         """A primary asset is browsable if any of its versions are browsable."""
-        return any(version.browsable for version in (self.versions or []))
+        return self.most_recent_version.browsable if self.most_recent_version else False
 
     class Config:
         from_attributes = True

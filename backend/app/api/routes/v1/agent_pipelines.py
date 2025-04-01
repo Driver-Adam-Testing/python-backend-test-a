@@ -44,7 +44,7 @@ class AgentRunRequest(PromptWithContext):
 
 
 @router.post(
-    "/",
+    "/dep",
     summary="Start a modal instance of the execute Agent Sequence",
     dependencies=[ContentEditorPermission],
 )

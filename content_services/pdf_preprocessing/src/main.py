@@ -113,7 +113,7 @@ def create_and_embed_pdf_summaries(node_id: str) -> None:
                 cleaned_content = str(result.content.replace("\x00", ""))
                 splits = split_text(cleaned_content)
                 if not splits:
-                    results_splits_embeds.append([(result, None, None)])
+                    results_splits_embeds.append((result, None, None))
                 else:
                     futures[executor.submit(batch_embed_text, splits)] = [
                         result,

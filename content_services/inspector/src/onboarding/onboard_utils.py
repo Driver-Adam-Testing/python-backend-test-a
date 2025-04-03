@@ -4,6 +4,7 @@ import re
 import time
 import zipfile
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from enum import Enum
 from functools import cache
 from pathlib import Path
@@ -417,6 +418,66 @@ def reencode_file(filepath: Path) -> None:
         with open(filepath, "w", encoding="utf-8") as w_file:
             w_file.write(decoded_str)
         print(f"Updated {filepath} to UTF-8")
+
+
+def process_and_upload_file(
+    s3_client: any,
+    org_hashed_id: str,
+    primary_asset_id: str,
+    version_id: str,
+    local_path: Path,
+    download_dir: Path,
+    db_node_paths: set[str],
+) -> Path | None:
+    trimmed_path = local_path.relative_to(download_dir)
+    if str(trimmed_path) in db_node_paths:
+        reencode_file(local_path)
+        s3_key = f"{primary_asset_id}/{version_id}/{trimmed_path}"
+        s3_client.upload_file(local_path, org_hashed_id, s3_key)
+        print(f"uploading {trimmed_path} to s3 at {s3_key}")
+        return local_path
+    return None
+
+
+def process_and_upload_all_files_in_parallel(
+    s3_client: any,
+    org_hashed_id: str,
+    primary_asset_id: str,
+    version_id: str,
+    extracted_path: Path,
+    download_dir: Path,
+    db_node_paths: set[str],
+    max_workers: int = 8,
+) -> list[Path]:
+    file_paths: list[Path] = []
+    files_to_process: list[Path] = []
+
+    for root, _, files in os.walk(extracted_path):
+        for filename in files:
+            local_path = Path(root) / filename
+            files_to_process.append(local_path)
+
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = []
+        for local_path in files_to_process:
+            futures.append(
+                executor.submit(
+                    process_and_upload_file,
+                    s3_client,
+                    org_hashed_id,
+                    primary_asset_id,
+                    version_id,
+                    local_path,
+                    download_dir,
+                    db_node_paths,
+                )
+            )
+
+        for future in as_completed(futures):
+            result = future.result()
+            if result is not None:
+                file_paths.append(result)
+    return file_paths
 
 
 def analyze_text_file(filepath: Path) -> dict:

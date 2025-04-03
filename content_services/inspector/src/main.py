@@ -147,17 +147,17 @@ async def inspect_db(
     from database.models_v2_enums import NodeKind as DbNodeKind
     from database.models_v2_enums import VersionStatus
     from onboarding.onboard_utils import (
-        reencode_file,
+        process_and_upload_all_files_in_parallel,
         set_codebase_status,
         unpack_archive,
     )
     from utils.db import (
         create_inspector_run,
-        download_all_source_files_in_parallel,
         get_analyzable_nodes_by_version_id,
         get_version_by_id,
         try_get_prev_version,
     )
+    from utils.io import download_all_source_files_in_parallel
 
     try:
         # Get the Version and check if it has previous_version_id
@@ -203,10 +203,9 @@ async def inspect_db(
             if (
                 version.status == VersionStatus.CONNECTED
                 or version.status == VersionStatus.GENERATING
-            ):
+            ):  # TODO change condition per discussion with Shane
                 # TODO: check usage before switching to generating
                 # if it's in the connected state, must upload the individual files to S3
-                file_paths = []
                 download_archive_key = (
                     f"{version.primary_asset_id}/{version_id}/{version_id}_source.zip"
                 )
@@ -222,26 +221,21 @@ async def inspect_db(
                     extraction_path=download_dir,
                 )
                 print(f"Extracted archive to {extracted_path}")
-                for root, _, files in os.walk(extracted_path):
-                    for filename in files:
-                        local_path = Path(root) / filename
-                        trimmed_path = local_path.relative_to(download_dir)
-                        for node in db_file_nodes:
-                            if node.relative_path == str(trimmed_path):
-                                reencode_file(local_path)
 
-                                s3_client.upload_file(
-                                    local_path,
-                                    org_hashed_id,
-                                    f"{version.primary_asset_id}/{version_id}/{node.relative_path}",
-                                )
-                                print(
-                                    f"uploading {trimmed_path} to s3 at {version.primary_asset_id}/{version_id}/{node.relative_path}"
-                                )
-                                file_paths.append(local_path)
+                db_node_paths = {node.relative_path for node in db_file_nodes}
+                file_paths = process_and_upload_all_files_in_parallel(
+                    s3_client=s3_client,
+                    org_hashed_id=org_hashed_id,
+                    primary_asset_id=version.primary_asset_id,
+                    version_id=version_id,
+                    extracted_path=extracted_path,
+                    download_dir=download_dir,
+                    db_node_paths=db_node_paths,
+                    max_workers=10,
+                )
+
                 if version.status == VersionStatus.CONNECTED:
                     set_codebase_status(version_id, VersionStatus.GENERATING)
-
             else:
                 print("Downloading all source files for codebase from s3...")
                 file_paths = download_all_source_files_in_parallel(

@@ -22,9 +22,9 @@ from utils.task import Task, TaskResult, TaskResultKind
 TechDocsTask = Union["FileTechDocTask", "FolderTechDocTask", "TopLevelDocsTask"]
 
 # Semaphores below provide a simple way to cut down on rate limit errors with Open AI API
-symbols_sem = asyncio.Semaphore(55)
-tech_docs_sem = asyncio.Semaphore(40)
-folder_tech_docs_sem = asyncio.Semaphore(20)
+symbols_sem = asyncio.Semaphore(220)
+tech_docs_sem = asyncio.Semaphore(150)
+folder_tech_docs_sem = asyncio.Semaphore(80)
 embed_sem = asyncio.Semaphore(10)
 
 # Limits active DB connections for an individual inspector run

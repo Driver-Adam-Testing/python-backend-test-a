@@ -29,7 +29,7 @@ class GitProviderAppConfig(BaseModel):
 
 
 class GroupAccessToken(BaseModel):
-    name: str
+    name: str | None = None
     token: str
 
 

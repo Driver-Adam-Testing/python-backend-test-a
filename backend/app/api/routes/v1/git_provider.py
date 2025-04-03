@@ -14,7 +14,16 @@ from database.models_v1 import (
 )
 from database.models_v2 import PrimaryAsset
 from database.models_v2_enums import PrimaryAssetKind
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
+from fastapi import (
+    APIRouter,
+    Body,
+    Depends,
+    HTTPException,
+    Query,
+    Request,
+    Response,
+    status,
+)
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from shared.interfaces.aws_client_config import AWSClientConfig
@@ -53,11 +62,12 @@ from app.services.gitlab_provider_service import (
     clone_git_repository,
     create_git_provider_app,
     fetch_git_provider_apps_by_org_id,
-    fetch_group_repositories_by_app_id,
+    fetch_group_repositories_by_installation_id,
     handle_authorization_callback,
     handle_delete_git_provider_app,
     handle_group_access_revoke,
     install_group_access_token,
+    update_group_access_token,
 )
 from app.utils.aws_s3 import org_id_to_hash
 from app.utils.aws_secrets_manager import format_secret_key, write_secret
@@ -198,7 +208,7 @@ def add_group_access_token(
         )
     except GitProviderAccessTokenError:
         logger.exception("Error adding token")
-        raise HTTPException(status_code=403, detail="Insufficient permissions")
+        raise HTTPException(status_code=500, detail="Invalid token")
 
 
 @router.get(
@@ -254,27 +264,59 @@ def delete_app_installation(
 
 
 @router.get(
-    "/app/{application_id}/repos",
+    "/app/{application_id}/repos/{installation_id}",
     dependencies=[OrgManagerPermission],
     response_model=list[GitRepository],
 )
-def get_user_repositories_by_app_id(
+def get_repositories_by_installation_id(
     session: CurrentSession,
     current_user: UserToken,
     application_id: str,
+    installation_id: str,
 ) -> list[GitRepository]:
     try:
-        return fetch_group_repositories_by_app_id(
+        return fetch_group_repositories_by_installation_id(
             session,
             current_user.organization_id,
             current_user.user_id,
             application_id,
+            installation_id,
             aws_config,
         )
     except GitProviderAccessTokenError as e:
         logger.error(f"Error fetching repositories: {e}")
         # give me a 403 if the user is not authorized to access the installation
-        raise HTTPException(status_code=403, detail="Insufficient permissions")
+        raise HTTPException(status_code=500, detail="Invalid Token")
+
+
+@router.put(
+    "/app/{application_id}/repos/{installation_id}/token",
+    dependencies=[OrgManagerPermission],
+)
+def update_git_provider_group_access_token(
+    session: CurrentSession,
+    current_user: UserToken,
+    application_id: str,
+    installation_id: str,
+    new_gat: GroupAccessToken = Body(...),
+) -> JSONResponse:
+    try:
+        update_group_access_token(
+            session,
+            current_user.organization_id,
+            application_id,
+            installation_id,
+            new_gat,
+            aws_config,
+        )
+
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content={"message": "Token updated."},
+        )
+    except GitProviderAccessTokenError:
+        logger.exception("Error adding token")
+        raise HTTPException(status_code=500, detail="Invalid token")
 
 
 @router.get("/app/callback")

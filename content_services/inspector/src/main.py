@@ -203,7 +203,7 @@ async def inspect_db(
             if (
                 version.status == VersionStatus.CONNECTED
                 or version.status == VersionStatus.GENERATING
-            ):  # TODO change condition per discussion with Shane
+            ):
                 # TODO: check usage before switching to generating
                 # if it's in the connected state, must upload the individual files to S3
                 download_archive_key = (

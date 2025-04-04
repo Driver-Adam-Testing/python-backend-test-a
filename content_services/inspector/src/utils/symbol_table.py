@@ -1,3 +1,4 @@
+from collections import defaultdict
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Self
@@ -27,13 +28,44 @@ def is_declaration(sym: RawTreeSitterSymbolData) -> bool:
     return sym.symbol_kind == SymbolKind.CALLABLE_DECLARATION
 
 
-def parse_c_file(fpath: Path) -> tuple[list[RawTreeSitterSymbolData], list[str]]:
+def build_containment_map(
+    symbols: list[RawTreeSitterSymbolData],
+) -> dict[RawTreeSitterSymbolData, list[RawTreeSitterSymbolData]]:
+    """
+    Return a mapping of parent_symbol -> list of child_symbols
+    where each child is fully within the parent's [start_byte, end_byte].
+    """
+    child_map: dict[RawTreeSitterSymbolData, list[RawTreeSitterSymbolData]] = (
+        defaultdict(list)
+    )
+
+    # Compare all pairs (O(n^2) :(
+    for parent in symbols:
+        for child in symbols:
+            if parent is child:
+                continue
+            if (
+                parent.start_byte <= child.start_byte
+                and child.end_byte <= parent.end_byte
+            ):
+                child_map[parent].append(child)
+    return dict(child_map)
+
+
+def parse_c_file(
+    fpath: Path,
+) -> tuple[
+    list[RawTreeSitterSymbolData],
+    list[str],
+    dict[RawTreeSitterSymbolData, list[RawTreeSitterSymbolData]],
+]:
     from treesitter_driver import CDriverTree
 
     code_str = fpath.read_text(encoding="utf8")
 
     driver = CDriverTree.from_code(code_str, file_path=fpath)
     all_syms = driver.extract_all_symbols()
+    containment_map = build_containment_map(all_syms)
 
     includes: list[str] = []
     non_import_symbols: list[RawTreeSitterSymbolData] = []
@@ -44,7 +76,7 @@ def parse_c_file(fpath: Path) -> tuple[list[RawTreeSitterSymbolData], list[str]]
         else:
             non_import_symbols.append(sym)
 
-    return non_import_symbols, includes
+    return non_import_symbols, includes, containment_map
 
 
 @dataclass(frozen=True)
@@ -57,26 +89,38 @@ class ParsedProject:
 
     file_to_symbols: dict[Path, list[RawTreeSitterSymbolData]]
     includes_map: dict[Path, list[str]]
+    file_to_containment_map: dict[
+        Path, dict[RawTreeSitterSymbolData, list[RawTreeSitterSymbolData]]
+    ]
 
     @classmethod
     def from_files(cls, file_paths: list[Path]) -> Self:
         file_to_syms: dict[Path, list[RawTreeSitterSymbolData]] = {}
         raw_includes: dict[Path, list[str]] = {}
+        file_to_containment_map: dict[
+            Path, dict[RawTreeSitterSymbolData, list[RawTreeSitterSymbolData]]
+        ] = {}
 
         total = len(file_paths)
         for i, fpath in enumerate(file_paths, 1):
             print(f"[{i}/{total}] Parsing {fpath}...", end="", flush=True)
             try:
-                symbols, includes = parse_c_file(fpath)
+                symbols, includes, containment_map = parse_c_file(fpath)
                 print(" done.")
             except Exception as e:
                 print(f" failed: {e}")
                 symbols = []
                 includes = []
+                containment_map = {}
             file_to_syms[fpath] = symbols
             raw_includes[fpath] = includes
+            file_to_containment_map[fpath] = containment_map
 
-        return cls(file_to_symbols=file_to_syms, includes_map=raw_includes)
+        return cls(
+            file_to_symbols=file_to_syms,
+            includes_map=raw_includes,
+            file_to_containment_map=file_to_containment_map,
+        )
 
 
 def resolve_include_path(
@@ -258,6 +302,7 @@ class ReifiedSymbol:
     is_definition: bool
     definition: Self | None = None
     usages: list[Self] = field(default_factory=list)
+    calls: list[Self] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -270,8 +315,21 @@ class ReifiedProjectIndex:
     file_to_symbols: dict[Path, list[ReifiedSymbol]]
 
     @classmethod
-    def from_linked_project(cls, linked_proj: LinkedProject) -> Self:
-        # 1) Create provisional ReifiedSymbols that omit definition/usages
+    def from_linked_project(
+        cls,
+        linked_proj: LinkedProject,
+        file_to_containment_map: dict[
+            Path, dict[RawTreeSitterSymbolData, list[RawTreeSitterSymbolData]]
+        ],
+    ) -> Self:
+        """
+        Final pass. For each LinkedSymbol, produce a ReifiedSymbol and:
+          1) Link usage -> definition
+          2) Build definition -> usage adjacency
+          3) For each function definition, gather calls from containment_map
+        """
+
+        # (1) Create provisional ReifiedSymbols that omit definition/usages/calls
         provisional_map: dict[LinkedSymbol, ReifiedSymbol] = {}
         for _fpath, ls_list in linked_proj.linked_symbols.items():
             for lsym in ls_list:
@@ -279,29 +337,60 @@ class ReifiedProjectIndex:
                     raw=lsym.raw, is_definition=lsym.is_definition
                 )
 
-        # 2) Build adjacency from a definition => all usage symbols
+        # (2) Build adjacency from definition => usage
         def_to_usage: dict[LinkedSymbol, list[LinkedSymbol]] = {}
         for lsym in provisional_map:
-            if (not lsym.is_definition) and lsym.definition is not None:
+            # If lsym is a usage, link it to its definition
+            if not lsym.is_definition and lsym.definition is not None:
                 def_ls = lsym.definition
                 def_to_usage.setdefault(def_ls, []).append(lsym)
 
-        # 3) Fix up each ReifiedSymbol's definition pointer and usage list
+        # (3) Build a first pass 'final_map' that sets .definition and .usages
         final_map: dict[LinkedSymbol, ReifiedSymbol] = {}
         for lsym, reified_sym in provisional_map.items():
             new_def = None
             if (not lsym.is_definition) and lsym.definition:
                 new_def = provisional_map[lsym.definition]
 
-            usage_list: list[ReifiedSymbol] = []
-            if lsym in def_to_usage:
-                usage_list = [provisional_map[u] for u in def_to_usage[lsym]]
+            usage_list = [provisional_map[u] for u in def_to_usage.get(lsym, [])]
 
             final_map[lsym] = replace(
                 reified_sym, definition=new_def, usages=usage_list
             )
 
-        # 4) Group them by file
+        # (4) For each function definition, find the calls it makes
+        #     by looking at all children in the containment map that have symbol_kind=CALL.
+        #     Then see if that CALL usage has a definition. If so, that's the called function.
+        #     We'll need to map from RawTreeSitterSymbolData -> LinkedSymbol to find it.
+        raw_to_linked: dict[RawTreeSitterSymbolData, LinkedSymbol] = {}
+        for lsym in final_map:
+            raw_to_linked[lsym.raw] = lsym
+
+        for fpath, ls_list in linked_proj.linked_symbols.items():
+            containment_map = file_to_containment_map.get(fpath, {})
+
+            for lsym in ls_list:
+                # If it's a function definition (e.g. 'CALLABLE'), gather its calls
+                if lsym.is_definition and lsym.raw.symbol_kind == SymbolKind.CALLABLE:
+                    # Which children are inside this function?
+                    children = containment_map.get(lsym.raw, [])
+                    calls_made: list[ReifiedSymbol] = []
+                    for child_raw in children:
+                        if child_raw.symbol_kind == SymbolKind.CALL:
+                            # child_raw is a usage symbol
+                            child_linked_sym = raw_to_linked[child_raw]
+                            # If that call usage found a definition, that's the function it calls
+                            if child_linked_sym.definition is not None:
+                                called_func_reif = final_map[
+                                    child_linked_sym.definition
+                                ]
+                                calls_made.append(called_func_reif)
+
+                    # Update the reified symbol with calls
+                    old_reif = final_map[lsym]
+                    final_map[lsym] = replace(old_reif, calls=calls_made)
+
+        # (5) Group them by file
         file_map: dict[Path, list[ReifiedSymbol]] = {}
         for fpath, ls_list in linked_proj.linked_symbols.items():
             file_map[fpath] = [final_map[ls] for ls in ls_list]
@@ -337,6 +426,15 @@ class ReifiedProjectIndex:
                         f"{GREEN}  DEF: {name} {lines} in {sym_file_path} "
                         f"has {usage_count} usage(s){RESET}"
                     )
+
+                    if sym.raw.symbol_kind == SymbolKind.CALLABLE and sym.calls:
+                        print(f"    Calls {len(sym.calls)} function(s):")
+                        for called_func in sym.calls:
+                            called_name = called_func.raw.name
+                            c_lines = f"[lines {called_func.raw.start_line}-{called_func.raw.end_line}]"
+                            c_path = called_func.raw.file_path
+                            print(f"      -> {called_name} {c_lines} in {c_path}")
+
                     for usage_sym in sym.usages:
                         usage_name = usage_sym.raw.name
                         usage_lines = f"[lines {usage_sym.raw.start_line}-{usage_sym.raw.end_line}]"
@@ -346,6 +444,7 @@ class ReifiedProjectIndex:
                             f"in {usage_file_path}{RESET}"
                         )
                 else:
+                    # usage symbol
                     if sym.definition:
                         def_name = sym.definition.raw.name
                         def_lines = f"[lines {sym.definition.raw.start_line}-{sym.definition.raw.end_line}]"
@@ -381,7 +480,9 @@ def build_c_project_index(
     print("==> Linking symbols...")
     linked = LinkedProject.from_parsed_project_with_visibility(project_vis)
     print("==> Reifying symbol graph...")
-    reified = ReifiedProjectIndex.from_linked_project(linked)
+    reified = ReifiedProjectIndex.from_linked_project(
+        linked, parsed.file_to_containment_map
+    )
     print("==> Done building index.")
     return reified
 
@@ -434,7 +535,6 @@ def main() -> None:
         with cache_path.open("wb") as f:
             pickle.dump(index, f)
 
-    # You can pass in a specific file or set of files here to examine
     focus_files: list[Path] | None = [
         project_root / "drivers" / "dac" / "ad5421" / "ad5421.c"
     ]

@@ -1,7 +1,8 @@
 name: Backend Staging Deployment
 on:
   push:
-    branches: ["staging"]
+    branches:
+      - "release/*"  # Trigger for any branch prefixed with 'release/'
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
@@ -58,6 +59,13 @@ jobs:
         run: poetry install --no-root && poetry run modal deploy --env=$MODAL_ENV --tag=${GITHUB_SHA::8} src/main.py
       - name: Deploy Agent
         working-directory: content_services/agent
+        env:
+          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+          MODAL_ENV: ${{ vars.MODAL_ENV }}
+        run: poetry install --no-root && poetry run modal deploy --env=$MODAL_ENV --tag=${GITHUB_SHA::8} src/main.py
+      - name: Deploy Mermaid Validator
+        working-directory: content_services/mermaid_validator
         env:
           MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
           MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}

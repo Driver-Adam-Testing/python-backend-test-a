@@ -89,7 +89,7 @@ class HybridSearchTool(LlmTool):
             # Sort by combined score descending
             sorted_results = sorted(combined_results, key=lambda x: x[1], reverse=True)
 
-            # Limit to top 10
+            # Limit to top 15
             top_results = sorted_results[:15]
 
             for chunk, combo_score, node_id in top_results:
@@ -141,5 +141,6 @@ class HybridSearchTool(LlmTool):
     @property
     def status(self) -> LlmTool.LlmToolStatusString:
         if self._references:
-            return f"Found {len(self._references)} references for {self.search_query}\n"
+            unique_short_paths = {ref.short_path for ref in self.references}
+            return f"Found references for {self.search_query}\n{"\n".join(unique_short_paths)}"
         return f"Searching: {self.search_query}...\n"

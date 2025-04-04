@@ -147,17 +147,17 @@ async def inspect_db(
     from database.models_v2_enums import NodeKind as DbNodeKind
     from database.models_v2_enums import VersionStatus
     from onboarding.onboard_utils import (
-        reencode_file,
+        process_and_upload_all_files_in_parallel,
         set_codebase_status,
         unpack_archive,
     )
     from utils.db import (
         create_inspector_run,
-        download_source_file,
         get_analyzable_nodes_by_version_id,
         get_version_by_id,
         try_get_prev_version,
     )
+    from utils.io import download_all_source_files_in_parallel
 
     try:
         # Get the Version and check if it has previous_version_id
@@ -200,7 +200,6 @@ async def inspect_db(
             tempfile.TemporaryDirectory() as previous_download_dir,
         ):
             download_root = Path(download_dir)
-            file_paths = []
             if (
                 version.status == VersionStatus.CONNECTED
                 or version.status == VersionStatus.GENERATING
@@ -222,38 +221,32 @@ async def inspect_db(
                     extraction_path=download_dir,
                 )
                 print(f"Extracted archive to {extracted_path}")
-                for root, _, files in os.walk(extracted_path):
-                    for filename in files:
-                        local_path = Path(root) / filename
-                        trimmed_path = local_path.relative_to(download_dir)
-                        for node in db_file_nodes:
-                            if node.relative_path == str(trimmed_path):
-                                reencode_file(local_path)
 
-                                s3_client.upload_file(
-                                    local_path,
-                                    org_hashed_id,
-                                    f"{version.primary_asset_id}/{version_id}/{node.relative_path}",
-                                )
-                                print(
-                                    f"uploading {trimmed_path} to s3 at {version.primary_asset_id}/{version_id}/{node.relative_path}"
-                                )
-                                file_paths.append(local_path)
+                db_node_paths = {node.relative_path for node in db_file_nodes}
+                file_paths = process_and_upload_all_files_in_parallel(
+                    s3_client=s3_client,
+                    org_hashed_id=org_hashed_id,
+                    primary_asset_id=version.primary_asset_id,
+                    version_id=version_id,
+                    extracted_path=extracted_path,
+                    download_dir=download_dir,
+                    db_node_paths=db_node_paths,
+                    max_workers=10,
+                )
+
                 if version.status == VersionStatus.CONNECTED:
                     set_codebase_status(version_id, VersionStatus.GENERATING)
-
             else:
                 print("Downloading all source files for codebase from s3...")
-                for db_file_node in db_file_nodes:
-                    download_abs_path = download_source_file(
-                        s3_client=s3_client,
-                        bucket_name=org_hashed_id,
-                        primary_asset_id=str(version.primary_asset.id),
-                        version_id=str(version_id),
-                        node_rel_path=db_file_node.relative_path,
-                        download_root=download_root,
-                    )
-                    file_paths.append(download_abs_path)
+                file_paths = download_all_source_files_in_parallel(
+                    s3_client=s3_client,
+                    bucket_name=org_hashed_id,
+                    primary_asset_id=str(version.primary_asset.id),
+                    version_id=str(version_id),
+                    node_rel_paths=[node.relative_path for node in db_file_nodes],
+                    download_root=download_root,
+                    max_workers=8,
+                )
                 print("Download complete")
 
             codebase_dag: FileTreeDag = build_dag(
@@ -266,18 +259,18 @@ async def inspect_db(
 
             if previous_version is not None:
                 previous_download_root = Path(previous_download_dir)
-                previous_file_paths = []
                 print("Downloading all source files for previous codebase from s3...")
-                for db_previous_file_node in db_previous_file_nodes:
-                    download_abs_path = download_source_file(
-                        s3_client=s3_client,
-                        bucket_name=org_hashed_id,
-                        primary_asset_id=str(previous_version.primary_asset.id),
-                        version_id=str(previous_version.id),
-                        node_rel_path=db_previous_file_node.relative_path,
-                        download_root=previous_download_root,
-                    )
-                    previous_file_paths.append(download_abs_path)
+                previous_file_paths = download_all_source_files_in_parallel(
+                    s3_client=s3_client,
+                    bucket_name=org_hashed_id,
+                    primary_asset_id=str(previous_version.primary_asset.id),
+                    version_id=str(previous_version.id),
+                    node_rel_paths=[
+                        prev_node.relative_path for prev_node in db_previous_file_nodes
+                    ],
+                    download_root=previous_download_root,
+                    max_workers=8,
+                )
                 print("Download complete for new version of code")
 
                 previous_codebase_dag: FileTreeDag = build_dag(

@@ -474,7 +474,7 @@ def connect_unconnected_repos() -> None:
     proxy=modal.Proxy.from_name("pg-proxy")
     if os.environ["MODAL_ENVIRONMENT"] != "staging"
     else None,
-    timeout=60 * 60,
+    timeout=60 * 60 * 9,
     region="us-east",
     concurrency_limit=5,
 )

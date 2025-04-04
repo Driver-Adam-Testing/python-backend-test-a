@@ -1,3 +1,4 @@
+import concurrent.futures
 import os
 
 import modal
@@ -62,7 +63,7 @@ def send_exception_email(exception_details: str) -> None:
         print(f"Error sending email: {e}")
 
 
-@app.function(timeout=16200, **pdf_preprocessing_modal_config)
+@app.function(timeout=16200, **pdf_preprocessing_modal_config, cpu=32.0)
 def create_and_embed_pdf_summaries(node_id: str) -> None:
     import io
 
@@ -76,6 +77,7 @@ def create_and_embed_pdf_summaries(node_id: str) -> None:
     from shared.file_storage.s3 import (
         get_presigned_url,
     )
+    from shared.interfaces.file_content.pdf_file_content import ProcessedPdfFileContent
     from shared.pipelines.process_file.process_file_pdf import run_process_pdf
     from sqlalchemy.orm import selectinload
     from sqlmodel import Session, select
@@ -102,8 +104,37 @@ def create_and_embed_pdf_summaries(node_id: str) -> None:
         pdf_content = io.BytesIO(response.content)
         pdf_content.name = node.relative_path.split("/")[-1]
         results = run_process_pdf(pdf_content)
-        with Session(engine) as session:
+        futures = {}
+        results_splits_embeds = []
+        print("Embedding pdf content...")
+        with concurrent.futures.ThreadPoolExecutor(max_workers=30) as executor:
             for result in results:
+                # Remove NUL characters from the content
+                cleaned_content = str(result.content.replace("\x00", ""))
+                splits = split_text(cleaned_content)
+                if not splits:
+                    results_splits_embeds.append((result, None, None))
+                else:
+                    futures[executor.submit(batch_embed_text, splits)] = [
+                        result,
+                        splits,
+                    ]
+            for future in concurrent.futures.as_completed(futures):
+                result, splits = futures[future]
+                try:
+                    embeds = future.result()
+                except Exception as e:
+                    print("Could not embed: ")
+                    print(str(splits))
+                    raise e
+                results_splits_embeds.append((result, splits, embeds))
+
+        print("persisting to database...")
+
+        def persist_to_db(
+            result: ProcessedPdfFileContent, splits: list, embeds: list
+        ) -> None:
+            with Session(engine) as session:
                 content_kind = result.content_type.value
 
                 if content_kind not in ContentKind:
@@ -131,27 +162,30 @@ def create_and_embed_pdf_summaries(node_id: str) -> None:
                 session.add(derived_content)
                 session.commit()
                 session.refresh(derived_content)
-                splits = split_text(cleaned_content)
-                if not splits:
-                    continue
-                try:
-                    embeds = batch_embed_text(splits)
-                except Exception as e:
-                    # Print the offending text to be embedded
-                    print("Could not embed: ")
-                    print(str(splits))
-                    raise e
-                for i, split in enumerate(splits):
-                    session.add(
-                        ChunkAndEmbedding(
-                            content_id=derived_content.id,
-                            text=split.text,
-                            chunk_number=i,
-                            text_embedding_3_small=embeds[i],
+                if embeds:
+                    for i, split in enumerate(splits):
+                        session.add(
+                            ChunkAndEmbedding(
+                                content_id=derived_content.id,
+                                text=split.text,
+                                chunk_number=i,
+                                text_embedding_3_small=embeds[i],
+                            )
                         )
-                    )
 
-                session.commit()
+                    session.commit()
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            db_futures = []
+            for result, splits, embeds in results_splits_embeds:
+                db_futures.append(
+                    executor.submit(persist_to_db, result, splits, embeds)
+                )
+            for future in concurrent.futures.as_completed(db_futures):
+                try:
+                    future.result()
+                except Exception as e:
+                    print(f"Error persisting to db: {e}")
 
         # Re-query the content object and update its status
         with Session(engine) as session:

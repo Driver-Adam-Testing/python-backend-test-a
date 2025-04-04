@@ -62,6 +62,7 @@ class OpenAiChatClient(LlmClient):
         response: ChatCompletionMessage = (
             self.client.chat.completions.create(**completion_kwargs).choices[0].message
         )
+
         result = LlmMessage.from_openai_chat_completion_message(
             response, response_type=response_type, tool_types=tool_types
         )
@@ -78,7 +79,6 @@ class OpenAiChatClient(LlmClient):
         completion_kwargs = self._make_kwargs(
             openai_message_history, response_type, tool_types
         )
-        print(completion_kwargs)
         stream = await self.async_client.chat.completions.create(
             **completion_kwargs,
             stream=True,

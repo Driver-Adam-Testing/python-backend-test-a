@@ -9,6 +9,7 @@ from database.models_v2_enums import (
     NodeKind,
     PrimaryAssetKind,
     VersionStatus,
+    WhizStatus,
 )
 from sqlalchemy import (
     Column,
@@ -384,4 +385,25 @@ class RuntimeLlmMessage(SQLModel, table=True):
     )
     message_history: "RuntimeLlmMessageHistory" = Relationship(
         back_populates="messages",
+    )
+
+
+class WhizStatusHistory(SQLModel, table=True):
+    __tablename__ = "v2_whiz_status_history"
+    id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    page_node_id: UUID = Field(
+        index=True,
+        nullable=False,
+        foreign_key="v2_node.id",
+        ondelete="CASCADE",
+    )
+    status: WhizStatus = Field(
+        nullable=False,
+    )
+    content: str | None
+    created_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
+        default=None,
     )

@@ -48,3 +48,11 @@ def split_text(
     raise NotImplementedError(
         "Splitting method not implemented for the given 'split_on' parameter"
     )
+
+
+def get_num_tokens(text: str, model: str = "gpt-4") -> int:
+    """
+    Returns the number of tokens in the input text based on the specified model.
+    """
+    encoder = tiktoken.encoding_for_model(model)
+    return len(encoder.encode(text, disallowed_special=()))

@@ -17,7 +17,7 @@ async def run_chat_pipeline(
     llm_session_id: UUID,
     message_history: LlmMessageHistory,
     datasource: DataSource,
-    llm_client: LlmClient = LlmClient.o3_mini(),
+    llm_client: LlmClient = LlmClient.gpt_4o_chat(),
 ) -> AsyncGenerator[LlmStreamResponse, None]:
     """
     Run the chat pipeline.

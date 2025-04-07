@@ -21,7 +21,7 @@ class DevelopmentStack(Stack):
         cors_origins = (
             "https://app.dev.driverai.com,https://labs.dev.driverai.com,"
             "https://app2.dev.driverai.com,http://localhost:3000,https://app.beta.driverai.com,"
-            "https://prndl.driverai.com"
+            "https://staging.d1p5ll6c30mdpu.amplifyapp.com"
         )
 
         self.metrics_lambda = MetricsLambda(

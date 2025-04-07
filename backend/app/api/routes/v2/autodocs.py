@@ -1,7 +1,7 @@
 from uuid import UUID
 
 import modal
-from database.models_v2 import Node, WhizStatusHistory
+from database.models_v2 import Node, PrimaryAsset, Version, WhizStatusHistory
 from database.models_v2_enums import VersionStatus, WhizStatus
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -35,7 +35,12 @@ def run_whizdoodler(
     input: WhizRequest,
 ) -> WhizStatusHistory:
     node = session.exec(
-        select(Node).where(Node.id == input.page_id).options(selectinload(Node.version))
+        select(Node)
+        .join(Version)
+        .join(PrimaryAsset)
+        .where(PrimaryAsset.organization_id == user.organization_id)
+        .where(Node.id == input.page_id)
+        .options(selectinload(Node.version))
     ).one()
     # TODO: check for sources - return error code if none
 

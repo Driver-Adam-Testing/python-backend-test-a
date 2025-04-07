@@ -187,41 +187,43 @@ def apply_sorting_to_query(
         sort_field = pagination.sort_by
         parts = sort_field.split(".")
 
-        # CASE 1: Direct column sorting (no dot-notation)
         if len(parts) == 1:
+            # CASE 1: Direct column sorting (no dot-notation)
             if not hasattr(model, sort_field):
                 raise HTTPException(status_code=400, detail="Invalid sort field")
             sort_column = getattr(model, sort_field)
-
-            # Prevent sorting on relationships
-            if (
-                isinstance(sort_column, InstrumentedAttribute)
-                and hasattr(sort_column, "property")
-                and hasattr(sort_column.property, "direction")
-            ):
-                # You might allow relationship sorting if you join them, but for simplicity we disallow it.
-                raise HTTPException(
-                    status_code=400,
-                    detail="Sorting on relationship fields is not supported. Please sort on a concrete column.",
-                )
-
-        # CASE 2: Dot notation provided (e.g. JSONB column)
         else:
-            first_field = parts[0]
-            if not hasattr(model, first_field):
-                raise HTTPException(status_code=400, detail="Invalid sort field")
-            column = getattr(model, first_field)
+            # CASE 2: Dot notation -> interpret each part except the last as a relationship
+            current_model = model
+            for rel_part in parts[:-1]:
+                if not hasattr(current_model, rel_part):
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Invalid relationship path: '{rel_part}' on '{current_model.__name__}'.",
+                    )
+                rel_attr = getattr(current_model, rel_part)
+                if not (
+                    isinstance(rel_attr, InstrumentedAttribute)
+                    and hasattr(rel_attr, "property")
+                    and isinstance(rel_attr.property, RelationshipProperty)
+                ):
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"'{rel_part}' is not a valid relationship on '{current_model.__name__}'.",
+                    )
+                # Join the relationship
+                related_model = rel_attr.property.mapper.class_
+                query = query.outerjoin(rel_attr)
+                current_model = related_model
 
-            # Check if the column is a JSONB column
-            if not (hasattr(column, "type") and isinstance(column.type, JSONB)):
+            # The final part is the actual column we want to sort on in the related model
+            col_name = parts[-1]
+            if not hasattr(current_model, col_name):
                 raise HTTPException(
                     status_code=400,
-                    detail="Sorting on relationships is not supported. For JSONB sorting, ensure the first column is of JSONB type.",
+                    detail=f"Invalid sort field: '{col_name}' on '{current_model.__name__}'.",
                 )
-
-            sort_column = column
-            for key in parts[1:]:
-                sort_column = sort_column[key]
+            sort_column = getattr(current_model, col_name)
 
         # Apply the sorting direction
         if pagination.sort_direction == SortDirection.ASC:

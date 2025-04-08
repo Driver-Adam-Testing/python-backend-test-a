@@ -92,15 +92,15 @@ def run_autodoc(
     return autodoc_status
 
 
-@router.get("/current_status")
+@router.get("/current_status/{page_id}")
 def get_autodoc_current_status(
     user: UserToken,
     session: CurrentSession,
-    input: AutoDocRequest,
+    page_id: UUID,
 ) -> AutoDocStatusHistory:
     autodoc_status = session.exec(
         select(AutoDocStatusHistory)
-        .where(AutoDocStatusHistory.page_node_id == input.page_id)
+        .where(AutoDocStatusHistory.page_node_id == page_id)
         .order_by(AutoDocStatusHistory.created_at.desc())
     ).first()
 

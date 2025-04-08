@@ -1,7 +1,7 @@
 """add node total_files
 
 Revision ID: 21e1da60676a
-Revises: bf5f2636af5e
+Revises: c852fcd10a2f
 Create Date: 2025-04-07 11:40:48.665443
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "21e1da60676a"
-down_revision = "bf5f2636af5e"
+down_revision = "c852fcd10a2f"
 branch_labels = None
 depends_on = None
 

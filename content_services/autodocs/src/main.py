@@ -14,8 +14,13 @@ from autodocs_prototype import (
 
 image = inspection_image = (
     modal.Image.debian_slim(python_version="3.12")
-    .copy_local_dir(local_path="../../driver_db", remote_path="/driver_db")
-    .copy_local_dir(local_path="../../packages/shared", remote_path="/shared_pkg")
+    # NOTE: order matters here - anything needed for the build must be added with
+    # copy=True before other actions, all other files must be added after all other
+    # actions
+    .add_local_dir(local_path="../../driver_db", remote_path="/driver_db", copy=True)
+    .add_local_dir(
+        local_path="../../packages/shared", remote_path="/shared_pkg", copy=True
+    )
     .pip_install(
         [
             "boto3",
@@ -28,6 +33,12 @@ image = inspection_image = (
             "google-genai",
         ]
     )
+    .add_local_dir(
+        local_path="../../driver_db/certs",
+        remote_path="/root/data/",
+    )
+    .add_local_file("src/adi_driver_v4.toml", "/autodocs_configs/adi_driver_page.toml")
+    .add_local_python_source("autodocs_prototype", "database", "shared", "utils")
 )
 
 app = modal.App("autodocs")
@@ -40,22 +51,13 @@ app = modal.App("autodocs")
         modal.Secret.from_name("aws-inspector-s3"),
         modal.Secret.from_name("open-ai"),
     ],
-    mounts=[
-        modal.Mount.from_local_dir(
-            local_path="../../driver_db/certs",
-            remote_path="/root/data/",
-        ),
-        modal.Mount.from_local_file(
-            "src/adi_driver_v4.toml", "/autodocs_configs/adi_driver_page.toml"
-        ),
-    ],
     proxy=modal.Proxy.from_name("pg-proxy")
-    if os.environ["MODAL_ENVIRONMENT"] != "dev-shane"
+    if os.environ["MODAL_ENVIRONMENT"] != "staging"
     else None,
     memory="2048",
     timeout=3600 * 8,
     region="us-east",
-    concurrency_limit=5,
+    max_containers=5,
 )
 async def run_adi_driver(
     page_node_id: uuid.UUID,

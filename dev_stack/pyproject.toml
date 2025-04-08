@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "dev-stack"
+version = "0.1.0"
+description = ""
+authors = ["Eric Miller <146128069+eric-driverai@users.noreply.github.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+auth0-python = "^4.9.0"
+asyncio = "^3.4.3"
+httpx = "^0.28.1"
+pydantic-settings = "^2.8.1"
+click = "^8.1.8"
+fastapi = "^0.115.12"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

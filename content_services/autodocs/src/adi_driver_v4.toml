@@ -1,0 +1,137 @@
+[llm]
+tag_model = "gpt-4o"
+section_init_model = "o3-mini"
+section_update_model = "gpt-4o"
+section_format_model = "o3-mini"
+assembly_model = "o3-mini"
+copy_editor_model = "gpt-4o"
+
+[document]
+goal = "Write a structured README for a driver in the `no-OS` codebase by ADI."
+fmt = "defined_sections" # "from_example" "undefined" "architecture" "legacy_modernization"
+use_tagging = true
+
+[[sections]]
+title = "Supported Devices"
+level = 1
+use_pdfs = false
+required = true
+instruction = "A section that lists all device models supported by the driver by name, hyperlinked to the corresponding ADI product page, and with not further description."
+content_structure = "A simple list of device models supported by the driver by name, with a hyperlinkto the ADI product page, and with not further description."
+section_creation_method = "sequential_edit"
+
+[[sections]]
+title = "Overview"
+level = 1
+use_pdfs = true
+required = true
+instruction = "Provide a 4 to 5 sentence general description of the device described in the PDF. Pull word for word content from any section named 'Features' or 'General Description' in the provided text, and construct it into a single 4 to 5 sentence paragraph, otherwise respond 'no overview found for this page or source code'"
+content_structure = "Provide a single paragraph description of the device taken from the PDF datasheet. Do not edit the content of this section while formatting."
+section_creation_method = "scatter_gather"
+
+[[sections]]
+title = "Applications"
+level = 1
+use_pdfs = true
+required = true
+instruction = "Provide only a list of the applications supported by the device described in the PDF. Exactly copy the content from any sections named 'Applications', if an 'Applications' section does not exist in the content provided, simply respond 'No applications found for this content'. The Applications section you copy will just be a list, if that doesn't exist just return 'No applications found for this content'"
+content_structure = "Provide only an unordered list of the applications supported by the device. Just the list with no descriptions. Do not edit the content in this section, beyond making sure the list is well formatted."
+section_creation_method = "scatter_gather"
+
+[[sections]]
+title = "Operation Modes"
+level = 1
+use_pdfs = false
+required = false
+instruction = "Describe the available operation modes and their configuration in a table with the following columns: Mode Name, Description, Configuration Bits, Typical Use Case. Only include operation modes, you may be given unrelated content to evaluate, in that case, just return 'no operation modes described'"
+content_structure = "A table with the following columns: Mode Name, Description, Configuration Bits, Typical Use Case. Only include the table without any further content."
+section_creation_method = "scatter_gather"
+
+[[sections]]
+title = "Device Configuration"
+level = 1
+use_pdfs = false
+required = true
+instruction = "Group and describe all of the functions implemented for this driver. Group the functions by category with one descriptive paragraph for each function category. In the descriptive paragraph for each function category, make sure to exhaustively name all of the functions in that category. Use appropriate titles for each category as relevant for the code. Example categories that could be relevant include: Initialization, Power Configuration, Conversion Modes, Buffer and Reference Settings, Filter Configurations, Gain and Offset Adjustments. These are just examples, you may need to use different categories based on the properties of the driver. In your output, put the group that discusses initialization first in the content."
+content_structure = "Consecutive subsections for each category of functions, with a one paragraph description of the functions for each category/section that includes an exhaustive list of the associated functions. The subsections should be level two Markdown headers (##)."
+section_creation_method = "scatter_gather"
+
+
+# TODO: This needs to come from the project folder, not the driver code, if applicable.
+[[sections]]
+title = "Driver Initialization Example"
+level = 1
+use_pdfs = false
+required = true
+instruction = """A detailed section showing initialization code for the device in detail. Only provide a code snippet example with no description. Make sure to demonstrate populating the data structure for device parameters and how this is passed into initialization functions. If there are different configuration options and states, describe that in the code. Make sure to include required top-level includes. Provide the code as a snippet of what driver data structures and functions need to be called without needing to wrap it in a broader main function.
+
+Here's an initialization example from another driver:
+```
+#include <xparameters.h>
+#include "ad7768.h"
+#include "xilinx_spi.h"
+#include "xilinx_gpio.h"
+#include "no_os_gpio.h"
+#include "no_os_spi.h"
+
+// Initializing the AD7768 device
+ad7768_init_param default_init_param = {
+    .spi_init = {
+        .device_id = SPI_DEVICE_ID,
+        .max_speed_hz = 1000000,
+        .chip_select = SPI_AD7768_CS,
+        .mode = NO_OS_SPI_MODE_0,
+        .platform_ops = &xil_spi_ops,
+        .extra = NULL
+    },
+    .gpio_reset = {
+        .number = GPIO_RESET_N,
+        .platform_ops = &xil_gpio_ops,
+        .extra = NULL
+    },
+    .gpio_reset_value = NO_OS_GPIO_HIGH,
+    .mclk = 32768000,
+    .datalines = 8
+};
+
+ad7768_dev *dev;
+int ret;
+
+// Begin AD7768 device setup
+ret = ad7768_setup_begin(&dev, default_init_param);
+if (ret) {
+    printf("AD7768 setup begin failed\n");
+    return ret;
+}
+
+// Reset AD7768 to ensure clean startup
+ret = no_os_gpio_set_value(dev->gpio_reset, NO_OS_GPIO_LOW);
+if (ret) return ret;
+no_os_udelay(100);
+ret = no_os_gpio_set_value(dev->gpio_reset, NO_OS_GPIO_HIGH);
+if (ret) return ret;
+no_os_udelay(1660);
+
+// Read and check the device revision ID
+uint8_t reg_data;
+ret = ad7768_spi_read(dev, AD7768_REG_REV_ID, &reg_data);
+if (ret || reg_data != 0x06) {
+    printf("Device ID error: %#x\n", reg_data);
+    return -1;
+}
+
+printf("AD7768 Rev ID %#x.\n", reg_data);
+
+// Finish the AD7768 device initialization
+ret = ad7768_setup_finish(dev, default_init_param);
+if (ret) {
+    printf("AD7768 setup finish failed\n");
+    return ret;
+}
+
+// Setup complete
+return 0;
+```
+Use a format similar to this, but use functions defined in the provided driver source code instead."""
+content_structure = "A detailed section showing initialization code for the device in detail. Only provide a code snippet example with no description. Make sure to demonstrate populating the data structure for device parameters and how this is passed into initialization functions. If there are different configuration options and states, describe that in the code. Make sure to include required top-level includes. Provide the code as a snippet of what driver data structures and functions need to be called without needing to wrap it in a broader main function."
+section_creation_method = "code_example"

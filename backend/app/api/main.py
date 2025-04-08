@@ -19,6 +19,7 @@ from app.api.routes.v1 import (
 
 # ruff: noqa: F401
 from app.api.routes.v2 import (
+    autodocs,
     chat,
     contents,
     convenience_endpoints,
@@ -73,3 +74,4 @@ api_router.include_router(
 
 api_router.include_router(generate.router, prefix="/generate", tags=["generate"])
 api_router.include_router(chat.router, prefix="/chat", tags=["chat"])
+api_router.include_router(autodocs.router, prefix="/autodocs", tags=["autodocs"])

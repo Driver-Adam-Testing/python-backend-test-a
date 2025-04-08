@@ -42,7 +42,9 @@ def trigger_codebase_connection(
         f"Triggering codebase connection for org = {trigger_body.org_id} and archive = {archive_name}, provider = {trigger_body.provider}, version_id = {trigger_body.version_id}"
     )
     run_codebase_connection = modal.Function.lookup(
-        "inspector-v2", "run_codebase_connection"
+        "inspector-v2",
+        "run_codebase_connection",
+        environment_name=settings.MODAL_ENVIRONMENT,
     )
 
     call = run_codebase_connection.spawn(

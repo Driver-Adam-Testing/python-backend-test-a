@@ -32,9 +32,9 @@ class AutoDocCancelResponse(BaseModel):
 
 @router.post(
     "/generate",
-    summary="Generate whizdoodler page",
+    summary="Generate autodoc page",
 )
-def run_whizdoodler(
+def run_autodoc(
     user: UserToken,
     session: CurrentSession,
     input: AutoDocRequest,
@@ -66,19 +66,19 @@ def run_whizdoodler(
     if node.version.status == VersionStatus.GENERATING:
         raise HTTPException(
             status_code=400,
-            detail="Whizdoodler is already generating for this page",
+            detail="Autodoc is already generating for this page",
         )
 
     node.version.status = VersionStatus.GENERATING
     session.add(node.version)
 
-    run_whiz = modal.Function.lookup(
+    run_autodoc = modal.Function.lookup(
         "autodocs",
         "run_adi_driver",
         environment_name=settings.MODAL_ENVIRONMENT,
     )
 
-    call = run_whiz.spawn(page_node_id=str(input.page_id))
+    call = run_autodoc.spawn(page_node_id=str(input.page_id))
     autodoc_status = AutoDocStatusHistory(
         page_node_id=input.page_id,
         status_kind=AutoDocStatusMessageKind.RETRIEVING_SOURCES,
@@ -98,16 +98,16 @@ def get_autodoc_current_status(
     session: CurrentSession,
     input: AutoDocRequest,
 ) -> AutoDocStatusHistory:
-    whiz_status = session.exec(
+    autodoc_status = session.exec(
         select(AutoDocStatusHistory)
         .where(AutoDocStatusHistory.page_node_id == input.page_id)
         .order_by(AutoDocStatusHistory.created_at.desc())
     ).first()
 
-    if not whiz_status:
+    if not autodoc_status:
         raise HTTPException(status_code=404, detail="No autodocs status found")
 
-    return whiz_status
+    return autodoc_status
 
 
 @router.post("/cancel")
@@ -135,14 +135,14 @@ def cancel(
     session.add(node.version)
     session.commit()
 
-    whiz_status = session.exec(
+    autodoc_status = session.exec(
         select(AutoDocStatusHistory)
         .where(AutoDocStatusHistory.page_node_id == input.page_id)
         .order_by(AutoDocStatusHistory.created_at.desc())
     ).first()
-    if not whiz_status:
+    if not autodoc_status:
         raise HTTPException(status_code=404, detail="No autodocs status found")
-    call_id = whiz_status.call_id
+    call_id = autodoc_status.call_id
     call = modal.FunctionCall.from_id(call_id)
     call.cancel()
 

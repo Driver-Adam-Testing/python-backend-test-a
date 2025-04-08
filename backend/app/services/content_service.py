@@ -272,8 +272,8 @@ class ContentService:
                     download_url=generate_org_get_presigned_url(
                         organization_id, download_key
                     ),
-                    content_name=node.version.primary_asset.display_name or "",
-                    status=node.version.status or "",
+                    content_name=node.version.primary_asset.display_name,
+                    status=node.version.status,
                 )
         except ClientError:
             logger.exception("Content not found or not downloadable")

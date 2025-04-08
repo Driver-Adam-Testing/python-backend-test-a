@@ -34,11 +34,14 @@ image = inspection_image = (
         ]
     )
     .add_local_dir(
-        local_path="../../driver_db/certs",
-        remote_path="/root/data/",
+        local_path="../../driver_db/certs", remote_path="/root/data/", copy=True
     )
-    .add_local_file("src/adi_driver_v4.toml", "/autodocs_configs/adi_driver_page.toml")
-    .add_local_python_source("autodocs_prototype", "database", "shared", "utils")
+    .add_local_file(
+        "src/adi_driver_v4.toml", "/autodocs_configs/adi_driver_page.toml", copy=True
+    )  # These shouldn't require the copy, but seems to be conflicting with the Proxy
+    .add_local_python_source(
+        "autodocs_prototype", "database", "shared", "utils", copy=True
+    )
 )
 
 app = modal.App("autodocs")

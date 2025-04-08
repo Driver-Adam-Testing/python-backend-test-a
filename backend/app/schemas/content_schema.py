@@ -129,6 +129,7 @@ class BatchDeleteTagsResponse(BaseModel):
 class DownloadContentResponse(BaseModel):
     download_url: str
     content_name: str
+    status: str
 
 
 class TagResult(BaseModel):

@@ -5,11 +5,11 @@ from typing import TYPE_CHECKING, Optional
 from uuid import UUID
 
 from database.models_v2_enums import (
+    AutoDocStatusMessageKind,
     LlmPipelineKind,
     NodeKind,
     PrimaryAssetKind,
     VersionStatus,
-    WhizStatus,
 )
 from sqlalchemy import (
     Column,
@@ -388,8 +388,8 @@ class RuntimeLlmMessage(SQLModel, table=True):
     )
 
 
-class WhizStatusHistory(SQLModel, table=True):
-    __tablename__ = "v2_whiz_status_history"
+class AutoDocStatusHistory(SQLModel, table=True):
+    __tablename__ = "v2_autodoc_status_history"
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     page_node_id: UUID = Field(
         index=True,
@@ -397,7 +397,7 @@ class WhizStatusHistory(SQLModel, table=True):
         foreign_key="v2_node.id",
         ondelete="CASCADE",
     )
-    status: WhizStatus = Field(
+    status_kind: AutoDocStatusMessageKind = Field(
         nullable=False,
     )
     content: str | None
@@ -407,3 +407,4 @@ class WhizStatusHistory(SQLModel, table=True):
         ),
         default=None,
     )
+    call_id: str | None

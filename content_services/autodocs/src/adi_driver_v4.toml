@@ -39,15 +39,6 @@ content_structure = "Provide only an unordered list of the applications supporte
 section_creation_method = "scatter_gather"
 
 [[sections]]
-title = "Driver Structure"
-level = 1
-use_pdfs = false
-required = true
-instruction = "Provide a file tree for the driver. If you don't have information about the file tree, just provide the file path of the file you're evaluating if it's not already present in the section. Below the file tree provide a 2 sentence description of the folder (folder only not file) if you've been provided information about the folder."
-content_structure = "A markdown formatted folder tree of all files included in the driver, followed by any folder level descriptions below the file tree."
-section_creation_method = "sequential_edit"
-
-[[sections]]
 title = "Operation Modes"
 level = 1
 use_pdfs = false
@@ -62,7 +53,7 @@ level = 1
 use_pdfs = false
 required = true
 instruction = "Group and describe all of the functions implemented for this driver. Group the functions by category with one descriptive paragraph for each function category. In the descriptive paragraph for each function category, make sure to exhaustively name all of the functions in that category. Use appropriate titles for each category as relevant for the code. Example categories that could be relevant include: Initialization, Power Configuration, Conversion Modes, Buffer and Reference Settings, Filter Configurations, Gain and Offset Adjustments. These are just examples, you may need to use different categories based on the properties of the driver. In your output, put the group that discusses initialization first in the content."
-content_structure = "Consecutive subsections for each category of functions, with a one paragraph description of the functions for each category/section that includes the associated functions discussed throughout the subsection. The subsections should be level two Markdown headers (##)."
+content_structure = "Consecutive subsections for each category of functions, with a one paragraph description of the functions for each category/section that includes an exhaustive list of the associated functions. The subsections should be level two Markdown headers (##)."
 section_creation_method = "scatter_gather"
 
 
@@ -72,11 +63,7 @@ title = "Driver Initialization Example"
 level = 1
 use_pdfs = false
 required = true
-instruction = """A detailed section showing initialization code for the device in detail.
-
-This code example should focus on the device driver specifically for the ADRV9009 and it's intialization.
-
-Only provide a code snippet example with no description. Make sure to demonstrate populating the data structure for device parameters and how this is passed into initialization functions. If there are different configuration options and states, describe that in the code. Make sure to include required top-level includes. Provide the code as a snippet of what driver data structures and functions need to be called without needing to wrap it in a broader main function.
+instruction = """A detailed section showing initialization code for the device in detail. Only provide a code snippet example with no description. Make sure to demonstrate populating the data structure for device parameters and how this is passed into initialization functions. If there are different configuration options and states, describe that in the code. Make sure to include required top-level includes. Provide the code as a snippet of what driver data structures and functions need to be called without needing to wrap it in a broader main function.
 
 Here's an initialization example from another driver:
 ```

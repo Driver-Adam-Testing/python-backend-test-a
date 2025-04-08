@@ -9,6 +9,7 @@ from autodocs_prototype import (
     FullyQualifiedDriverPathCode,
     FullyQualifiedDriverPathPdf,
     Scope,
+    update_autodocs_status,
 )
 
 image = inspection_image = (
@@ -29,7 +30,7 @@ image = inspection_image = (
     )
 )
 
-app = modal.App("whizdoodler")
+app = modal.App("autodocs")
 
 
 @app.function(
@@ -45,7 +46,7 @@ app = modal.App("whizdoodler")
             remote_path="/root/data/",
         ),
         modal.Mount.from_local_file(
-            "src/adi_driver_v4.toml", "/whiz_configs/adi_driver_page.toml"
+            "src/adi_driver_v4.toml", "/autodocs_configs/adi_driver_page.toml"
         ),
     ],
     proxy=modal.Proxy.from_name("pg-proxy")
@@ -61,12 +62,12 @@ async def run_adi_driver(
 ) -> None:
     from database.db import get_session
     from database.models_v1 import DerivedContent, DocumentSource
-    from database.models_v2 import Node, Version, WhizStatusHistory
+    from database.models_v2 import Node, Version
     from database.models_v2_enums import (
+        AutoDocStatusMessageKind,
         ContentKind,
         PrimaryAssetKind,
         VersionStatus,
-        WhizStatus,
     )
     from sqlalchemy.orm import selectinload
     from sqlmodel import select
@@ -106,7 +107,7 @@ async def run_adi_driver(
                 )
                 scope.pdfs.append(pdf_cfg)
 
-    config = AutoDocCfg.from_file("/whiz_configs/adi_driver_page.toml")
+    config = AutoDocCfg.from_file("/autodocs_configs/adi_driver_page.toml")
     config.scope = scope
     print(config.scope)
 
@@ -117,14 +118,12 @@ async def run_adi_driver(
     doc = await init_state.generate(
         execution_mode=ExecutionMode.MODAL, page_id=str(page_node_id)
     )
+    await update_autodocs_status(
+        page_id=str(page_node_id),
+        status_kind=AutoDocStatusMessageKind.GENERATION_COMPLETE,
+        content=doc,
+    )
     with get_session() as session, session.begin():
-        status_update = WhizStatusHistory(
-            page_node_id=page_node_id,
-            status=WhizStatus.GENERATION_COMPLETE,
-            content=doc,
-        )
-        session.add(status_update)
-
         derived_content = session.exec(
             select(DerivedContent).where(
                 DerivedContent.node_id == page_node_id,
@@ -152,6 +151,4 @@ async def run_adi_driver(
 def main(
     page_node_id: str,
 ) -> None:
-    # config = AutoDocCfg.from_file(config_path)
-    # run_whizdoodler.remote(config=config)
     run_adi_driver.remote(page_node_id=page_node_id)

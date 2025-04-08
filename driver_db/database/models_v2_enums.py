@@ -25,7 +25,7 @@ class NodeKind(str, enum.Enum):
     OTHER = "OTHER"
 
 
-class WhizStatus(str, enum.Enum):
+class AutoDocStatusMessageKind(str, enum.Enum):
     RETRIEVING_SOURCES = "RETRIEVING_SOURCES"
     EVALUATING_SECTIONS = "EVALUATING_SECTIONS"
     EVALUATING_SOURCES = "EVALUATING_SOURCES"

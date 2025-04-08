@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "whizdoodler"
+name = "autodocs"
 version = "0.1.0"
 description = ""
 authors = ["Shane Ghiotto <shane.ghiotto@driverai.com>"]

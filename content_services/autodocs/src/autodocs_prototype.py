@@ -16,7 +16,7 @@ import boto3
 import fitz
 import openai
 import pymupdf4llm
-from database.models_v2_enums import ContentKind
+from database.models_v2_enums import AutoDocStatusMessageKind, ContentKind
 from google import genai
 from pydantic import BaseModel
 from rich.console import Console
@@ -154,6 +154,27 @@ def _get_codebase_name(path: str) -> str:
             return p
 
     raise ValueError(f"Could not construct codebase name for path: `{path}`")
+
+
+async def update_autodocs_status(
+    page_id: str, status_kind: AutoDocStatusMessageKind, content: str
+) -> None:
+    import modal
+    from database.db import async_engine
+    from database.models_v2 import AutoDocStatusHistory
+    from sqlmodel.ext.asyncio.session import AsyncSession
+
+    call_id = modal.current_function_call_id()
+
+    async with AsyncSession(async_engine) as session, session.begin():
+        status_update = AutoDocStatusHistory(
+            page_node_id=page_id,
+            status_kind=status_kind,
+            content=content,
+            call_id=call_id,
+        )
+        session.add(status_update)
+        await session.commit()
 
 
 class TechDocsContent(BaseModel):
@@ -2219,12 +2240,6 @@ Your output is the full content of the document with editing updates based on yo
         resume: bool = False,
         page_id: str | None = None,
     ) -> str:
-        if execution_mode == ExecutionMode.MODAL:
-            from database.db import async_engine
-            from database.models_v2 import WhizStatusHistory
-            from database.models_v2_enums import WhizStatus
-            from sqlmodel.ext.asyncio.session import AsyncSession
-
         llm_tagging = ChatOpenAI(
             model=self.llm.tag_model, temperature=0, request_timeout=300
         )
@@ -2311,14 +2326,11 @@ Your output is the full content of the document with editing updates based on yo
             joined_graph = {k: v for dd in driver_docs for k, v in dd.dag.items()}
 
             if execution_mode == ExecutionMode.MODAL:
-                async with AsyncSession(async_engine) as session, session.begin():
-                    status_update = WhizStatusHistory(
-                        page_node_id=page_id,
-                        status=WhizStatus.EVALUATING_SOURCES,
-                        content="Evaluating sources for relevance...",
-                    )
-                    session.add(status_update)
-                    await session.commit()
+                await update_autodocs_status(
+                    page_id=page_id,
+                    status_kind=AutoDocStatusMessageKind.EVALUATING_SOURCES,
+                    content="Evaluating sources for relevance...",
+                )
 
             # Annotate nodes with tags, if applicable.
             annotations, pdf_annotations = (
@@ -2333,14 +2345,11 @@ Your output is the full content of the document with editing updates based on yo
             )
             # self.save_annotations(annotations=annotations)
             if execution_mode == ExecutionMode.MODAL:
-                async with AsyncSession(async_engine) as session, session.begin():
-                    status_update = WhizStatusHistory(
-                        page_node_id=page_id,
-                        status=WhizStatus.GENERATING_SECTION_DRAFTS,
-                        content="Generating initial section drafts...",
-                    )
-                    session.add(status_update)
-                    await session.commit()
+                await update_autodocs_status(
+                    page_id=page_id,
+                    status_kind=AutoDocStatusMessageKind.GENERATING_SECTION_DRAFTS,
+                    content="Generating initial section drafts...",
+                )
 
             pidx = 1
             section_state = dict()
@@ -2426,14 +2435,11 @@ Your output is the full content of the document with editing updates based on yo
                     section_state = new_section_state
 
         if execution_mode == ExecutionMode.MODAL:
-            async with AsyncSession(async_engine) as session, session.begin():
-                status_update = WhizStatusHistory(
-                    page_node_id=page_id,
-                    status=WhizStatus.OPTIMIZING_SECTION_STRUCTURE,
-                    content="Optimizing content structure for each section...",
-                )
-                session.add(status_update)
-                await session.commit()
+            await update_autodocs_status(
+                page_id=page_id,
+                status_kind=AutoDocStatusMessageKind.OPTIMIZING_SECTION_STRUCTURE,
+                content="Optimizing content structure for each section...",
+            )
         # Final output format enforcement
         print(
             f"\n({BLUE}{self.llm.section_format_model}{RESET}) Final section output structure pass..."
@@ -2449,14 +2455,11 @@ Your output is the full content of the document with editing updates based on yo
         self.save_state(revisions=revisions, init_state=init_state)
         section_state = new_section_state
         if execution_mode == ExecutionMode.MODAL:
-            async with AsyncSession(async_engine) as session, session.begin():
-                status_update = WhizStatusHistory(
-                    page_node_id=page_id,
-                    status=WhizStatus.ASSEMBLING_FINAL_DOCUMENT,
-                    content="Assembling all sections into a single document...",
-                )
-                session.add(status_update)
-                await session.commit()
+            await update_autodocs_status(
+                page_id=page_id,
+                status_kind=AutoDocStatusMessageKind.ASSEMBLING_FINAL_DOCUMENT,
+                content="Assembling all sections into a single document...",
+            )
 
         # Final document assembly
         final_doc_revisions = []
@@ -2478,14 +2481,11 @@ Your output is the full content of the document with editing updates based on yo
         )
 
         if execution_mode == ExecutionMode.MODAL:
-            async with AsyncSession(async_engine) as session, session.begin():
-                status_update = WhizStatusHistory(
-                    page_node_id=page_id,
-                    status=WhizStatus.COPY_EDITING,
-                    content="Copy editing and finalizing document...",
-                )
-                session.add(status_update)
-                await session.commit()
+            await update_autodocs_status(
+                page_id=page_id,
+                status_kind=AutoDocStatusMessageKind.COPY_EDITING,
+                content="Copy editing and finalizing document...",
+            )
         # Final copy editor pass
         print(
             f"\n({BLUE}{self.llm.copy_editor_model}{RESET}) Final copy editor pass..."

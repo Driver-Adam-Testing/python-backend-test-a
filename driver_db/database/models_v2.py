@@ -220,6 +220,17 @@ class Node(SQLModel, table=True):  # type: ignore
             index=True,
         )
     )
+
+    total_files: int | None = Field(
+        sa_column=Column(
+            Integer,
+            Computed("(misc_metadata->>'total_files')::INTEGER", persisted=True),
+            index=True,
+            nullable=True,
+        ),
+        default=None,
+    )
+
     misc_metadata: dict | None = Field(  # type: ignore
         sa_column=Column(JSONB, nullable=True), default=None
     )

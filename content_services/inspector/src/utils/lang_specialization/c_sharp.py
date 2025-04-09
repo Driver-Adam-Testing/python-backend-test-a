@@ -522,7 +522,7 @@ class CsClassRawSymbolCollection(RawSymbolCollection):
                 and not s["name"].startswith("__anon")
                 and (s["kind"] in C_SHARP_FUNCTIONS)
                 and s["scopeKind"] in C_SHARP_CLASSES
-                and not s.get("scope").startswith("__anon")
+                and "__anon" not in s.get("scope")
             ):
                 # TODO: is this needed for partial case?
                 # if s["scope"].split("::")[-1] not in class_raw_symbol_data:
@@ -562,7 +562,7 @@ class CsClassRawSymbolCollection(RawSymbolCollection):
                 and (s["kind"] in C_SHARP_CLASSES)
                 or (s["kind"] in C_SHARP_DATA_STRUCTURES)
                 and (s["scopeKind"] in C_SHARP_CLASSES)
-                and not s.get("scope").startswith("__anon")
+                and "__anon" not in s.get("scope")
             ):
                 if s["scope"].split(".")[-1] in class_raw_symbol_data:
                     class_raw_symbol_data[s["scope"].split(".")[-1]].children.append(
@@ -581,7 +581,7 @@ class CsClassRawSymbolCollection(RawSymbolCollection):
                 and not s["name"].startswith("__anon")
                 and (s["kind"] in C_SHARP_VARIABLES)
                 and (s["scopeKind"] in C_SHARP_CLASSES)
-                and not s.get("scope").startswith("__anon")
+                and "__anon" not in s.get("scope")
             ):
                 if s["scope"].split(".")[-1] in class_raw_symbol_data:
                     class_raw_symbol_data[s["scope"].split(".")[-1]].children.append(

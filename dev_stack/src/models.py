@@ -40,29 +40,17 @@ class Auth0M2MCreateRequest(BaseModel):
 
 
 class DomainType(enum.Enum):
-    """
-    Enum to represent the type of domain.
-    """
-
     WEBAPP = "WEB_APP"
     API = "API"
     TCP = "TCP"
 
 
 class DomainStatus(enum.Enum):
-    """
-    Enum to represent the status of a reserved domain.
-    """
-
     CREATED = "CREATED"
     FAILED = "FAILED"
 
 
 class NgrokReservedDomain(BaseModel):
-    """
-    NgrokReservedDomain model to represent a reserved domain in the system.
-    """
-
     domain_type: DomainType
     subdomain: str
     domain: str
@@ -74,17 +62,10 @@ class NgrokReservedDomain(BaseModel):
     @computed_field
     @property
     def domain_url(self) -> str:
-        """
-        Generate the full URL for the reserved domain.
-        """
         return f"https://{self.domain}"
 
 
 class NgrokReservedTcpAddress(BaseModel):
-    """
-    NgrokReservedTcpAddress model to represent a reserved TCP address in the system.
-    """
-
     address: str
     description: str
     region: str = "us"
@@ -94,17 +75,10 @@ class NgrokReservedTcpAddress(BaseModel):
     @computed_field
     @property
     def address_url(self) -> str:
-        """
-        Generate the full URL for the TCP address.
-        """
         return f"tcp://{self.address}"
 
 
 class DeveloperResourceType(enum.Enum):
-    """
-    Enum to represent the type of developer resource.
-    """
-
     WEB_APP = "WEB_APP"
     API = "API"
     M2M = "M2M"
@@ -112,39 +86,23 @@ class DeveloperResourceType(enum.Enum):
 
 
 class DeveloperResource(BaseModel):
-    """
-    DeveloperResource model to represent a resource associated with a developer.
-    """
-
     resource_name: str
     resource_type: DeveloperResourceType
     resource: dict
 
 
 class WebAppResourceConfig(BaseModel):
-    """
-    WebAppResource model to represent a web application resource.
-    """
-
     resource_name: str = "webapp-frontend"
     vite_config: dict
     env: dict
 
 
 class ApiResourceConfig(BaseModel):
-    """
-    ApiResource model to represent an API resource.
-    """
-
     resource_name: str = "backend"
     env: dict
 
 
 class Developer(BaseModel):
-    """
-    Developer model to represent a developer in the system.
-    """
-
     full_name: str
     email: str
     region: str = "us"  # Default to "us" region
@@ -158,7 +116,4 @@ class Developer(BaseModel):
     @computed_field
     @property
     def s3_bucket_name(self) -> str:
-        """
-        Generate the S3 bucket name for the developer.
-        """
         return f"{self.full_name.lower().replace(' ', '-')}-codebase-dropzone"

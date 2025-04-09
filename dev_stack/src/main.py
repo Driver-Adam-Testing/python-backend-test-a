@@ -7,15 +7,6 @@ from models import Developer
 
 
 def load_developer_state(full_name: str) -> Developer | None:
-    """
-    Load developer state from file.
-
-    Args:
-        full_name: The developer's full name
-
-    Returns:
-        Developer object if found, None otherwise
-    """
     filename = f"{full_name.lower().replace(' ', '_')}_state.json"
     file_path = Path("state") / filename
 

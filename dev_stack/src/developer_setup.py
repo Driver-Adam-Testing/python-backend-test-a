@@ -31,9 +31,6 @@ from ngrok import (
 
 
 def create_developer(full_name: str, email: str, region: str = "us") -> Developer:
-    """
-    Create a developer instance with the given full name and email.
-    """
     return Developer(
         full_name=full_name,
         email=email,
@@ -46,9 +43,6 @@ def create_developer_domains(
     domain_types: list[DomainType],
     ngrok_api_key: str,
 ) -> list[NgrokReservedDomain] | None:
-    """
-    Create reserved domains for the developer.
-    """
     results = []
     for app_type in domain_types:
         subdomain = generate_unique_subdomain(
@@ -74,13 +68,6 @@ def create_developer_domains(
 
 
 def write_developer_state(developer: Developer, output_dir: str = "state") -> None:
-    """
-    Write the developer state to a JSON file.
-
-    Args:
-        developer: The developer object to write
-        output_dir: Directory to write the state file to
-    """
     # Create output directory if it doesn't exist
     output_path = Path(output_dir)
     output_path.mkdir(exist_ok=True)
@@ -100,16 +87,6 @@ def create_developer_tcp_tunnel(
     developer: Developer,
     ngrok_api_key: str,
 ) -> NgrokReservedTcpAddress | None:
-    """
-    Create a reserved TCP tunnel for the developer.
-
-    Args:
-        developer: The developer object
-        ngrok_api_key: The ngrok API key
-
-    Returns:
-        NgrokReservedTcpAddress: The created TCP tunnel address object or None if creation failed
-    """
     description = f"TCP tunnel for {developer.full_name}"
     try:
         return create_reserved_tcp_address(
@@ -155,7 +132,6 @@ def setup_developer_resources(
         initiate_login_uri=web_app_domain.domain_url,
     )
     web_app = create_spa_web_app(auth0_web_app)
-    # print(json.dumps(web_app, indent=2))
 
     api_domain = next(
         domain
@@ -166,11 +142,11 @@ def setup_developer_resources(
     api_app = create_api_app(
         name=f"{developer.full_name} Cloud Local API", identifier=identifier
     )
-    print(json.dumps(api_app, indent=2))
+
     m2m_app = create_m2m_app(
         name=f"{developer.full_name} Cloud Local M2M", identifier=identifier
     )
-    # print(json.dumps(m2m_app, indent=2))
+
     developer.auth0_webapp = web_app
     developer.auth0_api = api_app
     developer.auth0_m2m = m2m_app
@@ -201,7 +177,6 @@ def setup_developer_resources(
         m2m_resource,
         db_resource,
     ]
-    # pr
     # Write the developer state to a file
     write_developer_state(developer)
 
@@ -264,15 +239,6 @@ def create_developer_resource_configs(developer: Developer) -> dict:
 
 
 def teardown_developer_resources(developer: Developer) -> bool:
-    """
-    Teardown all resources created for a developer.
-
-    Args:
-        developer: The developer object containing all resources to teardown
-
-    Returns:
-        bool: True if all resources were successfully torn down, False otherwise
-    """
     success = True
 
     # Delete Auth0 resources

@@ -96,18 +96,6 @@ def delete_reserved_domain(api_key: str, domain_id: str) -> bool:
 def create_reserved_tcp_address(
     api_key: str, description: str, region: str = "us", metadata: str | None = None
 ) -> NgrokReservedTcpAddress:
-    """
-    Create a reserved TCP address in ngrok.
-
-    Args:
-        api_key: The ngrok API key
-        description: Description of the TCP address
-        region: The region where the TCP address should be created (default: "us")
-        metadata: Optional metadata to attach to the TCP address
-
-    Returns:
-        NgrokReservedTcpAddress: The created TCP address object
-    """
     ngrok_api_url = f"{NGROK_BASE_API_URL}/reserved_addrs"
 
     headers = {
@@ -142,16 +130,6 @@ def create_reserved_tcp_address(
 
 
 def delete_reserved_tcp_address(api_key: str, address_id: str) -> bool:
-    """
-    Delete a reserved TCP address from ngrok.
-
-    Args:
-        api_key: The ngrok API key
-        address_id: The ID of the TCP address to delete
-
-    Returns:
-        bool: True if deletion was successful, False otherwise
-    """
     ngrok_api_url = f"{NGROK_BASE_API_URL}/reserved_addrs/{address_id}"
 
     headers = {
@@ -176,7 +154,6 @@ def delete_reserved_tcp_address(api_key: str, address_id: str) -> bool:
 
 @contextmanager
 def prefixed_output(prefix: str) -> Generator[None, None, None]:
-    """Context manager to prefix all output with a given string"""
     original_stdout = sys.stdout
     original_stderr = sys.stderr
 

@@ -4,7 +4,6 @@ from auth0.management import Auth0
 from config import settings
 from models import Auth0SpaCreateAppRequest
 
-# def create_auth0_client() -> Auth0:
 domain = settings.AUTH0_DOMAIN
 mgmt_client_id = settings.AUTH0_MGMT_API_CLIENT_ID
 mgmt_client_secret = settings.AUTH0_MGMT_API_CLIENT_SECRET
@@ -127,15 +126,6 @@ def create_m2m_app(name: str, identifier: str) -> dict:
 
 
 def delete_auth0_app(client_id: str) -> bool:
-    """
-    Delete an Auth0 application.
-
-    Args:
-        client_id: The client ID of the application to delete
-
-    Returns:
-        bool: True if deletion was successful, False otherwise
-    """
     try:
         auth0_client.clients.delete(client_id)
         print(f"✅ Successfully deleted Auth0 application: {client_id}")
@@ -146,15 +136,6 @@ def delete_auth0_app(client_id: str) -> bool:
 
 
 def delete_auth0_api(api_id: str) -> bool:
-    """
-    Delete an Auth0 API.
-
-    Args:
-        api_id: The ID of the API to delete
-
-    Returns:
-        bool: True if deletion was successful, False otherwise
-    """
     try:
         auth0_client.resource_servers.delete(api_id)
         print(f"✅ Successfully deleted Auth0 API: {api_id}")
@@ -165,15 +146,6 @@ def delete_auth0_api(api_id: str) -> bool:
 
 
 def get_role_by_name(role_name: str) -> dict | None:
-    """
-    Get a role by its name.
-
-    Args:
-        role_name: The name of the role to find
-
-    Returns:
-        dict | None: The role object if found, None otherwise
-    """
     try:
         roles = auth0_client.roles.list()
         for role in roles.get("roles", []):
@@ -188,17 +160,6 @@ def get_role_by_name(role_name: str) -> dict | None:
 def assign_role_permissions_to_api(
     role_name: str, api_identifier: str, permissions: list[str]
 ) -> bool:
-    """
-    Assign permissions to an API using an existing role.
-
-    Args:
-        role_name: The name of the existing role
-        api_identifier: The API identifier (audience)
-        permissions: List of permission names to assign
-
-    Returns:
-        bool: True if successful, False otherwise
-    """
     try:
         # Get the existing role
         role = get_role_by_name(role_name)
@@ -224,21 +185,3 @@ def assign_role_permissions_to_api(
     except Exception as e:
         print(f"❌ Error assigning permissions: {e!s}")
         return False
-
-
-# def main():
-#     # Example usage
-#     create_app = Auth0SpaCreateAppRequest(
-#         name="Eric Cloud Local Web App",
-#         callbacks=["https://app-driver.ngrok.io", "http://localhost:3000"],
-#         allowed_logout_urls=["https://app-driver.ngrok.io", "http://localhost:3000"],
-#         web_origins=["https://app-driver.ngrok.io", "http://localhost:3000"],
-#         allowed_origins=["https://app-driver.ngrok.io", "http://localhost:3000"],
-#         initiate_login_uri="https://app-driver.ngrok.io"
-#     )
-#     app = create_spa_web_app(create_app)
-#     print(app)
-#
-#
-# if __name__ == "__main__":
-#     main()

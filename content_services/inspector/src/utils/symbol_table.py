@@ -6,6 +6,12 @@ from typing import Self
 from utils.lang_specialization.symbol_common import RawTreeSitterSymbolData, SymbolKind
 
 
+def to_root_relative(fpath: Path, project_root: Path) -> Path:
+    """Convert /abs/path/to/root/foo.c -> root/foo.c"""
+    # TODO move to util file
+    return Path(project_root.name) / fpath.relative_to(project_root)
+
+
 def is_definition(sym: RawTreeSitterSymbolData) -> bool:
     """
     Simple heuristic for whether a raw symbol is considered a 'definition'
@@ -48,6 +54,7 @@ def build_containment_map(
 
 def parse_c_file(
     fpath: Path,
+    project_root: Path,
 ) -> tuple[
     list[RawTreeSitterSymbolData],
     list[str],
@@ -56,8 +63,10 @@ def parse_c_file(
     from treesitter_driver import CDriverTree
 
     code_str = fpath.read_text(encoding="utf8")
+    root_rel_path = to_root_relative(fpath, project_root)
 
-    driver = CDriverTree.from_code(code_str, file_path=fpath)
+    driver = CDriverTree.from_code(code_str, file_path=root_rel_path)
+
     all_syms = driver.extract_all_symbols()
     containment_map = build_containment_map(all_syms)
 
@@ -88,7 +97,7 @@ class ParsedProject:
     ]
 
     @classmethod
-    def from_files(cls, file_paths: list[Path]) -> Self:
+    def from_files(cls, file_paths: list[Path], project_root: Path) -> Self:
         file_to_syms: dict[Path, list[RawTreeSitterSymbolData]] = {}
         raw_includes: dict[Path, list[str]] = {}
         file_to_containment_map: dict[
@@ -96,19 +105,22 @@ class ParsedProject:
         ] = {}
 
         total = len(file_paths)
-        for i, fpath in enumerate(file_paths, 1):
-            print(f"[{i}/{total}] Parsing {fpath}...", end="", flush=True)
+        for i, abs_fpath in enumerate(file_paths, 1):
+            rel_fpath = to_root_relative(abs_fpath, project_root)
+            print(f"[{i}/{total}] Parsing {rel_fpath}...", end="", flush=True)
             try:
-                symbols, includes, containment_map = parse_c_file(fpath)
+                symbols, includes, containment_map = parse_c_file(
+                    abs_fpath, project_root
+                )
                 print(" done.")
             except Exception as e:
                 print(f" failed: {e}")
                 symbols = []
                 includes = []
                 containment_map = {}
-            file_to_syms[fpath] = symbols
-            raw_includes[fpath] = includes
-            file_to_containment_map[fpath] = containment_map
+            file_to_syms[rel_fpath] = symbols
+            raw_includes[rel_fpath] = includes
+            file_to_containment_map[rel_fpath] = containment_map
 
         return cls(
             file_to_symbols=file_to_syms,
@@ -457,7 +469,9 @@ class ReifiedProjectIndex:
                 #         )
 
 
-def build_c_project_index(file_paths: list[Path]) -> ReifiedProjectIndex:
+def build_c_project_index(
+    file_paths: list[Path], project_root: Path
+) -> ReifiedProjectIndex:
     """
     Orchestrate the 4 passes:
       1) Parse each file
@@ -466,7 +480,7 @@ def build_c_project_index(file_paths: list[Path]) -> ReifiedProjectIndex:
       4) definition -> usage
     """
     print("==> Parsing files...")
-    parsed = ParsedProject.from_files(file_paths)
+    parsed = ParsedProject.from_files(file_paths, project_root)
     print("==> Resolving includes and visibility...")
     project_vis = ParsedProjectWithVisibility.from_parsed_project(parsed)
     print("==> Linking symbols...")
@@ -489,9 +503,9 @@ def main() -> None:
     project_root = Path("/Users/andrewmark/Downloads/sqlite")
     file_paths = discover_c_and_h_files(project_root)
 
-    index = build_c_project_index(file_paths)
+    index = build_c_project_index(file_paths, project_root)
 
-    focus_file = project_root / "src" / "btree.c"
+    focus_file = Path("sqlite/src/btree.c")  # Note this is project-relative
     index.print_summary([focus_file])
 
 

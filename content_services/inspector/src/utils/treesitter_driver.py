@@ -545,7 +545,7 @@ if __name__ == "__main__":
 }
 Point2, *Point2Ptr;
 """
-    driver_tree = CDriverTree.from_code(code)
+    driver_tree = CDriverTree.from_code(code, "does_not_matter.c")
     data_structures = driver_tree.extract_data_structure_definitions()
     print(driver_tree.tree.root_node.children)
     print(data_structures)

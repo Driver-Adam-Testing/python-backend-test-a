@@ -61,16 +61,6 @@ def generate_unique_subdomain(
 
 
 def delete_reserved_domain(api_key: str, domain_id: str) -> bool:
-    """
-    Delete a reserved domain from ngrok.
-
-    Args:
-        api_key: The ngrok API key
-        domain_id: The ID of the domain to delete
-
-    Returns:
-        bool: True if deletion was successful, False otherwise
-    """
     ngrok_api_url = f"{NGROK_BASE_API_URL}/reserved_domains/{domain_id}"
 
     headers = {

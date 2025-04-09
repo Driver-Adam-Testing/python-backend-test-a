@@ -54,8 +54,8 @@ def create_api_app(name: str, identifier: str) -> dict:
         "skip_consent_for_verifiable_first_party_clients": True,
         "allow_offline_access": True,
         "enforce_policies": True,  # Enable RBAC
+        "token_dialect": "access_token_authz",
         "scopes": [
-            {"value": "read:appointments", "description": "Read your appointments"},
             {
                 "value": "organization:management",
                 "description": "Ability to add, remove and manage members of the organization.",
@@ -74,17 +74,25 @@ def create_api_app(name: str, identifier: str) -> dict:
                 "value": "git_provider:management",
                 "description": "Git provider app management",
             },
-            {"value": "payment_initiation", "description": "Payment initiation"},
         ],
-        # "options": {
-        #     "allow_skip_consent": True,
-        #     "enable_permissions_in_token": True,
-        #     "token_lifetime_for_implicit_grant": 7200
-        # }
     }
 
     api = auth0_client.resource_servers.create(api_payload)
     print(f"✅ Created API: {api['name']} (ID: {api['id']})")
+    # The API identifier from your API configuration
+    api_identifier = identifier  # This is the identifier you used when creating the API
+    # List of permissions to assign (these should match the scopes defined in your API)
+    admin_permissions = [
+        "organization:management",
+        "content:readonly",
+        "content:editor",
+    ]
+    admin_role_name = "Admin"
+    # Assign permissions to the role for the API
+    assign_role_permissions_to_api(admin_role_name, api_identifier, admin_permissions)
+    print(
+        f"✅ Assigned permissions to role '{admin_role_name}' for API '{api_identifier}'"
+    )
     return api
 
 
@@ -102,14 +110,12 @@ def create_m2m_app(name: str, identifier: str) -> dict:
 
     # 2. Authorize it to call the eric-backend API
     scopes = [
-        "read:appointments",
         "organization:management",
         "content:readonly",
         "content:editor",
         "usage_credit:management",
         "subscription:management",
         "git_provider:management",
-        "payment_initiation",
     ]
 
     auth0_client.client_grants.create(
@@ -155,6 +161,68 @@ def delete_auth0_api(api_id: str) -> bool:
         return True
     except Exception as e:
         print(f"❌ Error deleting Auth0 API: {e!s}")
+        return False
+
+
+def get_role_by_name(role_name: str) -> dict | None:
+    """
+    Get a role by its name.
+
+    Args:
+        role_name: The name of the role to find
+
+    Returns:
+        dict | None: The role object if found, None otherwise
+    """
+    try:
+        roles = auth0_client.roles.list()
+        for role in roles.get("roles", []):
+            if role["name"] == role_name:
+                return role
+        return None
+    except Exception as e:
+        print(f"❌ Error finding role: {e!s}")
+        return None
+
+
+def assign_role_permissions_to_api(
+    role_name: str, api_identifier: str, permissions: list[str]
+) -> bool:
+    """
+    Assign permissions to an API using an existing role.
+
+    Args:
+        role_name: The name of the existing role
+        api_identifier: The API identifier (audience)
+        permissions: List of permission names to assign
+
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    try:
+        # Get the existing role
+        role = get_role_by_name(role_name)
+        if not role:
+            print(f"❌ Role not found: {role_name}")
+            return False
+
+        # Create permission objects for the API
+        permission_objects = [
+            {
+                "resource_server_identifier": api_identifier,
+                "permission_name": permission,
+            }
+            for permission in permissions
+        ]
+
+        # Add permissions to the role
+        auth0_client.roles.add_permissions(role["id"], permission_objects)
+        print(
+            f"✅ Successfully assigned permissions to role '{role_name}' for API '{api_identifier}'"
+        )
+        return True
+    except Exception as e:
+        print(f"❌ Error assigning permissions: {e!s}")
         return False
 
 

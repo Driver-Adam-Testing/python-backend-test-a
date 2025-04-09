@@ -130,9 +130,9 @@ def setup_developer_resources(
     developer = create_developer(full_name, email, region)
 
     # Create domains
-    developer_domains = create_developer_domains(
-        developer, [DomainType.WEBAPP, DomainType.API], ngrok_api_key
-    )
+    domain_types = [DomainType.WEBAPP, DomainType.API]
+    # domain_types = [ DomainType.API]
+    developer_domains = create_developer_domains(developer, domain_types, ngrok_api_key)
     developer.reserved_domains.extend(developer_domains)
 
     # Create TCP tunnel

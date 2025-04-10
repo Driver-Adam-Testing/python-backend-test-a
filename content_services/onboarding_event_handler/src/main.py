@@ -38,12 +38,12 @@ def handler(
 
         client_id = (
             cache.get_secret_string(settings.CLIENT_ID_SECRET)
-            if settings.ENVIRONMENT != "local"
+            if settings.ENVIRONMENT not in ["local", "cloud-local"]
             else settings.CLIENT_ID_SECRET
         )
         client_secret = (
             cache.get_secret_string(settings.CLIENT_SECRET_SECRET)
-            if settings.ENVIRONMENT != "local"
+            if settings.ENVIRONMENT not in ["local", "cloud-local"]
             else settings.CLIENT_SECRET_SECRET
         )
         payload = json.dumps(
@@ -74,7 +74,10 @@ def handler(
                 real_object_key = unquote_plus(object_key)
                 logger.info("key = " + real_object_key)
                 logger.info("bucket = " + bucket_name)
-                if has_guard_duty_tag(bucket=bucket_name, key=real_object_key):
+                if (
+                    has_guard_duty_tag(bucket=bucket_name, key=real_object_key)
+                    or settings.ENVIRONMENT == "cloud-local"
+                ):
                     logger.info("No threats found, continuing document onboarding")
                     metadata = head_object(bucket=bucket_name, key=real_object_key)
                     presigned_url = generate_get_presigned_url(

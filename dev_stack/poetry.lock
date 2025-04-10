@@ -210,6 +210,152 @@ requests = ">=2.32.3"
 urllib3 = ">=2.2.3"
 
 [[package]]
+name = "aws-cdk-asset-awscli-v1"
+version = "2.2.231"
+description = "A library that contains the AWS CLI for use in Lambda Layers"
+optional = false
+python-versions = "~=3.9"
+files = [
+    {file = "aws_cdk_asset_awscli_v1-2.2.231-py3-none-any.whl", hash = "sha256:06d6b1d9e52272c315b944320f7039b47c6a6058f063fa33ab0ec06fea17bfbe"},
+    {file = "aws_cdk_asset_awscli_v1-2.2.231.tar.gz", hash = "sha256:859d99e0fcdc2f6ada44090ad9f921743da3ca3a6d9f39ab06836d4c8e0fbc23"},
+]
+
+[package.dependencies]
+jsii = ">=1.111.0,<2.0.0"
+publication = ">=0.0.3"
+typeguard = ">=2.13.3,<4.3.0"
+
+[[package]]
+name = "aws-cdk-asset-node-proxy-agent-v6"
+version = "2.1.0"
+description = "@aws-cdk/asset-node-proxy-agent-v6"
+optional = false
+python-versions = "~=3.8"
+files = [
+    {file = "aws_cdk.asset_node_proxy_agent_v6-2.1.0-py3-none-any.whl", hash = "sha256:24a388b69a44d03bae6dbf864c4e25ba650d4b61c008b4568b94ffbb9a69e40e"},
+    {file = "aws_cdk_asset_node_proxy_agent_v6-2.1.0.tar.gz", hash = "sha256:1f292c0631f86708ba4ee328b3a2b229f7e46ea1c79fbde567ee9eb119c2b0e2"},
+]
+
+[package.dependencies]
+jsii = ">=1.103.1,<2.0.0"
+publication = ">=0.0.3"
+typeguard = ">=2.13.3,<5.0.0"
+
+[[package]]
+name = "aws-cdk-aws-lambda-python-alpha"
+version = "2.189.0a0"
+description = "The CDK Construct Library for AWS Lambda in Python"
+optional = false
+python-versions = "~=3.9"
+files = [
+    {file = "aws_cdk_aws_lambda_python_alpha-2.189.0a0-py3-none-any.whl", hash = "sha256:b0ced765dbb05fc91f9f5b3a129fb7e246eff2a095608d91de34418b803d5122"},
+    {file = "aws_cdk_aws_lambda_python_alpha-2.189.0a0.tar.gz", hash = "sha256:510e5dfd75028db6d007ce5714f2b6199476e60f1bf96f7ebf462f34b674eca4"},
+]
+
+[package.dependencies]
+aws-cdk-lib = ">=2.189.0,<3.0.0"
+constructs = ">=10.0.0,<11.0.0"
+jsii = ">=1.110.0,<2.0.0"
+publication = ">=0.0.3"
+typeguard = ">=2.13.3,<4.3.0"
+
+[[package]]
+name = "aws-cdk-cloud-assembly-schema"
+version = "41.2.0"
+description = "Schema for the protocol between CDK framework and CDK CLI"
+optional = false
+python-versions = "~=3.8"
+files = [
+    {file = "aws_cdk.cloud_assembly_schema-41.2.0-py3-none-any.whl", hash = "sha256:779ca7e3edb02695e0a94a1f38e322b04fbe192cd7944553f80b681a21edd670"},
+    {file = "aws_cdk_cloud_assembly_schema-41.2.0.tar.gz", hash = "sha256:7064ac13f6944fd53f8d8eace611d3c5d8db7014049d629f5c47ede8dc5f2e3b"},
+]
+
+[package.dependencies]
+jsii = ">=1.108.0,<2.0.0"
+publication = ">=0.0.3"
+typeguard = ">=2.13.3,<4.3.0"
+
+[[package]]
+name = "aws-cdk-lib"
+version = "2.189.0"
+description = "Version 2 of the AWS Cloud Development Kit library"
+optional = false
+python-versions = "~=3.9"
+files = [
+    {file = "aws_cdk_lib-2.189.0-py3-none-any.whl", hash = "sha256:0c991e67a6b03ee23b9fbf98358e89d9e298fc3b3fafb1def2fb79fa38551b94"},
+    {file = "aws_cdk_lib-2.189.0.tar.gz", hash = "sha256:10b5d5b07a9ef2bf831edb9d26c736ad87b186d3ae416c16e9cf1ca241d71c58"},
+]
+
+[package.dependencies]
+"aws-cdk.asset-awscli-v1" = ">=2.2.229,<3.0.0"
+"aws-cdk.asset-node-proxy-agent-v6" = ">=2.1.0,<3.0.0"
+"aws-cdk.cloud-assembly-schema" = ">=41.0.0,<42.0.0"
+constructs = ">=10.0.0,<11.0.0"
+jsii = ">=1.110.0,<2.0.0"
+publication = ">=0.0.3"
+typeguard = ">=2.13.3,<4.3.0"
+
+[[package]]
+name = "cattrs"
+version = "24.1.3"
+description = "Composable complex class support for attrs and dataclasses."
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "cattrs-24.1.3-py3-none-any.whl", hash = "sha256:adf957dddd26840f27ffbd060a6c4dd3b2192c5b7c2c0525ef1bd8131d8a83f5"},
+    {file = "cattrs-24.1.3.tar.gz", hash = "sha256:981a6ef05875b5bb0c7fb68885546186d306f10f0f6718fe9b96c226e68821ff"},
+]
+
+[package.dependencies]
+attrs = ">=23.1.0"
+
+[package.extras]
+bson = ["pymongo (>=4.4.0)"]
+cbor2 = ["cbor2 (>=5.4.6)"]
+msgpack = ["msgpack (>=1.0.5)"]
+msgspec = ["msgspec (>=0.18.5)"]
+orjson = ["orjson (>=3.9.2)"]
+pyyaml = ["pyyaml (>=6.0)"]
+tomlkit = ["tomlkit (>=0.11.8)"]
+ujson = ["ujson (>=5.7.0)"]
+
+[[package]]
+name = "cdk-monitoring-constructs"
+version = "9.7.0"
+description = "cdk-monitoring-constructs"
+optional = false
+python-versions = "~=3.8"
+files = [
+    {file = "cdk_monitoring_constructs-9.7.0-py3-none-any.whl", hash = "sha256:670b12aec72301f58d3599437b64bef0f82ce2f8603261499471809581b80379"},
+    {file = "cdk_monitoring_constructs-9.7.0.tar.gz", hash = "sha256:3e3217c3aee9f3ac75e0188b271115939f4e77745a206db358d7a7737a558836"},
+]
+
+[package.dependencies]
+aws-cdk-lib = ">=2.160.0,<3.0.0"
+constructs = ">=10.0.5,<11.0.0"
+jsii = ">=1.106.0,<2.0.0"
+publication = ">=0.0.3"
+typeguard = ">=2.13.3,<4.3.0"
+
+[[package]]
+name = "cdk-nag"
+version = "2.35.67"
+description = "Check CDK v2 applications for best practices using a combination on available rule packs."
+optional = false
+python-versions = "~=3.9"
+files = [
+    {file = "cdk_nag-2.35.67-py3-none-any.whl", hash = "sha256:ecf2d5d13461f35f13f1c5d7d7e68ae0c126d40a6fd283b265f56cbf01d24c03"},
+    {file = "cdk_nag-2.35.67.tar.gz", hash = "sha256:ffa0c8d9ac63a27c5b7fffbffc045a06c57e7bb2fb614d7d1351ef23978c6b73"},
+]
+
+[package.dependencies]
+aws-cdk-lib = ">=2.156.0,<3.0.0"
+constructs = ">=10.0.5,<11.0.0"
+jsii = ">=1.111.0,<2.0.0"
+publication = ">=0.0.3"
+typeguard = ">=2.13.3,<4.3.0"
+
+[[package]]
 name = "certifi"
 version = "2025.1.31"
 description = "Python package for providing Mozilla's CA Bundle."
@@ -424,6 +570,22 @@ files = [
     {file = "colorama-0.4.6-py2.py3-none-any.whl", hash = "sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6"},
     {file = "colorama-0.4.6.tar.gz", hash = "sha256:08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44"},
 ]
+
+[[package]]
+name = "constructs"
+version = "10.4.2"
+description = "A programming model for software-defined state"
+optional = false
+python-versions = "~=3.8"
+files = [
+    {file = "constructs-10.4.2-py3-none-any.whl", hash = "sha256:1f0f59b004edebfde0f826340698b8c34611f57848139b7954904c61645f13c1"},
+    {file = "constructs-10.4.2.tar.gz", hash = "sha256:ce54724360fffe10bab27d8a081844eb81f5ace7d7c62c84b719c49f164d5307"},
+]
+
+[package.dependencies]
+jsii = ">=1.102.0,<2.0.0"
+publication = ">=0.0.3"
+typeguard = ">=2.13.3,<2.14.0"
 
 [[package]]
 name = "cryptography"
@@ -674,6 +836,45 @@ files = [
 all = ["flake8 (>=7.1.1)", "mypy (>=1.11.2)", "pytest (>=8.3.2)", "ruff (>=0.6.2)"]
 
 [[package]]
+name = "importlib-resources"
+version = "6.5.2"
+description = "Read resources from Python packages"
+optional = false
+python-versions = ">=3.9"
+files = [
+    {file = "importlib_resources-6.5.2-py3-none-any.whl", hash = "sha256:789cfdc3ed28c78b67a06acb8126751ced69a3d5f79c095a98298cd8a760ccec"},
+    {file = "importlib_resources-6.5.2.tar.gz", hash = "sha256:185f87adef5bcc288449d98fb4fba07cea78bc036455dd44c5fc4a2fe78fed2c"},
+]
+
+[package.extras]
+check = ["pytest-checkdocs (>=2.4)", "pytest-ruff (>=0.2.1)"]
+cover = ["pytest-cov"]
+doc = ["furo", "jaraco.packaging (>=9.3)", "jaraco.tidelift (>=1.4)", "rst.linker (>=1.9)", "sphinx (>=3.5)", "sphinx-lint"]
+enabler = ["pytest-enabler (>=2.2)"]
+test = ["jaraco.test (>=5.4)", "pytest (>=6,!=8.1.*)", "zipp (>=3.17)"]
+type = ["pytest-mypy"]
+
+[[package]]
+name = "jsii"
+version = "1.111.0"
+description = "Python client for jsii runtime"
+optional = false
+python-versions = "~=3.9"
+files = [
+    {file = "jsii-1.111.0-py3-none-any.whl", hash = "sha256:3084e31173e73d2eefee678c8ee31aa49428830509043057a421a4c0dde94434"},
+    {file = "jsii-1.111.0.tar.gz", hash = "sha256:db523ab9b6575c84d6ed8779cdbdc739abd48a7cb0723b66beb84c1a9dc31c7c"},
+]
+
+[package.dependencies]
+attrs = ">=21.2,<26.0"
+cattrs = ">=1.8,<24.2"
+importlib-resources = ">=5.2.0"
+publication = ">=0.0.3"
+python-dateutil = "*"
+typeguard = ">=2.13.3,<4.5.0"
+typing-extensions = ">=3.8,<5.0"
+
+[[package]]
 name = "markdown"
 version = "3.7"
 description = "Python implementation of John Gruber's Markdown."
@@ -897,6 +1098,17 @@ files = [
 ]
 
 [[package]]
+name = "publication"
+version = "0.0.3"
+description = "Publication helps you maintain public-api-friendly modules by preventing unintentional access to private implementation details via introspection."
+optional = false
+python-versions = "*"
+files = [
+    {file = "publication-0.0.3-py2.py3-none-any.whl", hash = "sha256:0248885351febc11d8a1098d5c8e3ab2dabcf3e8c0c96db1e17ecd12b53afbe6"},
+    {file = "publication-0.0.3.tar.gz", hash = "sha256:68416a0de76dddcdd2930d1c8ef853a743cc96c82416c4e4d3b5d901c6276dc4"},
+]
+
+[[package]]
 name = "pycparser"
 version = "2.22"
 description = "C parser in Python"
@@ -1077,6 +1289,20 @@ docs = ["sphinx", "sphinx-rtd-theme", "zope.interface"]
 tests = ["coverage[toml] (==5.0.4)", "pytest (>=6.0.0,<7.0.0)"]
 
 [[package]]
+name = "python-dateutil"
+version = "2.9.0.post0"
+description = "Extensions to the standard Python datetime module"
+optional = false
+python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,>=2.7"
+files = [
+    {file = "python-dateutil-2.9.0.post0.tar.gz", hash = "sha256:37dd54208da7e1cd875388217d5e00ebd4179249f90fb72437e91a35459a0ad3"},
+    {file = "python_dateutil-2.9.0.post0-py2.py3-none-any.whl", hash = "sha256:a8b2bc7bffae282281c8140a97d3aa9c14da0b136dfe83f850eea9a5f7470427"},
+]
+
+[package.dependencies]
+six = ">=1.5"
+
+[[package]]
 name = "python-dotenv"
 version = "1.1.0"
 description = "Read key-value pairs from a .env file and set them as environment variables"
@@ -1112,6 +1338,17 @@ socks = ["PySocks (>=1.5.6,!=1.5.7)"]
 use-chardet-on-py3 = ["chardet (>=3.0.2,<6)"]
 
 [[package]]
+name = "six"
+version = "1.17.0"
+description = "Python 2 and 3 compatibility utilities"
+optional = false
+python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,>=2.7"
+files = [
+    {file = "six-1.17.0-py2.py3-none-any.whl", hash = "sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274"},
+    {file = "six-1.17.0.tar.gz", hash = "sha256:ff70335d468e7eb6ec65b95b99d3a2836546063f63acc5171de367e834932a81"},
+]
+
+[[package]]
 name = "sniffio"
 version = "1.3.1"
 description = "Sniff out which async library your code is running under"
@@ -1138,6 +1375,21 @@ anyio = ">=3.6.2,<5"
 
 [package.extras]
 full = ["httpx (>=0.27.0,<0.29.0)", "itsdangerous", "jinja2", "python-multipart (>=0.0.18)", "pyyaml"]
+
+[[package]]
+name = "typeguard"
+version = "2.13.3"
+description = "Run-time type checker for Python"
+optional = false
+python-versions = ">=3.5.3"
+files = [
+    {file = "typeguard-2.13.3-py3-none-any.whl", hash = "sha256:5e3e3be01e887e7eafae5af63d1f36c849aaa94e3a0112097312aabfa16284f1"},
+    {file = "typeguard-2.13.3.tar.gz", hash = "sha256:00edaa8da3a133674796cf5ea87d9f4b4c367d77476e185e80251cc13dfbb8c4"},
+]
+
+[package.extras]
+doc = ["sphinx-autodoc-typehints (>=1.2.0)", "sphinx-rtd-theme"]
+test = ["mypy", "pytest", "typing-extensions"]
 
 [[package]]
 name = "typing-extensions"
@@ -1280,4 +1532,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "23999053fbd03deb8c42aabbf28d5456d6fee619c1ed314c3d9ea6a5e9aea986"
+content-hash = "40de99c1261de53230bc32a7aaa4d9569eee020624e5569183b35aca3096434c"

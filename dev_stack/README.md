@@ -1,13 +1,23 @@
 ## Coming soon
 
 - [x] Create ngrok domains and tcp addresses
-  - [x] Create ngrok tunnel
-  - [x] Create ngrok tcp tunnel
+  - [x] Create ngrok http tunnels
+  - [x] Create ngrok tcp tunnels
 -[x] Create Auth0 applications
   - [x] Create SPA Application
   - [x] Create API Resource Server
   - [x] Create M2M Application - Grants m2m access to the API
   - [x] Configure Auth0 Application to use ngrok domains
-- [ ] GitHub App (This step requires manual setup)
-  - [ ] Add step to `generate_configs` that creates a guide for setting up the GitHub App
-  - [ ] Configure GitHub App to use ngrok domains
+- [x] GitHub App (This step requires manual setup)
+  - [x] Add flag `setup` that creates a guide for setting up the GitHub App
+  - [x] during setup the cli will allow the user to enter client id and secret and private key .pem file
+-[ ] TestInDevCDK Stack
+  - [ ] clone codebase-onboarding-lambda
+  - [ ] clone document-onboarding-lambda
+  - [ ] update code to use the env variables from the previous steps
+  - [ ] integrate cdk deploy into the cli
+- [ ] Modal setup
+  - [ ] create developer modal environment
+  - [ ] generate script to create modal secrets
+  - [ ] generate script to deploy modal apps
+- [ ] Test the setup

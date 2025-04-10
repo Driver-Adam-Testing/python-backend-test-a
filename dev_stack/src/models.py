@@ -122,7 +122,7 @@ class GitHubAppPermissionsConfig(BaseModel):
 
 class GitHubAppResource(BaseModel):
     app_name: str
-    app_id: int | None = None
+    app_id: str | None = None
     client_id: str | None = None
     client_secret: str | None = None
     homepage_url: str
@@ -136,6 +136,7 @@ class GitHubAppResource(BaseModel):
     subscribed_events: list[str]
     public_in_marketplace: bool = False
     private_key_pem_path: str | None = None
+    base64_private_key_pem: str | None = None
 
 
 class Developer(BaseModel):
@@ -147,6 +148,7 @@ class Developer(BaseModel):
     auth0_webapp: dict | None = None
     auth0_api: dict | None = None
     auth0_m2m: dict | None = None
+    github_app: GitHubAppResource | None = None
     resources: list[DeveloperResource] = []
 
     @computed_field

@@ -34,7 +34,6 @@ def create_spa_web_app(create_app: Auth0SpaCreateAppRequest) -> dict:
     try:
         with httpx.Client() as client:
             response = client.patch(url, headers=headers, json=payload)
-            print(response)
             response.raise_for_status()  # Raises an exception if the HTTP response status is not successful.
             print("✅ Disabled google-oauth2 connection")
     except httpx.HTTPStatusError as e:

@@ -1,5 +1,5 @@
 import asyncio
-import json
+import base64
 import socket
 import subprocess
 import time
@@ -7,29 +7,14 @@ from pathlib import Path
 
 import click
 from developer_setup import (
-    create_developer_resource_configs,
+    generate_developer_configs,
+    load_developer_state,
     setup_developer_resources,
     teardown_developer_resources,
+    write_developer_state,
 )
-from models import Developer
+from github_setup import generate_github_app_setup_guide
 from ngrok import run_ngrok_tunnels
-
-
-def load_developer_state(full_name: str) -> Developer | None:
-    filename = f"{full_name.lower().replace(' ', '_')}_state.json"
-    file_path = Path("state") / filename
-
-    if not file_path.exists():
-        print(f"❌ No state file found for developer: {full_name}")
-        return None
-
-    try:
-        with open(file_path) as f:
-            state = json.load(f)
-            return Developer.model_validate(state)
-    except Exception as e:
-        print(f"❌ Error loading state file: {e!s}")
-        return None
 
 
 @click.group()
@@ -41,10 +26,70 @@ def cli() -> None:
 @click.option("--name", type=str, help="Developer name", required=True)
 @click.option("--email", type=str, help="Developer email", required=True)
 @click.option("--region", type=str, default="us", help="Ngrok region (default: us)")
-def setup(name: str, email: str, region: str) -> None:
+@click.option("--setup-github", is_flag=True, help="Setup GitHub resources")
+def setup(name: str, email: str, region: str, setup_github: bool) -> None:
     """Setup developer environment"""
     try:
-        setup_developer_resources(full_name=name, email=email, region=region)
+        developer = setup_developer_resources(
+            full_name=name, email=email, region=region, setup_github=setup_github
+        )
+        generate_developer_configs(name=name, output_dir="state/out")
+
+        if setup_github:
+            generate_github_app_setup_guide(developer.github_app)
+            click.echo(
+                "\n📝 Please follow the setup guide in state/out/github_app_setup_guide.md to create your GitHub App"
+            )
+            click.echo("Once you've completed the setup, press Enter to continue...")
+            input()
+
+            # Get GitHub client ID
+            # app_id = click.prompt("Please enter your GitHub App ID", type=str)
+            client_id = click.prompt("Please enter your GitHub App Client ID", type=str)
+            client_secret = click.prompt(
+                "Please enter your GitHub App Client Secret", type=str
+            )
+
+            # Get PEM file path
+            raw_pem_path = click.prompt(
+                "Please drag and drop your downloaded GitHub App private key (.pem file)",
+                type=str,
+            )
+
+            # Clean the path from drag-and-drop
+            pem_path = raw_pem_path.strip().strip("'").strip('"')
+
+            # Validate the cleaned path
+            try:
+                click.Path(exists=True, file_okay=True, dir_okay=False).convert(
+                    pem_path, None, None
+                )
+            except click.BadParameter as e:
+                click.echo(f"❌ Error: {e}", err=True)
+                return
+
+            # Convert to absolute path
+            pem_path = str(Path(pem_path).resolve())
+
+            # Update developer state with GitHub credentials
+            # developer.github_app.app_id = app_id
+            developer.github_app.client_id = client_id.strip().strip(" ")
+            developer.github_app.client_secret = client_secret.strip().strip(" ")
+            developer.github_app.private_key_pem_path = pem_path
+
+            # Read and base64 encode the PEM file
+            with open(pem_path, "rb") as f:
+                pem_content = f.read()
+                base64_private_key_pem = base64.b64encode(pem_content).decode("utf-8")
+                developer.github_app.base64_private_key_pem = base64_private_key_pem
+
+            write_developer_state(developer)
+            generate_developer_configs(name=name, output_dir="state/out")
+
+            click.echo(
+                "✅ GitHub App credentials have been saved to your developer state"
+            )
+
         click.echo(f"✅ Successfully set up developer: {name}")
     except Exception as e:
         click.echo(f"❌ Error setting up developer: {e!s}", err=True)
@@ -63,134 +108,6 @@ def teardown(name: str) -> None:
         click.echo(f"✅ Successfully tore down resources for: {name}")
     else:
         click.echo(f"❌ Some resources failed to tear down for: {name}", err=True)
-
-
-@cli.command()
-@click.option("--name", type=str, help="Developer name", required=True)
-@click.option(
-    "--output-dir",
-    "-o",
-    type=click.Path(),
-    default="state/out",
-    help="Directory to write config files to",
-)
-def generate_configs(name: str, output_dir: str) -> None:
-    """Generate resource config files for a developer"""
-    developer = load_developer_state(name)
-    if not developer:
-        click.echo(f"❌ No state file found for developer: {name}", err=True)
-        return
-
-    # Create output directory if it doesn't exist
-    output_path = Path(output_dir)
-    output_path.mkdir(exist_ok=True)
-
-    # Generate configs
-    configs = create_developer_resource_configs(developer)
-
-    # Create markdown guide
-    guide_file = output_path / "setup_guide.md"
-    with open(guide_file, "w") as f:
-        f.write(f"# Setup Guide for {developer.full_name}\n\n")
-        f.write("## Overview\n\n")
-        f.write(
-            "This guide will help you set up your development environment with the following resources:\n\n"
-        )
-
-        # List all resources
-        for resource_name in configs:
-            f.write(f"- {resource_name.replace('-', ' ').title()}\n")
-
-        f.write("\n## Configuration Files\n\n")
-        f.write("The following configuration files have been generated:\n\n")
-
-        # Write config files and document them
-        for resource_name, config in configs.items():
-            config_file = (
-                output_path / f"{resource_name.lower().replace(' ', '_')}_config.json"
-            )
-            with open(config_file, "w") as cf:
-                json.dump(config, cf, indent=2)
-            click.echo(f"✅ Wrote {resource_name} config to {config_file}")
-
-            # Add to markdown guide
-            f.write(f"### {resource_name.replace('-', ' ').title()}\n\n")
-            f.write(f"Configuration file: `{config_file.name}`\n\n")
-
-            if resource_name == "github-app":
-                click.echo(f"📝 {resource_name} Configuration:")
-                click.echo("```json")
-                click.echo(json.dumps(config, indent=2))
-                click.echo("```\n")
-
-                f.write("#### GitHub App Configuration\n\n")
-                f.write("```json\n")
-                f.write(json.dumps(config, indent=2))
-                f.write("\n```\n\n")
-                f.write("To set up the GitHub App:\n")
-                f.write("1. Go to GitHub Developer Settings\n")
-                f.write("2. Create a new GitHub App\n")
-                f.write(
-                    "3. Use the configuration above to fill in the required fields\n"
-                )
-                f.write("4. Generate and download the private key\n")
-                f.write("5. Update the `private_key_pem_path` in the config file\n\n")
-
-            if "env" in config:
-                click.echo(f"\n📝 {resource_name} Environment Variables (.env format):")
-                click.echo("```")
-                for key, value in config["env"].items():
-                    click.echo(f"{key}={value}")
-                click.echo("```\n")
-
-                f.write("#### Environment Variables\n\n")
-                f.write("Add these variables to your `.env` file:\n\n")
-                f.write("```\n")
-                for key, value in config["env"].items():
-                    f.write(f"{key}={value}\n")
-                f.write("```\n\n")
-
-            if resource_name == "webapp-frontend" and "vite_config" in config:
-                click.echo(
-                    f"📝 {resource_name} Vite Configuration (vite.config.ts format):"
-                )
-                click.echo("```typescript")
-                click.echo("import { defineConfig } from 'vite'")
-                click.echo("import react from '@vitejs/plugin-react'")
-                click.echo("\n// https://vitejs.dev/config/")
-                click.echo("export default defineConfig({")
-                click.echo("  plugins: [react()],")
-                click.echo("  server: {")
-                for key, value in config["vite_config"]["server"].items():
-                    if isinstance(value, list):
-                        click.echo(f"    {key}: {json.dumps(value)},")
-                    else:
-                        click.echo(f"    {key}: {json.dumps(value)},")
-                click.echo("  }")
-                click.echo("})")
-                click.echo("```\n")
-
-                f.write("#### Vite Configuration\n\n")
-                f.write("Add this configuration to your `vite.config.ts`:\n\n")
-                f.write("```typescript\n")
-                f.write("import { defineConfig } from 'vite'\n")
-                f.write("import react from '@vitejs/plugin-react'\n\n")
-                f.write("// https://vitejs.dev/config/\n")
-                f.write("export default defineConfig({\n")
-                f.write("  plugins: [react()],\n")
-                f.write("  server: {\n")
-                for key, value in config["vite_config"]["server"].items():
-                    if isinstance(value, list):
-                        f.write(f"    {key}: {json.dumps(value)},\n")
-                    else:
-                        f.write(f"    {key}: {json.dumps(value)},\n")
-                f.write("  }\n")
-                f.write("})\n")
-                f.write("```\n\n")
-
-            f.write("---\n\n")
-
-    click.echo(f"✅ Created setup guide: {guide_file}")
 
 
 def wait_for_socket_server(

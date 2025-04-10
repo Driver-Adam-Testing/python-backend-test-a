@@ -71,6 +71,23 @@ def create_developer_domains(
     return results
 
 
+def load_developer_state(full_name: str) -> Developer | None:
+    filename = f"{full_name.lower().replace(' ', '_')}_state.json"
+    file_path = Path("state") / filename
+
+    if not file_path.exists():
+        print(f"❌ No state file found for developer: {full_name}")
+        return None
+
+    try:
+        with open(file_path) as f:
+            state = json.load(f)
+            return Developer.model_validate(state)
+    except Exception as e:
+        print(f"❌ Error loading state file: {e!s}")
+        return None
+
+
 def write_developer_state(developer: Developer, output_dir: str = "state") -> None:
     # Create output directory if it doesn't exist
     output_path = Path(output_dir)
@@ -105,7 +122,7 @@ def create_developer_tcp_tunnel(
 
 
 def setup_developer_resources(
-    full_name: str, email: str, region: str = "us"
+    full_name: str, email: str, region: str = "us", setup_github: bool = True
 ) -> Developer:
     ngrok_api_key = settings.NGROK_API_KEY
     developer = create_developer(full_name, email, region)
@@ -175,7 +192,7 @@ def setup_developer_resources(
         resource_type=DeveloperResourceType.DB,
         resource=tcp_tunnel.model_dump(mode="json"),
     )
-    github_app = GitHubAppResource(
+    developer.github_app = GitHubAppResource(
         app_name=f"{developer.sanitized_full_name}-gh-app",
         # app_id=123456,
         # client_id="your-client-id",
@@ -209,17 +226,17 @@ def setup_developer_resources(
         public_in_marketplace=False,
         # private_key_pem_path="/path/to/private-key.pem"
     )
-    gh_app_resource = DeveloperResource(
-        resource_name="github-app",
-        resource_type=DeveloperResourceType.GITHUB_APP,
-        resource=github_app.model_dump(mode="json"),
-    )
+    # gh_app_resource = DeveloperResource(
+    #     resource_name="github-app",
+    #     resource_type=DeveloperResourceType.GITHUB_APP,
+    #     resource=github_app.model_dump(mode="json"),
+    # )
     developer.resources = [
         web_app_resource,
         api_resource,
         m2m_resource,
         db_resource,
-        gh_app_resource,
+        # gh_app_resource,
     ]
     # Write the developer state to a file
     write_developer_state(developer)
@@ -269,6 +286,21 @@ def create_developer_resource_configs(developer: Developer) -> dict:
                         "DROPZONE_BUCKET_NAME": developer.s3_bucket_name,
                         "BACKEND_CORS_ORIGINS": web_app_domain.domain_url,
                         "USE_LEGACY_DROPZONE": "False",
+                        "GH_CLIENT_ID": developer.github_app.client_id
+                        if developer.github_app
+                        else "",
+                        "GH_CLIENT_SECRET": developer.github_app.client_secret
+                        if developer.github_app
+                        else "",
+                        "GH_CLIENT_PEM_SECRET": developer.github_app.base64_private_key_pem
+                        if developer.github_app
+                        else "",
+                        "GH_REDIRECT_URI": developer.github_app.callback_url
+                        if developer.github_app
+                        else "",
+                        "GH_WEBHOOK_SECRET": developer.github_app.webhook.webhook_secret
+                        if developer.github_app
+                        else "",
                     }
                 )
                 resource_configs[api_resource.resource_name] = api_resource.model_dump(
@@ -282,6 +314,91 @@ def create_developer_resource_configs(developer: Developer) -> dict:
             case DeveloperResourceType.DB:
                 pass
     return resource_configs
+
+
+def generate_developer_configs(name: str, output_dir: str) -> None:
+    """Generate resource config files for a developer"""
+    developer = load_developer_state(name)
+    if not developer:
+        raise ValueError(f"No state file found for developer: {name}")
+
+    # Create output directory if it doesn't exist
+    output_path = Path(output_dir)
+    output_path.mkdir(exist_ok=True)
+
+    # Generate configs
+    configs = create_developer_resource_configs(developer)
+
+    # Create markdown guide
+    guide_file = output_path / "setup_guide.md"
+    with open(guide_file, "w") as f:
+        f.write(f"# Setup Guide for {developer.full_name} Dev Stack\n\n")
+        f.write("## Overview\n\n")
+        f.write(
+            "This guide will help you set up your development environment with the following resources:\n\n"
+        )
+
+        # List all resources
+        for resource_name in configs:
+            f.write(f"- {resource_name.replace('-', ' ').title()}\n")
+
+        f.write("\n## Configuration Files\n\n")
+        f.write("The following configuration files have been generated:\n\n")
+
+        # Write config files and document them
+        for resource_name, config in configs.items():
+            config_file = (
+                output_path / f"{resource_name.lower().replace(' ', '_')}_config.json"
+            )
+            with open(config_file, "w") as cf:
+                json.dump(config, cf, indent=2)
+
+            # Add to markdown guide
+            f.write(f"### {resource_name.replace('-', ' ').title()}\n\n")
+            f.write(f"Configuration file: `{config_file.name}`\n\n")
+
+            if resource_name == "github-app":
+                f.write("#### GitHub App Configuration\n\n")
+                f.write("```json\n")
+                f.write(json.dumps(config, indent=2))
+                f.write("\n```\n\n")
+                f.write("To set up the GitHub App:\n")
+                f.write("1. Go to GitHub Developer Settings\n")
+                f.write("2. Create a new GitHub App\n")
+                f.write(
+                    "3. Use the configuration above to fill in the required fields\n"
+                )
+                f.write("4. Generate and download the private key\n")
+                f.write("5. Update the `private_key_pem_path` in the config file\n\n")
+
+            if "env" in config:
+                f.write("#### Environment Variables\n\n")
+                f.write("Add these variables to your `.env` file:\n\n")
+                f.write("```\n")
+                for key, value in config["env"].items():
+                    f.write(f"{key}={value}\n")
+                f.write("```\n\n")
+
+            if resource_name == "webapp-frontend" and "vite_config" in config:
+                f.write("#### Vite Configuration\n\n")
+                f.write("Add this configuration to your `vite.config.ts`:\n\n")
+                f.write("```typescript\n")
+                f.write("import { defineConfig } from 'vite'\n")
+                f.write("import react from '@vitejs/plugin-react'\n\n")
+                f.write("// https://vitejs.dev/config/\n")
+                f.write("export default defineConfig({\n")
+                f.write("  plugins: [react()],\n")
+                f.write("  server: {\n")
+                for key, value in config["vite_config"]["server"].items():
+                    if isinstance(value, list):
+                        f.write(f"    {key}: {json.dumps(value)},\n")
+                    else:
+                        f.write(f"    {key}: {json.dumps(value)},\n")
+                f.write("  }\n")
+                f.write("})\n")
+                f.write("```\n\n")
+
+            f.write("---\n\n")
 
 
 def teardown_developer_resources(developer: Developer) -> bool:

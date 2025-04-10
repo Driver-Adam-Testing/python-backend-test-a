@@ -17,6 +17,9 @@ from models import (
     DeveloperResourceType,
     DomainStatus,
     DomainType,
+    GitHubAppPermissionsConfig,
+    GitHubAppResource,
+    GitHubAppWebhookConfig,
     NgrokReservedDomain,
     NgrokReservedTcpAddress,
     WebAppResourceConfig,
@@ -28,6 +31,7 @@ from ngrok import (
     delete_reserved_tcp_address,
     generate_unique_subdomain,
 )
+from utils import generate_webhook_secret
 
 
 def create_developer(full_name: str, email: str, region: str = "us") -> Developer:
@@ -171,11 +175,51 @@ def setup_developer_resources(
         resource_type=DeveloperResourceType.DB,
         resource=tcp_tunnel.model_dump(mode="json"),
     )
+    github_app = GitHubAppResource(
+        app_name=f"{developer.sanitized_full_name}-gh-app",
+        # app_id=123456,
+        # client_id="your-client-id",
+        # client_secret="your-client-secret",
+        homepage_url=web_app_domain.domain_url,
+        callback_url=f"{identifier}/git-provider/github/callback",
+        request_oauth_on_installation=True,
+        enable_device_flow=True,
+        setup_url=f"https://github.com/app/{developer.sanitized_full_name}-gh-app",
+        redirect_on_update=True,
+        webhook=GitHubAppWebhookConfig(
+            webhook_url=f"{identifier}/git-provider/github/webhook",
+            webhook_secret=generate_webhook_secret(),
+            ssl_verification_enabled=True,
+        ),
+        permissions=GitHubAppPermissionsConfig(
+            repository_permissions={
+                "contents": "read-only",
+                "pull_requests": "read-only",
+                "metadata": "read-only",
+                "webhooks": "read-only",
+            },
+            organization_permissions={
+                "events": "read-only",
+                "members": "read-only",
+                "webhooks": "read-only",
+            },
+            account_permissions={"email_addresses": "read-only"},
+        ),
+        subscribed_events=["push", "pull_request", "installation", "repository"],
+        public_in_marketplace=False,
+        # private_key_pem_path="/path/to/private-key.pem"
+    )
+    gh_app_resource = DeveloperResource(
+        resource_name="github-app",
+        resource_type=DeveloperResourceType.GITHUB_APP,
+        resource=github_app.model_dump(mode="json"),
+    )
     developer.resources = [
         web_app_resource,
         api_resource,
         m2m_resource,
         db_resource,
+        gh_app_resource,
     ]
     # Write the developer state to a file
     write_developer_state(developer)
@@ -230,6 +274,8 @@ def create_developer_resource_configs(developer: Developer) -> dict:
                 resource_configs[api_resource.resource_name] = api_resource.model_dump(
                     mode="json"
                 )
+            case DeveloperResourceType.GITHUB_APP:
+                resource_configs[resource.resource_name] = resource.resource
             case DeveloperResourceType.M2M:
                 # resource_configs[resource.resource_name] = resource.resource
                 pass

@@ -230,3 +230,8 @@ async def get() -> HTMLResponse:
     </html>
     """
     return HTMLResponse(content=html_content)
+
+
+@app.get("/github", response_class=HTMLResponse)
+async def get_github_setup() -> HTMLResponse:
+    return HTMLResponse(content=open("static/gh.html").read())

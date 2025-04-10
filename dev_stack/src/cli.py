@@ -1,5 +1,6 @@
 import asyncio
 import json
+import subprocess
 from pathlib import Path
 
 import click
@@ -92,7 +93,11 @@ def generate_configs(name: str, output_dir: str) -> None:
         with open(config_file, "w") as f:
             json.dump(config, f, indent=2)
         click.echo(f"✅ Wrote {resource_name} config to {config_file}")
-
+        if resource_name == "github-app":
+            click.echo(f"📝 {resource_name} Configuration:")
+            click.echo("```json")
+            click.echo(json.dumps(config, indent=2))
+            click.echo("```\n")
         # Print .env format for environment variables
         if "env" in config:
             click.echo(f"\n📝 {resource_name} Environment Variables (.env format):")
@@ -153,11 +158,18 @@ def run_tunnels(name: str, ports: str) -> None:
             )
             return
 
-        click.echo("🚀 Starting ngrok tunnels...")
+        # Start ngrok server in the background
+        click.echo("🚀 Starting ngrok server...")
+        server_process = subprocess.Popen(
+            ["uvicorn", "src.ngrok_server:app", "--reload"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
         click.echo("🔌 Connecting to tunnel manager...")
         click.echo("Press Ctrl+C to stop all tunnels")
 
-        # Run the tunnels
+        # Run the tunnels using asyncio.run
         try:
             asyncio.run(run_ngrok_tunnels(domains, port_list))
         except KeyboardInterrupt:
@@ -169,6 +181,10 @@ def run_tunnels(name: str, ports: str) -> None:
             )
         except Exception as e:
             click.echo(f"❌ Error running tunnels: {e!s}", err=True)
+        finally:
+            # Cleanup: stop the server process
+            server_process.terminate()
+            server_process.wait()
 
     except Exception as e:
         click.echo(f"❌ Error setting up tunnels: {e!s}", err=True)

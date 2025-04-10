@@ -1,4 +1,6 @@
 import enum
+import re
+from typing import Literal
 
 from pydantic import BaseModel, computed_field, constr
 
@@ -83,6 +85,7 @@ class DeveloperResourceType(enum.Enum):
     API = "API"
     M2M = "M2M"
     DB = "DB"
+    GITHUB_APP = "GITHUB_APP"
 
 
 class DeveloperResource(BaseModel):
@@ -102,6 +105,39 @@ class ApiResourceConfig(BaseModel):
     env: dict
 
 
+class GitHubAppWebhookConfig(BaseModel):
+    webhook_url: str
+    webhook_secret: str | None
+    ssl_verification_enabled: bool = True
+
+
+PermissionAccess = Literal["read-only", "read-write", "no-access"]
+
+
+class GitHubAppPermissionsConfig(BaseModel):
+    repository_permissions: dict[constr(to_lower=True), PermissionAccess]
+    organization_permissions: dict[constr(to_lower=True), PermissionAccess]
+    account_permissions: dict[constr(to_lower=True), PermissionAccess]
+
+
+class GitHubAppResource(BaseModel):
+    app_name: str
+    app_id: int | None = None
+    client_id: str | None = None
+    client_secret: str | None = None
+    homepage_url: str
+    callback_url: str
+    request_oauth_on_installation: bool = True
+    enable_device_flow: bool = True
+    setup_url: str | None = None
+    redirect_on_update: bool = True
+    webhook: GitHubAppWebhookConfig
+    permissions: GitHubAppPermissionsConfig
+    subscribed_events: list[str]
+    public_in_marketplace: bool = False
+    private_key_pem_path: str | None = None
+
+
 class Developer(BaseModel):
     full_name: str
     email: str
@@ -117,3 +153,11 @@ class Developer(BaseModel):
     @property
     def s3_bucket_name(self) -> str:
         return f"{self.full_name.lower().replace(' ', '-')}-codebase-dropzone"
+
+    @computed_field
+    @property
+    def sanitized_full_name(self) -> str:
+        sanitized_name = re.sub(
+            r"[^a-z0-9\-]", "", self.full_name.lower().replace(" ", "-")
+        )
+        return sanitized_name

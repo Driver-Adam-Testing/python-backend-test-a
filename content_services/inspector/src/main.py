@@ -381,8 +381,6 @@ async def inspect_files(
     if any(c_files):
         index = build_c_project_index(c_and_h_files, codebase_root / codebase_name)
         print("C symbol index built")
-        print(codebase_root)
-        print(index.file_to_symbols)
         # Build index here put as single dict key. This is obviously not prod ready. We would ideally name the dict
         # by unique id (or ephemeral) and pass in a dict handle  the downstream functions that need shared data
         d = modal.Dict.from_name("temp", create_if_missing=True)

@@ -52,9 +52,7 @@ def make_tech_doc(
             raise Exception("Symbol table not found when processing .c file!")
         if symbol_table is None and suffix == ".h":
             print("Symbol table not found when processing .h file; cpp?")
-        print(list(symbol_table.file_to_symbols.keys()))
         reified_symbols = symbol_table.file_to_symbols[node.root_rel_path]
-        print(f"Reified symbols: {reified_symbols}")
 
     file_docs_successful, file_doc = comprehend_file_top_down(
         llm=llm,

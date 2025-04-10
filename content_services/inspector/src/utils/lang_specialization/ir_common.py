@@ -301,11 +301,15 @@ class IrData(BaseModel, abc.ABC):
                     output += (
                         f"    - [{name_part}]({path_part}#{kind_part}:{name_part})\n"
                     )
-            # if sym.raw.symbol_kind == SymbolKind.CALLABLE and sym.usages:
-            #     output += "- **Usages of this function**:\n"
-            #     for used_func in self._reified_symbol.usages:
-            #         used_func.
+            if sym.raw.symbol_kind == SymbolKind.CALLABLE and sym.usages:
+                output += "- **Usages of this function**:\n"
+                for usage in self._reified_symbol.usages:
+                    path_part = usage.raw.file_path
+                    file_name = usage.raw.file_path.stem
+                    start_line = usage.raw.start_line
+                    end_line = usage.raw.end_line
 
+                    output += f"    - [{file_name} (ines {start_line}-{end_line})]({path_part})\n"
         # Render child data
         child_dictionary = {
             label_name: "" for label_name in self._supported_child_ordering

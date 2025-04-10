@@ -71,7 +71,7 @@ def teardown(name: str) -> None:
     "--output-dir",
     "-o",
     type=click.Path(),
-    default="configs",
+    default="state/out",
     help="Directory to write config files to",
 )
 def generate_configs(name: str, output_dir: str) -> None:
@@ -88,46 +88,109 @@ def generate_configs(name: str, output_dir: str) -> None:
     # Generate configs
     configs = create_developer_resource_configs(developer)
 
-    for resource_name, config in configs.items():
-        config_file = (
-            output_path / f"{resource_name.lower().replace(' ', '_')}_config.json"
+    # Create markdown guide
+    guide_file = output_path / "setup_guide.md"
+    with open(guide_file, "w") as f:
+        f.write(f"# Setup Guide for {developer.full_name}\n\n")
+        f.write("## Overview\n\n")
+        f.write(
+            "This guide will help you set up your development environment with the following resources:\n\n"
         )
-        with open(config_file, "w") as f:
-            json.dump(config, f, indent=2)
-        click.echo(f"✅ Wrote {resource_name} config to {config_file}")
-        if resource_name == "github-app":
-            click.echo(f"📝 {resource_name} Configuration:")
-            click.echo("```json")
-            click.echo(json.dumps(config, indent=2))
-            click.echo("```\n")
-        # Print .env format for environment variables
-        if "env" in config:
-            click.echo(f"\n📝 {resource_name} Environment Variables (.env format):")
-            click.echo("```")
-            for key, value in config["env"].items():
-                click.echo(f"{key}={value}")
-            click.echo("```\n")
 
-        # Print Vite config for Web App
-        if resource_name == "webapp-frontend" and "vite_config" in config:
-            click.echo(
-                f"📝 {resource_name} Vite Configuration (vite.config.ts format):"
+        # List all resources
+        for resource_name in configs:
+            f.write(f"- {resource_name.replace('-', ' ').title()}\n")
+
+        f.write("\n## Configuration Files\n\n")
+        f.write("The following configuration files have been generated:\n\n")
+
+        # Write config files and document them
+        for resource_name, config in configs.items():
+            config_file = (
+                output_path / f"{resource_name.lower().replace(' ', '_')}_config.json"
             )
-            click.echo("```typescript")
-            click.echo("import { defineConfig } from 'vite'")
-            click.echo("import react from '@vitejs/plugin-react'")
-            click.echo("\n// https://vitejs.dev/config/")
-            click.echo("export default defineConfig({")
-            click.echo("  plugins: [react()],")
-            click.echo("  server: {")
-            for key, value in config["vite_config"]["server"].items():
-                if isinstance(value, list):
-                    click.echo(f"    {key}: {json.dumps(value)},")
-                else:
-                    click.echo(f"    {key}: {json.dumps(value)},")
-            click.echo("  }")
-            click.echo("})")
-            click.echo("```\n")
+            with open(config_file, "w") as cf:
+                json.dump(config, cf, indent=2)
+            click.echo(f"✅ Wrote {resource_name} config to {config_file}")
+
+            # Add to markdown guide
+            f.write(f"### {resource_name.replace('-', ' ').title()}\n\n")
+            f.write(f"Configuration file: `{config_file.name}`\n\n")
+
+            if resource_name == "github-app":
+                click.echo(f"📝 {resource_name} Configuration:")
+                click.echo("```json")
+                click.echo(json.dumps(config, indent=2))
+                click.echo("```\n")
+
+                f.write("#### GitHub App Configuration\n\n")
+                f.write("```json\n")
+                f.write(json.dumps(config, indent=2))
+                f.write("\n```\n\n")
+                f.write("To set up the GitHub App:\n")
+                f.write("1. Go to GitHub Developer Settings\n")
+                f.write("2. Create a new GitHub App\n")
+                f.write(
+                    "3. Use the configuration above to fill in the required fields\n"
+                )
+                f.write("4. Generate and download the private key\n")
+                f.write("5. Update the `private_key_pem_path` in the config file\n\n")
+
+            if "env" in config:
+                click.echo(f"\n📝 {resource_name} Environment Variables (.env format):")
+                click.echo("```")
+                for key, value in config["env"].items():
+                    click.echo(f"{key}={value}")
+                click.echo("```\n")
+
+                f.write("#### Environment Variables\n\n")
+                f.write("Add these variables to your `.env` file:\n\n")
+                f.write("```\n")
+                for key, value in config["env"].items():
+                    f.write(f"{key}={value}\n")
+                f.write("```\n\n")
+
+            if resource_name == "webapp-frontend" and "vite_config" in config:
+                click.echo(
+                    f"📝 {resource_name} Vite Configuration (vite.config.ts format):"
+                )
+                click.echo("```typescript")
+                click.echo("import { defineConfig } from 'vite'")
+                click.echo("import react from '@vitejs/plugin-react'")
+                click.echo("\n// https://vitejs.dev/config/")
+                click.echo("export default defineConfig({")
+                click.echo("  plugins: [react()],")
+                click.echo("  server: {")
+                for key, value in config["vite_config"]["server"].items():
+                    if isinstance(value, list):
+                        click.echo(f"    {key}: {json.dumps(value)},")
+                    else:
+                        click.echo(f"    {key}: {json.dumps(value)},")
+                click.echo("  }")
+                click.echo("})")
+                click.echo("```\n")
+
+                f.write("#### Vite Configuration\n\n")
+                f.write("Add this configuration to your `vite.config.ts`:\n\n")
+                f.write("```typescript\n")
+                f.write("import { defineConfig } from 'vite'\n")
+                f.write("import react from '@vitejs/plugin-react'\n\n")
+                f.write("// https://vitejs.dev/config/\n")
+                f.write("export default defineConfig({\n")
+                f.write("  plugins: [react()],\n")
+                f.write("  server: {\n")
+                for key, value in config["vite_config"]["server"].items():
+                    if isinstance(value, list):
+                        f.write(f"    {key}: {json.dumps(value)},\n")
+                    else:
+                        f.write(f"    {key}: {json.dumps(value)},\n")
+                f.write("  }\n")
+                f.write("})\n")
+                f.write("```\n\n")
+
+            f.write("---\n\n")
+
+    click.echo(f"✅ Created setup guide: {guide_file}")
 
 
 def wait_for_socket_server(

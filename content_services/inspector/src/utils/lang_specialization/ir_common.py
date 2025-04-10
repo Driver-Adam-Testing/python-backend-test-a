@@ -309,7 +309,7 @@ class IrData(BaseModel, abc.ABC):
                     start_line = usage.raw.start_line
                     end_line = usage.raw.end_line
 
-                    output += f"    - [{file_name} (ines {start_line}-{end_line})]({path_part})\n"
+                    output += f"    - [{file_name} (lines {start_line}-{end_line})]({path_part})\n"
         # Render child data
         child_dictionary = {
             label_name: "" for label_name in self._supported_child_ordering

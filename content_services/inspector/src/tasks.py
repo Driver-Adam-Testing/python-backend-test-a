@@ -25,8 +25,8 @@ TechDocsTask = Union["FileTechDocTask", "FolderTechDocTask", "TopLevelDocsTask"]
 # The symbols and tech docs semaphores are set to 154 to be 4 above the concurrency limit on the modal functions.
 # Somewhat arbitrary; we just want a few more than modal concurrency for expediency in kicking off the next task
 # when one completes
-symbols_sem = asyncio.Semaphore(154)
-tech_docs_sem = asyncio.Semaphore(154)
+symbols_sem = asyncio.Semaphore(76)
+tech_docs_sem = asyncio.Semaphore(76)
 folder_tech_docs_sem = asyncio.Semaphore(64)
 
 embed_sem = asyncio.Semaphore(10)

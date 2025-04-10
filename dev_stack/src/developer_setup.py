@@ -344,4 +344,14 @@ def teardown_developer_resources(developer: Developer) -> bool:
         print(f"❌ Error deleting config directory: {e!s}")
         success = False
 
+    # Delete gh.html file
+    try:
+        gh_html_path = Path("static") / "gh.html"
+        if gh_html_path.exists():
+            gh_html_path.unlink()
+            print(f"✅ Deleted GitHub app setup guide: {gh_html_path}")
+    except Exception as e:
+        print(f"❌ Error deleting GitHub app setup guide: {e!s}")
+        success = False
+
     return success

@@ -334,7 +334,7 @@ def teardown_developer_resources(developer: Developer) -> bool:
 
     # Delete config directory
     try:
-        config_dir = Path("configs")
+        config_dir = Path("state/out")
         if config_dir.exists():
             import shutil
 

@@ -115,20 +115,6 @@ class DataSource(BaseModel):
                 self._cached_nodes = list(id_to_node.values())
         return self._cached_nodes
 
-    def human_readable_summary(self) -> str:
-        """
-        Creates a simple summary of this DataSource by listing the relative_path
-        of each node and its ancestors, sorted alphabetically.
-        """
-        # Because we've already loaded ancestors via selectinload, we can simply
-        # iterate here without causing a detached session error.
-        all_paths = set()
-        for node in self.nodes:
-            all_paths.add(node.relative_path)
-        paths = sorted(all_paths)
-        lines = [f"- {p}" for p in paths]
-        return "\n".join(lines)
-
     def describe_contents_char_limit(self, char_limit: int) -> str:
         """
         Describes the contents of this DataSource by grouping nodes by version,
@@ -230,21 +216,3 @@ class DataSource(BaseModel):
             traverse_tree(built_tree, indent=1)
 
         return "\n".join(summary_lines)
-
-
-# if __name__ == "__main__":
-#     ds = DataSource.from_page_id(
-#         "589a0ebe-8650-4e63-9470-e8a47dc69494", "org_s76pU1v8LAYhTOWB"
-#     )
-#     print(ds.describe_contents_char_limit(char_limit=500))
-#     input("500 characters\n\nPress Enter to continue...")
-#     print(ds.describe_contents_char_limit(char_limit=1000))
-#     input("1000 characters\n\nPress Enter to continue...")
-#     print(ds.describe_contents_char_limit(char_limit=2000))
-#     input("2000 characters\n\nPress Enter to continue...")
-#     print(ds.describe_contents_char_limit(char_limit=4000))
-#     input("4000 characters\n\nPress Enter to continue...")
-#     print(ds.describe_contents_char_limit(char_limit=7500))
-#     input("7500 characters\n\nPress Enter to continue...")
-#     print(ds.describe_contents_char_limit(char_limit=20000))
-#     input("20000 characters\n\nPress Enter to continue...")

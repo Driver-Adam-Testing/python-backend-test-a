@@ -14,6 +14,7 @@
 -[ ] TestInDevCDK Stack
   - [ ] clone codebase-onboarding-lambda
   - [ ] clone document-onboarding-lambda
+  - [ ] Create a new stack inspired by the TestInDevCDK stack
   - [ ] update code to use the env variables from the previous steps
   - [ ] integrate cdk deploy into the cli
 - [ ] Modal setup

@@ -1,6 +1,8 @@
 import asyncio
 import json
+import socket
 import subprocess
+import time
 from pathlib import Path
 
 import click
@@ -128,6 +130,24 @@ def generate_configs(name: str, output_dir: str) -> None:
             click.echo("```\n")
 
 
+def wait_for_socket_server(
+    host: str = "localhost", port: int = 9000, timeout: int = 30
+) -> bool:
+    """Wait for the socket server to be ready to accept connections"""
+    start_time = time.time()
+    while time.time() - start_time < timeout:
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                sock.settimeout(1)
+                result = sock.connect_ex((host, port))
+                if result == 0:
+                    return True
+        except OSError:
+            pass
+        time.sleep(1)
+    return False
+
+
 @cli.command()
 @click.option("--name", type=str, help="Developer name", required=True)
 @click.option(
@@ -166,6 +186,15 @@ def run_tunnels(name: str, ports: str) -> None:
             stderr=subprocess.PIPE,
         )
 
+        click.echo("⏳ Waiting for socket server to start...")
+        if not wait_for_socket_server():
+            click.echo("❌ Socket server failed to start within timeout", err=True)
+            server_process.terminate()
+            server_process.wait()
+            return
+
+        click.echo("🌐 Ngrok server is running at: http://localhost:8000")
+        click.echo("⚙️ GitHub app setup guide running at: http://localhost:8000/github")
         click.echo("🔌 Connecting to tunnel manager...")
         click.echo("Press Ctrl+C to stop all tunnels")
 

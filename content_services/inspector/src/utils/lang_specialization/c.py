@@ -14,6 +14,8 @@ from .ir_common import (
 from .symbol_common import (
     RawSymbolCollection,
     RawSymbolData,
+    ReifiedSymbol,
+    SymbolKind,
     code_requires_multi_prompt,
 )
 
@@ -248,7 +250,7 @@ class CFnData(FnData):
 class CFunctionCollection(IrCollection):
     data: dict[str, CFnData | list[CFnData]]
 
-    @classmethod
+    @classmethod  # Can add extra arg here with symbol table info
     def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
         return cls.from_llm_with_ir_data(CFnData, llm, symbols_list)
 
@@ -328,12 +330,17 @@ class CFunctionRawSymbolCollection(RawSymbolCollection):
     data: dict[str, RawSymbolData]
 
     @classmethod
-    def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
-        driver_tree = CDriverTree.from_code(code, root_rel_path)
+    def from_static_analysis(
+        cls, code: str, root_rel_path: Path, reified_symbols: list[ReifiedSymbol] | None
+    ) -> Self | None:
+        func_symbols = [
+            sym for sym in reified_symbols if sym.raw.symbol_kind == SymbolKind.CALLABLE
+        ]
         function_raw_symbol_data = {}
         is_large_file = code_requires_multi_prompt(code)
 
-        for ts_symbol in driver_tree.extract_function_definitions():
+        for reified_sym in func_symbols:
+            ts_symbol = reified_sym.raw
             if ts_symbol.name is not None:
                 raw_symbol_data = RawSymbolData.from_tree_sitter_raw_symbol(
                     ts_symbol=ts_symbol,
@@ -347,6 +354,7 @@ class CFunctionRawSymbolCollection(RawSymbolCollection):
                     is_overloaded=False,
                     use_padding=False,
                     code=code,
+                    reified_symbol=reified_sym,  # TODO hack!
                 )
                 function_raw_symbol_data[ts_symbol.name] = raw_symbol_data
 

@@ -43,6 +43,19 @@ def make_tech_doc(
         request_timeout=FILE_TECH_DOC_LLM_TIMEOUT,
     )
 
+    reified_symbols = None
+    suffix = node.root_rel_path.suffix.lower()
+    if suffix in [".h", ".c"]:
+        d = modal.Dict.from_name("temp", create_if_missing=True)
+        symbol_table = d.get("symbol_table", None)
+        if symbol_table is None and suffix == ".c":
+            raise Exception("Symbol table not found when processing .c file!")
+        if symbol_table is None and suffix == ".h":
+            print("Symbol table not found when processing .h file; cpp?")
+        print(list(symbol_table.file_to_symbols.keys()))
+        reified_symbols = symbol_table.file_to_symbols[node.root_rel_path]
+        print(f"Reified symbols: {reified_symbols}")
+
     file_docs_successful, file_doc = comprehend_file_top_down(
         llm=llm,
         node=node,
@@ -52,6 +65,7 @@ def make_tech_doc(
         chunk_overlap=CHUNK_OVERLAP,
         compression_loop_max_itr=COMPRESSION_LOOP_MAX_ITR,
         max_num_chunks=MAX_NUM_CHUNKS_FILE,
+        reified_symbols=reified_symbols,
         raise_hard_errors=raise_hard_errors,
     )
     print(f"Tech docs created for ({node})")

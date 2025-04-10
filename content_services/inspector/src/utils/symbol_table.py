@@ -1,9 +1,13 @@
 from collections import defaultdict
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Self
 
-from utils.lang_specialization.symbol_common import RawTreeSitterSymbolData, SymbolKind
+from utils.lang_specialization.symbol_common import (
+    RawTreeSitterSymbolData,
+    ReifiedSymbol,
+    SymbolKind,
+)
 
 
 def to_root_relative(fpath: Path, project_root: Path) -> Path:
@@ -60,7 +64,7 @@ def parse_c_file(
     list[str],
     dict[RawTreeSitterSymbolData, list[RawTreeSitterSymbolData]],
 ]:
-    from treesitter_driver import CDriverTree
+    from utils.treesitter_driver import CDriverTree
 
     code_str = fpath.read_text(encoding="utf8")
     root_rel_path = to_root_relative(fpath, project_root)
@@ -113,7 +117,7 @@ class ParsedProject:
                     abs_fpath, project_root
                 )
                 print(" done.")
-            except Exception as e:
+            except Exception as e:  # TODO specific exception type
                 print(f" failed: {e}")
                 symbols = []
                 includes = []
@@ -188,7 +192,7 @@ class ParsedProjectWithVisibility:
         for fpath in file_to_symbols:
             print(f"Resolving visibility for {fpath}...", flush=True)
             visited: set[Path] = set()
-            dfs(fpath.resolve(), visited)
+            dfs(fpath, visited)
             visibility_map[fpath] = visited
 
         return cls(
@@ -299,19 +303,6 @@ class LinkedProject:
             linked_map[fpath] = linked_syms
 
         return cls(linked_symbols=linked_map, visibility_map=project_vis.visibility_map)
-
-
-@dataclass(frozen=True)
-class ReifiedSymbol:
-    """
-    Extends LinkedSymbol with a list of usages (if this is a definition).
-    """
-
-    raw: RawTreeSitterSymbolData
-    is_definition: bool
-    definition: Self | None = None
-    usages: list[Self] = field(default_factory=list)
-    calls: list[Self] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -500,13 +491,16 @@ def discover_c_and_h_files(project_root: Path) -> list[Path]:
 
 
 def main() -> None:
-    project_root = Path("/Users/andrewmark/Downloads/sqlite")
+    # project_root = Path("/Users/andrewmark/Downloads/sqlite")
+    project_root = Path("/Users/andrewmark/projects/c_test_2")
+
     file_paths = discover_c_and_h_files(project_root)
 
     index = build_c_project_index(file_paths, project_root)
 
-    focus_file = Path("sqlite/src/btree.c")  # Note this is project-relative
-    index.print_summary([focus_file])
+    # focus_file = Path("sqlite/src/btree.c")  # Note this is project-relative
+    # index.print_summary([focus_file])
+    index.print_summary()
 
 
 if __name__ == "__main__":

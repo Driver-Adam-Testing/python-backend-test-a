@@ -10,7 +10,11 @@ from utils.dag import LiteNode
 from utils.io import (
     get_prompt_template,
 )
-from utils.lang_specialization.symbol_common import Lang, disambiguate_header
+from utils.lang_specialization.symbol_common import (
+    Lang,
+    ReifiedSymbol,
+    disambiguate_header,
+)
 from utils.models import ChatOpenAI
 from utils.templates import Template
 
@@ -406,6 +410,7 @@ def comprehend_file_top_down(
     chunk_overlap: int,
     compression_loop_max_itr: int,
     max_num_chunks: int,
+    reified_symbols: None | list[ReifiedSymbol],
     raise_hard_errors: bool = True,
 ) -> tuple[bool, dict[str, Any]]:
     from shared.chunking.text_splitter import split_text
@@ -464,6 +469,7 @@ def comprehend_file_top_down(
                         llm=llm,
                         root_rel_path=node.root_rel_path,
                         code=source_code,
+                        reified_symbols=reified_symbols,
                         code_chunks=chunk_texts,
                     )
                 case _:
@@ -511,6 +517,7 @@ def comprehend_file_top_down(
                         llm=llm,
                         root_rel_path=node.root_rel_path,
                         code=source_code,
+                        reified_symbols=reified_symbols,
                         code_chunks=chunk_texts,
                     )
             # Now ready to generate final documentation content.
@@ -584,7 +591,10 @@ def comprehend_file_top_down(
             template = TEMPLATE_DATA[file_kind.kind][language]
             long_template = Template(template=template)
             file_description_long = long_template.run_with_code(
-                llm=llm, root_rel_path=node.root_rel_path, code=source_code
+                llm=llm,
+                root_rel_path=node.root_rel_path,
+                code=source_code,
+                reified_symbols=reified_symbols,
             )
             chunk_detailed_descriptions = [file_description_long]
             file_description_single_sentence = file_single_sentence_from_code(

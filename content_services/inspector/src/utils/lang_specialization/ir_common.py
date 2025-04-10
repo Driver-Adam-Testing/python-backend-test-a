@@ -10,7 +10,9 @@ from pydantic import BaseModel, PrivateAttr
 from utils.lang_specialization.symbol_common import (
     RawSymbolCollection,
     RawSymbolData,
+    ReifiedSymbol,
     ScopeRelation,
+    SymbolKind,
 )
 from utils.models import ChatOpenAI, OutputConfig, OutputConfigKind
 from utils.threadpool import FastShutdownThreadPoolExecutor
@@ -179,6 +181,8 @@ class IrData(BaseModel, abc.ABC):
     # Support for children and how they are presented are now defined by _supported_child_ordering and
     # _child_to_ir and _child_to_field_name, rather than as explicit fields here.
 
+    _reified_symbol: ReifiedSymbol | None = PrivateAttr(default=None)
+
     @classmethod
     @abc.abstractmethod
     def system_prompt(cls) -> str:
@@ -234,6 +238,11 @@ class IrData(BaseModel, abc.ABC):
                 # TODO: do something with this - switch to default_instance
             cls_instance = cls.parse_raw(content_raw)
 
+        if symbol.reified_symbol is not None:
+            cls_instance._reified_symbol = (
+                symbol.reified_symbol
+            )  # So we can render this info later
+
         if len(symbol.children) > 0:
             workers = compute_num_workers(len(symbol.children))
             futures = {}
@@ -280,6 +289,22 @@ class IrData(BaseModel, abc.ABC):
                 raise ValueError(
                     f"Unsupported field content type for {label_name}: {type(label_content)}. Add a MdRenderable class to render this content."
                 )
+        if self._reified_symbol is not None:
+            sym = self._reified_symbol
+            if sym.raw.symbol_kind == SymbolKind.CALLABLE and sym.calls:
+                output += "- **Functions called**:\n"
+                for called_func in self._reified_symbol.calls:
+                    kind_part = called_func.raw.symbol_kind.name.lower()
+                    name_part = called_func.raw.name
+                    path_part = called_func.raw.file_path
+
+                    output += (
+                        f"    - [{name_part}]({path_part}#{kind_part}:{name_part})\n"
+                    )
+            # if sym.raw.symbol_kind == SymbolKind.CALLABLE and sym.usages:
+            #     output += "- **Usages of this function**:\n"
+            #     for used_func in self._reified_symbol.usages:
+            #         used_func.
 
         # Render child data
         child_dictionary = {
@@ -336,12 +361,13 @@ class IrCollection(BaseModel, abc.ABC):
         with FastShutdownThreadPoolExecutor(max_workers=workers) as executor:
             for _, s in symbols_list.data.items():
                 if isinstance(s, list):
-                    for item in s:
-                        if item.name not in symbols_dict:
-                            symbols_dict[item.name] = []
-                        futures[executor.submit(ir_data.from_llm, llm_to_use, item)] = (
-                            item.name
-                        )
+                    for raw_sym_data in s:
+                        if raw_sym_data.name not in symbols_dict:
+                            symbols_dict[raw_sym_data.name] = []
+                            # can reattach raw symbol info to use downstream when rendering MD.
+                        futures[
+                            executor.submit(ir_data.from_llm, llm_to_use, raw_sym_data)
+                        ] = raw_sym_data.name
                 elif isinstance(s, RawSymbolData):
                     if s.name not in symbols_dict:
                         symbols_dict[s.name] = []
@@ -356,7 +382,10 @@ class IrCollection(BaseModel, abc.ABC):
                 if res is not None:
                     print(f"Processed {idx}/{len(futures)} symbols")
                     symbols_dict[futures[future]].append(res)
-        return cls(data=symbols_dict)
+
+        return cls(
+            data=symbols_dict
+        )  # This is just the LLM produced content, without the raw symbol info.
 
     @classmethod
     @abc.abstractmethod
@@ -371,7 +400,14 @@ class IrCollection(BaseModel, abc.ABC):
         output = ""
         for k, v in self.data.items():
             for item in v:
-                output += f"\n---\n### {k}\n"
+                if item._reified_symbol is not None:
+                    kind_part = item._reified_symbol.raw.symbol_kind.name.lower()
+                    name_part = item._reified_symbol.raw.name
+                    id_comment = f"<!-- {{{{#{kind_part}:{name_part}}}}} -->"
+                else:
+                    id_comment = ""
+
+                output += f"\n---\n### {k} {id_comment}\n"
                 output += item.render_markdown()
 
         return output
@@ -414,6 +450,7 @@ class FnData(IrData, abc.ABC):
     inputs: ListedBacktickNameRawContentWithNone
     control_flow: ListedRawContentWithNone
     output: FieldNameWithBulletedContent
+    # TODO can add method to take _symbol_info
 
     @classmethod
     def default_instance(cls) -> Self:

@@ -45,7 +45,9 @@ with inspection_image.imports():
         SymbolsTask,
         TopLevelDocsTask,
     )
+    from utils.symbol_table import build_c_project_index
     from utils.task import TaskManager
+
 
 # TODO considering using concurrent inputs when we're just calling open AI. This should
 # save some cost (though costs are negligible today)
@@ -364,6 +366,28 @@ async def inspect_files(
     for node, _ in nodes_with_id:
         print(node)
 
+    c_files = [
+        codebase_root / node.root_rel_path
+        for node, _ in nodes_with_id
+        if node.root_rel_path.suffix.lower() in [".c"]
+    ]
+    h_files = [
+        codebase_root / node.root_rel_path
+        for node, _ in nodes_with_id
+        if node.root_rel_path.suffix.lower() in [".h"]
+    ]
+    c_and_h_files = c_files + h_files
+
+    if any(c_files):
+        index = build_c_project_index(c_and_h_files, codebase_root / codebase_name)
+        print("C symbol index built")
+        print(codebase_root)
+        print(index.file_to_symbols)
+        # Build index here put as single dict key. This is obviously not prod ready. We would ideally name the dict
+        # by unique id (or ephemeral) and pass in a dict handle  the downstream functions that need shared data
+        d = modal.Dict.from_name("temp", create_if_missing=True)
+        d["symbol_table"] = index
+
     tasks = []
     for node, db_node_id in nodes_with_id:
         lite_node = node.into_lite_node()
@@ -470,6 +494,9 @@ async def inspect_files(
     task_results = await task_manager.run_tasks(
         run_id, result_loading_config=result_loading_config
     )
+
+    if len(c_files) > 0:
+        modal.Dict.delete(name="temp")
 
     print("\n---------- Task results ----------")
     pprinter = pprint.PrettyPrinter(indent=2)

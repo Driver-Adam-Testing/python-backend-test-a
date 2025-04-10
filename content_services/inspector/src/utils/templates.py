@@ -7,6 +7,7 @@ from typing import Any, Self
 
 from pydantic import BaseModel, ValidationError
 
+from utils.lang_specialization.symbol_common import ReifiedSymbol
 from utils.models import ChatOpenAI, OutputConfig, OutputConfigKind
 
 
@@ -69,6 +70,7 @@ class Template(BaseModel):
         llm: ChatOpenAI,
         root_rel_path: Path,
         code: str,
+        reified_symbols: list[ReifiedSymbol] | None,
         code_chunks: list[str] | None = None,
     ) -> str:
         output = ""
@@ -129,9 +131,18 @@ class Template(BaseModel):
                     | S.FN_COND_JSON
                 ):  # Conditional construct using a function
                     section_title, conditional_fn, true_action, false_action = args
-                    fn_output: list[str] | str | None = conditional_fn(
-                        code, root_rel_path
-                    )
+
+                    match _arity(conditional_fn):
+                        case 2:
+                            fn_output = conditional_fn(code, root_rel_path)
+                        case 3:
+                            fn_output = conditional_fn(
+                                code, root_rel_path, reified_symbols
+                            )
+                        case _:
+                            raise TemplateError(
+                                "`FN_COND_*` expects conditional function with arity 2 or 3"
+                            )
                     action = false_action if fn_output is None else true_action
                     if (
                         action is None

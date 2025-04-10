@@ -1,14 +1,9 @@
-from shared.v3.app.static.messages.constants import (
-    DOCUMENT_CONTENT_AFTER_CURSOR_XML_BEGIN,
-    DOCUMENT_CONTENT_AFTER_CURSOR_XML_END,
-    DOCUMENT_CONTENT_BEFORE_CURSOR_XML_BEGIN,
-    DOCUMENT_CONTENT_BEFORE_CURSOR_XML_END,
-    PROMPT_XML_BEGIN,
-    PROMPT_XML_END,
-    USER_CURSOR_XML_BEGIN,
-    USER_CURSOR_XML_END,
-    USER_SELECTED_TEXT_XML_BEGIN,
-    USER_SELECTED_TEXT_XML_END,
+from shared.v3.globals.glossary import (
+    CURSOR,
+    DOCUMENT_CONTENT,
+    DOCUMENT_CONTENT_AFTER_CURSOR,
+    DOCUMENT_CONTENT_BEFORE_CURSOR,
+    USER_PROMPT,
 )
 from shared.v3.interfaces.llm_message import LlmMessage, MessageKind
 
@@ -22,14 +17,15 @@ class SmartInstructionInputMessage(LlmMessage):
         prompt: str,
         page_content_before_cursor: str | None = None,
         page_content_after_cursor: str | None = None,
-        selected_text: str | None = None,
     ) -> "SmartInstructionInputMessage":
+        document_content = DOCUMENT_CONTENT.wrap(
+            DOCUMENT_CONTENT_BEFORE_CURSOR.wrap(page_content_before_cursor)
+            + CURSOR.wrap("", annotate_empty=True)
+            + DOCUMENT_CONTENT_AFTER_CURSOR.wrap(page_content_after_cursor)
+        )
         content = (
             f"The user has entered the following request:\n"
-            f"{PROMPT_XML_BEGIN}{prompt}{PROMPT_XML_END}\n"
-            f"{f'{USER_SELECTED_TEXT_XML_BEGIN}{selected_text}{USER_SELECTED_TEXT_XML_END}' if selected_text else ''}\n"
-            f"{f'{DOCUMENT_CONTENT_BEFORE_CURSOR_XML_BEGIN}{page_content_before_cursor}{DOCUMENT_CONTENT_BEFORE_CURSOR_XML_END}' if page_content_before_cursor and page_content_before_cursor.strip() else ''}\n"
-            f"{f'{USER_CURSOR_XML_BEGIN}{selected_text}{USER_CURSOR_XML_END}' if selected_text else '<USER_CURSOR>'}\n"
-            f"{f'{DOCUMENT_CONTENT_AFTER_CURSOR_XML_BEGIN}{page_content_after_cursor}{DOCUMENT_CONTENT_AFTER_CURSOR_XML_END}' if page_content_after_cursor and page_content_after_cursor.strip() else ''}"
+            f"{USER_PROMPT.wrap(prompt)}\n"
+            f"{document_content}"
         )
         return cls(content=content.strip())

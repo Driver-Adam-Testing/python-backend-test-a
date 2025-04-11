@@ -159,7 +159,7 @@ async def run_adi_driver(
         await update_autodocs_status(
             page_id=str(page_node_id),
             status_kind=AutoDocStatusMessageKind.GENERATION_ERROR,
-            content=str(e),
+            content="An error as has occurred during generation.",
         )
         with get_session() as session, session.begin():
             node = session.get(Node, page_node_id)

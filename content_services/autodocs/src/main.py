@@ -37,7 +37,7 @@ image = inspection_image = (
         local_path="../../driver_db/certs", remote_path="/root/data/", copy=True
     )
     .add_local_file(
-        "src/adi_driver_v4.toml", "/autodocs_configs/adi_driver_page.toml", copy=True
+        "src/adi_driver_v5.toml", "/autodocs_configs/adi_driver_page.toml", copy=True
     )  # These shouldn't require the copy, but seems to be conflicting with the Proxy
     .add_local_python_source(
         "autodocs_prototype", "database", "shared", "utils", copy=True

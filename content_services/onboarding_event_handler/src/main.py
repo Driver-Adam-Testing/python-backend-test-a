@@ -38,12 +38,12 @@ def handler(
 
         client_id = (
             cache.get_secret_string(settings.CLIENT_ID_SECRET)
-            if settings.ENVIRONMENT not in ["local", "cloud-local"]
+            if settings.ENVIRONMENT != "local"
             else settings.CLIENT_ID_SECRET
         )
         client_secret = (
             cache.get_secret_string(settings.CLIENT_SECRET_SECRET)
-            if settings.ENVIRONMENT not in ["local", "cloud-local"]
+            if settings.ENVIRONMENT != "local"
             else settings.CLIENT_SECRET_SECRET
         )
         payload = json.dumps(

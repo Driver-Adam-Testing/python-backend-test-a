@@ -3,14 +3,15 @@ import os
 from aws_cdk import RemovalPolicy, Stack, aws_s3
 from constructs import Construct
 
-# from cdk.constructs.dev.document_onboarding_lambda import (
-#     DocumentOnboardingLambda,
-#     DocumentOnboardingLambdaParams,
-# )
+from cdk.developer_constructs.dev_stack_document_onboarding_lambda import (
+    DevStackDocumentOnboardingLambda,
+    DevStackDocumentOnboardingLambdaParams,
+)
 from cdk.developer_constructs.dev_stack_code_onboarding_lambda import (
     DevStackCodeOnboardingLambda,
     DevStackCodeOnboardingLambdaParams,
 )
+from cdk.developer_constructs.dev_stack_metrics_lambda import DevStackMetricsLambda, DevStackMetricsLambdaParams
 
 
 # This stack is intended to be used to manually deploy *additional* infrastructure
@@ -42,7 +43,7 @@ class DeveloperTestInDevStack(Stack):
                     allowed_origins=[
                         "http://localhost:3000",
                         "http://localhost:4000",
-                        os.getenv("BACKEND_CORS_ORIGINS"),
+                        os.getenv("CORS_ORIGINS"),
                     ],
                     allowed_headers=["*"],
                     exposed_headers=[
@@ -59,35 +60,31 @@ class DeveloperTestInDevStack(Stack):
             "EricCodeOnboardingLambda",
             DevStackCodeOnboardingLambdaParams(
                 environment="cloud-local",
-                api_url=os.getenv("AUTH0_AUDIENCE"),
-                auth0_url="https://auth.dev.driverai.com",
+                api_url=os.getenv("API_URL"),
+                auth0_url=os.getenv("AUTH0_URL"),
                 dropzone_bucket=self.eric_codebase_dropzone_bucket,
                 use_legacy_dropzone=True,
-                client_id=os.getenv("AUTH0_CLIENT_ID"),
-                client_secret=os.getenv("AUTH0_CLIENT_SECRET"),
+            ),
+        )
+        # print(self.onboarding_lambda)
+        # need to create a bucket
+        self.metrics_lambda = DevStackMetricsLambda(
+            self,
+            "MetricsLambda",
+            DevStackMetricsLambdaParams(
+                environment="cloud-local",
+                database_url=os.getenv("DATABASE_URL"),
             ),
         )
 
-        # need to create a bucket
-        # self.metrics_lambda = MetricsLambda(
-        #     self,
-        #     "MetricsLambda",
-        #     MetricsLambdaParams(
-        #         environment=os.getenv("ENVIRONMENT", "local"),
-        #         database_url=os.getenv("DATABASE_URL"),
-        #     ),
-        # )
-
-        # self.document_onboarding_lambda = DocumentOnboardingLambda(
-        #     self,
-        #     "DocumentOnboardingLambda",
-        #     DocumentOnboardingLambdaParams(
-        #         environment="development",
-        #         api_url="https://driverai.ngrok.io/api/v1",
-        #         auth0_url="https://auth.dev.driverai.com",
-        #         dropzone_bucket=self.eric_codebase_dropzone_bucket,
-        #         use_legacy_dropzone=True,
-        #         event_type=aws_s3.EventType.OBJECT_CREATED,
-        #         ignore_tags=True,
-        #     ),
-        # )
+        self.document_onboarding_lambda = DevStackDocumentOnboardingLambda(
+            self,
+            "EricDocumentOnboardingLambda",
+            DevStackDocumentOnboardingLambdaParams(
+                environment="cloud-local",
+                api_url=os.getenv("API_URL"),
+                auth0_url=os.getenv("AUTH0_URL"),
+                dropzone_bucket=self.eric_codebase_dropzone_bucket,
+                use_legacy_dropzone=True,
+            ),
+        )

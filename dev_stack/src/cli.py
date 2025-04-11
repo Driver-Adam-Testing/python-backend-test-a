@@ -15,7 +15,7 @@ from developer_setup import (
 )
 from github_setup import generate_github_app_setup_guide
 from ngrok import run_ngrok_tunnels
-
+from config import settings
 
 @click.group()
 def cli() -> None:
@@ -94,6 +94,27 @@ def setup(name: str, email: str, region: str, setup_github: bool) -> None:
     except Exception as e:
         click.echo(f"❌ Error setting up developer: {e!s}", err=True)
 
+@cli.command()
+@click.option("--name", type=str, help="Developer name", required=True)
+@click.option(
+    "--output-dir",
+    "-o",
+    type=click.Path(),
+    default="state/out",
+    help="Directory to write config files to",
+)
+def generate_configs(name: str, output_dir: str) -> None:
+    """Generate developer configs"""
+    developer = load_developer_state(name)
+    if not developer:
+        click.echo(f"❌ No state file found for developer: {name}", err=True)
+        return
+
+    try:
+        generate_developer_configs(name=name, output_dir=output_dir)
+        click.echo(f"✅ Successfully generated configs for developer: {name}")
+    except Exception as e:
+        click.echo(f"❌ Error generating configs: {e!s}", err=True)
 
 @cli.command()
 @click.option("--name", type=str, help="Developer name", required=True)

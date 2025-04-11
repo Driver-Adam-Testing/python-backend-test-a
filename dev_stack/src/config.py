@@ -7,10 +7,14 @@ class Settings(BaseSettings):
     )
 
     NGROK_API_KEY: str
+    AUTH0_URL: str
     AUTH0_DOMAIN: str
     AUTH0_MGMT_API_CLIENT_ID: str
     AUTH0_MGMT_API_CLIENT_SECRET: str
     AUTH0_MGMT_API_AUDIENCE: str
 
+    POSTGRES_USER: str
+    POSTGRES_PASSWORD: str
+    POSTGRES_DB: str
 
 settings = Settings()  # type: ignore

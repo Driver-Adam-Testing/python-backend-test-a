@@ -94,7 +94,7 @@ def handler(event: dict, context: dict) -> any:
                 node_id = metadata["Metadata"]["node_id"]
                 version_id = metadata["Metadata"]["version_id"]
                 asset_id = metadata["Metadata"]["primary_asset_id"]
-                if has_no_threats_tag(bucket=bucket_name, key=real_object_key):
+                if has_no_threats_tag(bucket=bucket_name, key=real_object_key) or settings.ENVIRONMENT == "cloud-local":
                     logger.info("No threats found, continuing document onboarding")
                     # Check if the destination bucket exists, and create it if it doesn't
                     bucket_exists = ensure_bucket_exists(

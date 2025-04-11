@@ -11,7 +11,7 @@ from aws_cdk import (
     aws_secretsmanager,
     aws_sns,
     aws_sqs,
-    aws_ssm,
+    aws_ssm, Stack, CfnOutput,
 )
 from aws_cdk import (
     aws_events_targets as targets,
@@ -19,7 +19,7 @@ from aws_cdk import (
 from constructs import Construct
 
 
-class MetricsLambdaParams:
+class DevStackMetricsLambdaParams:
     environment: str
 
     def __init__(
@@ -33,21 +33,21 @@ class MetricsLambdaParams:
         self.cloudwatch_alarm_arn = cloudwatch_alarm_arn
 
 
-class MetricsLambda(Construct):
-    def __init__(self, scope: Construct, id: str, params: MetricsLambdaParams) -> None:
+class DevStackMetricsLambda(Construct):
+    def __init__(self, scope: Construct, id: str, params: DevStackMetricsLambdaParams) -> None:
         super().__init__(scope, id)
 
-        database_url_secret = aws_secretsmanager.Secret(self, "MetricsLambdaDBSecret")
+        database_url_secret = aws_secretsmanager.Secret(self, "DevStackMetricsLambdaDBSecret")
         vpc_id = aws_ssm.StringParameter.value_from_lookup(
             scope, parameter_name="/baseline/infra/v2/vpc/id"
         )
         vpc = aws_ec2.Vpc.from_lookup(self, id="BaselineVPC_DRV_24", vpc_id=vpc_id)
-        driver_db_path = os.path.abspath("driver_db")
-
+        driver_db_path = os.path.abspath("../driver_db")
+        print(f"Driver DB path: {driver_db_path}")
         self.lambda_function = aws_lambda_python_alpha.PythonFunction(
             scope,
             "MetricsLambdaPy",
-            entry="lambdas/metrics_handler",
+            entry="../lambdas/metrics_handler",
             runtime=aws_lambda.Runtime.PYTHON_3_12,
             index="src/main.py",
             vpc=vpc,
@@ -73,10 +73,11 @@ class MetricsLambda(Construct):
             self.lambda_function,
         )
         self.metrics_dlq = aws_sqs.Queue(self, "MetricsDLQ")
+        stack_name = Stack.of(self).stack_name
         self.metrics_bus = aws_events.EventBus(
             self,
             "MetricsBus",
-            event_bus_name="metrics-event-bus",
+            event_bus_name=f"metrics-event-bus-{stack_name}-{params.environment}",
             dead_letter_queue=self.metrics_dlq,
         )
         self.metrics_rule = aws_events.Rule(
@@ -134,3 +135,4 @@ class MetricsLambda(Construct):
             print(
                 f"*** NO CW DLQ ALARM CONFIGURED FOR MetricAlarm in {params.environment} ***"
             )
+        CfnOutput(self, "MetricsLambdaDBSecretOutput", value=database_url_secret.secret_name,export_name="MetricsLambdaDBSecretOutput")

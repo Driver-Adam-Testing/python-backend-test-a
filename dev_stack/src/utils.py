@@ -1,3 +1,4 @@
+import json
 import random
 import urllib.request
 
@@ -19,6 +20,9 @@ def generate_webhook_secret(num_words=16, delimiter=" "):
     secret_words = random.choices(wordlist, k=num_words)
     return delimiter.join(secret_words)
 
+def load_secrets_from_json(file_name):
+    with open(f"./state/out/{file_name}", "r") as f:
+        return json.load(f)
 
 if __name__ == "__main__":
     print(generate_webhook_secret())

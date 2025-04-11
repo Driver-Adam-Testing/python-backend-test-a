@@ -22,7 +22,9 @@ from models import (
     GitHubAppWebhookConfig,
     NgrokReservedDomain,
     NgrokReservedTcpAddress,
-    WebAppResourceConfig,
+    WebAppResourceConfig, LambdaResourceConfig, CodeLambdaSecretMap, DocumentLambdaSecretMap, DatabaseResource,
+    DatabaseResourceConfig, MetricsLambdaSecretMap,CDKResourceConfig
+
 )
 from ngrok import (
     create_reserved_domain,
@@ -167,36 +169,8 @@ def setup_developer_resources(
     m2m_app = create_m2m_app(
         name=f"{developer.full_name} Cloud Local M2M", identifier=identifier
     )
-
-    developer.auth0_webapp = web_app
-    developer.auth0_api = api_app
-    developer.auth0_m2m = m2m_app
-
-    web_app_resource = DeveloperResource(
-        resource_name="Web App",
-        resource_type=DeveloperResourceType.WEB_APP,
-        resource=web_app,
-    )
-    api_resource = DeveloperResource(
-        resource_name="API",
-        resource_type=DeveloperResourceType.API,
-        resource=api_app,
-    )
-    m2m_resource = DeveloperResource(
-        resource_name="M2M",
-        resource_type=DeveloperResourceType.M2M,
-        resource=m2m_app,
-    )
-    db_resource = DeveloperResource(
-        resource_name="DB",
-        resource_type=DeveloperResourceType.DB,
-        resource=tcp_tunnel.model_dump(mode="json"),
-    )
-    developer.github_app = GitHubAppResource(
+    github_app = GitHubAppResource(
         app_name=f"{developer.sanitized_full_name}-gh-app",
-        # app_id=123456,
-        # client_id="your-client-id",
-        # client_secret="your-client-secret",
         homepage_url=web_app_domain.domain_url,
         callback_url=f"{identifier}/git-provider/github/callback",
         request_oauth_on_installation=True,
@@ -224,8 +198,69 @@ def setup_developer_resources(
         ),
         subscribed_events=["push", "pull_request", "installation", "repository"],
         public_in_marketplace=False,
-        # private_key_pem_path="/path/to/private-key.pem"
     )
+
+    db_resource = DatabaseResource(
+        db_name=settings.POSTGRES_DB,
+        host_address=developer.reserved_tcp_address.address,
+        user_name=settings.POSTGRES_USER,
+        password=settings.POSTGRES_PASSWORD,
+    )
+    developer.auth0_webapp = web_app
+    developer.auth0_api = api_app
+    developer.auth0_m2m = m2m_app
+    developer.github_app = github_app
+    developer.database = db_resource
+
+    web_app_resource = DeveloperResource(
+        resource_name="Web App",
+        resource_type=DeveloperResourceType.WEB_APP,
+        resource=web_app,
+    )
+    api_resource = DeveloperResource(
+        resource_name="API",
+        resource_type=DeveloperResourceType.API,
+        resource=api_app,
+    )
+    m2m_resource = DeveloperResource(
+        resource_name="M2M",
+        resource_type=DeveloperResourceType.M2M,
+        resource=m2m_app,
+    )
+    db_resource = DeveloperResource(
+        resource_name="database",
+        resource_type=DeveloperResourceType.DB,
+        resource=db_resource.model_dump(mode="json"),
+    )
+    codebase_onboarding_lambda_resource = DeveloperResource(
+        resource_name="codebase-onboarding-lambda",
+        resource_type=DeveloperResourceType.CODEBASE_ONBOARDING_LAMBDA,
+        resource=CodeLambdaSecretMap,
+    )
+    document_onboarding_lambda_resource = DeveloperResource(
+        resource_name="document-onboarding-lambda",
+        resource_type=DeveloperResourceType.DOCUMENT_ONBOARDING_LAMBDA,
+        resource=DocumentLambdaSecretMap,
+    )
+    metrics_lambda_resource = DeveloperResource(
+        resource_name="metrics-lambda",
+        resource_type=DeveloperResourceType.METRICS_LAMBDA,
+        resource=MetricsLambdaSecretMap,
+    )
+
+    cdk_resource = DeveloperResource(
+        resource_name="cdk-stack",
+        resource_type=DeveloperResourceType.CDK_STACK,
+        resource={
+            "ENVIRONMENT": "cloud-local",
+            "LOG_LEVEL": "INFO",
+            "CORS_ORIGINS": web_app_domain.domain_url,
+            "API_URL": developer.auth0_api["identifier"],
+            "AUTH0_URL": settings.AUTH0_URL,
+            "DATABASE_URL": developer.database.db_url,
+        },
+    )
+
     # gh_app_resource = DeveloperResource(
     #     resource_name="github-app",
     #     resource_type=DeveloperResourceType.GITHUB_APP,
@@ -236,6 +271,10 @@ def setup_developer_resources(
         api_resource,
         m2m_resource,
         db_resource,
+        codebase_onboarding_lambda_resource,
+        document_onboarding_lambda_resource,
+        metrics_lambda_resource,
+        cdk_resource,
         # gh_app_resource,
     ]
     # Write the developer state to a file
@@ -308,11 +347,72 @@ def create_developer_resource_configs(developer: Developer) -> dict:
                 )
             case DeveloperResourceType.GITHUB_APP:
                 resource_configs[resource.resource_name] = resource.resource
-            case DeveloperResourceType.M2M:
-                # resource_configs[resource.resource_name] = resource.resource
-                pass
+            case DeveloperResourceType.CODEBASE_ONBOARDING_LAMBDA | DeveloperResourceType.DOCUMENT_ONBOARDING_LAMBDA:
+
+                lambda_resource = LambdaResourceConfig(
+                    resource_name=resource.resource_name,
+                    env={
+                        "ENVIRONMENT": "cloud-local",
+                        "LOG_LEVEL": "INFO",
+                        "CLIENT_ID_SECRET": developer.auth0_m2m["client_id"],
+                        "CLIENT_SECRET_SECRET": developer.auth0_m2m["client_secret"],
+                        "API_URL": developer.auth0_api["identifier"],
+                        "AUTH0_URL": settings.AUTH0_URL,
+                    },
+                    secret_map=resource.resource,
+                )
+                resource_configs[resource.resource_name] = lambda_resource.model_dump(
+                    mode="json"
+                )
+            case DeveloperResourceType.METRICS_LAMBDA:
+                lambda_resource = LambdaResourceConfig(
+                    resource_name=resource.resource_name,
+                    env={
+                        "ENVIRONMENT": "cloud-local",
+                        "LOG_LEVEL": "INFO",
+                        "DATABASE_URL_SECRET_NAME": developer.database.db_url,
+                    },
+                    secret_map=resource.resource,
+                )
+                resource_configs[resource.resource_name] = lambda_resource.model_dump(
+                    mode="json"
+                )
             case DeveloperResourceType.DB:
-                pass
+                database_resource = DatabaseResourceConfig(
+                    resource_name=resource.resource_name,
+                    env={
+                        "DATABASE_URL": developer.database.db_url,
+                        "ASYNC_DATABASE_URL": developer.database.async_db_url,
+                    },
+                )
+                resource_configs[database_resource.resource_name] = (
+                    database_resource.model_dump(mode="json")
+                )
+            case DeveloperResourceType.CDK_STACK:
+                # cdk_resource = DeveloperResourceConfig(
+                #     resource_name=resource.resource_name,
+                #     env={
+                #         "ENVIRONMENT": "cloud-local",
+                #         "LOG_LEVEL": "INFO",
+                #         "CORS_ORIGINS": web_app_domain.domain_url,
+                #         "API_URL": developer.auth0_api["identifier"],
+                #         "AUTH0_URL": settings.AUTH0_URL,
+                #     },
+                # )
+                cdk_resource = CDKResourceConfig(
+                    resource_name=resource.resource_name,
+                    env={
+                        "ENVIRONMENT": "cloud-local",
+                        "LOG_LEVEL": "INFO",
+                        "CORS_ORIGINS": web_app_domain.domain_url,
+                        "API_URL": developer.auth0_api["identifier"],
+                        "AUTH0_URL": settings.AUTH0_URL,
+                        "DATABASE_URL": developer.database.db_url,
+                    },
+                )
+                resource_configs[resource.resource_name] = (
+                    cdk_resource.model_dump(mode="json")
+                )
     return resource_configs
 
 
@@ -348,7 +448,7 @@ def generate_developer_configs(name: str, output_dir: str) -> None:
         # Write config files and document them
         for resource_name, config in configs.items():
             config_file = (
-                output_path / f"{resource_name.lower().replace(' ', '_')}_config.json"
+                output_path / f"{resource_name.lower().replace(' ', '-')}-config.json"
             )
             with open(config_file, "w") as cf:
                 json.dump(config, cf, indent=2)

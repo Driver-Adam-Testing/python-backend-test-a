@@ -7,9 +7,10 @@ from aws_cdk import (
     aws_s3,
     aws_s3_notifications,
     aws_sns,
+    aws_secretsmanager,
 )
 from constructs import Construct
-
+from aws_cdk import CfnOutput
 
 class DevStackCodeOnboardingLambdaParams:
     environment: str
@@ -17,8 +18,6 @@ class DevStackCodeOnboardingLambdaParams:
     auth0_url: str
     dropzone_bucket: aws_s3.Bucket
     use_legacy_dropzone: bool
-    client_id: str
-    client_secret: str
 
     def __init__(
         self,
@@ -27,16 +26,12 @@ class DevStackCodeOnboardingLambdaParams:
         auth0_url,
         dropzone_bucket,
         use_legacy_dropzone,
-        client_id: str,
-        client_secret: str,
     ) -> None:
         self.environment = environment
         self.api_url = api_url
         self.auth0_url = auth0_url
         self.dropzone_bucket = dropzone_bucket
         self.use_legacy_dropzone = use_legacy_dropzone
-        self.client_id = client_id
-        self.client_secret = client_secret
 
 
 class DevStackCodeOnboardingLambda(Construct):
@@ -45,8 +40,10 @@ class DevStackCodeOnboardingLambda(Construct):
     ) -> None:
         super().__init__(scope, id)
         print(__file__)
-        # client_id_secret = aws_secretsmanager.Secret(scope, "DevStackClientIdSecret",)
-        # client_secret_secret = aws_secretsmanager.Secret(scope, "DevStackClientSecretSecret")
+        client_id_secret = aws_secretsmanager.Secret(scope, "DevStackCodeLambdaClientIdSecret")
+        client_secret_secret = aws_secretsmanager.Secret(scope, "DevStackCodeLambdaClientSecretSecret")
+        # client_id_secret = aws_secretsmanager.Secret(scope, "ClientIdSecret")
+        # client_secret_secret = aws_secretsmanager.Secret(scope, "ClientSecretSecret")
         lambda_function = aws_lambda_python_alpha.PythonFunction(
             scope,
             "DevStackCodeOnboardingLambdaPy",
@@ -56,8 +53,8 @@ class DevStackCodeOnboardingLambda(Construct):
             environment={
                 "ENVIRONMENT": "cloud-local",
                 "LOG_LEVEL": "INFO",
-                "CLIENT_ID_SECRET": params.client_id,
-                "CLIENT_SECRET_SECRET": params.client_secret,
+                "CLIENT_ID_SECRET": client_id_secret.secret_name,
+                "CLIENT_SECRET_SECRET": client_secret_secret.secret_name,
                 "API_URL": params.api_url,
                 "AUTH0_URL": params.auth0_url,
                 "AWS_S3_CODE_BUCKET_SUFFIX": "codebase-dropzone",
@@ -68,8 +65,8 @@ class DevStackCodeOnboardingLambda(Construct):
             ),
             timeout=Duration.seconds(15),
         )
-        # client_secret_secret.grant_read(lambda_function)
-        # client_id_secret.grant_read(lambda_function)
+        client_secret_secret.grant_read(lambda_function)
+        client_id_secret.grant_read(lambda_function)
         params.dropzone_bucket.grant_read(lambda_function)
 
         sns_topic = aws_sns.Topic(scope, "DevStackCodeOnboardingTopic")
@@ -77,7 +74,6 @@ class DevStackCodeOnboardingLambda(Construct):
             aws_lambda_event_sources.SnsEventSource(sns_topic)
         )
         params.dropzone_bucket.add_event_notification(
-            # aws_s3.EventType.OBJECT_TAGGING_PUT,
             aws_s3.EventType.OBJECT_CREATED,
             aws_s3_notifications.SnsDestination(sns_topic),
             aws_s3.NotificationKeyFilter(prefix="codebases/"),
@@ -90,14 +86,6 @@ class DevStackCodeOnboardingLambda(Construct):
         lambda_function.role.add_managed_policy(
             aws_iam.ManagedPolicy.from_aws_managed_policy_name("AmazonS3FullAccess")
         )
-        # legacy_dropzone_bucket = aws_s3.Bucket.from_bucket_name(
-        #     scope,
-        #     "LegacyDropzoneBucket",
-        #     bucket_name=f"{params.environment}-codebase-dropzone",
-        # )
-        # legacy_dropzone_bucket.add_event_notification(
-        #     aws_s3.EventType.OBJECT_TAGGING_PUT,
-        #     aws_s3_notifications.SnsDestination(sns_topic),
-        #     aws_s3.NotificationKeyFilter(prefix="codebases/"),
-        # )
-        # legacy_dropzone_bucket.grant_read(lambda_function)
+
+        CfnOutput(self, "ClientIdSecretNameOutput", value=client_id_secret.secret_name,export_name="CodeLambdaClientIdOutput")
+        CfnOutput(self, "ClientSecretSecretNameOutput", value=client_secret_secret.secret_name,export_name="CodeLambdaClientSecretOutput")

@@ -10,6 +10,8 @@ copy_editor_model = "gpt-4o"
 goal = "Write a structured README for a driver in the `no-OS` codebase by ADI."
 fmt = "defined_sections"
 use_tagging = true
+config_name = "ADI-Driver-README"
+config_version = "[V1]"
 
 [[sections]]
 title = "Supported Devices"

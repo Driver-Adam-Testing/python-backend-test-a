@@ -37,7 +37,9 @@ image = inspection_image = (
         local_path="../../driver_db/certs", remote_path="/root/data/", copy=True
     )
     .add_local_file(
-        "src/adi_driver_v5.toml", "/autodocs_configs/adi_driver_page.toml", copy=True
+        "src/adi_driver_readme.toml",
+        "/autodocs_configs/adi_driver_page.toml",
+        copy=True,
     )  # These shouldn't require the copy, but seems to be conflicting with the Proxy
     .add_local_python_source(
         "autodocs_prototype", "database", "shared", "utils", copy=True
@@ -121,8 +123,7 @@ async def run_adi_driver(
         print(config.scope)
 
         init_state = await AutoDocInitState.from_cfg(
-            cfg=config,
-            execution_mode=ExecutionMode.MODAL,
+            cfg=config, execution_mode=ExecutionMode.MODAL, page_id=page_node_id
         )
         doc = await init_state.generate(
             execution_mode=ExecutionMode.MODAL, page_id=str(page_node_id)

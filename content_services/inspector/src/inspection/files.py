@@ -424,24 +424,6 @@ def comprehend_file_top_down(
         text=source_code, chunk_size=chunk_size, chunk_overlap=chunk_overlap
     )
 
-    if len(chunks) > max_num_chunks:
-        if raise_hard_errors:
-            raise ValueError(
-                f"File `{node.root_rel_path}` too large to process: {len(chunks)} chunks greater than max of {max_num_chunks} chunks."
-            )
-        else:
-            logging.warning(
-                f"File `{node.root_rel_path}` too large to process: {len(chunks)} chunks greater than max of {max_num_chunks} chunks."
-            )
-            print(
-                f"WARNING: File `{node.root_rel_path}` too large to process: {len(chunks)} chunks greater than max of {max_num_chunks} chunks."
-            )
-            description = "File too large to process."
-            success = False
-            results = _return_with_simple_message(
-                message=description,
-            )
-            return (success, results)
     if len(chunks) > 1:
         chunk_texts = [c.text for c in chunks]
 
@@ -465,6 +447,7 @@ def comprehend_file_top_down(
                         root_rel_path=node.root_rel_path,
                         code=source_code,
                         code_chunks=chunk_texts,
+                        max_num_chunks_to_use=max_num_chunks,
                     )
                 case _:
                     language = Lang.from_ext_and_source(
@@ -512,6 +495,7 @@ def comprehend_file_top_down(
                         root_rel_path=node.root_rel_path,
                         code=source_code,
                         code_chunks=chunk_texts,
+                        max_num_chunks_to_use=max_num_chunks,
                     )
             # Now ready to generate final documentation content.
             description_chunks = split_text(
@@ -584,7 +568,10 @@ def comprehend_file_top_down(
             template = TEMPLATE_DATA[file_kind.kind][language]
             long_template = Template(template=template)
             file_description_long = long_template.run_with_code(
-                llm=llm, root_rel_path=node.root_rel_path, code=source_code
+                llm=llm,
+                root_rel_path=node.root_rel_path,
+                code=source_code,
+                max_num_chunks_to_use=max_num_chunks,
             )
             chunk_detailed_descriptions = [file_description_long]
             file_description_single_sentence = file_single_sentence_from_code(

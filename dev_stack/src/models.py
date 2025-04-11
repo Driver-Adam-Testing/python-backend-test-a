@@ -91,6 +91,7 @@ class DeveloperResourceType(enum.Enum):
     METRICS_LAMBDA = "METRICS_LAMBDA"
     S3_BUCKET = "S3_BUCKET"
     CDK_STACK = "CDK_STACK"
+    CONTENT_SERVICES = "CONTENT_SERVICES"
 
 
 class DeveloperResource(BaseModel):
@@ -98,9 +99,12 @@ class DeveloperResource(BaseModel):
     resource_type: DeveloperResourceType
     resource: dict
 
+
 class CDKResourceConfig(BaseModel):
     resource_name: str = "cdk-stack"
+    execute: str
     env: dict
+
 
 class WebAppResourceConfig(BaseModel):
     resource_name: str = "webapp-frontend"
@@ -112,10 +116,12 @@ class ApiResourceConfig(BaseModel):
     resource_name: str = "backend"
     env: dict
 
+
 class DatabaseResourceConfig(BaseModel):
     resource_name: str = "database"
     env: dict
     secret_map: dict[str, str] | None = None
+
 
 class DatabaseResource(BaseModel):
     db_name: str
@@ -127,10 +133,22 @@ class DatabaseResource(BaseModel):
     @property
     def db_url(self) -> str:
         return f"postgresql+psycopg2://{self.user_name}:{self.password}@{self.host_address}/{self.db_name}"
+
     @computed_field
     @property
     def async_db_url(self) -> str:
         return f"postgresql+asyncpg://{self.user_name}:{self.password}@{self.host_address}/{self.db_name}"
+
+
+class ModalSecretResource(BaseModel):
+    resource_name: str
+    env: dict
+
+
+class ContentServicesResource(BaseModel):
+    modal_environment: str
+    secrets: list[ModalSecretResource]
+
 
 class LambdaResourceConfig(BaseModel):
     resource_name: str
@@ -201,12 +219,12 @@ class Developer(BaseModel):
 
 CodeLambdaSecretMap = {
     "CLIENT_ID_SECRET": "CodeLambdaClientIdOutput",
-    "CLIENT_SECRET_SECRET": "CodeLambdaClientSecretOutput"
+    "CLIENT_SECRET_SECRET": "CodeLambdaClientSecretOutput",
 }
 
 DocumentLambdaSecretMap = {
     "CLIENT_ID_SECRET": "DocLambdaClientIdOutput",
-    "CLIENT_SECRET_SECRET": "DocLambdaClientSecretOutput"
+    "CLIENT_SECRET_SECRET": "DocLambdaClientSecretOutput",
 }
 MetricsLambdaSecretMap = {
     "DATABASE_URL_SECRET_NAME": "MetricsLambdaDBSecretOutput",

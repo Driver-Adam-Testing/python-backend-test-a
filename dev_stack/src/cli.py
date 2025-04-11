@@ -15,7 +15,7 @@ from developer_setup import (
 )
 from github_setup import generate_github_app_setup_guide
 from ngrok import run_ngrok_tunnels
-from config import settings
+
 
 @click.group()
 def cli() -> None:
@@ -94,6 +94,7 @@ def setup(name: str, email: str, region: str, setup_github: bool) -> None:
     except Exception as e:
         click.echo(f"❌ Error setting up developer: {e!s}", err=True)
 
+
 @cli.command()
 @click.option("--name", type=str, help="Developer name", required=True)
 @click.option(
@@ -115,6 +116,7 @@ def generate_configs(name: str, output_dir: str) -> None:
         click.echo(f"✅ Successfully generated configs for developer: {name}")
     except Exception as e:
         click.echo(f"❌ Error generating configs: {e!s}", err=True)
+
 
 @cli.command()
 @click.option("--name", type=str, help="Developer name", required=True)
@@ -152,29 +154,76 @@ def wait_for_socket_server(
 @cli.command()
 @click.option("--name", type=str, help="Developer name", required=True)
 @click.option(
-    "--ports", type=str, help="Comma-separated list of ports to forward", required=True
+    "--ports",
+    type=str,
+    help="Comma-separated list of ports to forward. Format: 'http:8000,tcp:9000'",
+    required=True,
 )
 def run_tunnels(name: str, ports: str) -> None:
-    """Run ngrok tunnels for each domain"""
+    """Run ngrok tunnels for each domain and TCP address"""
     developer = load_developer_state(name)
     if not developer:
         click.echo(f"❌ No state file found for developer: {name}", err=True)
         return
 
     try:
-        # Parse ports
-        port_list = [int(p.strip()) for p in ports.split(",")]
+        # Parse ports and separate HTTP and TCP ports
+        http_ports: list[int] = []
+        tcp_ports: list[int] = []
 
-        # Get domains from developer state
+        for port_spec in ports.split(","):
+            port_spec = port_spec.strip()
+            if ":" not in port_spec:
+                click.echo(
+                    f"❌ Invalid port specification: {port_spec}. Must be in format 'http:8000' or 'tcp:9000'",
+                    err=True,
+                )
+                return
+
+            port_type, port = port_spec.split(":")
+            try:
+                port_num = int(port.strip())
+                if port_type.lower() == "http":
+                    http_ports.append(port_num)
+                elif port_type.lower() == "tcp":
+                    tcp_ports.append(port_num)
+                else:
+                    click.echo(
+                        f"❌ Invalid port type: {port_type}. Must be 'http' or 'tcp'",
+                        err=True,
+                    )
+                    return
+            except ValueError:
+                click.echo(f"❌ Invalid port number: {port}", err=True)
+                return
+
+        # Get domains and TCP addresses from developer state
         domains = developer.reserved_domains
+        tcp_address = developer.reserved_tcp_address
 
-        if not domains:
-            click.echo("❌ No domains found in developer state", err=True)
+        if not domains and not tcp_address:
+            click.echo(
+                "❌ No domains or TCP address found in developer state", err=True
+            )
             return
 
-        if len(domains) != len(port_list):
+        if len(domains) != len(http_ports):
             click.echo(
-                f"❌ Number of domains ({len(domains)}) does not match number of ports ({len(port_list)})",
+                f"❌ Number of domains ({len(domains)}) does not match number of HTTP ports ({len(http_ports)})",
+                err=True,
+            )
+            return
+
+        if len(tcp_ports) > 1:
+            click.echo(
+                "❌ Only one TCP port can be specified since there is only one reserved TCP address",
+                err=True,
+            )
+            return
+
+        if tcp_ports and not tcp_address:
+            click.echo(
+                "❌ TCP port specified but no TCP address found in developer state",
                 err=True,
             )
             return
@@ -201,7 +250,14 @@ def run_tunnels(name: str, ports: str) -> None:
 
         # Run the tunnels using asyncio.run
         try:
-            asyncio.run(run_ngrok_tunnels(domains, port_list))
+            asyncio.run(
+                run_ngrok_tunnels(
+                    domains=domains,
+                    http_ports=http_ports,
+                    tcp_addresses=[tcp_address] if tcp_address and tcp_ports else [],
+                    tcp_ports=tcp_ports,
+                )
+            )
         except KeyboardInterrupt:
             click.echo("\n👋 Stopping tunnels...")
         except ConnectionRefusedError:

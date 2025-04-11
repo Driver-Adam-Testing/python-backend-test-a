@@ -12,19 +12,26 @@ from config import settings
 from models import (
     ApiResourceConfig,
     Auth0SpaCreateAppRequest,
+    CDKResourceConfig,
+    CodeLambdaSecretMap,
+    ContentServicesResource,
+    DatabaseResource,
+    DatabaseResourceConfig,
     Developer,
     DeveloperResource,
     DeveloperResourceType,
+    DocumentLambdaSecretMap,
     DomainStatus,
     DomainType,
     GitHubAppPermissionsConfig,
     GitHubAppResource,
     GitHubAppWebhookConfig,
+    LambdaResourceConfig,
+    MetricsLambdaSecretMap,
+    ModalSecretResource,
     NgrokReservedDomain,
     NgrokReservedTcpAddress,
-    WebAppResourceConfig, LambdaResourceConfig, CodeLambdaSecretMap, DocumentLambdaSecretMap, DatabaseResource,
-    DatabaseResourceConfig, MetricsLambdaSecretMap,CDKResourceConfig
-
+    WebAppResourceConfig,
 )
 from ngrok import (
     create_reserved_domain,
@@ -247,7 +254,12 @@ def setup_developer_resources(
         resource_type=DeveloperResourceType.METRICS_LAMBDA,
         resource=MetricsLambdaSecretMap,
     )
-
+    # content_services_resource =
+    modal_resource = DeveloperResource(
+        resource_name="content-services",
+        resource_type=DeveloperResourceType.CONTENT_SERVICES,
+        resource={},
+    )
     cdk_resource = DeveloperResource(
         resource_name="cdk-stack",
         resource_type=DeveloperResourceType.CDK_STACK,
@@ -275,6 +287,7 @@ def setup_developer_resources(
         document_onboarding_lambda_resource,
         metrics_lambda_resource,
         cdk_resource,
+        modal_resource,
         # gh_app_resource,
     ]
     # Write the developer state to a file
@@ -347,8 +360,10 @@ def create_developer_resource_configs(developer: Developer) -> dict:
                 )
             case DeveloperResourceType.GITHUB_APP:
                 resource_configs[resource.resource_name] = resource.resource
-            case DeveloperResourceType.CODEBASE_ONBOARDING_LAMBDA | DeveloperResourceType.DOCUMENT_ONBOARDING_LAMBDA:
-
+            case (
+                DeveloperResourceType.CODEBASE_ONBOARDING_LAMBDA
+                | DeveloperResourceType.DOCUMENT_ONBOARDING_LAMBDA
+            ):
                 lambda_resource = LambdaResourceConfig(
                     resource_name=resource.resource_name,
                     env={
@@ -389,18 +404,9 @@ def create_developer_resource_configs(developer: Developer) -> dict:
                     database_resource.model_dump(mode="json")
                 )
             case DeveloperResourceType.CDK_STACK:
-                # cdk_resource = DeveloperResourceConfig(
-                #     resource_name=resource.resource_name,
-                #     env={
-                #         "ENVIRONMENT": "cloud-local",
-                #         "LOG_LEVEL": "INFO",
-                #         "CORS_ORIGINS": web_app_domain.domain_url,
-                #         "API_URL": developer.auth0_api["identifier"],
-                #         "AUTH0_URL": settings.AUTH0_URL,
-                #     },
-                # )
                 cdk_resource = CDKResourceConfig(
                     resource_name=resource.resource_name,
+                    execute="aws sso login --profile admin-development\nPYTHONPATH=.. cdk deploy --profile admin-development",
                     env={
                         "ENVIRONMENT": "cloud-local",
                         "LOG_LEVEL": "INFO",
@@ -410,8 +416,60 @@ def create_developer_resource_configs(developer: Developer) -> dict:
                         "DATABASE_URL": developer.database.db_url,
                     },
                 )
+                resource_configs[resource.resource_name] = cdk_resource.model_dump(
+                    mode="json"
+                )
+            case DeveloperResourceType.CONTENT_SERVICES:
+                content_services_resource = ContentServicesResource(
+                    modal_environment="dev-eric",
+                    secrets=[
+                        ModalSecretResource(
+                            resource_name="aws-inspector-s3",
+                            env={
+                                "AWS_ACCESS_KEY_ID": settings.AWS_ACCESS_KEY_ID,
+                                "AWS_SECRET_ACCESS_KEY": settings.AWS_SECRET_ACCESS_KEY,
+                                "AWS_REGION": "us-east-1",
+                                "BUCKET_NAME": developer.s3_bucket_name,
+                                "DROPZONE_BUCKET_NAME": developer.s3_bucket_name,
+                            },
+                        ),
+                        ModalSecretResource(
+                            resource_name="db",
+                            env={
+                                "DATABASE_URL": developer.database.db_url,
+                                "ASYNC_DATABASE_URL": developer.database.async_db_url,
+                            },
+                        ),
+                        ModalSecretResource(
+                            resource_name="open-ai",
+                            env={
+                                "OPENAI_API_KEY": settings.OPENAI_API_KEY,
+                            },
+                        ),
+                        ModalSecretResource(
+                            resource_name="github-app",
+                            env={
+                                "GH_CLIENT_ID": developer.github_app.client_id,
+                                "GH_CLIENT_PEM_SECRET": developer.github_app.base64_private_key_pem,
+                            },
+                        ),
+                        ModalSecretResource(
+                            resource_name="anthropic",
+                            env={
+                                "anthropic": "placeholder",
+                            },
+                        ),
+                        ModalSecretResource(
+                            resource_name="driver-api-credentials",
+                            env={
+                                "DRIVER_API_SHARED_SECRET": "NOT USED ANYMORE",
+                            },
+                        ),
+                    ],
+                )
+
                 resource_configs[resource.resource_name] = (
-                    cdk_resource.model_dump(mode="json")
+                    content_services_resource.model_dump(mode="json")
                 )
     return resource_configs
 
@@ -447,6 +505,41 @@ def generate_developer_configs(name: str, output_dir: str) -> None:
 
         # Write config files and document them
         for resource_name, config in configs.items():
+            if resource_name == "content-services":
+                modal_environment = config["modal_environment"]
+                f.write("### Modal - Content Services\n\n")
+                f.write("The was created to set modal secrets:\n\n")
+                f.write("```bash\n")
+                f.write(
+                    "chmod +x state/out/modal_secrets.sh && state/out/modal_secrets.sh"
+                )
+                f.write("\n```\n\n")
+                f.write("```bash\n")
+                f.write(
+                    f"chmod +x scripts/modal_deploy.sh && scripts/modal_deploy.sh {modal_environment}"
+                )
+                f.write("\n```\n\n")
+                # print(config["resource"])
+
+                secrets = config["secrets"]
+                with open(output_path / "modal_secrets.sh", "w") as sf:
+                    sf.write("#!/bin/bash\n")
+                    sf.write(f'export MODAL_TOKEN_ID="{settings.MODAL_TOKEN_ID}"\n')
+                    sf.write(
+                        f'export MODAL_TOKEN_SECRET="{settings.MODAL_TOKEN_SECRET}"\n\n'
+                    )
+                    sf.write('echo "Creating secrets..."\n\n')
+                    for secret in secrets:
+                        line = f"modal secret create --env={modal_environment} --force {secret['resource_name']} \\\n"
+                        secret_count = len(secret["env"].items())
+                        for index, (key, value) in enumerate(secret["env"].items()):
+                            # print(f"{key}={value} {index} {secret_count}")
+                            delimeter = "\\\n" if index < secret_count - 1 else "\n"
+                            line += f'{key}="{value}" {delimeter}'
+                        # f.write(f"{line}\n")
+                        sf.write(f"{line}\n")
+                continue
+
             config_file = (
                 output_path / f"{resource_name.lower().replace(' ', '-')}-config.json"
             )
@@ -457,6 +550,15 @@ def generate_developer_configs(name: str, output_dir: str) -> None:
             f.write(f"### {resource_name.replace('-', ' ').title()}\n\n")
             f.write(f"Configuration file: `{config_file.name}`\n\n")
 
+            if resource_name == "cdk-stack":
+                f.write("#### CDK Stack Configuration\n\n")
+                f.write("```bash\n")
+                f.write(config["execute"])
+                f.write("\n```\n\n")
+                #     poetry run python src/deploy.py
+                f.write("```bash\n")
+                f.write("poetry run python src/deploy.py\n")
+                f.write("\n```\n\n")
             if resource_name == "github-app":
                 f.write("#### GitHub App Configuration\n\n")
                 f.write("```json\n")

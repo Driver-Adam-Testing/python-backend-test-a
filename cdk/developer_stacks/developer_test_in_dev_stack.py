@@ -3,15 +3,18 @@ import os
 from aws_cdk import RemovalPolicy, Stack, aws_s3
 from constructs import Construct
 
-from cdk.developer_constructs.dev_stack_document_onboarding_lambda import (
-    DevStackDocumentOnboardingLambda,
-    DevStackDocumentOnboardingLambdaParams,
-)
 from cdk.developer_constructs.dev_stack_code_onboarding_lambda import (
     DevStackCodeOnboardingLambda,
     DevStackCodeOnboardingLambdaParams,
 )
-from cdk.developer_constructs.dev_stack_metrics_lambda import DevStackMetricsLambda, DevStackMetricsLambdaParams
+from cdk.developer_constructs.dev_stack_document_onboarding_lambda import (
+    DevStackDocumentOnboardingLambda,
+    DevStackDocumentOnboardingLambdaParams,
+)
+from cdk.developer_constructs.dev_stack_metrics_lambda import (
+    DevStackMetricsLambda,
+    DevStackMetricsLambdaParams,
+)
 
 
 # This stack is intended to be used to manually deploy *additional* infrastructure
@@ -26,7 +29,7 @@ class DeveloperTestInDevStack(Stack):
         self.eric_codebase_dropzone_bucket = aws_s3.Bucket(
             self,
             "EricCodebaseDropzone",
-            bucket_name="eric-codebase-dropzone",
+            bucket_name="eric-miller-codebase-dropzone",
             removal_policy=RemovalPolicy.DESTROY,
             auto_delete_objects=True,
             block_public_access=aws_s3.BlockPublicAccess.BLOCK_ALL,

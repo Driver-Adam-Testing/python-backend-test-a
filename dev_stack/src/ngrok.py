@@ -178,11 +178,22 @@ def prefixed_output(prefix: str) -> Generator[None, None, None]:
 
 
 class TunnelManager:
-    def __init__(self, domains: list[NgrokReservedDomain], ports: list[int]) -> None:
-        if len(domains) != len(ports):
-            raise ValueError("Number of domains must match number of ports")
+    def __init__(
+        self,
+        domains: list[NgrokReservedDomain],
+        http_ports: list[int],
+        tcp_addresses: list[NgrokReservedTcpAddress],
+        tcp_ports: list[int],
+    ) -> None:
+        if len(domains) != len(http_ports):
+            raise ValueError("Number of domains must match number of HTTP ports")
+        if len(tcp_addresses) != len(tcp_ports):
+            raise ValueError("Number of TCP addresses must match number of TCP ports")
+
         self.domains = domains
-        self.ports = ports
+        self.http_ports = http_ports
+        self.tcp_addresses = tcp_addresses
+        self.tcp_ports = tcp_ports
         self.processes: dict[str, asyncio.subprocess.Process] = {}
         self.tasks: list[asyncio.Task] = []
         self.reader: asyncio.StreamReader | None = None
@@ -199,7 +210,7 @@ class TunnelManager:
                 print(f"Error sending message: {e}")
 
     async def run_tunnel(self, domain: NgrokReservedDomain, port: int) -> None:
-        """Run a single ngrok tunnel"""
+        """Run a single HTTP ngrok tunnel"""
         # Wait for server connection before starting tunnel
         await self._connected.wait()
 
@@ -209,7 +220,9 @@ class TunnelManager:
             *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT
         )
         self.processes[domain.domain] = proc
-        await self.send_message(f"Started tunnel for {domain.domain} on port {port}")
+        await self.send_message(
+            f"Started HTTP tunnel for {domain.domain} on port {port}"
+        )
 
         try:
             while True:
@@ -220,15 +233,53 @@ class TunnelManager:
                     output = line.decode().strip()
                     await self.send_message(f"[{domain.domain}] {output}")
         except Exception as e:
-            await self.send_message(f"Error in tunnel {domain.domain}: {e}")
+            await self.send_message(f"Error in HTTP tunnel {domain.domain}: {e}")
         finally:
             self.processes.pop(domain.domain, None)
 
+    async def run_tcp_tunnel(
+        self, tcp_address: NgrokReservedTcpAddress, port: int
+    ) -> None:
+        """Run a single TCP ngrok tunnel"""
+        # Wait for server connection before starting tunnel
+        await self._connected.wait()
+
+        cmd = ["ngrok", "tcp", "--remote-addr", tcp_address.address, str(port)]
+
+        proc = await asyncio.create_subprocess_exec(
+            *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT
+        )
+        self.processes[tcp_address.address] = proc
+        await self.send_message(
+            f"Started TCP tunnel for {tcp_address.address} on port {port}"
+        )
+
+        try:
+            while True:
+                if proc.stdout:
+                    line = await proc.stdout.readline()
+                    if not line:
+                        break
+                    output = line.decode().strip()
+                    await self.send_message(f"[{tcp_address.address}] {output}")
+        except Exception as e:
+            await self.send_message(f"Error in TCP tunnel {tcp_address.address}: {e}")
+        finally:
+            self.processes.pop(tcp_address.address, None)
+
     async def start_all_tunnels(self) -> None:
-        """Start all tunnels"""
-        for domain, port in zip(self.domains, self.ports):
+        """Start all HTTP and TCP tunnels"""
+        # Start HTTP tunnels
+        for domain, port in zip(self.domains, self.http_ports):
             if domain.domain not in self.processes:
                 self.tasks.append(asyncio.create_task(self.run_tunnel(domain, port)))
+
+        # Start TCP tunnels
+        for tcp_address, port in zip(self.tcp_addresses, self.tcp_ports):
+            if tcp_address.address not in self.processes:
+                self.tasks.append(
+                    asyncio.create_task(self.run_tcp_tunnel(tcp_address, port))
+                )
 
     async def stop_all_tunnels(self) -> None:
         """Stop all tunnels"""
@@ -315,8 +366,11 @@ class TunnelManager:
 
 
 async def run_ngrok_tunnels(
-    domains: list[NgrokReservedDomain], ports: list[int]
+    domains: list[NgrokReservedDomain],
+    http_ports: list[int],
+    tcp_addresses: list[NgrokReservedTcpAddress],
+    tcp_ports: list[int],
 ) -> None:
     """Main entry point for running ngrok tunnels"""
-    manager = TunnelManager(domains, ports)
+    manager = TunnelManager(domains, http_ports, tcp_addresses, tcp_ports)
     await manager.run()

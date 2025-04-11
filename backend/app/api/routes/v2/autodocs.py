@@ -105,7 +105,11 @@ def get_autodoc_current_status(
     ).first()
 
     if not autodoc_status:
-        raise HTTPException(status_code=404, detail="No autodocs status found")
+        return AutoDocStatusHistory(
+            page_node_id=page_id,
+            status_kind=AutoDocStatusMessageKind.NOT_STARTED,
+            content="Autodoc generation has not started for this page",
+        )
 
     return autodoc_status
 

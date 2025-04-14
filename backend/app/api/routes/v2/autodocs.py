@@ -74,14 +74,23 @@ def run_autodoc(
         )
 
     # TODO: this check is a temporary guardrail while ADI is using this just for drivers
+    code_node_count = 0
     for document_source in document_sources:
         if (
             document_source.source_node.version.primary_asset.kind
             == PrimaryAssetKind.CODEBASE
-        ) and document_source.source_node.depth == 0:
+        ):
+            code_node_count += 1
+        if (
+            (
+                document_source.source_node.version.primary_asset.kind
+                == PrimaryAssetKind.CODEBASE
+            )
+            and document_source.source_node.depth <= 1
+        ) or (code_node_count >= 4):
             raise HTTPException(
                 status_code=400,
-                detail="Autodoc generation is not currently supported for full codebases, tune sources to only include subfolders",
+                detail="Tune sources to only include at most a single driver and single project subfolder",
             )
 
     node.version.status = VersionStatus.GENERATING

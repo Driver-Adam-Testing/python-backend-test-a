@@ -391,7 +391,7 @@ class ReifiedProjectIndex:
         BLUE = "\033[94m"
         GREEN = "\033[92m"
         YELLOW = "\033[93m"
-        # CYAN = "\033[96m"
+        CYAN = "\033[96m"
 
         targets = files if files else sorted(self.file_to_symbols.keys())
 
@@ -438,26 +438,26 @@ class ReifiedProjectIndex:
                             f"{YELLOW}    USAGE: {usage_name} {usage_lines} "
                             f"in {usage_file_path}{RESET}"
                         )
-                # else:
-                #     # usage symbol
-                #     if sym.definition:
-                #         def_name = sym.definition.raw.name
-                #         def_lines = (
-                #             f"[lines {sym.definition.raw.start_line}-"
-                #             f"{sym.definition.raw.end_line}]"
-                #         )
-                #         def_file_path = sym.definition.raw.file_path
-                #         print(
-                #             f"{CYAN}  USE: {name} {lines} in {sym_file_path} "
-                #             f"-> definition: {def_name} {def_lines} "
-                #             f"in {def_file_path}{RESET}"
-                #         )
-                #     else:
-                #         print(
-                #             f"{CYAN}  USE: {name} {lines} in {sym_file_path} "
-                #             "-> definition: None"
-                #             f"{RESET}"
-                #         )
+                else:
+                    # usage symbol
+                    if sym.definition:
+                        def_name = sym.definition.raw.name
+                        def_lines = (
+                            f"[lines {sym.definition.raw.start_line}-"
+                            f"{sym.definition.raw.end_line}]"
+                        )
+                        def_file_path = sym.definition.raw.file_path
+                        print(
+                            f"{CYAN}  USE: {name} {lines} in {sym_file_path} "
+                            f"-> definition: {def_name} {def_lines} "
+                            f"in {def_file_path}{RESET}"
+                        )
+                    else:
+                        print(
+                            f"{CYAN}  USE: {name} {lines} in {sym_file_path} "
+                            "-> definition: None"
+                            f"{RESET}"
+                        )
 
 
 def build_c_project_index(
@@ -492,7 +492,7 @@ def discover_c_and_h_files(project_root: Path) -> list[Path]:
 
 def main() -> None:
     # project_root = Path("/Users/andrewmark/Downloads/sqlite")
-    project_root = Path("/Users/andrewmark/projects/c_test_2")
+    project_root = Path("/Users/andrewmark/projects/c_test_3")
 
     file_paths = discover_c_and_h_files(project_root)
 

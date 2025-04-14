@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import abc
 import concurrent.futures
+import re
 from math import ceil
 from typing import Self
 
@@ -283,12 +284,28 @@ class IrData(BaseModel, abc.ABC):
 
         # doesn't handle children, since children is a private attribute
         for label_name, label_content in self:
-            if isinstance(label_content, MdRenderable):
-                output += label_content.render_markdown(label_name)
-            else:
+            if not isinstance(label_content, MdRenderable):
                 raise ValueError(
-                    f"Unsupported field content type for {label_name}: {type(label_content)}. Add a MdRenderable class to render this content."
+                    f"Unsupported field content type for {label_name}: {type(label_content)}. "
+                    f"Add a MdRenderable class to render this content."
                 )
+
+            rendered = label_content.render_markdown(label_name)
+
+            if (
+                self._reified_symbol
+                and self._reified_symbol.raw.symbol_kind == SymbolKind.CALLABLE
+                and self._reified_symbol.calls
+            ):
+                for called_func in self._reified_symbol.calls:
+                    kind_part = called_func.raw.symbol_kind.name.lower()
+                    name_part = re.escape(called_func.raw.name)  # escape special chars
+                    path_part = called_func.raw.file_path
+                    link = f"[{called_func.raw.name}]({path_part}#{kind_part}:{called_func.raw.name})"
+
+                    rendered = re.sub(rf"`{name_part}`", link, rendered)
+
+            output += rendered
         if self._reified_symbol is not None:
             sym = self._reified_symbol
             if sym.raw.symbol_kind == SymbolKind.CALLABLE and sym.calls:

@@ -16,3 +16,15 @@ cd ../content_services/inspector
 source .venv/bin/activate  # On Unix/macOS
 # Run modal deploy using poetry's Python environment
 poetry run modal deploy --env="dev-eric" src/main.py
+
+
+cd ../content_services/agent
+source .venv/bin/activate  # On Unix/macOS
+# Run modal deploy using poetry's Python environment
+poetry run modal deploy --env="dev-eric" src/main.py
+
+
+cd ../content_services/pdf_preprocessing
+source .venv/bin/activate  # On Unix/macOS
+# Run modal deploy using poetry's Python environment
+poetry run modal deploy --env="dev-eric" src/main.py

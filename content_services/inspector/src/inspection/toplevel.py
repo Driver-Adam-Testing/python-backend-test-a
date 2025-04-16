@@ -329,14 +329,14 @@ def comprehend_codebase_top_down(
         single_paragraph = single_paragraph_future.result()
 
     short_descriptions = {
-        "terse_sentence": terse_sentence.replace("\x00", ""),
-        "single_sentence": single_sentence.replace("\x00", ""),
-        "single_paragraph": single_paragraph.replace("\x00", ""),
+        "terse_sentence": terse_sentence,
+        "single_sentence": single_sentence,
+        "single_paragraph": single_paragraph,
     }
     print(f"Codebase short description:\n{short_descriptions['single_paragraph']}")
 
     return {
         "aggregated_description": data,
         "short": short_descriptions,
-        "long": long.replace("\x00", ""),
+        "long": long,
     }

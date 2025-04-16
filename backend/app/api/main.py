@@ -25,6 +25,7 @@ from app.api.routes.v2 import (
     convenience_endpoints,
     document_sources,
     generate,
+    message_history,
     nodes,
     primary_asset_tags,
     primary_assets,

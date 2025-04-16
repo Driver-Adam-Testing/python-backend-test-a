@@ -29,6 +29,9 @@ class LlmStreamResponse(BaseModel):
     def __str__(self) -> str:
         return self.to_sse()
 
+    def encode(self, *args: any, **kwargs: any) -> bytes:
+        return self.to_sse().encode(*args, **kwargs)
+
 
 class StartSessionStreamResponse(LlmStreamResponse):
     kind: LlmStreamResponseKind = LlmStreamResponseKind.START_SESSION

@@ -1,17 +1,11 @@
 from uuid import UUID
 
+import modal
 from fastapi import APIRouter
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from shared.interfaces.agents.block_kind import BlockKind
-from shared.v3.app.pipelines.inline_edit import (
-    run_inline_edit,
-)
-from shared.v3.app.pipelines.smart_instruction import (
-    SmartInstructionPipelineResponse,
-    run_smart_instruction,
-)
+from shared.v3.app.pipelines import InlineEditPipelineInput, InlineEditPipelineResponse
 from shared.v3.utils.datasource import DataSource
-from shared.v3.utils.references import Reference
 
 from app.api.auth import (
     ContentEditorPermission,
@@ -21,45 +15,12 @@ from app.api.auth import (
 router = APIRouter()
 
 
-class SmartInstructionRequest(BaseModel):
+class InlineEditHttpRequest(BaseModel):
     prompt: str
-    block_kind: BlockKind
     page_content_before_cursor: str
     page_content_after_cursor: str
     node_ids: list[UUID]
-
-
-class InlineEditRequest(BaseModel):
-    prompt: str
-    selected_text: str
-    page_content_before: str
-    page_content_after: str
-    node_ids: list[UUID]
-
-
-class InlineEditResponse(BaseModel):
-    final_response: str
-    references: list[Reference]
-
-
-@router.post(
-    "/smart_instruction",
-    summary="Generate smart instruction",
-    dependencies=[ContentEditorPermission],
-)
-def generate_smart_instruction(
-    user: UserToken,
-    input: SmartInstructionRequest,
-) -> SmartInstructionPipelineResponse:
-    return run_smart_instruction(
-        user_prompt=input.prompt,
-        text_before_instruction=input.page_content_before_cursor,
-        text_after_instruction=input.page_content_after_cursor,
-        datasource=DataSource.from_node_ids(
-            input.node_ids, organization_id=user.organization_id
-        ),
-        block_kind=input.block_kind,
-    )
+    cursor_selection: str
 
 
 @router.post(
@@ -69,18 +30,40 @@ def generate_smart_instruction(
 )
 def inline_edit(
     user: UserToken,
-    input: InlineEditRequest,
-) -> InlineEditResponse:
+    input: InlineEditHttpRequest,
+) -> InlineEditPipelineResponse:
     """
     Perform inline editing on the selected text.
     """
-
-    return run_inline_edit(
+    response = InlineEditPipelineInput(
         user_prompt=input.prompt,
-        text_before_instruction=input.page_content_before,
-        text_after_instruction=input.page_content_after,
+        page_content_before_cursor=input.page_content_before_cursor,
+        page_content_after_cursor=input.page_content_after_cursor,
         datasource=DataSource.from_node_ids(
             input.node_ids, organization_id=user.organization_id
         ),
-        selected_text=input.selected_text,
+        selected_text=input.cursor_selection,
+    ).run()
+    return response
+
+
+@router.post(
+    "/inline_edit_stream",
+    summary="stream inline edit",
+    dependencies=[ContentEditorPermission],
+)
+def inline_edit_stream(user: UserToken, input: InlineEditHttpRequest) -> None:
+    parsed_input = InlineEditPipelineInput(
+        user_prompt=input.prompt,
+        page_content_before_cursor=input.page_content_before_cursor,
+        page_content_after_cursor=input.page_content_after_cursor,
+        node_ids=input.node_ids,
+        organization_id=user.organization_id,
+        selected_text=input.cursor_selection,
+    )
+    return StreamingResponse(
+        modal.Function.lookup(
+            "generation", "inline_edit_stream", environment_name="neil"
+        ).remote_gen(parsed_input.model_dump()),
+        media_type="text/event-stream",
     )

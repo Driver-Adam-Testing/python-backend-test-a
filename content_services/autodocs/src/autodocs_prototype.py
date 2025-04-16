@@ -437,6 +437,8 @@ class DocumentCfg(BaseModel):
     goal: str
     fmt: DocKind
     use_tagging: bool
+    config_name: str
+    config_version: str
 
 
 class FullyQualifiedDriverPathPdf(BaseModel):
@@ -1351,7 +1353,6 @@ class AutoDocCfg(BaseModel):
     def from_file(cls, toml_file: str) -> Self:
         with open(toml_file, "rb") as f:
             raw_data = tomllib.load(f)
-
         llm_raw_default = LlmCfg.default().model_dump()
         if "llm" in raw_data:
             raw_data["llm"] = {**llm_raw_default, **raw_data["llm"]}
@@ -1533,7 +1534,9 @@ Your output is the full content of the document with editing updates based on yo
         return cls(**state["cfg"])
 
     @classmethod
-    async def from_cfg(cls, cfg: AutoDocCfg, execution_mode: ExecutionMode) -> Self:
+    async def from_cfg(
+        cls, cfg: AutoDocCfg, execution_mode: ExecutionMode, page_id: str = ""
+    ) -> Self:
         preamble_content = (
             f"\nHere is further context about the document we are writing:\n\n{cfg.scope.preamble}"
             if cfg.scope.preamble.strip() != ""
@@ -1542,6 +1545,10 @@ Your output is the full content of the document with editing updates based on yo
         print(
             f"\n🧙 {CYAN}Whizdoodling{RESET}! to create a document with the following goal:\n{cfg.document.goal}\n{preamble_content}\n"
         )
+        print(
+            f"Configuration: {cfg.document.config_name} {cfg.document.config_version}"
+        )
+        print(f"Page ID: {page_id}\n")
         match cfg.document.fmt:
             case DocKind.DEFINED_SECTIONS:
                 targets = [

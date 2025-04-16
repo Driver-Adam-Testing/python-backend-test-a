@@ -1,0 +1,199 @@
+[llm]
+tag_model = "gpt-4o"
+section_init_model = "o3-mini"
+section_update_model = "gpt-4o"
+section_format_model = "o3-mini"
+assembly_model = "o3-mini"
+copy_editor_model = "gpt-4o"
+
+[document]
+goal = "Write a structured README for a driver in the `no-OS` codebase by ADI."
+fmt = "defined_sections"
+use_tagging = true
+config_name = "ADI-Driver-README"
+config_version = "[V1]"
+
+[[sections]]
+title = "Supported Devices"
+level = 1
+use_pdfs = false
+required = true
+instruction = "A section that lists all device models supported by the driver by name, hyperlinked to the corresponding ADI product page, and with no further description.  The resulting list should show only the device model number and not include a description.  A correct example is as follows: ADE7912.  Reference only the driver code and do not reference any project code.  Do not include variations of the same model number."
+content_structure = "A simple list of device models supported by the driver by name, with a hyperlinked to the ADI product page, and with no further description.  The resulting list should show only the device model number and not include a description.  A correct example is as follows: ADE7912"
+section_creation_method = "sequential_edit"
+
+[[sections]]
+title = "Overview"
+level = 1
+use_pdfs = true
+required = true
+instruction = "Provide a 4 to 5 sentence general description of the device described in the PDF. Pull word for word content from any section named 'Features' or 'General Description' in the provided text, and construct it into a single 4 to 5 sentence paragraph, otherwise respond 'no overview found for this page or source code'"
+content_structure = "Provide a single paragraph description of the device taken from the PDF data sheet. Do not edit the content of this section while formatting."
+section_creation_method = "scatter_gather"
+
+[[sections]]
+title = "Applications"
+level = 1
+use_pdfs = true
+required = true
+instruction = "Provide only a list of the applications supported by the device described in the data sheet. Exactly copy the content from any sections named 'Applications', if an 'Applications' section does not exist in the content provided, simply respond 'No applications found for this content'. The Applications section you copy will just be a list, if that doesn't exist just return 'No applications found for this content'.  Do not include content from sections that are not exactly titled 'Applications'"
+content_structure = "Provide only an unordered list of the applications supported by the device. Just the list with no descriptions. Do not edit the content in this section, beyond making sure the list is well formatted."
+section_creation_method = "scatter_gather"
+
+[[sections]]
+title = "Driver Structure"
+level = 1
+use_pdfs = false
+required = true
+instruction = "Illustrate the file tree for the driver directory.  Include the top level directory and all sub-directories and files.  Only describe the directories and files for the driver and do not include any information about the project directory if available.  Format the file tree as an ASCI diagram in a Markdown code block.  Include nothing more than the code block.  The root directory shall always be the driver directory."
+content_structure = "Illustrate the file tree for the driver directory.  Include the top level directory and all sub-directories and files.  Only describe the directories and files for the driver and do not include any information about the project directory if available.  Format the file tree as an ASCI diagram in a Markdown code block.  Include nothing more than the code block.  The root directory shall always be the driver directory."
+section_creation_method = "sequential_edit"
+
+[[sections]]
+title = "Operation Modes"
+level = 1
+use_pdfs = false
+required = false
+instruction = "Describe the available operation modes and their configuration in a table with the following columns: Mode Name, Description, Configuration Bits, Typical Use Case. Only include operation modes, you may be given unrelated content to evaluate, in that case, just return 'no operation modes described'.  Describe only operation modes that are configurable through the driver header interface and do not reference any of the project code if it is available.  The Configuration Bits columns should reference symbols from the main driver header file.  Describe the modes from the programmers view using only the driver interface.  Do not include specific references to the device data sheet.  Only include the table without any further content."
+content_structure = "Describe the available operation modes and their configuration in a table with the following columns: Mode Name, Description, Configuration Bits, Typical Use Case. Only include operation modes, you may be given unrelated content to evaluate, in that case, just return 'no operation modes described'.  Describe only operation modes that are configurable through the driver header interface and do not reference any of the project code if it is available.  The Configuration Bits columns should reference symbols from the main driver header file.  Describe the modes from the programmers view using only the driver interface.  Do not include specific references to the device data sheet.  Only include the table without any further content."
+section_creation_method = "scatter_gather"
+
+[[sections]]
+title = "Device Configuration"
+level = 1
+use_pdfs = false
+required = true
+instruction = """Isolate all of the public functions declared in the driver's header file. Group the functions by category with one descriptive paragraph for each function category. This descriptive paragraph shall exhaustively name all of the functions declared in the header in that category and include a brief description of the function.  Do not list the functions outside of the paragraph.  Use appropriate titles for each category as relevant for the code. Example categories that could be relevant include: Initialization, Power Configuration, Conversion Modes, Buffer and Reference Settings, Filter Configurations, Gain and Offset Adjustments. These are just examples, you may need to use different categories based on the properties of the driver.  Additional requirements for this sections are as follows:
+
+* The group that discusses initialization shall appear first.
+
+* All function names shall be displayed with the following Markdown format: `function_name()`
+
+* Only functions that are declared in the driver header (.h) file shall be included.
+
+* Functions implemented in the associated project code shall not be referenced if it is available.
+
+* All public functions declared in the driver header shall be listed exactly once among all the sections.
+
+* No sections shall include any functions that are not explicitly declared in the driver header file.
+
+* Functions implemented in the the driver's .c file that are not declared in the driver's header (.h) file shall not be included.  No static functions or public functions that are declared and/or defined in the .c file but not exposed through the header (.h) file shall be included.
+"""
+content_structure = """Isolate all of the public functions declared in the driver's header file. Group the functions by category with one descriptive paragraph for each function category. This descriptive paragraph shall exhaustively name all of the functions declared in the header in that category and include a brief description of the function.  Do not list the functions outside of the paragraph.  Use appropriate titles for each category as relevant for the code. Example categories that could be relevant include: Initialization, Power Configuration, Conversion Modes, Buffer and Reference Settings, Filter Configurations, Gain and Offset Adjustments. These are just examples, you may need to use different categories based on the properties of the driver.  Additional requirements for this sections are as follows:
+
+* The group that discusses initialization shall appear first.
+
+* All function names shall be displayed with the following Markdown format: `function_name()`
+
+* Only functions that are declared in the driver header (.h) file shall be included.
+
+* Functions implemented in the associated project code shall not be referenced if it is available.
+
+* All public functions declared in the driver header shall be listed exactly once among all the sections.
+
+* No sections shall include any functions that are not explicitly declared in the driver header file.
+
+* Functions implemented in the the driver's .c file that are not declared in the driver's header (.h) file shall not be included.  No static functions or public functions that are declared and/or defined in the .c file but not exposed through the header (.h) file shall be included.
+"""
+
+section_creation_method = "sequential_edit"
+
+[[sections]]
+title = "Driver Initialization Example"
+level = 1
+use_pdfs = false
+required = true
+instruction = """
+Create a detailed code example that illustrates the procedure for initializing the device for basic use and verifying that the initialization was completed successfully.  Requirements for the example code are as follows:
+
+* List all required top level includes required by the example.  This should include system includes, the driver header, and any other files that are required by the example.  It shall not include any header files that are specific to the associated project code if available.
+
+* The example shall be a code snippet and not a stand alone application with a main() function.
+
+* The example shall illustrate the initialization process using the APIs declared in the driver's main header file.
+
+* The example shall illustrate how to correctly populate the device structure defined by the API.
+
+* The example shall illustrate how to correctly populate any sub-structures that the main device structure contains.  This may be initialization structures for peripherals such as GPIO, SPI, I2C, or others.
+
+* All initialization structures shall be populated with realistic and valid parameters. Dummy or placeholder values shall be avoided.
+
+* Initialization structures shall be populated with the raw values, macros, or enums,(not variables) taken directly from related project source code if it is available.
+
+* The example shall not include any references or dependencies of the project source code if it is available other than representative initialization parameters.
+
+* The example shall explicitly populate all members of any required initialization struct.
+
+* All potential errors in the initialization process shall be caught and handled using goto statements.
+
+* The code formatting shall adhere to the Linux kernel style.
+
+* The example shall include print statements that indicting the status of the initialization process throughout the procedure.
+
+* The code example shall be displayed as a single Markdown code block with no other content.
+
+* Tabs should have a size of 8 characters and should be used instead of spaces for indentation (don't use 8 spaces instead of a tab).
+
+* Do not wrap the initialization code in a function or define any new functions as part of the example.
+
+* The example shall not include any code comments.
+
+The following is an example of how to populate the initialization structure:
+
+```
+ad7768_init_param default_init_param = {
+    .spi_init = {
+        .device_id = SPI_DEVICE_ID,
+        .max_speed_hz = 1000000,
+        .chip_select = SPI_AD7768_CS,
+        .mode = NO_OS_SPI_MODE_0,
+        .platform_ops = &xil_spi_ops,
+        .extra = &xil_spi_initial
+    },
+    .gpio_reset = {
+        .number = GPIO_RESET_N,
+        .platform_ops = &xil_gpio_ops,
+        .extra = &xil_gpio_initial
+    },
+    .gpio_reset_value = NO_OS_GPIO_HIGH,
+    .mclk = 32768000,
+    .datalines = 8
+};
+```
+"""
+content_structure = """
+Create a detailed code example that illustrates the procedure for initializing the device for basic use and verifying that the initialization was completed successfully.  Requirements for the example code are as follows:
+
+* List all required top level includes required by the example.  This should include system includes, the driver header, and any other files that are required by the example.  It shall not include any header files that are specific to the associated project code if available.
+
+* The example shall be a code snippet and not a stand alone application with a main() function.
+
+* The example shall illustrate the initialization process using the APIs declared in the driver's main header file.
+
+* The example shall illustrate how to correctly populate the device structure defined by the API.
+
+* The example shall illustrate how to correctly populate any sub-structures that the main device structure contains.  This may be initialization structures for peripherals such as GPIO, SPI, I2C, or others.
+
+* All initialization structures shall be populated with realistic and valid parameters. Dummy or placeholder values shall be avoided.
+
+* Initialization structures shall be populated with the raw values, macros, or enums,(not variables) taken directly from related project source code if it is available.
+
+* The example shall not include any references or dependencies of the project source code if it is available other than representative initialization parameters.
+
+* The example shall explicitly populate all members of any required initialization struct.
+
+* All potential errors in the initialization process shall be caught and handled using goto statements.
+
+* The code formatting shall adhere to the Linux kernel style.
+
+* The example shall include print statements that indicting the status of the initialization process throughout the procedure.
+
+* The code example shall be displayed as a single Markdown code block with no other content.
+
+* Tabs should have a size of 8 characters and should be used instead of spaces for indentation (don't use 8 spaces instead of a tab).
+
+* Do not wrap the initialization code in a function or define any new functions as part of the example.
+
+* The example shall not include any code comments.
+"""
+section_creation_method = "sequential_edit"

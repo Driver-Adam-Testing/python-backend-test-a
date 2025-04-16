@@ -513,6 +513,7 @@ def comprehend_file_top_down(
                         code=source_code,
                         code_chunks=chunk_texts,
                     )
+                    file_description_long = file_description_long.replace("\x00", "")
             # Now ready to generate final documentation content.
             description_chunks = split_text(
                 text=file_description_long,
@@ -532,6 +533,9 @@ def comprehend_file_top_down(
                     codebase_name=codebase_name,
                 )
             )
+            file_description_single_sentence = file_description_single_sentence.replace(
+                "\x00", ""
+            )
             file_description_single_paragraph = (
                 file_single_paragraph_from_chunk_descriptions(
                     llm=llm,
@@ -539,6 +543,9 @@ def comprehend_file_top_down(
                     file_name=node.root_rel_path.name,
                     codebase_name=codebase_name,
                 )
+            )
+            file_description_single_paragraph = (
+                file_description_single_paragraph.replace("\x00", "")
             )
         except openai.BadRequestError as e:
             email_func = modal.Function.lookup("inspector-v2", "send_exception_email")
@@ -586,6 +593,7 @@ def comprehend_file_top_down(
             file_description_long = long_template.run_with_code(
                 llm=llm, root_rel_path=node.root_rel_path, code=source_code
             )
+            file_description_long = file_description_long.replace("\x00", "")
             chunk_detailed_descriptions = [file_description_long]
             file_description_single_sentence = file_single_sentence_from_code(
                 llm=llm,
@@ -594,12 +602,18 @@ def comprehend_file_top_down(
                 path=node.root_rel_path,
                 code=source_code,
             )
+            file_description_single_sentence = file_description_single_sentence.replace(
+                "\x00", ""
+            )
             file_description_single_paragraph = file_single_paragraph_from_code(
                 llm=llm,
                 file_name=node.root_rel_path.name,
                 codebase_name=codebase_name,
                 path=node.root_rel_path,
                 code=source_code,
+            )
+            file_description_single_paragraph = (
+                file_description_single_paragraph.replace("\x00", "")
             )
         except openai.BadRequestError as e:
             email_func = modal.Function.lookup("inspector-v2", "send_exception_email")

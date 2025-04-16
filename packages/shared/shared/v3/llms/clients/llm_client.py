@@ -215,7 +215,7 @@ class LlmClient(ABC):
             self._generate(
                 message_history=message_history,
                 response_type=response_type,
-                tool_types=tool_types,
+                tool_types=tool_types if i < iterations - 1 else None,
             )
             if message_history.last().message_kind == MessageKind.TOOL_CALL_REQUEST:
                 for tool_call in message_history.last().tool_requests:
@@ -266,7 +266,7 @@ class LlmClient(ABC):
             response_stream = self._generate_stream(
                 message_history=message_history,
                 response_type=response_type,
-                tool_types=tool_types,
+                tool_types=tool_types if iteration_index < iterations - 1 else None,
             )
 
             async for chunk in response_stream:

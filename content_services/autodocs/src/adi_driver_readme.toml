@@ -40,14 +40,14 @@ instruction = "Provide only a list of the applications supported by the device d
 content_structure = "Provide only an unordered list of the applications supported by the device. Just the list with no descriptions. Do not edit the content in this section, beyond making sure the list is well formatted."
 section_creation_method = "scatter_gather"
 
-[[sections]]
-title = "Driver Structure"
-level = 1
-use_pdfs = false
-required = true
-instruction = "Illustrate the file tree for the driver directory.  Include the top level directory and all sub-directories and files.  Only describe the directories and files for the driver and do not include any information about the project directory if available.  Format the file tree as an ASCI diagram in a Markdown code block.  Include nothing more than the code block.  The root directory shall always be the driver directory."
-content_structure = "Illustrate the file tree for the driver directory.  Include the top level directory and all sub-directories and files.  Only describe the directories and files for the driver and do not include any information about the project directory if available.  Format the file tree as an ASCI diagram in a Markdown code block.  Include nothing more than the code block.  The root directory shall always be the driver directory."
-section_creation_method = "sequential_edit"
+# [[sections]]
+# title = "Driver Structure"
+# level = 1
+# use_pdfs = false
+# required = true
+# instruction = "Illustrate the file tree for the driver directory.  Include the top level directory and all sub-directories and files.  Only describe the directories and files for the driver and do not include any information about the project directory if available.  Format the file tree as an ASCI diagram in a Markdown code block.  Include nothing more than the code block.  The root directory shall always be the driver directory."
+# content_structure = "Illustrate the file tree for the driver directory.  Include the top level directory and all sub-directories and files.  Only describe the directories and files for the driver and do not include any information about the project directory if available.  Format the file tree as an ASCI diagram in a Markdown code block.  Include nothing more than the code block.  The root directory shall always be the driver directory."
+# section_creation_method = "sequential_edit"
 
 [[sections]]
 title = "Operation Modes"

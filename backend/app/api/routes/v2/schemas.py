@@ -78,6 +78,7 @@ class NodeMetaRead(NodeRead):
     created_at: datetime | None
     updated_at: datetime | None
     misc_metadata: dict | None
+    total_files: int | None
     depth: int
 
     class Config:

@@ -71,6 +71,7 @@ def handler(
 
         logger.info("Processing S3 event(s)...")
         logger.info(sns_message)
+        logger.info("Number of records: " + str(len(sns_message["Records"])))
         for s3_record in sns_message["Records"]:
             bucket_name = s3_record["s3"]["bucket"]["name"]
             object_key = s3_record["s3"]["object"]["key"]

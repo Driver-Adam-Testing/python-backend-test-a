@@ -268,6 +268,8 @@ class ContentService:
         logger.info(f"Trying download_key={download_key}")
         try:
             if head_org_object(organization_id, download_key):
+                # TODO: provide an argument to the presigned URL to determine the name of the file downloaded
+                # TODO: use the shared library for get_presigned_url
                 return DownloadContentResponse(
                     download_url=generate_org_get_presigned_url(
                         organization_id, download_key

@@ -1,5 +1,6 @@
 import concurrent.futures
 import os
+from pathlib import Path
 
 import modal
 
@@ -9,8 +10,10 @@ image_jve = (
     modal.Image.debian_slim(python_version="3.12")
     .copy_local_dir("../../driver_db/", remote_path="/driver_db")
     .copy_local_dir(local_path="../../packages/shared", remote_path="/packages/shared")
+    .copy_local_file(local_path="./ad4080.pdf", remote_path="/pdfs/ad4080.pdf")
     .poetry_install_from_file("pyproject.toml")
     .apt_install("default-jre")
+    .apt_install("ghostscript")
 )
 
 pdf_preprocessing_modal_config = {
@@ -64,45 +67,86 @@ def send_exception_email(exception_details: str) -> None:
 
 
 @app.function(timeout=16200, **pdf_preprocessing_modal_config, cpu=32.0)
-def create_and_embed_pdf_summaries(node_id: str) -> None:
+def create_and_embed_pdf_summaries(
+    presigned_url: str,
+    version_id: str,
+    asset_name: str,
+    org_id: str,
+) -> None:
     import io
+    from hashlib import sha256
+    from pathlib import Path
+    from tempfile import NamedTemporaryFile
 
-    import requests
     from database.db import engine
     from database.models_v1 import ChunkAndEmbedding, DerivedContent
     from database.models_v2 import Node, Version
-    from database.models_v2_enums import ContentKind, VersionStatus
+    from database.models_v2_enums import ContentKind, NodeKind, VersionStatus
     from shared.chunking.text_splitter import split_text
     from shared.embedding.text_embedder import batch_embed_text
-    from shared.file_storage.s3 import (
-        get_presigned_url,
-    )
+    from shared.file_storage.aws_s3_client import AWSS3Client
+    from shared.interfaces.aws_client_config import AWSClientConfig
     from shared.interfaces.file_content.pdf_file_content import ProcessedPdfFileContent
     from shared.pipelines.process_file.process_file_pdf import run_process_pdf
     from sqlalchemy.orm import selectinload
     from sqlmodel import Session, select
 
-    print(f"Processing {node_id!s}")
+    hashed_org_id = sha256(org_id.encode()).hexdigest()[:63]
     try:
-        # TODO: call an orm function to do this.
-        with Session(engine) as session:
-            node = session.exec(
-                select(Node)
-                .where(Node.id == node_id)
-                .options(selectinload(Node.version).selectinload(Version.primary_asset))
+        with Session(engine) as session, session.begin():
+            version = session.exec(
+                select(Version).where(Version.id == version_id)
             ).one()
 
-            presigned_url = get_presigned_url(
-                organization_id=node.version.primary_asset.organization_id,
-                path=f"{node.version.primary_asset_id}/{node.version_id}/{node.relative_path}",
+        relative_path = asset_name
+        with NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
+            temp_file_path = Path(temp_file.name)
+            aws_config = AWSClientConfig(
+                aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
+                aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
+                region_name=os.environ["AWS_REGION"],
+            )
+            s3_client = AWSS3Client(aws_config=aws_config)
+
+            s3_client.download_file_from_presigned_url(
+                presigned_url=presigned_url,
+                download_destination=temp_file_path,
+            )
+        with NamedTemporaryFile(suffix=".pdf") as sanitized_pdf:
+            sanitize_pdf_with_ghostscript(temp_file_path, Path(sanitized_pdf.name))
+            # Upload sanitized PDF to the location that will be used for download
+            s3_client.upload_file_to_s3(
+                file_path=Path(sanitized_pdf.name),
+                bucket=hashed_org_id,
+                upload_key=f"{version.primary_asset_id}/{version_id}/{relative_path}",
+            )
+            # Upload unsanitized PDF to same {primary_asset_id}/{version_id}/ but with a different, known name
+            s3_client.upload_file_to_s3(
+                file_path=temp_file_path,
+                bucket=hashed_org_id,
+                upload_key=f"{version.primary_asset_id}/{version_id}/__unsanitized.pdf",  # TODO: what's the right name for this?
             )
 
-        response = requests.get(presigned_url)
-        print(str(presigned_url))
-        response.raise_for_status()
+        with Session(engine) as session, session.begin():
+            version = session.exec(
+                select(Version).where(Version.id == version_id)
+            ).one()
+            version.status = VersionStatus.GENERATING
+            session.add(version)
+            node = Node(
+                kind=NodeKind.OTHER,
+                version_id=version_id,
+                relative_path=relative_path,
+            )
+            node_id = node.id
+            session.add(node)
 
-        pdf_content = io.BytesIO(response.content)
-        pdf_content.name = node.relative_path.split("/")[-1]
+        with open(temp_file_path, "rb") as f:
+            pdf_bytes = f.read()
+        pdf_content = io.BytesIO(pdf_bytes)
+        temp_file_path.unlink()
+        pdf_content.name = asset_name
+        # TODO: shuld be able to call with with f from the context manager
         results = run_process_pdf(pdf_content)
         futures = {}
         results_splits_embeds = []
@@ -218,3 +262,26 @@ def create_and_embed_pdf_summaries(node_id: str) -> None:
         raise e
 
     return results
+
+
+def sanitize_pdf_with_ghostscript(file_path: Path, destination_path: Path) -> None:
+    import subprocess
+
+    # Run the Ghostscript command
+    command = [
+        "gs",
+        "-dNOPAUSE",
+        "-dBATCH",
+        "-sDEVICE=pdfwrite",
+        f"-sOUTPUTFILE={destination_path}",
+        str(file_path),
+    ]
+    try:
+        subprocess.run(command, check=True, capture_output=True, text=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Ghostscript failed with return code {e.returncode}")
+        print(f"stdout:\n{e.stdout}")
+        print(f"stderr:\n{e.stderr}")
+        raise
+
+    print("Ghostscript command executed successfully.")

@@ -1,15 +1,11 @@
 from aws_cdk import Stack
 from constructs import Construct
 
+from cdk.constructs.asset_onboarding_lambda import (
+    AssetOnboardingLambda,
+    AssetOnboardingLambdaParams,
+)
 from cdk.constructs.backend import Backend, BackendParams
-from cdk.constructs.code_onboarding_lambda import (
-    CodeOnboardingLambda,
-    CodeOnboardingLambdaParams,
-)
-from cdk.constructs.document_onboarding_lambda import (
-    DocumentOnboardingLambda,
-    DocumentOnboardingLambdaParams,
-)
 from cdk.constructs.inspector import Inspector, InspectorParams
 from cdk.constructs.metrics_lambda import MetricsLambda, MetricsLambdaParams
 
@@ -39,21 +35,10 @@ class ProductionStack(Stack):
                 metrics_bus=self.metrics_lambda.metrics_bus,
             ),
         )
-        self.onboarding_lambda = CodeOnboardingLambda(
+        self.onboarding_lambda = AssetOnboardingLambda(
             self,
-            "CodeOnboardingLambda",
-            CodeOnboardingLambdaParams(
-                environment="production",
-                api_url="https://api.us1.driverai.com/api/v1",
-                auth0_url="https://auth.driverai.com",
-                dropzone_bucket=self.backend.dropzone_bucket,
-                use_legacy_dropzone=True,
-            ),
-        )
-        self.document_onboarding_lambda = DocumentOnboardingLambda(
-            self,
-            "DocumentOnboardingLambda",
-            DocumentOnboardingLambdaParams(
+            "AssetOnboardingLambda",
+            AssetOnboardingLambdaParams(
                 environment="production",
                 api_url="https://api.us1.driverai.com/api/v1",
                 auth0_url="https://auth.driverai.com",

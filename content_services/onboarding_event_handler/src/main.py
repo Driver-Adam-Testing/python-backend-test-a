@@ -70,6 +70,7 @@ def handler(
             token_json = token_response.json()
 
         logger.info("Processing S3 event(s)...")
+        logger.info(sns_message)
         for s3_record in sns_message["Records"]:
             bucket_name = s3_record["s3"]["bucket"]["name"]
             object_key = s3_record["s3"]["object"]["key"]

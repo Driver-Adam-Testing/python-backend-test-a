@@ -10,7 +10,6 @@ image_jve = (
     modal.Image.debian_slim(python_version="3.12")
     .copy_local_dir("../../driver_db/", remote_path="/driver_db")
     .copy_local_dir(local_path="../../packages/shared", remote_path="/packages/shared")
-    .copy_local_file(local_path="./ad4080.pdf", remote_path="/pdfs/ad4080.pdf")
     .poetry_install_from_file("pyproject.toml")
     .apt_install("default-jre")
     .apt_install("ghostscript")

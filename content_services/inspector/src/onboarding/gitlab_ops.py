@@ -108,6 +108,7 @@ def download_and_upload_repo(
                         f"Failed to find primary asset for {repo} for org: {org_id}, unable to process push event, unable to process push event"
                     )
                     return repo
+                primary_asset_id = primary_asset.id
                 if all(
                     v.status == VersionStatus.CONNECTED for v in primary_asset.versions
                 ):
@@ -168,6 +169,7 @@ def download_and_upload_repo(
                     installation_id=installation_id,
                 )
                 session.add(primary_asset)
+                primary_asset_id = primary_asset.id
 
                 version = Version(
                     primary_asset_id=primary_asset.id,
@@ -201,7 +203,7 @@ def download_and_upload_repo(
 
     org_hashed_id = hashlib.sha256(org_id.encode("utf-8")).hexdigest()[:63]
     upload_key = (
-        f"assets/{org_hashed_id}/{primary_asset.id}/{version_id}/{repo_name}.zip"
+        f"assets/{org_hashed_id}/{primary_asset_id}/{version_id}/{repo_name}.zip"
     )
     upload_to_s3_with_metadata(zip_content, metadata, upload_key)
     print(f"Repository {repo_name} uploaded successfully to {upload_key}.")

@@ -60,11 +60,6 @@ class AssetOnboardingLambda(Construct):
         lambda_function.add_event_source(
             aws_lambda_event_sources.SnsEventSource(sns_topic)
         )
-        # params.dropzone_bucket.add_event_notification(
-        #     aws_s3.EventType.OBJECT_TAGGING_PUT,
-        #     aws_s3_notifications.SnsDestination(sns_topic),
-        #     aws_s3.NotificationKeyFilter(prefix="codebases/"),
-        # )
 
         # TODO: We should find a way to scope down these privileges.
         # Because we need to create arbitrary buckets per org,

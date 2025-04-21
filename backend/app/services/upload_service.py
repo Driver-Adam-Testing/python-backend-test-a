@@ -92,6 +92,4 @@ class UploadService:
             )
 
         logger.info(f"Upload URL generated for {relative_path}")
-        return UploadResponse(
-            upload_url=upload_url
-        )  # , version_id=new_version.id, primary_asset_id=new_asset.id)
+        return UploadResponse(upload_url=upload_url)

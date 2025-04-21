@@ -15,5 +15,3 @@ class UploadRequest(BaseModel):
 
 class UploadResponse(BaseModel):
     upload_url: str
-    # version_id: UUID
-    # primary_asset_id: UUID

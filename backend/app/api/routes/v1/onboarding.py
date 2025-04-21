@@ -20,14 +20,18 @@ class AssetConnection(BaseModel):
     call_id: str | None = None
 
 
-class AssetConnectionRequest(BaseModel):
+class AssetConnectionRequestParams(BaseModel):
     org_id: str
-    download_url: str | None
     asset_name: str
     asset_kind: PrimaryAssetKind
-    version_id: uuid.UUID
     provider: str  # TODO: provider should be an enum
+    download_url: str
+
+
+class AssetConnectionRequest(BaseModel):
+    version_id: uuid.UUID
     should_process: bool
+    params: AssetConnectionRequestParams | None
 
 
 @router.post(
@@ -54,55 +58,35 @@ def trigger_asset_connection(
             f"GuardDuty found something. Version {trigger_body.version_id} set to CONNECTION_FAILED."
         )
 
-    if trigger_body.asset_kind == PrimaryAssetKind.CODEBASE:
-        run_codebase_connection = modal.Function.lookup(
-            "inspector-v2", "run_codebase_connection"
-        )
+    match trigger_body.params.asset_kind:
+        case PrimaryAssetKind.CODEBASE:
+            run_codebase_connection = modal.Function.lookup(
+                "inspector-v2", "run_codebase_connection"
+            )
 
-        call = run_codebase_connection.spawn(
-            presigned_url=trigger_body.download_url,
-            provisional_codebase_name=trigger_body.asset_name,
-            org_id=trigger_body.org_id,
-            version_id=trigger_body.version_id,
-            provider=trigger_body.provider,
-        )
-    elif trigger_body.asset_kind == PrimaryAssetKind.FILE:
-        create_and_embed_pdf_summaries = modal.Function.lookup(
-            app_name="pdf-summary-embedding",
-            # TODO: this line is not need once we deploy to production.
-            environment_name=settings.MODAL_ENVIRONMENT,
-            tag="create_and_embed_pdf_summaries",
-        )
-        call = create_and_embed_pdf_summaries.spawn(
-            trigger_body.download_url,
-            trigger_body.version_id,
-            trigger_body.asset_name,
-            trigger_body.org_id,
-        )
+            call = run_codebase_connection.spawn(
+                presigned_url=trigger_body.params.download_url,
+                provisional_codebase_name=trigger_body.params.asset_name,
+                org_id=trigger_body.params.org_id,
+                version_id=trigger_body.version_id,
+                provider=trigger_body.params.provider,
+            )
+        case PrimaryAssetKind.FILE:
+            create_and_embed_pdf_summaries = modal.Function.lookup(
+                app_name="pdf-summary-embedding",
+                # TODO: this line is not need once we deploy to production.
+                environment_name=settings.MODAL_ENVIRONMENT,
+                tag="create_and_embed_pdf_summaries",
+            )
+            call = create_and_embed_pdf_summaries.spawn(
+                trigger_body.params.download_url,
+                trigger_body.version_id,
+                trigger_body.params.asset_name,
+                trigger_body.params.org_id,
+            )
+        case _:
+            raise Exception(
+                f"Asset kind {trigger_body.params.asset_kind} not supported for connection."
+            )
 
     return AssetConnection(status="OK", call_id=call.object_id)
-
-
-# class PdfOnboardingRequestBody(BaseModel):
-#     node_id: str | None = None
-#
-#
-# @router.post(
-#     "/generate-pdf-summaries",
-#     summary="Trigger PDF Summarization and Embedding",
-#     response_description="Return HTTP Status Code 200 (OK)",
-# )
-# def trigger_pdf_summary_processing(
-#     current_token: M2MToken, session: CurrentSession, body: PdfOnboardingRequestBody
-# ) -> AssetConnection:
-#     logging.info("Triggering pdf summary creation...")
-#     # archive_name = Path(trigger_body.object_key).name
-#     create_and_embed_pdf_summaries = modal.Function.lookup(
-#         app_name="pdf-summary-embedding",
-#         # TODO: this line is not need once we deploy to production.
-#         environment_name=settings.MODAL_ENVIRONMENT,
-#         tag="create_and_embed_pdf_summaries",
-#     )
-#     call = create_and_embed_pdf_summaries.spawn(body.node_id)
-#
-#     return AssetConnection(status="OK", call_id=call.object_id)

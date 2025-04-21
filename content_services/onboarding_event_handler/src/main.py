@@ -75,32 +75,38 @@ def handler(
         for s3_record in sns_message["Records"]:
             bucket_name = s3_record["s3"]["bucket"]["name"]
             object_key = s3_record["s3"]["object"]["key"]
+            _, _hashed_org_id, primary_asset_id, version_id, *other = object_key.split(
+                "/"
+            )
             real_object_key = unquote_plus(object_key)
             logger.info("key = " + real_object_key)
             logger.info("bucket = " + bucket_name)
             should_process = has_allowed_guard_duty_tag(
                 bucket=bucket_name, key=real_object_key
             )
-            metadata = head_object(bucket=bucket_name, key=real_object_key)
             if should_process:
+                metadata = head_object(bucket=bucket_name, key=real_object_key)
                 logger.info("No threats found, continuing asset onboarding")
                 presigned_url = generate_get_presigned_url(
                     bucket=bucket_name, key=real_object_key
                 )
+                request_params = {
+                    "download_url": presigned_url,
+                    "asset_name": metadata["Metadata"]["asset_name"],
+                    "org_id": metadata["Metadata"]["unhashed_organization_id"],
+                    "provider": metadata["Metadata"]["provider"],
+                    "asset_kind": metadata["Metadata"]["asset_kind"],
+                }
             else:
                 logger.error(
                     f"GuardDuty found something. Bucket: {bucket_name}, Key: {real_object_key}"
                 )
-                presigned_url = None
+                request_params = None
 
             request_body = {
-                "download_url": presigned_url,
-                "asset_name": metadata["Metadata"]["asset_name"],
-                "org_id": metadata["Metadata"]["unhashed_organization_id"],
-                "provider": metadata["Metadata"]["provider"],
-                "version_id": metadata["Metadata"]["version_id"],
-                "asset_kind": metadata["Metadata"]["asset_kind"],
+                "version_id": version_id,
                 "should_process": should_process,
+                "params": request_params,
             }
             onboarding_result = exec_onboarding_service(
                 request_body,

@@ -61,7 +61,7 @@ def trigger_asset_connection(
 
         call = run_codebase_connection.spawn(
             presigned_url=trigger_body.download_url,
-            archive_name=trigger_body.asset_name,
+            provisional_codebase_name=trigger_body.asset_name,
             org_id=trigger_body.org_id,
             version_id=trigger_body.version_id,
             provider=trigger_body.provider,

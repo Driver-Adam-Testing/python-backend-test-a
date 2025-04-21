@@ -207,6 +207,14 @@ def create_and_embed_pdf_summaries(node_id: str) -> None:
         )
         print(exception_details)
         send_exception_email.remote(exception_details)
+        with Session(engine) as session:
+            node = session.exec(
+                select(Node)
+                .where(Node.id == node_id)
+                .options(selectinload(Node.version))
+            ).one()
+            node.version.status = VersionStatus.GENERATION_ERROR
+            session.commit()
         raise e
 
     return results

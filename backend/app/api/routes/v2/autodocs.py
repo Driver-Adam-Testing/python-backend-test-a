@@ -3,7 +3,11 @@ from uuid import UUID
 import modal
 from database.models_v1 import DocumentSource
 from database.models_v2 import AutoDocStatusHistory, Node, PrimaryAsset, Version
-from database.models_v2_enums import AutoDocStatusMessageKind, VersionStatus
+from database.models_v2_enums import (
+    AutoDocStatusMessageKind,
+    PrimaryAssetKind,
+    VersionStatus,
+)
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import selectinload
@@ -69,6 +73,26 @@ def run_autodoc(
             detail="Autodoc is already generating for this page",
         )
 
+    # TODO: this check is a temporary guardrail while ADI is using this just for drivers
+    code_node_count = 0
+    for document_source in document_sources:
+        if (
+            document_source.source_node.version.primary_asset.kind
+            == PrimaryAssetKind.CODEBASE
+        ):
+            code_node_count += 1
+        if (
+            (
+                document_source.source_node.version.primary_asset.kind
+                == PrimaryAssetKind.CODEBASE
+            )
+            and document_source.source_node.depth <= 1
+        ) or (code_node_count >= 4):
+            raise HTTPException(
+                status_code=400,
+                detail="Tune sources to only include at most a single driver and single project subfolder",
+            )
+
     node.version.status = VersionStatus.GENERATING
     session.add(node.version)
 
@@ -105,7 +129,11 @@ def get_autodoc_current_status(
     ).first()
 
     if not autodoc_status:
-        raise HTTPException(status_code=404, detail="No autodocs status found")
+        return AutoDocStatusHistory(
+            page_node_id=page_id,
+            status_kind=AutoDocStatusMessageKind.NOT_STARTED,
+            content="Autodoc generation has not started for this page",
+        )
 
     return autodoc_status
 

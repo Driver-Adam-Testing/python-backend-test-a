@@ -26,6 +26,7 @@ class NodeKind(str, enum.Enum):
 
 
 class AutoDocStatusMessageKind(str, enum.Enum):
+    NOT_STARTED = "NOT_STARTED"
     RETRIEVING_SOURCES = "RETRIEVING_SOURCES"
     EVALUATING_SECTIONS = "EVALUATING_SECTIONS"
     EVALUATING_SOURCES = "EVALUATING_SOURCES"

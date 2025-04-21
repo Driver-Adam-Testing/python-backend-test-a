@@ -4,7 +4,7 @@ version = "0.1.0"
 description = ""
 authors = ["Shane Ghiotto <shane.ghiotto@driverai.com>"]
 packages = [
-    { include = "src.utils" },
+    { include = "src/utils" },
 ]
 
 # Note: this file is just used to create the venv for the local ide. Modal installs the dependencies for the containers

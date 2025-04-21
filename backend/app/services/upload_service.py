@@ -77,7 +77,7 @@ class UploadService:
                     "provider": "manual",
                     "version_id": str(new_version.id),
                     "asset_name": asset_name,
-                    "asset_kind": str(new_asset.kind),
+                    "asset_kind": new_asset.kind.value,
                 }
                 upload_url = generate_put_presigned_url(
                     key=upload_key,

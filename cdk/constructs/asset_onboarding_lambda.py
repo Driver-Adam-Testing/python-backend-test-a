@@ -4,9 +4,12 @@ from aws_cdk import (
     Duration,
     aws_iam,
     aws_lambda,
+    aws_lambda_event_sources,
     aws_lambda_python_alpha,
     aws_s3,
+    aws_s3_notifications,
     aws_secretsmanager,
+    aws_sns,
 )
 from constructs import Construct
 
@@ -53,10 +56,10 @@ class AssetOnboardingLambda(Construct):
         client_id_secret.grant_read(lambda_function)
         params.dropzone_bucket.grant_read(lambda_function)
 
-        # sns_topic = aws_sns.Topic(scope, "CodeOnboardingTopic")
-        # lambda_function.add_event_source(
-        #     aws_lambda_event_sources.SnsEventSource(sns_topic)
-        # )
+        sns_topic = aws_sns.Topic(scope, "CodeOnboardingTopic")
+        lambda_function.add_event_source(
+            aws_lambda_event_sources.SnsEventSource(sns_topic)
+        )
         # params.dropzone_bucket.add_event_notification(
         #     aws_s3.EventType.OBJECT_TAGGING_PUT,
         #     aws_s3_notifications.SnsDestination(sns_topic),
@@ -75,9 +78,9 @@ class AssetOnboardingLambda(Construct):
             "LegacyDropzoneBucket",
             bucket_name=f"{params.environment}-codebase-dropzone",
         )
-        # legacy_dropzone_bucket.add_event_notification(
-        #     aws_s3.EventType.OBJECT_TAGGING_PUT,
-        #     aws_s3_notifications.SnsDestination(sns_topic),
-        #     aws_s3.NotificationKeyFilter(prefix="assets/"),
-        # )
+        legacy_dropzone_bucket.add_event_notification(
+            aws_s3.EventType.OBJECT_TAGGING_PUT,
+            aws_s3_notifications.SnsDestination(sns_topic),
+            aws_s3.NotificationKeyFilter(prefix="assets/"),
+        )
         legacy_dropzone_bucket.grant_read(lambda_function)

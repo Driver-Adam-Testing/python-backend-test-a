@@ -29,3 +29,11 @@ async def inline_edit_stream(input: dict) -> AsyncGenerator[LlmStreamResponse, N
     parsed_input = InlineEditPipelineInput.from_dict(input)
     async for chunk in parsed_input.stream():
         yield chunk
+
+
+@app.function(image=image, secrets=secrets)
+async def inline_edit_run(input: dict) -> AsyncGenerator[LlmStreamResponse, None]:
+    from shared.v3.app.pipelines.inline_edit import InlineEditPipelineInput
+
+    parsed_input = InlineEditPipelineInput.from_dict(input)
+    return parsed_input.run()

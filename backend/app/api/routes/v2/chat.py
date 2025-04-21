@@ -62,6 +62,7 @@ async def create_streaming_post(
     user: UserToken,
     payload: ChatRequest,
 ) -> StreamingResponse:
+    # TODO: Refactor this to logically be WITHIN the pipeline.
     source_node_ids: list[UUID] | None = payload.source_node_ids
     page_node_id: UUID | None = payload.page_node_id
     llm_session_id: UUID | None = payload.llm_session_id

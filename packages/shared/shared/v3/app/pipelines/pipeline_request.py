@@ -3,6 +3,8 @@ from collections.abc import AsyncGenerator
 from typing import TYPE_CHECKING
 from uuid import UUID
 
+from database.db import get_session
+from database.models_v2 import RuntimeLlmSession
 from pydantic import BaseModel
 from shared.v3 import LlmClient
 from shared.v3.utils.datasource import DataSource
@@ -16,6 +18,7 @@ class PipelineRequest(BaseModel, ABC):
     _datasource: DataSource
     node_ids: list[UUID] | None = None
     organization_id: str | None = None
+    user_id: str | None = None
 
     @property
     def datasource(self) -> DataSource:
@@ -25,6 +28,21 @@ class PipelineRequest(BaseModel, ABC):
                 organization_id=self.organization_id,
             )
         return self._datasource
+
+    _llm_session: RuntimeLlmSession | None = None
+
+    @property
+    def llm_session(self) -> RuntimeLlmSession:
+        if self._llm_session is None:
+            with get_session() as session:
+                self._llm_session = RuntimeLlmSession(
+                    organization_id=self.organization_id,
+                    user_id=self.user_id,
+                )
+                session.add(self._llm_session)
+                session.commit()
+                session.refresh(self._llm_session)
+        return self._llm_session
 
     @classmethod
     def from_dict(cls, data: dict) -> "PipelineRequest":

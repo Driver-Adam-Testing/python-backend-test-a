@@ -1,4 +1,3 @@
-import uuid
 from collections.abc import AsyncGenerator
 
 from shared.v3 import LlmClient, LlmMessageHistory
@@ -74,10 +73,9 @@ class InlineEditPipelineInput(PipelineRequest):
     async def stream(
         self, client: LlmClient = LlmClient.o3_mini()
     ) -> AsyncGenerator[LlmStreamResponse, None]:
-        llm_session_id = uuid.uuid4()
         yield StartSessionStreamResponse(
             kind=LlmStreamResponseKind.START_SESSION,
-            llm_session_id=llm_session_id,
+            llm_session_id=self.llm_session.id,
         )
         abbreviated_page_content = abbreviate_page_content(
             user_prompt=self.user_prompt,
@@ -99,7 +97,8 @@ class InlineEditPipelineInput(PipelineRequest):
                         page_content_after_cursor=abbreviated_page_content.abbreviated_after,
                         selected_text=self.selected_text,
                     ),
-                ]
+                ],
+                llm_session_id=self.llm_session.id,
             ),
             tool_types=[HybridSearchTool],
             iterations=2,
@@ -108,5 +107,5 @@ class InlineEditPipelineInput(PipelineRequest):
             yield chunk
         yield EndSessionStreamResponse(
             kind=LlmStreamResponseKind.END_SESSION,
-            llm_session_id=llm_session_id,
+            llm_session_id=self.llm_session.id,
         )

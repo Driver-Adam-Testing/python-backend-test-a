@@ -19,8 +19,8 @@ class InlineEditHttpRequest(BaseModel):
     prompt: str
     page_content_before_cursor: str
     page_content_after_cursor: str
-    node_ids: list[UUID]
     cursor_selection: str
+    node_ids: list[UUID]
 
 
 @router.post(
@@ -35,7 +35,7 @@ def inline_edit(
     """
     Perform inline editing on the selected text.
     """
-    response = InlineEditPipelineInput(
+    parsed_input = InlineEditPipelineInput(
         user_prompt=input.prompt,
         page_content_before_cursor=input.page_content_before_cursor,
         page_content_after_cursor=input.page_content_after_cursor,
@@ -43,7 +43,10 @@ def inline_edit(
             input.node_ids, organization_id=user.organization_id
         ),
         selected_text=input.cursor_selection,
-    ).run()
+    )
+    response = modal.Function.lookup(
+        "generation", "inline_edit_run", environment_name="neil"
+    ).remote_gen(parsed_input.model_dump())
     return response
 
 
@@ -60,6 +63,7 @@ def inline_edit_stream(user: UserToken, input: InlineEditHttpRequest) -> None:
         node_ids=input.node_ids,
         organization_id=user.organization_id,
         selected_text=input.cursor_selection,
+        user_id=user.user_id,
     )
     return StreamingResponse(
         modal.Function.lookup(

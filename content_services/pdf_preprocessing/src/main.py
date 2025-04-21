@@ -92,10 +92,11 @@ def create_and_embed_pdf_summaries(
 
     hashed_org_id = sha256(org_id.encode()).hexdigest()[:63]
     try:
-        with Session(engine) as session, session.begin():
+        with Session(engine) as session:
             version = session.exec(
                 select(Version).where(Version.id == version_id)
             ).one()
+            primary_asset_id = version.primary_asset_id
 
         relative_path = asset_name
         with NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
@@ -117,13 +118,17 @@ def create_and_embed_pdf_summaries(
             s3_client.upload_file_to_s3(
                 file_path=Path(sanitized_pdf.name),
                 bucket=hashed_org_id,
-                upload_key=f"{version.primary_asset_id}/{version_id}/{relative_path}",
+                upload_key=f"{primary_asset_id}/{version_id}/{relative_path}",
+                metadata=None,
+                content_type="application/pdf",
             )
             # Upload unsanitized PDF to same {primary_asset_id}/{version_id}/ but with a different, known name
             s3_client.upload_file_to_s3(
                 file_path=temp_file_path,
                 bucket=hashed_org_id,
-                upload_key=f"{version.primary_asset_id}/{version_id}/__unsanitized.pdf",  # TODO: what's the right name for this?
+                upload_key=f"{primary_asset_id}/{version_id}/__unsanitized.pdf",  # TODO: what's the right name for this?
+                metadata=None,
+                content_type="application/pdf",
             )
 
         with Session(engine) as session, session.begin():
@@ -195,7 +200,7 @@ def create_and_embed_pdf_summaries(
                 derived_content = DerivedContent(
                     content_kind=content_kind,
                     node_id=node_id,
-                    relative_path=node.relative_path,
+                    relative_path=relative_path,
                     content=cleaned_content,
                     misc_metadata={
                         "open_ai_file_id": result.open_ai_file_id,

@@ -13,7 +13,7 @@ router = APIRouter()
 
 
 @router.post(
-    "/codebase",  # TODO: putting as codebase for testing, should just be "/"
+    "/",
     summary="Create upload URL",
     dependencies=[ContentEditorPermission],
 )

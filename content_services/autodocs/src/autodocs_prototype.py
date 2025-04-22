@@ -495,10 +495,11 @@ class SectionCfg(BaseModel):
     title: str
     level: int
     use_pdfs: bool
-    required: bool
+    required: bool = True  # this setting is ignored when committed_with is not None
     instruction: str
     content_structure: str
     section_creation_method: SectionCreationMethod
+    committed_with: str = None
 
 
 class SectionCommitted(BaseModel):
@@ -1400,7 +1401,7 @@ class AutoDocCfg(BaseModel):
         optional_sections = [
             (idx, s.level, s.title, s.instruction)
             for idx, s in enumerate(self.sections)
-            if s.required is False
+            if s.required is False and s.committed_with is None
         ]
         if len(optional_sections) > 0:
             print(
@@ -1430,10 +1431,23 @@ class AutoDocCfg(BaseModel):
                     print(
                         f"{RED}- {'#' * level} {sf.name}{RESET} ({instruction[:100]} ...)"
                     )
+
+            for idx, section_cfg in enumerate(self.sections):
+                if section_cfg.committed_with:
+                    for parent_idx, parent_cfg in enumerate(self.sections):
+                        if parent_cfg.title == section_cfg.committed_with and (
+                            parent_cfg.required or parent_idx in included_idxs
+                        ):
+                            included_idxs.add(idx)
+                            break
+
             return [
                 SectionCommitted.from_section_cfg(cfg)
                 for idx, cfg in enumerate(self.sections)
-                if (cfg.required is True or idx in included_idxs)
+                if (
+                    (cfg.required is True and cfg.committed_with is None)
+                    or idx in included_idxs
+                )
             ]
         else:
             return [SectionCommitted.from_section_cfg(cfg) for cfg in self.sections]

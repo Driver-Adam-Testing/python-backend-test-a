@@ -50,9 +50,9 @@ async def inline_edit(
         print(f"Stream: {input.stream}")
         if input.remote_execution:
             return StreamingResponse(
-                modal.Function.lookup(
-                    "generation", "inline_edit_stream", environment_name="neil"
-                ).remote_gen(parsed_input.model_dump()),
+                modal.Function.lookup("generation", "inline_edit_stream").remote_gen(
+                    parsed_input.model_dump()
+                ),
                 media_type="text/event-stream",
             )
         else:
@@ -62,9 +62,9 @@ async def inline_edit(
             )
     else:
         if input.remote_execution:
-            return modal.Function.lookup(
-                "generation", "inline_edit_run", environment_name="neil"
-            ).remote(parsed_input.model_dump())
+            return modal.Function.lookup("generation", "inline_edit_run").remote(
+                parsed_input.model_dump()
+            )
         else:
             return parsed_input.run()
 

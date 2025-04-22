@@ -40,11 +40,13 @@ class InlineEditPipelineInput(PipelineRequest):
     def run(
         self, client: LlmClient = LlmClient.o3_mini()
     ) -> InlineEditPipelineResponse:
+        # TODO: can I make the meat of this one method?
         abbreviated_page_content = abbreviate_page_content(
             user_prompt=self.user_prompt,
             page_content_before_cursor=self.page_content_before_cursor,
             page_content_after_cursor=self.page_content_after_cursor,
         )
+        # TODO: how do I handle the multiple histories? Should I save abbreviation?
         information_response, called_tools = client.multi_shot(
             message_history=LlmMessageHistory(
                 messages=[

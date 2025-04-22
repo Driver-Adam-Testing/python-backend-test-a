@@ -1393,8 +1393,16 @@ class AutoDocCfg(BaseModel):
         else:
             raw_data.setdefault("scope", scope_raw_default)
         raw_data.setdefault("sections", [])
+        cfg = cls(**raw_data)
+        if "substitutions" in raw_data:
+            mapping = {item["key"]: item["value"] for item in raw_data["substitutions"]}
+            for section in cfg.sections:
+                section.instruction = section.instruction.format_map(mapping)
+                section.content_structure = section.content_structure.format_map(
+                    mapping
+                )
 
-        return cls(**raw_data)
+        return cfg
 
     async def eval_optional_sections(
         self, llm: ChatOpenAI, long_descriptions: str

@@ -494,7 +494,6 @@ class Scope(BaseModel):
 class SectionCfg(BaseModel):
     title: str
     level: int
-    use_pdfs: bool
     required: bool = True  # this setting is ignored when committed_with is not None
     instruction: str
     content_structure: str
@@ -505,7 +504,6 @@ class SectionCfg(BaseModel):
 class SectionCommitted(BaseModel):
     title: str
     level: int
-    use_pdfs: bool
     instruction: str
     content_structure: str
     section_creation_method: SectionCreationMethod
@@ -515,7 +513,6 @@ class SectionCommitted(BaseModel):
         return cls(
             title=cfg.title,
             level=cfg.level,
-            use_pdfs=cfg.use_pdfs,
             instruction=cfg.instruction,
             content_structure=cfg.content_structure,
             section_creation_method=cfg.section_creation_method,

@@ -834,6 +834,10 @@ The section you are writing about is titled {title}. Here is the a description o
 Your output should be markdown formatted text including the section title as a top level header, important subsections, and content included for each subsection as appropriate.
 
 Technical detail is very important in this document. As you write the document, cite specific examples from the source code or pdf page to support your documentation.
+
+Use only content directly from the source code or pdf page to write the document. Do not make up any content that is not directly from the source code or pdf page.
+
+It is okay to just return "no relevant content" if the source code or pdf page does not provide any relevant content for the section.
 """
         preamble_content = (
             f"\nHere is further overall context about the document we are writing:\n\n{preamble}"

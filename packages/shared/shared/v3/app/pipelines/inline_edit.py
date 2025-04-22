@@ -1,5 +1,6 @@
 from collections.abc import AsyncGenerator
 
+import modal
 from shared.v3 import LlmClient, LlmMessageHistory
 from shared.v3.app.pipelines.abbreviate_page_content import (
     abbreviate_page_content,
@@ -76,6 +77,7 @@ class InlineEditPipelineInput(PipelineRequest):
         yield StartSessionStreamResponse(
             kind=LlmStreamResponseKind.START_SESSION,
             llm_session_id=self.llm_session.id,
+            execution_call_id=modal.current_function_call_id(),
         )
         abbreviated_page_content = abbreviate_page_content(
             user_prompt=self.user_prompt,

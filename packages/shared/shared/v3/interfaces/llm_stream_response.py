@@ -36,6 +36,7 @@ class LlmStreamResponse(BaseModel):
 class StartSessionStreamResponse(LlmStreamResponse):
     kind: LlmStreamResponseKind = LlmStreamResponseKind.START_SESSION
     llm_session_id: UUID
+    execution_call_id: str | None = None
 
 
 class EndSessionStreamResponse(LlmStreamResponse):

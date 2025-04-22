@@ -199,26 +199,6 @@ async def get_autodoc_elapsed_time(page_id: str) -> float:
         ).all()
         start_state = states[0]
         end_state = states[-1]
-        # start_state = (
-        #     await session.exec(
-        #         select(AutoDocStatusHistory)
-        #         .where(
-        #             AutoDocStatusHistory.page_node_id == page_id,
-        #             AutoDocStatusHistory.call_id == call_id,
-        #         )
-        #         .order_by(AutoDocStatusHistory.created_at.asc())
-        #     )
-        # ).first()
-        # end_state = (
-        #     await session.exec(
-        #         select(AutoDocStatusHistory)
-        #         .where(
-        #             AutoDocStatusHistory.page_node_id == page_id,
-        #             AutoDocStatusHistory.call_id == call_id,
-        #         )
-        #         .order_by(AutoDocStatusHistory.created_at.desc())
-        #     )
-        # ).first()
         elapsed_time = end_state.created_at - start_state.created_at
     return elapsed_time.total_seconds()
 

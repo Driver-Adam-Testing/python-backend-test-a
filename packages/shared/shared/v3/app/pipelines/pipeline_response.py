@@ -10,6 +10,7 @@ class PipelineResponse(BaseModel):
     final_response: str
     references: list[Reference]
 
+    # Todo: Add a from_llm_session or message_history constructor
     def __init__(self, **data: dict[str, any]) -> None:
         if isinstance(data.get("references"), list):
             data["references"] = ReferenceSet(references=set(data["references"]))

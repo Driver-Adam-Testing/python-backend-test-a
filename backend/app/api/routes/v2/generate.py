@@ -20,7 +20,7 @@ class InlineEditHttpRequest(BaseModel):
     page_content_after_cursor: str
     cursor_selection: str
     node_ids: list[UUID]
-    use_modal: bool = True
+    remote_execution: bool = True
     stream: bool = True
 
 
@@ -48,7 +48,7 @@ async def inline_edit(
 
     if input.stream:
         print(f"Stream: {input.stream}")
-        if input.use_modal:
+        if input.remote_execution:
             return StreamingResponse(
                 modal.Function.lookup(
                     "generation", "inline_edit_stream", environment_name="neil"
@@ -56,9 +56,12 @@ async def inline_edit(
                 media_type="text/event-stream",
             )
         else:
-            return parsed_input.stream()
+            return StreamingResponse(
+                parsed_input.stream(),
+                media_type="text/event-stream",
+            )
     else:
-        if input.use_modal:
+        if input.remote_execution:
             return modal.Function.lookup(
                 "generation", "inline_edit_run", environment_name="neil"
             ).remote(parsed_input.model_dump())

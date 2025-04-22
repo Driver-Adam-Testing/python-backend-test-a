@@ -177,6 +177,52 @@ async def update_autodocs_status(
         await session.commit()
 
 
+async def get_autodoc_elapsed_time(page_id: str) -> float:
+    import modal
+    from database.db import async_engine
+    from database.models_v2 import AutoDocStatusHistory
+    from sqlmodel import select
+    from sqlmodel.ext.asyncio.session import AsyncSession
+
+    call_id = modal.current_function_call_id()
+
+    async with AsyncSession(async_engine) as session:
+        states = (
+            await session.exec(
+                select(AutoDocStatusHistory)
+                .where(
+                    AutoDocStatusHistory.page_node_id == page_id,
+                    AutoDocStatusHistory.call_id == call_id,
+                )
+                .order_by(AutoDocStatusHistory.created_at.asc())
+            )
+        ).all()
+        start_state = states[0]
+        end_state = states[-1]
+        # start_state = (
+        #     await session.exec(
+        #         select(AutoDocStatusHistory)
+        #         .where(
+        #             AutoDocStatusHistory.page_node_id == page_id,
+        #             AutoDocStatusHistory.call_id == call_id,
+        #         )
+        #         .order_by(AutoDocStatusHistory.created_at.asc())
+        #     )
+        # ).first()
+        # end_state = (
+        #     await session.exec(
+        #         select(AutoDocStatusHistory)
+        #         .where(
+        #             AutoDocStatusHistory.page_node_id == page_id,
+        #             AutoDocStatusHistory.call_id == call_id,
+        #         )
+        #         .order_by(AutoDocStatusHistory.created_at.desc())
+        #     )
+        # ).first()
+        elapsed_time = end_state.created_at - start_state.created_at
+    return elapsed_time.total_seconds()
+
+
 class TechDocsContent(BaseModel):
     name: str
     source: str | None
@@ -2502,7 +2548,7 @@ Your output is the full content of the document with editing updates based on yo
             system_prompt=self.final_copy_editor_system_prompt(),
             user_prompt=copy_editor_user_prompt,
         )
-        final_document += "\n\nMade with ❤️ by [Driver](https://www.driver.ai/)."
+        final_document += "\n\nMade with ❤️ by [Driver](https://www.driver.ai/)"
         final_doc_revisions.append(final_document)
         self.save_state(
             revisions=revisions,

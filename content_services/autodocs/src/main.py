@@ -1,5 +1,6 @@
 import os
 import uuid
+from math import ceil
 
 import modal
 from autodocs_prototype import (
@@ -9,6 +10,7 @@ from autodocs_prototype import (
     FullyQualifiedDriverPathCode,
     FullyQualifiedDriverPathPdf,
     Scope,
+    get_autodoc_elapsed_time,
     update_autodocs_status,
 )
 
@@ -133,6 +135,14 @@ async def run_adi_driver(
             status_kind=AutoDocStatusMessageKind.GENERATION_COMPLETE,
             content=doc,
         )
+        elapsed_time_s = await get_autodoc_elapsed_time(
+            page_id=str(page_node_id),
+        )
+        elapsed_time_min = ceil(elapsed_time_s / 60)
+        if elapsed_time_min == 1:
+            doc += f" in {elapsed_time_min} minute"
+        else:
+            doc += f" in {elapsed_time_min} minutes"
         with get_session() as session, session.begin():
             derived_content = session.exec(
                 select(DerivedContent).where(

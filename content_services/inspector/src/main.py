@@ -39,13 +39,13 @@ from utils.dag import FileTreeDag, Node, NodeKind, NodeStatus  # noqa: E402
 
 with inspection_image.imports():
     from tasks import (
+        CSymbolTableTask,
         EmbeddingTask,
         FileTechDocTask,
         FolderTechDocTask,
         SymbolsTask,
         TopLevelDocsTask,
     )
-    from utils.symbol_table import build_c_project_index
     from utils.task import TaskManager
 
 
@@ -363,30 +363,43 @@ async def inspect_files(
     result_loading_config: list[tuple[UUID, set[NodeStatus]]] | None,
 ) -> None:
     print("---------- All nodes ----------")
+
     for node, _ in nodes_with_id:
         print(node)
 
-    c_files = [
-        codebase_root / node.root_rel_path
-        for node, _ in nodes_with_id
-        if node.root_rel_path.suffix.lower() in [".c"]
-    ]
-    h_files = [
-        codebase_root / node.root_rel_path
-        for node, _ in nodes_with_id
-        if node.root_rel_path.suffix.lower() in [".h"]
-    ]
-    c_and_h_files = c_files + h_files
+    # c_files = [
+    #     codebase_root / node.root_rel_path
+    #     for node, _ in nodes_with_id
+    #     if node.root_rel_path.suffix.lower() in [".c"]
+    # ]
+    # h_files = [
+    #     codebase_root / node.root_rel_path
+    #     for node, _ in nodes_with_id
+    #     if node.root_rel_path.suffix.lower() in [".h"]
+    # ]
+    # c_and_h_files = c_files + h_files
 
-    if any(c_files):
-        index = build_c_project_index(c_and_h_files, codebase_root / codebase_name)
-        print("C symbol index built")
-        # Build index here put as single dict key. This is obviously not prod ready. We would ideally name the dict
-        # by unique id (or ephemeral) and pass in a dict handle  the downstream functions that need shared data
-        d = modal.Dict.from_name("temp", create_if_missing=True)
-        d["symbol_table"] = index
+    # if any(c_files):
+    #     index = build_c_project_index(c_and_h_files, codebase_root / codebase_name)
+    #     print("C symbol index built")
+    #     # Build index here put as single dict key. This is obviously not prod ready. We would ideally name the dict
+    #     # by unique id (or ephemeral) and pass in a dict handle  the downstream functions that need shared data
+    #     d = modal.Dict.from_name("temp", create_if_missing=True)
+    #     d["symbol_table"] = index
 
     tasks = []
+    c_symbol_table_task = CSymbolTableTask(
+        root_node=nodes_with_id[-1][0],
+        task_name="CSymbolTableTask",
+        codebase_name=codebase_name,
+        codebase_root=codebase_root,
+        nodes_relative_paths=[
+            node.root_rel_path
+            for node, _ in nodes_with_id
+            if node.kind == NodeKind.FILE
+        ],
+    )
+    tasks.append(c_symbol_table_task)
     for node, db_node_id in nodes_with_id:
         lite_node = node.into_lite_node()
 
@@ -427,6 +440,9 @@ async def inspect_files(
                 node=lite_node,
                 task_name=f"TechDoc {node.root_rel_path}",
                 db_node_id=db_node_id,
+                symbol_table_task=c_symbol_table_task.self_or_none(
+                    lite_node.root_rel_path
+                ),
             )
             file_tech_docs_embedding_task = EmbeddingTask(
                 node=node,

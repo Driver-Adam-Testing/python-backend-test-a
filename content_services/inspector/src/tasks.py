@@ -1,6 +1,8 @@
 import asyncio
+import concurrent.futures
 import uuid
-from typing import Union
+from pathlib import Path
+from typing import Self, Union
 
 from database.models_v1 import (
     ChunkAndEmbedding,
@@ -15,8 +17,9 @@ from modal_funcs import (
 )
 from openai import OpenAIError
 from sqlmodel import delete, select
-from utils.dag import LiteNode
+from utils.dag import LiteNode, NodeKind
 from utils.db import get_source_code_derived_content
+from utils.symbol_table import ReifiedProjectIndex, build_c_project_index
 from utils.task import Task, TaskResult, TaskResultKind
 
 TechDocsTask = Union["FileTechDocTask", "FolderTechDocTask", "TopLevelDocsTask"]
@@ -146,23 +149,34 @@ class FileTechDocTask(Task):
         node: LiteNode,
         task_name: str,
         db_node_id: uuid.UUID,
+        symbol_table_task: "CSymbolTableTask" | None,
     ) -> None:
         self.codebase_name = codebase_name
         self.source_code = source_code
         self.db_node_id = db_node_id
+        self.symbol_table_task = symbol_table_task
         super().__init__(
             task_name=task_name,
             node=node,
+            dependencies=[symbol_table_task] if symbol_table_task else [],
         )
 
     async def run_implementation(
         self, dependent_results: dict["Task", TaskResult]
     ) -> dict[str, any]:
+        if self.symbol_table_task:
+            result = dependent_results.get(
+                self.symbol_table_task
+            ).result.file_to_symbols[self.node.root_rel_path]
+        else:
+            result = None
+
         async with tech_docs_sem:
             success, docs, node = await make_tech_doc.remote.aio(
                 node=self.node,
                 source_code=self.source_code,
                 codebase_name=self.codebase_name,
+                reified_symbols=result,
             )
 
         return {
@@ -618,3 +632,58 @@ class EmbeddingTask(Task):
 
     def recoverable_errors(self) -> set[type[Exception]]:
         return {OpenAIError}
+
+
+class CSymbolTableTask(Task):
+    def __init__(
+        self,
+        root_node: LiteNode,
+        task_name: str,
+        codebase_name: str,
+        codebase_root: Path,
+        nodes_relative_paths: list[Path],
+    ) -> None:
+        assert root_node.kind == NodeKind.ROOT_FOLDER
+
+        self.codebase_name = codebase_name
+        self.codebase_root = codebase_root
+        self.c_and_h_files = {
+            codebase_root / rel_path
+            for rel_path in nodes_relative_paths
+            if rel_path.suffix in {".c", ".h"}
+        }
+        self.has_c_files = any(p.suffix == ".c" for p in self.c_and_h_files)
+        super().__init__(
+            task_name=task_name,
+            node=root_node,
+        )
+
+    async def run_implementation(
+        self, dependent_results: dict[Task, TaskResult]
+    ) -> ReifiedProjectIndex:
+        if self.has_c_files:
+            loop = asyncio.get_running_loop()
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                result = await loop.run_in_executor(
+                    pool,
+                    build_c_project_index,
+                    self.c_and_h_files,
+                    self.codebase_root / self.codebase_name,
+                )
+            return result
+        return None  # TODO: what do we do when no c files?
+
+    async def post_run_io(
+        self,
+        task_result: TaskResult,
+        dependent_io_results: dict["Task", dict[str, any]],
+    ) -> dict[str, any]:
+        pass
+
+    def recoverable_errors(self) -> set[type[Exception]]:
+        return set()
+
+    def self_or_none(self, absolute_path: Path) -> Self | None:
+        if absolute_path in self.c_and_h_files:
+            return self
+        return None

@@ -31,7 +31,10 @@ function_cfg = {"secrets": [modal.Secret.from_name("open-ai")], "image": image}
     **function_cfg,
 )
 def make_tech_doc(
-    node: LiteNode, source_code: str, codebase_name: str
+    node: LiteNode,
+    source_code: str,
+    codebase_name: str,
+    reified_symbols: dict | None,  # TODO: what is the correct type for reified_symbols?
 ) -> tuple[bool, dict, LiteNode]:
     from utils.models import ChatOpenAI
 
@@ -43,16 +46,16 @@ def make_tech_doc(
         request_timeout=FILE_TECH_DOC_LLM_TIMEOUT,
     )
 
-    reified_symbols = None
-    suffix = node.root_rel_path.suffix.lower()
-    if suffix in [".h", ".c"]:
-        d = modal.Dict.from_name("temp", create_if_missing=True)
-        symbol_table = d.get("symbol_table", None)
-        if symbol_table is None and suffix == ".c":
-            raise Exception("Symbol table not found when processing .c file!")
-        if symbol_table is None and suffix == ".h":
-            print("Symbol table not found when processing .h file; cpp?")
-        reified_symbols = symbol_table.file_to_symbols[node.root_rel_path]
+    # reified_symbols = None
+    # suffix = node.root_rel_path.suffix.lower()
+    # if suffix in [".h", ".c"]:
+    #     d = modal.Dict.from_name("temp", create_if_missing=True)
+    #     symbol_table = d.get("symbol_table", None)
+    #     if symbol_table is None and suffix == ".c":
+    #         raise Exception("Symbol table not found when processing .c file!")
+    #     if symbol_table is None and suffix == ".h":
+    #         print("Symbol table not found when processing .h file; cpp?")
+    #     reified_symbols = symbol_table.file_to_symbols[node.root_rel_path]
 
     file_docs_successful, file_doc = comprehend_file_top_down(
         llm=llm,

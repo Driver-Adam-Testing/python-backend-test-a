@@ -130,11 +130,6 @@ async def run_adi_driver(
         doc = await init_state.generate(
             execution_mode=ExecutionMode.MODAL, page_id=str(page_node_id)
         )
-        await update_autodocs_status(
-            page_id=str(page_node_id),
-            status_kind=AutoDocStatusMessageKind.GENERATION_COMPLETE,
-            content=doc,
-        )
         elapsed_time_s = await get_autodoc_elapsed_time(
             page_id=str(page_node_id),
         )
@@ -143,6 +138,11 @@ async def run_adi_driver(
             doc += f" in {elapsed_time_min} minute"
         else:
             doc += f" in {elapsed_time_min} minutes"
+        await update_autodocs_status(
+            page_id=str(page_node_id),
+            status_kind=AutoDocStatusMessageKind.GENERATION_COMPLETE,
+            content=doc,
+        )
         with get_session() as session, session.begin():
             derived_content = session.exec(
                 select(DerivedContent).where(

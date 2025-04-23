@@ -7,6 +7,19 @@ from pathlib import Path
 import toml
 
 
+def check_poetry_version() -> None:
+    try:
+        result = subprocess.run(
+            ["poetry", "--version"], capture_output=True, text=True, check=True
+        )
+        version = result.stdout.strip()
+        if " 2." not in version:
+            raise ValueError("Poetry version 2.x is required.")
+    except subprocess.CalledProcessError as e:
+        print(f"Error: {e}")
+        sys.exit(1)
+
+
 def locate_pyproject_files(root_dir: str) -> list[Path]:
     return list(Path(root_dir).rglob("pyproject.toml"))
 
@@ -68,7 +81,7 @@ def execute_poetry_lock(
     project_name_to_project_deps: dict[str, list[str]],
     dry_run: bool,
 ) -> None:
-    """Execute 'poetry lock --no-update' in each project directory, showing reasons for each action."""
+    """Execute 'poetry lock' in each project directory, showing reasons for each action."""
     for project_name, project_dir in ordered_project_names_and_dirs:
         deps = project_name_to_project_deps.get(project_name, [])
         reasons_text = (
@@ -78,17 +91,15 @@ def execute_poetry_lock(
         )
         action_text = "Would run" if dry_run else "Running"
         print(
-            f"{action_text} `poetry lock --no-update` for `{project_name}` in `{project_dir}` because it {reasons_text}"
+            f"{action_text} `poetry lock` for `{project_name}` in `{project_dir}` because it {reasons_text}"
         )
 
         if not dry_run:
             try:
-                subprocess.run(
-                    ["poetry", "lock", "--no-update"], cwd=project_dir, check=True
-                )
+                subprocess.run(["poetry", "lock"], cwd=project_dir, check=True)
             except subprocess.CalledProcessError as e:
                 print(
-                    f"Error: Failed to run 'poetry lock --no-update' in `{project_dir}`. Error: {e}"
+                    f"Error: Failed to run 'poetry lock' in `{project_dir}`. Error: {e}"
                 )
                 sys.exit(1)
 
@@ -96,7 +107,7 @@ def execute_poetry_lock(
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="""
-        This script automates the process of running 'poetry lock --no-update' in multiple interdependent Python projects
+        This script automates the process of running 'poetry lock' in multiple interdependent Python projects
         within a directory structure, such as in a monorepo.
 
         Motivation:
@@ -155,4 +166,5 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    check_poetry_version()
     main()

@@ -24,7 +24,7 @@ def head_object(bucket: str, key: str) -> dict:
     return s3_client.head_object(Bucket=bucket, Key=key)
 
 
-def has_guard_duty_tag(bucket: str, key: str) -> bool:
+def has_allowed_guard_duty_tag(bucket: str, key: str) -> bool:
     """
     Check if the S3 object has the 'GuardDutyMalwareScanStatus' tag with value 'NO_THREATS_FOUND' or 'UNSUPPORTED'.
     """

@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Optional
 from uuid import UUID
 
 from database.models_v2_enums import (
+    AutoDocStatusMessageKind,
     LlmPipelineKind,
     NodeKind,
     PrimaryAssetKind,
@@ -219,6 +220,17 @@ class Node(SQLModel, table=True):  # type: ignore
             index=True,
         )
     )
+
+    total_files: int | None = Field(
+        sa_column=Column(
+            Integer,
+            Computed("(misc_metadata->>'total_files')::INTEGER", persisted=True),
+            index=True,
+            nullable=True,
+        ),
+        default=None,
+    )
+
     misc_metadata: dict | None = Field(  # type: ignore
         sa_column=Column(JSONB, nullable=True), default=None
     )
@@ -385,3 +397,25 @@ class RuntimeLlmMessage(SQLModel, table=True):
     message_history: "RuntimeLlmMessageHistory" = Relationship(
         back_populates="messages",
     )
+
+
+class AutoDocStatusHistory(SQLModel, table=True):
+    __tablename__ = "v2_autodoc_status_history"
+    id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    page_node_id: UUID = Field(
+        index=True,
+        nullable=False,
+        foreign_key="v2_node.id",
+        ondelete="CASCADE",
+    )
+    status_kind: AutoDocStatusMessageKind = Field(
+        nullable=False,
+    )
+    content: str | None
+    created_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
+        default=None,
+    )
+    call_id: str | None

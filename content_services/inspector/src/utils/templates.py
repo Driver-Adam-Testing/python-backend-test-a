@@ -72,6 +72,7 @@ class Template(BaseModel):
         code: str,
         reified_symbols: list[ReifiedSymbol] | None,
         code_chunks: list[str] | None = None,
+        max_num_chunks_to_use: int | None = None,
     ) -> str:
         output = ""
         for tup in self.template:
@@ -178,7 +179,7 @@ class Template(BaseModel):
                         aggregate_prompt,
                     ) = args
                     chunk_paragraphs = ""
-                    for code_chunk in code_chunks:
+                    for code_chunk in code_chunks[:max_num_chunks_to_use]:
                         user_prompt = f"{section_prompt}\n\nCode:\n\n{code_chunk}"
                         content = llm.generate_response(
                             system_prompt=system_prompt,

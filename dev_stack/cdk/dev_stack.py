@@ -3,15 +3,15 @@ import os
 from aws_cdk import RemovalPolicy, Stack, aws_s3
 from constructs import Construct
 
-from cdk.developer_constructs.dev_stack_code_onboarding_lambda import (
+from cdk.constructs.code_onboarding_lambda import (
     DevStackCodeOnboardingLambda,
     DevStackCodeOnboardingLambdaParams,
 )
-from cdk.developer_constructs.dev_stack_document_onboarding_lambda import (
+from cdk.constructs.document_onboarding_lambda import (
     DevStackDocumentOnboardingLambda,
     DevStackDocumentOnboardingLambdaParams,
 )
-from cdk.developer_constructs.dev_stack_metrics_lambda import (
+from cdk.constructs.metrics_lambda import (
     DevStackMetricsLambda,
     DevStackMetricsLambdaParams,
 )

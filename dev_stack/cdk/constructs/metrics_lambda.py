@@ -1,7 +1,9 @@
 import os
 
 from aws_cdk import (
+    CfnOutput,
     Duration,
+    Stack,
     aws_cloudwatch,
     aws_cloudwatch_actions,
     aws_ec2,
@@ -11,7 +13,7 @@ from aws_cdk import (
     aws_secretsmanager,
     aws_sns,
     aws_sqs,
-    aws_ssm, Stack, CfnOutput,
+    aws_ssm,
 )
 from aws_cdk import (
     aws_events_targets as targets,
@@ -34,10 +36,14 @@ class DevStackMetricsLambdaParams:
 
 
 class DevStackMetricsLambda(Construct):
-    def __init__(self, scope: Construct, id: str, params: DevStackMetricsLambdaParams) -> None:
+    def __init__(
+        self, scope: Construct, id: str, params: DevStackMetricsLambdaParams
+    ) -> None:
         super().__init__(scope, id)
 
-        database_url_secret = aws_secretsmanager.Secret(self, "DevStackMetricsLambdaDBSecret")
+        database_url_secret = aws_secretsmanager.Secret(
+            self, "DevStackMetricsLambdaDBSecret"
+        )
         vpc_id = aws_ssm.StringParameter.value_from_lookup(
             scope, parameter_name="/baseline/infra/v2/vpc/id"
         )
@@ -135,4 +141,9 @@ class DevStackMetricsLambda(Construct):
             print(
                 f"*** NO CW DLQ ALARM CONFIGURED FOR MetricAlarm in {params.environment} ***"
             )
-        CfnOutput(self, "MetricsLambdaDBSecretOutput", value=database_url_secret.secret_name,export_name="MetricsLambdaDBSecretOutput")
+        CfnOutput(
+            self,
+            "MetricsLambdaDBSecretOutput",
+            value=database_url_secret.secret_name,
+            export_name="MetricsLambdaDBSecretOutput",
+        )

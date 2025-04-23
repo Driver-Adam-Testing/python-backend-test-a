@@ -11,14 +11,19 @@
 - [x] GitHub App (This step requires manual setup)
   - [x] Add flag `setup` that creates a guide for setting up the GitHub App
   - [x] during setup the cli will allow the user to enter client id and secret and private key .pem file
--[ ] TestInDevCDK Stack
-  - [ ] clone codebase-onboarding-lambda
-  - [ ] clone document-onboarding-lambda
+-[x] TestInDevCDK Stack
+  - [x] ~~clone codebase-onboarding-lambda~~
+  - [x] ~~clone document-onboarding-lambda~~
   - [x] Create a new stack inspired by the TestInDevCDK stack
-  - [ ] update code to use the env variables from the previous steps
-  - [ ] integrate cdk deploy into the cli
+  - [x] update code to use the env variables from the previous steps
+  - [x] integrate cdk deploy into the cli
+  - [ ] Clean up hard coded values
+  - [ ] integrate unified lamda into stack
 - [ ] Modal setup
   - [ ] create developer modal environment
-  - [ ] generate script to create modal secrets
-  - [ ] generate script to deploy modal apps
+  - [x] generate script to create modal secrets
+  - [x] generate script to deploy modal apps
+  - [ ] figure out the modal proxy issue
+- Teardown
+  - [ ] add cdk destroy to teardown cmd
 - [ ] Test the setup

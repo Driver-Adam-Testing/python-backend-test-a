@@ -1,4 +1,5 @@
 from aws_cdk import (
+    CfnOutput,
     Duration,
     aws_iam,
     aws_lambda,
@@ -7,7 +8,7 @@ from aws_cdk import (
     aws_s3,
     aws_s3_notifications,
     aws_secretsmanager,
-    aws_sns, CfnOutput,
+    aws_sns,
 )
 from constructs import Construct
 
@@ -43,7 +44,9 @@ class DevStackDocumentOnboardingLambda(Construct):
     ):
         super().__init__(scope, id)
 
-        client_id_secret = aws_secretsmanager.Secret(scope, "DevStackDocLambdaClientIdSecret")
+        client_id_secret = aws_secretsmanager.Secret(
+            scope, "DevStackDocLambdaClientIdSecret"
+        )
         client_secret_secret = aws_secretsmanager.Secret(
             scope, "DevStackDocLambdaClientSecretSecret"
         )
@@ -62,7 +65,7 @@ class DevStackDocumentOnboardingLambda(Construct):
                 "AUTH0_URL": params.auth0_url,
                 "AWS_S3_CODE_BUCKET_SUFFIX": "codebase-dropzone",
                 "DROPZONE_BUCKET_NAME": params.dropzone_bucket.bucket_name,
-                "USE_LEGACY_DROPZONE": "True"
+                "USE_LEGACY_DROPZONE": "True",
             },
             bundling=aws_lambda_python_alpha.BundlingOptions(
                 asset_excludes=[".venv", ".env", "tests/", ".pytest*"]
@@ -90,5 +93,15 @@ class DevStackDocumentOnboardingLambda(Construct):
         lambda_function.role.add_managed_policy(
             aws_iam.ManagedPolicy.from_aws_managed_policy_name("AmazonS3FullAccess")
         )
-        CfnOutput(self, "ClientIdSecretNameOutput", value=client_id_secret.secret_name,export_name="DocLambdaClientIdOutput")
-        CfnOutput(self, "ClientSecretSecretNameOutput", value=client_secret_secret.secret_name,export_name="DocLambdaClientSecretOutput")
+        CfnOutput(
+            self,
+            "ClientIdSecretNameOutput",
+            value=client_id_secret.secret_name,
+            export_name="DocLambdaClientIdOutput",
+        )
+        CfnOutput(
+            self,
+            "ClientSecretSecretNameOutput",
+            value=client_secret_secret.secret_name,
+            export_name="DocLambdaClientSecretOutput",
+        )

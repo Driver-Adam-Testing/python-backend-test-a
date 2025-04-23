@@ -1,4 +1,5 @@
 from typing import Any
+from uuid import UUID
 
 from pydantic import BaseModel, field_validator
 
@@ -15,3 +16,5 @@ class UploadRequest(BaseModel):
 
 class UploadResponse(BaseModel):
     upload_url: str
+    primary_asset_id: UUID
+    version_id: UUID

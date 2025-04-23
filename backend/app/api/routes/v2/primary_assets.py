@@ -1,7 +1,9 @@
 import hashlib
+from logging import getLogger
 from uuid import UUID
 
 import boto3
+from botocore.exceptions import ClientError
 from database.models_v1 import InspectorRun
 from database.models_v2 import PrimaryAsset, PrimaryAssetTag, Version
 from fastapi import Body, HTTPException, Path, Request
@@ -23,6 +25,8 @@ from app.api.routes.v2.schemas import (
 )
 from app.api.session import CurrentSession
 from app.core.config import settings  # Assuming settings contains AWS credentials
+
+logger = getLogger(__name__)
 
 
 @router.get("/primary_assets", response_model=ListWithCount[PrimaryAssetDetailRead])
@@ -143,7 +147,15 @@ def delete_primary_asset(
     bucket = s3.Bucket(org_id_hash)
     inspector_bucket = s3.Bucket(settings.INSPECTOR_BUCKET_NAME)
 
-    bucket.objects.filter(Prefix=prefix).delete()
+    try:
+        bucket.objects.filter(Prefix=prefix).delete()
+    except ClientError as e:
+        if e.response["Error"]["Code"] == "NoSuchBucket":
+            logger.warning(
+                f"Bucket {org_id_hash} for {user.organization_id} does not exist. Still deleting asset from DB."
+            )
+        else:
+            raise
 
     for run_id in run_ids:
         inspector_bucket.objects.filter(Prefix=str(run_id)).delete()

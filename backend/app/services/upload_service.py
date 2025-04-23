@@ -61,6 +61,7 @@ class UploadService:
                     repository_id=None,
                 )
                 self.session.add(new_asset)
+                primary_asset_id = new_asset.id
                 new_version = Version(
                     primary_asset_id=new_asset.id,
                     display_name="Unversioned",
@@ -68,6 +69,7 @@ class UploadService:
                     previous_version_id=None,
                 )
                 self.session.add(new_version)
+                version_id = new_version.id
                 # TODO: add the creator and VersionCreator here
                 relative_path = f"{new_asset.id}/{new_version.id}/{unquote_plus(file_name)}"  # TODO: don't understand what unquote_plus does here, no spaces left in filename
                 upload_key = f"assets/{org_id_hash}/{relative_path}"
@@ -92,4 +94,8 @@ class UploadService:
             )
 
         logger.info(f"Upload URL generated for {relative_path}")
-        return UploadResponse(upload_url=upload_url)
+        return UploadResponse(
+            upload_url=upload_url,
+            primary_asset_id=primary_asset_id,
+            version_id=version_id,
+        )

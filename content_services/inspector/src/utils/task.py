@@ -3,16 +3,16 @@ import asyncio
 import concurrent
 import hashlib
 import json
+import pickle
 from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 from uuid import UUID
 
 import boto3
-import modal.exception
 from botocore.exceptions import NoCredentialsError
 
 from utils.dag import LiteNode, NodeStatus
@@ -20,24 +20,34 @@ from utils.dag import LiteNode, NodeStatus
 TaskName = str
 
 
-class TaskResultKind(Enum):
-    SUCCESS = "success"
-    RECOVERABLE_ERROR = "recoverable_error"
-    UNRECOVERABLE_ERROR = "unrecoverable_error"
+class SerializationMethod(str, Enum):
+    JSON = "json"  # NOTE: we use JSON here in case of python version upgrade, we maintain backwards compatibility.
+    PICKLE = "pickle"  # NOTE: use this sparingly, due to concern about backwards compatibilty with python upgrade
 
 
-@dataclass
+@dataclass(frozen=True)
 class TaskResult:
-    result: dict[str, any]
-    state: TaskResultKind
+    data: Any
+    serialization: SerializationMethod
 
-    def to_json(self) -> str:
-        return json.dumps({"result": self.result, "state": self.state.value})
+    def serialize(self) -> str | bytes:
+        if self.serialization is SerializationMethod.JSON:
+            return json.dumps(self.data)  # str
+        if self.serialization is SerializationMethod.PICKLE:
+            return pickle.dumps(self.data)  # bytes
+        raise ValueError(f"Unsupported serialization method: {self.serialization}")
 
     @classmethod
-    def from_json(cls, json_str: str) -> "TaskResult":
-        data = json.loads(json_str)
-        return TaskResult(result=data["result"], state=TaskResultKind(data["state"]))
+    def deserialize(
+        cls, data: str | bytes, method: SerializationMethod
+    ) -> "TaskResult":
+        if method is SerializationMethod.JSON and isinstance(data, str):
+            value = json.loads(data)
+        elif method is SerializationMethod.PICKLE and isinstance(data, bytes):
+            value = pickle.loads(data)
+        else:
+            raise ValueError("Invalid data type for the given serialization method")
+        return cls(value=value, serialization=method)
 
 
 # TODO check exception handling and propagation is correct!
@@ -45,20 +55,21 @@ class TaskResult:
 
 
 class TaskResultPersistence(ABC):
+    _extension_for_method: ClassVar[dict[SerializationMethod, str]] = {
+        SerializationMethod.JSON: ".json",
+        SerializationMethod.PICKLE: ".pkl",
+    }
+
+    _method_for_extension: ClassVar[dict[str, SerializationMethod]] = {
+        v: k for k, v in _extension_for_method.items()
+    }
+
     @abstractmethod
     def save_task_result(self, run_id: str, task_id: str, result: TaskResult) -> None:
         pass
 
     @abstractmethod
     def load_task_result(self, run_id: str, task_id: str) -> None | TaskResult:
-        pass
-
-    @abstractmethod
-    def load_all_results(self, run_id: str) -> dict[str, TaskResult]:
-        pass
-
-    @abstractmethod
-    def clear_all_results(self, run_id: str) -> None:
         pass
 
 
@@ -67,8 +78,8 @@ class LocalDiskTaskResultPersistence(TaskResultPersistence):
         self.base_dir = Path(base_dir)
         self.base_dir.mkdir(parents=True, exist_ok=True)
 
-    def _get_file_path(self, run_id: str, task_id: str) -> Path:
-        return self.base_dir / run_id / f"{task_id}.json"
+    def _get_file_base_path(self, run_id: str, task_id: str) -> Path:
+        return self.base_dir / run_id / f"{task_id}"
 
     def _get_run_dir(self, run_id: str) -> Path:
         return self.base_dir / run_id
@@ -76,37 +87,32 @@ class LocalDiskTaskResultPersistence(TaskResultPersistence):
     def save_task_result(self, run_id: str, task_id: str, result: TaskResult) -> None:
         run_dir = self._get_run_dir(run_id)
         run_dir.mkdir(parents=True, exist_ok=True)
-        file_path = self._get_file_path(run_id, task_id)
-        with file_path.open("w") as f:
-            f.write(result.to_json())
+        file_path = self._get_file_base_path(run_id, task_id)
+        ext = self._extension_for_method[result.serialization]
+        full_path = file_path.with_suffix(ext)
+
+        data = result.serialize()
+        if result.serialization is SerializationMethod.JSON:
+            full_path.write_text(data)
+        elif result.serialization is SerializationMethod.PICKLE:
+            full_path.write_bytes(data)
+        else:
+            raise ValueError(
+                f"Serialization must be either JSON or PICKLE, found {result.serialization}"
+            )
 
     def load_task_result(self, run_id: str, task_id: str) -> None | TaskResult:
-        file_path = self._get_file_path(run_id, task_id)
-        if not file_path.exists():
-            return None
-        with file_path.open("r") as f:
-            json_str = f.read()
-        return TaskResult.from_json(json_str)
+        base_path = self._get_file_base_path(run_id, task_id)
 
-    def load_all_results(self, run_id: str) -> dict[str, TaskResult]:
-        results = {}
-        run_dir = self._get_run_dir(run_id)
-        if not run_dir.exists():
-            return results
-        for file_path in run_dir.glob("*.json"):
-            task_id = file_path.stem
-            result = self.load_task_result(run_id, task_id)
-            if result:
-                results[task_id] = result
-        return results
+        for serialization_method, ext in self._extension_for_method.items():
+            file_path = base_path.with_suffix(ext)
+            if file_path.exists():
+                data = (
+                    file_path.read_text() if ext == ".json" else file_path.read_bytes()
+                )
+                return TaskResult.deserialize(data, serialization_method)
 
-    def clear_all_results(self, run_id: str) -> None:
-        run_dir = self._get_run_dir(run_id)
-        if not run_dir.exists():
-            return
-        for file_path in run_dir.glob("*.json"):
-            file_path.unlink()
-        run_dir.rmdir()
+        return None
 
 
 class S3TaskResultPersistence(TaskResultPersistence):
@@ -115,53 +121,42 @@ class S3TaskResultPersistence(TaskResultPersistence):
         self.bucket_name = bucket_name
 
     def save_task_result(self, run_id: str, task_id: str, result: TaskResult) -> None:
-        object_key = f"{run_id}/{task_id}.json"
+        base_object_key = f"{run_id}/{task_id}"
+        ext = self._extension_for_method[result.serialization]
+        object_key = f"{base_object_key}{ext}"
+
         self.s3_client.put_object(
-            Bucket=self.bucket_name, Key=object_key, Body=result.to_json()
+            Bucket=self.bucket_name, Key=object_key, Body=result.serialize()
         )
 
     def load_task_result(self, run_id: str, task_id: str) -> None | TaskResult:
-        object_key = f"{run_id}/{task_id}.json"
-        try:
-            response = self.s3_client.get_object(
-                Bucket=self.bucket_name, Key=object_key
-            )
-            result = TaskResult.from_json(response["Body"].read().decode("utf-8"))
+        base_object_key = f"{run_id}/{task_id}"
+        for serialization_method, ext in self._extension_for_method.items():
+            object_key = f"{base_object_key}{ext}"
+            try:
+                response = self.s3_client.get_object(
+                    Bucket=self.bucket_name, Key=object_key
+                )
+            except self.s3_client.exceptions.NoSuchKey:
+                continue
+            except NoCredentialsError:
+                raise Exception("AWS credentials not found.")
+            except Exception as e:
+                print(f"Error fetching data from S3: {e}")
+                return None
+            body = response["Body"].read()
+            if serialization_method is SerializationMethod.JSON:
+                result = TaskResult.deserialize(
+                    body.decode("utf-8"), serialization_method
+                )
+            elif serialization_method is SerializationMethod.PICKLE:
+                result = TaskResult.deserialize(body, serialization_method)
+            else:
+                raise ValueError(
+                    f"Unsupported serialization method: {serialization_method}"
+                )
             return result
-        except self.s3_client.exceptions.NoSuchKey:
-            return None
-        except NoCredentialsError:
-            raise Exception("AWS credentials not found.")
-        except Exception as e:
-            print(f"Error fetching data from S3: {e}")
-            return None
-
-    def load_all_results(self, run_id: str) -> dict[str, TaskResult]:
-        results = {}
-        paginator = self.s3_client.get_paginator("list_objects_v2")
-        prefix = f"{run_id}/"
-        for page in paginator.paginate(Bucket=self.bucket_name, Prefix=prefix):
-            for obj in page.get("Contents", []):
-                task_id = obj["Key"].split("/")[-1].replace(".json", "")
-                result = self.load_task_result(run_id, task_id)
-                if result:
-                    results[task_id] = result
-        return results
-
-    def clear_all_results(self, run_id: str) -> None:
-        try:
-            paginator = self.s3_client.get_paginator("list_objects_v2")
-            prefix = f"{run_id}/"
-            delete_us = {"Objects": []}
-            for page in paginator.paginate(Bucket=self.bucket_name, Prefix=prefix):
-                for obj in page.get("Contents", []):
-                    delete_us["Objects"].append({"Key": obj["Key"]})
-            if delete_us["Objects"]:
-                self.s3_client.delete_objects(Bucket=self.bucket_name, Delete=delete_us)
-        except NoCredentialsError as e:
-            raise Exception("AWS credentials not found.") from e
-        except Exception as e:
-            print(f"Error clearing objects in S3: {e}")
+        return None
 
 
 @dataclass
@@ -169,36 +164,17 @@ class Task(abc.ABC):
     task_name: str
     node: LiteNode
     dependencies: tuple[type["Task"], ...] = field(default_factory=tuple)
-    _base_recoverable_errors: set = field(init=False, repr=False)
-
-    def __post_init__(self) -> None:
-        self._base_recoverable_errors = {modal.exception.Error, KeyboardInterrupt}
 
     async def run(
         self,
         dependent_results: dict["Task", TaskResult],
     ) -> TaskResult:
-        try:
-            result = await self.run_implementation(dependent_results)
-            return TaskResult(result=result, state=TaskResultKind.SUCCESS)
-        except Exception as e:
-            raise e
-            if self._is_recoverable_error(e):
-                return TaskResult(
-                    result={"error": f"{e.__class__}, {e}"},
-                    state=TaskResultKind.RECOVERABLE_ERROR,
-                )
-            else:
-                # TODO log when errors occur here so we know to look at them. Consider scheduling email or similar
-                return TaskResult(
-                    result={"error": f"{e.__class__}, {e}"},
-                    state=TaskResultKind.UNRECOVERABLE_ERROR,
-                )
+        return await self.run_implementation(dependent_results)
 
     @abstractmethod
     async def run_implementation(
         self, dependent_results: dict["Task", TaskResult]
-    ) -> dict[str, any]:
+    ) -> TaskResult:
         raise NotImplementedError
 
     @abstractmethod
@@ -208,18 +184,6 @@ class Task(abc.ABC):
         dependent_io_results: dict["Task", dict[str, any]],
     ) -> dict[str, any]:
         raise NotImplementedError
-
-    @abstractmethod
-    def recoverable_errors(self) -> set[type[Exception]]:
-        raise NotImplementedError
-
-    def _is_recoverable_error(self, error: Exception) -> bool:
-        for recoverable_error in (
-            self._base_recoverable_errors | self.recoverable_errors()
-        ):
-            if isinstance(error, recoverable_error):
-                return True
-        return False
 
     # TODO this could get really long, but does it matter?
     @property
@@ -386,18 +350,7 @@ class TaskManager:
 
     def _can_skip_task(self, task: type[Task]) -> bool:
         task_result = self.task_results.get(task, None)
-        if task_result is None:
-            return False
-
-        match task_result.state:
-            case TaskResultKind.SUCCESS:
-                return True
-            case TaskResultKind.RECOVERABLE_ERROR:
-                # TODO: Note, we'll rerun if there was a recoverable error, but we don't have the diff update flow yet, so
-                # we're not re-running upstream tasks.
-                return False
-            case TaskResultKind.UNRECOVERABLE_ERROR:
-                return True
+        return task_result is not None
 
     async def _run_task(self, task: type[Task]) -> TaskResult:
         """

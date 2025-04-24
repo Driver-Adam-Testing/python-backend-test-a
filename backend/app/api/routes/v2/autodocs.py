@@ -119,6 +119,7 @@ def run_autodoc(
 
     call = run_autodoc.spawn(
         page_node_id=str(input.page_id),
+        config_kind=input.config_kind,
     )
     autodoc_status = AutoDocStatusHistory(
         page_node_id=input.page_id,

@@ -61,7 +61,9 @@ def trigger_asset_connection(
     match trigger_body.params.asset_kind:
         case PrimaryAssetKind.CODEBASE:
             run_codebase_connection = modal.Function.lookup(
-                "inspector-v2", "run_codebase_connection"
+                "inspector-v2",
+                "run_codebase_connection",
+                environment_name=settings.ENVIRONMENT_NAME,
             )
 
             call = run_codebase_connection.spawn(

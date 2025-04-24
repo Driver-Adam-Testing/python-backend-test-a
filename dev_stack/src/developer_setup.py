@@ -11,16 +11,15 @@ from auth0_apps import (
 from config import settings
 from models import (
     ApiResourceConfig,
+    AssetLambdaSecretMap,
     Auth0SpaCreateAppRequest,
     CDKResourceConfig,
-    CodeLambdaSecretMap,
     ContentServicesResource,
     DatabaseResource,
     DatabaseResourceConfig,
     Developer,
     DeveloperResource,
     DeveloperResourceType,
-    DocumentLambdaSecretMap,
     DomainStatus,
     DomainType,
     GitHubAppPermissionsConfig,
@@ -239,22 +238,16 @@ def setup_developer_resources(
         resource_type=DeveloperResourceType.DB,
         resource=db_resource.model_dump(mode="json"),
     )
-    codebase_onboarding_lambda_resource = DeveloperResource(
-        resource_name="codebase-onboarding-lambda",
-        resource_type=DeveloperResourceType.CODEBASE_ONBOARDING_LAMBDA,
-        resource=CodeLambdaSecretMap,
-    )
-    document_onboarding_lambda_resource = DeveloperResource(
-        resource_name="document-onboarding-lambda",
-        resource_type=DeveloperResourceType.DOCUMENT_ONBOARDING_LAMBDA,
-        resource=DocumentLambdaSecretMap,
+    asset_onboarding_lambda_resource = DeveloperResource(
+        resource_name="asset-onboarding-lambda",
+        resource_type=DeveloperResourceType.ASSET_ONBOARDING_LAMBDA,
+        resource=AssetLambdaSecretMap,
     )
     metrics_lambda_resource = DeveloperResource(
         resource_name="metrics-lambda",
         resource_type=DeveloperResourceType.METRICS_LAMBDA,
         resource=MetricsLambdaSecretMap,
     )
-    # content_services_resource =
     modal_resource = DeveloperResource(
         resource_name="content-services",
         resource_type=DeveloperResourceType.CONTENT_SERVICES,
@@ -283,8 +276,7 @@ def setup_developer_resources(
         api_resource,
         m2m_resource,
         db_resource,
-        codebase_onboarding_lambda_resource,
-        document_onboarding_lambda_resource,
+        asset_onboarding_lambda_resource,
         metrics_lambda_resource,
         cdk_resource,
         modal_resource,
@@ -360,10 +352,7 @@ def create_developer_resource_configs(developer: Developer) -> dict:
                 )
             case DeveloperResourceType.GITHUB_APP:
                 resource_configs[resource.resource_name] = resource.resource
-            case (
-                DeveloperResourceType.CODEBASE_ONBOARDING_LAMBDA
-                | DeveloperResourceType.DOCUMENT_ONBOARDING_LAMBDA
-            ):
+            case DeveloperResourceType.ASSET_ONBOARDING_LAMBDA:
                 lambda_resource = LambdaResourceConfig(
                     resource_name=resource.resource_name,
                     env={
@@ -404,9 +393,12 @@ def create_developer_resource_configs(developer: Developer) -> dict:
                     database_resource.model_dump(mode="json")
                 )
             case DeveloperResourceType.CDK_STACK:
+                stripped_name = developer.full_name.replace(" ", "").strip()
+                print(stripped_name)
+                cli_args = f"DEV_NAME={stripped_name} DEPLOYMENT_ENVIRONMENT=cloud-local DATABASE_URL={developer.database.db_url}"
                 cdk_resource = CDKResourceConfig(
                     resource_name=resource.resource_name,
-                    execute="aws sso login --profile admin-development\nPYTHONPATH=.. cdk deploy --profile admin-development",
+                    execute=f"aws sso login --profile admin-development\n {cli_args} cdk deploy --profile admin-development",
                     env={
                         "ENVIRONMENT": "cloud-local",
                         "LOG_LEVEL": "INFO",
@@ -420,9 +412,14 @@ def create_developer_resource_configs(developer: Developer) -> dict:
                     mode="json"
                 )
             case DeveloperResourceType.CONTENT_SERVICES:
+                stripped_name = developer.full_name.replace(" ", "").strip().lower()
                 content_services_resource = ContentServicesResource(
-                    modal_environment="dev-eric",
+                    modal_environment=f"dev-{stripped_name}",
                     secrets=[
+                        ModalSecretResource(
+                            resource_name="env-name",
+                            env={"ENVIRONMENT": "cloud-local"},
+                        ),
                         ModalSecretResource(
                             resource_name="aws-inspector-s3",
                             env={
@@ -457,6 +454,12 @@ def create_developer_resource_configs(developer: Developer) -> dict:
                             resource_name="anthropic",
                             env={
                                 "anthropic": "placeholder",
+                            },
+                        ),
+                        ModalSecretResource(
+                            resource_name="sendgrid",
+                            env={
+                                "SENDGRID_API_KEY": "placeholder",
                             },
                         ),
                         ModalSecretResource(
@@ -510,8 +513,12 @@ def generate_developer_configs(name: str, output_dir: str) -> None:
                 f.write("### Modal - Content Services\n\n")
                 f.write("The was created to set modal secrets:\n\n")
                 f.write("```bash\n")
+                # modal environment create dev
+                f.write(f"modal environment create {modal_environment}")
+                f.write("\n```\n\n")
+                f.write("```bash\n")
                 f.write(
-                    "chmod +x state/out/modal_secrets.sh && state/out/modal_secrets.sh"
+                    f"chmod +x state/out/modal_secrets.sh && state/out/modal_secrets.sh {modal_environment}"
                 )
                 f.write("\n```\n\n")
                 f.write("```bash\n")
@@ -557,7 +564,7 @@ def generate_developer_configs(name: str, output_dir: str) -> None:
                 f.write("\n```\n\n")
                 #     poetry run python src/deploy.py
                 f.write("```bash\n")
-                f.write("poetry run python src/deploy.py\n")
+                f.write("poetry run python src/deploy_secrets.py\n")
                 f.write("\n```\n\n")
             if resource_name == "github-app":
                 f.write("#### GitHub App Configuration\n\n")

@@ -39,7 +39,7 @@ class AssetOnboardingLambda(Construct):
         )
         lambda_function = aws_lambda_python_alpha.PythonFunction(
             scope,
-            f"{params.cdk_prefix}AssetOnboardingLambdaPy",
+            "AssetOnboardingLambdaPy",
             entry="../content_services/onboarding_event_handler",
             runtime=aws_lambda.Runtime.PYTHON_3_12,
             index="src/main.py",
@@ -77,10 +77,10 @@ class AssetOnboardingLambda(Construct):
         legacy_dropzone_bucket = aws_s3.Bucket.from_bucket_name(
             scope,
             "LegacyDropzoneBucket",
-            bucket_name=f"{params.environment}-codebase-dropzone",
+            bucket_name=params.dropzone_bucket.bucket_name,
         )
         legacy_dropzone_bucket.add_event_notification(
-            aws_s3.EventType.OBJECT_PUT,
+            aws_s3.EventType.OBJECT_CREATED_PUT,
             aws_s3_notifications.SnsDestination(sns_topic),
             aws_s3.NotificationKeyFilter(prefix="assets/"),
         )

@@ -86,8 +86,7 @@ class DeveloperResourceType(enum.Enum):
     M2M = "M2M"
     DB = "DB"
     GITHUB_APP = "GITHUB_APP"
-    CODEBASE_ONBOARDING_LAMBDA = "CODEBASE_ONBOARDING_LAMBDA"
-    DOCUMENT_ONBOARDING_LAMBDA = "DOCUMENT_ONBOARDING_LAMBDA"
+    ASSET_ONBOARDING_LAMBDA = "ASSET_ONBOARDING_LAMBDA"
     METRICS_LAMBDA = "METRICS_LAMBDA"
     S3_BUCKET = "S3_BUCKET"
     CDK_STACK = "CDK_STACK"
@@ -206,7 +205,7 @@ class Developer(BaseModel):
     @computed_field
     @property
     def s3_bucket_name(self) -> str:
-        return f"{self.full_name.lower().replace(' ', '-')}-codebase-dropzone"
+        return f"{self.full_name.lower().replace(' ', '').strip()}-asset-dropzone"
 
     @computed_field
     @property
@@ -217,15 +216,11 @@ class Developer(BaseModel):
         return sanitized_name
 
 
-CodeLambdaSecretMap = {
+AssetLambdaSecretMap = {
     "CLIENT_ID_SECRET": "CodeLambdaClientIdOutput",
     "CLIENT_SECRET_SECRET": "CodeLambdaClientSecretOutput",
 }
 
-DocumentLambdaSecretMap = {
-    "CLIENT_ID_SECRET": "DocLambdaClientIdOutput",
-    "CLIENT_SECRET_SECRET": "DocLambdaClientSecretOutput",
-}
 MetricsLambdaSecretMap = {
     "DATABASE_URL_SECRET_NAME": "MetricsLambdaDBSecretOutput",
 }

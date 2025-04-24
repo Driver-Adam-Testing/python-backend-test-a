@@ -3,6 +3,7 @@ from __future__ import annotations
 import abc
 import concurrent.futures
 import re
+from collections import defaultdict
 from math import ceil
 from typing import Self
 
@@ -310,23 +311,26 @@ class IrData(BaseModel, abc.ABC):
             sym = self._reified_symbol
             if sym.raw.symbol_kind == SymbolKind.CALLABLE and sym.calls:
                 output += "- **Functions called**:\n"
+                seen_name_parts = defaultdict(list)
                 for called_func in self._reified_symbol.calls:
-                    kind_part = called_func.raw.symbol_kind.name.lower()
                     name_part = called_func.raw.name
-                    path_part = called_func.raw.file_path
+                    seen_name_parts[name_part].append(called_func)
+                for name_part, calls in seen_name_parts.items():
+                    kind_part = calls[0].raw.symbol_kind.name.lower()
+                    path_part = calls[0].raw.file_path
 
                     output += (
                         f"    - [{name_part}]({path_part}#{kind_part}:{name_part})\n"
                     )
-            if sym.raw.symbol_kind == SymbolKind.CALLABLE and sym.usages:
-                output += "- **Usages of this function**:\n"
-                for usage in self._reified_symbol.usages:
-                    path_part = usage.raw.file_path
-                    file_name = usage.raw.file_path.name
-                    start_line = usage.raw.start_line
-                    # end_line = usage.raw.end_line
+            # if sym.raw.symbol_kind == SymbolKind.CALLABLE and sym.usages:
+            #     output += "- **Usages of this function**:\n"
+            #     for usage in self._reified_symbol.usages:
+            #         path_part = usage.raw.file_path
+            #         file_name = usage.raw.file_path.name
+            #         start_line = usage.raw.start_line
+            #         # end_line = usage.raw.end_line
 
-                    output += f"    - [{file_name}]({path_part}) (line {start_line})\n"
+            #         output += f"    - [{file_name}]({path_part}) (line {start_line})\n"
         # Render child data
         child_dictionary = {
             label_name: "" for label_name in self._supported_child_ordering

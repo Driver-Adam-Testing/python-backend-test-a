@@ -16,7 +16,7 @@ from modal_funcs import (
     make_toplevel_tech_docs,
 )
 from sqlmodel import delete, select
-from utils.dag import LiteNode, NodeKind
+from utils.dag import LiteNode
 from utils.db import get_source_code_derived_content
 from utils.symbol_table import build_c_project_index
 from utils.task import SerializationMethod, Task, TaskResult
@@ -61,7 +61,7 @@ class FolderTechDocTask(Task):
         # Here, we know we have results for all the child nodes, so processing can commence.
         # We only want to use the results that were successful to prevent folder docs failures due to files that failed to process
         child_nodes_to_docs = {
-            task.node: dr.result["docs"] for task, dr in dependent_results.items()
+            task.node: dr.data["docs"] for task, dr in dependent_results.items()
         }
         async with folder_tech_docs_sem:
             docs = await make_folder_tech_doc.remote.aio(
@@ -79,7 +79,7 @@ class FolderTechDocTask(Task):
         from database.db import async_engine
         from sqlmodel.ext.asyncio.session import AsyncSession
 
-        docs = task_result.result["docs"]
+        docs = task_result.data["docs"]
 
         async with database_sem:
             # Short Single Sentence
@@ -193,7 +193,7 @@ class FileTechDocTask(Task):
         from database.db import async_engine
         from sqlmodel.ext.asyncio.session import AsyncSession
 
-        docs = task_result.result["docs"]
+        docs = task_result.data["docs"]
         async with database_sem:
             # Short Single Sentence
             short_sent_dc = DerivedContent(
@@ -283,10 +283,10 @@ class SymbolsTask(Task):
         self, dependent_results: dict["Task", TaskResult]
     ) -> TaskResult:
         tech_docs_result = dependent_results[self.tech_docs_task]
-        file_summary = tech_docs_result.result["docs"]["short"]["single_paragraph"]
+        file_summary = tech_docs_result.data["docs"]["short"]["single_paragraph"]
         symbol_count_limit = 500
 
-        if tech_docs_result.result["success"] is False:
+        if tech_docs_result.data["success"] is False:
             symbols = []
         else:
             async with symbols_sem:
@@ -310,7 +310,7 @@ class SymbolsTask(Task):
         from sqlmodel.ext.asyncio.session import AsyncSession
 
         session_chunk_size = 25
-        symbols = task_result.result["symbols"]
+        symbols = task_result.data["symbols"]
 
         async with database_sem:
             symbol_dcs = []
@@ -368,7 +368,7 @@ class TopLevelDocsTask(Task):
         # We put this data into the format expected by the top level task.
         # TODO: could this get too big to send over the container wire? The current limit of modal is 100MB
         children_nodes_to_docs = {
-            task.node: dr.result["docs"] for task, dr in dependent_results.items()
+            task.node: dr.data["docs"] for task, dr in dependent_results.items()
         }
         docs = await make_toplevel_tech_docs.remote.aio(
             codebase_name=self.codebase_name,
@@ -382,7 +382,7 @@ class TopLevelDocsTask(Task):
         task_result: TaskResult,
         dependent_io_results: dict["Task", dict[str, any]],
     ) -> dict[str, any]:
-        docs = task_result.result["docs"]
+        docs = task_result.data["docs"]
 
         async with database_sem:
             # TODO: add types for top level sentence/paragraph/etc.
@@ -626,8 +626,6 @@ class CSymbolTableTask(Task):
         codebase_root: Path,
         nodes_relative_paths: list[Path],
     ) -> None:
-        assert root_node.kind == NodeKind.ROOT_FOLDER
-
         self.codebase_name = codebase_name
         self.codebase_root = codebase_root
         self.c_and_h_files = {

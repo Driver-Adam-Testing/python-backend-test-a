@@ -1,6 +1,5 @@
 import hashlib
 import os
-import pprint
 import uuid
 from enum import Enum
 from pathlib import Path
@@ -138,6 +137,7 @@ async def get_result_loading_config(
     timeout=3600 * 8,
     region="us-east",
     concurrency_limit=5,
+    cpu=1.0,
 )
 async def inspect_db(
     version_id: uuid.UUID,
@@ -441,7 +441,7 @@ async def inspect_files(
                 task_name=f"TechDoc {node.root_rel_path}",
                 db_node_id=db_node_id,
                 symbol_table_task=c_symbol_table_task.self_or_none(
-                    lite_node.root_rel_path
+                    codebase_root / lite_node.root_rel_path
                 ),
             )
             file_tech_docs_embedding_task = EmbeddingTask(
@@ -505,32 +505,7 @@ async def inspect_files(
         bucket_name=os.environ["BUCKET_NAME"], tasks=tasks, serial_exe=False
     )
 
-    task_results = await task_manager.run_tasks(
-        run_id, result_loading_config=result_loading_config
-    )
-
-    if len(c_files) > 0:
-        modal.Dict.delete(name="temp")
-
-    print("\n---------- Task results ----------")
-    pprinter = pprint.PrettyPrinter(indent=2)
-    for t, r in task_results.items():
-        print(f"\n==> Task: {t.task_name} Result")
-        match t:
-            case FileTechDocTask():
-                print(r.result)
-                print(r.result["docs"]["short"]["single_paragraph"])
-            case FolderTechDocTask():
-                print(r.result["docs"]["short"]["single_sentence"])
-            case SymbolsTask():
-                print(r.result)
-                pprinter.pprint(r.result["symbols"][:1])
-            case TopLevelDocsTask():
-                print(r.result["docs"]["short"])
-            case EmbeddingTask():
-                print("N/A")
-            case _:
-                raise ValueError(f"Unknown task type: {t}")
+    await task_manager.run_tasks(run_id, result_loading_config=result_loading_config)
 
 
 def get_file_content(path: Path) -> str:

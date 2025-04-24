@@ -1,4 +1,5 @@
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Self
@@ -88,12 +89,6 @@ def parse_c_file(
 
 @dataclass(frozen=True)
 class ParsedProject:
-    """
-    Raw pass that results in:
-      - file_to_symbols: for each file, a list of raw symbols (excluding import symbols).
-      - includes_map: for each file, a list of direct include strings.
-    """
-
     file_to_symbols: dict[Path, list[RawTreeSitterSymbolData]]
     includes_map: dict[Path, list[str]]
     file_to_containment_map: dict[
@@ -101,30 +96,48 @@ class ParsedProject:
     ]
 
     @classmethod
-    def from_files(cls, file_paths: list[Path], project_root: Path) -> Self:
-        file_to_syms: dict[Path, list[RawTreeSitterSymbolData]] = {}
-        raw_includes: dict[Path, list[str]] = {}
-        file_to_containment_map: dict[
-            Path, dict[RawTreeSitterSymbolData, list[RawTreeSitterSymbolData]]
-        ] = {}
-
-        total = len(file_paths)
-        for i, abs_fpath in enumerate(file_paths, 1):
+    def from_files(
+        cls, file_paths: list[Path], project_root: Path, num_workers: int | None = None
+    ) -> Self:
+        def parse_and_handle(abs_fpath: Path) -> tuple[Path, list, list, dict]:
             rel_fpath = to_root_relative(abs_fpath, project_root)
-            print(f"[{i}/{total}] Parsing {rel_fpath}...", end="", flush=True)
             try:
                 symbols, includes, containment_map = parse_c_file(
                     abs_fpath, project_root
                 )
-                print(" done.")
-            except Exception as e:  # TODO specific exception type
-                print(f" failed: {e}")
-                symbols = []
-                includes = []
-                containment_map = {}
-            file_to_syms[rel_fpath] = symbols
-            raw_includes[rel_fpath] = includes
-            file_to_containment_map[rel_fpath] = containment_map
+                print(f"Parsing {rel_fpath}... done.")
+            except Exception as e:
+                print(f"Parsing {rel_fpath}... failed: {e}")
+                symbols, includes, containment_map = [], [], {}
+            return rel_fpath, symbols, includes, containment_map
+
+        file_to_syms = {}
+        raw_includes = {}
+        file_to_containment_map = {}
+
+        if num_workers is None or num_workers == 1:
+            # Serial processing
+            total = len(file_paths)
+            for i, abs_fpath in enumerate(file_paths, 1):
+                print(f"[{i}/{total}]", end=" ")
+                rel_fpath, symbols, includes, containment_map = parse_and_handle(
+                    abs_fpath
+                )
+                file_to_syms[rel_fpath] = symbols
+                raw_includes[rel_fpath] = includes
+                file_to_containment_map[rel_fpath] = containment_map
+        else:
+            # Parallel processing
+            with ThreadPoolExecutor(max_workers=num_workers) as executor:
+                future_to_path = {
+                    executor.submit(parse_and_handle, fp): fp for fp in file_paths
+                }
+                for i, future in enumerate(as_completed(future_to_path), 1):
+                    rel_fpath, symbols, includes, containment_map = future.result()
+                    print(f"[{i}/{len(file_paths)}] Parsed {rel_fpath}")
+                    file_to_syms[rel_fpath] = symbols
+                    raw_includes[rel_fpath] = includes
+                    file_to_containment_map[rel_fpath] = containment_map
 
         return cls(
             file_to_symbols=file_to_syms,
@@ -170,7 +183,9 @@ class ParsedProjectWithVisibility:
     visibility_map: dict[Path, set[Path]]
 
     @classmethod
-    def from_parsed_project(cls, parsed: ParsedProject) -> Self:
+    def from_parsed_project(
+        cls, parsed: ParsedProject, num_workers: int | None
+    ) -> Self:
         """
         Build a map from each file -> all files it can 'see' transitively.
         Only links includes that are in parsed.file_to_symbols (our project).
@@ -188,12 +203,28 @@ class ParsedProjectWithVisibility:
                     visited.add(inc_path)
                     dfs(inc_path, visited)
 
-        # For each file, do a DFS of includes:
-        for fpath in file_to_symbols:
-            print(f"Resolving visibility for {fpath}...", flush=True)
-            visited: set[Path] = set()
+        def compute_visited(fpath: Path) -> set[Path]:
+            visited: set[Path] = {fpath}
             dfs(fpath, visited)
-            visibility_map[fpath] = visited
+            return visited
+
+        # For each file, do a DFS of includes:
+        if num_workers is None or num_workers == 1:
+            # Serial processing
+            for fpath in file_to_symbols:
+                print(f"Resolving visibility for {fpath}...", flush=True)
+                visited = compute_visited(fpath)
+                visibility_map[fpath] = visited
+        else:
+            # Parallel processing
+            with ThreadPoolExecutor(max_workers=num_workers) as executor:
+                future_to_path = {
+                    executor.submit(compute_visited, fp): fp for fp in file_to_symbols
+                }
+                for i, future in enumerate(as_completed(future_to_path), 1):
+                    visited = future.result()
+                    print(f"[{i}/{len(file_to_symbols)}]")
+                    visibility_map[future_to_path[future]] = visited
 
         return cls(
             file_to_symbols=file_to_symbols,
@@ -471,9 +502,9 @@ def build_c_project_index(
       4) definition -> usage
     """
     print("==> Parsing files...")
-    parsed = ParsedProject.from_files(file_paths, project_root)
+    parsed = ParsedProject.from_files(file_paths, project_root, num_workers=8)
     print("==> Resolving includes and visibility...")
-    project_vis = ParsedProjectWithVisibility.from_parsed_project(parsed)
+    project_vis = ParsedProjectWithVisibility.from_parsed_project(parsed, num_workers=8)
     print("==> Linking symbols...")
     linked = LinkedProject.from_parsed_project_with_visibility(project_vis)
     print("==> Reifying symbol graph...")

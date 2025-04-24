@@ -38,6 +38,11 @@ class AutoDocStatusMessageKind(str, enum.Enum):
     GENERATION_ERROR = "GENERATION_ERROR"
 
 
+class AutoDocConfigKind(str, enum.Enum):
+    ADI_DRIVER = "ADI_DRIVER"
+    ARCHITECTURE = "ARCHITECTURE"
+
+
 @strawberry.enum
 class ContentKind(str, enum.Enum):
     PDF_VISUAL_SUMMARY = "pdf-visual-summary"

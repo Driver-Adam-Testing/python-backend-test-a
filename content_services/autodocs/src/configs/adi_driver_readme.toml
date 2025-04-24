@@ -16,7 +16,6 @@ config_version = "[V1]"
 [[sections]]
 title = "Supported Devices"
 level = 1
-use_pdfs = false
 required = true
 instruction = "A section that lists all device models supported by the driver by name, hyperlinked to the corresponding ADI product page, and with no further description.  The resulting list should show only the device model number and not include a description.  A correct example is as follows: ADE7912.  Reference only the driver code and do not reference any project code.  Do not include variations of the same model number."
 content_structure = "A simple list of device models supported by the driver by name, with a hyperlinked to the ADI product page, and with no further description.  The resulting list should show only the device model number and not include a description.  A correct example is as follows: ADE7912"
@@ -25,7 +24,6 @@ section_creation_method = "sequential_edit"
 [[sections]]
 title = "Overview"
 level = 1
-use_pdfs = true
 required = true
 instruction = "Provide a 4 to 5 sentence general description of the device described in the PDF. Pull word for word content from any section named 'Features' or 'General Description' in the provided text, and construct it into a single 4 to 5 sentence paragraph, otherwise respond 'no overview found for this page or source code'"
 content_structure = "Provide a single paragraph description of the device taken from the PDF data sheet. Do not edit the content of this section while formatting."
@@ -34,7 +32,6 @@ section_creation_method = "scatter_gather"
 [[sections]]
 title = "Applications"
 level = 1
-use_pdfs = true
 required = true
 instruction = "Provide only a list of the applications supported by the device described in the data sheet. Exactly copy the content from any sections named 'Applications', if an 'Applications' section does not exist in the content provided, simply respond 'No applications found for this content'. The Applications section you copy will just be a list, if that doesn't exist just return 'No applications found for this content'.  Do not include content from sections that are not exactly titled 'Applications'"
 content_structure = "Provide only an unordered list of the applications supported by the device. Just the list with no descriptions. Do not edit the content in this section, beyond making sure the list is well formatted."
@@ -43,7 +40,6 @@ section_creation_method = "scatter_gather"
 # [[sections]]
 # title = "Driver Structure"
 # level = 1
-# use_pdfs = false
 # required = true
 # instruction = "Illustrate the file tree for the driver directory.  Include the top level directory and all sub-directories and files.  Only describe the directories and files for the driver and do not include any information about the project directory if available.  Format the file tree as an ASCI diagram in a Markdown code block.  Include nothing more than the code block.  The root directory shall always be the driver directory."
 # content_structure = "Illustrate the file tree for the driver directory.  Include the top level directory and all sub-directories and files.  Only describe the directories and files for the driver and do not include any information about the project directory if available.  Format the file tree as an ASCI diagram in a Markdown code block.  Include nothing more than the code block.  The root directory shall always be the driver directory."
@@ -52,7 +48,6 @@ section_creation_method = "scatter_gather"
 [[sections]]
 title = "Operation Modes"
 level = 1
-use_pdfs = false
 required = false
 instruction = "Describe the available operation modes and their configuration in a table with the following columns: Mode Name, Description, Configuration Bits, Typical Use Case. Only include operation modes, you may be given unrelated content to evaluate, in that case, just return 'no operation modes described'.  Describe only operation modes that are configurable through the driver header interface and do not reference any of the project code if it is available.  The Configuration Bits columns should reference symbols from the main driver header file.  Describe the modes from the programmers view using only the driver interface.  Do not include specific references to the device data sheet.  Only include the table without any further content."
 content_structure = "Describe the available operation modes and their configuration in a table with the following columns: Mode Name, Description, Configuration Bits, Typical Use Case. Only include operation modes, you may be given unrelated content to evaluate, in that case, just return 'no operation modes described'.  Describe only operation modes that are configurable through the driver header interface and do not reference any of the project code if it is available.  The Configuration Bits columns should reference symbols from the main driver header file.  Describe the modes from the programmers view using only the driver interface.  Do not include specific references to the device data sheet.  Only include the table without any further content."
@@ -61,7 +56,6 @@ section_creation_method = "scatter_gather"
 [[sections]]
 title = "Device Configuration"
 level = 1
-use_pdfs = false
 required = true
 instruction = """Isolate all of the public functions declared in the driver's header file. Group the functions by category with one descriptive paragraph for each function category. This descriptive paragraph shall exhaustively name all of the functions declared in the header in that category and include a brief description of the function.  Do not list the functions outside of the paragraph.  Use appropriate titles for each category as relevant for the code. Example categories that could be relevant include: Initialization, Power Configuration, Conversion Modes, Buffer and Reference Settings, Filter Configurations, Gain and Offset Adjustments. These are just examples, you may need to use different categories based on the properties of the driver.  Additional requirements for this sections are as follows:
 
@@ -101,7 +95,6 @@ section_creation_method = "sequential_edit"
 [[sections]]
 title = "Driver Initialization Example"
 level = 1
-use_pdfs = false
 required = true
 instruction = """
 Create a detailed code example that illustrates the procedure for initializing the device for basic use and verifying that the initialization was completed successfully.  Requirements for the example code are as follows:

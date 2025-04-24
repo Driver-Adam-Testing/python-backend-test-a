@@ -128,10 +128,15 @@ async def run_autodoc(
                     )
                     scope.pdfs.append(pdf_cfg)
 
-        if config_kind == AutoDocConfigKind.ADI_DRIVER:
-            config = AutoDocCfg.from_file("/autodocs_configs/adi_driver_page.toml")
-        else:
-            config = AutoDocCfg.from_file("/autodocs_configs/architecture_modal.toml")
+        match config_kind:
+            case AutoDocConfigKind.ADI_DRIVER:
+                config = AutoDocCfg.from_file("/autodocs_configs/adi_driver_page.toml")
+            case AutoDocConfigKind.ARCHITECTURE:
+                config = AutoDocCfg.from_file(
+                    "/autodocs_configs/architecture_modal.toml"
+                )
+            case _:
+                raise ValueError(f"Unsupported config kind: {config_kind}")
         config.scope = scope
         print(config.scope)
 
@@ -196,5 +201,5 @@ def main(
     from database.models_v2_enums import AutoDocConfigKind
 
     run_autodoc.remote(
-        page_node_id=page_node_id, config_kind=AutoDocConfigKind.ARCHITECTURE
+        page_node_id=page_node_id, config_kind=AutoDocConfigKind.ADI_DRIVER
     )

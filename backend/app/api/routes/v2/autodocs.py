@@ -28,6 +28,10 @@ class AutoDocRequest(BaseModel):
     config_kind: AutoDocConfigKind
 
 
+class AutoDocCancelRequest(BaseModel):
+    page_id: UUID
+
+
 class AutoDocResponse(BaseModel):
     status: AutoDocStatusHistory
 
@@ -160,7 +164,7 @@ def get_autodoc_current_status(
 def cancel(
     user: UserToken,
     session: CurrentSession,
-    input: AutoDocRequest,
+    input: AutoDocCancelRequest,
 ) -> AutoDocCancelResponse:
     node = session.exec(
         select(Node)

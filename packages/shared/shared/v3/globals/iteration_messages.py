@@ -1,3 +1,4 @@
+from shared.v3.globals.constants import IMPORTANT
 from shared.v3.interfaces.llm_message import LlmMessage
 from shared.v3.interfaces.llm_message_kind import MessageKind
 
@@ -5,9 +6,11 @@ from shared.v3.interfaces.llm_message_kind import MessageKind
 class MultiShotIterationContextMessage(LlmMessage):
     message_kind: MessageKind = MessageKind.ITERATION
     content: str = (
-        "You are operating to fulfil a single request in multi-iteration mode: you must respond to a single iteration request, so that the final response is exhaustive and optimized. "
-        "In each iteration, you must execute tools, retrieve additional context, and refine outputs based on prior results. "
-        "You must iterate until the task is resolved to the highest quality."
+        "You are operating in multi-iteration mode. "
+        "You must iterate until the task is resolved to the highest quality. "
+        "You will be given a task, and be notified of the iterations that remain. Each iteration, you can execute tools, or return the final assistant response. "
+        f"{IMPORTANT} The final assistant response is NEVER a tool call or a description of a tool call. It is always a markdown response. "
+        "If you do not have enough information to return a final assistant response, display a message about the information you may need, and encourage the user to refine their request and try again."
     )
 
 

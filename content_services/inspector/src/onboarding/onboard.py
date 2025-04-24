@@ -476,7 +476,7 @@ def connect_unconnected_repos() -> None:
 )
 def run_codebase_connection(
     presigned_url: str,
-    archive_name: str,
+    provisional_codebase_name: str,
     org_id: str,  # Not strictly necessary, but we can check that the version belongs to the org.
     version_id: str,
     provider: str = "manual",
@@ -510,17 +510,18 @@ def run_codebase_connection(
     from sqlalchemy.exc import IntegrityError
     from sqlmodel import Session, select, update
 
-    download_dest = Path(archive_name)
+    download_dest = Path(provisional_codebase_name)
     download_file_from_presigned_url(presigned_url, download_dest)
 
-    print(f"Downloaded {archive_name} from S3")
+    print(f"Downloaded {provisional_codebase_name} from S3")
 
     if provider == "github":
-        override_codebase_name = archive_name.rsplit(".", 1)[0]
+        override_codebase_name = provisional_codebase_name
     elif provider == GitProviderKind.GITLAB_ENTERPRISE_SELF_MANAGED.value.lower():
+        # TODO: is this actually needed? Does self managed behave differently than enterprise?
         override_codebase_name = re.sub(
-            r"-[a-fA-F0-9]{40}-[a-fA-F0-9]{40}", "", archive_name
-        ).rsplit(".", 1)[0]
+            r"-[a-fA-F0-9]{40}-[a-fA-F0-9]{40}", "", provisional_codebase_name
+        )
     else:
         override_codebase_name = None
 
@@ -584,8 +585,8 @@ def run_codebase_connection(
 
         s3_resource = resource("s3", endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL"))
         s3_bucket = s3_resource.Bucket(org_id_bucket)
-        s3_bucket.upload_file(Path(archive_name), str(s3_dest))
-        print(f"Uploaded {archive_name} to {s3_dest}")
+        s3_bucket.upload_file(Path(provisional_codebase_name), str(s3_dest))
+        print(f"Uploaded {provisional_codebase_name} to {s3_dest}")
         with Session(engine) as session, session.begin():
             # Add directories source contents
             for directory in all_directories:

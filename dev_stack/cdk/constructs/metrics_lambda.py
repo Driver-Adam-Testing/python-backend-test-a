@@ -1,4 +1,5 @@
 import os
+from dataclasses import dataclass
 
 from aws_cdk import (
     CfnOutput,
@@ -21,28 +22,20 @@ from aws_cdk import (
 from constructs import Construct
 
 
-class DevStackMetricsLambdaParams:
+@dataclass
+class MetricsLambdaParams:
     environment: str
-
-    def __init__(
-        self,
-        environment: str,
-        database_url: str | None = None,
-        cloudwatch_alarm_arn: str | None = None,
-    ) -> None:
-        self.environment = environment
-        self.database_url = database_url
-        self.cloudwatch_alarm_arn = cloudwatch_alarm_arn
+    cdk_prefix: str
+    database_url: str | None = None
+    cloudwatch_alarm_arn: str | None = None
 
 
-class DevStackMetricsLambda(Construct):
-    def __init__(
-        self, scope: Construct, id: str, params: DevStackMetricsLambdaParams
-    ) -> None:
+class MetricsLambda(Construct):
+    def __init__(self, scope: Construct, id: str, params: MetricsLambdaParams) -> None:
         super().__init__(scope, id)
 
         database_url_secret = aws_secretsmanager.Secret(
-            self, "DevStackMetricsLambdaDBSecret"
+            self, f"{params.cdk_prefix}MetricsLambdaDBSecret"
         )
         vpc_id = aws_ssm.StringParameter.value_from_lookup(
             scope, parameter_name="/baseline/infra/v2/vpc/id"

@@ -16,7 +16,6 @@ config_version = "[V1]"
 [[sections]]
 title = "Overview"
 level = 1
-use_pdfs = false
 required = true
 instruction = "An introduction to this library, highlighting purpose, scope, and capabilities."
 content_structure = "2 -- 3 paragraphs."
@@ -25,7 +24,6 @@ section_creation_method= "scatter_gather"
 [[sections]]
 title = "Technology Stack and Dependencies"
 level = 2
-use_pdfs = false
 required = true
 instruction = "Describe the core technology stack (languages, frameworks and SDKs, etc.) components and critical dependencies (most important libraries/dependencies etc.). The technology stack and dependencies should not include application logic built up in the codebase, just the languages and dependenices use to build the application logic."
 content_structure = "A table with components as rows and columns like name and single sentence entries for description and purpose."
@@ -34,7 +32,6 @@ section_creation_method= "scatter_gather"
 [[sections]]
 title = "System Constraints and Limitations"
 level = 2
-use_pdfs = false
 required = false
 instruction = "Identify and describe any major constraints or limitations of the codebase or applied to its execution."
 content_structure = "1 paragraph of text."
@@ -43,7 +40,6 @@ section_creation_method= "scatter_gather"
 [[sections]]
 title = "Key Architectural Decisions"
 level = 2
-use_pdfs = false
 required = true
 instruction = "Identify the main architectural decisions made in this codebase and how they are implemented."
 content_structure = "A subsection and no more than 1 paragraph of text for each identified decision."
@@ -52,7 +48,6 @@ section_creation_method= "scatter_gather"
 [[sections]]
 title = "Target Use Cases"
 level = 2
-use_pdfs = false
 required = true
 instruction = "Describe typical applications and target use cases for this codebase."
 content_structure = "A list of identified applications and use cases with a 2--3 sentence description."
@@ -61,7 +56,6 @@ section_creation_method= "scatter_gather"
 [[sections]]
 title = "Architecture"
 level = 1
-use_pdfs = false
 required = true
 instruction = "Describe the overarching architecture of the codebase."
 content_structure = "A single sentence."
@@ -70,7 +64,6 @@ section_creation_method= "scatter_gather"
 [[sections]]
 title = "Architecture Diagram"
 level = 2
-use_pdfs = false
 required = true
 instruction = "Make a high level block diagram that describes the architecture of this codebase and how it operates in use. The diaram should include major architectural components and how they depend on/relate to each other."
 content_structure = "A MermaidJS diagram with a 2 -- 3 sentence caption below it."
@@ -79,7 +72,6 @@ section_creation_method= "scatter_gather"
 [[sections]]
 title = "Core Components"
 level = 2
-use_pdfs = false
 required = true
 instruction = "Identify and describe the most important and core individual components of this codebase. Describe them in detail, including brief code snippets that articulate the component and why it is important."
 content_structure = "A subsection for each identified component with description and code snippets."
@@ -88,7 +80,6 @@ section_creation_method= "scatter_gather"
 [[sections]]
 title = "Key Interactions and Data Flow"
 level = 2
-use_pdfs = false
 required = true
 instruction = "Describe important interactions and data flow through components of the system in operation in words and in a data flow diagram."
 content_structure = "2 -- 3 paragraphs with a MermaidJS data flow diagram."
@@ -97,7 +88,6 @@ section_creation_method= "scatter_gather"
 [[sections]]
 title = "Code Examples"
 level = 2
-use_pdfs = false
 required = true
 instruction = "Write a set of code examples that highlight important ways to interact with and use this codebase. Choose code examples most important to a new developer onboarding to this codebase."
 content_structure = "A subsection for each code example, with a code block and brief explanatory caption for each."
@@ -106,7 +96,6 @@ section_creation_method= "scatter_gather"
 [[sections]]
 title = "Entry Points"
 level = 2
-use_pdfs = false
 required = false
 instruction = "Describe any and all entry points into the codebase in detail. This could include `main` functions, command-line interfaces, core library preludes and imports, etc."
 content_structure = "A table with the most important 2 -- 3 endpoints included, where endpoints are rows and the columns are Name, Kind (e.g., `main` executable, CLI, API endpoint, library export, etc.), and Brief Description."
@@ -115,7 +104,6 @@ section_creation_method= "scatter_gather"
 [[sections]]
 title = "API Specifications"
 level = 2
-use_pdfs = false
 required = false
 instruction = "Describe any formal APIs defined and available in this codebase. A formal API in this sense means REST APIs or other forms such as GraphQL, etc."
 content_structure = "2 -- 3 paragraphs."
@@ -124,7 +112,6 @@ section_creation_method= "scatter_gather"
 [[sections]]
 title = "Setup and Configuration"
 level = 1
-use_pdfs = false
 required = true
 instruction = "Describe the kinds of setup and configuration required to use this codebase."
 content_structure = "2 -- 3 sentences."
@@ -133,7 +120,6 @@ section_creation_method= "scatter_gather"
 [[sections]]
 title = "Installation Requirements"
 level = 2
-use_pdfs = false
 required = false
 instruction = "Describe anything that needs to be installed to work with and develop against this codebase."
 content_structure = "1 -- 3 paragraphs."
@@ -142,7 +128,6 @@ section_creation_method= "scatter_gather"
 [[sections]]
 title = "Hardware Configuration"
 level = 2
-use_pdfs = false
 required = false
 instruction = "Describe any hardware that must be configured to develop for or use this codeabse."
 content_structure = "1 -- 3 paragraphs."
@@ -151,7 +136,6 @@ section_creation_method= "scatter_gather"
 [[sections]]
 title = "Compilation and Build Steps"
 level = 2
-use_pdfs = false
 required = false
 instruction = "Describe compilation and build steps for statically compiled parts of this codebase."
 content_structure = "1 -- 3 paragraphs."
@@ -160,7 +144,6 @@ section_creation_method= "scatter_gather"
 [[sections]]
 title = "Global State and Environment Variables"
 level = 2
-use_pdfs = false
 required = false
 instruction = "Describe global state such as environment variables that must be configured for this codebase."
 content_structure = "A list of stateful entities, such as environment variables, that must be configured with a brief description for each."
@@ -169,7 +152,6 @@ section_creation_method= "scatter_gather"
 [[sections]]
 title = "Testing"
 level = 1
-use_pdfs = false
 required = false
 instruction = "Describe the testing strategy and implementation in this codebase."
 content_structure = "A single sentence."
@@ -178,7 +160,6 @@ section_creation_method= "scatter_gather"
 [[sections]]
 title = "Organization of Tests"
 level = 2
-use_pdfs = false
 required = false
 instruction = "Describe how tests are organized and the overall testing strategy for this codebase."
 content_structure = "A single paragraph."
@@ -187,7 +168,6 @@ section_creation_method= "scatter_gather"
 [[sections]]
 title = "Unit Tests"
 level = 2
-use_pdfs = false
 required = false
 instruction = "Identify and describe unit tests implemented in this codebase. Focus only on unit tests and do not include integration tests."
 content_structure = "2 -- 3 paragraphs."
@@ -196,7 +176,6 @@ section_creation_method= "scatter_gather"
 [[sections]]
 title = "Integration Tests"
 level = 2
-use_pdfs = false
 required = false
 instruction = "Identify and describe integration tests implemented in this codebase, how they are implemented, and what purpose they serve. Focus only on integration tests and do not include unit tests."
 content_structure = "2 -- 3 paragraphs."
@@ -205,7 +184,6 @@ section_creation_method= "scatter_gather"
 [[sections]]
 title = "Invoking and Running Tests"
 level = 2
-use_pdfs = false
 required = false
 instruction = "Describe how to invoke and run the various tests in this codebase. Use code snippets, command line invocations, etc. as much as possible, as relevant."
 content_structure = "A list of ways to run tests with a brief description for each."
@@ -214,7 +192,6 @@ section_creation_method= "scatter_gather"
 [[sections]]
 title = "CI/CD"
 level = 2
-use_pdfs = false
 required = false
 instruction = "Describe concrete implementations of Continuous Integration/Continuous Deployment strategies for this codebase."
 content_structure = "A single paragraph."

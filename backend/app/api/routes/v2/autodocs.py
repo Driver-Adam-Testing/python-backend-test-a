@@ -78,6 +78,9 @@ def run_autodoc(
     match input.config_kind:
         case AutoDocConfigKind.ADI_DRIVER:
             # TODO: this check is a temporary guardrail while ADI is using this just for drivers
+            # TODO: We could do an org check here, but it gets messy with dev/staging/prod.
+            # This is low risk to be hit by other organizations though, and there is no data leakage concern here since
+            # no-os is an open source repo.
             code_node_count = 0
             for document_source in document_sources:
                 if (

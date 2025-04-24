@@ -24,6 +24,7 @@ SSO registration scopes [None]: sso:account:access
   python src/cli.py setup --name="Your Name" --email="Your Email" --setup-github
 ```
 
+See [setup_guide.md](state/out/setup_guide.md) for more details next steps.
 
 ### Run Tunnels
 ```bash

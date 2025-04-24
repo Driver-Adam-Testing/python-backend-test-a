@@ -23,7 +23,7 @@ def is_definition(sym: RawTreeSitterSymbolData) -> bool:
     (as opposed to a usage or forward declaration).
     """
     return sym.symbol_kind in {
-        SymbolKind.VARIABLE,
+        # SymbolKind.VARIABLE,
         SymbolKind.CALLABLE,
         SymbolKind.DATA_STRUCTURE,
     }

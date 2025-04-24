@@ -1,4 +1,5 @@
 import logging
+import re
 from collections.abc import Callable
 from enum import IntEnum
 from inspect import signature
@@ -7,7 +8,7 @@ from typing import Any, Self
 
 from pydantic import BaseModel, ValidationError
 
-from utils.lang_specialization.symbol_common import ReifiedSymbol
+from utils.lang_specialization.symbol_common import ReifiedSymbol, SymbolKind
 from utils.models import ChatOpenAI, OutputConfig, OutputConfigKind
 
 
@@ -91,6 +92,29 @@ class Template(BaseModel):
                         user_prompt=user_prompt,
                         output_cfg=output_cfg,
                     )
+                    if reified_symbols is not None:
+                        # find all backticked symbols in the content with re
+                        _re_backticked = re.compile(r"`[^`]+`")
+
+                        def _sub(m: re.Match[str]) -> str:
+                            found_name = m[0][1:-1]
+
+                            repl_text = m[0]
+                            for symbol in reified_symbols:
+                                if (
+                                    found_name == symbol.raw.name
+                                    and symbol.raw.symbol_kind == SymbolKind.CALLABLE
+                                ):
+                                    name_part = symbol.raw.name
+                                    kind_part = symbol.raw.symbol_kind.name.lower()
+                                    path_part = symbol.raw.file_path
+
+                                    repl_text = f"[{name_part}]({path_part}#{kind_part}:{name_part})"
+                                    break
+                            return repl_text
+
+                        content = _re_backticked.sub(_sub, content)
+
                     # TODO: actually handle rendering JSON output.
                     output += f"{section_title}\n{content}\n"
                 case S.SINGLE_PROMPT_JSON:  # Simple section header, prompt, JSON structured output

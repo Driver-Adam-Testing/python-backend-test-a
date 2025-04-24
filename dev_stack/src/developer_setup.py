@@ -398,7 +398,7 @@ def create_developer_resource_configs(developer: Developer) -> dict:
                 cli_args = f"DEV_NAME={stripped_name} DEPLOYMENT_ENVIRONMENT=cloud-local DATABASE_URL={developer.database.db_url}"
                 cdk_resource = CDKResourceConfig(
                     resource_name=resource.resource_name,
-                    execute=f"aws sso login --profile admin-development\n {cli_args} cdk deploy --profile admin-development",
+                    execute=f"aws sso login --profile <your-profile-name> \n {cli_args} cdk deploy --profile <your-profile-name>",
                     env={
                         "ENVIRONMENT": "cloud-local",
                         "LOG_LEVEL": "INFO",

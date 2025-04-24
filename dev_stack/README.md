@@ -1,5 +1,43 @@
-## Coming soon
+## Dev Stack Setup Guide
 
+# Pre-requisites
+- Install docker
+- AWS CLI
+- Get ngrok API key
+- OpenAI API key
+- Modal MODAL_TOKEN_ID
+- Modal MODAL_TOKEN_SECRET
+
+
+## AWS CLI Configuration
+```bash
+$ aws configure sso
+SSO session name (Recommended): <name>-sso
+SSO start URL [None]: https://driverai.awsapps.com/start
+SSO region [None]: us-east-1
+SSO registration scopes [None]: sso:account:access
+```
+## Dev Stack CLI
+
+### Setup
+```bash
+  python src/cli.py setup --name="Your Name" --email="Your Email" --setup-github
+```
+
+
+### Run Tunnels
+```bash
+  python src/cli.py run-tunnels --name="Your Name" --ports="http:3000,http:4000,tcp:5432"
+```
+
+### Teardown
+```bash
+  python src/cli.py teardown --name="Your Name"
+```
+
+
+
+### Dev Stack TODO List
 - [x] Create ngrok domains and tcp addresses
   - [x] Create ngrok http tunnels
   - [x] Create ngrok tcp tunnels
@@ -17,10 +55,10 @@
   - [x] Create a new stack inspired by the TestInDevCDK stack
   - [x] update code to use the env variables from the previous steps
   - [x] integrate cdk deploy into the cli
-  - [ ] Clean up hard coded values
-  - [ ] integrate unified lamda into stack
+  - [x] Clean up hard coded values
+  - [x] integrate unified lamda into stack
 - [ ] Modal setup
-  - [ ] create developer modal environment
+  - [x] create developer modal environment
   - [x] generate script to create modal secrets
   - [x] generate script to deploy modal apps
   - [ ] figure out the modal proxy issue

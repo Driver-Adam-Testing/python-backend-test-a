@@ -331,7 +331,16 @@ def create_developer_resource_configs(developer: Developer) -> dict:
     for resource in developer.resources:
         match resource.resource_type:
             case DeveloperResourceType.WEB_APP:
+                setup_str = """
+> Make sure to install the latest version of node.js or nvm
+```bash
+git clone https://github.com/driver-ai/webapp-frontend
+cd webapp-frontend
+npm install
+```
+"""
                 webapp_resource = WebAppResourceConfig(
+                    setup_str=setup_str,
                     vite_config={
                         "server": {
                             "port": 3000,
@@ -454,7 +463,7 @@ def create_developer_resource_configs(developer: Developer) -> dict:
                 cli_args = f"DEV_NAME={stripped_name} DEPLOYMENT_ENVIRONMENT=cloud-local DATABASE_URL={developer.database.db_url}"
                 cdk_resource = CDKResourceConfig(
                     resource_name=resource.resource_name,
-                    execute=f"aws sso login --profile <your-profile-name> \n {cli_args} cdk deploy --profile <your-profile-name>",
+                    execute=f"aws sso login --profile <your-profile-name>\n\n{cli_args} cdk deploy --profile <your-profile-name>",
                     env={
                         "ENVIRONMENT": "cloud-local",
                         "LOG_LEVEL": "INFO",
@@ -549,12 +558,67 @@ def generate_developer_configs(name: str, output_dir: str) -> None:
     # Create markdown guide
     guide_file = output_path / "setup_guide.md"
     with open(guide_file, "w") as f:
-        f.write(f"# Setup Guide for {developer.full_name} Dev Stack\n\n")
+        f.write("# Dev Stack Setup Guide\n\n")
         f.write("## Overview\n\n")
         f.write(
             "This guide will help you set up your development environment with the following resources:\n\n"
         )
 
+        intro_block = """
+# Pre-requisites
+- Install docker desktop or docker engine
+- [AWS CLI](https://aws.amazon.com/cli/)
+- node.js or nvm
+- Request invite to Driver AI ngrok [team](https://dashboard.ngrok.com/)
+- Create an ngrok API key
+- Find or create an OpenAI API key
+- Sign up for a [Modal](https://modal.com/) account and join the Driver AI team
+- Create a [Modal API key](https://modal.com/settings/profile)
+  - MODAL_TOKEN_ID
+  - MODAL_TOKEN_SECRET
+
+
+## AWS CLI Configuration
+```bash
+$ aws configure sso
+SSO session name (Recommended): <name>-sso
+SSO start URL [None]: https://driverai.awsapps.com/start
+SSO region [None]: us-east-1
+SSO registration scopes [None]: sso:account:access
+```
+#### AWS Profile Configuration
+
+1. Once authorized you chose the development environment
+There are 5 AWS accounts available to you.
+- ~~driverai, aws-admin@driverai.com (585662562693)~~
+- ~~production, production@driverai.com (896724907114)~~
+- ~~DevOps, devops@driverai.com (058264523856)~~
+- **development, development@driverai.com (550082761109)**
+- ~~staging, support@driverai.com (794038236739)~~
+2. Set default client region to `us-east-1` and output format to `json`
+3. Set a Profile name for the development environment. like `<name>-dev-admin`
+> The profile name will be used later to authenticate with the AWS CLI and deploy the CDK stack.
+
+## Dev Stack CLI
+
+### Setup
+```bash
+  python src/cli.py setup --name="Your Name" --email="Your Email" --setup-github
+```
+
+See [setup_guide.md](state/out/setup_guide.md) for more details next steps.
+
+### Run Tunnels
+```bash
+  python src/cli.py run-tunnels --name="Your Name" --ports="http:3000,http:4000,tcp:5432"
+```
+
+### Teardown
+```bash
+  python src/cli.py teardown --name="Your Name"
+```
+"""
+        f.write(intro_block)
         # List all resources
         for resource_name in configs:
             f.write(f"- {resource_name.replace('-', ' ').title()}\n")
@@ -635,7 +699,9 @@ def generate_developer_configs(name: str, output_dir: str) -> None:
                 )
                 f.write("4. Generate and download the private key\n")
                 f.write("5. Update the `private_key_pem_path` in the config file\n\n")
-
+            if "setup_str" in config:
+                f.write("#### Setup Instructions\n\n")
+                f.write(f"{config['setup_str']}\n\n")
             if "env" in config:
                 f.write("#### Environment Variables\n\n")
                 f.write("Add these variables to your `.env` file:\n\n")

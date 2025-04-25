@@ -108,6 +108,7 @@ class CDKResourceConfig(BaseModel):
 
 class WebAppResourceConfig(BaseModel):
     resource_name: str = "webapp-frontend"
+    setup_str: str
     vite_config: dict
     env: dict
 

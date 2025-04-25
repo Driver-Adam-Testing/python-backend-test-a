@@ -27,7 +27,7 @@ def cli() -> None:
 @click.option("--email", type=str, help="Developer email", required=True)
 @click.option("--region", type=str, default="us", help="Ngrok region (default: us)")
 @click.option(
-    "--setup-github", is_flag=True, help="Setup GitHub resources", required=True
+    "--setup-github", is_flag=True, help="Setup GitHub resources", required=False
 )
 def setup(name: str, email: str, region: str, setup_github: bool) -> None:
     """Setup developer environment"""

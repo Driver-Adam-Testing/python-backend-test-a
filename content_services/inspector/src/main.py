@@ -432,7 +432,7 @@ async def inspect_files(
                 task_name=f"Embedding Source Code {node.root_rel_path}",
                 source_code=source_code,
                 db_node_id=db_node_id,
-                dependent_tasks=[],
+                dependent_tasks=[c_symbol_table_task],
             )
             file_tech_docs_task = FileTechDocTask(
                 codebase_name=codebase_name,
@@ -440,9 +440,7 @@ async def inspect_files(
                 node=lite_node,
                 task_name=f"TechDoc {node.root_rel_path}",
                 db_node_id=db_node_id,
-                symbol_table_task=c_symbol_table_task.self_or_none(
-                    codebase_root / lite_node.root_rel_path
-                ),
+                symbol_table_task=c_symbol_table_task,
             )
             file_tech_docs_embedding_task = EmbeddingTask(
                 node=node,

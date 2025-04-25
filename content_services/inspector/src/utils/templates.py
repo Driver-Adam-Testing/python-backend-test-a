@@ -109,7 +109,7 @@ class Template(BaseModel):
                                     kind_part = symbol.raw.symbol_kind.name.lower()
                                     path_part = symbol.raw.file_path
 
-                                    repl_text = f"[{name_part}]({path_part}#{kind_part}:{name_part})"
+                                    repl_text = f"[`{name_part}`]({path_part}#{kind_part}:{name_part})"
                                     break
                             return repl_text
 

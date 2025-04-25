@@ -302,7 +302,7 @@ class IrData(BaseModel, abc.ABC):
                     kind_part = called_func.raw.symbol_kind.name.lower()
                     name_part = re.escape(called_func.raw.name)  # escape special chars
                     path_part = called_func.raw.file_path
-                    link = f"[{called_func.raw.name}]({path_part}#{kind_part}:{called_func.raw.name})"
+                    link = f"[`{called_func.raw.name}`]({path_part}#{kind_part}:{called_func.raw.name})"
 
                     rendered = re.sub(rf"`{name_part}`", link, rendered)
 
@@ -320,7 +320,7 @@ class IrData(BaseModel, abc.ABC):
                     path_part = calls[0].raw.file_path
 
                     output += (
-                        f"    - [{name_part}]({path_part}#{kind_part}:{name_part})\n"
+                        f"    - [`{name_part}`]({path_part}#{kind_part}:{name_part})\n"
                     )
             # if sym.raw.symbol_kind == SymbolKind.CALLABLE and sym.usages:
             #     output += "- **Usages of this function**:\n"

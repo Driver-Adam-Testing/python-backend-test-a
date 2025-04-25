@@ -161,9 +161,9 @@ class FileTechDocTask(Task):
             # TODO: if the symbol_table_task is here, task_result_data SHOULD be not None (maybe an empty list of symbols though).
             # Should we assert and fail out inspector, or continue?
             if task_result_data is not None:
-                reified_symbols = task_result_data.file_to_symbols[
+                reified_symbols = task_result_data.file_to_symbols.get(
                     self.node.root_rel_path
-                ]
+                )
             else:
                 reified_symbols = None
         else:
@@ -507,6 +507,8 @@ class EmbeddingTask(Task):
         # TODO: type names are just strings now
 
         for task, dr in dependent_io_results.items():
+            if isinstance(task, CSymbolTableTask):
+                continue
             content_ids_to_embed = [
                 uuid.UUID(uid) for uid in dr["content_ids"]
             ]  # TODO may not be needed

@@ -90,11 +90,11 @@ class AssetOnboardingLambda(Construct):
             self,
             f"{params.cdk_prefix}ClientIdSecretNameOutput",
             value=client_id_secret.secret_name,
-            export_name="CodeLambdaClientIdOutput",
+            export_name=f"{params.cdk_prefix}CodeLambdaClientIdOutput",
         )
         CfnOutput(
             self,
             f"{params.cdk_prefix}ClientSecretSecretNameOutput",
             value=client_secret_secret.secret_name,
-            export_name="CodeLambdaClientSecretOutput",
+            export_name=f"{params.cdk_prefix}CodeLambdaClientSecretOutput",
         )

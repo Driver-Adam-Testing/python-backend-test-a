@@ -138,5 +138,5 @@ class MetricsLambda(Construct):
             self,
             f"{params.cdk_prefix}MetricsLambdaDBSecretOutput",
             value=database_url_secret.secret_name,
-            export_name="MetricsLambdaDBSecretOutput",
+            export_name=f"{params.cdk_prefix}MetricsLambdaDBSecretOutput",
         )

@@ -173,7 +173,7 @@ def unpack_archive(
         members=[
             member
             for member in local_archive.namelist()
-            if any(member.startswith(root) for root in root_dirs)
+            if not member.startswith("__MACOSX")
         ],
     )
 

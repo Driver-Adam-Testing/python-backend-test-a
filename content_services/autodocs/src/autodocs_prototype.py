@@ -494,17 +494,16 @@ class Scope(BaseModel):
 class SectionCfg(BaseModel):
     title: str
     level: int
-    use_pdfs: bool
-    required: bool
+    required: bool = True  # this setting is ignored when committed_with is not None
     instruction: str
     content_structure: str
     section_creation_method: SectionCreationMethod
+    committed_with: str = None
 
 
 class SectionCommitted(BaseModel):
     title: str
     level: int
-    use_pdfs: bool
     instruction: str
     content_structure: str
     section_creation_method: SectionCreationMethod
@@ -514,7 +513,6 @@ class SectionCommitted(BaseModel):
         return cls(
             title=cfg.title,
             level=cfg.level,
-            use_pdfs=cfg.use_pdfs,
             instruction=cfg.instruction,
             content_structure=cfg.content_structure,
             section_creation_method=cfg.section_creation_method,
@@ -836,6 +834,10 @@ The section you are writing about is titled {title}. Here is the a description o
 Your output should be markdown formatted text including the section title as a top level header, important subsections, and content included for each subsection as appropriate.
 
 Technical detail is very important in this document. As you write the document, cite specific examples from the source code or pdf page to support your documentation.
+
+Use only content directly from the source code or pdf page to write the document. Do not make up any content that is not directly from the source code or pdf page.
+
+It is okay to just return "no relevant content" if the source code or pdf page does not provide any relevant content for the section.
 """
         preamble_content = (
             f"\nHere is further overall context about the document we are writing:\n\n{preamble}"
@@ -1391,8 +1393,16 @@ class AutoDocCfg(BaseModel):
         else:
             raw_data.setdefault("scope", scope_raw_default)
         raw_data.setdefault("sections", [])
+        cfg = cls(**raw_data)
+        if "substitutions" in raw_data:
+            mapping = {item["key"]: item["value"] for item in raw_data["substitutions"]}
+            for section in cfg.sections:
+                section.instruction = section.instruction.format_map(mapping)
+                section.content_structure = section.content_structure.format_map(
+                    mapping
+                )
 
-        return cls(**raw_data)
+        return cfg
 
     async def eval_optional_sections(
         self, llm: ChatOpenAI, long_descriptions: str
@@ -1400,7 +1410,7 @@ class AutoDocCfg(BaseModel):
         optional_sections = [
             (idx, s.level, s.title, s.instruction)
             for idx, s in enumerate(self.sections)
-            if s.required is False
+            if s.required is False and s.committed_with is None
         ]
         if len(optional_sections) > 0:
             print(
@@ -1430,10 +1440,23 @@ class AutoDocCfg(BaseModel):
                     print(
                         f"{RED}- {'#' * level} {sf.name}{RESET} ({instruction[:100]} ...)"
                     )
+
+            for idx, section_cfg in enumerate(self.sections):
+                if section_cfg.committed_with:
+                    for parent_idx, parent_cfg in enumerate(self.sections):
+                        if parent_cfg.title == section_cfg.committed_with and (
+                            parent_cfg.required or parent_idx in included_idxs
+                        ):
+                            included_idxs.add(idx)
+                            break
+
             return [
                 SectionCommitted.from_section_cfg(cfg)
                 for idx, cfg in enumerate(self.sections)
-                if (cfg.required is True or idx in included_idxs)
+                if (
+                    (cfg.required is True and cfg.committed_with is None)
+                    or idx in included_idxs
+                )
             ]
         else:
             return [SectionCommitted.from_section_cfg(cfg) for cfg in self.sections]

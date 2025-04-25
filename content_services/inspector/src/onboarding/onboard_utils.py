@@ -139,14 +139,15 @@ def download_file_from_presigned_url(
                 w_file.write(chunk)
 
 
-def get_root_directories_in_archive(zip_file: zipfile.ZipFile) -> list:
-    root_dirs = []
+def get_root_nodes_in_archive(zip_file: zipfile.ZipFile) -> list[str]:
+    root_nodes: set[tuple] = set()
+
     for zip_node in zip_file.infolist():
-        if zip_node.is_dir():
-            node_path = Path(zip_node.filename)
-            if node_path.parts[0] not in root_dirs:
-                root_dirs.append(node_path.parts[0])
-    return root_dirs
+        node_path = Path(zip_node.filename)
+        if node_path.parts[0] != "__MACOSX" and len(node_path.parts) == 1:
+            root_nodes.add((node_path.parts[0], zip_node.is_dir()))
+
+    return list(root_nodes)
 
 
 def unpack_archive(
@@ -155,18 +156,19 @@ def unpack_archive(
     override_codebase_name: str | None = None,
 ) -> Path:
     # Creating zipfile instance does NOT unpack right away.
-    # We can check root dir cases and modify from there BEFORE unpacking
+    # We can check for root nodes and modify from there BEFORE unpacking
     local_archive = zipfile.ZipFile(archive_path, "r")
-    root_dirs = get_root_directories_in_archive(local_archive)
+    root_nodes = get_root_nodes_in_archive(local_archive)
+    print("Root dirs", root_nodes)
 
-    if len(root_dirs) != 1:
+    if len(root_nodes) != 1 or (len(root_nodes) == 1 and not root_nodes[0][1]):
         # Handles both multiple and no roots, extract to an appended root
         codebase_root = extraction_path / Path(archive_path.stem)
         codebase_root.mkdir(exist_ok=False)  # don't unpack into an existing dir
         final_extracted_path = codebase_root
     else:
         codebase_root = extraction_path
-        final_extracted_path = extraction_path / Path(root_dirs[0])
+        final_extracted_path = extraction_path / Path(root_nodes[0][0])
     # Members is used here to filter out __MACOSX files from the zip file
     local_archive.extractall(
         path=codebase_root,
@@ -185,6 +187,7 @@ def unpack_archive(
         stripped_extracted_path = extraction_path / Path(override_codebase_name)
 
     os.rename(final_extracted_path, stripped_extracted_path)
+    print(stripped_extracted_path)
 
     return stripped_extracted_path
 

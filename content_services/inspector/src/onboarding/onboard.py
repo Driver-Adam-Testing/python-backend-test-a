@@ -582,6 +582,18 @@ def run_codebase_connection(
                     driverignore=driverignore,
                 )
                 codebase_stats[local_path] = file_stats
+        if len(codebase_stats) == 0:
+            print(
+                f"Codebase {codebase_name} has no files. Setting status to connection failed."
+            )
+            with Session(engine) as session, session.begin():
+                update_stmt = (
+                    update(Version)
+                    .where(Version.id == version_id)
+                    .values(status=VersionStatus.CONNECTION_FAILED)
+                )
+                session.exec(update_stmt)
+            return None
 
         s3_resource = resource("s3", endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL"))
         s3_bucket = s3_resource.Bucket(org_id_bucket)

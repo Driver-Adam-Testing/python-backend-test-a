@@ -29,7 +29,10 @@ def extract_context_lines(
 
 
 def _document_symbol(
-    symbol: dict[str, any], file_node, file_description_paragraph, file_content
+    symbol: dict[str, any],
+    file_node: LiteNode,
+    file_description_paragraph: str,
+    file_content: str,
 ) -> dict[str, any]:
     try:
         # print(f"Documenting symbol `{symbol['name']}` in `{file_node.root_rel_path}`")
@@ -60,7 +63,7 @@ def _document_symbol(
             )
             updated_symbol["description"] = None
         else:
-            updated_symbol["description"] = symbol_description
+            updated_symbol["description"] = symbol_description.replace("\x00", "")
             updated_symbol["model_used"] = model_used
         return updated_symbol
     except Exception as exc:
@@ -138,7 +141,7 @@ def document_symbols_in_file(
 
 
 class ContextSizeError(Exception):
-    def __init__(self, message="Context size exceeds the maximum limit"):
+    def __init__(self, message: str = "Context size exceeds the maximum limit") -> None:
         self.message = message
         super().__init__(self.message)
 
@@ -178,7 +181,7 @@ def symbol_single_paragraph_from_code_and_file_description(
         "gpt-4o-mini": 128_000 - max_tokens_paragraph,
     }
 
-    def select_model(input_tokens: int):
+    def select_model(input_tokens: int) -> str:
         for model_name, token_limit in model_limits.items():
             if input_tokens <= token_limit:
                 return model_name

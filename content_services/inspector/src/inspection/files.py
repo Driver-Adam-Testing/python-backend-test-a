@@ -602,6 +602,13 @@ def comprehend_file_top_down(
             )
             return success, results
 
+    file_description_single_sentence = file_description_single_sentence.replace(
+        "\x00", ""
+    )
+    file_description_single_paragraph = file_description_single_paragraph.replace(
+        "\x00", ""
+    )
+    file_description_long = file_description_long.replace("\x00", "")
     short_descriptions = {
         "single_sentence": file_description_single_sentence,
         "single_paragraph": file_description_single_paragraph,

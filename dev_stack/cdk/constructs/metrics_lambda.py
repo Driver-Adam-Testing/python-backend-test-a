@@ -136,7 +136,7 @@ class MetricsLambda(Construct):
             )
         CfnOutput(
             self,
-            "MetricsLambdaDBSecretOutput",
+            f"{params.cdk_prefix}MetricsLambdaDBSecretOutput",
             value=database_url_secret.secret_name,
             export_name="MetricsLambdaDBSecretOutput",
         )

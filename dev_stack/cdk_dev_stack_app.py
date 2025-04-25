@@ -26,7 +26,7 @@ print(f"Deploying {dev_stack_name} CDK stack")
 with open("./state/out/cdk-stack-config.json") as f:
     cdk_stack_config = json.load(f)
 
-# print(cdk_stack_config)
+print(cdk_stack_config)
 
 for k, v in cdk_stack_config["env"].items():
     # print(f"{k}: {v}")

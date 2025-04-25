@@ -266,6 +266,39 @@ def setup_developer_resources(
         },
     )
 
+    # docker_resource = DeveloperResource(
+    #     resource_name="docker",
+    #     resource_type=DeveloperResourceType.DOCKER,
+    #     resource={
+    #         "PORT": 4000,
+    #         "HOST": "0.0.0.0",
+    #         "PROJECT_NAME": "Driver AI App",
+    #         "ENVIRONMENT": "local",
+    #         "LOG_LEVEL": "info",
+    #         # "AWS_ACCESS_KEY_ID": settings.AWS_ACCESS_KEY_ID,
+    #         # "AWS_SECRET_ACCESS_KEY": settings.AWS_SECRET_ACCESS_KEY,
+    #         # "AWS_REGION": "us-east-1",
+    #         "BUCKET_NAME": developer.s3_bucket_name,
+    #         "DROPZONE_BUCKET_NAME": developer.s3_bucket_name,
+    #         "POSTGRES_SERVER": developer.database.host_address,
+    #         "POSTGRES_PORT": 5432,
+    #         "POSTGRES_DB": developer.database.db_name,
+    #         "POSTGRES_USER": developer.database.user_name,
+    #         "POSTGRES_PASSWORD": developer.database.password,
+    #         "CORS_ORIGINS": web_app_domain.domain_url,
+    #         "API_URL": developer.auth0_api["identifier"],
+    #         "AUTH0_URL": settings.AUTH0_URL,
+    #         "DATABASE_URL": developer.database.db_url,
+    #         "SMTP_HOST": "changethis",
+    #         "SMTP_USER": "changethis",
+    #         "SMTP_PASSWORD": "changethis",
+    #         "EMAILS_FROM_EMAIL": "support@driverai.com",
+    #         "SMTP_TLS": True,
+    #         "SMTP_SSL": False,
+    #         "SMTP_PORT": 587,
+    #     },
+    # )
+
     # gh_app_resource = DeveloperResource(
     #     resource_name="github-app",
     #     resource_type=DeveloperResourceType.GITHUB_APP,
@@ -320,14 +353,23 @@ def create_developer_resource_configs(developer: Developer) -> dict:
             case DeveloperResourceType.API:
                 api_resource = ApiResourceConfig(
                     env={
-                        "DATABASE_URL": "change this",
-                        "AUTH0_DOMAIN": "auth.dev.driverai.com",
+                        "PORT": 4000,
+                        "HOST": "0.0.0.0",
+                        "PROJECT_NAME": "DriverAIApp",
+                        "ENVIRONMENT": "local",
+                        "LOG_LEVEL": "info",
+                        "AWS_ACCESS_KEY_ID": settings.AWS_ACCESS_KEY_ID,
+                        "AWS_SECRET_ACCESS_KEY": settings.AWS_SECRET_ACCESS_KEY,
+                        "AWS_REGION": "us-east-1",
+                        "BUCKET_NAME": developer.s3_bucket_name,
+                        "DROPZONE_BUCKET_NAME": developer.s3_bucket_name,
+                        # "DATABASE_URL": "change this",
+                        # "AUTH0_DOMAIN": "auth.dev.driverai.com",
                         "AUTH0_CLIENT_ID": developer.auth0_webapp["client_id"],
                         "AUTH0_AUDIENCE": developer.auth0_api["identifier"],
-                        "AUTH0_MGMT_API_CLIENT_ID": settings.AUTH0_MGMT_API_CLIENT_ID,
-                        "AUTH0_MGMT_API_CLIENT_SECRET": settings.AUTH0_MGMT_API_CLIENT_SECRET,
-                        "AUTH0_MGMT_API_AUDIENCE": settings.AUTH0_MGMT_API_AUDIENCE,
-                        "DROPZONE_BUCKET_NAME": developer.s3_bucket_name,
+                        # "AUTH0_MGMT_API_CLIENT_ID": settings.AUTH0_MGMT_API_CLIENT_ID,
+                        # "AUTH0_MGMT_API_CLIENT_SECRET": settings.AUTH0_MGMT_API_CLIENT_SECRET,
+                        # "AUTH0_MGMT_API_AUDIENCE": settings.AUTH0_MGMT_API_AUDIENCE,
                         "BACKEND_CORS_ORIGINS": web_app_domain.domain_url,
                         "USE_LEGACY_DROPZONE": "False",
                         "GH_CLIENT_ID": developer.github_app.client_id
@@ -342,9 +384,23 @@ def create_developer_resource_configs(developer: Developer) -> dict:
                         "GH_REDIRECT_URI": developer.github_app.callback_url
                         if developer.github_app
                         else "",
-                        "GH_WEBHOOK_SECRET": developer.github_app.webhook.webhook_secret
+                        "GH_WEBHOOK_SECRET": f'"{developer.github_app.webhook.webhook_secret}"'
                         if developer.github_app
                         else "",
+                        # "MODAL_TOKEN_ID": settings.MODAL_TOKEN_ID,
+                        # "MODAL_TOKEN_SECRET": settings.MODAL_TOKEN_SECRET,
+                        "MODAL_ENVIRONMENT": f"dev-{developer.full_name.replace(' ', '').strip().lower()}",
+                        "OPENAI_API_KEY": settings.OPENAI_API_KEY,
+                        "SENTRY_DSN": "",
+                        "SENDGRID_API_KEY": "",
+                        "DRIVER_API_SHARED_SECRET": "",
+                        "SMTP_HOST": "changethis",
+                        "SMTP_USER": "changethis",
+                        "SMTP_PASSWORD": "changethis",
+                        "EMAILS_FROM_EMAIL": "support@driverai.com",
+                        "SMTP_TLS": True,
+                        "SMTP_SSL": False,
+                        "SMTP_PORT": 587,
                     }
                 )
                 resource_configs[api_resource.resource_name] = api_resource.model_dump(

@@ -91,6 +91,7 @@ class DeveloperResourceType(enum.Enum):
     S3_BUCKET = "S3_BUCKET"
     CDK_STACK = "CDK_STACK"
     CONTENT_SERVICES = "CONTENT_SERVICES"
+    DOCKER = "DOCKER"
 
 
 class DeveloperResource(BaseModel):

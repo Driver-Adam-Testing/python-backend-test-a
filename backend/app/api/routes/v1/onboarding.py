@@ -63,7 +63,7 @@ def trigger_asset_connection(
             run_codebase_connection = modal.Function.lookup(
                 "inspector-v2",
                 "run_codebase_connection",
-                environment_name=settings.ENVIRONMENT_NAME,
+                environment_name=settings.MODAL_ENVIRONMENT,
             )
 
             call = run_codebase_connection.spawn(

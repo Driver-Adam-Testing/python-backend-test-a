@@ -610,7 +610,7 @@ See [setup_guide.md](state/out/setup_guide.md) for more details next steps.
 
 ### Run Tunnels
 ```bash
-  python src/cli.py run-tunnels --name="Your Name" --ports="http:3000,http:4000,tcp:5432"
+  python src/cli.py run-tunnels --name="Your Name" --ports="http:3000,http:4000,tcp:5434"
 ```
 
 ### Teardown

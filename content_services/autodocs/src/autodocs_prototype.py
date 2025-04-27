@@ -875,6 +875,8 @@ The section you are writing is titled {title}. Here is the a description of the 
 Your output should be a document with important sections/subsections using Markdown syntax with content included for each subsection as appropriate.
 
 Technical detail is very important in this document. Try to keep as much technical detail from each file as possible, but combine and organize the information in a logical way.
+
+Use only content directly from the sections you've been given in your aggregation. Do not make up any content that is not directly from the provided sections. Do not change code examples, copy these directly from the source sections provided.
 """
         preamble_content = (
             f"\nHere is further overall context about the document we are writing:\n\n{preamble}"
@@ -911,6 +913,8 @@ The section you are writing is titled {title}. Here is the a description of the 
 Your output should be a document with important sections/subsections using Markdown syntax with content included for each subsection as appropriate.
 
 Technical detail is very important in this document. Try to keep as much technical detail from each section as possible, but combine and organize the information in a logical way.
+
+Use only content directly from the sections you've been given in your aggregation. Do not make up any content that is not directly from the provided sections. Do not change code examples, copy these directly from the source sections provided.
 """
         preamble_content = (
             f"\nHere is further overall context about the document we are writing:\n\n{preamble}"

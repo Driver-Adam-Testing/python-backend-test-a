@@ -47,7 +47,7 @@ class TaskResult:
             value = pickle.loads(data)
         else:
             raise ValueError("Invalid data type for the given serialization method")
-        return cls(value=value, serialization=method)
+        return cls(data=value, serialization=method)
 
 
 # TODO check exception handling and propagation is correct!

@@ -33,7 +33,7 @@ except FileNotFoundError:
 
 OPENAI_SEM = asyncio.Semaphore(300)
 PDF_DOWNLOAD_DIR = "pdfs/"
-OPENAI_LIMITER = AsyncLimiter(100, 1)  # 100 requests per minute
+OPENAI_LIMITER = AsyncLimiter(100, 1)  # 100 requests per second
 
 
 async def llm_generate(llm: ChatOpenAI, system_prompt: str, user_prompt: str) -> str:
@@ -1063,7 +1063,7 @@ Your output should be markdown formatted text.
         goal: str,
         preamble: str,
         reverse_topos: list,
-        pdf_pages_dict: dict[str, list[int]] | None,
+        pdf_pages_dict: dict[str, list[str]] | None,
         tagged_nodes: dict | None,
         pdf_tagged_nodes: dict | None,
         tag_idx: int | None,
@@ -1101,7 +1101,7 @@ Your output should be markdown formatted text.
         goal: str,
         preamble: str,
         reverse_topos: list,
-        pdf_pages_dict: dict[str, list[int]] | None,
+        pdf_pages_dict: dict[str, list[str]] | None,
         tagged_nodes: dict | None,
         pdf_tagged_nodes: dict | None,
         tag_idx: int | None,
@@ -1839,7 +1839,7 @@ Your output is the full content of the document with editing updates based on yo
         topo: list[tuple[str, TechDocsContent]],
         graph: dict[str, set[str]],
         execution_mode: ExecutionMode,
-        pdf_pages_dict: dict[str, list[int]],
+        pdf_pages_dict: dict[str, list[str]],
     ) -> dict[str, list[Category]]:
         print(
             f"\n({BLUE}{llm.model}{RESET}) Annotating files for relevance to sections..."
@@ -1907,7 +1907,7 @@ Your output is the full content of the document with editing updates based on yo
         annotations: dict[str, list[Category]],
         pdf_annotations: dict,
         execution_mode: ExecutionMode,
-        pdf_pages_dict: dict[str, list[int]],
+        pdf_pages_dict: dict[str, list[str]],
     ) -> tuple[set[str], list[dict[str, str]]]:
         if self.scope.pdfs and any(
             s.section_creation_method == SectionCreationMethod.ONLY_PDFS

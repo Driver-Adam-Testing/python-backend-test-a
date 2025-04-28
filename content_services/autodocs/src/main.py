@@ -32,8 +32,9 @@ image = inspection_image = (
             "pydantic>=2.8.2",
             "tiktoken",
             "/shared_pkg",
-            "pymupdf4llm",
+            "pymupdf4llm==0.0.17",
             "google-genai",
+            "aiolimiter",
         ]
     )
     .add_local_dir(

@@ -1,4 +1,5 @@
 import abc
+from dataclasses import dataclass, field
 from enum import Enum, IntEnum, StrEnum, auto
 from pathlib import Path
 from typing import Self
@@ -96,7 +97,30 @@ class RawTreeSitterSymbolData(BaseModel):
     name: str | None
     start_line: int
     end_line: int
+    start_byte: int
+    end_byte: int
+    file_path: Path
     symbol_kind: SymbolKind
+
+    class Config:
+        """
+        This gives us __hash__!
+        """
+
+        frozen = True
+
+
+@dataclass(frozen=True)
+class ReifiedSymbol:
+    """
+    Extends LinkedSymbol with a list of usages (if this is a definition).
+    """
+
+    raw: RawTreeSitterSymbolData
+    is_definition: bool
+    definition: Self | None = None
+    usages: list[Self] = field(default_factory=list)
+    calls: list[Self] = field(default_factory=list)
 
 
 class RawSymbolData(BaseModel):
@@ -116,6 +140,9 @@ class RawSymbolData(BaseModel):
     is_large_file: bool = Field(default=False)
     is_overloaded: bool = Field(default=False)
 
+    # TODO kind of hack to put on here, but just cranking for now
+    reified_symbol: ReifiedSymbol | None = None
+
     @classmethod
     def from_tree_sitter_raw_symbol(
         cls,
@@ -130,6 +157,7 @@ class RawSymbolData(BaseModel):
         is_overloaded: bool,
         use_padding: bool,
         code: str,
+        reified_symbol: ReifiedSymbol | None = None,  # TODO this is a hack. fix
     ) -> Self:
         # Copied logic from ctags symbol construction below
         file_code = None
@@ -170,6 +198,7 @@ class RawSymbolData(BaseModel):
             delimiter=delimiter,
             is_large_file=is_large_file,
             is_overloaded=is_overloaded,
+            reified_symbol=reified_symbol,  # TODO hack
         )
         return raw_symbol
 
@@ -177,10 +206,10 @@ class RawSymbolData(BaseModel):
 class RawSymbolCollection(BaseModel, abc.ABC):
     data: dict[str, RawSymbolData]
 
-    @classmethod
-    @abc.abstractmethod
-    def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
-        pass
+    # @classmethod
+    # @abc.abstractmethod
+    # def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
+    #     pass
 
     @classmethod
     @abc.abstractmethod

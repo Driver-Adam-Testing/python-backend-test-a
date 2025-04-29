@@ -14,20 +14,19 @@ environment="$1"
 echo "Deploying to environment: $environment"
 # Navigate to the inspector directory
 cd ../content_services/inspector
-#poetry install --no-root
+poetry install --no-root
 # Run modal deploy using poetry's Python environment
 #poetry run modal deploy --env="$environment" src/main.py
+
 cd ../../
-#echo $PWD
-#echo $CWD
 
 cd ./content_services/agent
 poetry install --no-root
 # Run modal deploy using poetry's Python environment
 poetry run modal deploy --env="$environment" src/main.py
-#
+
 cd ../../
-#
+
 cd ./content_services/pdf_preprocessing
 poetry install --no-root
 ## Run modal deploy using poetry's Python environment
@@ -35,7 +34,7 @@ poetry run modal deploy --env="$environment" src/main.py
 #
 cd ../../
 #
-cd ../content_services/autodocs
+cd ./content_services/autodocs
 poetry install --no-root
 ## Run modal deploy using poetry's Python environment
 poetry run modal deploy --env="$environment" src/main.py

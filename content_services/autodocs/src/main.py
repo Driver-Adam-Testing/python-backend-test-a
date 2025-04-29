@@ -65,7 +65,7 @@ app = modal.App("autodocs")
         modal.Secret.from_name("open-ai"),
     ],
     proxy=modal.Proxy.from_name("pg-proxy")
-    if os.environ["MODAL_ENVIRONMENT"] != "staging"
+    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "prod"]
     else None,
     memory="2048",
     timeout=3600 * 8,

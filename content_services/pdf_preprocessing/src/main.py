@@ -31,7 +31,7 @@ pdf_preprocessing_modal_config = {
         modal.Secret.from_name("anthropic"),
     ],
     "proxy": modal.Proxy.from_name("pg-proxy")
-    if os.environ["MODAL_ENVIRONMENT"] not in ["staging", "dev-eric"]
+    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "prod"]
     else None,
     "concurrency_limit": 20,
 }

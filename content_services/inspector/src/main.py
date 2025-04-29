@@ -129,9 +129,9 @@ async def get_result_loading_config(
             remote_path="/root/data/",
         ),
     ],
-    # proxy=modal.Proxy.from_name("pg-proxy")
-    # if os.environ["MODAL_ENVIRONMENT"] not in  ["staging","dev-eric"]
-    # else None,
+    proxy=modal.Proxy.from_name("pg-proxy")
+    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "prod"]
+    else None,
     memory="2048",
     timeout=3600 * 8,
     region="us-east",
@@ -503,9 +503,9 @@ def get_file_content(path: Path) -> str:
     secrets=[
         modal.Secret.from_name("db"),
     ],
-    # proxy=modal.Proxy.from_name("pg-proxy")
-    # if os.environ["MODAL_ENVIRONMENT"] not in  ["staging","dev-eric"]
-    # else None,
+    proxy=modal.Proxy.from_name("pg-proxy")
+    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "prod"]
+    else None,
 )
 def set_codebase_status_in_container(version_id: str, status: str) -> None:
     """This container is needed because the local entrypoint can't run using remote packages/secrets"""

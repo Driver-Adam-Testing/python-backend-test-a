@@ -34,9 +34,9 @@ image = (
         modal.Secret.from_name("db"),
         modal.Secret.from_name("github-app"),
     ],
-    # proxy=modal.Proxy.from_name("pg-proxy")
-    # if os.environ["MODAL_ENVIRONMENT"] not in  ["staging","dev-eric"]
-    # else None,
+    proxy=modal.Proxy.from_name("pg-proxy")
+    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "prod"]
+    else None,
     timeout=60 * 60,
     region="us-east",
     concurrency_limit=5,
@@ -144,16 +144,16 @@ def handle_github_events(
         # This secret below is usually going to be empty, except in prod, prod where we'll put the full db url
         # values needed to work with the gitlab proxy (not localhost as for the pg proxy). This will go away
         # once we deprecate pg-proxy and can use `my-proxy` with the full db url everywhere in our app...
-        # modal.Secret.from_name("db-override-hack") if os.environ["MODAL_ENVIRONMENT"] == "prod" else None,
+        modal.Secret.from_name("db-override-hack", environment_name="prod"),
     ],
     # my-proxy defines the static IP that we share today with "on the beach". Not only does OTB whitelist this IP we also
     # whitelist this IP with ScaleGrid for our DB. Normally we would use pg-proxy but we cant use two proxies at once in
     # modal and that proxy is only good for the postgres port.
-    # proxy=(
-    #     modal.Proxy.from_name("my-proxy", environment_name="prod")
-    #     if os.environ["MODAL_ENVIRONMENT"] not in  ["staging","dev-eric"]
-    #     else None
-    # ),
+    proxy=(
+        modal.Proxy.from_name("my-proxy", environment_name="prod")
+        if os.environ["MODAL_ENVIRONMENT"] in ["dev", "prod"]
+        else None
+    ),
     timeout=60 * 60,
     region="us-east",
     concurrency_limit=5,
@@ -256,9 +256,9 @@ def handle_gitlab_events(
         modal.Secret.from_name("db"),
         modal.Secret.from_name("github-app"),
     ],
-    # proxy=modal.Proxy.from_name("pg-proxy")
-    # if os.environ["MODAL_ENVIRONMENT"] not in  ["staging","dev-eric"]
-    # else None,
+    proxy=modal.Proxy.from_name("pg-proxy")
+    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "prod"]
+    else None,
     timeout=60 * 60,
     region="us-east",
     concurrency_limit=1,
@@ -361,9 +361,9 @@ def connect_repos_for_installation(github_installation_id: str) -> None:
         modal.Secret.from_name("db"),
         modal.Secret.from_name("github-app"),
     ],
-    # proxy=modal.Proxy.from_name("pg-proxy")
-    # if os.environ["MODAL_ENVIRONMENT"] not in  ["staging","dev-eric"]
-    # else None,
+    proxy=modal.Proxy.from_name("pg-proxy")
+    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "prod"]
+    else None,
     timeout=60 * 60,
     region="us-east",
     concurrency_limit=1,
@@ -467,9 +467,9 @@ def connect_unconnected_repos() -> None:
         ),
     ],
     secrets=[modal.Secret.from_name("aws-inspector-s3"), modal.Secret.from_name("db")],
-    # proxy=modal.Proxy.from_name("pg-proxy")
-    # if os.environ["MODAL_ENVIRONMENT"] not in  ["staging","dev-eric"]
-    # else None,
+    proxy=modal.Proxy.from_name("pg-proxy")
+    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "prod"]
+    else None,
     timeout=60 * 60 * 9,
     region="us-east",
     concurrency_limit=5,

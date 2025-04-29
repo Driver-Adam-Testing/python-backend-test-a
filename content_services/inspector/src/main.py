@@ -149,7 +149,7 @@ async def inspect_db(
     from onboarding.onboard_utils import (
         process_and_upload_all_files_in_parallel,
         set_codebase_status,
-        unpack_archive,
+        unpack_archive_to_finalized_path,
     )
     from utils.db import (
         create_inspector_run,
@@ -215,10 +215,10 @@ async def inspect_db(
                     org_hashed_id, download_archive_key, download_path
                 )
 
-                extracted_path = unpack_archive(
+                extracted_path = unpack_archive_to_finalized_path(
                     archive_path=download_path,
+                    extraction_root=Path(download_dir),
                     override_codebase_name=codebase_name,
-                    extraction_path=download_dir,
                 )
                 print(f"Extracted archive to {extracted_path}")
 

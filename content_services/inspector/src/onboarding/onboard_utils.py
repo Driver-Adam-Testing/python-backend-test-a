@@ -1,9 +1,10 @@
 import hashlib
 import os
 import re
+import shutil
 import time
 import zipfile
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from enum import Enum
 from functools import cache
@@ -139,57 +140,76 @@ def download_file_from_presigned_url(
                 w_file.write(chunk)
 
 
-def get_root_nodes_in_archive(zip_file: zipfile.ZipFile) -> list[str]:
-    root_nodes: set[tuple] = set()
+def get_root_nodes_in_archive(zip_file: zipfile.ZipFile) -> list[tuple[str, bool]]:
+    return [
+        (parts[0], info.is_dir())
+        for info in zip_file.infolist()
+        if (parts := Path(info.filename).parts)
+        and parts[0] != "__MACOSX"
+        and len(parts) == 1
+    ]
 
-    for zip_node in zip_file.infolist():
-        node_path = Path(zip_node.filename)
-        if node_path.parts[0] != "__MACOSX" and len(node_path.parts) == 1:
-            root_nodes.add((node_path.parts[0], zip_node.is_dir()))
 
-    return list(root_nodes)
+def _wanted_members(zf: zipfile.ZipFile) -> list[str]:
+    return [m for m in zf.namelist() if not m.startswith("__MACOSX")]
 
 
-def unpack_archive(
-    archive_path: Path,
-    extraction_path: Path,
-    override_codebase_name: str | None = None,
+def unpack_archive(archive_path: Path, extraction_root: Path) -> Path:
+    with zipfile.ZipFile(archive_path) as zf:
+        root_nodes = get_root_nodes_in_archive(zf)
+
+        single_root_dir = len(root_nodes) == 1 and root_nodes[0][1]
+        if single_root_dir:
+            target_dir = extraction_root / root_nodes[0][0]
+            zf.extractall(path=extraction_root, members=_wanted_members(zf))
+        else:
+            target_dir = extraction_root / archive_path.stem
+            target_dir.mkdir(exist_ok=False)
+            zf.extractall(path=target_dir, members=_wanted_members(zf))
+
+    return target_dir
+
+
+def clean_extracted_codebase(
+    codebase_root: Path,
+    extra_filters: Iterable[str] | None = None,
+) -> None:
+    patterns: list[str] = ["**/__MACOSX/**", "**/.DS_Store"]
+    if extra_filters:
+        patterns.extend(extra_filters)
+
+    for pattern in patterns:
+        for path in codebase_root.glob(pattern):
+            if path.is_dir():
+                shutil.rmtree(path)
+            else:
+                path.unlink(missing_ok=True)
+
+
+def finalize_codebase_path(
+    extracted_path: Path,
+    override_name: str | None = None,
 ) -> Path:
-    # Creating zipfile instance does NOT unpack right away.
-    # We can check for root nodes and modify from there BEFORE unpacking
-    local_archive = zipfile.ZipFile(archive_path, "r")
-    root_nodes = get_root_nodes_in_archive(local_archive)
-    print("Root dirs", root_nodes)
+    if override_name:
+        final_path = extracted_path.parent / override_name
+        os.rename(extracted_path, final_path)
+        return final_path
+    return extracted_path
 
-    if len(root_nodes) != 1 or (len(root_nodes) == 1 and not root_nodes[0][1]):
-        # Handles both multiple and no roots, extract to an appended root
-        codebase_root = extraction_path / Path(archive_path.stem)
-        codebase_root.mkdir(exist_ok=False)  # don't unpack into an existing dir
-        final_extracted_path = codebase_root
-    else:
-        codebase_root = extraction_path
-        final_extracted_path = extraction_path / Path(root_nodes[0][0])
-    # Members is used here to filter out __MACOSX files from the zip file
-    local_archive.extractall(
-        path=codebase_root,
-        members=[
-            member
-            for member in local_archive.namelist()
-            if not member.startswith("__MACOSX")
-        ],
-    )
 
-    # Removes character incompatible with S3 keys
-    stripped_extracted_path = Path(
-        re.sub(r"/\.[^/.]+$/", "", str(final_extracted_path))
-    )
-    if override_codebase_name:
-        stripped_extracted_path = extraction_path / Path(override_codebase_name)
-
-    os.rename(final_extracted_path, stripped_extracted_path)
-    print(stripped_extracted_path)
-
-    return stripped_extracted_path
+def unpack_archive_to_finalized_path(
+    archive_path: Path,
+    extraction_root: Path,
+    override_codebase_name: str | None = None,
+    extra_filters: Iterable[str] | None = None,
+) -> Path:
+    """
+    Unpack *archive_path*, clean macOS junk (plus *extra_filters*), optionally
+    rename the result, and return the final directory on disk.
+    """
+    extracted = unpack_archive(archive_path, extraction_root)
+    clean_extracted_codebase(extracted, extra_filters=extra_filters)
+    return finalize_codebase_path(extracted, override_name=override_codebase_name)
 
 
 def upload_file_to_s3(

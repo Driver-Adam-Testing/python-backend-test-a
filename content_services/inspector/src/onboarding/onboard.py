@@ -504,7 +504,7 @@ def run_codebase_connection(
         is_on_blacklist,
         load_driverignore,
         run_file_stats_and_reencode,
-        unpack_archive,
+        unpack_archive_to_finalized_path,
     )
     from shared.usage.utils import bytes_to_sloc
     from sqlalchemy.exc import IntegrityError
@@ -527,10 +527,10 @@ def run_codebase_connection(
 
     with tempfile.TemporaryDirectory() as temp_dir:
         # Override so unpack from github doesn't have hash in name.
-        extracted_path = unpack_archive(
-            download_dest,
+        extracted_path = unpack_archive_to_finalized_path(
+            archive_path=download_dest,
+            extraction_root=Path(temp_dir),
             override_codebase_name=override_codebase_name,
-            extraction_path=temp_dir,
         )
         codebase_name = str(extracted_path.relative_to(temp_dir))
         print("Codebase name: ", codebase_name)
@@ -590,6 +590,7 @@ def run_codebase_connection(
                 ):
                     analyzable_bytes += file_stats["size"]
         if analyzable_bytes == 0:
+            # TODO: add status_reason to database when available
             print(
                 f"Codebase {codebase_name} has no analyzable files. Setting status to connection failed."
             )

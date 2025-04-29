@@ -1,7 +1,7 @@
 import zipfile
 from pathlib import Path
 
-from onboard_utils import unpack_archive
+from onboard_utils import unpack_archive_to_finalized_path
 
 
 def test_unpack_archive_single_file_no_root(tmp_path: Path) -> None:
@@ -13,9 +13,12 @@ def test_unpack_archive_single_file_no_root(tmp_path: Path) -> None:
     with zipfile.ZipFile(zip_path, "w") as zf:
         zf.writestr("lonely_file.txt", "hello")
 
-    result_path: Path = unpack_archive(zip_path, extraction_path)
+    result_path: Path = unpack_archive_to_finalized_path(zip_path, extraction_path)
 
     assert result_path.exists()
+    assert (
+        result_path.stem == zip_path.stem
+    )  # In these no root cases, we default to zip name
     assert result_path.name == "single_file"
     assert (result_path / "lonely_file.txt").exists()
 
@@ -32,10 +35,11 @@ def test_unpack_archive_multiple_root_dirs(tmp_path: Path) -> None:
         zf.writestr("dir1/file1.txt", "data1")
         zf.writestr("dir2/file2.txt", "data2")
 
-    result_path: Path = unpack_archive(zip_path, extraction_path)
+    result_path: Path = unpack_archive_to_finalized_path(zip_path, extraction_path)
 
     assert result_path.exists()
     assert result_path.name == "multi_root_dirs"
+    assert result_path.stem == zip_path.stem
     assert (result_path / "dir1/file1.txt").exists()
     assert (result_path / "dir2/file2.txt").exists()
 
@@ -51,10 +55,11 @@ def test_unpack_archive_mixed_files_and_dirs(tmp_path: Path) -> None:
         zf.writestr("random_file.txt", "hello")
         zf.writestr("dir_a/inside_file.txt", "world")
 
-    result_path: Path = unpack_archive(zip_path, extraction_path)
+    result_path: Path = unpack_archive_to_finalized_path(zip_path, extraction_path)
 
     assert result_path.exists()
     assert result_path.name == "mixed"
+    assert result_path.stem == zip_path.stem
     assert (result_path / "random_file.txt").exists()
     assert (result_path / "dir_a/inside_file.txt").exists()
 
@@ -71,7 +76,7 @@ def test_unpack_archive_single_root_dir_with_subdirs(tmp_path: Path) -> None:
         zf.writestr("real_root/file1.txt", "data1")
         zf.writestr("real_root/subdir/file2.txt", "data2")
 
-    result_path: Path = unpack_archive(zip_path, extraction_path)
+    result_path: Path = unpack_archive_to_finalized_path(zip_path, extraction_path)
 
     assert result_path.exists()
     assert result_path.name == "real_root"
@@ -92,7 +97,7 @@ def test_unpack_archive_single_root_dir_same_as_zip(tmp_path: Path) -> None:
         zf.writestr(f"{zip_stem}/file1.txt", "file1 content")
         zf.writestr(f"{zip_stem}/subdir/file2.txt", "file2 content")
 
-    result_path: Path = unpack_archive(zip_path, extraction_path)
+    result_path: Path = unpack_archive_to_finalized_path(zip_path, extraction_path)
 
     assert result_path.exists()
     assert result_path.name == zip_stem
@@ -112,7 +117,7 @@ def test_unpack_archive_with_override_matching_root(tmp_path: Path) -> None:
         zf.mkdir(f"{zip_stem}/")
         zf.writestr(f"{zip_stem}/file1.txt", "content1")
 
-    result_path: Path = unpack_archive(
+    result_path: Path = unpack_archive_to_finalized_path(
         zip_path, extraction_path, override_codebase_name=override_name
     )
 
@@ -132,7 +137,7 @@ def test_unpack_archive_with_override_nonmatching_root(tmp_path: Path) -> None:
         zf.mkdir("real_root/")
         zf.writestr("real_root/file_inside.txt", "some data")
 
-    result_path: Path = unpack_archive(
+    result_path: Path = unpack_archive_to_finalized_path(
         zip_path, extraction_path, override_codebase_name=override_name
     )
 

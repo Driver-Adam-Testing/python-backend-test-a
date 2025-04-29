@@ -572,6 +572,7 @@ def run_codebase_connection(
 
         all_directories = []
         codebase_stats = {}
+        analyzable_bytes = 0
         for root, _, files in os.walk(extracted_path):
             all_directories.append(root)
             for filename in files:
@@ -582,9 +583,15 @@ def run_codebase_connection(
                     driverignore=driverignore,
                 )
                 codebase_stats[local_path] = file_stats
-        if len(codebase_stats) == 0:
+                if (
+                    file_stats["is_analyzable"]
+                    and not file_stats["is_blacklisted"]
+                    and not file_stats.get("is_ignored", False)
+                ):
+                    analyzable_bytes += file_stats["size"]
+        if analyzable_bytes == 0:
             print(
-                f"Codebase {codebase_name} has no files. Setting status to connection failed."
+                f"Codebase {codebase_name} has no analyzable files. Setting status to connection failed."
             )
             with Session(engine) as session, session.begin():
                 update_stmt = (

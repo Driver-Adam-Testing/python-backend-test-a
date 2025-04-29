@@ -564,7 +564,7 @@ def generate_developer_configs(name: str, output_dir: str) -> None:
             "This guide will help you set up your development environment with the following resources:\n\n"
         )
 
-        intro_block = """
+        intro_block = f"""
 # Pre-requisites
 - Install docker desktop or docker engine
 - [AWS CLI](https://aws.amazon.com/cli/)
@@ -603,19 +603,19 @@ There are 5 AWS accounts available to you.
 
 ### Setup
 ```bash
-  python src/cli.py setup --name="Your Name" --email="Your Email" --setup-github
+  python src/cli.py setup --name="{developer.full_name}" --email="{developer.email}" --setup-github
 ```
 
 See [setup_guide.md](state/out/setup_guide.md) for more details next steps.
 
 ### Run Tunnels
 ```bash
-  python src/cli.py run-tunnels --name="Your Name" --ports="http:3000,http:4000,tcp:5434"
+  python src/cli.py run-tunnels --name="{developer.full_name}" --ports="http:3000,http:4000,tcp:5434"
 ```
 
 ### Teardown
 ```bash
-  python src/cli.py teardown --name="Your Name"
+  python src/cli.py teardown --name="{developer.full_name}"
 ```
 """
         f.write(intro_block)

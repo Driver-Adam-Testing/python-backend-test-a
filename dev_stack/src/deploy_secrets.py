@@ -41,7 +41,10 @@ outputs = {o["ExportName"]: o["OutputValue"] for o in stack.get("Outputs", [])}
 # print(outputs)
 # Set secret values in Secrets Manager
 for env_key, output_key in asset_lambda_secrets["secret_map"].items():
-    secret_name = outputs.get(output_key)
+    # print(f"🔍 Checking {output_key} in file")
+    remapped_key = f"{stripped_name}{output_key}"
+    secret_name = outputs.get(remapped_key)
+    # secret_name = f"{stripped_name}{outputs.get(output_key)}"
     secret_value = asset_lambda_secrets["env"].get(env_key)
     print(f"🔍 Checking {secret_name} in stack {stack_name}")
 
@@ -57,7 +60,8 @@ for env_key, output_key in asset_lambda_secrets["secret_map"].items():
 
 
 for env_key, output_key in metrics_lambda_secrets["secret_map"].items():
-    secret_name = outputs.get(output_key)
+    remapped_key = f"{stripped_name}{output_key}"
+    secret_name = outputs.get(remapped_key)
     # secret_name = f"{stripped_name}{outputs.get(output_key)}"
     secret_value = metrics_lambda_secrets["env"].get(env_key)
     print(f"🔍 Checking {secret_name} in stack {stack_name}")

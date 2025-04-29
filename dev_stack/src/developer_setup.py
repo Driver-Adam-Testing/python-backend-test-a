@@ -643,7 +643,7 @@ See [setup_guide.md](state/out/setup_guide.md) for more details next steps.
                 f.write("\n```\n\n")
                 f.write("```bash\n")
                 f.write(
-                    f"chmod +x scripts/modal_deploy.sh && scripts/modal_deploy.sh {modal_environment}"
+                    f'chmod +x scripts/modal_deploy.sh && MODAL_TOKEN_ID="{settings.MODAL_TOKEN_ID}"  MODAL_TOKEN_SECRET="{settings.MODAL_TOKEN_SECRET}" scripts/modal_deploy.sh {modal_environment}'
                 )
                 f.write("\n```\n\n")
                 # print(config["resource"])

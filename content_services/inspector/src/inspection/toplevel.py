@@ -328,6 +328,11 @@ def comprehend_codebase_top_down(
         single_sentence = single_sentence_future.result()
         single_paragraph = single_paragraph_future.result()
 
+    terse_sentence = terse_sentence.replace("\x00", "")
+    single_sentence = single_sentence.replace("\x00", "")
+    single_paragraph = single_paragraph.replace("\x00", "")
+    long = long.replace("\x00", "")
+
     short_descriptions = {
         "terse_sentence": terse_sentence,
         "single_sentence": single_sentence,

@@ -1,6 +1,5 @@
 import hashlib
 import os
-import pprint
 import uuid
 from enum import Enum
 from pathlib import Path
@@ -39,6 +38,7 @@ from utils.dag import FileTreeDag, Node, NodeKind, NodeStatus  # noqa: E402
 
 with inspection_image.imports():
     from tasks import (
+        CSymbolTableTask,
         EmbeddingTask,
         FileTechDocTask,
         FolderTechDocTask,
@@ -46,6 +46,7 @@ with inspection_image.imports():
         TopLevelDocsTask,
     )
     from utils.task import TaskManager
+
 
 # TODO considering using concurrent inputs when we're just calling open AI. This should
 # save some cost (though costs are negligible today)
@@ -136,6 +137,7 @@ async def get_result_loading_config(
     timeout=3600 * 8,
     region="us-east",
     concurrency_limit=5,
+    cpu=1.0,
 )
 async def inspect_db(
     version_id: uuid.UUID,
@@ -149,7 +151,7 @@ async def inspect_db(
     from onboarding.onboard_utils import (
         process_and_upload_all_files_in_parallel,
         set_codebase_status,
-        unpack_archive,
+        unpack_archive_to_finalized_path,
     )
     from utils.db import (
         create_inspector_run,
@@ -215,10 +217,10 @@ async def inspect_db(
                     org_hashed_id, download_archive_key, download_path
                 )
 
-                extracted_path = unpack_archive(
+                extracted_path = unpack_archive_to_finalized_path(
                     archive_path=download_path,
+                    extraction_root=Path(download_dir),
                     override_codebase_name=codebase_name,
-                    extraction_path=download_dir,
                 )
                 print(f"Extracted archive to {extracted_path}")
 
@@ -361,10 +363,43 @@ async def inspect_files(
     result_loading_config: list[tuple[UUID, set[NodeStatus]]] | None,
 ) -> None:
     print("---------- All nodes ----------")
+
     for node, _ in nodes_with_id:
         print(node)
 
+    # c_files = [
+    #     codebase_root / node.root_rel_path
+    #     for node, _ in nodes_with_id
+    #     if node.root_rel_path.suffix.lower() in [".c"]
+    # ]
+    # h_files = [
+    #     codebase_root / node.root_rel_path
+    #     for node, _ in nodes_with_id
+    #     if node.root_rel_path.suffix.lower() in [".h"]
+    # ]
+    # c_and_h_files = c_files + h_files
+
+    # if any(c_files):
+    #     index = build_c_project_index(c_and_h_files, codebase_root / codebase_name)
+    #     print("C symbol index built")
+    #     # Build index here put as single dict key. This is obviously not prod ready. We would ideally name the dict
+    #     # by unique id (or ephemeral) and pass in a dict handle  the downstream functions that need shared data
+    #     d = modal.Dict.from_name("temp", create_if_missing=True)
+    #     d["symbol_table"] = index
+
     tasks = []
+    c_symbol_table_task = CSymbolTableTask(
+        root_node=nodes_with_id[-1][0],
+        task_name="CSymbolTableTask",
+        codebase_name=codebase_name,
+        codebase_root=codebase_root,
+        nodes_relative_paths=[
+            node.root_rel_path
+            for node, _ in nodes_with_id
+            if node.kind == NodeKind.FILE
+        ],
+    )
+    tasks.append(c_symbol_table_task)
     for node, db_node_id in nodes_with_id:
         lite_node = node.into_lite_node()
 
@@ -397,7 +432,7 @@ async def inspect_files(
                 task_name=f"Embedding Source Code {node.root_rel_path}",
                 source_code=source_code,
                 db_node_id=db_node_id,
-                dependent_tasks=[],
+                dependent_tasks=[c_symbol_table_task],
             )
             file_tech_docs_task = FileTechDocTask(
                 codebase_name=codebase_name,
@@ -405,6 +440,7 @@ async def inspect_files(
                 node=lite_node,
                 task_name=f"TechDoc {node.root_rel_path}",
                 db_node_id=db_node_id,
+                symbol_table_task=c_symbol_table_task,
             )
             file_tech_docs_embedding_task = EmbeddingTask(
                 node=node,
@@ -467,29 +503,7 @@ async def inspect_files(
         bucket_name=os.environ["BUCKET_NAME"], tasks=tasks, serial_exe=False
     )
 
-    task_results = await task_manager.run_tasks(
-        run_id, result_loading_config=result_loading_config
-    )
-
-    print("\n---------- Task results ----------")
-    pprinter = pprint.PrettyPrinter(indent=2)
-    for t, r in task_results.items():
-        print(f"\n==> Task: {t.task_name} Result")
-        match t:
-            case FileTechDocTask():
-                print(r.result)
-                print(r.result["docs"]["short"]["single_paragraph"])
-            case FolderTechDocTask():
-                print(r.result["docs"]["short"]["single_sentence"])
-            case SymbolsTask():
-                print(r.result)
-                pprinter.pprint(r.result["symbols"][:1])
-            case TopLevelDocsTask():
-                print(r.result["docs"]["short"])
-            case EmbeddingTask():
-                print("N/A")
-            case _:
-                raise ValueError(f"Unknown task type: {t}")
+    await task_manager.run_tasks(run_id, result_loading_config=result_loading_config)
 
 
 def get_file_content(path: Path) -> str:

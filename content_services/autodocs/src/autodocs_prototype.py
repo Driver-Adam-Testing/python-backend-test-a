@@ -13,9 +13,9 @@ from pathlib import Path
 from typing import Any, Self
 
 import boto3
-import fitz
 import openai
 import pymupdf4llm
+from aiolimiter import AsyncLimiter
 from database.models_v2_enums import AutoDocStatusMessageKind, ContentKind
 from google import genai
 from pydantic import BaseModel
@@ -31,12 +31,13 @@ try:
 except FileNotFoundError:
     LOCAL_FILES = None
 
-OPENAI_SEM = asyncio.Semaphore(1000)
+OPENAI_SEM = asyncio.Semaphore(300)
 PDF_DOWNLOAD_DIR = "pdfs/"
+OPENAI_LIMITER = AsyncLimiter(100, 1)  # 100 requests per second
 
 
 async def llm_generate(llm: ChatOpenAI, system_prompt: str, user_prompt: str) -> str:
-    async with OPENAI_SEM:
+    async with OPENAI_SEM, OPENAI_LIMITER:
         try:
             return await llm.generate_response(
                 system_prompt=system_prompt, user_prompt=user_prompt
@@ -874,6 +875,8 @@ The section you are writing is titled {title}. Here is the a description of the 
 Your output should be a document with important sections/subsections using Markdown syntax with content included for each subsection as appropriate.
 
 Technical detail is very important in this document. Try to keep as much technical detail from each file as possible, but combine and organize the information in a logical way.
+
+Use only content directly from the sections you've been given in your aggregation. Do not make up any content that is not directly from the provided sections. Do not change code examples, copy these directly from the source sections provided.
 """
         preamble_content = (
             f"\nHere is further overall context about the document we are writing:\n\n{preamble}"
@@ -910,6 +913,8 @@ The section you are writing is titled {title}. Here is the a description of the 
 Your output should be a document with important sections/subsections using Markdown syntax with content included for each subsection as appropriate.
 
 Technical detail is very important in this document. Try to keep as much technical detail from each section as possible, but combine and organize the information in a logical way.
+
+Use only content directly from the sections you've been given in your aggregation. Do not make up any content that is not directly from the provided sections. Do not change code examples, copy these directly from the source sections provided.
 """
         preamble_content = (
             f"\nHere is further overall context about the document we are writing:\n\n{preamble}"
@@ -1058,7 +1063,7 @@ Your output should be markdown formatted text.
         goal: str,
         preamble: str,
         reverse_topos: list,
-        pdf_paths: list | None,
+        pdf_pages_dict: dict[str, list[str]] | None,
         tagged_nodes: dict | None,
         pdf_tagged_nodes: dict | None,
         tag_idx: int | None,
@@ -1069,7 +1074,7 @@ Your output should be markdown formatted text.
             goal,
             preamble,
             reverse_topos,
-            pdf_paths,
+            pdf_pages_dict,
             tagged_nodes,
             pdf_tagged_nodes,
             tag_idx,
@@ -1096,7 +1101,7 @@ Your output should be markdown formatted text.
         goal: str,
         preamble: str,
         reverse_topos: list,
-        pdf_paths: list | None,
+        pdf_pages_dict: dict[str, list[str]] | None,
         tagged_nodes: dict | None,
         pdf_tagged_nodes: dict | None,
         tag_idx: int | None,
@@ -1146,29 +1151,23 @@ Your output should be markdown formatted text.
                     )
 
         print("Generating node sections for pdfs...")
-        for pdf_path in pdf_paths:
-            with fitz.open(pdf_path) as doc:
-                for idx, _ in enumerate(doc):
-                    if (
-                        pdf_tagged_nodes is None
-                        or tag_idx is None
-                        or pdf_tagged_nodes[pdf_path][idx][tag_idx]
-                        == Category.HighlyRelevant
-                    ):
-                        ordered_nodes.append(str(pdf_path) + f" page {idx}")
-                        md_text = pymupdf4llm.to_markdown(
-                            pdf_path, pages=[idx], show_progress=False
+        for pdf_path in pdf_pages_dict:
+            for idx, page_content in enumerate(pdf_pages_dict[pdf_path]):
+                if (
+                    pdf_tagged_nodes is None
+                    or tag_idx is None
+                    or pdf_tagged_nodes[pdf_path][idx][tag_idx]
+                    == Category.HighlyRelevant
+                ):
+                    ordered_nodes.append(str(pdf_path) + f" page {idx}")
+                    user_prompt = f"Page content from {pdf_path}:\n\n{page_content}"
+                    node_coroutines.append(
+                        llm_generate(
+                            llm=llm,
+                            system_prompt=self.scatter_system_prompt(goal, preamble),
+                            user_prompt=user_prompt,
                         )
-                        user_prompt = f"Page content from {pdf_path}:\n\n{md_text}"
-                        node_coroutines.append(
-                            llm_generate(
-                                llm=llm,
-                                system_prompt=self.scatter_system_prompt(
-                                    goal, preamble
-                                ),
-                                user_prompt=user_prompt,
-                            )
-                        )
+                    )
 
         node_responses = await asyncio.gather(*node_coroutines)
         for ordered_node, response in zip(ordered_nodes, node_responses):
@@ -1840,6 +1839,7 @@ Your output is the full content of the document with editing updates based on yo
         topo: list[tuple[str, TechDocsContent]],
         graph: dict[str, set[str]],
         execution_mode: ExecutionMode,
+        pdf_pages_dict: dict[str, list[str]],
     ) -> dict[str, list[Category]]:
         print(
             f"\n({BLUE}{llm.model}{RESET}) Annotating files for relevance to sections..."
@@ -1883,27 +1883,19 @@ Your output is the full content of the document with editing updates based on yo
             )
             pidx = 1
             total = len(self.scope.pdfs)
-            pdf_paths = _get_pdf_paths(
-                [pdf_cfg.pdf_name for pdf_cfg in self.scope.pdfs],
-                execution_mode=execution_mode,
-            )
-            for pdf in pdf_paths:
+            for pdf_path in pdf_pages_dict:
                 coroutines = []
-                tagged_pdfs[pdf] = dict()
-                print(f"[{pidx} / {total}] Annotating `{GREEN}{pdf}{RESET}`...")
-                with fitz.open(pdf) as doc:
-                    for idx, _ in enumerate(doc):
-                        md_text = pymupdf4llm.to_markdown(
-                            pdf, pages=[idx], show_progress=False
+                tagged_pdfs[pdf_path] = dict()
+                print(f"[{pidx} / {total}] Annotating `{GREEN}{pdf_path}{RESET}`...")
+                for idx, page_content in enumerate(pdf_pages_dict[pdf_path]):
+                    coroutines.append(
+                        self._annotate_pdf_page(
+                            llm=llm, pdf_text=page_content, page_idx=idx
                         )
-                        coroutines.append(
-                            self._annotate_pdf_page(
-                                llm=llm, pdf_text=md_text, page_idx=idx
-                            )
-                        )
+                    )
                 pdf_results = await tqdm_asyncio.gather(*coroutines)
                 for result in pdf_results:
-                    tagged_pdfs[pdf][result[0]] = result[1]
+                    tagged_pdfs[pdf_path][result[0]] = result[1]
 
         return tagged_nodes, tagged_pdfs
 
@@ -1915,6 +1907,7 @@ Your output is the full content of the document with editing updates based on yo
         annotations: dict[str, list[Category]],
         pdf_annotations: dict,
         execution_mode: ExecutionMode,
+        pdf_pages_dict: dict[str, list[str]],
     ) -> tuple[set[str], list[dict[str, str]]]:
         if self.scope.pdfs and any(
             s.section_creation_method == SectionCreationMethod.ONLY_PDFS
@@ -2015,10 +2008,7 @@ Your output is the full content of the document with editing updates based on yo
                             goal=self.document.goal,
                             preamble=self.scope.preamble,
                             reverse_topos=reverse_topos_from_start,
-                            pdf_paths=_get_pdf_paths(
-                                [pdf_cfg.pdf_name for pdf_cfg in self.scope.pdfs],
-                                execution_mode=execution_mode,
-                            ),
+                            pdf_pages_dict=pdf_pages_dict,
                             tagged_nodes=annotations,
                             pdf_tagged_nodes=pdf_annotations,
                             tag_idx=idx,
@@ -2181,6 +2171,7 @@ Your output is the full content of the document with editing updates based on yo
         llm: ChatOpenAI,
         previous_state: list[dict[str, str]],
         pdf_path: str,
+        pdf_pages: list[str],
         pdf_annotations: list[Category] | None,
     ) -> dict[str, str]:
         # NOTE: Currently doing the whole PDF in one function, can save state between pages if needed at a later point.
@@ -2191,53 +2182,49 @@ Your output is the full content of the document with editing updates based on yo
         temp_results = [
             previous_state[idx]["content"] for idx in range(len(previous_state))
         ]
-        with fitz.open(pdf_path) as doc:
-            for pg_idx, _ in enumerate(doc):
-                prompt_pairs = []
-                pdf_md = pymupdf4llm.to_markdown(
-                    pdf_path, pages=[pg_idx], show_progress=False
+        for pg_idx, page_content in enumerate(pdf_pages):
+            prompt_pairs = []
+            for idx in range(len(previous_state)):
+                user_prompt = f"Current state of the {self.sections[idx].title} section:\n\n{temp_results[idx]}"
+                user_prompt += common_update_prompt
+                user_prompt += f"PDF PAGE CONTENT for `{pdf_path}`:\n\n{page_content}"
+                system_prompt = self.sections[idx].update_from_pdf_system_prompt(
+                    goal=self.document.goal,
+                    preamble=self.scope.preamble,
                 )
-                for idx in range(len(previous_state)):
-                    user_prompt = f"Current state of the {self.sections[idx].title} section:\n\n{temp_results[idx]}"
-                    user_prompt += common_update_prompt
-                    user_prompt += f"PDF PAGE CONTENT for `{pdf_path}`:\n\n{pdf_md}"
-                    system_prompt = self.sections[idx].update_from_pdf_system_prompt(
-                        goal=self.document.goal,
-                        preamble=self.scope.preamble,
-                    )
-                    prompt_pairs.append((system_prompt, user_prompt))
-                async with asyncio.TaskGroup() as tg:
-                    section_tasks = []
-                    for idx, (system_prompt, user_prompt) in enumerate(prompt_pairs):
-                        if pdf_annotations is not None:
-                            relevant = (
-                                pdf_annotations[pg_idx][idx] == Category.HighlyRelevant
-                            )  # Only doing highly relevant for pdf pages
-                        else:
-                            relevant = True
-                        if (
-                            not relevant
-                            or self.sections[idx].section_creation_method
-                            != SectionCreationMethod.SEQUENTIAL_EDIT
-                        ):
-                            section_tasks.append(None)
-                        else:
-                            section_tasks.append(
-                                tg.create_task(
-                                    llm_generate(
-                                        llm=llm,
-                                        system_prompt=system_prompt,
-                                        user_prompt=user_prompt,
-                                    )
+                prompt_pairs.append((system_prompt, user_prompt))
+            async with asyncio.TaskGroup() as tg:
+                section_tasks = []
+                for idx, (system_prompt, user_prompt) in enumerate(prompt_pairs):
+                    if pdf_annotations is not None:
+                        relevant = (
+                            pdf_annotations[pg_idx][idx] == Category.HighlyRelevant
+                        )  # Only doing highly relevant for pdf pages
+                    else:
+                        relevant = True
+                    if (
+                        not relevant
+                        or self.sections[idx].section_creation_method
+                        != SectionCreationMethod.SEQUENTIAL_EDIT
+                    ):
+                        section_tasks.append(None)
+                    else:
+                        section_tasks.append(
+                            tg.create_task(
+                                llm_generate(
+                                    llm=llm,
+                                    system_prompt=system_prompt,
+                                    user_prompt=user_prompt,
                                 )
                             )
-                new_temp_results = []
-                for idx, task in enumerate(section_tasks):
-                    if task is None:
-                        new_temp_results.append(temp_results[idx])
-                    else:
-                        new_temp_results.append(task.result())
-                temp_results = new_temp_results
+                        )
+            new_temp_results = []
+            for idx, task in enumerate(section_tasks):
+                if task is None:
+                    new_temp_results.append(temp_results[idx])
+                else:
+                    new_temp_results.append(task.result())
+            temp_results = new_temp_results
 
         new_state = []
         for idx, result in enumerate(temp_results):
@@ -2321,6 +2308,18 @@ Your output is the full content of the document with editing updates based on yo
             for pdf_id in pdf_ids:
                 _download_pdf_from_s3(version_id=pdf_id)
 
+        # Convert PDFs to markdown
+        pdf_pages_dict = {}
+        if len(self.scope.pdfs) > 0:
+            print("Converting pdfs to markdown...")
+            pdf_paths = _get_pdf_paths(
+                [pdf_cfg.pdf_name for pdf_cfg in self.scope.pdfs],
+                execution_mode=execution_mode,
+            )
+            for pdf_path in pdf_paths:
+                md_text = pymupdf4llm.to_markdown(pdf_path, show_progress=False)
+                pdf_pages_dict[pdf_path] = md_text.split("-----")
+
         # Handle resume
         if resume:
             state = self.load_state()
@@ -2395,6 +2394,7 @@ Your output is the full content of the document with editing updates based on yo
                     topo=appended_topo,
                     graph=joined_graph,
                     execution_mode=execution_mode,
+                    pdf_pages_dict=pdf_pages_dict,
                 )
                 if self.document.use_tagging
                 else (None, None)
@@ -2422,6 +2422,7 @@ Your output is the full content of the document with editing updates based on yo
                 annotations=annotations,
                 pdf_annotations=pdf_annotations,
                 execution_mode=execution_mode,
+                pdf_pages_dict=pdf_pages_dict,
             )
             section_state["sections"] = sections_init
             section_state["_index"] = pidx
@@ -2481,6 +2482,7 @@ Your output is the full content of the document with editing updates based on yo
                         llm=llm_section_update,
                         previous_state=section_state["sections"],
                         pdf_path=pdf_path,
+                        pdf_pages=pdf_pages_dict[pdf_path],
                         pdf_annotations=pdf_annotations[pdf_path],
                     )
                     pidx += 1

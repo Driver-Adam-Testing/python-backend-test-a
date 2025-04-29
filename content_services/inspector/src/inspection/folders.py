@@ -166,9 +166,13 @@ def comprehend_folder_top_down(
     child_file_list = ""
     for k, v in child_single_sentence_descriptions.items():
         if k.kind == NodeKind.FILE:
-            child_file_list += f"- **{k.root_rel_path.name}**: {v}\n"
+            child_file_list += (
+                f"- **[{k.root_rel_path.name}]({k.root_rel_path})**: {v}\n"
+            )
         else:  # subfolder or root folder
-            child_folder_list += f"- **{k.root_rel_path.name}**: {v}\n"
+            child_folder_list += (
+                f"- **[{k.root_rel_path.name}]({k.root_rel_path})**: {v}\n"
+            )
     if child_folder_list:
         folder_prefix = "## Folders\n"
         child_folder_list_finalized = f"{folder_prefix}{child_folder_list}"
@@ -400,9 +404,11 @@ def comprehend_folder_top_down(
                 codebase_name,
                 data,
             )
+            single_sentence = single_sentence_future.result().replace("\x00", "")
+            single_paragraph = single_paragraph_future.result().replace("\x00", "")
             short_descriptions = {
-                "single_sentence": single_sentence_future.result(),
-                "single_paragraph": single_paragraph_future.result(),
+                "single_sentence": single_sentence,
+                "single_paragraph": single_paragraph,
             }
     else:
         single_sentence = single_sentence_fn(
@@ -417,11 +423,13 @@ def comprehend_folder_top_down(
             codebase_name=codebase_name,
             data=data,
         )
+        single_sentence = single_sentence.replace("\x00", "")
+        single_paragraph = single_paragraph.replace("\x00", "")
         short_descriptions = {
             "single_sentence": single_sentence,
             "single_paragraph": single_paragraph,
         }
-    long_description = completed_child_lists
+    long_description = completed_child_lists.replace("\x00", "")
 
     print(
         f"Short description for `{folder_name}` at `{node.root_rel_path}`:\n{short_descriptions['single_paragraph']}"

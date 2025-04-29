@@ -62,7 +62,6 @@ class ChatOpenAI:
         user_prompt: str,
         output_cfg: OutputConfig = OutputConfig.default(),
     ) -> str:
-        self.client = AsyncOpenAI(timeout=self.request_timeout)
         # TODO: relax when `gpt-4o` or similar defaults support JSON strict mode.
         if output_cfg.kind == OutputConfigKind.JSON_STRICT and self.model not in [
             "gpt-4o-2024-08-06",

@@ -17,9 +17,10 @@ boto3 = "^1.34.114"
 database = {path = "../../driver_db", develop = true}
 pydantic = "^2.8.2"
 pymupdf = "^1.25.5"
-pymupdf4llm = "^0.0.20"
+pymupdf4llm = "0.0.17"
 google-genai = "^1.9.0"
 shared = {path = "../../packages/shared", develop = true}
+aiolimiter = "^1.2.1"
 
 [build-system]
 requires = ["poetry-core"]

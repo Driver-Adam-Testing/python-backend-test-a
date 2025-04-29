@@ -33,7 +33,9 @@ agent_model_config = {
     "concurrency_limit": 36,
 }
 
-if os.environ["MODAL_ENVIRONMENT"] != "staging":
+if os.environ["MODAL_ENVIRONMENT"] != "staging" and not os.environ[
+    "MODAL_ENVIRONMENT"
+].startswith("dev-"):
     agent_model_config["proxy"] = modal.Proxy.from_name("pg-proxy")
 
 

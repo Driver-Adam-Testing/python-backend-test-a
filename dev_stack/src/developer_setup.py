@@ -9,6 +9,7 @@ from auth0_apps import (
     delete_auth0_app,
 )
 from config import settings
+from modal_scripts import build_modal_deploy_script
 from models import (
     ApiResourceConfig,
     AssetLambdaSecretMap,
@@ -643,10 +644,15 @@ See [setup_guide.md](state/out/setup_guide.md) for more details next steps.
                 f.write("\n```\n\n")
                 f.write("```bash\n")
                 f.write(
-                    f'chmod +x scripts/modal_deploy.sh && MODAL_TOKEN_ID="{settings.MODAL_TOKEN_ID}"  MODAL_TOKEN_SECRET="{settings.MODAL_TOKEN_SECRET}" scripts/modal_deploy.sh {modal_environment}'
+                    f"chmod +x state/out/modal_deploy.sh && state/out/modal_deploy.sh {modal_environment}"
                 )
                 f.write("\n```\n\n")
                 # print(config["resource"])
+                with open(output_path / "modal_deploy.sh", "w") as mdf:
+                    modal_deploy = build_modal_deploy_script(
+                        settings.MODAL_TOKEN_ID, settings.MODAL_TOKEN_SECRET
+                    )
+                    mdf.write(modal_deploy)
 
                 secrets = config["secrets"]
                 with open(output_path / "modal_secrets.sh", "w") as sf:

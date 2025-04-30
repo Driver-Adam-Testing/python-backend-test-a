@@ -3,10 +3,17 @@ from collections.abc import AsyncGenerator
 from typing import TYPE_CHECKING
 from uuid import UUID
 
+import modal
 from database.db import get_session
 from database.models_v2 import RuntimeLlmSession
 from pydantic import BaseModel
 from shared.v3 import LlmClient
+from shared.v3.interfaces.llm_stream_response import (
+    EndSessionStreamResponse,
+    LlmStreamResponse,
+    LlmStreamResponseKind,
+    StartSessionStreamResponse,
+)
 from shared.v3.utils.datasource import DataSource
 
 if TYPE_CHECKING:
@@ -48,12 +55,30 @@ class PipelineRequest(BaseModel, ABC):
     def from_dict(cls, data: dict) -> "PipelineRequest":
         return cls(**data)
 
-    @abstractmethod
     def run(self, client: LlmClient = None) -> "PipelineResponse":
-        pass
+        return self._run()
 
-    @abstractmethod
     async def stream(
         self, client: LlmClient = None
     ) -> AsyncGenerator["LlmStreamResponse", None]:
-        pass
+        yield StartSessionStreamResponse(
+            kind=LlmStreamResponseKind.START_SESSION,
+            llm_session_id=self.llm_session.id,
+            execution_call_id=modal.current_function_call_id(),
+        )
+        async for response in self._stream():
+            yield response
+        yield EndSessionStreamResponse(
+            kind=LlmStreamResponseKind.END_SESSION,
+            llm_session_id=self.llm_session.id,
+        )
+
+    @abstractmethod
+    def _run(self, client: LlmClient = None) -> "PipelineResponse":
+        raise NotImplementedError("This pipeline does not support this method")
+
+    @abstractmethod
+    async def _stream(
+        self, client: LlmClient = None
+    ) -> AsyncGenerator["LlmStreamResponse", None]:
+        raise NotImplementedError("This pipeline does not support this method")

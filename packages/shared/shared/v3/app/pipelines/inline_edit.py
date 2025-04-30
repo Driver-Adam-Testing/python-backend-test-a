@@ -1,6 +1,5 @@
 from collections.abc import AsyncGenerator
 
-import modal
 from shared.v3 import LlmClient, LlmMessageHistory
 from shared.v3.app.pipelines.abbreviate_page_content import (
     abbreviate_page_content,
@@ -20,10 +19,7 @@ from shared.v3.app.static.tools.hybrid_search import HybridSearchTool
 from shared.v3.globals.datasource_messages import DataSourceMessage
 from shared.v3.globals.global_messages import GlobalSystemMessage
 from shared.v3.interfaces.llm_stream_response import (
-    EndSessionStreamResponse,
     LlmStreamResponse,
-    LlmStreamResponseKind,
-    StartSessionStreamResponse,
 )
 
 
@@ -31,14 +27,14 @@ class InlineEditPipelineResponse(PipelineResponse):
     pass
 
 
-class InlineEditPipelineInput(PipelineRequest):
+class InlineEditPipelineRequest(PipelineRequest):
     user_prompt: str
     page_content_before_cursor: str
     page_content_after_cursor: str
-    selected_text: str
+    cursor_selection: str
 
-    def run(
-        self, client: LlmClient = LlmClient.o3_mini()
+    def _run(
+        self, client: LlmClient = LlmClient.gpt_4_1()
     ) -> InlineEditPipelineResponse:
         # TODO: can I make the meat of this one method?
         abbreviated_page_content = abbreviate_page_content(
@@ -60,7 +56,7 @@ class InlineEditPipelineInput(PipelineRequest):
                         user_prompt=self.user_prompt,
                         page_content_before_cursor=abbreviated_page_content.abbreviated_before,
                         page_content_after_cursor=abbreviated_page_content.abbreviated_after,
-                        selected_text=self.selected_text,
+                        selected_text=self.cursor_selection,
                     ),
                 ]
             ),
@@ -73,14 +69,9 @@ class InlineEditPipelineInput(PipelineRequest):
             references=list({ref for tool in called_tools for ref in tool.references}),
         )
 
-    async def stream(
+    async def _stream(
         self, client: LlmClient = LlmClient.o3_mini()
     ) -> AsyncGenerator[LlmStreamResponse, None]:
-        yield StartSessionStreamResponse(
-            kind=LlmStreamResponseKind.START_SESSION,
-            llm_session_id=self.llm_session.id,
-            execution_call_id=modal.current_function_call_id(),
-        )
         abbreviated_page_content = abbreviate_page_content(
             user_prompt=self.user_prompt,
             page_content_before_cursor=self.page_content_before_cursor,
@@ -99,7 +90,7 @@ class InlineEditPipelineInput(PipelineRequest):
                         user_prompt=self.user_prompt,
                         page_content_before_cursor=abbreviated_page_content.abbreviated_before,
                         page_content_after_cursor=abbreviated_page_content.abbreviated_after,
-                        selected_text=self.selected_text,
+                        selected_text=self.cursor_selection,
                     ),
                 ],
                 llm_session_id=self.llm_session.id,
@@ -109,7 +100,3 @@ class InlineEditPipelineInput(PipelineRequest):
             datasource=self.datasource,
         ):
             yield chunk
-        yield EndSessionStreamResponse(
-            kind=LlmStreamResponseKind.END_SESSION,
-            llm_session_id=self.llm_session.id,
-        )

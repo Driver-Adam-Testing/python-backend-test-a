@@ -23,17 +23,40 @@ secrets = [
 @app.function(image=image, secrets=secrets)
 async def inline_edit_stream(input: dict) -> AsyncGenerator[LlmStreamResponse, None]:
     from shared.v3.app.pipelines.inline_edit import (
-        InlineEditPipelineInput,
+        InlineEditPipelineRequest,
     )
 
-    parsed_input = InlineEditPipelineInput.from_dict(input)
+    parsed_input = InlineEditPipelineRequest.from_dict(input)
     async for chunk in parsed_input.stream():
         yield chunk
 
 
 @app.function(image=image, secrets=secrets)
 async def inline_edit_run(input: dict) -> AsyncGenerator[LlmStreamResponse, None]:
-    from shared.v3.app.pipelines.inline_edit import InlineEditPipelineInput
+    from shared.v3.app.pipelines.inline_edit import InlineEditPipelineRequest
 
-    parsed_input = InlineEditPipelineInput.from_dict(input)
+    parsed_input = InlineEditPipelineRequest.from_dict(input)
+    return parsed_input.run()
+
+
+@app.function(image=image, secrets=secrets)
+async def smart_instruction_stream(
+    input: dict,
+) -> AsyncGenerator[LlmStreamResponse, None]:
+    from shared.v3.app.pipelines.smart_instruction import (
+        SmartInstructionPipelineRequest,
+    )
+
+    parsed_input = SmartInstructionPipelineRequest.from_dict(input)
+    async for chunk in parsed_input.stream():
+        yield chunk
+
+
+@app.function(image=image, secrets=secrets)
+async def smart_instruction_run(input: dict) -> AsyncGenerator[LlmStreamResponse, None]:
+    from shared.v3.app.pipelines.smart_instruction import (
+        SmartInstructionPipelineRequest,
+    )
+
+    parsed_input = SmartInstructionPipelineRequest.from_dict(input)
     return parsed_input.run()

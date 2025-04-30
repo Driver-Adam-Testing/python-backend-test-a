@@ -23,9 +23,5 @@ class SmartInstructionInputMessage(LlmMessage):
             + CURSOR.wrap("", annotate_empty=True)
             + DOCUMENT_CONTENT_AFTER_CURSOR.wrap(page_content_after_cursor)
         )
-        content = (
-            f"The user has entered the following request:\n"
-            f"{USER_PROMPT.wrap(prompt)}\n"
-            f"{document_content}"
-        )
+        content = f"The user prompt for this smart instruction is:\n{USER_PROMPT.wrap(prompt)}\n\nThe document content is:\n{document_content}"
         return cls(content=content.strip())

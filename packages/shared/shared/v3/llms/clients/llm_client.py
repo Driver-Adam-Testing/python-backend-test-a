@@ -110,6 +110,18 @@ class LlmClient(ABC):
     def claude_haiku_3_5(cls) -> "LlmClient":
         return cls.from_config(LlmConfig.claude_haiku_3_5())
 
+    @classmethod
+    def gpt_4_1(cls) -> "LlmClient":
+        return cls.from_config(LlmConfig.gpt_4_1())
+
+    @classmethod
+    def gpt_4_1_mini(cls) -> "LlmClient":
+        return cls.from_config(LlmConfig.gpt_4_1_mini())
+
+    @classmethod
+    def o4_mini(cls) -> "LlmClient":
+        return cls.from_config(LlmConfig.o4_mini())
+
     @abstractmethod
     def _generate(
         self,

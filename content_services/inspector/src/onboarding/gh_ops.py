@@ -8,7 +8,6 @@ from uuid import UUID
 import httpx
 import jwt
 import requests
-from onboarding.onboard_utils import AccessTokenError, upload_to_s3_with_metadata
 from sqlalchemy.orm import selectinload
 from sqlmodel import Session, select
 
@@ -26,6 +25,8 @@ def generate_jwt() -> str:
 
 
 def fetch_app_access_token(installation_id: str) -> str:
+    from onboard_utils import AccessTokenError
+
     url = f"https://api.github.com/app/installations/{installation_id}/access_tokens"
     jwt = generate_jwt()
     with httpx.Client() as client:
@@ -111,6 +112,7 @@ def download_and_upload_repo(
         PrimaryAssetKind,
         VersionStatus,
     )
+    from onboarding.onboard_utils import upload_to_s3_with_metadata
     from sqlalchemy.exc import IntegrityError
 
     if not repo.get("commit"):
@@ -238,3 +240,21 @@ def download_and_upload_repo(
     print(f"Repository {repo['name']} uploaded successfully to {upload_key}.")
 
     return None
+
+
+def get_repo_clone_info_from_id(repo_id: str, github_token: str) -> tuple[str, str]:
+    headers = {
+        "Authorization": f"Bearer {github_token}",
+        "Accept": "application/vnd.github+json",
+    }
+
+    with httpx.Client() as client:
+        resp = client.get(
+            f"https://api.github.com/repositories/{repo_id}", headers=headers
+        )
+        resp.raise_for_status()
+        data = resp.json()
+
+    full_name = data["full_name"]  # e.g., "org/repo"
+    clone_url = f"https://x-access-token:{github_token}@github.com/{full_name}.git"
+    return clone_url, full_name

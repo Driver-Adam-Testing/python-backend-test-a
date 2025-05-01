@@ -29,6 +29,7 @@ services:
 ##      - NEW_API_USERNAME=localapi
 ##      - NEW_API_PASSWORD=localapi
   backend:
+    platform: linux/arm64
     image: "backend:latest"
     ports:
       - "4000:4000"

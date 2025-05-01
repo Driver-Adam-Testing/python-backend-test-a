@@ -298,10 +298,15 @@ class IrData(BaseModel, abc.ABC):
                 and self._reified_symbol.raw.symbol_kind == SymbolKind.CALLABLE
                 and self._reified_symbol.calls
             ):
+                seen_func_names = set()
                 for called_func in self._reified_symbol.calls:
                     kind_part = called_func.raw.symbol_kind.name.lower()
                     name_part = re.escape(called_func.raw.name)  # escape special chars
                     path_part = called_func.raw.file_path
+
+                    if name_part in seen_func_names:
+                        continue
+                    seen_func_names.add(name_part)
                     link = f"[`{called_func.raw.name}`]({path_part}#{kind_part}:{called_func.raw.name})"
 
                     rendered = re.sub(rf"`{name_part}`", link, rendered)

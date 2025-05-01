@@ -37,6 +37,7 @@ class ChatRequest(BaseModel):
     source_node_ids: list[UUID] | None = None
     page_node_id: UUID | None = None
     llm_session_id: UUID | None = None
+    relative_paths: list[str] | None = None
 
 
 def get_datasource(
@@ -44,15 +45,19 @@ def get_datasource(
     page_node_id: UUID | None,
     llm_session: RuntimeLlmSession | None,
     user: UserToken,
+    relative_paths: list[str] | None = None,
 ) -> DataSource:
     if source_node_ids:
         return DataSource.from_node_ids(source_node_ids, user.organization_id)
+    if relative_paths:
+        return DataSource.from_relative_paths(relative_paths, user.organization_id)
     if page_node_id:
         return DataSource.from_page_id(page_node_id, user.organization_id)
     if llm_session:
         return DataSource.from_node_ids(
             json.loads(llm_session.source_node_ids_str), user.organization_id
         )
+
     raise Exception("Please provide either a page_node_id or source_node_ids.")
 
 
@@ -89,7 +94,9 @@ async def create_streaming_post(
             message_history_id=chat_message_history_id
         )
 
-    datasource = get_datasource(source_node_ids, page_node_id, llm_session, user)
+    datasource = get_datasource(
+        source_node_ids, page_node_id, llm_session, user, payload.relative_paths
+    )
 
     if llm_session_id is None:
         llm_session = RuntimeLlmSession(
@@ -129,28 +136,3 @@ async def create_streaming_post(
         ),
         media_type="text/event-stream",
     )
-
-
-class HybridSearchRequest(BaseModel):
-    search_query: str
-    source_node_ids: list[UUID] | None = None
-    page_node_id: UUID | None = None
-    llm_session_id: UUID | None = None
-
-
-# @router.post("/hybrid-search")
-# async def hybrid_search(
-#     session: CurrentSession,
-#     user: UserToken,
-#     payload: HybridSearchRequest,
-# ) -> dict:
-#     datasource = get_datasource(
-#         payload.source_node_ids, payload.page_node_id, payload.llm_session_id, user
-#     )
-#     print(len(datasource.nodes))
-#     hybrid_search_tool = HybridSearchTool(
-#         search_query=payload.search_query,
-#         datasource=datasource,
-#     )
-#     hybrid_search_tool.execute(None, datasource)
-#     return {"results": [r.model_dump() for r in hybrid_search_tool.references]}

@@ -31,7 +31,10 @@ function_cfg = {"secrets": [modal.Secret.from_name("open-ai")], "image": image}
     **function_cfg,
 )
 def make_tech_doc(
-    node: LiteNode, source_code: str, codebase_name: str
+    node: LiteNode,
+    source_code: str,
+    codebase_name: str,
+    reified_symbols: dict | None,  # TODO: what is the correct type for reified_symbols?
 ) -> tuple[bool, dict, LiteNode]:
     from utils.models import ChatOpenAI
 
@@ -52,6 +55,7 @@ def make_tech_doc(
         chunk_overlap=CHUNK_OVERLAP,
         compression_loop_max_itr=COMPRESSION_LOOP_MAX_ITR,
         max_num_chunks=MAX_NUM_CHUNKS_FILE,
+        reified_symbols=reified_symbols,
         raise_hard_errors=raise_hard_errors,
     )
     print(f"Tech docs created for ({node})")

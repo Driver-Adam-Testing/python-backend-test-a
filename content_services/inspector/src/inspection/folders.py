@@ -166,9 +166,13 @@ def comprehend_folder_top_down(
     child_file_list = ""
     for k, v in child_single_sentence_descriptions.items():
         if k.kind == NodeKind.FILE:
-            child_file_list += f"- **{k.root_rel_path.name}**: {v}\n"
+            child_file_list += (
+                f"- **[{k.root_rel_path.name}]({k.root_rel_path})**: {v}\n"
+            )
         else:  # subfolder or root folder
-            child_folder_list += f"- **{k.root_rel_path.name}**: {v}\n"
+            child_folder_list += (
+                f"- **[{k.root_rel_path.name}]({k.root_rel_path})**: {v}\n"
+            )
     if child_folder_list:
         folder_prefix = "## Folders\n"
         child_folder_list_finalized = f"{folder_prefix}{child_folder_list}"

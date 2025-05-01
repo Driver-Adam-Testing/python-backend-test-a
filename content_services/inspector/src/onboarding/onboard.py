@@ -56,14 +56,13 @@ def handle_github_events(
     # primary assets from models_v2. This should be fixed by consolidating into a single models.py file
     from database.models_v1 import GithubAppInstallation  # noqa: F401
     from database.models_v2 import PrimaryAsset
-    from sqlalchemy.orm import selectinload
-    from sqlmodel import Session, select
-
     from onboarding.gh_ops import (
         download_and_upload_repo,
         fetch_app_access_token,
     )
     from onboarding.onboard_utils import AccessTokenError
+    from sqlalchemy.orm import selectinload
+    from sqlmodel import Session, select
 
     if installation_id is None and (repos_added or repos_pushed):
         raise ValueError(
@@ -174,11 +173,10 @@ def handle_gitlab_events(
     # primary assets from models_v2. This should be fixed by consolidating into a single models.py file
     from database.models_v1 import GithubAppInstallation  # noqa: F401
     from database.models_v2 import PrimaryAsset
-    from sqlalchemy.orm import selectinload
-    from sqlmodel import Session, select
-
     from onboarding import gitlab_ops
     from onboarding.onboard_utils import AccessTokenError
+    from sqlalchemy.orm import selectinload
+    from sqlmodel import Session, select
 
     if installation_id is None and (repos_added or repos_pushed):
         raise ValueError(
@@ -269,9 +267,8 @@ def connect_repos_for_installation(github_installation_id: str) -> None:
     import requests
     from database.db import engine
     from database.models_v1 import GithubAppInstallation
-    from sqlmodel import Session, select
-
     from onboarding.gh_ops import AccessTokenError, fetch_app_access_token
+    from sqlmodel import Session, select
 
     with Session(engine) as session:
         install = session.exec(
@@ -379,9 +376,8 @@ def connect_unconnected_repos() -> None:
     import requests
     from database.db import engine
     from database.models_v1 import GithubAppInstallation
-    from sqlmodel import Session, select
-
     from onboarding.gh_ops import AccessTokenError, fetch_app_access_token
+    from sqlmodel import Session, select
 
     with Session(engine) as session:
         gh_app_installs = session.exec(select(GithubAppInstallation)).all()
@@ -480,7 +476,7 @@ def connect_unconnected_repos() -> None:
 )
 def run_codebase_connection(
     presigned_url: str,
-    archive_name: str,
+    provisional_codebase_name: str,
     org_id: str,  # Not strictly necessary, but we can check that the version belongs to the org.
     version_id: str,
     provider: str = "manual",
@@ -501,10 +497,6 @@ def run_codebase_connection(
         Version,
     )
     from database.models_v2_enums import VersionStatus
-    from shared.usage.utils import bytes_to_sloc
-    from sqlalchemy.exc import IntegrityError
-    from sqlmodel import Session, select, update
-
     from onboarding.onboard_utils import (
         create_bucket_if_dne,
         download_file_from_presigned_url,
@@ -512,29 +504,33 @@ def run_codebase_connection(
         is_on_blacklist,
         load_driverignore,
         run_file_stats_and_reencode,
-        unpack_archive,
+        unpack_archive_to_finalized_path,
     )
+    from shared.usage.utils import bytes_to_sloc
+    from sqlalchemy.exc import IntegrityError
+    from sqlmodel import Session, select, update
 
-    download_dest = Path(archive_name)
+    download_dest = Path(provisional_codebase_name)
     download_file_from_presigned_url(presigned_url, download_dest)
 
-    print(f"Downloaded {archive_name} from S3")
+    print(f"Downloaded {provisional_codebase_name} from S3")
 
     if provider == "github":
-        override_codebase_name = archive_name.rsplit(".", 1)[0]
+        override_codebase_name = provisional_codebase_name
     elif provider == GitProviderKind.GITLAB_ENTERPRISE_SELF_MANAGED.value.lower():
+        # TODO: is this actually needed? Does self managed behave differently than enterprise?
         override_codebase_name = re.sub(
-            r"-[a-fA-F0-9]{40}-[a-fA-F0-9]{40}", "", archive_name
-        ).rsplit(".", 1)[0]
+            r"-[a-fA-F0-9]{40}-[a-fA-F0-9]{40}", "", provisional_codebase_name
+        )
     else:
         override_codebase_name = None
 
     with tempfile.TemporaryDirectory() as temp_dir:
         # Override so unpack from github doesn't have hash in name.
-        extracted_path = unpack_archive(
-            download_dest,
+        extracted_path = unpack_archive_to_finalized_path(
+            archive_path=download_dest,
+            extraction_root=Path(temp_dir),
             override_codebase_name=override_codebase_name,
-            extraction_path=temp_dir,
         )
         codebase_name = str(extracted_path.relative_to(temp_dir))
         print("Codebase name: ", codebase_name)
@@ -576,6 +572,7 @@ def run_codebase_connection(
 
         all_directories = []
         codebase_stats = {}
+        analyzable_bytes = 0
         for root, _, files in os.walk(extracted_path):
             all_directories.append(root)
             for filename in files:
@@ -586,11 +583,30 @@ def run_codebase_connection(
                     driverignore=driverignore,
                 )
                 codebase_stats[local_path] = file_stats
+                if (
+                    file_stats["is_analyzable"]
+                    and not file_stats["is_blacklisted"]
+                    and not file_stats.get("is_ignored", False)
+                ):
+                    analyzable_bytes += file_stats["size"]
+        if analyzable_bytes == 0:
+            # TODO: add status_reason to database when available
+            print(
+                f"Codebase {codebase_name} has no analyzable files. Setting status to connection failed."
+            )
+            with Session(engine) as session, session.begin():
+                update_stmt = (
+                    update(Version)
+                    .where(Version.id == version_id)
+                    .values(status=VersionStatus.CONNECTION_FAILED)
+                )
+                session.exec(update_stmt)
+            return None
 
         s3_resource = resource("s3", endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL"))
         s3_bucket = s3_resource.Bucket(org_id_bucket)
-        s3_bucket.upload_file(Path(archive_name), str(s3_dest))
-        print(f"Uploaded {archive_name} to {s3_dest}")
+        s3_bucket.upload_file(Path(provisional_codebase_name), str(s3_dest))
+        print(f"Uploaded {provisional_codebase_name} to {s3_dest}")
         with Session(engine) as session, session.begin():
             # Add directories source contents
             for directory in all_directories:

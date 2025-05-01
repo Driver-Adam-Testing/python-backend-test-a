@@ -243,6 +243,7 @@ class Backend(Construct):
             self,
             "BackendApi",
             protocol=aws_elasticloadbalancingv2.ApplicationProtocol.HTTPS,
+            ssl_policy=aws_elasticloadbalancingv2.SslPolicy.FIPS_TLS13_12_RES,
             platform_version=aws_ecs.FargatePlatformVersion.LATEST,
             # Github Actions runners only provide x86 - we'd have to go to self-hosted to deploy ARM currently
             # There is a limited beta, so support for ARM is coming

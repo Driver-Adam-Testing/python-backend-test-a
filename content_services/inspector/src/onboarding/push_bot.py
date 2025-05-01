@@ -5,6 +5,8 @@ import uuid
 from pathlib import Path
 from urllib.parse import urlparse
 
+import httpx
+
 
 def extract_values_from_presigned_url(url: str) -> dict:
     parsed = urlparse(url)
@@ -42,6 +44,64 @@ def run(
     return result
 
 
+def create_pull_request(
+    full_name: str, branch: str, access_token: str, version_id: str
+) -> None:
+    """Create a pull request for the driver docs changes."""
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Accept": "application/vnd.github+json",
+    }
+
+    # First check for existing PRs for this branch
+    with httpx.Client() as client:
+        # Get existing PRs
+        response = client.get(
+            f"https://api.github.com/repos/{full_name}/pulls",
+            headers=headers,
+            params={"state": "open", "head": f"{full_name.split('/')[0]}:{branch}"},
+        )
+        response.raise_for_status()
+        existing_prs = response.json()
+
+        if existing_prs:
+            # Update existing PR
+            pr_number = existing_prs[0]["number"]
+            update_response = client.patch(
+                f"https://api.github.com/repos/{full_name}/pulls/{pr_number}",
+                headers=headers,
+                json={
+                    "title": f"Update driver docs for version {version_id}",
+                    "body": f"Automated update of driver documentation for version {version_id}",
+                },
+            )
+            update_response.raise_for_status()
+            print(f"✅ Updated existing PR: {existing_prs[0]['html_url']}")
+            return
+
+        # Create new PR if none exists
+        pr_data = {
+            "title": f"Update driver docs for version {version_id}",
+            "body": f"Automated update of driver documentation for version {version_id}",
+            "head": branch,
+            "base": "main",  # Assuming main is the default branch
+        }
+
+        try:
+            response = client.post(
+                f"https://api.github.com/repos/{full_name}/pulls",
+                headers=headers,
+                json=pr_data,
+            )
+            response.raise_for_status()
+            print(f"✅ Created PR: {response.json()['html_url']}")
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 422:
+                print("⚠️ No changes to create PR for - branch is up to date with main")
+            else:
+                raise
+
+
 async def push_docs(presigned_url: str) -> None:
     import os
     import tempfile
@@ -68,7 +128,7 @@ async def push_docs(presigned_url: str) -> None:
         extracted_path = unpack_archive_to_finalized_path(
             archive_path=docs_temp_path, extraction_root=Path(temp_dir)
         )
-        branch = "driver_docs/v1"
+        branch = "driver_docs/v3"
         print(extracted_path)
         clone_url, full_name = get_repo_clone_info_from_id(repo_id, access_token)
         print(clone_url)
@@ -93,8 +153,11 @@ async def push_docs(presigned_url: str) -> None:
             return
 
         run(f'git commit -m "{COMMIT_MESSAGE}"', cwd=repo_dir)
-        run(f"git push {clone_url} {branch}", cwd=repo_dir)
+        run(f"git push --force {clone_url} {branch}", cwd=repo_dir)
         print(f"✅ Pushed `{target_dir}` to `{branch}`")
+
+        # Create a pull request after successful push
+        create_pull_request(full_name, branch, access_token, str(version.id))
 
 
 def sync_directory(src: str, dest: str) -> None:

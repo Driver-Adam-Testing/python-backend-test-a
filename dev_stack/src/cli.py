@@ -115,7 +115,7 @@ def generate_configs(name: str, output_dir: str) -> None:
 
     try:
         generate_developer_configs(name=name, output_dir=output_dir)
-        click.echo(f"✅ Successfully generated configs for developer: {name}")
+        click.echo(f"✅ Successfully regenerated configs for developer: {name}")
     except Exception as e:
         click.echo(f"❌ Error generating configs: {e!s}", err=True)
 

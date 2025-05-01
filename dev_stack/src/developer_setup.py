@@ -182,7 +182,7 @@ def setup_developer_resources(
         callback_url=f"{identifier}/git-provider/github/callback",
         request_oauth_on_installation=True,
         enable_device_flow=True,
-        setup_url=f"https://github.com/app/{developer.sanitized_full_name}-gh-app",
+        setup_url=f"https://github.com/apps/{developer.sanitized_full_name}-gh-app",
         redirect_on_update=True,
         webhook=GitHubAppWebhookConfig(
             webhook_url=f"{identifier}/git-provider/github/webhook",
@@ -355,6 +355,7 @@ npm install
                         "VITE_AUTH0_BASE_URL": web_app_domain.domain_url,
                         "VITE_AUTH0_CLIENT_ID": developer.auth0_webapp["client_id"],
                         "VITE_AUTH0_DOMAIN": "auth.dev.driverai.com",
+                        "VITE_GITHUB_APP_URL": developer.github_app.setup_url,
                     },
                 )
                 resource_configs[webapp_resource.resource_name] = (
@@ -368,9 +369,9 @@ npm install
                         "PROJECT_NAME": "DriverAIApp",
                         "ENVIRONMENT": "local",
                         "LOG_LEVEL": "info",
-                        "AWS_ACCESS_KEY_ID": settings.AWS_ACCESS_KEY_ID,
-                        "AWS_SECRET_ACCESS_KEY": settings.AWS_SECRET_ACCESS_KEY,
-                        "AWS_REGION": "us-east-1",
+                        # "AWS_ACCESS_KEY_ID": settings.AWS_ACCESS_KEY_ID,
+                        # "AWS_SECRET_ACCESS_KEY": settings.AWS_SECRET_ACCESS_KEY,
+                        # "AWS_REGION": "us-east-1",
                         "BUCKET_NAME": developer.s3_bucket_name,
                         "DROPZONE_BUCKET_NAME": developer.s3_bucket_name,
                         # "DATABASE_URL": "change this",
@@ -604,19 +605,24 @@ There are 5 AWS accounts available to you.
 
 ### Setup
 ```bash
-  python src/cli.py setup --name="{developer.full_name}" --email="{developer.email}" --setup-github
+  poetry run python src/cli.py setup --name="{developer.full_name}" --email="{developer.email}" --setup-github
 ```
 
 See [setup_guide.md](state/out/setup_guide.md) for more details next steps.
 
+### Regenerate Configs
+```bash
+  poetry run python src/cli.py generate-configs --name="{developer.full_name}"
+```
+
 ### Run Tunnels
 ```bash
-  python src/cli.py run-tunnels --name="{developer.full_name}" --ports="http:3000,http:4000,tcp:5434"
+  poetry run python src/cli.py run-tunnels --name="{developer.full_name}" --ports="http:3000,http:4000,tcp:5434"
 ```
 
 ### Teardown
 ```bash
-  python src/cli.py teardown --name="{developer.full_name}"
+  poetry run python src/cli.py teardown --name="{developer.full_name}"
 ```
 """
         f.write(intro_block)

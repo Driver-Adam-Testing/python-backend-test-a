@@ -4,9 +4,7 @@ from app.api.auth import ContentEditorPermission, UserToken
 from app.api.session import CurrentSession
 from app.core.logger import logger
 from app.schemas.upload_schema import (
-    PDFUploadResponse,
-    UploadCodebaseRequest,
-    UploadPDFRequest,
+    UploadRequest,
     UploadResponse,
 )
 from app.services.upload_service import UploadService
@@ -15,28 +13,16 @@ router = APIRouter()
 
 
 @router.post(
-    "/codebase",
-    summary="Create codebase upload URL",
+    "/",
+    summary="Create upload URL",
     dependencies=[ContentEditorPermission],
 )
-def create_codebase_and_upload_url(
+def create_upload_url(
     session: CurrentSession,
     user: UserToken,
-    request: UploadCodebaseRequest,
+    request: UploadRequest,
 ) -> UploadResponse:
-    """Upload a codebase."""
-    logger.info(f"upload_codebase called with request: {request}")
+    """Upload a zip or pdf."""
+    logger.info(f"create_upload_url called with request: {request}")
     upload_service = UploadService(session)
-    return upload_service.create_codebase_and_upload_url(user, request)
-
-
-@router.post("/pdf", summary="Upload a pdf", dependencies=[ContentEditorPermission])
-def upload_pdf(
-    session: CurrentSession,
-    user: UserToken,
-    request: UploadPDFRequest,
-) -> PDFUploadResponse:
-    """Upload a codebase."""
-    logger.info(f"upload_codebase called with request: {request}")
-    upload_service = UploadService(session)
-    return upload_service.upload_pdf(user, request)
+    return upload_service.create_asset_version_and_upload_url(user, request)

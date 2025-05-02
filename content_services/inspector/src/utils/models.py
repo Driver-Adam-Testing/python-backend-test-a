@@ -41,7 +41,7 @@ class ChatOpenAI:
     request_timeout: int
     client: OpenAI = field(init=False)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.client = OpenAI(timeout=self.request_timeout)
 
     @retry_with_exponential_backoff(
@@ -60,7 +60,7 @@ class ChatOpenAI:
         system_prompt: str,
         user_prompt: str,
         output_cfg: OutputConfig = OutputConfig.default(),
-    ):
+    ) -> str:
         # TODO: relax when `gpt-4o` or similar defaults support JSON strict mode.
         if output_cfg.kind == OutputConfigKind.JSON_STRICT and self.model not in [
             "gpt-4o-2024-08-06",
@@ -99,4 +99,4 @@ class ChatOpenAI:
                     },
                 ],
             )
-        return response.choices[0].message.content
+        return response.choices[0].message.content.replace("\x00", "")

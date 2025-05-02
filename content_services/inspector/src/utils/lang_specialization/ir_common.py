@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import abc
 import concurrent.futures
+import re
+from collections import defaultdict
 from math import ceil
 from typing import Self
 
@@ -10,7 +12,9 @@ from pydantic import BaseModel, PrivateAttr
 from utils.lang_specialization.symbol_common import (
     RawSymbolCollection,
     RawSymbolData,
+    ReifiedSymbol,
     ScopeRelation,
+    SymbolKind,
 )
 from utils.models import ChatOpenAI, OutputConfig, OutputConfigKind
 from utils.threadpool import FastShutdownThreadPoolExecutor
@@ -179,6 +183,8 @@ class IrData(BaseModel, abc.ABC):
     # Support for children and how they are presented are now defined by _supported_child_ordering and
     # _child_to_ir and _child_to_field_name, rather than as explicit fields here.
 
+    _reified_symbol: ReifiedSymbol | None = PrivateAttr(default=None)
+
     @classmethod
     @abc.abstractmethod
     def system_prompt(cls) -> str:
@@ -234,6 +240,11 @@ class IrData(BaseModel, abc.ABC):
                 # TODO: do something with this - switch to default_instance
             cls_instance = cls.parse_raw(content_raw)
 
+        if symbol.reified_symbol is not None:
+            cls_instance._reified_symbol = (
+                symbol.reified_symbol
+            )  # So we can render this info later
+
         if len(symbol.children) > 0:
             workers = compute_num_workers(len(symbol.children))
             futures = {}
@@ -274,13 +285,57 @@ class IrData(BaseModel, abc.ABC):
 
         # doesn't handle children, since children is a private attribute
         for label_name, label_content in self:
-            if isinstance(label_content, MdRenderable):
-                output += label_content.render_markdown(label_name)
-            else:
+            if not isinstance(label_content, MdRenderable):
                 raise ValueError(
-                    f"Unsupported field content type for {label_name}: {type(label_content)}. Add a MdRenderable class to render this content."
+                    f"Unsupported field content type for {label_name}: {type(label_content)}. "
+                    f"Add a MdRenderable class to render this content."
                 )
 
+            rendered = label_content.render_markdown(label_name)
+
+            if (
+                self._reified_symbol
+                and self._reified_symbol.raw.symbol_kind == SymbolKind.CALLABLE
+                and self._reified_symbol.calls
+            ):
+                seen_func_names = set()
+                for called_func in self._reified_symbol.calls:
+                    kind_part = called_func.raw.symbol_kind.name.lower()
+                    name_part = re.escape(called_func.raw.name)  # escape special chars
+                    path_part = called_func.raw.file_path
+
+                    if name_part in seen_func_names:
+                        continue
+                    seen_func_names.add(name_part)
+                    link = f"[`{called_func.raw.name}`]({path_part}#{kind_part}:{called_func.raw.name})"
+
+                    rendered = re.sub(rf"`{name_part}`", link, rendered)
+
+            output += rendered
+        if self._reified_symbol is not None:
+            sym = self._reified_symbol
+            if sym.raw.symbol_kind == SymbolKind.CALLABLE and sym.calls:
+                output += "- **Functions called**:\n"
+                seen_name_parts = defaultdict(list)
+                for called_func in self._reified_symbol.calls:
+                    name_part = called_func.raw.name
+                    seen_name_parts[name_part].append(called_func)
+                for name_part, calls in seen_name_parts.items():
+                    kind_part = calls[0].raw.symbol_kind.name.lower()
+                    path_part = calls[0].raw.file_path
+
+                    output += (
+                        f"    - [`{name_part}`]({path_part}#{kind_part}:{name_part})\n"
+                    )
+            # if sym.raw.symbol_kind == SymbolKind.CALLABLE and sym.usages:
+            #     output += "- **Usages of this function**:\n"
+            #     for usage in self._reified_symbol.usages:
+            #         path_part = usage.raw.file_path
+            #         file_name = usage.raw.file_path.name
+            #         start_line = usage.raw.start_line
+            #         # end_line = usage.raw.end_line
+
+            #         output += f"    - [{file_name}]({path_part}) (line {start_line})\n"
         # Render child data
         child_dictionary = {
             label_name: "" for label_name in self._supported_child_ordering
@@ -336,12 +391,13 @@ class IrCollection(BaseModel, abc.ABC):
         with FastShutdownThreadPoolExecutor(max_workers=workers) as executor:
             for _, s in symbols_list.data.items():
                 if isinstance(s, list):
-                    for item in s:
-                        if item.name not in symbols_dict:
-                            symbols_dict[item.name] = []
-                        futures[executor.submit(ir_data.from_llm, llm_to_use, item)] = (
-                            item.name
-                        )
+                    for raw_sym_data in s:
+                        if raw_sym_data.name not in symbols_dict:
+                            symbols_dict[raw_sym_data.name] = []
+                            # can reattach raw symbol info to use downstream when rendering MD.
+                        futures[
+                            executor.submit(ir_data.from_llm, llm_to_use, raw_sym_data)
+                        ] = raw_sym_data.name
                 elif isinstance(s, RawSymbolData):
                     if s.name not in symbols_dict:
                         symbols_dict[s.name] = []
@@ -356,7 +412,10 @@ class IrCollection(BaseModel, abc.ABC):
                 if res is not None:
                     print(f"Processed {idx}/{len(futures)} symbols")
                     symbols_dict[futures[future]].append(res)
-        return cls(data=symbols_dict)
+
+        return cls(
+            data=symbols_dict
+        )  # This is just the LLM produced content, without the raw symbol info.
 
     @classmethod
     @abc.abstractmethod
@@ -371,7 +430,14 @@ class IrCollection(BaseModel, abc.ABC):
         output = ""
         for k, v in self.data.items():
             for item in v:
-                output += f"\n---\n### {k}\n"
+                if item._reified_symbol is not None:
+                    kind_part = item._reified_symbol.raw.symbol_kind.name.lower()
+                    name_part = item._reified_symbol.raw.name
+                    id_comment = f"<!-- {{{{#{kind_part}:{name_part}}}}} -->"
+                else:
+                    id_comment = ""
+
+                output += f"\n---\n### {k} {id_comment}\n"
                 output += item.render_markdown()
 
         return output
@@ -414,6 +480,7 @@ class FnData(IrData, abc.ABC):
     inputs: ListedBacktickNameRawContentWithNone
     control_flow: ListedRawContentWithNone
     output: FieldNameWithBulletedContent
+    # TODO can add method to take _symbol_info
 
     @classmethod
     def default_instance(cls) -> Self:

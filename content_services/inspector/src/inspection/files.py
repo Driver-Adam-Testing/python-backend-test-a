@@ -10,7 +10,11 @@ from utils.dag import LiteNode
 from utils.io import (
     get_prompt_template,
 )
-from utils.lang_specialization.symbol_common import Lang, disambiguate_header
+from utils.lang_specialization.symbol_common import (
+    Lang,
+    ReifiedSymbol,
+    disambiguate_header,
+)
 from utils.models import ChatOpenAI
 from utils.templates import Template
 
@@ -406,6 +410,7 @@ def comprehend_file_top_down(
     chunk_overlap: int,
     compression_loop_max_itr: int,
     max_num_chunks: int,
+    reified_symbols: None | list[ReifiedSymbol],
     raise_hard_errors: bool = True,
 ) -> tuple[bool, dict[str, Any]]:
     from shared.chunking.text_splitter import split_text
@@ -446,6 +451,7 @@ def comprehend_file_top_down(
                         llm=llm,
                         root_rel_path=node.root_rel_path,
                         code=source_code,
+                        reified_symbols=reified_symbols,
                         code_chunks=chunk_texts,
                         max_num_chunks_to_use=max_num_chunks,
                     )
@@ -494,6 +500,7 @@ def comprehend_file_top_down(
                         llm=llm,
                         root_rel_path=node.root_rel_path,
                         code=source_code,
+                        reified_symbols=reified_symbols,
                         code_chunks=chunk_texts,
                         max_num_chunks_to_use=max_num_chunks,
                     )
@@ -571,6 +578,7 @@ def comprehend_file_top_down(
                 llm=llm,
                 root_rel_path=node.root_rel_path,
                 code=source_code,
+                reified_symbols=reified_symbols,
                 max_num_chunks_to_use=max_num_chunks,
             )
             chunk_detailed_descriptions = [file_description_long]
@@ -602,6 +610,13 @@ def comprehend_file_top_down(
             )
             return success, results
 
+    file_description_single_sentence = file_description_single_sentence.replace(
+        "\x00", ""
+    )
+    file_description_single_paragraph = file_description_single_paragraph.replace(
+        "\x00", ""
+    )
+    file_description_long = file_description_long.replace("\x00", "")
     short_descriptions = {
         "single_sentence": file_description_single_sentence,
         "single_paragraph": file_description_single_paragraph,

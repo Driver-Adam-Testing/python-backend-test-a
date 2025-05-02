@@ -1,5 +1,7 @@
 import os
 import uuid
+from math import ceil
+from typing import Any
 
 import modal
 from autodocs_prototype import (
@@ -9,6 +11,7 @@ from autodocs_prototype import (
     FullyQualifiedDriverPathCode,
     FullyQualifiedDriverPathPdf,
     Scope,
+    get_autodoc_elapsed_time,
     update_autodocs_status,
 )
 
@@ -29,18 +32,24 @@ image = inspection_image = (
             "pydantic>=2.8.2",
             "tiktoken",
             "/shared_pkg",
-            "pymupdf4llm",
+            "pymupdf4llm==0.0.17",
             "google-genai",
+            "aiolimiter",
         ]
     )
     .add_local_dir(
         local_path="../../driver_db/certs", remote_path="/root/data/", copy=True
     )
     .add_local_file(
-        "src/adi_driver_readme.toml",
+        "src/configs/adi_driver_readme.toml",
         "/autodocs_configs/adi_driver_page.toml",
         copy=True,
     )  # These shouldn't require the copy, but seems to be conflicting with the Proxy
+    .add_local_file(
+        "src/configs/architecture_modal.toml",
+        "/autodocs_configs/architecture_modal.toml",
+        copy=True,
+    )
     .add_local_python_source(
         "autodocs_prototype", "database", "shared", "utils", copy=True
     )
@@ -64,13 +73,15 @@ app = modal.App("autodocs")
     region="us-east",
     max_containers=5,
 )
-async def run_adi_driver(
+async def run_autodoc(
     page_node_id: uuid.UUID,
+    config_kind: Any,  # noqa: ANN401 #TODO: the actual type is a deferred import here, not sure how to resolve?
 ) -> None:
     from database.db import get_session
     from database.models_v1 import DerivedContent, DocumentSource
     from database.models_v2 import Node, Version
     from database.models_v2_enums import (
+        AutoDocConfigKind,
         AutoDocStatusMessageKind,
         ContentKind,
         PrimaryAssetKind,
@@ -118,7 +129,15 @@ async def run_adi_driver(
                     )
                     scope.pdfs.append(pdf_cfg)
 
-        config = AutoDocCfg.from_file("/autodocs_configs/adi_driver_page.toml")
+        match config_kind:
+            case AutoDocConfigKind.ADI_DRIVER:
+                config = AutoDocCfg.from_file("/autodocs_configs/adi_driver_page.toml")
+            case AutoDocConfigKind.ARCHITECTURE:
+                config = AutoDocCfg.from_file(
+                    "/autodocs_configs/architecture_modal.toml"
+                )
+            case _:
+                raise ValueError(f"Unsupported config kind: {config_kind}")
         config.scope = scope
         print(config.scope)
 
@@ -128,6 +147,14 @@ async def run_adi_driver(
         doc = await init_state.generate(
             execution_mode=ExecutionMode.MODAL, page_id=str(page_node_id)
         )
+        elapsed_time_s = await get_autodoc_elapsed_time(
+            page_id=str(page_node_id),
+        )
+        elapsed_time_min = ceil(elapsed_time_s / 60)
+        if elapsed_time_min == 1:
+            doc += f" in {elapsed_time_min} minute"
+        else:
+            doc += f" in {elapsed_time_min} minutes"
         await update_autodocs_status(
             page_id=str(page_node_id),
             status_kind=AutoDocStatusMessageKind.GENERATION_COMPLETE,
@@ -172,4 +199,8 @@ async def run_adi_driver(
 def main(
     page_node_id: str,
 ) -> None:
-    run_adi_driver.remote(page_node_id=page_node_id)
+    from database.models_v2_enums import AutoDocConfigKind
+
+    run_autodoc.remote(
+        page_node_id=page_node_id, config_kind=AutoDocConfigKind.ADI_DRIVER
+    )

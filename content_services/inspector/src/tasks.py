@@ -1,6 +1,8 @@
 import asyncio
+import concurrent.futures
 import uuid
-from typing import Union
+from pathlib import Path
+from typing import Optional, Self, Union
 
 from database.models_v1 import (
     ChunkAndEmbedding,
@@ -13,11 +15,11 @@ from modal_funcs import (
     make_tech_doc,
     make_toplevel_tech_docs,
 )
-from openai import OpenAIError
 from sqlmodel import delete, select
 from utils.dag import LiteNode
 from utils.db import get_source_code_derived_content
-from utils.task import Task, TaskResult, TaskResultKind
+from utils.symbol_table import build_c_project_index
+from utils.task import SerializationMethod, Task, TaskResult
 
 TechDocsTask = Union["FileTechDocTask", "FolderTechDocTask", "TopLevelDocsTask"]
 
@@ -55,13 +57,11 @@ class FolderTechDocTask(Task):
 
     async def run_implementation(
         self, dependent_results: dict[TechDocsTask, TaskResult]
-    ) -> dict[str, any]:
+    ) -> TaskResult:
         # Here, we know we have results for all the child nodes, so processing can commence.
         # We only want to use the results that were successful to prevent folder docs failures due to files that failed to process
         child_nodes_to_docs = {
-            task.node: dr.result["docs"]
-            for task, dr in dependent_results.items()
-            if dr.state == TaskResultKind.SUCCESS
+            task.node: dr.data["docs"] for task, dr in dependent_results.items()
         }
         async with folder_tech_docs_sem:
             docs = await make_folder_tech_doc.remote.aio(
@@ -69,7 +69,7 @@ class FolderTechDocTask(Task):
                 node=self.node,
                 child_nodes_to_docs=child_nodes_to_docs,
             )
-        return {"docs": docs}
+        return TaskResult(data={"docs": docs}, serialization=SerializationMethod.JSON)
 
     async def post_run_io(
         self,
@@ -79,7 +79,7 @@ class FolderTechDocTask(Task):
         from database.db import async_engine
         from sqlmodel.ext.asyncio.session import AsyncSession
 
-        docs = task_result.result["docs"]
+        docs = task_result.data["docs"]
 
         async with database_sem:
             # Short Single Sentence
@@ -129,13 +129,8 @@ class FolderTechDocTask(Task):
                 for record in dc_records:
                     await session.refresh(record)
                     content_ids.append(record.id)
-                content_ids = [
-                    str(cid) for cid in content_ids
-                ]  # Must be json serializable... TODO
+                content_ids = [str(cid) for cid in content_ids]
         return {"content_ids": content_ids}
-
-    def recoverable_errors(self) -> set[type[Exception]]:
-        return {OpenAIError}
 
 
 class FileTechDocTask(Task):
@@ -146,29 +141,49 @@ class FileTechDocTask(Task):
         node: LiteNode,
         task_name: str,
         db_node_id: uuid.UUID,
+        symbol_table_task: Optional["CSymbolTableTask"],
     ) -> None:
         self.codebase_name = codebase_name
         self.source_code = source_code
         self.db_node_id = db_node_id
+        self.symbol_table_task = symbol_table_task
         super().__init__(
             task_name=task_name,
             node=node,
+            dependencies=[symbol_table_task] if symbol_table_task else [],
         )
 
     async def run_implementation(
         self, dependent_results: dict["Task", TaskResult]
-    ) -> dict[str, any]:
+    ) -> TaskResult:
+        if self.symbol_table_task:
+            task_result_data = dependent_results.get(self.symbol_table_task).data
+            # TODO: if the symbol_table_task is here, task_result_data SHOULD be not None (maybe an empty list of symbols though).
+            # Should we assert and fail out inspector, or continue?
+            if task_result_data is not None:
+                reified_symbols = task_result_data.file_to_symbols.get(
+                    self.node.root_rel_path
+                )
+            else:
+                reified_symbols = None
+        else:
+            reified_symbols = None
+
         async with tech_docs_sem:
             success, docs, node = await make_tech_doc.remote.aio(
                 node=self.node,
                 source_code=self.source_code,
                 codebase_name=self.codebase_name,
+                reified_symbols=reified_symbols,
             )
 
-        return {
-            "success": success,
-            "docs": docs,
-        }
+        return TaskResult(
+            data={
+                "success": success,
+                "docs": docs,
+            },
+            serialization=SerializationMethod.JSON,
+        )
 
     async def post_run_io(
         self,
@@ -178,7 +193,7 @@ class FileTechDocTask(Task):
         from database.db import async_engine
         from sqlmodel.ext.asyncio.session import AsyncSession
 
-        docs = task_result.result["docs"]
+        docs = task_result.data["docs"]
         async with database_sem:
             # Short Single Sentence
             short_sent_dc = DerivedContent(
@@ -242,13 +257,8 @@ class FileTechDocTask(Task):
                 for record in dc_records:
                     await session.refresh(record)
                     content_ids.append(record.id)
-                content_ids = [
-                    str(cid) for cid in content_ids
-                ]  # Make json serializable for result writer by converting to string... TODO
+                content_ids = [str(cid) for cid in content_ids]
         return {"content_ids": content_ids}
-
-    def recoverable_errors(self) -> set[type[Exception]]:
-        return {OpenAIError}
 
 
 class SymbolsTask(Task):
@@ -271,12 +281,12 @@ class SymbolsTask(Task):
 
     async def run_implementation(
         self, dependent_results: dict["Task", TaskResult]
-    ) -> dict[str, any]:
+    ) -> TaskResult:
         tech_docs_result = dependent_results[self.tech_docs_task]
-        file_summary = tech_docs_result.result["docs"]["short"]["single_paragraph"]
+        file_summary = tech_docs_result.data["docs"]["short"]["single_paragraph"]
         symbol_count_limit = 500
 
-        if tech_docs_result.result["success"] is False:
+        if tech_docs_result.data["success"] is False:
             symbols = []
         else:
             async with symbols_sem:
@@ -287,7 +297,9 @@ class SymbolsTask(Task):
                     symbol_count_limit=symbol_count_limit,
                 )
 
-        return {"symbols": symbols}
+        return TaskResult(
+            data={"symbols": symbols}, serialization=SerializationMethod.JSON
+        )
 
     async def post_run_io(
         self,
@@ -298,7 +310,7 @@ class SymbolsTask(Task):
         from sqlmodel.ext.asyncio.session import AsyncSession
 
         session_chunk_size = 25
-        symbols = task_result.result["symbols"]
+        symbols = task_result.data["symbols"]
 
         async with database_sem:
             symbol_dcs = []
@@ -330,13 +342,8 @@ class SymbolsTask(Task):
                 for record in symbol_dcs:
                     await session.refresh(record)
                     content_ids.append(record.id)
-                content_ids = [
-                    str(cid) for cid in content_ids
-                ]  # Must be json serializable... TODO
+                content_ids = [str(cid) for cid in content_ids]
         return {"content_ids": content_ids}
-
-    def recoverable_errors(self) -> set[type[Exception]]:
-        return set()
 
 
 class TopLevelDocsTask(Task):
@@ -357,27 +364,25 @@ class TopLevelDocsTask(Task):
 
     async def run_implementation(
         self, dependent_results: dict["Task", TaskResult]
-    ) -> dict[str, any]:
+    ) -> TaskResult:
         # We put this data into the format expected by the top level task.
         # TODO: could this get too big to send over the container wire? The current limit of modal is 100MB
         children_nodes_to_docs = {
-            task.node: dr.result["docs"]
-            for task, dr in dependent_results.items()
-            if dr.state == TaskResultKind.SUCCESS
+            task.node: dr.data["docs"] for task, dr in dependent_results.items()
         }
         docs = await make_toplevel_tech_docs.remote.aio(
             codebase_name=self.codebase_name,
             nodes_to_docs=children_nodes_to_docs,
         )
 
-        return {"docs": docs}
+        return TaskResult(data={"docs": docs}, serialization=SerializationMethod.JSON)
 
     async def post_run_io(
         self,
         task_result: TaskResult,
         dependent_io_results: dict["Task", dict[str, any]],
     ) -> dict[str, any]:
-        docs = task_result.result["docs"]
+        docs = task_result.data["docs"]
 
         async with database_sem:
             # TODO: add types for top level sentence/paragraph/etc.
@@ -442,13 +447,8 @@ class TopLevelDocsTask(Task):
                 for record in dc_contents:
                     await session.refresh(record)
                     content_ids.append(record.id)
-                content_ids = [
-                    str(cid) for cid in content_ids
-                ]  # Must be json serializable... TODO
+                content_ids = [str(cid) for cid in content_ids]
         return {"content_ids": content_ids}
-
-    def recoverable_errors(self) -> set[type[Exception]]:
-        return {OpenAIError}
 
 
 class EmbeddingTask(Task):
@@ -480,7 +480,7 @@ class EmbeddingTask(Task):
     async def run_implementation(
         self, dependent_results: dict["Task", TaskResult]
     ) -> dict[str, any]:
-        return {}
+        return TaskResult(data={}, serialization=SerializationMethod.JSON)
 
     async def post_run_io(
         self,
@@ -507,6 +507,8 @@ class EmbeddingTask(Task):
         # TODO: type names are just strings now
 
         for task, dr in dependent_io_results.items():
+            if isinstance(task, CSymbolTableTask):
+                continue
             content_ids_to_embed = [
                 uuid.UUID(uid) for uid in dr["content_ids"]
             ]  # TODO may not be needed
@@ -616,5 +618,52 @@ class EmbeddingTask(Task):
             )
         return chunks
 
-    def recoverable_errors(self) -> set[type[Exception]]:
-        return {OpenAIError}
+
+class CSymbolTableTask(Task):
+    def __init__(
+        self,
+        root_node: LiteNode,
+        task_name: str,
+        codebase_name: str,
+        codebase_root: Path,
+        nodes_relative_paths: list[Path],
+    ) -> None:
+        self.codebase_name = codebase_name
+        self.codebase_root = codebase_root
+        self.c_and_h_files = {
+            codebase_root / rel_path
+            for rel_path in nodes_relative_paths
+            if rel_path.suffix in {".c", ".h"}
+        }
+        self.has_c_files = any(p.suffix == ".c" for p in self.c_and_h_files)
+        super().__init__(
+            task_name=task_name,
+            node=root_node,
+        )
+
+    async def run_implementation(
+        self, dependent_results: dict[Task, TaskResult]
+    ) -> TaskResult:
+        if self.has_c_files:
+            loop = asyncio.get_running_loop()
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                result = await loop.run_in_executor(
+                    pool,
+                    build_c_project_index,
+                    self.c_and_h_files,
+                    self.codebase_root / self.codebase_name,
+                )
+            return TaskResult(data=result, serialization=SerializationMethod.PICKLE)
+        return TaskResult(data=None, serialization=SerializationMethod.PICKLE)
+
+    async def post_run_io(
+        self,
+        task_result: TaskResult,
+        dependent_io_results: dict["Task", dict[str, any]],
+    ) -> dict[str, any]:
+        return {}
+
+    def self_or_none(self, absolute_path: Path) -> Self | None:
+        if absolute_path in self.c_and_h_files and self.has_c_files:
+            return self
+        return None

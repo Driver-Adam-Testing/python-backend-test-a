@@ -4,6 +4,7 @@ import modal
 from database.models_v1 import DocumentSource
 from database.models_v2 import AutoDocStatusHistory, Node, PrimaryAsset, Version
 from database.models_v2_enums import (
+    AutoDocConfigKind,
     AutoDocStatusMessageKind,
     PrimaryAssetKind,
     VersionStatus,
@@ -23,6 +24,11 @@ router = APIRouter()
 
 
 class AutoDocRequest(BaseModel):
+    page_id: UUID
+    config_kind: AutoDocConfigKind
+
+
+class AutoDocCancelRequest(BaseModel):
     page_id: UUID
 
 
@@ -73,36 +79,52 @@ def run_autodoc(
             detail="Autodoc is already generating for this page",
         )
 
-    # TODO: this check is a temporary guardrail while ADI is using this just for drivers
-    code_node_count = 0
-    for document_source in document_sources:
-        if (
-            document_source.source_node.version.primary_asset.kind
-            == PrimaryAssetKind.CODEBASE
-        ):
-            code_node_count += 1
-        if (
-            (
-                document_source.source_node.version.primary_asset.kind
-                == PrimaryAssetKind.CODEBASE
-            )
-            and document_source.source_node.depth <= 1
-        ) or (code_node_count >= 4):
+    match input.config_kind:
+        case AutoDocConfigKind.ADI_DRIVER:
+            # TODO: this check is a temporary guardrail while ADI is using this just for drivers
+            # TODO: We could do an org check here, but it gets messy with dev/staging/prod.
+            # This is low risk to be hit by other organizations though, and there is no data leakage concern here since
+            # no-os is an open source repo.
+            code_node_count = 0
+            for document_source in document_sources:
+                if (
+                    document_source.source_node.version.primary_asset.kind
+                    == PrimaryAssetKind.CODEBASE
+                ):
+                    code_node_count += 1
+                if (
+                    (
+                        document_source.source_node.version.primary_asset.kind
+                        == PrimaryAssetKind.CODEBASE
+                    )
+                    and document_source.source_node.depth <= 1
+                ) or (code_node_count >= 4):
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Tune sources to only include at most a single driver and single project subfolder",
+                    )
+
+        case AutoDocConfigKind.ARCHITECTURE:
+            # TODO: guardrail here?
+            pass
+        case _:
             raise HTTPException(
                 status_code=400,
-                detail="Tune sources to only include at most a single driver and single project subfolder",
+                detail="Invalid config",
             )
+    run_autodoc = modal.Function.lookup(
+        "autodocs",
+        "run_autodoc",
+        environment_name=settings.MODAL_ENVIRONMENT,
+    )
 
     node.version.status = VersionStatus.GENERATING
     session.add(node.version)
 
-    run_autodoc = modal.Function.lookup(
-        "autodocs",
-        "run_adi_driver",
-        environment_name=settings.MODAL_ENVIRONMENT,
+    call = run_autodoc.spawn(
+        page_node_id=str(input.page_id),
+        config_kind=input.config_kind,
     )
-
-    call = run_autodoc.spawn(page_node_id=str(input.page_id))
     autodoc_status = AutoDocStatusHistory(
         page_node_id=input.page_id,
         status_kind=AutoDocStatusMessageKind.RETRIEVING_SOURCES,
@@ -142,7 +164,7 @@ def get_autodoc_current_status(
 def cancel(
     user: UserToken,
     session: CurrentSession,
-    input: AutoDocRequest,
+    input: AutoDocCancelRequest,
 ) -> AutoDocCancelResponse:
     node = session.exec(
         select(Node)

@@ -76,13 +76,18 @@ def generate_codebase_metadata(
     repo_id: str | int,
     provider: str,
     version_id: str | UUID,
+    asset_name: str,
 ) -> dict:
+    from database.models_v2_enums import PrimaryAssetKind
+
     return {
         "unhashed_organization_id": org_id,
-        "full_repo_name": full_repo_name,
+        "full_repo_name": full_repo_name,  # NOTE: just used for debugging
         "provider": provider,
         "version_id": str(version_id),
-        "repository_id": str(repo_id),
+        "repository_id": str(repo_id),  # NOTE: just used for debugging
+        "asset_name": asset_name,
+        "asset_kind": PrimaryAssetKind.CODEBASE,
     }
 
 
@@ -132,6 +137,7 @@ def download_and_upload_repo(
                         f"Failed to find primary asset for {repo} for org: {org_id}, unable to process push event, unable to process push event"
                     )
                     return repo
+                primary_asset_id = primary_asset.id
                 if all(
                     v.status == VersionStatus.CONNECTED for v in primary_asset.versions
                 ):
@@ -191,6 +197,7 @@ def download_and_upload_repo(
                     repository_id=repo["id"],
                 )
                 session.add(primary_asset)
+                primary_asset_id = primary_asset.id
 
                 version = Version(
                     primary_asset_id=primary_asset.id,
@@ -209,19 +216,24 @@ def download_and_upload_repo(
         )
         return repo
 
+    # TODO: update this metadata for latest updates to onboarding logic
     metadata = generate_codebase_metadata(
         org_id,
         repo["full_name"],
         repo["id"],
         "github",
         version_id,
+        repo["name"],
     )
 
     zip_content = download_github_repo_zip(repo["full_name"], commit, access_token)
     logger.info("Repository downloaded successfully. Size: %d bytes", len(zip_content))
 
     org_hashed_id = hashlib.sha256(org_id.encode()).hexdigest()[:63]
-    upload_key = f"codebases/{org_hashed_id}/{repo['name']}.zip"
+    # TODO: make a helper for constructing the upload key
+    upload_key = (
+        f"assets/{org_hashed_id}/{primary_asset_id}/{version_id}/{repo['name']}.zip"
+    )
     upload_to_s3_with_metadata(zip_content, metadata, upload_key)
     print(f"Repository {repo['name']} uploaded successfully to {upload_key}.")
 

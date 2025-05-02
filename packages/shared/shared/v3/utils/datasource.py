@@ -77,6 +77,43 @@ class DataSource(BaseModel):
             datasource = cls(node_ids=node_ids, organization_id=organization_id)
             return datasource
 
+    @classmethod
+    def from_relative_paths(
+        cls,
+        relative_paths: list[str],
+        organization_id: str,
+        version_id: str | None = None,
+    ) -> "DataSource":
+        """
+        Example of pulling node_ids from relative_paths.
+        """
+        with get_session() as session:
+            stmt = (
+                select(Node)
+                .join(Version, Node.version_id == Version.id)
+                .join(PrimaryAsset, Version.primary_asset_id == PrimaryAsset.id)
+                .where(
+                    Node.relative_path.in_(relative_paths),
+                    PrimaryAsset.organization_id == organization_id,
+                    or_(
+                        Node.version_id == version_id,
+                        and_(
+                            version_id is None,
+                            Node.version_id
+                            == select(Version.id)
+                            .where(Version.primary_asset_id == PrimaryAsset.id)
+                            .order_by(Version.updated_at.desc())
+                            .limit(1)
+                            .correlate(PrimaryAsset)
+                            .scalar_subquery(),
+                        ),
+                    ),
+                )
+            )
+            nodes = session.exec(stmt).all()
+            node_ids = [node.id for node in nodes]
+            return cls(node_ids=node_ids, organization_id=organization_id)
+
     @property
     def nodes(self) -> list[Node]:
         """

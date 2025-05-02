@@ -1,5 +1,8 @@
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import dataclass
+from inspect import getmembers, ismethod
+from pathlib import Path
 from typing import Self
 
 import tree_sitter
@@ -8,6 +11,13 @@ import tree_sitter_c
 from utils.lang_specialization.symbol_common import RawTreeSitterSymbolData, SymbolKind
 
 LANGUAGES = {"c": tree_sitter.Language(tree_sitter_c.language())}
+
+
+def symbol_extractor(
+    method: Callable[..., list[RawTreeSitterSymbolData]],
+) -> Callable[..., list[RawTreeSitterSymbolData]]:
+    method._is_symbol_extractor = True
+    return method
 
 
 @dataclass
@@ -22,10 +32,11 @@ class DriverTree(ABC):
     tree: tree_sitter.Tree
     # symbols: List[tree_sitter.Node]
     source_bytes: bytes
+    file_path: Path
     language: str = ""
 
     @classmethod
-    def from_code(cls, code_str: str) -> Self:
+    def from_code(cls, code_str: str, file_path: Path | str) -> Self:
         if not cls.language:
             raise DriverTreeError(
                 f"No language specified for {cls.__name__}. Override the 'language' attribute."
@@ -38,6 +49,7 @@ class DriverTree(ABC):
             tree=tree,
             tree_sitter_lang=ts_lang,
             source_bytes=source_bytes,
+            file_path=Path(file_path),
         )
 
     @abstractmethod
@@ -56,9 +68,9 @@ class DriverTree(ABC):
     def extract_function_calls(self) -> list[RawTreeSitterSymbolData]:
         pass
 
-    @abstractmethod
-    def extract_data_structure_instances(self) -> list[RawTreeSitterSymbolData]:
-        pass
+    # @abstractmethod
+    # def extract_data_structure_instances(self) -> list[RawTreeSitterSymbolData]:
+    #     pass
 
     @abstractmethod
     def extract_variables(self) -> list[RawTreeSitterSymbolData]:
@@ -80,6 +92,18 @@ class DriverTree(ABC):
             end_line -= 1
 
         return start_line, end_line
+
+    def extract_all_symbols(self) -> list[RawTreeSitterSymbolData]:
+        all_symbols: list[RawTreeSitterSymbolData] = []
+
+        for _, method in getmembers(self, predicate=ismethod):
+            if getattr(method, "_is_symbol_extractor", False):
+                try:
+                    all_symbols.extend(method())
+                except NotImplementedError:
+                    continue
+
+        return sorted(all_symbols, key=lambda s: s.start_line)
 
 
 def node_to_text(node: tree_sitter.Node) -> str:
@@ -138,6 +162,7 @@ def find_identifier_node(node: tree_sitter.Node) -> tree_sitter.Node | None:
 class CDriverTree(DriverTree):
     language = "c"
 
+    @symbol_extractor
     def extract_imports(self) -> list[RawTreeSitterSymbolData]:
         """Extract all #include directives and their target text from the C code."""
         query = self.tree_sitter_lang.query(
@@ -168,18 +193,23 @@ class CDriverTree(DriverTree):
                 include_path_text = include_path_text.replace('"', "")
 
             start_line, end_line = self.get_node_line_range(include_directive_node)
+            ts_node = include_path_node
             includes.append(
                 RawTreeSitterSymbolData(
                     name=include_path_text,
                     start_line=start_line,
                     end_line=end_line,
                     symbol_kind=SymbolKind.IMPORT,
+                    start_byte=ts_node.start_byte,
+                    end_byte=ts_node.end_byte,
+                    file_path=self.file_path,
                 )
             )
-        sorted_includes = sorted(includes, key=lambda x: x.start_line)
+        sorted_includes = sorted(includes, key=lambda x: x.start_byte)
 
         return sorted_includes
 
+    @symbol_extractor
     def extract_function_definitions(self) -> list[RawTreeSitterSymbolData]:
         query = self.tree_sitter_lang.query("(function_definition) @function_def")
         matches = query.matches(self.tree.root_node)
@@ -193,16 +223,21 @@ class CDriverTree(DriverTree):
                 print("Could not parse function name for node:", declarator_node)
                 func_name = None
             start_line, end_line = self.get_node_line_range(function_def)
+            ts_node = function_def
             func = RawTreeSitterSymbolData(
                 name=func_name,
                 start_line=start_line,
                 end_line=end_line,
                 symbol_kind=SymbolKind.CALLABLE,
+                start_byte=ts_node.start_byte,
+                end_byte=ts_node.end_byte,
+                file_path=self.file_path,
             )
             functions.append(func)
-        sorted_functions = sorted(functions, key=lambda x: x.start_line)
+        sorted_functions = sorted(functions, key=lambda x: x.start_byte)
         return sorted_functions
 
+    @symbol_extractor
     def extract_data_structure_definitions(self) -> list[RawTreeSitterSymbolData]:
         """
         Extract struct, union, and enum tags and typedefs, ignoring forward declarations.
@@ -334,17 +369,23 @@ class CDriverTree(DriverTree):
                 data_structure_name = None  # If we didn't capture a name...
 
             start_line, end_line = self.get_node_line_range(data_structure_node)
+            ts_node = data_structure_node
             ds = RawTreeSitterSymbolData(
                 name=data_structure_name,
                 start_line=start_line,
                 end_line=end_line,
                 symbol_kind=SymbolKind.DATA_STRUCTURE,
+                start_byte=ts_node.start_byte,
+                end_byte=ts_node.end_byte,
+                file_path=self.file_path,
             )
+
             results.append(ds)
 
-        results.sort(key=lambda x: x.start_line)
+        results.sort(key=lambda x: x.start_byte)
         return results
 
+    @symbol_extractor
     def extract_variables(self) -> list[RawTreeSitterSymbolData]:
         query = self.tree_sitter_lang.query(
             """
@@ -393,20 +434,25 @@ class CDriverTree(DriverTree):
                     id_node = find_identifier_node(child)
                     if id_node:
                         var_name = id_node.text.decode("utf8")
+                        ts_node = decl_node
                         var = RawTreeSitterSymbolData(
                             name=var_name,
                             start_line=start_line,
                             end_line=end_line,
                             symbol_kind=SymbolKind.VARIABLE,
+                            start_byte=ts_node.start_byte,
+                            end_byte=ts_node.end_byte,
+                            file_path=self.file_path,
                         )
                         variables.append(var)
 
-        sorted_vars = sorted(variables, key=lambda x: x.start_line)
+        sorted_vars = sorted(variables, key=lambda x: x.start_byte)
         return sorted_vars
 
     # TODO we really need to swap to byte position since we often have
     # multiple calls per line to disambiguate
 
+    @symbol_extractor
     def extract_function_calls(self) -> list[RawTreeSitterSymbolData]:
         query = self.tree_sitter_lang.query("(call_expression) @call")
         matches = query.matches(self.tree.root_node)
@@ -423,23 +469,27 @@ class CDriverTree(DriverTree):
             func_name = identifier_node.text.decode("utf-8")
 
             start_line, end_line = self.get_node_line_range(call_node)
-
+            ts_node = call_node
             func_call = RawTreeSitterSymbolData(
                 name=func_name,
                 start_line=start_line,
                 end_line=end_line,
                 symbol_kind=SymbolKind.CALL,
+                start_byte=ts_node.start_byte,
+                end_byte=ts_node.end_byte,
+                file_path=self.file_path,
             )
 
             function_calls.append(func_call)
 
-        # Sort the calls by their start line
-        sorted_calls = sorted(function_calls, key=lambda x: x.start_line)
+        # Sort the calls by their start byte
+        sorted_calls = sorted(function_calls, key=lambda x: x.start_byte)
         return sorted_calls
 
-    def extract_data_structure_instances(self) -> list[RawTreeSitterSymbolData]:
-        pass
+    # def extract_data_structure_instances(self) -> list[RawTreeSitterSymbolData]:
+    #     pass
 
+    @symbol_extractor
     def extract_function_declarations(self) -> list[RawTreeSitterSymbolData]:
         """Extract all function declarations (not definitions) in the C code."""
         query = self.tree_sitter_lang.query("(declaration) @declaration")
@@ -467,18 +517,19 @@ class CDriverTree(DriverTree):
                 continue
 
             start_line, end_line = self.get_node_line_range(declaration_node)
+            ts_node = declaration_node
             func = RawTreeSitterSymbolData(
                 name=func_name,
                 start_line=start_line,
                 end_line=end_line,
                 symbol_kind=SymbolKind.CALLABLE_DECLARATION,
-                # start_byte=declaration_node.start_byte,
-                # end_byte=declaration_node.end_byte,
-                # params_list_node=params_node,
+                start_byte=ts_node.start_byte,
+                end_byte=ts_node.end_byte,
+                file_path=self.file_path,
             )
             declarations.append(func)
 
-        sorted_declarations = sorted(declarations, key=lambda x: x.start_line)
+        sorted_declarations = sorted(declarations, key=lambda x: x.start_byte)
         return sorted_declarations
 
 
@@ -494,7 +545,7 @@ if __name__ == "__main__":
 }
 Point2, *Point2Ptr;
 """
-    driver_tree = CDriverTree.from_code(code)
+    driver_tree = CDriverTree.from_code(code, "does_not_matter.c")
     data_structures = driver_tree.extract_data_structure_definitions()
     print(driver_tree.tree.root_node.children)
     print(data_structures)

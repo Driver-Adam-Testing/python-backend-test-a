@@ -128,7 +128,7 @@ async def push_docs(presigned_url: str) -> None:
         extracted_path = unpack_archive_to_finalized_path(
             archive_path=docs_temp_path, extraction_root=Path(temp_dir)
         )
-        branch = "driver_docs/v3"
+        branch = "driver_docs/v5"
         print(extracted_path)
         clone_url, full_name = get_repo_clone_info_from_id(repo_id, access_token)
         print(clone_url)

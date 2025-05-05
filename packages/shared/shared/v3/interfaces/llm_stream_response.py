@@ -62,3 +62,12 @@ class ErrorStreamResponse(LlmStreamResponse):
 class ResponseFullStreamResponse(LlmStreamResponse):
     kind: LlmStreamResponseKind = LlmStreamResponseKind.RESPONSE_FULL
     content: str
+
+    def __init__(self, **data: dict[str, any]) -> None:
+        from shared.v3.utils.post_processing.mermaid import (
+            fix_mermaid_syntax_in_response,
+        )
+
+        if "```mermaid" in data.get("content", ""):
+            data["content"] = fix_mermaid_syntax_in_response(data["content"])
+        super().__init__(**data)

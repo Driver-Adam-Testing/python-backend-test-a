@@ -1,3 +1,4 @@
+import json
 from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator
 from typing import TYPE_CHECKING
@@ -15,6 +16,8 @@ from shared.v3.interfaces.llm_stream_response import (
     StartSessionStreamResponse,
 )
 from shared.v3.utils.datasource import DataSource
+from shared.v3.utils.encoder import UUIDEncoder
+from sqlmodel import select
 
 if TYPE_CHECKING:
     from shared.v3.app.pipelines.pipeline_response import PipelineResponse
@@ -23,9 +26,56 @@ if TYPE_CHECKING:
 
 class PipelineRequest(BaseModel, ABC):
     _datasource: DataSource
-    node_ids: list[UUID] | None = None
-    organization_id: str | None = None
-    user_id: str | None = None
+    _llm_session: RuntimeLlmSession | None = None
+
+    def __init__(
+        self,
+        llm_session_id: UUID | None = None,
+        page_node_id: UUID | None = None,
+        organization_id: str | None = None,
+        user_id: str | None = None,
+        node_ids: list[UUID] | None = None,
+        relative_paths: list[str] | None = None,
+        **data,  # noqa: ANN003
+    ) -> None:
+        super().__init__(**data)
+        if node_ids is not None:
+            self._datasource = DataSource.from_node_ids(node_ids, organization_id)
+        elif relative_paths is not None:
+            self._datasource = DataSource.from_relative_paths(
+                relative_paths, organization_id
+            )
+        elif page_node_id is not None:
+            self._datasource = DataSource.from_page_node_id(
+                page_node_id, organization_id
+            )
+        else:
+            self._datasource = None
+
+        with get_session() as session:
+            if llm_session_id:
+                self._llm_session = session.exec(
+                    select(RuntimeLlmSession).where(
+                        RuntimeLlmSession.id == llm_session_id
+                    )
+                ).first()
+                if self._datasource is None:
+                    self._datasource = DataSource.from_node_ids(
+                        json.loads(self._llm_session.source_node_ids_str),
+                        self._llm_session.organization_id,
+                    )
+            if not llm_session_id or self._llm_session is None:
+                self._llm_session = RuntimeLlmSession(
+                    organization_id=organization_id,
+                    user_id=user_id,
+                    source_node_ids_str=json.dumps(
+                        self._datasource.node_ids, cls=UUIDEncoder
+                    ),
+                    page_node_id=page_node_id,
+                )
+                session.add(self._llm_session)
+                session.commit()
+                session.refresh(self._llm_session)
 
     @property
     def datasource(self) -> DataSource:
@@ -36,19 +86,8 @@ class PipelineRequest(BaseModel, ABC):
             )
         return self._datasource
 
-    _llm_session: RuntimeLlmSession | None = None
-
     @property
     def llm_session(self) -> RuntimeLlmSession:
-        if self._llm_session is None:
-            with get_session() as session:
-                self._llm_session = RuntimeLlmSession(
-                    organization_id=self.organization_id,
-                    user_id=self.user_id,
-                )
-                session.add(self._llm_session)
-                session.commit()
-                session.refresh(self._llm_session)
         return self._llm_session
 
     @classmethod

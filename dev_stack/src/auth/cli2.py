@@ -2,11 +2,11 @@ import click
 import httpx
 from auth0_device_flow import Auth0DeviceAuthenticator
 
-CLIENT_ID = "Xlz4oR4jzIvRmQXAX1oBhxMum2Y7Tzla"
+CLIENT_ID = "Qzu2iNFOTNwZ2UiT0xaVsgzS85xW7zcC"
 DOMAIN = "driverai-dev.us.auth0.com"
-AUDIENCE = "https://eric-miller-api.ngrok.io/api/v1"
+# AUDIENCE = "https://eric-miller-api.ngrok.io/api/v1"
 
-auth = Auth0DeviceAuthenticator(client_id=CLIENT_ID, domain=DOMAIN, audience=AUDIENCE)
+auth = Auth0DeviceAuthenticator(client_id=CLIENT_ID, domain=DOMAIN)
 
 
 # https://auth0.com/docs/quickstart/native/device#request-device-code

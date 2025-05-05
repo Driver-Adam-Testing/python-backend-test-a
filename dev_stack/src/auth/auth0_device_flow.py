@@ -52,16 +52,17 @@ class Auth0DeviceAuthenticator:
             )
             response.raise_for_status()
             data = response.json()
+            print(data)
 
         print("\n== Log in to continue ==")
         print(f"Visit: {data['verification_uri_complete']}")
         print(f"Or: {data['verification_uri']} and enter code: {data['user_code']}\n")
 
-        tokens = self._poll_for_token(data)
+        tokens = self._poll_for_token(data, scope=self.scope)
         self._cache_tokens(tokens)
         return tokens
 
-    def _poll_for_token(self, device_data):
+    def _poll_for_token(self, device_data, scope):
         interval = device_data.get("interval", 5)
         expires_at = datetime.utcnow() + timedelta(
             seconds=device_data.get("expires_in", 900)
@@ -72,9 +73,10 @@ class Auth0DeviceAuthenticator:
             payload = {
                 "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
                 "device_code": device_data["device_code"],
+                # "device_code": scope,
                 "client_id": self.client_id,
             }
-
+            print(payload)
             with httpx.Client() as client:
                 print(payload)
                 resp = client.post(
@@ -105,11 +107,11 @@ class Auth0DeviceAuthenticator:
                     resp.raise_for_status()
                 except httpx.HTTPStatusError as e:
                     print(f"HTTP error occurred: {e}")
-                    raise
+                    # raise
 
         raise TimeoutError("⏳ Login timed out. Please start the login flow again.")
 
-        interval = device_data.get("interval", 60)
+        interval = device_data.get("interval", 5)
         while True:
             time.sleep(interval)
             payload = {

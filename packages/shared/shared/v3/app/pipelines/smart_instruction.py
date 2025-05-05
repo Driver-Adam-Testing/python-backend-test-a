@@ -1,5 +1,4 @@
 from collections.abc import AsyncGenerator
-from uuid import UUID
 
 from shared.v3 import LlmClient, LlmMessage, LlmMessageHistory, MessageKind
 from shared.v3.app.pipelines.abbreviate_page_content import abbreviate_page_content
@@ -12,7 +11,9 @@ from shared.v3.app.static.messages.smart_instruction_messages import (
     SmartInstructionInputMessage,
 )
 from shared.v3.app.static.messages.software_expertise import SoftwareExpertiseMessage
+from shared.v3.app.static.tools.folder_summary import FolderSummaryTool
 from shared.v3.app.static.tools.hybrid_search import HybridSearchTool
+from shared.v3.app.static.tools.open_file import OpenFileTool
 from shared.v3.globals.datasource_messages import DataSourceMessage
 from shared.v3.globals.global_messages import GlobalSystemMessage
 from shared.v3.interfaces.llm_stream_response import (
@@ -29,7 +30,6 @@ class SmartInstructionPipelineRequest(PipelineRequest):
     page_content_before_cursor: str
     page_content_after_cursor: str
     format_kind: str
-    node_ids: list[UUID]
 
     def _run(
         self, client: LlmClient = LlmClient.gpt_4_1()
@@ -55,7 +55,7 @@ class SmartInstructionPipelineRequest(PipelineRequest):
         )
         response, called_tools = client.multi_shot(
             message_history=message_history,
-            tool_types=[HybridSearchTool],
+            tool_types=[HybridSearchTool, OpenFileTool, FolderSummaryTool],
             iterations=3,
             datasource=self.datasource,
         )
@@ -67,8 +67,8 @@ class SmartInstructionPipelineRequest(PipelineRequest):
         )
         response, called_tools = client.multi_shot(
             message_history=message_history,
-            tool_types=[HybridSearchTool],
-            iterations=4,
+            tool_types=[],
+            iterations=1,
             datasource=self.datasource,
         )
         return SmartInstructionPipelineResponse(
@@ -100,7 +100,7 @@ class SmartInstructionPipelineRequest(PipelineRequest):
         )
         async for response in client.multi_shot_stream(
             message_history=message_history,
-            tool_types=[HybridSearchTool],
+            tool_types=[HybridSearchTool, OpenFileTool, FolderSummaryTool],
             iterations=3,
             datasource=self.datasource,
         ):
@@ -113,7 +113,7 @@ class SmartInstructionPipelineRequest(PipelineRequest):
         )
         async for response in client.multi_shot_stream(
             message_history=message_history,
-            tool_types=[HybridSearchTool],
+            tool_types=[],
             iterations=1,
             datasource=self.datasource,
         ):

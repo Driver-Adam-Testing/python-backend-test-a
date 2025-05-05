@@ -10,6 +10,7 @@ from shared.v3.app.pipelines import (
     InlineEditPipelineRequest,
     InlineEditPipelineResponse,
     PipelineResponse,
+    ReformatPipelineRequest,
     SmartInstructionPipelineRequest,
 )
 from shared.v3.app.static.enums.format_kinds import FormatKind
@@ -156,7 +157,13 @@ _PIPELINE_BUILDERS: dict[
         organization_id=user.organization_id,
         user_id=user.user_id,
     ),
-    # PipelineKind.REFORMAT : lambda req, user: ...,
+    PipelineKind.REFORMAT: lambda req, user: ReformatPipelineRequest(
+        cursor_selection=req.cursor_selection,
+        format_kind=req.format_kind,
+        node_ids=req.node_ids,
+        organization_id=user.organization_id,
+        user_id=user.user_id,
+    ),
     # PipelineKind.CHAT     : lambda req, user: ...,
 }
 

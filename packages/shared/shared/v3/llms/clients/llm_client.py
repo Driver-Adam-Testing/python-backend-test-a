@@ -188,6 +188,26 @@ class LlmClient(ABC):
         )
         return message_history.last()
 
+    async def single_shot_stream(
+        self,
+        prompt: str | None = None,
+        response_type: type[LlmResponseType] | None = None,
+        message_history: LlmMessageHistory | None = None,
+    ) -> AsyncGenerator[LlmStreamResponse, None]:
+        response_stream = self._generate_stream(
+            message_history=message_history,
+            response_type=response_type,
+            tool_types=None,
+        )
+        async for chunk in response_stream:
+            if isinstance(chunk, LlmMessage):
+                yield ResponseFullStreamResponse(
+                    kind=LlmStreamResponseKind.RESPONSE_FULL,
+                    content=chunk.content,
+                )
+            else:
+                yield chunk
+
     def multi_shot(
         self,
         prompt: str | None = None,

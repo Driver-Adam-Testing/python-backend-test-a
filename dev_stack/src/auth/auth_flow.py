@@ -39,7 +39,13 @@ async def callback(request: Request):
 
 
 def run_server():
-    uvicorn.run(app, host="127.0.0.1", port=4001)
+    uvicorn.run(
+        app,
+        host="127.0.0.1",
+        port=4001,
+        log_level="critical",  # 🔕 disables info/debug logs
+        access_log=False,  # 🔕 disables access logs
+    )
 
 
 def get_tokens(code, verifier):
@@ -77,7 +83,7 @@ def login():
     )
     webbrowser.open(url)
 
-    print("🌐 Waiting for browser login...")
+    # print("🌐 Waiting for browser login...")
 
     thread = Thread(target=run_server, daemon=True)
     thread.start()

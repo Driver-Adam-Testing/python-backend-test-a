@@ -116,7 +116,13 @@ def handle_github_events(
     errant_repos = []
     with ThreadPoolExecutor(max_workers=10) as executor:
         futures = [
-            executor.submit(download_and_upload_repo, org_id, repo, token)
+            executor.submit(
+                download_and_upload_repo,
+                org_id,
+                repo,
+                token,
+                installation_id,
+            )
             for repo in repos_added
         ]
         wait(futures)
@@ -129,6 +135,7 @@ def handle_github_events(
             org_id=org_id,
             repo=repo,
             access_token=token,
+            install_id=installation_id,
             is_push=True,
         )
         if repo_name_or_none is not None:

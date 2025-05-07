@@ -140,6 +140,7 @@ async def get_result_loading_config(
 )
 async def export_tech_docs_to_zip(
     version_id: uuid.UUID,
+    install_id: str | None = None,
 ) -> None:
     import hashlib
     import tempfile
@@ -201,12 +202,20 @@ async def export_tech_docs_to_zip(
                 "s3", endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL")
             )
             s3_dest = f"{primary_asset_id}/{version_id}/{version_id}_tech_docs.zip"
-            print(s3_dest)
             s3_bucket = s3_resource.Bucket(org_id_hash)
-            s3_bucket.upload_file(
-                Path("tech_docs.zip"),
-                s3_dest,
-            )
+            if install_id is not None:
+                s3_bucket.upload_file(
+                    Path("tech_docs.zip"),
+                    s3_dest,
+                    ExtraArgs={"Metadata": {"install_id": install_id}},
+                )
+            else:
+                s3_bucket.upload_file(
+                    Path("tech_docs.zip"),
+                    s3_dest,
+                )
+            print(f"Uploaded tech docs zip to S3: {s3_dest}")
+
     except Exception as e:
         exception_type = type(e).__name__
         exc_tb = e.__traceback__
@@ -316,6 +325,10 @@ async def inspect_db(
                 )
                 download_path = Path(download_dir) / f"{version_id}.zip"
                 print(f"downloading zip to {download_path}")
+                metadata = s3_client.head_object(
+                    Bucket=org_hashed_id, Key=download_archive_key
+                )
+                install_id = metadata["Metadata"].get("install_id")
                 s3_client.download_file(
                     org_hashed_id, download_archive_key, download_path
                 )
@@ -438,7 +451,7 @@ async def inspect_db(
         raise
     else:
         set_codebase_status_in_container.remote(version_id, "GENERATION_COMPLETE")
-        export_tech_docs_to_zip.spawn(version_id)
+        export_tech_docs_to_zip.spawn(version_id, install_id)
 
 
 def hash_file(file_path: Path) -> str:
@@ -659,11 +672,12 @@ def main(
 
 
 @app.local_entrypoint()
-def test_export(version_id: str) -> None:
+def test_export(version_id: str, install_id: str) -> None:
     """Test export tech docs to zip"""
     try:
         export_tech_docs_to_zip.remote(
             version_id,
+            install_id,
         )
     except Exception as e:
         print(e)

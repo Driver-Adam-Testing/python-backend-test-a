@@ -29,10 +29,14 @@ class LlmStreamResponse(BaseModel):
     def __str__(self) -> str:
         return self.to_sse()
 
+    def encode(self, *args: any, **kwargs: any) -> bytes:
+        return self.to_sse().encode(*args, **kwargs)
+
 
 class StartSessionStreamResponse(LlmStreamResponse):
     kind: LlmStreamResponseKind = LlmStreamResponseKind.START_SESSION
     llm_session_id: UUID
+    execution_call_id: str | None = None
 
 
 class EndSessionStreamResponse(LlmStreamResponse):
@@ -58,3 +62,12 @@ class ErrorStreamResponse(LlmStreamResponse):
 class ResponseFullStreamResponse(LlmStreamResponse):
     kind: LlmStreamResponseKind = LlmStreamResponseKind.RESPONSE_FULL
     content: str
+
+    def __init__(self, **data: dict[str, any]) -> None:
+        from shared.v3.utils.post_processing.mermaid import (
+            fix_mermaid_syntax_in_response,
+        )
+
+        if "```mermaid" in data.get("content", ""):
+            data["content"] = fix_mermaid_syntax_in_response(data["content"])
+        super().__init__(**data)

@@ -5,19 +5,13 @@ from shared.pipelines.search import (
     get_bm25_scores,
     overall_score,
 )
-from shared.v3.app.static.messages.constants import (
-    REFERENCE_CONTENT_XML_BEGIN,
-    REFERENCE_CONTENT_XML_END,
-    REFERENCE_PATH_XML_BEGIN,
-    REFERENCE_PATH_XML_END,
-    REFERENCE_XML_BEGIN,
-    REFERENCE_XML_END,
-    REFERENCES_XML_BEGIN,
-    REFERENCES_XML_END,
-    SEARCH_QUERY_XML_BEGIN,
-    SEARCH_QUERY_XML_END,
-    TOOL_ERROR_XML_BEGIN,
-    TOOL_ERROR_XML_END,
+from shared.v3.globals.glossary import (
+    REFERENCE,
+    REFERENCE_CONTENT,
+    REFERENCE_LIST,
+    REFERENCE_RELATIVE_PATH,
+    SEARCH_QUERY,
+    TOOL_ERROR_MESSAGE,
 )
 from shared.v3.interfaces.llm_message import LlmMessage, MessageKind
 from shared.v3.interfaces.llm_tool import (
@@ -43,7 +37,6 @@ class HybridSearchTool(LlmTool):
     search_query: str
 
     def _execute(self) -> None:
-        print(len(self.datasource.nodes))
         embedded_query: list[float] = batch_embed_text([self.search_query])[0]
 
         with get_session() as session:
@@ -122,7 +115,7 @@ class HybridSearchTool(LlmTool):
         if not self._references:
             return LlmMessage(
                 message_kind=MessageKind.TOOL_CALL_RESPONSE,
-                content=f"{TOOL_ERROR_XML_BEGIN} No results found for the given search query. {SEARCH_QUERY_XML_BEGIN}{self.search_query}{SEARCH_QUERY_XML_END}{TOOL_ERROR_XML_END}",
+                content=f"{TOOL_ERROR_MESSAGE.wrap(f'No results found for the given search query. {SEARCH_QUERY.wrap(self.search_query)}')}",
                 tool_response=LlmMessage.ToolCallResponse(
                     id=self.tool_call_id or None, name="HybridSearchTool"
                 ),
@@ -130,9 +123,12 @@ class HybridSearchTool(LlmTool):
 
         return LlmMessage(
             message_kind=MessageKind.TOOL_CALL_RESPONSE,
-            content=f"""HybridSearchTool Results for: {SEARCH_QUERY_XML_BEGIN}{self.search_query}{SEARCH_QUERY_XML_END}{REFERENCES_XML_BEGIN}
-                {"".join(f"{REFERENCE_XML_BEGIN}{REFERENCE_CONTENT_XML_BEGIN}{ref.content}{REFERENCE_CONTENT_XML_END}{REFERENCE_PATH_XML_BEGIN}{ref.version_display_name}/{ref.relative_path}{REFERENCE_PATH_XML_END}{REFERENCE_XML_END}" for ref in self.references)}
-            {REFERENCES_XML_END}""".strip(),
+            content=f"""HybridSearchTool Results{SEARCH_QUERY.wrap(self.search_query)}{REFERENCE_LIST.wrap(
+                "\n".join(
+                    f"{REFERENCE.wrap(REFERENCE_CONTENT.wrap(ref.content))}{REFERENCE_RELATIVE_PATH.wrap(ref.version_display_name + '/' + ref.relative_path)}"
+                    for ref in self.references
+                )
+            )}""",
             tool_response=LlmMessage.ToolCallResponse(
                 id=self.tool_call_id or None, name="HybridSearchTool"
             ),

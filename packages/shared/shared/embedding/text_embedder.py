@@ -14,7 +14,7 @@ from shared.utils.decorators import async_retry_with_exponential_backoff
 
 TEXT_EMBEDDING_MODEL = os.getenv("TEXT_EMBEDDING_MODEL", "text-embedding-3-small")
 SUPPORTED_OPENAI_MODELS = ["text-embedding-3-small"]
-BATCH_SIZE = 2000
+BATCH_SIZE = 500  # OpenAI's max batch is 300k tokens, we max at 512 tokens * 500 batches = 256k tokens
 
 
 def _prepare_text_chunks(text_chunks: list[str | TextChunk]) -> list[str]:

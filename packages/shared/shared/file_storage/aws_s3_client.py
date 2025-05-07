@@ -1,8 +1,10 @@
 import hashlib
+import os
 from pathlib import Path
 
 import boto3
 import httpx
+from botocore.exceptions import ClientError
 from shared.interfaces.aws_client_config import AWSClientConfig
 
 
@@ -20,7 +22,18 @@ class AWSS3Client:
             aws_secret_access_key=self.aws_config.aws_secret_access_key,
         )
 
-    #
+    def create_bucket_if_dne(self, bucket_name: str) -> None:
+        try:
+            # TODO: handle this cleanly? AWS_S3_ENDPOINT_URL returns None if DNE, which reverts to
+            # default boto3 behavior
+            s3_resource = boto3.resource(
+                "s3", endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL")
+            )
+            s3_resource.meta.client.head_bucket(Bucket=bucket_name)
+        except ClientError:
+            s3_resource.create_bucket(Bucket=bucket_name)
+            print(f"Created bucket: {bucket_name}")
+
     def generate_get_presigned_url(
         self, key: str, bucket: str, expires: int = 3600
     ) -> str:
@@ -60,6 +73,7 @@ class AWSS3Client:
     def upload_to_s3(
         self, zip_content: bytes, metadata: dict, upload_key: str, bucket: str
     ) -> bool:
+        self.create_bucket_if_dne(bucket)
         s3_url = self.generate_put_presigned_url(
             key=upload_key,
             bucket=bucket,
@@ -87,6 +101,7 @@ class AWSS3Client:
         metadata: dict | None,
         content_type: str | None,
     ) -> None:
+        self.create_bucket_if_dne(bucket)
         extra_args = {}
         if metadata:
             extra_args["Metadata"] = metadata

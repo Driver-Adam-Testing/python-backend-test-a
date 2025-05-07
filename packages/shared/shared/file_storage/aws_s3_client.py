@@ -22,7 +22,7 @@ class AWSS3Client:
             aws_secret_access_key=self.aws_config.aws_secret_access_key,
         )
 
-    def create_bucket_if_dne(bucket_name: str) -> None:
+    def create_bucket_if_dne(self, bucket_name: str) -> None:
         try:
             # TODO: handle this cleanly? AWS_S3_ENDPOINT_URL returns None if DNE, which reverts to
             # default boto3 behavior

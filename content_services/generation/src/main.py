@@ -1,7 +1,7 @@
 from collections.abc import AsyncGenerator
 
 import modal
-from shared.v3.interfaces.llm_stream_response import LlmStreamResponse
+from pydantic import BaseModel
 
 app = modal.App(name="generation")
 
@@ -21,7 +21,7 @@ secrets = [
 
 
 @app.function(image=image, secrets=secrets)
-async def inline_edit_stream(input: dict) -> AsyncGenerator[LlmStreamResponse, None]:
+async def inline_edit_stream(input: dict) -> AsyncGenerator[BaseModel, None]:
     from shared.v3.app.pipelines.inline_edit import (
         InlineEditPipelineRequest,
     )
@@ -32,7 +32,7 @@ async def inline_edit_stream(input: dict) -> AsyncGenerator[LlmStreamResponse, N
 
 
 @app.function(image=image, secrets=secrets)
-async def inline_edit_run(input: dict) -> AsyncGenerator[LlmStreamResponse, None]:
+async def inline_edit_run(input: dict) -> AsyncGenerator[BaseModel, None]:
     from shared.v3.app.pipelines.inline_edit import InlineEditPipelineRequest
 
     parsed_input = InlineEditPipelineRequest.from_dict(input)
@@ -42,7 +42,7 @@ async def inline_edit_run(input: dict) -> AsyncGenerator[LlmStreamResponse, None
 @app.function(image=image, secrets=secrets)
 async def smart_instruction_stream(
     input: dict,
-) -> AsyncGenerator[LlmStreamResponse, None]:
+) -> AsyncGenerator[BaseModel, None]:
     from shared.v3.app.pipelines.smart_instruction import (
         SmartInstructionPipelineRequest,
     )
@@ -53,7 +53,7 @@ async def smart_instruction_stream(
 
 
 @app.function(image=image, secrets=secrets)
-async def smart_instruction_run(input: dict) -> AsyncGenerator[LlmStreamResponse, None]:
+async def smart_instruction_run(input: dict) -> AsyncGenerator[BaseModel, None]:
     from shared.v3.app.pipelines.smart_instruction import (
         SmartInstructionPipelineRequest,
     )

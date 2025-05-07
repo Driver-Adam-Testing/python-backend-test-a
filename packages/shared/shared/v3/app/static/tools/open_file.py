@@ -61,10 +61,7 @@ class OpenFileTool(LlmTool):
         full_text = "\n".join(formatted_results)
 
         if len(full_text) > 75000:
-            self._error_message = (
-                "The file is too long. Use a different tool or limit context."
-            )
-            return
+            full_text = full_text[:75000] + "\n[Content truncated]"
 
         self._references.add_reference(
             Reference(

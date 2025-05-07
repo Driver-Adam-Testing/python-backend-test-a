@@ -102,6 +102,9 @@ class FolderSummaryTool(LlmTool):
             f"{REFERENCE_RELATIVE_PATH.wrap(r.version_display_name + '/' + r.relative_path)}"
             for r in self.references
         )
+        if len(refs_serialised) > 75000:
+            refs_serialised = refs_serialised[:75000]
+            self._error_message = "The folder summary is too long. Only the first 75000 characters are included."
 
         return LlmMessage(
             message_kind=MessageKind.TOOL_CALL_RESPONSE,

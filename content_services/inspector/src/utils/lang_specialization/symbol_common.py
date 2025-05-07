@@ -118,9 +118,13 @@ class ReifiedSymbol:
 
     raw: RawTreeSitterSymbolData
     is_definition: bool
+    is_declaration: bool
     definition: Self | None = None
     usages: list[Self] = field(default_factory=list)
     calls: list[Self] = field(default_factory=list)
+    declarations: list[Self] = field(
+        default_factory=list
+    )  # Should this be a list? Likely not
 
 
 class RawSymbolData(BaseModel):

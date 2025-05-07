@@ -122,6 +122,109 @@ async def get_result_loading_config(
     secrets=[
         modal.Secret.from_name("db"),
         modal.Secret.from_name("aws-inspector-s3"),
+    ],
+    mounts=[
+        modal.Mount.from_local_dir(
+            local_path="../../driver_db/certs",
+            remote_path="/root/data/",
+        ),
+    ],
+    proxy=modal.Proxy.from_name("pg-proxy")
+    if os.environ["MODAL_ENVIRONMENT"] != "staging"
+    else None,
+    memory="2048",
+    timeout=3600 * 8,
+    region="us-east",
+    concurrency_limit=5,
+    cpu=1.0,
+)
+async def export_tech_docs_to_zip(
+    version_id: uuid.UUID,
+) -> None:
+    import hashlib
+    import tempfile
+    from pathlib import Path
+    from shutil import make_archive
+
+    import boto3
+    from database.db import async_engine
+    from database.models_v1 import DerivedContent
+    from database.models_v2 import Node, Version
+    from database.models_v2_enums import ContentKind, NodeKind
+    from sqlalchemy.orm import selectinload
+    from sqlmodel import select
+    from sqlmodel.ext.asyncio.session import AsyncSession
+
+    try:
+        async with AsyncSession(async_engine) as session:
+            nodes_query = (
+                select(Node.relative_path, DerivedContent.content)
+                .join(DerivedContent)
+                .where(
+                    Node.version_id == version_id,
+                    Node.kind == NodeKind.CODEBASE_FILE,
+                    DerivedContent.content_kind == ContentKind.LONG_DESCRIPTION,
+                )
+            )
+            version_query = (
+                select(Version)
+                .where(Version.id == version_id)
+                .options(
+                    selectinload(Version.primary_asset),
+                )
+            )
+            version_result = await session.exec(version_query)
+            version_row = version_result.one()
+            primary_asset_id = version_row.primary_asset_id
+            org_id = version_row.primary_asset.organization_id
+            org_id_hash = hashlib.sha256(org_id.encode()).hexdigest()[:63]
+            print(org_id_hash)
+            result = await session.exec(nodes_query)
+            node_rows = result.all()
+        with (
+            tempfile.TemporaryDirectory() as temp_dir,
+        ):
+            for node_row in node_rows:
+                node_path = Path(node_row[0])
+                doc_file_path = (
+                    node_path.with_suffix("")
+                    .with_stem(node_path.stem + node_path.suffix.replace(".", "_"))
+                    .with_suffix(".md")
+                )
+                content = node_row[1]
+                file_path = Path(temp_dir) / doc_file_path
+                file_path.parent.mkdir(parents=True, exist_ok=True)
+                file_path.write_text(content)
+            make_archive("tech_docs", "zip", Path(temp_dir))
+
+            s3_resource = boto3.resource(
+                "s3", endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL")
+            )
+            s3_dest = f"{primary_asset_id}/{version_id}/{version_id}_tech_docs.zip"
+            print(s3_dest)
+            s3_bucket = s3_resource.Bucket(org_id_hash)
+            s3_bucket.upload_file(
+                Path("tech_docs.zip"),
+                s3_dest,
+            )
+    except Exception as e:
+        exception_type = type(e).__name__
+        exc_tb = e.__traceback__
+        filename = exc_tb.tb_frame.f_code.co_filename
+        line_number = exc_tb.tb_lineno
+        exception_details = (
+            f"Exception type: {exception_type}\nFile: {filename}\nLine: {line_number}"
+        )
+        send_exception_email.remote(exception_details)
+        print(f"Error while processing version {version_id}: {e}")
+        raise e
+
+
+@app.function(
+    image=inspection_image,
+    secrets=[
+        modal.Secret.from_name("db"),
+        modal.Secret.from_name("aws-inspector-s3"),
         modal.Secret.from_name("open-ai"),
     ],
     mounts=[
@@ -335,6 +438,7 @@ async def inspect_db(
         raise
     else:
         set_codebase_status_in_container.remote(version_id, "GENERATION_COMPLETE")
+        export_tech_docs_to_zip.spawn(version_id)
 
 
 def hash_file(file_path: Path) -> str:
@@ -552,6 +656,17 @@ def main(
         raise
     else:
         set_codebase_status_in_container.remote(version_id, "GENERATION_COMPLETE")
+
+
+@app.local_entrypoint()
+def test_export(version_id: str) -> None:
+    """Test export tech docs to zip"""
+    try:
+        export_tech_docs_to_zip.remote(
+            version_id,
+        )
+    except Exception as e:
+        print(e)
 
 
 @app.local_entrypoint()

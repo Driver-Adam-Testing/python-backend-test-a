@@ -533,6 +533,34 @@ def set_codebase_status_in_container(version_id: str, status: str) -> None:
         version.status = VersionStatus(status)
         session.add(version)
 
+@app.function(
+    image=modal.Image.debian_slim(python_version="3.12")
+    .apt_install("git")
+    .copy_local_dir("../../driver_db/", remote_path="/driver_db")
+    .copy_local_dir(local_path="../../packages/shared", remote_path="/packages/shared")
+    .poetry_install_from_file(
+        "pyproject.toml"
+    )  # TODO clean this up since inspector doesn't use pyproject install
+    .pip_install(
+        "requests"
+    ),
+    secrets=[
+        modal.Secret.from_name("aws-inspector-s3"),
+        modal.Secret.from_name("db"),
+        modal.Secret.from_name("github-app"),
+    ],
+    proxy=modal.Proxy.from_name("pg-proxy")
+    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "prod"]
+    else None,
+    timeout=60 * 60,
+    region="us-east",
+    concurrency_limit=5,
+)
+async def push_tech_docs(version_id:str) -> None:
+    """Push tech docs to s3"""
+    from onboarding.push_bot import push_docs
+
+    await push_docs(version_id)
 
 @app.local_entrypoint()
 def main(

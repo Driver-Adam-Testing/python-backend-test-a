@@ -1,3 +1,4 @@
+import os
 import asyncio
 import re
 import subprocess
@@ -6,7 +7,6 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 import httpx
-
 
 def extract_values_from_presigned_url(url: str) -> dict:
     parsed = urlparse(url)
@@ -18,10 +18,9 @@ def extract_values_from_presigned_url(url: str) -> dict:
     if not match:
         raise ValueError("URL path does not match the expected structure.")
 
-    org_id_hash, primary_asset_id, version_id, filename = match.groups()
+    primary_asset_id, version_id, filename = match.groups()
 
     return {
-        "org_id_hash": org_id_hash,
         "primary_asset_id": primary_asset_id,
         "version_id": version_id,
         "filename": filename,
@@ -102,10 +101,11 @@ def create_pull_request(
                 raise
 
 
-async def push_docs(presigned_url: str) -> None:
+async def push_docs(version_id:str) -> None:
     import os
     import tempfile
-
+    # import boto3
+    import hashlib
     from gh_ops import fetch_app_access_token, get_repo_clone_info_from_id
     from onboard_utils import (
         download_file_from_presigned_url,
@@ -113,25 +113,28 @@ async def push_docs(presigned_url: str) -> None:
     )
     from src.utils.db import get_installation_id_by_org_id, get_version_by_id
 
-    parsed_values = extract_values_from_presigned_url(presigned_url)
+    # parsed_values = extract_values_from_presigned_url(presigned_url)
 
-    version = await get_version_by_id(uuid.UUID(parsed_values["version_id"]))
+    version = await get_version_by_id(uuid.UUID(version_id))
+    primary_asset_id = version.primary_asset.id
     repo_id = version.primary_asset.repository_id
     org_id = version.primary_asset.organization_id
-    install = await get_installation_id_by_org_id(org_id)
-    access_token = fetch_app_access_token(install.github_app_installation_id)
-    print(f"Access token: {access_token}")
-    with tempfile.TemporaryDirectory() as temp_dir:
+    org_id_hash = hashlib.sha256(org_id.encode()).hexdigest()[:63]
+
+    with tempfile.TemporaryDirectory() as temp_dir, tempfile.NamedTemporaryFile("w",suffix=".zip") as temp_file:
         # Override so unpack from github doesn't have hash in name.
-        docs_temp_path = Path(temp_dir) / parsed_values["filename"]
-        download_file_from_presigned_url(presigned_url, docs_temp_path)
+        object_key = f"{primary_asset_id}/{version_id}/{version_id}_tech_docs.zip"
+        download_meta = download_file_from_s3(org_id_hash, object_key, temp_file.name)
+        # print(download_meta)
+        install_id = download_meta["install_id"]
+
         extracted_path = unpack_archive_to_finalized_path(
-            archive_path=docs_temp_path, extraction_root=Path(temp_dir)
+            archive_path=Path(temp_file.name), extraction_root=Path(temp_dir)
         )
-        branch = "driver_docs/v5"
-        print(extracted_path)
+        commit_slug = version.display_name[:7]
+        branch = f"docs_{commit_slug}"
+        access_token = fetch_app_access_token(install_id)
         clone_url, full_name = get_repo_clone_info_from_id(repo_id, access_token)
-        print(clone_url)
         repo_dir = Path(temp_dir) / full_name
         target_dir = "driver_docs"
         if not os.path.exists(repo_dir):
@@ -140,7 +143,7 @@ async def push_docs(presigned_url: str) -> None:
         run(f"git checkout -B {branch}", cwd=repo_dir)
         src_path = os.path.abspath(extracted_path)
         dst_path = repo_dir / "driver_docs"
-        COMMIT_MESSAGE = "Bot: update driver docs for version_id: " + str(version.id)
+        COMMIT_MESSAGE = "Bot: update driver docs for commit: " + commit_slug
         sync_directory(src_path, dst_path)
 
         run('git config user.name "docs-bot"', cwd=repo_dir)
@@ -170,6 +173,22 @@ def sync_directory(src: str, dest: str) -> None:
     print(f"✅ Synced `{src}` to `{dest}`")
 
 
+
+def download_file_from_s3(bucket_name: str, object_key:str,local_file_path:str) -> dict:
+    import boto3
+    # Create an S3 client
+    s3 = boto3.client('s3')
+    response = s3.head_object(Bucket=bucket_name, Key=object_key)
+
+    # Extract and print metadata
+    metadata = response.get('Metadata', {})
+    print(metadata)
+    # Download the ZIP file
+    s3.download_file(bucket_name, object_key, local_file_path)
+
+    print(f"Downloaded {object_key} from bucket {bucket_name} to {local_file_path}")
+    return metadata
+
 def build_s3_path(org_id_hash: str, primary_asset_id: str, version_id: str) -> str:
     return f"driver_docs/{org_id_hash}/{primary_asset_id}/{version_id}/driver_docs.zip"
 
@@ -183,34 +202,36 @@ async def main() -> None:
     import hashlib
     import os
 
-    print(os.environ["ASYNC_DATABASE_URL"])
-    from onboard_utils import generate_get_presigned_url, upload_to_s3_with_metadata
-    from src.utils.db import get_version_by_id
+    # print(os.environ["ASYNC_DATABASE_URL"])
+    # from onboard_utils import generate_get_presigned_url, upload_to_s3_with_metadata
+    # from src.utils.db import get_version_by_id
 
-    version_id = "d3821b06-abd2-4c50-ae4d-17aabe66e6b5"
-    local_docs_path = "/Users/ghostmac/Downloads/driver_docs.zip"
+    version_id = "d8b460f4-060c-4d24-abd5-cd5bc3c1d0eb"
+    # local_docs_path = "/Users/ghostmac/Downloads/driver_docs.zip"
+    # tech_docs_path = "64647130-650d-4c00-9104-799dc97be024/d8b460f4-060c-4d24-abd5-cd5bc3c1d0eb/d8b460f4-060c-4d24-abd5-cd5bc3c1d0eb_tech_docs.zip"
+    # parsed_values = extract_values_from_presigned_url(tech_docs_path)
+    # print(parsed_values)
+    # version = await get_version_by_id(uuid.UUID(version_id))
+    # primary_asset_id = version.primary_asset_id
+    # org_id = version.primary_asset.organization_id
+    # org_id_hash = hashlib.sha256(org_id.encode()).hexdigest()[:63]
 
-    version = await get_version_by_id(uuid.UUID(version_id))
-    primary_asset_id = version.primary_asset_id
-    org_id = version.primary_asset.organization_id
-    org_id_hash = hashlib.sha256(org_id.encode()).hexdigest()[:63]
-
-    with open(local_docs_path, "rb") as f:
-        zip_content = f.read()
-    upload_key = build_s3_path(org_id_hash, primary_asset_id, version_id)
-    metadata = {
-        "version_id": str(version_id),
-        "provider": "github",
-        "unhashed_organization_id": org_id,
-        "installation_id": "65566326",
-    }
-    upload_to_s3_with_metadata(
-        zip_content=zip_content, metadata=metadata, upload_key=upload_key
-    )
-    bucket = os.environ["DROPZONE_BUCKET_NAME"]
-    download_url = generate_get_presigned_url(bucket, upload_key)
-    print(f"Download URL: {download_url}")
-    await push_docs(download_url)
+    # with open(local_docs_path, "rb") as f:
+    #     zip_content = f.read()
+    # upload_key = build_s3_path(org_id_hash, primary_asset_id, version_id)
+    # metadata = {
+    #     "version_id": str(version_id),
+    #     "provider": "github",
+    #     "unhashed_organization_id": org_id,
+    #     "installation_id": "65566326",
+    # }
+    # upload_to_s3_with_metadata(
+    #     zip_content=zip_content, metadata=metadata, upload_key=upload_key
+    # )
+    # bucket = os.environ["DROPZONE_BUCKET_NAME"]
+    # download_url = generate_get_presigned_url(bucket, upload_key)
+    # print(f"Download URL: {download_url}")
+    await push_docs(version_id)
 
 
 if __name__ == "__main__":

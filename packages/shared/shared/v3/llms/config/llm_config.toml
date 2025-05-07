@@ -6,14 +6,6 @@ optimal_context_window = 64000
 max_output_tokens = 16384
 api_kind = "openai_strict"
 
-[llms.gpt_4_5]
-llm_model_id = "gpt-4.5-preview"
-provider = "openai"
-max_context_window = 128000
-optimal_context_window = 64000
-max_output_tokens = 16384
-api_kind = "openai_strict"
-
 [llms.gpt_4o]
 llm_model_id = "gpt-4o"
 provider = "openai"
@@ -29,6 +21,22 @@ max_context_window = 128000
 optimal_context_window = 64000
 max_output_tokens = 16384
 api_kind = "openai_chat_with_tools"
+
+[llms.gpt_4_1]
+llm_model_id = "gpt-4.1"
+provider = "openai"
+max_context_window = 1_047_576
+optimal_context_window = 523_776
+max_output_tokens = 32_768
+api_kind = "openai_strict"
+
+[llms.gpt_4_1_mini]
+llm_model_id = "gpt-4.1-mini"
+provider = "openai"
+max_context_window = 1_047_576
+optimal_context_window = 523_776
+max_output_tokens = 32_768
+api_kind = "openai_strict"
 
 [llms.gpt_4o_mini]
 llm_model_id = "gpt-4o-mini"
@@ -69,6 +77,14 @@ max_context_window = 200000
 optimal_context_window = 100000
 max_output_tokens = 100000
 api_kind = "openai_chat_with_tools"
+
+[llms.o4_mini]
+llm_model_id = "o4-mini"
+provider = "openai"
+max_context_window = 200_000
+optimal_context_window = 100_000
+max_output_tokens = 100_000
+api_kind = "openai_strict"
 
 [llms.claude_sonnet_3_5]
 llm_model_id = "claude-3-5-sonnet-20241022"

@@ -110,6 +110,18 @@ class LlmClient(ABC):
     def claude_haiku_3_5(cls) -> "LlmClient":
         return cls.from_config(LlmConfig.claude_haiku_3_5())
 
+    @classmethod
+    def gpt_4_1(cls) -> "LlmClient":
+        return cls.from_config(LlmConfig.gpt_4_1())
+
+    @classmethod
+    def gpt_4_1_mini(cls) -> "LlmClient":
+        return cls.from_config(LlmConfig.gpt_4_1_mini())
+
+    @classmethod
+    def o4_mini(cls) -> "LlmClient":
+        return cls.from_config(LlmConfig.o4_mini())
+
     @abstractmethod
     def _generate(
         self,
@@ -175,6 +187,26 @@ class LlmClient(ABC):
             tool_types=None,
         )
         return message_history.last()
+
+    async def single_shot_stream(
+        self,
+        prompt: str | None = None,
+        response_type: type[LlmResponseType] | None = None,
+        message_history: LlmMessageHistory | None = None,
+    ) -> AsyncGenerator[LlmStreamResponse, None]:
+        response_stream = self._generate_stream(
+            message_history=message_history,
+            response_type=response_type,
+            tool_types=None,
+        )
+        async for chunk in response_stream:
+            if isinstance(chunk, LlmMessage):
+                yield ResponseFullStreamResponse(
+                    kind=LlmStreamResponseKind.RESPONSE_FULL,
+                    content=chunk.content,
+                )
+            else:
+                yield chunk
 
     def multi_shot(
         self,

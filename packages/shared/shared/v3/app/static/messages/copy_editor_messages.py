@@ -1,12 +1,8 @@
-from shared.v3.app.static.messages.constants import (
-    DOCUMENT_CONTENT_AFTER_CURSOR_XML_BEGIN,
-    DOCUMENT_CONTENT_AFTER_CURSOR_XML_END,
-    DOCUMENT_CONTENT_BEFORE_CURSOR_XML_BEGIN,
-    DOCUMENT_CONTENT_BEFORE_CURSOR_XML_END,
-    PROMPT_XML_BEGIN,
-    PROMPT_XML_END,
-    TEXT_TO_EDIT_XML_BEGIN,
-    TEXT_TO_EDIT_XML_END,
+from shared.v3.globals.glossary import (
+    DOCUMENT_CONTENT_AFTER_CURSOR,
+    DOCUMENT_CONTENT_BEFORE_CURSOR,
+    TEXT_TO_EDIT,
+    USER_PROMPT,
 )
 from shared.v3.interfaces.llm_message import LlmMessage, MessageKind
 
@@ -55,9 +51,9 @@ class CopyEditorUserMessage(LlmMessage):
         page_content_after_cursor: str,
     ) -> "CopyEditorUserMessage":
         content = (
-            f"Edit this text based on the user's prompt: {TEXT_TO_EDIT_XML_BEGIN}{text_to_edit}{TEXT_TO_EDIT_XML_END}\n"
-            f"{PROMPT_XML_BEGIN}{original_user_prompt}{PROMPT_XML_END}\n"
-            f"{f'{DOCUMENT_CONTENT_BEFORE_CURSOR_XML_BEGIN}{page_content_before_cursor}{DOCUMENT_CONTENT_BEFORE_CURSOR_XML_END}' if page_content_before_cursor and page_content_before_cursor.strip() else ''}\n"
-            f"{f'{DOCUMENT_CONTENT_AFTER_CURSOR_XML_BEGIN}{page_content_after_cursor}{DOCUMENT_CONTENT_AFTER_CURSOR_XML_END}' if page_content_after_cursor and page_content_after_cursor.strip() else ''}"
+            f"{TEXT_TO_EDIT.wrap(text_to_edit)}\n"
+            f"{USER_PROMPT.wrap(original_user_prompt)}\n"
+            f"{DOCUMENT_CONTENT_BEFORE_CURSOR.wrap(page_content_before_cursor)}"
+            f"{DOCUMENT_CONTENT_AFTER_CURSOR.wrap(page_content_after_cursor)}"
         )
         return cls(content=content)

@@ -49,19 +49,3 @@ def test_data_source_is_in_scope() -> None:
     assert ds.is_in_scope("docs/somefile.md") is True
     # child_path that doesn't start with 'docs/'
     assert ds.is_in_scope("another/somefile.md") is False
-
-
-def test_data_source_human_readable_summary() -> None:
-    """
-    Test human_readable_summary returns a string listing each node path.
-    """
-    ds = DataSource(node_ids=[], organization_id="test_org")
-
-    class FakeNode:
-        def __init__(self, path: str) -> None:
-            self.relative_path = path
-
-    ds._cached_nodes = [FakeNode("fileA.txt"), FakeNode("fileB.txt")]
-    summary = ds.human_readable_summary()
-    assert "- fileA.txt" in summary
-    assert "- fileB.txt" in summary

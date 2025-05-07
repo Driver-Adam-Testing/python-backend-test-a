@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from shared.v3.globals.constants import (
     FORMAT_TOOL_CALL_REQUEST_f_class_name__example_json__docstring,
 )
+from shared.v3.globals.glossary import TOOL_ERROR_MESSAGE
 from shared.v3.interfaces.llm_message import LlmMessage, MessageKind
 from shared.v3.interfaces.llm_parseable import LlmParseable
 from shared.v3.utils.datasource import DataSource
@@ -27,6 +28,7 @@ class LlmTool(LlmParseable, ABC):
     _tool_datasource: DataSource | None = None
 
     _references: ReferenceSet = ReferenceSet(references=[])
+    _error_message: str | None = None
 
     @property
     def tool_call_id(self) -> str | None:
@@ -41,6 +43,10 @@ class LlmTool(LlmParseable, ABC):
         return self._references
 
     @property
+    def error_message(self) -> str | None:
+        return self._error_message
+
+    @property
     def status(self) -> LlmToolStatusString:
         return f"Tool called: {self.__class__.__name__}\n"
 
@@ -51,7 +57,17 @@ class LlmTool(LlmParseable, ABC):
     ) -> LlmMessage:
         self._tool_call_id = tool_call_id
         self._tool_datasource = datasource
-        self._execute()
+        try:
+            self._execute()
+        except Exception as e:
+            self._error_message = str(e)
+            return LlmMessage(
+                content=f"{TOOL_ERROR_MESSAGE.wrap(self._error_message)}",
+                message_kind=MessageKind.TOOL_CALL_RESPONSE,
+                tool_response=LlmMessage.ToolCallResponse(
+                    id=self.tool_call_id or None, name=self.__class__.__name__
+                ),
+            )
         return self.to_tool_call_response_message()
 
     @abstractmethod

@@ -78,6 +78,7 @@ def generate_codebase_metadata(
     provider: str,
     version_id: str | UUID,
     asset_name: str,
+    install_id: str,
 ) -> dict:
     from database.models_v2_enums import PrimaryAssetKind
 
@@ -89,6 +90,7 @@ def generate_codebase_metadata(
         "repository_id": str(repo_id),  # NOTE: just used for debugging
         "asset_name": asset_name,
         "asset_kind": PrimaryAssetKind.CODEBASE,
+        "install_id": install_id,
     }
 
 
@@ -101,7 +103,11 @@ def download_github_repo_zip(full_name: str, commit: str, access_token: str) -> 
 
 
 def download_and_upload_repo(
-    org_id: str, repo: dict, access_token: str, is_push: bool = False
+    org_id: str,
+    repo: dict,
+    access_token: str,
+    install_id: str,
+    is_push: bool = False,
 ) -> str | None:
     from database.db import engine
     from database.models_v2 import (
@@ -226,6 +232,7 @@ def download_and_upload_repo(
         "github",
         version_id,
         repo["name"],
+        install_id,
     )
 
     zip_content = download_github_repo_zip(repo["full_name"], commit, access_token)

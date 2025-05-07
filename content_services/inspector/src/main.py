@@ -130,7 +130,7 @@ async def get_result_loading_config(
         ),
     ],
     proxy=modal.Proxy.from_name("pg-proxy")
-    if os.environ["MODAL_ENVIRONMENT"] != "staging"
+    if os.environ["MODAL_ENVIRONMENT"] in  ["dev","prod"]
     else None,
     memory="2048",
     timeout=3600 * 8,
@@ -215,7 +215,7 @@ async def export_tech_docs_to_zip(
                     s3_dest,
                 )
             print(f"Uploaded tech docs zip to S3: {s3_dest}")
-
+            push_tech_docs.spawn(version_id)
     except Exception as e:
         exception_type = type(e).__name__
         exc_tb = e.__traceback__

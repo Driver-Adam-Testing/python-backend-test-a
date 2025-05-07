@@ -516,7 +516,8 @@ def run_codebase_connection(
     from shared.usage.utils import bytes_to_sloc
     from sqlalchemy.exc import IntegrityError
     from sqlmodel import Session, select, update
-
+    from boto3 import client
+    from onboarding.onboard_utils import parse_presigned_url
     download_dest = Path(provisional_codebase_name)
     download_file_from_presigned_url(presigned_url, download_dest)
 
@@ -612,7 +613,25 @@ def run_codebase_connection(
 
         s3_resource = resource("s3", endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL"))
         s3_bucket = s3_resource.Bucket(org_id_bucket)
-        s3_bucket.upload_file(Path(provisional_codebase_name), str(s3_dest))
+        dropzone_bucket, dropzone_key = parse_presigned_url(presigned_url)
+        s3 = client('s3')
+        response = s3.head_object(Bucket=dropzone_bucket, Key=dropzone_key)
+
+        # Extract and print metadata
+        metadata = response.get('Metadata', {})
+        install_id = metadata.get('install_id', None)
+        if install_id is not None:
+            s3_bucket.upload_file(
+                Path(provisional_codebase_name),
+                str(s3_dest),
+                ExtraArgs={"Metadata": {"install_id": install_id}},
+            )
+        else:
+            s3_bucket.upload_file(
+                Path(provisional_codebase_name),
+                str(s3_dest),
+            )
+        # s3_bucket.upload_file(Path(provisional_codebase_name), str(s3_dest))
         print(f"Uploaded {provisional_codebase_name} to {s3_dest}")
         with Session(engine) as session, session.begin():
             # Add directories source contents

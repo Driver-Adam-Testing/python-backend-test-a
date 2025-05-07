@@ -10,6 +10,7 @@ import jwt
 import requests
 from sqlalchemy.orm import selectinload
 from sqlmodel import Session, select
+from onboarding.onboard_utils import AccessTokenError
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,6 @@ def generate_jwt() -> str:
 
 
 def fetch_app_access_token(installation_id: str) -> str:
-    from onboard_utils import AccessTokenError
 
     url = f"https://api.github.com/app/installations/{installation_id}/access_tokens"
     jwt = generate_jwt()

@@ -101,21 +101,21 @@ def create_pull_request(
                 raise
 
 
-async def push_docs(version_id:str) -> None:
+async def push_docs(version_id:uuid.UUID) -> None:
     import os
     import tempfile
     # import boto3
     import hashlib
-    from gh_ops import fetch_app_access_token, get_repo_clone_info_from_id
-    from onboard_utils import (
+    from onboarding.gh_ops import fetch_app_access_token, get_repo_clone_info_from_id
+    from onboarding.onboard_utils import (
         download_file_from_presigned_url,
         unpack_archive_to_finalized_path,
     )
-    from src.utils.db import get_installation_id_by_org_id, get_version_by_id
+    from utils.db import get_installation_id_by_org_id, get_version_by_id
 
     # parsed_values = extract_values_from_presigned_url(presigned_url)
 
-    version = await get_version_by_id(uuid.UUID(version_id))
+    version = await get_version_by_id(version_id)
     primary_asset_id = version.primary_asset.id
     repo_id = version.primary_asset.repository_id
     org_id = version.primary_asset.organization_id

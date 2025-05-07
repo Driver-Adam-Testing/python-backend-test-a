@@ -46,9 +46,7 @@ class PipelineRequest(BaseModel, ABC):
                 relative_paths, organization_id
             )
         elif page_node_id is not None:
-            self._datasource = DataSource.from_page_node_id(
-                page_node_id, organization_id
-            )
+            self._datasource = DataSource.from_page_id(page_node_id, organization_id)
         else:
             self._datasource = None
 

@@ -105,8 +105,17 @@ def run_autodoc(
                     )
 
         case AutoDocConfigKind.ARCHITECTURE:
-            # TODO: guardrail here?
-            pass
+            for document_source in document_sources:
+                if (
+                    document_source.source_node.version.primary_asset.kind
+                    == PrimaryAssetKind.CODEBASE
+                ):
+                    code_node_count += 1
+            if code_node_count == 0:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Architecture Overview requires at least one codebase source tuned",
+                )
         case _:
             raise HTTPException(
                 status_code=400,

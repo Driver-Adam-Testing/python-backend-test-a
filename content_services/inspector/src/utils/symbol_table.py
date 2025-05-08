@@ -569,7 +569,7 @@ def discover_c_and_h_files(project_root: Path) -> list[Path]:
 
 def main() -> None:
     # project_root = Path("/Users/andrewmark/Downloads/sqlite")
-    project_root = Path("/Users/andrewmark/projects/c_test_3")
+    project_root = Path("/Users/andrewmark/projects/chesslib4")
 
     file_paths = discover_c_and_h_files(project_root)
 

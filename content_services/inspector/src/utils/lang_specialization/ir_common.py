@@ -403,7 +403,7 @@ class IrCollection(BaseModel, abc.ABC):
                         symbols_dict[s.name] = []
                     futures[executor.submit(ir_data.from_llm, llm_to_use, s)] = s.name
                 else:
-                    raise ValueError("Unsupport type in RawSymbolCollection")
+                    raise ValueError("Unsupported type in RawSymbolCollection")
 
             for idx, future in enumerate(
                 concurrent.futures.as_completed(futures.keys())
@@ -439,7 +439,8 @@ class IrCollection(BaseModel, abc.ABC):
 
                 output += f"\n---\n### {k} {id_comment}\n"
                 output += item.render_markdown()
-
+        # if self.__class__.__name__ == "CDeclarationCollection":
+        #     print("------->", output)
         return output
 
     def __str__(self) -> str:
@@ -472,6 +473,22 @@ class DataStructureData(IrData, abc.ABC):
             type=FieldNameWithBackTickContent(content=""),
             members=ListedBacktickNameRawContentNoNone(content=[]),
             description=FieldNameWithRawContent(content=""),
+        )
+
+
+class FnDeclData(IrData, abc.ABC):
+    single_sentence: RawContent
+    detailed_description: RawContent
+    inputs: ListedBacktickNameRawContentWithNone
+    output: FieldNameWithBackTickContent
+
+    @classmethod
+    def default_instance(cls) -> Self:
+        return cls(
+            single_sentence=RawContent(content=""),
+            detailed_description=RawContent(content=""),
+            inputs=ListedBacktickNameRawContentWithNone(content=[]),
+            output=FieldNameWithBackTickContent(content=""),
         )
 
 

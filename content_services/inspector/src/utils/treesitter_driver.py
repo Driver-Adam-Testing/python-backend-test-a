@@ -203,6 +203,7 @@ class CDriverTree(DriverTree):
                     start_byte=ts_node.start_byte,
                     end_byte=ts_node.end_byte,
                     file_path=self.file_path,
+                    symbol_code=node_to_text(ts_node),
                 )
             )
         sorted_includes = sorted(includes, key=lambda x: x.start_byte)
@@ -232,6 +233,7 @@ class CDriverTree(DriverTree):
                 start_byte=ts_node.start_byte,
                 end_byte=ts_node.end_byte,
                 file_path=self.file_path,
+                symbol_code=node_to_text(ts_node),
             )
             functions.append(func)
         sorted_functions = sorted(functions, key=lambda x: x.start_byte)
@@ -378,6 +380,7 @@ class CDriverTree(DriverTree):
                 start_byte=ts_node.start_byte,
                 end_byte=ts_node.end_byte,
                 file_path=self.file_path,
+                symbol_code=node_to_text(ts_node),
             )
 
             results.append(ds)
@@ -443,6 +446,7 @@ class CDriverTree(DriverTree):
                             start_byte=ts_node.start_byte,
                             end_byte=ts_node.end_byte,
                             file_path=self.file_path,
+                            symbol_code=node_to_text(ts_node),
                         )
                         variables.append(var)
 
@@ -478,6 +482,7 @@ class CDriverTree(DriverTree):
                 start_byte=ts_node.start_byte,
                 end_byte=ts_node.end_byte,
                 file_path=self.file_path,
+                symbol_code=node_to_text(ts_node),
             )
 
             function_calls.append(func_call)
@@ -526,6 +531,7 @@ class CDriverTree(DriverTree):
                 start_byte=ts_node.start_byte,
                 end_byte=ts_node.end_byte,
                 file_path=self.file_path,
+                symbol_code=node_to_text(ts_node),
             )
             declarations.append(func)
 

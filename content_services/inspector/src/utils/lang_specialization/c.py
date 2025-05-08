@@ -7,6 +7,7 @@ from utils.treesitter_driver import CDriverTree
 from .ir_common import (
     DataStructureData,
     FnData,
+    FnDeclData,
     IrCollection,
     IrData,
     VariableData,
@@ -121,6 +122,49 @@ Your job is to describe the function. **Always respond using exactly the followi
 Return JSON according to the schema above. Do not use the format ```json ... ```, just return the JSON data.
 """
 
+FUNCTION_DECLS_FOUND_SYSTEM_PROMPT_JSON = """
+You are an expert C programmer and a software engineering documentation expert. You write clear, precise documentation for public C APIs intended for library users.
+You focus on documenting the public interface of functions from header files, without revealing any implementation details. Your documentation helps developers understand how to use the API correctly without needing to know how it works internally.
+You will be given a function to document. IMPORTANT: You must ONLY document the public API interface as visible in the header file. DO NOT reveal any implementation details from the source code in your documentation.
+
+Your job is to describe the API function from a user's perspective. **Always respond using exactly the following JSON schema:**
+{
+    "single_sentence": "<terse single sentence description of what the function does>",
+    "detailed_description": "<paragraph explaining the purpose and usage of the function>",
+    "inputs": [
+        {"name": <input_arg1>, "content": <description of input argument 1>},
+        {"name": <input_arg2>, "content": <description of input argument 2>},
+        ...
+    ],
+    "output": <description of output>
+}
+
+Guidelines:
+
+- Focus ONLY on the public interface, not implementation details
+- Document preconditions and postconditions
+- Be explicit about memory ownership when necessary
+- Include relevant error cases and how they're reported
+
+CRITICAL RULES:
+
+Use the implementation code ONLY to understand the function's behavior from a user's perspective
+NEVER mention any algorithms, data structures, or techniques used in the implementation
+NEVER reveal private helper functions called within the implementation
+NEVER describe internal states or variables that aren't exposed in the API
+NEVER discuss code optimizations or implementation choices
+DO describe behavior that affects API users (e.g., "This function is not thread-safe" or "The returned pointer must be freed by the caller")
+Use the implementation's behavior to accurately document edge cases and error conditions
+
+Return JSON according to the schema above. Do not use the format ```json ... ```, just return the JSON data.
+"""
+
+DECL_FOUND_USER_PROMPT = """
+Document the public API for the function provided below.
+
+Function to document:
+"""
+
 FUNCTIONS_FOUND_USER_PROMPT = """
 Summarize the function in the code provided below. Describe the inputs, control flow and logic, and output.
 
@@ -160,6 +204,91 @@ Variable to document:
 """
 
 VARIABLES_NONE_CONTENT = "\n---\nNo global variables defined in this file."
+
+
+class CDeclarationRawSymbolCollection(RawSymbolCollection):
+    data: dict[str, RawSymbolData]
+
+    @classmethod
+    def from_static_analysis(
+        cls, code: str, root_rel_path: Path, reified_symbols: list[ReifiedSymbol] | None
+    ) -> Self | None:
+        declaration_raw_symbol_data = {}
+        is_large_file = code_requires_multi_prompt(code)
+
+        decl_symbols = [sym for sym in reified_symbols if sym.is_declaration]
+        print(f"---------> {len(decl_symbols)} declarations")
+
+        for reified_sym in decl_symbols:
+            ts_symbol = reified_sym.raw
+            # TODO we skip declarations that weren't matched to definitions... not ideal but we are prototyping
+            if ts_symbol.name is not None and reified_sym.definition is not None:
+                raw_symbol_data = RawSymbolData.from_tree_sitter_raw_symbol(
+                    ts_symbol=ts_symbol,
+                    path=root_rel_path,
+                    scope=None,
+                    scope_relation=None,
+                    children=[],
+                    reference_code=None,
+                    delimiter=None,
+                    is_large_file=is_large_file,
+                    is_overloaded=False,
+                    use_padding=False,
+                    code=code,
+                    reified_symbol=reified_sym,
+                )
+                declaration_raw_symbol_data[ts_symbol.name] = raw_symbol_data
+
+        output = (
+            None
+            if len(declaration_raw_symbol_data) == 0
+            else cls(data=declaration_raw_symbol_data)
+        )
+        return output
+
+    @classmethod
+    def from_llm(cls, code: str, root_rel_path: str) -> Self:
+        raise NotImplementedError("Static analysis should be used for c imports")
+
+    def to_dict(self) -> dict[str, RawSymbolData]:
+        return self.data
+
+
+class CDeclData(FnDeclData):
+    @classmethod
+    def system_prompt(cls) -> str:
+        return FUNCTION_DECLS_FOUND_SYSTEM_PROMPT_JSON
+
+    @classmethod
+    def user_prompt(cls, symbol: RawSymbolData) -> str:
+        # TODO handle we didn't link decl to definition
+        symbol_body = symbol.reified_symbol.definition.raw.symbol_code
+        user_prompt = f"{DECL_FOUND_USER_PROMPT}\n\n{symbol_body}"
+        return user_prompt
+
+    @classmethod
+    def child_to_ir(cls, symbol: RawSymbolData) -> IrData | None:
+        raise NotImplementedError("C declarations should not have children")
+
+    @classmethod
+    def child_to_field_name(cls, symbol: RawSymbolData) -> str:
+        raise NotImplementedError("C declarations should not have children")
+
+
+class CDeclarationCollection(IrCollection):
+    data: dict[str, CDeclData | list[CDeclData]]
+
+    @classmethod
+    def from_llm(
+        cls,
+        llm: ChatOpenAI,
+        symbols_list: RawSymbolCollection,
+    ) -> Self:
+        return cls.from_llm_with_ir_data(
+            CDeclData,
+            llm,
+            symbols_list,
+        )
 
 
 class CIncludeRawSymbolCollection(RawSymbolCollection):

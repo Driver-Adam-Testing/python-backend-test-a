@@ -2,6 +2,8 @@ from utils.lang_specialization.c import (
     SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_C,
     CDataStructureCollection,
     CDataStructureRawSymbolCollection,
+    CDeclarationCollection,
+    CDeclarationRawSymbolCollection,
     CFunctionCollection,
     CFunctionRawSymbolCollection,
     CIncludeRawSymbolCollection,
@@ -49,6 +51,13 @@ SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_C = [
         "# Functions",
         CFunctionRawSymbolCollection.from_static_analysis,
         CFunctionCollection.from_llm,
+        None,
+    ),
+    (
+        S.FN_COND_JSON,
+        "# Function Declarations",
+        CDeclarationRawSymbolCollection.from_static_analysis,
+        CDeclarationCollection.from_llm,
         None,
     ),
 ]

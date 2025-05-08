@@ -101,6 +101,9 @@ class RawTreeSitterSymbolData(BaseModel):
     end_byte: int
     file_path: Path
     symbol_kind: SymbolKind
+    symbol_code: (
+        None | str
+    )  # TODO: this is somewhat a hack since we need the code, but makes symbols bulky
 
     class Config:
         """

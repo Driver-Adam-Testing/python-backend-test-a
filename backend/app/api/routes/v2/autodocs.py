@@ -105,6 +105,7 @@ def run_autodoc(
                     )
 
         case AutoDocConfigKind.ARCHITECTURE:
+            code_node_count = 0
             for document_source in document_sources:
                 if (
                     document_source.source_node.version.primary_asset.kind

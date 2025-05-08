@@ -8,8 +8,10 @@ app = modal.App(name="generation")
 image = modal.Image.debian_slim(python_version="3.12").pip_install("fastapi[standard]")
 image = (
     modal.Image.debian_slim(python_version="3.12")
-    .copy_local_dir("../../driver_db/", remote_path="/driver_db")
-    .copy_local_dir(local_path="../../packages/shared", remote_path="/packages/shared")
+    .add_local_dir("../../driver_db/", remote_path="/driver_db", copy=True)
+    .add_local_dir(
+        local_path="../../packages/shared", remote_path="/packages/shared", copy=True
+    )
     .poetry_install_from_file("pyproject.toml")
 )
 

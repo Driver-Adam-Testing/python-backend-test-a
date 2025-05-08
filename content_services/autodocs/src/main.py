@@ -37,9 +37,6 @@ image = inspection_image = (
             "aiolimiter",
         ]
     )
-    .add_local_dir(
-        local_path="../../driver_db/certs", remote_path="/root/data/", copy=True
-    )
     .add_local_file(
         "src/configs/adi_driver_readme.toml",
         "/autodocs_configs/adi_driver_page.toml",

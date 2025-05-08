@@ -15,8 +15,10 @@ from onboarding.onboard import (
 
 inspection_image = (
     modal.Image.debian_slim(python_version="3.12")
-    .copy_local_dir(local_path="../../driver_db", remote_path="/driver_db")
-    .copy_local_dir(local_path="../../packages/shared", remote_path="/shared_pkg")
+    .add_local_dir(local_path="../../driver_db", remote_path="/driver_db", copy=True)
+    .add_local_dir(
+        local_path="../../packages/shared", remote_path="/shared_pkg", copy=True
+    )
     .pip_install(
         [
             "boto3",
@@ -30,6 +32,17 @@ inspection_image = (
             "gitignore-parser",
             "chardet",
         ]
+    )
+    .add_local_python_source(
+        "inspection",
+        "modal_funcs",
+        "onboarding",
+        "shared",
+        "tasks",
+        "utils",
+        "common",
+        "database",
+        copy=True,
     )
 )
 
@@ -124,19 +137,13 @@ async def get_result_loading_config(
         modal.Secret.from_name("aws-inspector-s3"),
         modal.Secret.from_name("open-ai"),
     ],
-    mounts=[
-        modal.Mount.from_local_dir(
-            local_path="../../driver_db/certs",
-            remote_path="/root/data/",
-        ),
-    ],
     proxy=modal.Proxy.from_name("pg-proxy")
     if os.environ["MODAL_ENVIRONMENT"] != "staging"
     else None,
     memory="2048",
     timeout=3600 * 8,
     region="us-east",
-    concurrency_limit=5,
+    max_containers=5,
     cpu=1.0,
 )
 async def inspect_db(
@@ -512,8 +519,19 @@ def get_file_content(path: Path) -> str:
 
 @app.function(
     image=modal.Image.debian_slim(python_version="3.12")
-    .copy_local_dir(local_path="../../driver_db", remote_path="/driver_db")
-    .pip_install("/driver_db"),
+    .add_local_dir(local_path="../../driver_db", remote_path="/driver_db", copy=True)
+    .pip_install("/driver_db")
+    .add_local_python_source(
+        "common",
+        "database",
+        "inspection",
+        "modal_funcs",
+        "onboarding",
+        "shared",
+        "tasks",
+        "utils",
+        copy=True,
+    ),
     secrets=[
         modal.Secret.from_name("db"),
     ],
@@ -1093,8 +1111,18 @@ def run_connect_unconnected_repos() -> None:
 
 
 @app.function(
-    image=modal.Image.debian_slim(python_version="3.12").pip_install(
-        "sendgrid", "strawberry-graphql"
+    image=modal.Image.debian_slim(python_version="3.12")
+    .pip_install("sendgrid", "strawberry-graphql")
+    .add_local_python_source(
+        "common",
+        "database",
+        "inspection",
+        "modal_funcs",
+        "onboarding",
+        "shared",
+        "tasks",
+        "utils",
+        copy=True,
     ),
     secrets=[modal.Secret.from_name("sendgrid"), modal.Secret.from_name("env-name")],
 )
@@ -1121,7 +1149,7 @@ def send_exception_email(exception_details: str) -> None:
 
 onboarding_and_inspect_image = (
     modal.Image.debian_slim(python_version="3.12")
-    .copy_local_dir(local_path="../../driver_db", remote_path="/driver_db")
+    .add_local_dir(local_path="../../driver_db", remote_path="/driver_db", copy=True)
     .pip_install("/driver_db")
     .pip_install("requests")
     .pip_install("boto3")

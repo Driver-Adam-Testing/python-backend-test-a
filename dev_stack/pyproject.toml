@@ -1,0 +1,32 @@
+[tool.poetry]
+name = "dev-stack"
+version = "0.1.0"
+description = ""
+authors = ["Eric Miller <146128069+eric-driverai@users.noreply.github.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+auth0-python = "^4.9.0"
+asyncio = "^3.4.3"
+httpx = "^0.28.1"
+pydantic-settings = "^2.8.1"
+click = "^8.1.8"
+fastapi = "^0.115.12"
+markdown = "^3.7"
+
+aws-cdk-lib = ">=2.164.1"
+constructs = ">=10.0.0"
+cdk-nag = ">2.0.0"
+cdk-monitoring-constructs = "*"
+aws-cdk-aws-lambda-python-alpha = "^2.150.0a0"
+boto3 = "^1.37.32"
+python-dotenv = "^1.1.0"
+modal = "^0.73.165"
+dotenv = "^0.9.9"
+uvicorn = "^0.34.2"
+ngrok = "^1.4.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

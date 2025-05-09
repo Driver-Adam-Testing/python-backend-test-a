@@ -131,7 +131,7 @@ async def get_result_loading_config(
         ),
     ],
     proxy=modal.Proxy.from_name("pg-proxy")
-    if os.environ["MODAL_ENVIRONMENT"] != "staging"
+    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "prod"]
     else None,
     memory="2048",
     timeout=3600 * 8,
@@ -518,7 +518,7 @@ def get_file_content(path: Path) -> str:
         modal.Secret.from_name("db"),
     ],
     proxy=modal.Proxy.from_name("pg-proxy")
-    if os.environ["MODAL_ENVIRONMENT"] != "staging"
+    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "prod"]
     else None,
 )
 def set_codebase_status_in_container(version_id: str, status: str) -> None:

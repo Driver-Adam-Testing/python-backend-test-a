@@ -8,8 +8,10 @@ app = modal.App("pdf-summary-embedding")
 
 image_jve = (
     modal.Image.debian_slim(python_version="3.12")
-    .copy_local_dir("../../driver_db/", remote_path="/driver_db")
-    .copy_local_dir(local_path="../../packages/shared", remote_path="/packages/shared")
+    .add_local_dir("../../driver_db/", remote_path="/driver_db", copy=True)
+    .add_local_dir(
+        local_path="../../packages/shared", remote_path="/packages/shared", copy=True
+    )
     .poetry_install_from_file("pyproject.toml")
     .apt_install("default-jre")
     .apt_install("ghostscript")
@@ -17,12 +19,6 @@ image_jve = (
 
 pdf_preprocessing_modal_config = {
     "image": image_jve,
-    "mounts": [
-        modal.Mount.from_local_dir(
-            local_path="../../driver_db/certs",
-            remote_path="/root/data/",
-        ),
-    ],
     "secrets": [
         modal.Secret.from_name("driver-api-credentials"),
         modal.Secret.from_name("open-ai"),
@@ -33,7 +29,7 @@ pdf_preprocessing_modal_config = {
     "proxy": modal.Proxy.from_name("pg-proxy")
     if os.environ["MODAL_ENVIRONMENT"] in ["dev", "prod"]
     else None,
-    "concurrency_limit": 20,
+    "max_containers": 20,
 }
 
 

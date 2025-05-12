@@ -5,10 +5,14 @@ from utils.dag import LiteNode
 
 image = (
     modal.Image.debian_slim(python_version="3.12")
-    .copy_local_dir(local_path="../../driver_db", remote_path="/driver_db")
-    .copy_local_dir(local_path="../../packages/shared", remote_path="/shared_pkg")
-    .copy_local_file(
-        local_path="uctags-2024.10.02-linux-x86_64/bin/ctags", remote_path="/ctags"
+    .add_local_dir(local_path="../../driver_db", remote_path="/driver_db", copy=True)
+    .add_local_dir(
+        local_path="../../packages/shared", remote_path="/shared_pkg", copy=True
+    )
+    .add_local_file(
+        local_path="uctags-2024.10.02-linux-x86_64/bin/ctags",
+        remote_path="/ctags",
+        copy=True,
     )
     .pip_install(
         [
@@ -20,13 +24,23 @@ image = (
             "tree-sitter-c==0.23.4",
         ]
     )  # TODO lock versions down
+    .add_local_python_source(
+        "common",
+        "database",
+        "inspection",
+        "main",
+        "onboarding",
+        "shared",
+        "tasks",
+        "utils",
+    )
 )
 
 function_cfg = {"secrets": [modal.Secret.from_name("open-ai")], "image": image}
 
 
 @app.function(
-    concurrency_limit=72,
+    max_containers=72,
     timeout=120 * 60,
     **function_cfg,
 )
@@ -62,7 +76,7 @@ def make_tech_doc(
     return file_docs_successful, file_doc, node
 
 
-@app.function(concurrency_limit=72, timeout=60 * 60, **function_cfg)
+@app.function(max_containers=72, timeout=60 * 60, **function_cfg)
 def make_symbol_docs(
     node: LiteNode,
     source_code: str,
@@ -82,7 +96,7 @@ def make_symbol_docs(
     return symbols
 
 
-@app.function(concurrency_limit=60, timeout=30 * 60, **function_cfg)
+@app.function(max_containers=60, timeout=30 * 60, **function_cfg)
 def make_folder_tech_doc(
     codebase_name: str, node: LiteNode, child_nodes_to_docs: dict[LiteNode, dict]
 ) -> dict[str, any]:
@@ -110,7 +124,7 @@ def make_folder_tech_doc(
     return folder_docs
 
 
-@app.function(concurrency_limit=3, timeout=60 * 60, **function_cfg)
+@app.function(max_containers=3, timeout=60 * 60, **function_cfg)
 def make_toplevel_tech_docs(
     codebase_name: str, nodes_to_docs: dict[LiteNode, dict]
 ) -> dict[str, any]:

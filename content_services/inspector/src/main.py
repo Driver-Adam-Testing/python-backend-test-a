@@ -155,6 +155,8 @@ async def export_tech_docs_to_zip(
     from sqlalchemy.orm import selectinload
     from sqlmodel import select
     from sqlmodel.ext.asyncio.session import AsyncSession
+    from os.path import relpath
+    from utils.export_utils import extract_markdown_links, replace_driver_compatible_links_with_markdown_links
 
     try:
         async with AsyncSession(async_engine) as session:
@@ -193,6 +195,7 @@ async def export_tech_docs_to_zip(
                     .with_suffix(".md")
                 )
                 content = node_row[1]
+                content = replace_driver_compatible_links_with_markdown_links(content, Path(*doc_file_path.parts[1:]))
                 file_path = Path(temp_dir) / doc_file_path
                 file_path.parent.mkdir(parents=True, exist_ok=True)
                 file_path.write_text(content)

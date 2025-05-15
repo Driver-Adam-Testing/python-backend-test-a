@@ -161,6 +161,7 @@ class PrimaryAssetDetailRead(PrimaryAssetRead):
 
     most_recent_version: PrimaryAssetVersionRead | None
     tags: list[TagRead] | None
+    codebase_settings_auto_commit_docs: bool | None = None
 
     @computed_field
     @property
@@ -201,6 +202,7 @@ class PrimaryAssetCreate(BaseModel):
 
 class PrimaryAssetUpdate(BaseModel):
     display_name: str | None = None
+    codebase_settings_auto_commit_docs: bool | None = None
 
 
 class VersionCreate(BaseModel):

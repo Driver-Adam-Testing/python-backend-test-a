@@ -42,7 +42,9 @@ class SupportedModels(str, Enum):
     CLAUDE_SONNET_3_5 = "claude_sonnet_3_5"
     CLAUDE_SONNET_3_7 = "claude_sonnet_3_7"
     CLAUDE_HAIKU_3_5 = "claude_haiku_3_5"
-    GPT_4_5 = "gpt_4_5"
+    GPT_4_1 = "gpt_4_1"
+    GPT_4_1_MINI = "gpt_4_1_mini"
+    O4_MINI = "o4_mini"
 
 
 class LlmConfig(BaseModel):
@@ -176,10 +178,6 @@ class LlmConfig(BaseModel):
         return cls.from_name(SupportedModels.O3_MINI)
 
     @classmethod
-    def gpt_4_5(cls) -> "LlmConfig":
-        return cls.from_name(SupportedModels.GPT_4_5)
-
-    @classmethod
     def claude_sonnet_3_5(cls) -> "LlmConfig":
         return cls.from_name(SupportedModels.CLAUDE_SONNET_3_5)
 
@@ -190,3 +188,15 @@ class LlmConfig(BaseModel):
     @classmethod
     def claude_haiku_3_5(cls) -> "LlmConfig":
         return cls.from_name(SupportedModels.CLAUDE_HAIKU_3_5)
+
+    @classmethod
+    def gpt_4_1(cls) -> "LlmConfig":
+        return cls.from_name(SupportedModels.GPT_4_1)
+
+    @classmethod
+    def gpt_4_1_mini(cls) -> "LlmConfig":
+        return cls.from_name(SupportedModels.GPT_4_1_MINI)
+
+    @classmethod
+    def o4_mini(cls) -> "LlmConfig":
+        return cls.from_name(SupportedModels.O4_MINI)

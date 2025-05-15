@@ -2,7 +2,7 @@ services:
   db:
     image: pgvector/pgvector:pg16
     ports:
-      - "5432:5432"
+      - "5434:5432"
     volumes:
       - app-db-data:/var/lib/postgresql/data/pgdata
     env_file:
@@ -12,26 +12,27 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
       - POSTGRES_USER=${POSTGRES_USER?Variable not set}
       - POSTGRES_DB=${POSTGRES_DB?Variable not set}
-  db-initializer:
-    image: db-init
-    build:
-      context: ./driver_db
-    depends_on:
-      - db
-    env_file:
-      - .env
-    environment:
-      - POSTGRES_SERVER=db
-      - POSTGRES_PORT=${POSTGRES_PORT}
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_USER=${POSTGRES_USER?Variable not set}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
-      - NEW_API_USERNAME=localapi
-      - NEW_API_PASSWORD=localapi
+#  db-initializer:
+#    image: db-init
+#    build:
+#      context: ./driver_db
+#    depends_on:
+#      - db
+#    env_file:
+#      - .env
+#    environment:
+#      - POSTGRES_SERVER=db
+#      - POSTGRES_PORT=${POSTGRES_PORT}
+#      - POSTGRES_DB=${POSTGRES_DB}
+#      - POSTGRES_USER=${POSTGRES_USER?Variable not set}
+#      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
+##      - NEW_API_USERNAME=localapi
+##      - NEW_API_PASSWORD=localapi
   backend:
+    platform: linux/arm64
     image: "backend:latest"
     ports:
-      - "8888:8888"
+      - "4000:4000"
     volumes:
       - ./backend/:/app
       - ./driver_db/:/driver_db
@@ -44,19 +45,14 @@ services:
       - default
     depends_on:
       - db
-      - db-initializer
-      - s3
+#      - db-initializer
     env_file:
       - .env
     environment:
       - ENVIRONMENT=local
       - PYTHONPATH=/app
       - BACKEND_CORS_ORIGINS=${BACKEND_CORS_ORIGINS}
-      - USERS_OPEN_REGISTRATION=${USERS_OPEN_REGISTRATION}
-      - SMTP_HOST=${SMTP_HOST}
-      - SMTP_USER=${SMTP_USER}
-      - SMTP_PASSWORD=${SMTP_PASSWORD}
-      - EMAILS_FROM_EMAIL=${EMAILS_FROM_EMAIL}
+
       - POSTGRES_SERVER=db
       - POSTGRES_PORT=${POSTGRES_PORT}
       - POSTGRES_DB=${POSTGRES_DB}
@@ -69,34 +65,14 @@ services:
       - AUTH0_MGMT_API_CLIENT_SECRET=${AUTH0_MGMT_API_CLIENT_SECRET}
       - AUTH0_MGMT_API_AUDIENCE=${AUTH0_MGMT_API_AUDIENCE}
       - AWS_REGION=${AWS_REGION?Variable not set}
-      - AWS_S3_ENDPOINT_URL=http://s3:9000
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID?Variable not set}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY?Variable not set}
-      - PORT=8888
+      - PORT=4000
       - MODAL_TOKEN_ID=${MODAL_TOKEN_ID?Variable not set}
       - MODAL_TOKEN_SECRET=${MODAL_TOKEN_SECRET?Variable not set}
       - MODAL_ENVIRONMENT=${MODAL_ENVIRONMENT?dev}
       - INSTALL_DEV=true
       - INSPECTOR_BUCKET_NAME=${INSPECTOR_BUCKET_NAME?Variable not set}
-  s3:
-    image: quay.io/minio/minio:latest
-    command: server /data --console-address ":9001"
-    environment:
-      - MINIO_ROOT_USER=minioadmin
-      - MINIO_ROOT_PASSWORD=minioadmin
-    volumes:
-      - minio_data:/data
-    ports:
-      - 9000:9000
-      - 9001:9001
-  initialize-s3service:
-    image: quay.io/minio/mc
-    depends_on:
-      - s3
-    entrypoint: >
-      /bin/sh -c ' /usr/bin/mc alias set s3 http://s3:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}"; /usr/bin/mc mb s3/"$${INSPECTOR_BUCKET_NAME}"; exit 0; '
-    env_file: .env
+      - DROPZONE_BUCKET_NAME=${DROPZONE_BUCKET_NAME?Variable not set}
 volumes:
   app-db-data:
-  minio_data:
-    driver: local

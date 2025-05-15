@@ -11,9 +11,10 @@ from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
 from starlette.middleware.cors import CORSMiddleware
 
+from app.api.api_router import api_router
 from app.api.auth import AuthMiddleware
 from app.api.logging_middleware import LoggingMiddleware
-from app.api.main import api_router
+from app.api.studio_router import studio_router
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -98,7 +99,7 @@ configure_sentry(settings.ENVIRONMENT, settings.SENTRY_DSN)
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    openapi_url=f"{settings.API_V1_STR}/openapi.json",
+    openapi_url=f"{settings.STUDIO_V1_STR}/openapi.json",  # TODO: This will need to change to only include public endpoints...
     generate_unique_id_function=custom_generate_unique_id,
 )
 
@@ -118,6 +119,7 @@ if settings.BACKEND_CORS_ORIGINS:
 app.add_middleware(LoggingMiddleware)
 app.add_middleware(AuthMiddleware)
 
+app.include_router(studio_router, prefix=settings.STUDIO_V1_STR)
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
 

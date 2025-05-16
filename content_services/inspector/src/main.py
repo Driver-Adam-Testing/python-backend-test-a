@@ -15,6 +15,7 @@ from onboarding.onboard import (
 
 inspection_image = (
     modal.Image.debian_slim(python_version="3.12")
+    .apt_install("git")
     .add_local_dir(local_path="../../driver_db", remote_path="/driver_db", copy=True)
     .add_local_dir(
         local_path="../../packages/shared", remote_path="/shared_pkg", copy=True
@@ -166,6 +167,11 @@ async def inspect_db(
         get_version_by_id,
         try_get_prev_version,
     )
+    from utils.git_diff import (
+        CodeDiffParams,
+        InsufficientBalanceError,
+        compute_and_log_code_diff_size_in_bytes,
+    )
     from utils.io import download_all_source_files_in_parallel
 
     try:
@@ -290,13 +296,41 @@ async def inspect_db(
                 for node in previous_codebase_dag.topological_sort():
                     print(node.root_rel_path, node.status)
 
-                diff_dag = codebase_dag.compute_diff(previous_codebase_dag)
+                diff_dag = codebase_dag.compute_diff(
+                    previous_codebase_dag, delete_file_nodes=False
+                )
                 print("Diff dag computed")
 
                 print("======= Nodes from diff dag =======")
                 for node in diff_dag.topological_sort():
                     print(node.root_rel_path, node.status)
 
+                print("======= Computing diff size in bytes =======")
+                changed_nodes = diff_dag.topological_sort(
+                    changed_nodes_only=True, files_only=True
+                )
+                try:
+                    # @andrew: We calculate the diff size in bytes, log it while not turning on billing for code diffs
+                    compute_and_log_code_diff_size_in_bytes(
+                        CodeDiffParams(
+                            codebase_name=codebase_name,
+                            version_id=str(version.id),
+                            primary_asset_id=str(version.primary_asset_id),
+                            org_id=org_id,
+                            previous_download_root=previous_download_root,
+                            download_root=download_root,
+                            changed_nodes=changed_nodes,
+                        )
+                    )
+                except InsufficientBalanceError as ibe:
+                    print(
+                        f"Insufficient balance for org {org_id} to process codebase {codebase_name} {ibe}"
+                    )
+                    set_codebase_status_in_container.remote(
+                        version_id, VersionStatus.INSUFFICIENT_BALANCE.value
+                    )
+                    # I chose to return here vs re-raising the error because it will get caught and swalloed by the outer try/catch
+                    return
             if previous_version is not None:
                 sorted_nodes = diff_dag.topological_sort()
             else:
@@ -313,7 +347,7 @@ async def inspect_db(
             nodes_with_id: list[tuple[Node, uuid.UUID | None]] = [
                 (node, path_to_db_node_id[node.root_rel_path])
                 for node in sorted_nodes
-                if node.root_rel_path != Path(".")
+                if node.root_rel_path != Path(".") and node.status != NodeStatus.REMOVED
             ]
 
             print("======= Nodes with source content id =======")

@@ -517,13 +517,14 @@ class CsClassRawSymbolCollection(RawSymbolCollection):
                 )
 
         for s in symbols:
+            scope = s.get("scope")
             if (
-                (s.get("scope"))
-                and not s["name"].startswith("__anon")
-                and (s["kind"] in C_SHARP_FUNCTIONS)
-                and s["scopeKind"] in C_SHARP_CLASSES
-                and "__anon" not in s.get("scope")
+                scope is None
+                or s["name"].startswith("__anon")
+                or (scope and "__anon" in scope)
             ):
+                continue
+            if s["kind"] in C_SHARP_FUNCTIONS and s["scopeKind"] in C_SHARP_CLASSES:
                 # TODO: is this needed for partial case?
                 # if s["scope"].split("::")[-1] not in class_raw_symbol_data:
                 #     # Case where class is defined elsewhere (e.g. header), but methods for the class are defined in file
@@ -544,7 +545,7 @@ class CsClassRawSymbolCollection(RawSymbolCollection):
                 #     )
 
                 is_overloaded = global_method_counts[s["name"]] > 1
-                class_raw_symbol_data[s["scope"].split(".")[-1]].children.append(
+                class_raw_symbol_data[scope.split(".")[-1]].children.append(
                     create_raw_symbol_via_ctags(
                         ctags_symbol=s,
                         root_rel_path=root_rel_path,
@@ -557,18 +558,12 @@ class CsClassRawSymbolCollection(RawSymbolCollection):
                     )
                 )
             elif (
-                (s.get("scope"))
-                and (s.get("scopeKind"))
-                and not s["name"].startswith("__anon")
-                and (
-                    (s["kind"] in C_SHARP_CLASSES)
-                    or (s["kind"] in C_SHARP_DATA_STRUCTURES)
-                )
-                and (s["scopeKind"] in C_SHARP_CLASSES)
+                (s["kind"] in C_SHARP_CLASSES or (s["kind"] in C_SHARP_DATA_STRUCTURES))
+                and s["scopeKind"] in C_SHARP_CLASSES
                 and "__anon" not in s.get("scope")
             ):
-                if s["scope"].split(".")[-1] in class_raw_symbol_data:
-                    class_raw_symbol_data[s["scope"].split(".")[-1]].children.append(
+                if scope.split(".")[-1] in class_raw_symbol_data:
+                    class_raw_symbol_data[scope.split(".")[-1]].children.append(
                         create_raw_symbol_via_ctags(
                             ctags_symbol=s,
                             root_rel_path=root_rel_path,
@@ -580,14 +575,12 @@ class CsClassRawSymbolCollection(RawSymbolCollection):
                         )
                     )
             elif (
-                (s.get("scope"))
-                and not s["name"].startswith("__anon")
-                and (s["kind"] in C_SHARP_VARIABLES)
+                (s["kind"] in C_SHARP_VARIABLES)
                 and (s["scopeKind"] in C_SHARP_CLASSES)
                 and "__anon" not in s.get("scope")
             ):
-                if s["scope"].split(".")[-1] in class_raw_symbol_data:
-                    class_raw_symbol_data[s["scope"].split(".")[-1]].children.append(
+                if scope.split(".")[-1] in class_raw_symbol_data:
+                    class_raw_symbol_data[scope.split(".")[-1]].children.append(
                         create_raw_symbol_via_ctags(
                             ctags_symbol=s,
                             root_rel_path=root_rel_path,
@@ -644,10 +637,15 @@ class CsStructRawSymbolCollection(RawSymbolCollection):
                 )
 
         for s in symbols:
+            scope = s.get("scope")
             if (
-                (s.get("scope"))
-                and not s["name"].startswith("__anon")
-                and (s["kind"] in C_SHARP_FUNCTIONS)
+                scope is None
+                or s["name"].startswith("__anon")
+                or (scope and "__anon" in scope)
+            ):
+                continue
+            if (
+                s["kind"] in C_SHARP_FUNCTIONS
                 and s["scopeKind"] in C_SHARP_DATA_STRUCTURES
             ):
                 # TODO: is this needed for partial case?
@@ -670,7 +668,7 @@ class CsStructRawSymbolCollection(RawSymbolCollection):
                 #     )
 
                 is_overloaded = global_method_counts[s["name"]] > 1
-                struct_raw_symbol_data[s["scope"].split(".")[-1]].children.append(
+                struct_raw_symbol_data[scope.split(".")[-1]].children.append(
                     create_raw_symbol_via_ctags(
                         ctags_symbol=s,
                         root_rel_path=root_rel_path,
@@ -683,16 +681,10 @@ class CsStructRawSymbolCollection(RawSymbolCollection):
                     )
                 )
             elif (
-                (s.get("scope"))
-                and not s["name"].startswith("__anon")
-                and (
-                    (s["kind"] in C_SHARP_CLASSES)
-                    or (s["kind"] in C_SHARP_DATA_STRUCTURES)
-                )
-                and (s["scopeKind"] in C_SHARP_DATA_STRUCTURES)
-            ):
-                if s["scope"].split(".")[-1] in struct_raw_symbol_data:
-                    struct_raw_symbol_data[s["scope"].split(".")[-1]].children.append(
+                (s["kind"] in C_SHARP_CLASSES) or (s["kind"] in C_SHARP_DATA_STRUCTURES)
+            ) and (s["scopeKind"] in C_SHARP_DATA_STRUCTURES):
+                if scope.split(".")[-1] in struct_raw_symbol_data:
+                    struct_raw_symbol_data[scope.split(".")[-1]].children.append(
                         create_raw_symbol_via_ctags(
                             ctags_symbol=s,
                             root_rel_path=root_rel_path,
@@ -704,13 +696,11 @@ class CsStructRawSymbolCollection(RawSymbolCollection):
                         )
                     )
             elif (
-                (s.get("scope"))
-                and not s["name"].startswith("__anon")
-                and (s["kind"] in C_SHARP_VARIABLES)
-                and (s["scopeKind"] in C_SHARP_DATA_STRUCTURES)
+                s["kind"] in C_SHARP_VARIABLES
+                and s["scopeKind"] in C_SHARP_DATA_STRUCTURES
             ):
-                if s["scope"].split(".")[-1] in struct_raw_symbol_data:
-                    struct_raw_symbol_data[s["scope"].split(".")[-1]].children.append(
+                if scope.split(".")[-1] in struct_raw_symbol_data:
+                    struct_raw_symbol_data[scope.split(".")[-1]].children.append(
                         create_raw_symbol_via_ctags(
                             ctags_symbol=s,
                             root_rel_path=root_rel_path,

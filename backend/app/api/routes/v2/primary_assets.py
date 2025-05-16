@@ -105,7 +105,12 @@ def update_primary_asset(
     if not asset:
         raise HTTPException(status_code=404, detail="Primary asset not found")
 
-    asset.display_name = payload.display_name
+    if payload.display_name is not None:
+        asset.display_name = payload.display_name
+    if payload.codebase_settings_auto_commit_docs is not None:
+        asset.codebase_settings_auto_commit_docs = (
+            payload.codebase_settings_auto_commit_docs
+        )
 
     session.add(asset)
     session.commit()

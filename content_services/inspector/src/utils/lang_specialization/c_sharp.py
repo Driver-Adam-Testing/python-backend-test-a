@@ -558,9 +558,12 @@ class CsClassRawSymbolCollection(RawSymbolCollection):
                 )
             elif (
                 (s.get("scope"))
+                and (s.get("scopeKind"))
                 and not s["name"].startswith("__anon")
-                and (s["kind"] in C_SHARP_CLASSES)
-                or (s["kind"] in C_SHARP_DATA_STRUCTURES)
+                and (
+                    (s["kind"] in C_SHARP_CLASSES)
+                    or (s["kind"] in C_SHARP_DATA_STRUCTURES)
+                )
                 and (s["scopeKind"] in C_SHARP_CLASSES)
                 and "__anon" not in s.get("scope")
             ):
@@ -682,8 +685,10 @@ class CsStructRawSymbolCollection(RawSymbolCollection):
             elif (
                 (s.get("scope"))
                 and not s["name"].startswith("__anon")
-                and (s["kind"] in C_SHARP_CLASSES)
-                or (s["kind"] in C_SHARP_DATA_STRUCTURES)
+                and (
+                    (s["kind"] in C_SHARP_CLASSES)
+                    or (s["kind"] in C_SHARP_DATA_STRUCTURES)
+                )
                 and (s["scopeKind"] in C_SHARP_DATA_STRUCTURES)
             ):
                 if s["scope"].split(".")[-1] in struct_raw_symbol_data:

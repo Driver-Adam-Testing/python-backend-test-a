@@ -130,7 +130,7 @@ async def get_result_loading_config(
         ),
     ],
     proxy=modal.Proxy.from_name("pg-proxy")
-    if os.environ["MODAL_ENVIRONMENT"] in  ["dev","prod"]
+    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "prod"]
     else None,
     memory="2048",
     timeout=3600 * 8,
@@ -155,17 +155,19 @@ async def export_tech_docs_to_zip(
     from sqlalchemy.orm import selectinload
     from sqlmodel import select
     from sqlmodel.ext.asyncio.session import AsyncSession
-    from os.path import relpath
-    from utils.export_utils import extract_markdown_links, replace_driver_compatible_links_with_markdown_links
+    from utils.export_utils import (
+        replace_driver_compatible_links_with_markdown_links,
+    )
 
     try:
         async with AsyncSession(async_engine) as session:
             nodes_query = (
-                select(Node.relative_path, DerivedContent.content)
+                select(
+                    Node.relative_path, DerivedContent.content, Node.kind, Node.depth
+                )
                 .join(DerivedContent)
                 .where(
                     Node.version_id == version_id,
-                    Node.kind == NodeKind.CODEBASE_FILE,
                     DerivedContent.content_kind == ContentKind.LONG_DESCRIPTION,
                 )
             )
@@ -181,7 +183,6 @@ async def export_tech_docs_to_zip(
             primary_asset_id = version_row.primary_asset_id
             org_id = version_row.primary_asset.organization_id
             org_id_hash = hashlib.sha256(org_id.encode()).hexdigest()[:63]
-            print(org_id_hash)
             result = await session.exec(nodes_query)
             node_rows = result.all()
         with (
@@ -189,13 +190,15 @@ async def export_tech_docs_to_zip(
         ):
             for node_row in node_rows:
                 node_path = Path(node_row[0])
-                doc_file_path = (
-                    node_path.with_suffix("")
-                    .with_stem(node_path.stem + node_path.suffix.replace(".", "_"))
-                    .with_suffix(".md")
+                if node_row[2] == NodeKind.CODEBASE_FILE:
+                    doc_file_path = node_path.with_suffix(
+                        node_path.suffix + ".driver.md"
+                    )
+                else:
+                    doc_file_path = node_path.with_suffix(".driver.md")
+                content = replace_driver_compatible_links_with_markdown_links(
+                    node_row[1], Path(*doc_file_path.parts[1:])
                 )
-                content = node_row[1]
-                content = replace_driver_compatible_links_with_markdown_links(content, Path(*doc_file_path.parts[1:]))
                 file_path = Path(temp_dir) / doc_file_path
                 file_path.parent.mkdir(parents=True, exist_ok=True)
                 file_path.write_text(content)
@@ -653,6 +656,7 @@ def set_codebase_status_in_container(version_id: str, status: str) -> None:
         version.status = VersionStatus(status)
         session.add(version)
 
+
 @app.function(
     image=modal.Image.debian_slim(python_version="3.12")
     .apt_install("git")
@@ -661,9 +665,7 @@ def set_codebase_status_in_container(version_id: str, status: str) -> None:
     .poetry_install_from_file(
         "pyproject.toml"
     )  # TODO clean this up since inspector doesn't use pyproject install
-    .pip_install(
-        "requests"
-    ),
+    .pip_install("requests"),
     secrets=[
         modal.Secret.from_name("aws-inspector-s3"),
         modal.Secret.from_name("db"),
@@ -676,11 +678,12 @@ def set_codebase_status_in_container(version_id: str, status: str) -> None:
     region="us-east",
     concurrency_limit=5,
 )
-async def push_tech_docs(version_id:str) -> None:
+async def push_tech_docs(version_id: str) -> None:
     """Push tech docs to s3"""
     from onboarding.push_bot import push_docs
 
     await push_docs(version_id)
+
 
 @app.local_entrypoint()
 def main(

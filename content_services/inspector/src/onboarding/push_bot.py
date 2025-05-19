@@ -1,5 +1,5 @@
-import os
 import asyncio
+import os
 import re
 import subprocess
 import uuid
@@ -7,6 +7,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 import httpx
+
 
 def extract_values_from_presigned_url(url: str) -> dict:
     parsed = urlparse(url)
@@ -83,7 +84,7 @@ def create_pull_request(
             "title": f"Update driver docs for version {version_id}",
             "body": f"Automated update of driver documentation for version {version_id}",
             "head": branch,
-            "base": "main",  # Assuming main is the default branch
+            "base": "master",  # Assuming main is the default branch
         }
 
         try:
@@ -101,17 +102,16 @@ def create_pull_request(
                 raise
 
 
-async def push_docs(version_id:uuid.UUID) -> None:
-    import os
-    import tempfile
+async def push_docs(version_id: uuid.UUID) -> None:
     # import boto3
     import hashlib
+    import tempfile
+
     from onboarding.gh_ops import fetch_app_access_token, get_repo_clone_info_from_id
     from onboarding.onboard_utils import (
-        download_file_from_presigned_url,
         unpack_archive_to_finalized_path,
     )
-    from utils.db import get_installation_id_by_org_id, get_version_by_id
+    from utils.db import get_version_by_id
 
     # parsed_values = extract_values_from_presigned_url(presigned_url)
 
@@ -121,7 +121,10 @@ async def push_docs(version_id:uuid.UUID) -> None:
     org_id = version.primary_asset.organization_id
     org_id_hash = hashlib.sha256(org_id.encode()).hexdigest()[:63]
 
-    with tempfile.TemporaryDirectory() as temp_dir, tempfile.NamedTemporaryFile("w",suffix=".zip") as temp_file:
+    with (
+        tempfile.TemporaryDirectory() as temp_dir,
+        tempfile.NamedTemporaryFile("w", suffix=".zip") as temp_file,
+    ):
         # Override so unpack from github doesn't have hash in name.
         object_key = f"{primary_asset_id}/{version_id}/{version_id}_tech_docs.zip"
         download_meta = download_file_from_s3(org_id_hash, object_key, temp_file.name)
@@ -164,7 +167,6 @@ async def push_docs(version_id:uuid.UUID) -> None:
 
 
 def sync_directory(src: str, dest: str) -> None:
-    import os
     import shutil
 
     if os.path.exists(dest):
@@ -173,21 +175,24 @@ def sync_directory(src: str, dest: str) -> None:
     print(f"✅ Synced `{src}` to `{dest}`")
 
 
-
-def download_file_from_s3(bucket_name: str, object_key:str,local_file_path:str) -> dict:
+def download_file_from_s3(
+    bucket_name: str, object_key: str, local_file_path: str
+) -> dict:
     import boto3
+
     # Create an S3 client
-    s3 = boto3.client('s3')
+    s3 = boto3.client("s3")
     response = s3.head_object(Bucket=bucket_name, Key=object_key)
 
     # Extract and print metadata
-    metadata = response.get('Metadata', {})
+    metadata = response.get("Metadata", {})
     print(metadata)
     # Download the ZIP file
     s3.download_file(bucket_name, object_key, local_file_path)
 
     print(f"Downloaded {object_key} from bucket {bucket_name} to {local_file_path}")
     return metadata
+
 
 def build_s3_path(org_id_hash: str, primary_asset_id: str, version_id: str) -> str:
     return f"driver_docs/{org_id_hash}/{primary_asset_id}/{version_id}/driver_docs.zip"
@@ -199,9 +204,6 @@ def build_s3_path(org_id_hash: str, primary_asset_id: str, version_id: str) -> s
 
 
 async def main() -> None:
-    import hashlib
-    import os
-
     # print(os.environ["ASYNC_DATABASE_URL"])
     # from onboard_utils import generate_get_presigned_url, upload_to_s3_with_metadata
     # from src.utils.db import get_version_by_id

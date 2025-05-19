@@ -334,6 +334,7 @@ class InspectorRun(SQLModel, table=True):
             nullable=False,
         ),
     )
+    call_id: str | None
     version: "Version" = Relationship(back_populates="inspector_runs")
 
 

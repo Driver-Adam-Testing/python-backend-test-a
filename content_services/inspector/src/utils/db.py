@@ -57,12 +57,16 @@ async def try_get_prev_version(version_id: uuid.UUID) -> None | Version:
 
 
 async def create_inspector_run(version_id: uuid.UUID) -> uuid.UUID:
+    import modal
     from database.db import async_engine
+
+    modal_call_id = modal.current_function_call_id()
 
     async with AsyncSession(async_engine) as session:
         inspector_run = InspectorRun(
             inspection_version_id=None,
             version_id=version_id,
+            call_id=modal_call_id,
         )
         session.add(inspector_run)
         await session.commit()

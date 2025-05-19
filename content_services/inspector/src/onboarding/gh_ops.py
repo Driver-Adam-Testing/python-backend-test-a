@@ -7,10 +7,11 @@ from uuid import UUID
 
 import httpx
 import jwt
+import modal
 import requests
+from onboarding.onboard_utils import AccessTokenError
 from sqlalchemy.orm import selectinload
 from sqlmodel import Session, select
-from onboarding.onboard_utils import AccessTokenError
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,6 @@ def generate_jwt() -> str:
 
 
 def fetch_app_access_token(installation_id: str) -> str:
-
     url = f"https://api.github.com/app/installations/{installation_id}/access_tokens"
     jwt = generate_jwt()
     with httpx.Client() as client:
@@ -110,6 +110,7 @@ def download_and_upload_repo(
     is_push: bool = False,
 ) -> str | None:
     from database.db import engine
+    from database.models_v1 import InspectorRun
     from database.models_v2 import (
         PrimaryAsset,
         Version,
@@ -184,10 +185,35 @@ def download_and_upload_repo(
                             version_id = new_version.id
                             break
                         elif version.status == VersionStatus.GENERATING:
-                            print(
-                                f"Version already in generating state for {repo["name"]}, skipping..."
+                            # Delete running version, and restart inspection with the new version,
+                            # this way the docs we generate reflect the most up to date state
+                            run_statement = (
+                                select(InspectorRun)
+                                .where(InspectorRun.version_id == version.id)
+                                .order_by(InspectorRun.created_at.desc())
                             )
-                            return repo
+                            run = session.exec(run_statement).first()
+
+                            if run is not None:
+                                call_id = run.call_id
+                                modal_call = modal.FunctionCall.from_id(call_id)
+                                modal_call.cancel()
+                            # else: the run possibly hasn't been created yet, we'll proceed with the version deletion
+
+                            session.delete(version)
+                            new_version = Version(
+                                primary_asset_id=primary_asset.id,
+                                display_name=commit,
+                                status=VersionStatus.GENERATING,  # Immediately jump to generating. This signals run_codebase_connection to start inspection after connection
+                                previous_version_id=version.previous_version_id,
+                            )
+                            session.add(new_version)
+                            version_id = new_version.id
+
+                            print(
+                                f"Version already in generating state for {repo["name"]}, deleting existing version and restarting inspection with new version..."
+                            )
+                            break
                 elif primary_asset.versions[0].status == VersionStatus.CONNECTING:
                     print(
                         f"Version already in connecting state for {repo["name"]}, skipping..."

@@ -132,3 +132,22 @@ async def get_source_code_derived_content(node_id: uuid.UUID) -> DerivedContent:
             DerivedContent.content_kind == ContentKind.CODEBASE_FILE,
         )
         return (await session.exec(statement)).one()
+
+
+def get_usage_balance_in_bytes(
+    org_id: str,
+) -> int:
+    from database.db import engine
+    from shared.interfaces.usage.usage_schema import UsageMetricUnitType
+    from shared.usage.usage_service import UsageService
+    from sqlmodel import Session
+
+    with Session(engine) as session:
+        usage_balance = (
+            UsageService(session)
+            .get_usage_balance(
+                org_id
+            )  # Since our app reports usage in SLOC this function returns the balance in SLOC
+            .convert_to(UsageMetricUnitType.BYTES)  # Convert SLOC to bytes
+        )
+        return usage_balance.balance

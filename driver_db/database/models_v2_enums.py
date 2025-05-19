@@ -17,6 +17,7 @@ class VersionStatus(str, enum.Enum):
     CONNECTED = "CONNECTED"
     CONNECTING = "CONNECTING"
     CONNECTION_FAILED = "CONNECTION_FAILED"
+    INSUFFICIENT_BALANCE = "INSUFFICIENT_BALANCE"
 
 
 class NodeKind(str, enum.Enum):

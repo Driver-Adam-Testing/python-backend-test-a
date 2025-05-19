@@ -166,10 +166,10 @@ class FileTreeDag:
                     node.status = NodeStatus.MODIFIED
 
     def mark_file_removal(self, path: Path) -> None:
-        if not path.exists():
-            raise FileNotFoundError(f"Path {path} does not exist.")
-        if not path.is_file():
-            raise ValueError(f"Path {path} is not a file.")
+        # if not path.exists():
+        #     raise FileNotFoundError(f"Path {path} does not exist.")
+        # if not path.is_file():
+        #     raise ValueError(f"Path {path} is not a file.")
 
         relative_path = path.relative_to(self.root_abs_path)
         parts = relative_path.parts
@@ -320,7 +320,9 @@ class FileTreeDag:
 
         return sorted_nodes
 
-    def compute_diff(self, old: "FileTreeDag") -> "FileTreeDag":
+    def compute_diff(
+        self, old: "FileTreeDag", delete_file_nodes: bool
+    ) -> "FileTreeDag":
         # This DAG has annotations of the changes required to go from `old` to `self` state
         diff_dag = copy.deepcopy(old)
         # We change the path to the root path of self so that the
@@ -360,7 +362,13 @@ class FileTreeDag:
             # print(f"-> checking if {path} got removed")
             if path not in self_nodes and old_node.kind == NodeKind.FILE:
                 # print(f"=> {path} got removed! calling delete node")
-                diff_dag.delete_file_node(diff_dag.root_abs_path / path)
+                if delete_file_nodes:
+                    diff_dag.delete_file_node(diff_dag.root_abs_path / path)
+                else:
+                    print(
+                        f"=> marking file for removal {diff_dag.root_abs_path / path}"
+                    )
+                    diff_dag.mark_file_removal(diff_dag.root_abs_path / path)
 
         return diff_dag
 

@@ -16,14 +16,20 @@ from database.models_v2_enums import (
 image = (
     modal.Image.debian_slim(python_version="3.12")
     .apt_install("tree")
-    .copy_local_dir("../../driver_db/", remote_path="/driver_db")
-    .copy_local_dir(local_path="../../packages/shared", remote_path="/packages/shared")
+    .add_local_dir("../../driver_db/", remote_path="/driver_db", copy=True)
+    .add_local_dir(
+        local_path="../../packages/shared", remote_path="/packages/shared", copy=True
+    )
     .poetry_install_from_file(
         "pyproject.toml"
     )  # TODO clean this up since inspector doesn't use pyproject install
     .pip_install(
         "requests"
     )  # TODO shouldn't be needed... in pyproject.toml RESOLVE THIS
+    .add_local_python_source("common", "database", "main", copy=True)
+    .add_local_file(
+        "src/onboarding/languages.yml", "/linguist/languages.yml", copy=True
+    )
 )
 
 
@@ -39,7 +45,7 @@ image = (
     else None,
     timeout=60 * 60,
     region="us-east",
-    concurrency_limit=5,
+    max_containers=5,
 )
 def handle_github_events(
     installation_id: str | None,
@@ -163,7 +169,7 @@ def handle_github_events(
     ),
     timeout=60 * 60,
     region="us-east",
-    concurrency_limit=5,
+    max_containers=5,
 )
 def handle_gitlab_events(
     installation_id: str | None,
@@ -268,7 +274,7 @@ def handle_gitlab_events(
     else None,
     timeout=60 * 60,
     region="us-east",
-    concurrency_limit=1,
+    max_containers=1,
 )
 def connect_repos_for_installation(github_installation_id: str) -> None:
     import requests
@@ -373,7 +379,7 @@ def connect_repos_for_installation(github_installation_id: str) -> None:
     else None,
     timeout=60 * 60,
     region="us-east",
-    concurrency_limit=1,
+    max_containers=1,
 )
 def connect_unconnected_repos() -> None:
     """This is a migration script to connect unconnected repos
@@ -468,18 +474,13 @@ def connect_unconnected_repos() -> None:
 
 @app.function(
     image=image,
-    mounts=[
-        modal.Mount.from_local_file(
-            "src/onboarding/languages.yml", "/linguist/languages.yml"
-        ),
-    ],
     secrets=[modal.Secret.from_name("aws-inspector-s3"), modal.Secret.from_name("db")],
     proxy=modal.Proxy.from_name("pg-proxy")
     if os.environ["MODAL_ENVIRONMENT"] in ["dev", "prod"]
     else None,
     timeout=60 * 60 * 9,
     region="us-east",
-    concurrency_limit=5,
+    max_containers=5,
 )
 def run_codebase_connection(
     presigned_url: str,
@@ -490,7 +491,7 @@ def run_codebase_connection(
 ) -> None:
     import tempfile
 
-    from boto3 import resource
+    from boto3 import client, resource
     from database.db import (
         engine,  # We defer the import since we'll have the secrets set here
     )
@@ -510,14 +511,14 @@ def run_codebase_connection(
         is_driverignored,
         is_on_blacklist,
         load_driverignore,
+        parse_presigned_url,
         run_file_stats_and_reencode,
         unpack_archive_to_finalized_path,
     )
     from shared.usage.utils import bytes_to_sloc
     from sqlalchemy.exc import IntegrityError
     from sqlmodel import Session, select, update
-    from boto3 import client
-    from onboarding.onboard_utils import parse_presigned_url
+
     download_dest = Path(provisional_codebase_name)
     download_file_from_presigned_url(presigned_url, download_dest)
 
@@ -614,12 +615,12 @@ def run_codebase_connection(
         s3_resource = resource("s3", endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL"))
         s3_bucket = s3_resource.Bucket(org_id_bucket)
         dropzone_bucket, dropzone_key = parse_presigned_url(presigned_url)
-        s3 = client('s3')
+        s3 = client("s3")
         response = s3.head_object(Bucket=dropzone_bucket, Key=dropzone_key)
 
         # Extract and print metadata
-        metadata = response.get('Metadata', {})
-        install_id = metadata.get('install_id', None)
+        metadata = response.get("Metadata", {})
+        install_id = metadata.get("install_id", None)
         if install_id is not None:
             s3_bucket.upload_file(
                 Path(provisional_codebase_name),

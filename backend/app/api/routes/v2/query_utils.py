@@ -213,10 +213,9 @@ def apply_sorting_to_query(
                     )
                 # Join the relationship
                 related_model = rel_attr.property.mapper.class_
-                query = query.outerjoin(rel_attr)
+                query = query.join(rel_attr)
                 current_model = related_model
 
-            # The final part is the actual column we want to sort on in the related model
             col_name = parts[-1]
             if not hasattr(current_model, col_name):
                 raise HTTPException(
@@ -227,9 +226,15 @@ def apply_sorting_to_query(
 
         # Apply the sorting direction
         if pagination.sort_direction == SortDirection.ASC:
-            query = query.order_by(sort_column.asc())
+            if model.id:
+                query = query.order_by(model.id, sort_column.asc()).distinct(model.id)
+            else:
+                query = query.order_by(sort_column.asc())
         else:
-            query = query.order_by(sort_column.desc())
+            if model.id:
+                query = query.order_by(model.id, sort_column.desc()).distinct(model.id)
+            else:
+                query = query.order_by(sort_column.desc())
 
     # Apply pagination
     query = query.limit(pagination.limit).offset(pagination.offset)

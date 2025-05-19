@@ -16,6 +16,9 @@ from app.api.routes.v1 import (
     usage,
     user,
 )
+from app.api.routes.v2 import (
+    api_key as v2_api_key,
+)
 
 # ruff: noqa: F401
 from app.api.routes.v2 import (
@@ -44,6 +47,7 @@ studio_router.include_router(graphql_router, prefix="/graphql", tags=["legacy-gr
 studio_router.include_router(
     healthcheck.router, prefix="/healthcheck", tags=["healthcheck"]
 )
+studio_router.include_router(v2_api_key.router, prefix="/api_key", tags=["api_key"])
 studio_router.include_router(
     git_provider.router, prefix="/git-provider", tags=["git-provider"]
 )

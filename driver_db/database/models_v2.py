@@ -420,3 +420,26 @@ class AutoDocStatusHistory(SQLModel, table=True):
         default=None,
     )
     call_id: str | None
+
+
+class ApiKey(SQLModel, table=True):
+    __tablename__ = "v2_api_key"
+    id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    salted_key: str = Field(nullable=False)
+    organization_id: str = Field(nullable=False)
+    user_id: str = Field(nullable=False)
+    created_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        ),
+        default=None,
+    )
+    updated_at: None | datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=func.now(),
+            onupdate=func.now(),
+            nullable=False,
+        ),
+        default=None,
+    )

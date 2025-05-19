@@ -213,7 +213,7 @@ def apply_sorting_to_query(
                     )
                 # Join the relationship
                 related_model = rel_attr.property.mapper.class_
-                query = query.join(rel_attr)
+                query = query.outerjoin(rel_attr)
                 current_model = related_model
 
             col_name = parts[-1]

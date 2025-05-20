@@ -51,7 +51,7 @@ SOURCE_CODE_SMALL_TEMPLATE_C = [
     ),
     (
         S.FN_COND_JSON,
-        "# Function Declarations",
+        "# Function Declarations (Public API)",
         CDeclarationRawSymbolCollection.from_static_analysis,
         CDeclarationCollection.from_llm,
         None,

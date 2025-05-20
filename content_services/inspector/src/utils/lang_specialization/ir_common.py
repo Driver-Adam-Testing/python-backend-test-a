@@ -480,7 +480,7 @@ class FnDeclData(IrData, abc.ABC):
     single_sentence: RawContent
     detailed_description: RawContent
     inputs: ListedBacktickNameRawContentWithNone
-    output: FieldNameWithBackTickContent
+    output: FieldNameWithRawContent
 
     @classmethod
     def default_instance(cls) -> Self:
@@ -488,7 +488,7 @@ class FnDeclData(IrData, abc.ABC):
             single_sentence=RawContent(content=""),
             detailed_description=RawContent(content=""),
             inputs=ListedBacktickNameRawContentWithNone(content=[]),
-            output=FieldNameWithBackTickContent(content=""),
+            output=FieldNameWithRawContent(content=""),
         )
 
 
@@ -497,7 +497,6 @@ class FnData(IrData, abc.ABC):
     inputs: ListedBacktickNameRawContentWithNone
     control_flow: ListedRawContentWithNone
     output: FieldNameWithBulletedContent
-    # TODO can add method to take _symbol_info
 
     @classmethod
     def default_instance(cls) -> Self:

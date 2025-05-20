@@ -511,7 +511,7 @@ class TestFileTreeDag:
         self, setup_diff_dags: tuple[FileTreeDag, FileTreeDag]
     ) -> None:
         dag_a, dag_b = setup_diff_dags
-        diff = dag_b.compute_diff(dag_a)
+        diff = dag_b.compute_diff(dag_a, delete_file_nodes=False)
 
         added_file_node = [
             node
@@ -548,7 +548,7 @@ class TestFileTreeDag:
         self, setup_diff_dags: tuple[FileTreeDag, FileTreeDag]
     ) -> None:
         dag_a, dag_b = setup_diff_dags
-        diff = dag_b.compute_diff(dag_a)
+        diff = dag_b.compute_diff(dag_a, delete_file_nodes=False)
 
         assert any(
             node
@@ -584,7 +584,7 @@ class TestFileTreeDag:
         self, setup_diff_dags: tuple[FileTreeDag, FileTreeDag]
     ) -> None:
         dag_a, dag_b = setup_diff_dags
-        diff = dag_b.compute_diff(dag_a)
+        diff = dag_b.compute_diff(dag_a, delete_file_nodes=True)
 
         # Starting out, the node is there.
         assert any(
@@ -619,7 +619,7 @@ class TestFileTreeDag:
         self, setup_diff_dags: tuple[FileTreeDag, FileTreeDag]
     ) -> None:
         dag_a, dag_b = setup_diff_dags
-        diff = dag_b.compute_diff(dag_a)
+        diff = dag_b.compute_diff(dag_a, delete_file_nodes=False)
 
         assert any(
             node
@@ -637,7 +637,7 @@ class TestFileTreeDag:
         dag_a = create_file_tree_dag(tmp_path / "dag_a", structure)
         dag_b = create_file_tree_dag(tmp_path / "dag_b", structure)
 
-        diff = dag_b.compute_diff(dag_a)
+        diff = dag_b.compute_diff(dag_a, delete_file_nodes=False)
 
         for node in diff.root.traverse_downstream():
             assert node.status == NodeStatus.UNMODIFIED

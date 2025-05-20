@@ -16,14 +16,20 @@ from database.models_v2_enums import (
 image = (
     modal.Image.debian_slim(python_version="3.12")
     .apt_install("tree")
-    .copy_local_dir("../../driver_db/", remote_path="/driver_db")
-    .copy_local_dir(local_path="../../packages/shared", remote_path="/packages/shared")
+    .add_local_dir("../../driver_db/", remote_path="/driver_db", copy=True)
+    .add_local_dir(
+        local_path="../../packages/shared", remote_path="/packages/shared", copy=True
+    )
     .poetry_install_from_file(
         "pyproject.toml"
     )  # TODO clean this up since inspector doesn't use pyproject install
     .pip_install(
         "requests"
     )  # TODO shouldn't be needed... in pyproject.toml RESOLVE THIS
+    .add_local_python_source("common", "database", "main", copy=True)
+    .add_local_file(
+        "src/onboarding/languages.yml", "/linguist/languages.yml", copy=True
+    )
 )
 
 
@@ -35,11 +41,11 @@ image = (
         modal.Secret.from_name("github-app"),
     ],
     proxy=modal.Proxy.from_name("pg-proxy")
-    if os.environ["MODAL_ENVIRONMENT"] != "staging"
+    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "prod"]
     else None,
     timeout=60 * 60,
     region="us-east",
-    concurrency_limit=5,
+    max_containers=5,
 )
 def handle_github_events(
     installation_id: str | None,
@@ -151,12 +157,12 @@ def handle_github_events(
     # modal and that proxy is only good for the postgres port.
     proxy=(
         modal.Proxy.from_name("my-proxy", environment_name="prod")
-        if os.environ.get("MODAL_ENVIRONMENT") != "staging"
+        if os.environ["MODAL_ENVIRONMENT"] in ["dev", "prod"]
         else None
     ),
     timeout=60 * 60,
     region="us-east",
-    concurrency_limit=5,
+    max_containers=5,
 )
 def handle_gitlab_events(
     installation_id: str | None,
@@ -257,11 +263,11 @@ def handle_gitlab_events(
         modal.Secret.from_name("github-app"),
     ],
     proxy=modal.Proxy.from_name("pg-proxy")
-    if os.environ["MODAL_ENVIRONMENT"] != "staging"
+    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "prod"]
     else None,
     timeout=60 * 60,
     region="us-east",
-    concurrency_limit=1,
+    max_containers=1,
 )
 def connect_repos_for_installation(github_installation_id: str) -> None:
     import requests
@@ -362,11 +368,11 @@ def connect_repos_for_installation(github_installation_id: str) -> None:
         modal.Secret.from_name("github-app"),
     ],
     proxy=modal.Proxy.from_name("pg-proxy")
-    if os.environ["MODAL_ENVIRONMENT"] != "staging"
+    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "prod"]
     else None,
     timeout=60 * 60,
     region="us-east",
-    concurrency_limit=1,
+    max_containers=1,
 )
 def connect_unconnected_repos() -> None:
     """This is a migration script to connect unconnected repos
@@ -461,18 +467,13 @@ def connect_unconnected_repos() -> None:
 
 @app.function(
     image=image,
-    mounts=[
-        modal.Mount.from_local_file(
-            "src/onboarding/languages.yml", "/linguist/languages.yml"
-        ),
-    ],
     secrets=[modal.Secret.from_name("aws-inspector-s3"), modal.Secret.from_name("db")],
     proxy=modal.Proxy.from_name("pg-proxy")
-    if os.environ["MODAL_ENVIRONMENT"] != "staging"
+    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "prod"]
     else None,
     timeout=60 * 60 * 9,
     region="us-east",
-    concurrency_limit=5,
+    max_containers=5,
 )
 def run_codebase_connection(
     presigned_url: str,

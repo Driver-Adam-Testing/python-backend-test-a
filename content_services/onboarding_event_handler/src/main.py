@@ -81,8 +81,9 @@ def handler(
             real_object_key = unquote_plus(object_key)
             logger.info("key = " + real_object_key)
             logger.info("bucket = " + bucket_name)
-            should_process = has_allowed_guard_duty_tag(
-                bucket=bucket_name, key=real_object_key
+            should_process = (
+                has_allowed_guard_duty_tag(bucket=bucket_name, key=real_object_key)
+                or settings.ENVIRONMENT == "cloud-local"
             )
             if should_process:
                 metadata = head_object(bucket=bucket_name, key=real_object_key)

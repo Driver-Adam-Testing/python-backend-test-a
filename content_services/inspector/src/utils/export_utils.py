@@ -51,9 +51,7 @@ def replace_driver_compatible_links_with_markdown_links(
             new_url = ""
         if anchor_tag:
             anchor_name = anchor_tag.split(":")[1]
-            new_url += (
-                "#" + anchor_name
-            )  # added dash at end because of the driver links causing an extra space
+            new_url += "#" + anchor_name
         text = text.replace(link, new_url)
 
     return text

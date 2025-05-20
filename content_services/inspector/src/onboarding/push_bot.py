@@ -73,8 +73,8 @@ def create_pull_request(
                 f"https://api.github.com/repos/{full_name}/pulls/{pr_number}",
                 headers=headers,
                 json={
-                    "title": f"Update driver docs for version {commit_slug}",
-                    "body": f"Automated update of driver documentation for version {commit_slug}",
+                    "title": f"Update driver docs for commit {commit_slug}",
+                    "body": f"Automated update of driver documentation for commit {commit_slug}",
                 },
             )
             update_response.raise_for_status()

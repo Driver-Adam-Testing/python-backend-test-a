@@ -1,4 +1,5 @@
 import json
+import threading
 from abc import ABC, abstractmethod
 
 from shared.v3.globals.constants import (
@@ -29,6 +30,7 @@ class LlmTool(LlmParseable, ABC):
 
     _references: ReferenceSet = ReferenceSet(references=[])
     _error_message: str | None = None
+    one_sentence_rationale_for_calling_the_tool: str | None = None
 
     @property
     def tool_call_id(self) -> str | None:
@@ -57,10 +59,22 @@ class LlmTool(LlmParseable, ABC):
     ) -> LlmMessage:
         self._tool_call_id = tool_call_id
         self._tool_datasource = datasource
-        try:
-            self._execute()
-        except Exception as e:
-            self._error_message = str(e)
+
+        def target() -> None:
+            try:
+                self._execute()
+            except Exception as e:
+                self._error_message = str(e)
+
+        thread = threading.Thread(target=target)
+        thread.start()
+        thread.join(timeout=12)
+
+        if thread.is_alive():
+            print(
+                f"Execution of {self.__class__.__name__, self.tool_call_id} timed out after 12 seconds."
+            )
+            self._error_message = "Execution timed out after 12 seconds."
             return LlmMessage(
                 content=f"{TOOL_ERROR_MESSAGE.wrap(self._error_message)}",
                 message_kind=MessageKind.TOOL_CALL_RESPONSE,
@@ -68,6 +82,16 @@ class LlmTool(LlmParseable, ABC):
                     id=self.tool_call_id or None, name=self.__class__.__name__
                 ),
             )
+
+        if self._error_message:
+            return LlmMessage(
+                content=f"{TOOL_ERROR_MESSAGE.wrap(self._error_message)}",
+                message_kind=MessageKind.TOOL_CALL_RESPONSE,
+                tool_response=LlmMessage.ToolCallResponse(
+                    id=self.tool_call_id or None, name=self.__class__.__name__
+                ),
+            )
+
         return self.to_tool_call_response_message()
 
     @abstractmethod

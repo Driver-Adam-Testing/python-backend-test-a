@@ -9,6 +9,7 @@ from database.models_v2_enums import LlmPipelineKind
 from shared.v3 import LlmClient, LlmMessage, LlmMessageHistory, MessageKind
 from shared.v3.app.pipelines.pipeline_request import PipelineRequest
 from shared.v3.app.pipelines.pipeline_response import PipelineResponse
+from shared.v3.app.static.messages.copy_editor_messages import CopyEditorSystemMessage
 from shared.v3.app.static.messages.driver_app_messages import (
     ChatContextMessage,
     ContentStructureMessage,
@@ -79,13 +80,14 @@ class ChatPipelineRequest(PipelineRequest):
         if history is None:
             history = LlmMessageHistory(
                 messages=[
-                    ChatContextMessage(),
                     DriverApplicationMessage(),
                     ContentStructureMessage(),
                     HowDriverWorksMessage(),
                     DataSourceSystemMessage(),
                     DataSourceTuningSystemMessage(),
                     PromptGuidelinesMessage(),
+                    CopyEditorSystemMessage(),
+                    ChatContextMessage(),
                     DataSourceMessage.from_context(self.datasource),
                 ],
                 llm_session_id=runtime_session.id,
@@ -98,7 +100,9 @@ class ChatPipelineRequest(PipelineRequest):
 
         return history
 
-    def _run(self, client: LlmClient = LlmClient.gpt_4o_chat()) -> ChatPipelineResponse:
+    def _run(
+        self, client: LlmClient = LlmClient.gpt_4_1_mini()
+    ) -> ChatPipelineResponse:
         history = self._get_or_create_message_history()
 
         information_response, called_tools = client.multi_shot(
@@ -115,7 +119,7 @@ class ChatPipelineRequest(PipelineRequest):
 
     async def _stream(
         self,
-        client: LlmClient = LlmClient.gpt_4o_chat(),
+        client: LlmClient = LlmClient.gpt_4_1_mini(),
     ) -> AsyncGenerator[LlmStreamResponse, None]:
         history = self._get_or_create_message_history()
 

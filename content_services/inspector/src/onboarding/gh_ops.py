@@ -71,6 +71,14 @@ def fetch_default_branch_and_commit(full_repo_name: str, access_token: str) -> s
     return branch_data["commit"]["sha"]
 
 
+def fetch_github_default_branch_name(full_repo_name: str, access_token: str) -> str:
+    headers = {"Authorization": f"token {access_token}"}
+    repo_url = get_github_repo_url(full_repo_name=full_repo_name)
+    repo = requests.get(repo_url, headers=headers)
+    repo_data = repo.json()
+    return repo_data["default_branch"]
+
+
 def generate_codebase_metadata(
     org_id: str,
     full_repo_name: str,
@@ -229,6 +237,7 @@ def download_and_upload_repo(
                     organization_id=org_id,
                     kind=PrimaryAssetKind.CODEBASE,
                     repository_id=repo["id"],
+                    codebase_settings_auto_commit_docs=False,
                 )
                 session.add(primary_asset)
                 primary_asset_id = primary_asset.id

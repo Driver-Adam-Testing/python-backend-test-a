@@ -7,6 +7,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 import httpx
+from onboarding.gh_ops import fetch_github_default_branch_name
 
 
 def extract_values_from_presigned_url(url: str) -> dict:
@@ -45,7 +46,7 @@ def run(
 
 
 def create_pull_request(
-    full_name: str, branch: str, access_token: str, version_id: str
+    full_name: str, branch: str, access_token: str, commit_slug: str
 ) -> None:
     """Create a pull request for the driver docs changes."""
     headers = {
@@ -56,6 +57,7 @@ def create_pull_request(
     # First check for existing PRs for this branch
     with httpx.Client() as client:
         # Get existing PRs
+        default_branch = fetch_github_default_branch_name(full_name, access_token)
         response = client.get(
             f"https://api.github.com/repos/{full_name}/pulls",
             headers=headers,
@@ -71,8 +73,8 @@ def create_pull_request(
                 f"https://api.github.com/repos/{full_name}/pulls/{pr_number}",
                 headers=headers,
                 json={
-                    "title": f"Update driver docs for version {version_id}",
-                    "body": f"Automated update of driver documentation for version {version_id}",
+                    "title": f"Update driver docs for commit {commit_slug}",
+                    "body": f"Automated update of driver documentation for commit {commit_slug}",
                 },
             )
             update_response.raise_for_status()
@@ -81,10 +83,10 @@ def create_pull_request(
 
         # Create new PR if none exists
         pr_data = {
-            "title": f"Update driver docs for version {version_id}",
-            "body": f"Automated update of driver documentation for version {version_id}",
+            "title": f"Update driver docs for commit {commit_slug}",
+            "body": f"Automated update of driver documentation for commit {commit_slug}",
             "head": branch,
-            "base": "master",  # Assuming main is the default branch
+            "base": default_branch,
         }
 
         try:
@@ -163,7 +165,7 @@ async def push_docs(version_id: uuid.UUID) -> None:
         print(f"✅ Pushed `{target_dir}` to `{branch}`")
 
         # Create a pull request after successful push
-        create_pull_request(full_name, branch, access_token, str(version.id))
+        create_pull_request(full_name, branch, access_token, commit_slug)
 
 
 def sync_directory(src: str, dest: str) -> None:

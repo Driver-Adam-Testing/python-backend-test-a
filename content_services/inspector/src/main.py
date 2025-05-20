@@ -137,19 +137,13 @@ async def get_result_loading_config(
         modal.Secret.from_name("db"),
         modal.Secret.from_name("aws-inspector-s3"),
     ],
-    mounts=[
-        modal.Mount.from_local_dir(
-            local_path="../../driver_db/certs",
-            remote_path="/root/data/",
-        ),
-    ],
     proxy=modal.Proxy.from_name("pg-proxy")
     if os.environ["MODAL_ENVIRONMENT"] in ["dev", "prod"]
     else None,
     memory="2048",
     timeout=3600 * 8,
     region="us-east",
-    concurrency_limit=5,
+    max_containers=5,
     cpu=1.0,
 )
 async def export_tech_docs_to_zip(
@@ -195,6 +189,9 @@ async def export_tech_docs_to_zip(
             version_result = await session.exec(version_query)
             version_row = version_result.one()
             primary_asset_id = version_row.primary_asset_id
+            auto_commit_docs = (
+                version_row.primary_asset.codebase_settings_auto_commit_docs
+            )
             org_id = version_row.primary_asset.organization_id
             org_id_hash = hashlib.sha256(org_id.encode()).hexdigest()[:63]
             result = await session.exec(nodes_query)
@@ -203,19 +200,20 @@ async def export_tech_docs_to_zip(
             tempfile.TemporaryDirectory() as temp_dir,
         ):
             for node_row in node_rows:
-                node_path = Path(node_row[0])
-                if node_row[2] == NodeKind.CODEBASE_FILE:
-                    doc_file_path = node_path.with_suffix(
-                        node_path.suffix + ".driver.md"
+                if node_row[3] != 0:
+                    node_path = Path(node_row[0])
+                    if node_row[2] == NodeKind.CODEBASE_FILE:
+                        doc_file_path = node_path.with_suffix(
+                            node_path.suffix + ".driver.md"
+                        )
+                    elif node_row[2] == NodeKind.CODEBASE_DIRECTORY:
+                        doc_file_path = node_path.with_suffix(".driver.md")
+                    content = replace_driver_compatible_links_with_markdown_links(
+                        node_row[1], Path(*doc_file_path.parts[1:])
                     )
-                else:
-                    doc_file_path = node_path.with_suffix(".driver.md")
-                content = replace_driver_compatible_links_with_markdown_links(
-                    node_row[1], Path(*doc_file_path.parts[1:])
-                )
-                file_path = Path(temp_dir) / doc_file_path
-                file_path.parent.mkdir(parents=True, exist_ok=True)
-                file_path.write_text(content)
+                    file_path = Path(temp_dir) / doc_file_path
+                    file_path.parent.mkdir(parents=True, exist_ok=True)
+                    file_path.write_text(content)
             make_archive("tech_docs", "zip", Path(temp_dir))
 
             s3_resource = boto3.resource(
@@ -235,7 +233,12 @@ async def export_tech_docs_to_zip(
                     s3_dest,
                 )
             print(f"Uploaded tech docs zip to S3: {s3_dest}")
-            push_tech_docs.spawn(version_id)
+            if auto_commit_docs:
+                print("PRing exported docs")
+                push_tech_docs.spawn(version_id)
+            else:
+                print("PR disabled for this codebase.")
+
     except Exception as e:
         exception_type = type(e).__name__
         exc_tb = e.__traceback__
@@ -712,12 +715,25 @@ def set_codebase_status_in_container(version_id: str, status: str) -> None:
 @app.function(
     image=modal.Image.debian_slim(python_version="3.12")
     .apt_install("git")
-    .copy_local_dir("../../driver_db/", remote_path="/driver_db")
-    .copy_local_dir(local_path="../../packages/shared", remote_path="/packages/shared")
+    .add_local_dir("../../driver_db/", remote_path="/driver_db", copy=True)
+    .add_local_dir(
+        local_path="../../packages/shared", remote_path="/packages/shared", copy=True
+    )
     .poetry_install_from_file(
         "pyproject.toml"
     )  # TODO clean this up since inspector doesn't use pyproject install
-    .pip_install("requests"),
+    .pip_install("requests")
+    .add_local_python_source(
+        "common",
+        "database",
+        "inspection",
+        "modal_funcs",
+        "onboarding",
+        "shared",
+        "tasks",
+        "utils",
+        copy=True,
+    ),
     secrets=[
         modal.Secret.from_name("aws-inspector-s3"),
         modal.Secret.from_name("db"),
@@ -728,7 +744,7 @@ def set_codebase_status_in_container(version_id: str, status: str) -> None:
     else None,
     timeout=60 * 60,
     region="us-east",
-    concurrency_limit=5,
+    max_containers=5,
 )
 async def push_tech_docs(version_id: str) -> None:
     """Push tech docs to s3"""

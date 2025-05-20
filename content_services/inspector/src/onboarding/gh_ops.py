@@ -110,7 +110,12 @@ def download_and_upload_repo(
     is_push: bool = False,
 ) -> str | None:
     from database.db import engine
-    from database.models_v1 import InspectorRun
+    from database.models_v1 import (
+        InspectorRun,
+        UsageEvent,
+        UsageEventType,
+        UsageSession,
+    )
     from database.models_v2 import (
         PrimaryAsset,
         Version,
@@ -199,8 +204,29 @@ def download_and_upload_repo(
                                 modal_call = modal.FunctionCall.from_id(call_id)
                                 modal_call.cancel()
                             # else: the run possibly hasn't been created yet, we'll proceed with the version deletion
-
                             session.delete(version)
+                            # Find and delete the usage session for the version
+                            print("Deleting existing usage session...")
+                            usage_session_statement = (
+                                select(UsageSession)
+                                .join(
+                                    UsageEvent, UsageSession.id == UsageEvent.session_id
+                                )
+                                .where(
+                                    UsageSession.session_metadata["version_id"].astext
+                                    == str(version.id)
+                                )
+                                .where(
+                                    UsageEvent.event_type
+                                    == UsageEventType.INSPECTOR_CODE_DIFF_USAGE_DEBIT
+                                )
+                            )
+                            usage_session = session.exec(
+                                usage_session_statement
+                            ).first()
+                            if usage_session is not None:
+                                session.delete(usage_session)
+
                             new_version = Version(
                                 primary_asset_id=primary_asset.id,
                                 display_name=commit,

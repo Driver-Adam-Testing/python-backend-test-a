@@ -12,6 +12,7 @@ from shared.v3.interfaces.llm_stream_response import (
     ErrorStreamResponse,
     LlmStreamResponse,
     LlmStreamResponseKind,
+    ReferenceStreamResponse,
     ResponseChunkStreamResponse,
     ResponseFullStreamResponse,
     ToolStatusUpdateStreamResponse,
@@ -345,6 +346,12 @@ class LlmClient(ABC):
                     yield ResponseFullStreamResponse(
                         kind=LlmStreamResponseKind.RESPONSE_FULL,
                         content=chunk.content,
+                    )
+                    yield ReferenceStreamResponse(
+                        kind=LlmStreamResponseKind.REFERENCES,
+                        references=[
+                            ref for tool in called_tools for ref in tool.references
+                        ],
                     )
                     should_continue = False
 

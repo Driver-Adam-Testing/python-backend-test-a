@@ -27,7 +27,6 @@ from shared.v3.interfaces.llm_stream_response import (
     EndSessionStreamResponse,
     LlmStreamResponse,
     LlmStreamResponseKind,
-    StartSessionStreamResponse,
 )
 from shared.v3.utils.datasource import DataSource
 from sqlmodel import select
@@ -122,11 +121,6 @@ class ChatPipelineRequest(PipelineRequest):
         client: LlmClient = LlmClient.gpt_4_1_mini(),
     ) -> AsyncGenerator[LlmStreamResponse, None]:
         history = self._get_or_create_message_history()
-
-        yield StartSessionStreamResponse(
-            kind=LlmStreamResponseKind.START_SESSION,
-            llm_session_id=self.llm_session.id,
-        )
 
         async for chunk in client.multi_shot_stream(
             message_history=history,

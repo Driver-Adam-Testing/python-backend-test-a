@@ -64,27 +64,12 @@ def create_pull_request(
             params={"state": "open", "head": f"{full_name.split('/')[0]}:{branch}"},
         )
         response.raise_for_status()
-        existing_prs = response.json()
-
-        if existing_prs:
-            # Update existing PR
-            pr_number = existing_prs[0]["number"]
-            update_response = client.patch(
-                f"https://api.github.com/repos/{full_name}/pulls/{pr_number}",
-                headers=headers,
-                json={
-                    "title": f"Update driver docs for commit {commit_slug}",
-                    "body": f"Automated update of driver documentation for commit {commit_slug}",
-                },
-            )
-            update_response.raise_for_status()
-            print(f"✅ Updated existing PR: {existing_prs[0]['html_url']}")
-            return
 
         # Create new PR if none exists
+        logo_image = '<img src="https://raw.githubusercontent.com/driver-ai/driver-assets/main/gray_wordmark.svg" width="100px" />'
         pr_data = {
             "title": f"Update driver docs for commit {commit_slug}",
-            "body": f"Automated update of driver documentation for commit {commit_slug}",
+            "body": f"Automated update of driver documentation for commit {commit_slug}\n<br/>\n{logo_image}",
             "head": branch,
             "base": default_branch,
         }

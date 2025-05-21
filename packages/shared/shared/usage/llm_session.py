@@ -120,8 +120,7 @@ class LLMUsageSession:
             "Source": "metrics.client",
             "DetailType": str(UsageEventType(usage_metric.event_type)),
             "Detail": event_detail,
-            # "EventBusName": "metrics-event-bus",
-            "EventBusName": "metrics-event-bus-EricMillerTempTestInDevStack-cloud-local",
+            "EventBusName": "metrics-event-bus",
             "TraceHeader": str(usage_metric.session_id),
         }
 

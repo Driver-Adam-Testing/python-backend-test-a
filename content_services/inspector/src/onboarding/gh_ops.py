@@ -3,6 +3,7 @@ import hashlib
 import logging
 import os
 import time
+from datetime import UTC, datetime
 from uuid import UUID
 
 import httpx
@@ -214,7 +215,7 @@ def download_and_upload_repo(
                             # else: the run possibly hasn't been created yet, we'll proceed with the version deletion
                             session.delete(version)
                             # Find and delete the usage session for the version
-                            print("Deleting existing usage session...")
+                            print("Fetching existing usage session...")
                             usage_session_statement = (
                                 select(UsageSession)
                                 .join(
@@ -228,12 +229,53 @@ def download_and_upload_repo(
                                     UsageEvent.event_type
                                     == UsageEventType.INSPECTOR_CODE_DIFF_USAGE_DEBIT
                                 )
+                                .options(selectinload(UsageSession.usage_events))
                             )
                             usage_session = session.exec(
                                 usage_session_statement
                             ).first()
+                            print(usage_session)
                             if usage_session is not None:
-                                session.delete(usage_session)
+                                usage_event = next(
+                                    (
+                                        event
+                                        for event in usage_session.usage_events
+                                        if event.event_type
+                                        == UsageEventType.INSPECTOR_CODE_DIFF_USAGE_DEBIT.value
+                                    ),
+                                    None,
+                                )
+                                print(
+                                    f"Found {len(usage_session.usage_events)} usage events for version {version.id}"
+                                )
+                                if usage_event is not None:
+                                    new_usage_session = UsageSession(
+                                        status=usage_session.status,
+                                        organization_id=usage_session.organization_id,
+                                        user_id="SYSTEM",
+                                        session_metadata=usage_session.session_metadata,
+                                    )
+                                    session.add(new_usage_session)
+                                    usage_event_credit = UsageEvent(
+                                        **usage_event.dict(
+                                            exclude={
+                                                "id",
+                                                "bytes_in",
+                                                "session_id",
+                                                "timestamp",
+                                                "event_type",
+                                            }
+                                        ),
+                                        event_type=UsageEventType.ADDITIONAL_PLATFORM_USAGE_CREDIT,
+                                        session_id=new_usage_session.id,
+                                        bytes_in=abs(usage_event.bytes_in),
+                                        timestamp=datetime.now(tz=UTC),
+                                    )
+                                    print(usage_event_credit)
+                                    print(
+                                        f"crediting {usage_event_credit.bytes_in} bytes back to version {version.id}"
+                                    )
+                                    session.add(usage_event_credit)
 
                             new_version = Version(
                                 primary_asset_id=primary_asset.id,

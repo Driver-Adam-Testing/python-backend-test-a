@@ -204,6 +204,7 @@ class UsageService:
             event_types=[
                 UsageEventType.ONBOARDING_USAGE_DEBIT,
                 UsageEventType.INSPECTOR_CODE_DIFF_USAGE_DEBIT,
+                UsageEventType.ADDITIONAL_PLATFORM_USAGE_CREDIT,
             ],
             limit=limit,
             offset=offset,

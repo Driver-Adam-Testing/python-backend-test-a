@@ -94,6 +94,10 @@ def compute_and_log_code_diff_size_in_bytes(
         organization_id=org_id,
         diff_size_in_bytes=diff_size_in_bytes,
     )
+    print("Adding {code_diff_bytes} to root node metadata...")
+    update_root_node_metadata(
+        version_id=version_id, diff_size_in_bytes=diff_size_in_bytes
+    )
 
 
 def log_code_diff_usage(
@@ -141,3 +145,29 @@ def log_code_diff_usage(
             ),
         )
         llm_session.commit_event_now(usage_metric)
+
+
+def update_root_node_metadata(version_id: str, diff_size_in_bytes: int) -> None:
+    # Without the line below. An error occurs because SQLAlchemy can't find the class `Tag`—ensure it's defined before referencing it in relationships.
+    from database import models_v1  # noqa: PGH004
+    from database.db import engine
+    from database.models_v2 import Node, NodeKind
+    from shared.usage.utils import bytes_to_sloc
+    from sqlalchemy.orm.attributes import flag_modified
+    from sqlmodel import Session, select
+
+    with Session(engine) as session, session.begin():
+        root_node_statement = (
+            select(Node)
+            .where(Node.kind == NodeKind.CODEBASE_DIRECTORY.value)
+            .where(Node.version_id == version_id)
+            .where(Node.depth == 0)
+        )
+        root_node = session.exec(root_node_statement).one()
+        if root_node is None:
+            raise ValueError("Root node not found")
+
+        root_node.misc_metadata["code_diff_bytes"] = diff_size_in_bytes
+        root_node.misc_metadata["code_diff_sloc"] = bytes_to_sloc(diff_size_in_bytes)
+        flag_modified(root_node, "misc_metadata")
+        session.commit()

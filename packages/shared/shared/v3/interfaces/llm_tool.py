@@ -1,6 +1,9 @@
+import asyncio
+import inspect
 import json
 import threading
 from abc import ABC, abstractmethod
+from functools import partial
 
 from shared.v3.globals.constants import (
     FORMAT_TOOL_CALL_REQUEST_f_class_name__example_json__docstring,
@@ -93,6 +96,26 @@ class LlmTool(LlmParseable, ABC):
             )
 
         return self.to_tool_call_response_message()
+
+    async def aexecute(
+        self,
+        tool_call_id: str,
+        datasource: DataSource | None = None,
+    ) -> LlmMessage:
+        """
+        Non-blocking wrapper around `execute`.
+
+        • If a future tool replaces `execute` with an `async def`, we await it.
+        • Otherwise we off-load the current sync implementation (which itself
+          runs a secondary thread) to the event-loop executor so the loop stays
+          free for other I/O.
+        """
+        if inspect.iscoroutinefunction(self.execute):
+            return await self.execute(tool_call_id, datasource)
+
+        loop = asyncio.get_running_loop()
+        fn = partial(self.execute, tool_call_id=tool_call_id, datasource=datasource)
+        return await loop.run_in_executor(None, fn)
 
     @abstractmethod
     def _execute(self) -> None:

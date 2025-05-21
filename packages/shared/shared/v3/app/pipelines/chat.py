@@ -23,16 +23,13 @@ from shared.v3.globals.datasource_messages import (
     DataSourceSystemMessage,
     DataSourceTuningSystemMessage,
 )
-from shared.v3.interfaces.llm_stream_response import (
-    EndSessionStreamResponse,
-    LlmStreamResponse,
-    LlmStreamResponseKind,
-)
 from shared.v3.utils.datasource import DataSource
 from sqlmodel import select
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Sequence
+
+    from shared.v3.interfaces.llm_stream_response import LlmStreamResponse
 
 __all__: Sequence[str] = [
     "ChatPipelineRequest",
@@ -129,8 +126,3 @@ class ChatPipelineRequest(PipelineRequest):
             datasource=self.datasource,
         ):
             yield chunk
-
-        yield EndSessionStreamResponse(
-            kind=LlmStreamResponseKind.END_SESSION,
-            llm_session_id=self.llm_session.id,
-        )

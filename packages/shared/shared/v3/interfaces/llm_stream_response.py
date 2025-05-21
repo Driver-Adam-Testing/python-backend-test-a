@@ -66,6 +66,7 @@ class ResponseFullStreamResponse(LlmStreamResponse):
     content: str
 
     def __init__(self, **data: dict[str, any]) -> None:
+        # TODO: Move this to a pipeline hook to ensure that it's correct, perhaps?
         from shared.v3.utils.post_processing.mermaid import (
             fix_mermaid_syntax_in_response,
         )

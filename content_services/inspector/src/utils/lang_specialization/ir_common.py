@@ -234,6 +234,12 @@ class IrData(BaseModel, abc.ABC):
                         kind=OutputConfigKind.JSON_STRICT, payload=cls
                     ),
                 )
+
+                # Kept here for debugging in the future.
+                # print("System Prompt: ", system_prompt)
+                # print("User Prompt: ", cls.user_prompt(symbol))
+                # print("Content Raw: ", content_raw)
+
             except openai.LengthFinishReasonError as _:
                 print("LengthFinishReasonError caught")
                 return None
@@ -327,6 +333,15 @@ class IrData(BaseModel, abc.ABC):
                     output += (
                         f"    - [`{name_part}`]({path_part}#{kind_part}:{name_part})\n"
                     )
+            if (
+                sym.raw.symbol_kind == SymbolKind.CALLABLE_DECLARATION
+                and sym.definition is not None
+            ):
+                kind_part = sym.definition.raw.symbol_kind.name.lower()
+                name_part = sym.definition.raw.name
+                path_part = sym.definition.raw.file_path
+
+                output += f"- **See also**: [`{name_part}`]({path_part}#{kind_part}:{name_part})  (Implementation)\n"
             # if sym.raw.symbol_kind == SymbolKind.CALLABLE and sym.usages:
             #     output += "- **Usages of this function**:\n"
             #     for usage in self._reified_symbol.usages:

@@ -454,8 +454,6 @@ class IrCollection(BaseModel, abc.ABC):
 
                 output += f"\n---\n### {k} {id_comment}\n"
                 output += item.render_markdown()
-        # if self.__class__.__name__ == "CDeclarationCollection":
-        #     print("------->", output)
         return output
 
     def __str__(self) -> str:

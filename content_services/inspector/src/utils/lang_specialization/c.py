@@ -217,7 +217,6 @@ class CDeclarationRawSymbolCollection(RawSymbolCollection):
         is_large_file = code_requires_multi_prompt(code)
 
         decl_symbols = [sym for sym in reified_symbols if sym.is_declaration]
-        print(f"---------> {len(decl_symbols)} declarations")
 
         for reified_sym in decl_symbols:
             ts_symbol = reified_sym.raw

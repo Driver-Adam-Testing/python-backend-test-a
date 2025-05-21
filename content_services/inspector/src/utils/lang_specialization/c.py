@@ -124,8 +124,8 @@ Return JSON according to the schema above. Do not use the format ```json ... ```
 
 FUNCTION_DECLS_FOUND_SYSTEM_PROMPT_JSON = """
 You are an expert C programmer and a software engineering documentation expert. You write clear, precise documentation for public C APIs intended for library users.
-You focus on documenting the public interface of functions from header files, without revealing any implementation details. Your documentation helps developers understand how to use the API correctly without needing to know how it works internally.
-You will be given a function to document. IMPORTANT: You must ONLY document the public API interface as visible in the header file. DO NOT reveal any implementation details from the source code in your documentation.
+You focus on documenting the public interface of functions present in header files, without revealing any implementation details. Your documentation helps developers understand how to use the API correctly without needing to know how it works internally.
+You will be given the function implementation code, as well as the header file code. IMPORTANT: You must ONLY document the public API interface as visible in the header file. DO NOT reveal any implementation details from the implementation code in your documentation.
 
 Your job is to describe the API function from a user's perspective. **Always respond using exactly the following JSON schema:**
 {
@@ -221,7 +221,8 @@ class CDeclarationRawSymbolCollection(RawSymbolCollection):
 
         for reified_sym in decl_symbols:
             ts_symbol = reified_sym.raw
-            # TODO we skip declarations that weren't matched to definitions... not ideal but we are prototyping
+            # We skip declarations that weren't matched to definitions.
+            # TODO should we still enumerate them without describing?
             if ts_symbol.name is not None and reified_sym.definition is not None:
                 raw_symbol_data = RawSymbolData.from_tree_sitter_raw_symbol(
                     ts_symbol=ts_symbol,
@@ -254,16 +255,17 @@ class CDeclarationRawSymbolCollection(RawSymbolCollection):
         return self.data
 
 
-class CDeclData(FnDeclData):
+class CFnDeclData(FnDeclData):
     @classmethod
     def system_prompt(cls) -> str:
         return FUNCTION_DECLS_FOUND_SYSTEM_PROMPT_JSON
 
     @classmethod
     def user_prompt(cls, symbol: RawSymbolData) -> str:
-        # TODO handle we didn't link decl to definition
         symbol_body = symbol.reified_symbol.definition.raw.symbol_code
         user_prompt = f"{DECL_FOUND_USER_PROMPT}\n\n{symbol_body}"
+        if symbol.file_code:
+            user_prompt += f"\n\nAssociated header file code:\n\n{symbol.file_code}"
         return user_prompt
 
     @classmethod
@@ -276,7 +278,7 @@ class CDeclData(FnDeclData):
 
 
 class CDeclarationCollection(IrCollection):
-    data: dict[str, CDeclData | list[CDeclData]]
+    data: dict[str, CFnDeclData | list[CFnDeclData]]
 
     @classmethod
     def from_llm(
@@ -285,7 +287,7 @@ class CDeclarationCollection(IrCollection):
         symbols_list: RawSymbolCollection,
     ) -> Self:
         return cls.from_llm_with_ir_data(
-            CDeclData,
+            CFnDeclData,
             llm,
             symbols_list,
         )

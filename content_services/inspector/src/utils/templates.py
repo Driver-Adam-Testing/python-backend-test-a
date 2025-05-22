@@ -103,7 +103,11 @@ class Template(BaseModel):
                             for symbol in reified_symbols:
                                 if (
                                     found_name == symbol.raw.name
-                                    and symbol.raw.symbol_kind == SymbolKind.CALLABLE
+                                    and symbol.raw.symbol_kind
+                                    in {
+                                        SymbolKind.CALLABLE,
+                                        SymbolKind.CALLABLE_DECLARATION,
+                                    }
                                 ):
                                     name_part = symbol.raw.name
                                     kind_part = symbol.raw.symbol_kind.name.lower()

@@ -7,6 +7,7 @@ from utils.treesitter_driver import CDriverTree
 from .ir_common import (
     DataStructureData,
     FnData,
+    FnDeclData,
     IrCollection,
     IrData,
     VariableData,
@@ -121,6 +122,62 @@ Your job is to describe the function. **Always respond using exactly the followi
 Return JSON according to the schema above. Do not use the format ```json ... ```, just return the JSON data.
 """
 
+FUNCTION_DECLS_FOUND_SYSTEM_PROMPT_JSON = """
+You are an expert C programmer and a professional software documentation writer. Your task is to produce clear, \
+precise documentation for public C APIs declared in header files. Your documentation helps developers understand how \
+to use the API correctly and safely, without requiring any knowledge of its internal implementation.
+
+You will be given both the function implementation code and the header file. Your documentation MUST be based \
+**only on the public API interface as visible in the header file**. Use the implementation code ONLY to understand \
+behavior relevant to API users (e.g., error handling, edge cases, parameter validation). \
+**Do not expose or mention any implementation details.**
+
+Your response must strictly follow this JSON schema:
+{
+    "single_sentence": "<short imperative sentence describing what the function does>",
+    "description": "<paragraph explaining how and when to use the function, including preconditions, edge cases, and side effects>",
+    "inputs": [
+        {"name": "<parameter_name>", "content": "<what the parameter is, valid ranges, ownership expectations, and how invalid values are handled>"},
+        ...
+    ],
+    "output": "<description of the return value or output behavior (e.g. mutation of input). Use 'None' if the function returns nothing and doesn't mutate any inputs>",
+}
+
+Guidelines:
+
+- **Do not repeat the function name** in the `single_sentence` or `description`.
+- The `single_sentence` must be a terse, imperative summary of the function's behavior (e.g., "Initializes a UART peripheral." or "Copies data to the destination buffer.").
+- The `description` should:
+    - Focus on the **purpose** of the function
+    - Describe when and why to call it, what effect it has, and any relevant side effects
+    - Include high-level **preconditions or expectations** (e.g., "must be called after initialization")
+    - Avoid repeating specific parameter constraints or return value behavior; those belong in `inputs` and `output`
+    - Use a single, well-structured paragraph. If needed, prefer clarity over verbosity.
+- Each `input` must describe:
+    - Purpose of the parameter
+    - Allowed values or formats (e.g., ranges) when applicable
+    - Ownership and nullability (e.g., "Must not be null", "Caller retains ownership")
+    - How the function behaves on invalid input
+- The `output` must describe:
+    - The return value (if any) and what it means
+    - If output is via pointers, describe what is written and under what conditions
+    - Use `"None"` if the function has no return value and doesn't mutate by reference
+- DO NOT mention:
+    - Algorithms, data structures, or techniques used in the implementation
+    - Private helper functions
+    - Internal state or static variables
+    - Code optimizations or performance tricks
+- You may infer behavior that affects the caller (e.g., clamping values, error returns, thread safety) only if it's clearly visible in the implementation
+
+Return ONLY the JSON according to the schema above. Do not use the format ```json ... ```, just return the JSON data.
+
+"""
+DECL_FOUND_USER_PROMPT = """
+Document the public API for the function provided below.
+
+Function to document:
+"""
+
 FUNCTIONS_FOUND_USER_PROMPT = """
 Summarize the function in the code provided below. Describe the inputs, control flow and logic, and output.
 
@@ -160,6 +217,92 @@ Variable to document:
 """
 
 VARIABLES_NONE_CONTENT = "\n---\nNo global variables defined in this file."
+
+
+class CDeclarationRawSymbolCollection(RawSymbolCollection):
+    data: dict[str, RawSymbolData]
+
+    @classmethod
+    def from_static_analysis(
+        cls, code: str, root_rel_path: Path, reified_symbols: list[ReifiedSymbol] | None
+    ) -> Self | None:
+        declaration_raw_symbol_data = {}
+        is_large_file = code_requires_multi_prompt(code)
+
+        decl_symbols = [sym for sym in reified_symbols if sym.is_declaration]
+
+        for reified_sym in decl_symbols:
+            ts_symbol = reified_sym.raw
+            # We skip declarations that weren't matched to definitions.
+            # TODO should we still enumerate them without describing?
+            if ts_symbol.name is not None and reified_sym.definition is not None:
+                raw_symbol_data = RawSymbolData.from_tree_sitter_raw_symbol(
+                    ts_symbol=ts_symbol,
+                    path=root_rel_path,
+                    scope=None,
+                    scope_relation=None,
+                    children=[],
+                    reference_code=None,
+                    delimiter=None,
+                    is_large_file=is_large_file,
+                    is_overloaded=False,
+                    use_padding=False,
+                    code=code,
+                    reified_symbol=reified_sym,
+                )
+                declaration_raw_symbol_data[ts_symbol.name] = raw_symbol_data
+
+        output = (
+            None
+            if len(declaration_raw_symbol_data) == 0
+            else cls(data=declaration_raw_symbol_data)
+        )
+        return output
+
+    @classmethod
+    def from_llm(cls, code: str, root_rel_path: str) -> Self:
+        raise NotImplementedError("Static analysis should be used for c imports")
+
+    def to_dict(self) -> dict[str, RawSymbolData]:
+        return self.data
+
+
+class CFnDeclData(FnDeclData):
+    @classmethod
+    def system_prompt(cls) -> str:
+        return FUNCTION_DECLS_FOUND_SYSTEM_PROMPT_JSON
+
+    @classmethod
+    def user_prompt(cls, symbol: RawSymbolData) -> str:
+        symbol_body = symbol.reified_symbol.definition.raw.symbol_code
+        user_prompt = f"{DECL_FOUND_USER_PROMPT}\n\n{symbol_body}"
+        if symbol.file_code:
+            user_prompt += f"\n\nAssociated header file code:\n\n{symbol.file_code}"
+        return user_prompt
+
+    @classmethod
+    def child_to_ir(cls, symbol: RawSymbolData) -> IrData | None:
+        raise NotImplementedError("C declarations should not have children")
+
+    @classmethod
+    def child_to_field_name(cls, symbol: RawSymbolData) -> str:
+        raise NotImplementedError("C declarations should not have children")
+
+
+class CDeclarationCollection(IrCollection):
+    data: dict[str, CFnDeclData | list[CFnDeclData]]
+
+    @classmethod
+    def from_llm(
+        cls,
+        llm: ChatOpenAI,
+        symbols_list: RawSymbolCollection,
+    ) -> Self:
+        return cls.from_llm_with_ir_data(
+            CFnDeclData,
+            llm,
+            symbols_list,
+        )
 
 
 class CIncludeRawSymbolCollection(RawSymbolCollection):

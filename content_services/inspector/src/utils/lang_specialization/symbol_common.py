@@ -1,4 +1,5 @@
 import abc
+import textwrap
 from dataclasses import dataclass, field
 from enum import Enum, IntEnum, StrEnum, auto
 from pathlib import Path
@@ -101,6 +102,9 @@ class RawTreeSitterSymbolData(BaseModel):
     end_byte: int
     file_path: Path
     symbol_kind: SymbolKind
+    symbol_code: (
+        None | str
+    )  # TODO: this is somewhat a hack since we need the code, but makes symbols bulky
 
     class Config:
         """
@@ -118,9 +122,13 @@ class ReifiedSymbol:
 
     raw: RawTreeSitterSymbolData
     is_definition: bool
+    is_declaration: bool
     definition: Self | None = None
     usages: list[Self] = field(default_factory=list)
     calls: list[Self] = field(default_factory=list)
+    declarations: list[Self] = field(
+        default_factory=list
+    )  # Should this be a list? Likely not
 
 
 class RawSymbolData(BaseModel):
@@ -223,21 +231,28 @@ class RawSymbolCollection(BaseModel, abc.ABC):
 
 def disambiguate_header(code: str, fallback: Lang) -> Lang:
     llm = ChatOpenAI(model="gpt-4o", temperature=0, request_timeout=60)
-    system_prompt = """
-    You are a software engineering expert that determines whether a header file corresponds to the C or C++ language.
+    system_prompt = textwrap.dedent("""\
+        You are a software engineering expert that determines whether a header file corresponds to C or C++ code.
 
-    Header files ('.h' extension) are used both in C and C++. You will be given source code from a header file and will answer whether it corresponds to C or C++ code.
+        Header files ('.h' extension) are used in both C and C++. Many C headers are written to be compatible with both languages.
+        In particular, the use of `#ifdef __cplusplus` and `extern "C"` does not by itself indicate that the code is C++.
+        These constructs are commonly used to allow a C header to be included in a C++ project.
 
-    You will be given the source code in the following format:
+        You will be given source code from a header file and must answer whether the code corresponds to:
+        - 0 if the code is valid as C (even if it includes compatibility for C++)
+        - 1 if the code is valid only as C++ or uses C++-only features (e.g., templates, classes, namespaces, overloading, references)
 
-    File contents:
+        Assume the code will be compiled as-is and determine the minimal language required for the code to compile correctly.
+        You will be given the source code in the following format:
 
-    <file_contents>
+        File contents:
 
-    You only respond with a single number to indicate your response:
-    - 0 if the code corresponds to C
-    - 1 if the code corresponds to C++
-    """
+        <file_contents>
+
+        You only respond with a single number to indicate your response:
+        - 0 if the code corresponds to C
+        - 1 if the code corresponds to C++
+    """)
     user_prompt = f"File contents:\n\n{code}"
 
     try:

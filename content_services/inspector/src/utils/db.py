@@ -1,6 +1,6 @@
 import uuid
 
-from database.models_v1 import DerivedContent, GithubAppInstallation, InspectorRun
+from database.models_v1 import DerivedContent, InspectorRun
 from database.models_v2 import Node, Version
 from database.models_v2_enums import ContentKind, NodeKind, VersionStatus
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -20,22 +20,6 @@ async def get_version_by_id(version_id: uuid.UUID) -> Version:
             )
         )
         return (await session.exec(statement)).one()
-
-
-async def get_installation_id_by_org_id(org_id: str) -> Version:
-    from database.db import async_engine
-    from sqlmodel import select
-
-    async with AsyncSession(async_engine) as session:
-        statement = (
-            select(GithubAppInstallation)
-            .where(GithubAppInstallation.organization_id == org_id)
-            .order_by(GithubAppInstallation.created_at.desc())
-            # .options(
-            #     selectinload(Version.primary_asset), selectinload(Version.root_node)
-            # )
-        )
-        return (await session.exec(statement)).first()
 
 
 async def try_get_prev_version(version_id: uuid.UUID) -> None | Version:

@@ -18,7 +18,6 @@ def extract_markdown_links(text: str) -> list:
     return re.findall(pattern, text)
 
 
-# TODO: anchor tags?
 def replace_driver_compatible_links_with_markdown_links(
     text: str, source_path: str
 ) -> str:
@@ -28,7 +27,7 @@ def replace_driver_compatible_links_with_markdown_links(
 
     Args:
         text (str): The input string containing markdown links.
-        new_url (str): The new URL to use in place of the original.
+        source_path (str): The source path to which the links should be relative.
 
     Returns:
         str: The modified text with updated hyperlinks.

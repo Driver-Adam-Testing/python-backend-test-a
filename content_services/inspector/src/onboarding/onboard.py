@@ -157,7 +157,7 @@ def handle_github_events(
         # This secret below is usually going to be empty, except in prod, prod where we'll put the full db url
         # values needed to work with the gitlab proxy (not localhost as for the pg proxy). This will go away
         # once we deprecate pg-proxy and can use `my-proxy` with the full db url everywhere in our app...
-        modal.Secret.from_name("db-override-hack", environment_name="prod"),
+        modal.Secret.from_name("db-override-hack"),
     ],
     # my-proxy defines the static IP that we share today with "on the beach". Not only does OTB whitelist this IP we also
     # whitelist this IP with ScaleGrid for our DB. Normally we would use pg-proxy but we cant use two proxies at once in

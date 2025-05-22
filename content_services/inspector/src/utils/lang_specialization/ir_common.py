@@ -491,7 +491,7 @@ class DataStructureData(IrData, abc.ABC):
 
 class FnDeclData(IrData, abc.ABC):
     single_sentence: RawContent
-    detailed_description: RawContent
+    description: FieldNameWithRawContent
     inputs: ListedBacktickNameRawContentWithNone
     output: FieldNameWithRawContent
 
@@ -499,7 +499,7 @@ class FnDeclData(IrData, abc.ABC):
     def default_instance(cls) -> Self:
         return cls(
             single_sentence=RawContent(content=""),
-            detailed_description=RawContent(content=""),
+            description=FieldNameWithRawContent(content=""),
             inputs=ListedBacktickNameRawContentWithNone(content=[]),
             output=FieldNameWithRawContent(content=""),
         )

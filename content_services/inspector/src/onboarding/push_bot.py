@@ -1,4 +1,3 @@
-import asyncio
 import os
 import re
 import subprocess
@@ -183,45 +182,3 @@ def download_file_from_s3(
 
 def build_s3_path(org_id_hash: str, primary_asset_id: str, version_id: str) -> str:
     return f"driver_docs/{org_id_hash}/{primary_asset_id}/{version_id}/driver_docs.zip"
-
-
-# pass a version_id to push_docs
-# load the version from the db
-# with the version you can derive the s3 path
-
-
-async def main() -> None:
-    # print(os.environ["ASYNC_DATABASE_URL"])
-    # from onboard_utils import generate_get_presigned_url, upload_to_s3_with_metadata
-    # from src.utils.db import get_version_by_id
-
-    version_id = "d8b460f4-060c-4d24-abd5-cd5bc3c1d0eb"
-    # local_docs_path = "/Users/ghostmac/Downloads/driver_docs.zip"
-    # tech_docs_path = "64647130-650d-4c00-9104-799dc97be024/d8b460f4-060c-4d24-abd5-cd5bc3c1d0eb/d8b460f4-060c-4d24-abd5-cd5bc3c1d0eb_tech_docs.zip"
-    # parsed_values = extract_values_from_presigned_url(tech_docs_path)
-    # print(parsed_values)
-    # version = await get_version_by_id(uuid.UUID(version_id))
-    # primary_asset_id = version.primary_asset_id
-    # org_id = version.primary_asset.organization_id
-    # org_id_hash = hashlib.sha256(org_id.encode()).hexdigest()[:63]
-
-    # with open(local_docs_path, "rb") as f:
-    #     zip_content = f.read()
-    # upload_key = build_s3_path(org_id_hash, primary_asset_id, version_id)
-    # metadata = {
-    #     "version_id": str(version_id),
-    #     "provider": "github",
-    #     "unhashed_organization_id": org_id,
-    #     "installation_id": "65566326",
-    # }
-    # upload_to_s3_with_metadata(
-    #     zip_content=zip_content, metadata=metadata, upload_key=upload_key
-    # )
-    # bucket = os.environ["DROPZONE_BUCKET_NAME"]
-    # download_url = generate_get_presigned_url(bucket, upload_key)
-    # print(f"Download URL: {download_url}")
-    await push_docs(version_id)
-
-
-if __name__ == "__main__":
-    asyncio.run(main())

@@ -81,6 +81,10 @@ def compute_and_log_code_diff_size_in_bytes(
     print(f"Diff size in bytes: {diff_size_in_bytes} for version {version_id}")
 
     current_balance_in_bytes = get_usage_balance_in_bytes(org_id)
+    print("Adding {code_diff_bytes} to root node metadata...")
+    update_root_node_metadata(
+        version_id=version_id, diff_size_in_bytes=diff_size_in_bytes
+    )
     if current_balance_in_bytes < diff_size_in_bytes:
         msg = f"Insufficient balance for org {org_id} to process codebase {codebase_name}. {diff_size_in_bytes} bytes needed to process updates."
         print(msg)
@@ -93,10 +97,6 @@ def compute_and_log_code_diff_size_in_bytes(
         version_id=version_id,
         organization_id=org_id,
         diff_size_in_bytes=diff_size_in_bytes,
-    )
-    print("Adding {code_diff_bytes} to root node metadata...")
-    update_root_node_metadata(
-        version_id=version_id, diff_size_in_bytes=diff_size_in_bytes
     )
 
 
@@ -149,7 +149,6 @@ def log_code_diff_usage(
 
 def update_root_node_metadata(version_id: str, diff_size_in_bytes: int) -> None:
     # Without the line below. An error occurs because SQLAlchemy can't find the class `Tag`—ensure it's defined before referencing it in relationships.
-    from database import models_v1  # noqa: PGH004
     from database.db import engine
     from database.models_v2 import Node, NodeKind
     from shared.usage.utils import bytes_to_sloc

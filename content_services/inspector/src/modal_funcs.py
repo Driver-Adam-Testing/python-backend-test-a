@@ -1,3 +1,6 @@
+import os
+import uuid
+
 import modal
 from common import app
 from inspection.files import comprehend_file_top_down
@@ -16,6 +19,8 @@ image = (
     )
     .pip_install(
         [
+            "boto3",
+            "requests",
             "openai>=1.40.2",
             "pydantic>=2.8.2",
             "tiktoken",
@@ -150,6 +155,134 @@ def make_toplevel_tech_docs(
     )
     print(f"Processed top-level docs for `{codebase_name}`")
     return top_level_docs
+
+
+@app.function(
+    image=image,
+    secrets=[
+        modal.Secret.from_name("db"),
+        modal.Secret.from_name("aws-inspector-s3"),
+    ],
+    proxy=modal.Proxy.from_name("pg-proxy")
+    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "prod"]
+    else None,
+    memory=2048,
+    timeout=3600 * 8,
+    region="us-east",
+    max_containers=5,
+    cpu=1.0,
+)
+def export_tech_docs_to_zip(
+    version_id: uuid.UUID,
+    install_id: str | None = None,
+) -> None:
+    import hashlib
+    import tempfile
+    from pathlib import Path
+    from shutil import make_archive
+
+    import boto3
+    from database.db import engine
+    from database.models_v1 import DerivedContent
+    from database.models_v2 import Node, Version
+    from database.models_v2_enums import ContentKind, NodeKind
+    from sqlalchemy.orm import selectinload
+    from sqlmodel import Session, select
+    from utils.export_utils import (
+        replace_driver_compatible_links_with_markdown_links,
+    )
+
+    with Session(engine) as session:
+        nodes_query = (
+            select(
+                Node,
+                DerivedContent,
+                # Node.relative_path, DerivedContent.content, Node.kind, Node.depth
+            )
+            .join(DerivedContent)
+            .where(
+                Node.version_id == version_id,
+                DerivedContent.content_kind == ContentKind.LONG_DESCRIPTION,
+            )
+        )
+        version_query = (
+            select(Version)
+            .where(Version.id == version_id)
+            .options(
+                selectinload(Version.primary_asset),
+            )
+        )
+        version_result = session.exec(version_query)
+        version_row = version_result.one()
+        primary_asset_id = version_row.primary_asset_id
+        auto_commit_docs = version_row.primary_asset.codebase_settings_auto_commit_docs
+        org_id = version_row.primary_asset.organization_id
+        org_id_hash = hashlib.sha256(org_id.encode()).hexdigest()[:63]
+        result = session.exec(nodes_query)
+        node_rows = result.all()
+    with (
+        tempfile.TemporaryDirectory() as temp_dir,
+    ):
+        for node, derived_content in node_rows:
+            if node.depth != 0:
+                node_path = Path(node.relative_path)
+                if node.kind == NodeKind.CODEBASE_FILE:
+                    doc_file_path = node_path.with_suffix(
+                        node_path.suffix + ".driver.md"
+                    )
+                elif node.kind == NodeKind.CODEBASE_DIRECTORY:
+                    doc_file_path = node_path.with_suffix(".driver.md")
+                content = replace_driver_compatible_links_with_markdown_links(
+                    derived_content.content, Path(*doc_file_path.parts[1:])
+                )
+                file_path = Path(temp_dir) / doc_file_path
+                file_path.parent.mkdir(parents=True, exist_ok=True)
+                file_path.write_text(content)
+        make_archive("tech_docs", "zip", Path(temp_dir))
+
+        s3_resource = boto3.resource(
+            "s3", endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL")
+        )
+        s3_dest = f"{primary_asset_id}/{version_id}/{version_id}_tech_docs.zip"
+        s3_bucket = s3_resource.Bucket(org_id_hash)
+        if install_id is not None:
+            s3_bucket.upload_file(
+                Path("tech_docs.zip"),
+                s3_dest,
+                ExtraArgs={"Metadata": {"install_id": install_id}},
+            )
+        else:
+            s3_bucket.upload_file(
+                Path("tech_docs.zip"),
+                s3_dest,
+            )
+        print(f"Uploaded tech docs zip to S3: {s3_dest}")
+        if auto_commit_docs:
+            print("PRing exported docs")
+            push_tech_docs.remote(version_id)
+        else:
+            print("PR disabled for this codebase.")
+
+
+@app.function(
+    image=image,
+    secrets=[
+        modal.Secret.from_name("aws-inspector-s3"),
+        modal.Secret.from_name("db"),
+        modal.Secret.from_name("github-app"),
+    ],
+    proxy=modal.Proxy.from_name("pg-proxy")
+    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "prod"]
+    else None,
+    timeout=60 * 60,
+    region="us-east",
+    max_containers=5,
+)
+async def push_tech_docs(version_id: str) -> None:
+    """Push tech docs to s3"""
+    from onboarding.push_bot import push_docs
+
+    await push_docs(version_id)
 
 
 CHUNK_SIZE = 64_000

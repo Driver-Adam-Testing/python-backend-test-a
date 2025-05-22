@@ -141,7 +141,7 @@ async def get_result_loading_config(
     proxy=modal.Proxy.from_name("pg-proxy")
     if os.environ["MODAL_ENVIRONMENT"] in ["dev", "prod"]
     else None,
-    memory="2048",
+    memory=4096,
     timeout=3600 * 8,
     region="us-east",
     max_containers=5,

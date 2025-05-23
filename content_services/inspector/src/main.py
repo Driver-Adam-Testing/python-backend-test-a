@@ -264,6 +264,8 @@ async def inspect_db(
                     download_root=download_root,
                     max_workers=8,
                 )
+                install_id = None  # TODO: install id is attached to the zip, and is not available on rerun/resume
+                # NOTE: can still achieve PR of docs by running export_tech_docs_to_zip manually with install_id via local entrypoint
                 print("Download complete")
 
             codebase_dag: FileTreeDag = build_dag(

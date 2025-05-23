@@ -38,6 +38,7 @@ image = (
         "shared",
         "tasks",
         "utils",
+        copy=True,
     )
 )
 

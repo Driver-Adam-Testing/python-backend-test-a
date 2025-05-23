@@ -368,3 +368,47 @@ def get_repo_clone_info_from_id(repo_id: str, github_token: str) -> tuple[str, s
     full_name = data["full_name"]  # e.g., "org/repo"
     clone_url = f"https://x-access-token:{github_token}@github.com/{full_name}.git"
     return clone_url, full_name
+
+
+def create_pull_request(
+    full_name: str, branch: str, access_token: str, commit_slug: str
+) -> None:
+    """Create a pull request for the driver docs changes."""
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Accept": "application/vnd.github+json",
+    }
+
+    # First check for existing PRs for this branch
+    with httpx.Client() as client:
+        # Get existing PRs
+        default_branch = fetch_github_default_branch_name(full_name, access_token)
+        response = client.get(
+            f"https://api.github.com/repos/{full_name}/pulls",
+            headers=headers,
+            params={"state": "open", "head": f"{full_name.split('/')[0]}:{branch}"},
+        )
+        response.raise_for_status()
+
+        # Create new PR if none exists
+        logo_image = '<img src="https://raw.githubusercontent.com/driver-ai/driver-assets/main/gray_wordmark.svg" width="100px" />'
+        pr_data = {
+            "title": f"Update driver docs for commit {commit_slug}",
+            "body": f"Automated update of driver documentation for commit {commit_slug}\n<br/>\n{logo_image}",
+            "head": branch,
+            "base": default_branch,
+        }
+
+        try:
+            response = client.post(
+                f"https://api.github.com/repos/{full_name}/pulls",
+                headers=headers,
+                json=pr_data,
+            )
+            response.raise_for_status()
+            print(f"✅ Created PR: {response.json()['html_url']}")
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 422:
+                print("⚠️ No changes to create PR for - branch is up to date with main")
+            else:
+                raise

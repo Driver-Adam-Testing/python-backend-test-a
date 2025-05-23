@@ -1,7 +1,9 @@
 import hashlib
 import os
+from datetime import UTC, datetime
 from uuid import UUID
 
+import modal
 import requests
 from onboarding.onboard_utils import AccessTokenError, upload_to_s3_with_metadata
 from shared.interfaces.aws_client_config import AWSClientConfig
@@ -11,6 +13,11 @@ from shared.secret_management.aws_secret_management import (
 )
 from sqlalchemy.orm import selectinload
 from sqlmodel import Session, select
+
+# TODO: add fetch_github_default_branch_name
+# TODO: update generate_codebase_metadata to include installation_id
+# TODO: update download_and_upload_repo match gh_ops:download_and_upload_repo
+# TODO: add get_repo_clone_info_from_id like in gh_ops
 
 
 def fetch_access_token(installation_id: str) -> str:
@@ -51,6 +58,7 @@ def generate_codebase_metadata(
     provider: str,
     version_id: str | UUID,
     asset_name: str,
+    install_id: str,
 ) -> dict:
     from database.models_v2_enums import PrimaryAssetKind
 
@@ -62,6 +70,7 @@ def generate_codebase_metadata(
         "repository_id": str(repo_id),  # NOTE: just used for debugging
         "asset_name": asset_name,
         "asset_kind": PrimaryAssetKind.CODEBASE,
+        "install_id": install_id,
     }
 
 
@@ -69,7 +78,13 @@ def download_and_upload_repo(
     org_id: str, repo: dict, access_token: str, is_push: bool = False
 ) -> str | None:
     from database.db import engine
-    from database.models_v1 import GitProviderAppInstallation
+    from database.models_v1 import (
+        GitProviderAppInstallation,
+        InspectorRun,
+        UsageEvent,
+        UsageEventType,
+        UsageSession,
+    )
     from database.models_v2 import (
         PrimaryAsset,
         Version,
@@ -147,10 +162,98 @@ def download_and_upload_repo(
                             version_id = new_version.id
                             break
                         elif version.status == VersionStatus.GENERATING:
-                            print(
-                                f"Version already in generating state for {repo_name}, skipping..."
+                            # Delete running version, and restart inspection with the new version,
+                            # this way the docs we generate reflect the most up to date state
+                            run_statement = (
+                                select(InspectorRun)
+                                .where(InspectorRun.version_id == version.id)
+                                .order_by(InspectorRun.created_at.desc())
                             )
-                            return repo
+                            run = session.exec(run_statement).first()
+
+                            if run is not None:
+                                call_id = run.call_id
+                                modal_call = modal.FunctionCall.from_id(call_id)
+                                modal_call.cancel()
+                            # else: the run possibly hasn't been created yet, we'll proceed with the version deletion
+                            session.delete(version)
+                            # Find and delete the usage session for the version
+                            print("Fetching existing usage session...")
+                            usage_session_statement = (
+                                select(UsageSession)
+                                .join(
+                                    UsageEvent, UsageSession.id == UsageEvent.session_id
+                                )
+                                .where(
+                                    UsageSession.session_metadata["version_id"].astext
+                                    == str(version.id)
+                                )
+                                .where(
+                                    UsageEvent.event_type
+                                    == UsageEventType.INSPECTOR_CODE_DIFF_USAGE_DEBIT
+                                )
+                                .options(selectinload(UsageSession.usage_events))
+                            )
+                            usage_session = session.exec(
+                                usage_session_statement
+                            ).first()
+                            print(usage_session)
+                            if usage_session is not None:
+                                usage_event = next(
+                                    (
+                                        event
+                                        for event in usage_session.usage_events
+                                        if event.event_type
+                                        == UsageEventType.INSPECTOR_CODE_DIFF_USAGE_DEBIT.value
+                                    ),
+                                    None,
+                                )
+                                print(
+                                    f"Found {len(usage_session.usage_events)} usage events for version {version.id}"
+                                )
+                                if usage_event is not None:
+                                    new_usage_session = UsageSession(
+                                        status=usage_session.status,
+                                        organization_id=usage_session.organization_id,
+                                        user_id="SYSTEM",
+                                        session_metadata=usage_session.session_metadata,
+                                    )
+                                    session.add(new_usage_session)
+                                    usage_event_credit = UsageEvent(
+                                        **usage_event.dict(
+                                            exclude={
+                                                "id",
+                                                "bytes_in",
+                                                "session_id",
+                                                "timestamp",
+                                                "event_type",
+                                            }
+                                        ),
+                                        event_type=UsageEventType.ADDITIONAL_PLATFORM_USAGE_CREDIT,
+                                        session_id=new_usage_session.id,
+                                        bytes_in=abs(usage_event.bytes_in),
+                                        timestamp=datetime.now(tz=UTC),
+                                    )
+                                    print(usage_event_credit)
+                                    print(
+                                        f"crediting {usage_event_credit.bytes_in} bytes back to version {version.id}"
+                                    )
+                                    session.add(usage_event_credit)
+
+                            new_version = Version(
+                                primary_asset_id=primary_asset.id,
+                                display_name=commit,
+                                status=VersionStatus.GENERATING,
+                                # Immediately jump to generating. This signals run_codebase_connection to start inspection after connection
+                                previous_version_id=version.previous_version_id,
+                            )
+                            session.add(new_version)
+                            version_id = new_version.id
+
+                            print(
+                                f"Version already in generating state for {repo["name"]}, deleting existing version and restarting inspection with new version..."
+                            )
+                            break
                 elif primary_asset.versions[0].status == VersionStatus.CONNECTING:
                     print(
                         f"Version already in connecting state for {repo_name}, skipping..."
@@ -197,6 +300,7 @@ def download_and_upload_repo(
         "gitlab_enterprise_self_managed",
         version_id,
         repo_name,
+        installation_id,
     )
 
     zip_content = download_repo(base_url, repo_id, commit, access_token)
@@ -210,3 +314,74 @@ def download_and_upload_repo(
     print(f"Repository {repo_name} uploaded successfully to {upload_key}.")
 
     return None
+
+
+def fetch_gitlab_default_branch_name(
+    base_url: str, repo_id: str, access_token: str
+) -> str:
+    headers = {"Authorization": f"Bearer {access_token}"}
+    response = requests.get(
+        f"{base_url}/api/v4/projects/{repo_id}",
+        headers=headers,
+        timeout=120,
+        allow_redirects=True,
+    )
+    response.raise_for_status()
+    return response.json()["default_branch"]
+
+
+def get_repo_clone_info_from_id(
+    base_url: str, repo_id: str, access_token: str
+) -> tuple[str, str]:
+    headers = {"Authorization": f"Bearer {access_token}"}
+    response = requests.get(
+        f"{base_url}/api/v4/projects/{repo_id}",
+        headers=headers,
+        timeout=120,
+        allow_redirects=True,
+    )
+    response.raise_for_status()
+    clone_url = response.json()["http_url_to_repo"]
+    full_name = response.json()["path_with_namespace"]
+    username = get_gitlab_username(base_url, access_token)
+    if clone_url and username:
+        clone_url = (
+            clone_url.replace("https://", f"https://{username}:{access_token}@")
+            if clone_url.startswith("https")
+            else clone_url.replace("http://", f"https://{username}:{access_token}@")
+        )
+    else:
+        raise ValueError("Clone URL or username is missing")
+    return clone_url, full_name
+
+
+def create_pull_request(
+    base_url: str,
+    repo_id: str,
+    access_token: str,
+    branch: str,
+    commit_slug: str,
+) -> None:
+    default_branch = fetch_gitlab_default_branch_name(base_url, repo_id, access_token)
+    headers = {"Authorization": f"Bearer {access_token}"}
+    response = requests.post(
+        f"{base_url}/api/v4/projects/{repo_id}/merge_requests",
+        headers=headers,
+        json={
+            "source_branch": branch,
+            "target_branch": default_branch,
+            "title": f"Update driver docs for commit {commit_slug}",
+        },
+    )
+    response.raise_for_status()
+    print(f"Pull request created successfully: {response.json()['web_url']}")
+
+
+def get_gitlab_username(base_url: str, access_token: str) -> str:
+    url = f"{base_url.rstrip('/')}/api/v4/user"
+    headers = {"PRIVATE-TOKEN": access_token}
+    print(f"Fetching GitLab username from {url}")
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()
+    print(response.json())
+    return response.json()["username"]

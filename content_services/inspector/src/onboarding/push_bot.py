@@ -5,9 +5,6 @@ import uuid
 from pathlib import Path
 from urllib.parse import urlparse
 
-import httpx
-from onboarding.gh_ops import fetch_github_default_branch_name
-
 
 def extract_values_from_presigned_url(url: str) -> dict:
     parsed = urlparse(url)
@@ -44,61 +41,19 @@ def run(
     return result
 
 
-def create_pull_request(
-    full_name: str, branch: str, access_token: str, commit_slug: str
-) -> None:
-    """Create a pull request for the driver docs changes."""
-    headers = {
-        "Authorization": f"Bearer {access_token}",
-        "Accept": "application/vnd.github+json",
-    }
-
-    # First check for existing PRs for this branch
-    with httpx.Client() as client:
-        # Get existing PRs
-        default_branch = fetch_github_default_branch_name(full_name, access_token)
-        response = client.get(
-            f"https://api.github.com/repos/{full_name}/pulls",
-            headers=headers,
-            params={"state": "open", "head": f"{full_name.split('/')[0]}:{branch}"},
-        )
-        response.raise_for_status()
-
-        # Create new PR if none exists
-        logo_image = '<img src="https://raw.githubusercontent.com/driver-ai/driver-assets/main/gray_wordmark.svg" width="100px" />'
-        pr_data = {
-            "title": f"Update driver docs for commit {commit_slug}",
-            "body": f"Automated update of driver documentation for commit {commit_slug}\n<br/>\n{logo_image}",
-            "head": branch,
-            "base": default_branch,
-        }
-
-        try:
-            response = client.post(
-                f"https://api.github.com/repos/{full_name}/pulls",
-                headers=headers,
-                json=pr_data,
-            )
-            response.raise_for_status()
-            print(f"✅ Created PR: {response.json()['html_url']}")
-        except httpx.HTTPStatusError as e:
-            if e.response.status_code == 422:
-                print("⚠️ No changes to create PR for - branch is up to date with main")
-            else:
-                raise
-
-
 async def push_docs(version_id: uuid.UUID) -> None:
     # import boto3
     import hashlib
     import tempfile
 
-    from onboarding.gh_ops import fetch_app_access_token, get_repo_clone_info_from_id
+    from database.db import engine
+    from database.models_v1 import GitProviderAppInstallation
+    from onboarding import gh_ops, gitlab_ops
     from onboarding.onboard_utils import (
         unpack_archive_to_finalized_path,
     )
+    from sqlmodel import Session, select
     from utils.db import get_version_by_id
-
     # parsed_values = extract_values_from_presigned_url(presigned_url)
 
     version = await get_version_by_id(version_id)
@@ -106,6 +61,8 @@ async def push_docs(version_id: uuid.UUID) -> None:
     repo_id = version.primary_asset.repository_id
     org_id = version.primary_asset.organization_id
     org_id_hash = hashlib.sha256(org_id.encode()).hexdigest()[:63]
+
+    is_github = version.primary_asset.installation_id is None
 
     with (
         tempfile.TemporaryDirectory() as temp_dir,
@@ -122,8 +79,27 @@ async def push_docs(version_id: uuid.UUID) -> None:
         )
         commit_slug = version.display_name[:7]
         branch = f"docs_{commit_slug}"
-        access_token = fetch_app_access_token(install_id)
-        clone_url, full_name = get_repo_clone_info_from_id(repo_id, access_token)
+        if is_github:
+            access_token = gh_ops.fetch_app_access_token(install_id)
+            clone_url, full_name = gh_ops.get_repo_clone_info_from_id(
+                repo_id, access_token
+            )
+        else:
+            with Session(engine) as session:
+                installation_id = version.primary_asset.installation_id
+                app_install = session.exec(
+                    select(GitProviderAppInstallation).where(
+                        GitProviderAppInstallation.id == installation_id
+                    )
+                ).one()
+                if app_install is None:
+                    raise ValueError(f"Installation ID {installation_id} not found.")
+                base_url = app_install.git_provider_app.base_url
+            access_token = gitlab_ops.fetch_access_token(install_id)
+            clone_url, full_name = gitlab_ops.get_repo_clone_info_from_id(
+                base_url, repo_id, access_token
+            )
+
         repo_dir = Path(temp_dir) / full_name
         target_dir = "driver_docs"
         if not os.path.exists(repo_dir):
@@ -148,8 +124,14 @@ async def push_docs(version_id: uuid.UUID) -> None:
         run(f"git push --force {clone_url} {branch}", cwd=repo_dir)
         print(f"✅ Pushed `{target_dir}` to `{branch}`")
 
-        # Create a pull request after successful push
-        create_pull_request(full_name, branch, access_token, commit_slug)
+        if is_github:
+            # Create a pull request after successful push
+            gh_ops.create_pull_request(full_name, branch, access_token, commit_slug)
+        else:
+            # Create a merge request after successful push
+            gitlab_ops.create_pull_request(
+                base_url, repo_id, access_token, branch, commit_slug
+            )
 
 
 def sync_directory(src: str, dest: str) -> None:

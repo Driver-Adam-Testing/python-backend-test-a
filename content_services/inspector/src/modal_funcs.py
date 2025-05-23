@@ -8,6 +8,7 @@ from utils.dag import LiteNode
 
 image = (
     modal.Image.debian_slim(python_version="3.12")
+    .apt_install("git")
     .add_local_dir(local_path="../../driver_db", remote_path="/driver_db", copy=True)
     .add_local_dir(
         local_path="../../packages/shared", remote_path="/shared_pkg", copy=True
@@ -19,8 +20,12 @@ image = (
     )
     .pip_install(
         [
-            "boto3",
-            "requests",
+            "boto3==1.37.22",
+            "cryptography==44.0.2",
+            "gitignore-parser==0.1.11",
+            "httpx==0.28.1",
+            "pyjwt==2.10.1",
+            "requests==2.32.3",
             "openai>=1.40.2",
             "pydantic>=2.8.2",
             "tiktoken",
@@ -38,6 +43,7 @@ image = (
         "shared",
         "tasks",
         "utils",
+        copy=True,
     )
 )
 

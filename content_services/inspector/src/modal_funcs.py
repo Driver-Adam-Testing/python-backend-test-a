@@ -264,8 +264,12 @@ def export_tech_docs_to_zip(
             )
         print(f"Uploaded tech docs zip to S3: {s3_dest}")
         if auto_commit_docs:
-            print("PRing exported docs")
-            push_tech_docs.remote(version_id)
+            if install_id is not None:
+                print("PRing exported docs")
+                push_tech_docs.remote(version_id)
+            else:
+                # TODO: better handling of install_id rather than attaching to S3 metadata
+                print("Unable to PR - install id is not available")
         else:
             print("PR disabled for this codebase.")
 

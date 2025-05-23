@@ -452,7 +452,7 @@ class IrCollection(BaseModel, abc.ABC):
                 else:
                     id_comment = ""
 
-                output += f"\n---\n### {k} {id_comment}\n"
+                output += f"\n---\n### {k}{id_comment}\n"
                 output += item.render_markdown()
         return output
 

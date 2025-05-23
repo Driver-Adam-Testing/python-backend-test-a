@@ -314,6 +314,26 @@ class LinkedProject:
                             is_declaration=False,
                             definition=None,
                         )
+                    else:
+                        # No direct definition, check for declarations
+                        decl_candidates = declarations_by_name.get(rsym.name, [])
+                        vis_decls = [
+                            (dpath, d_raw)
+                            for (dpath, d_raw) in decl_candidates
+                            if dpath in visible_with_self
+                        ]
+                        if len(vis_decls) >= 1:
+                            # pick first for simplicity
+                            _, decl_raw = vis_decls[0]
+                            # see if we unified this decl to a known definition
+                            maybe_def = decl_to_def.get(decl_raw)
+                            if maybe_def is not None:
+                                def_symbol = LinkedSymbol(
+                                    raw=maybe_def,
+                                    is_definition=True,
+                                    is_declaration=False,
+                                    definition=None,
+                                )
 
                 elif is_declaration(rsym) and rsym.name and rsym in decl_to_def:
                     def_symbol = LinkedSymbol(

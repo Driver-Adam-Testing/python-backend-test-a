@@ -156,7 +156,7 @@ Guidelines:
 - Each `input` must describe:
     - Purpose of the parameter
     - Allowed values or formats (e.g., ranges) when applicable
-    - Ownership and nullability (e.g., "Must not be null", "Caller retains ownership")
+    - Ownership and nullability if applicable (e.g., "Must not be null", "Caller retains ownership")
     - How the function behaves on invalid input
 - The `output` must describe:
     - The return value (if any) and what it means

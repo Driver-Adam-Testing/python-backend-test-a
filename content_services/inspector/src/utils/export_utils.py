@@ -43,14 +43,21 @@ def replace_driver_compatible_links_with_markdown_links(
         file_path = Path(
             *Path(link_part).parts[1:]
         )  # Strips the first part of the path
-        converted_file_path = file_path.with_suffix(file_path.suffix + ".driver.md")
-        new_url = relpath(converted_file_path, source_path)
-        new_url = new_url.removeprefix("../")
-        if new_url == ".":
-            new_url = ""
-        if anchor_tag:
-            anchor_name = anchor_tag.split(":")[1]
-            new_url += "#" + anchor_name
-        text = text.replace(link, new_url)
+        try:
+            converted_file_path = file_path.with_suffix(file_path.suffix + ".driver.md")
+            new_url = relpath(converted_file_path, source_path)
+            new_url = new_url.removeprefix("../")
+            if new_url == ".":
+                new_url = ""
+            if anchor_tag:
+                anchor_name = anchor_tag.split(":")[1]
+                new_url += "#" + anchor_name
+            text = text.replace(link, new_url)
+        except ValueError as e:
+            # This specifically errors in the case of this file, since the tech doc contains an invalid link
+            # But could occur elsewhere where these patterns naturally occur in our tech docs. We should
+            # just ignore and continue.
+            print(f"Error converting file path: {e}")
+            continue
 
     return text

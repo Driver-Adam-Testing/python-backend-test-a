@@ -28,10 +28,6 @@ if TYPE_CHECKING:
     from shared.v3.interfaces.llm_tool import LlmTool
     from shared.v3.utils.datasource import DataSource
 
-__all__ = [
-    "LlmClient",
-]
-
 
 class LlmClient(ABC):
     _PRESETS: ClassVar[dict[str, Callable[[], LlmConfig]]] = {
@@ -143,6 +139,16 @@ class LlmClient(ABC):
                     content=tool.status,
                 )
             except Exception as exc:
+                error_message = f"Error during tool execution: {exc!s}"
+                history.add_message(
+                    LlmMessage(
+                        MessageKind.TOOL_CALL_RESPONSE,
+                        error_message,
+                        tool_response=LlmMessage.ToolCallResponse(
+                            id=tool_msg.tool_response.id, name=tool.name
+                        ),
+                    )
+                )
                 yield ErrorStreamResponse(
                     kind=LlmStreamResponseKind.ERROR,
                     error_message=f"Tool failed: {exc!s}",
@@ -291,6 +297,9 @@ class LlmClient(ABC):
                         kind=LlmStreamResponseKind.RESPONSE_FULL,
                         content=chunk.content,
                     )
+                    await asyncio.sleep(
+                        0.05
+                    )  # 50ms pause to avoid race condition on client read
                     should_continue = False
                     continue
 
@@ -302,3 +311,6 @@ class LlmClient(ABC):
 
 
 LlmClient.initialize_presets()
+__all__ = [
+    "LlmClient",
+]

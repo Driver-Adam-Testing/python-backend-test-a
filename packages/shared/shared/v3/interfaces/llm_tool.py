@@ -110,12 +110,22 @@ class LlmTool(LlmParseable, ABC):
           runs a secondary thread) to the event-loop executor so the loop stays
           free for other I/O.
         """
-        if inspect.iscoroutinefunction(self.execute):
-            return await self.execute(tool_call_id, datasource)
+        try:
+            if inspect.iscoroutinefunction(self.execute):
+                return await self.execute(tool_call_id, datasource)
 
-        loop = asyncio.get_running_loop()
-        fn = partial(self.execute, tool_call_id=tool_call_id, datasource=datasource)
-        return await loop.run_in_executor(None, fn)
+            loop = asyncio.get_running_loop()
+            fn = partial(self.execute, tool_call_id=tool_call_id, datasource=datasource)
+            return await loop.run_in_executor(None, fn)
+        except Exception as e:
+            error_message = f"Error during execution: {e!s}"
+            return LlmMessage(
+                content=error_message,
+                message_kind=MessageKind.TOOL_CALL_RESPONSE,
+                tool_response=LlmMessage.ToolCallResponse(
+                    id=tool_call_id, name=self.__class__.__name__
+                ),
+            )
 
     @abstractmethod
     def _execute(self) -> None:

@@ -64,10 +64,25 @@ def list_primary_assets(
 
     count_query = select(func.count()).select_from(query.subquery())
     total_count = session.exec(count_query).one()
-
-    query = apply_sorting_to_query(query, pagination, PrimaryAsset)
-    result = session.exec(query)
-    primary_assets = result.all()
+    # TODO: This is a hack to sort by total_files. We should use the query utils instead, but It's very problematic.
+    if pagination.sort_by == "most_recent_version.root_node.total_files":
+        primary_assets = session.exec(query).all()
+        primary_assets = sorted(
+            primary_assets,
+            key=lambda x: (
+                x.most_recent_version.root_node.total_files
+                if x.most_recent_version.root_node
+                else 0
+            ),
+            reverse=(pagination.sort_direction == "DESC"),
+        )
+        primary_assets = primary_assets[
+            pagination.offset : pagination.offset + pagination.limit
+        ]
+    else:
+        query = apply_sorting_to_query(query, pagination, PrimaryAsset)
+        result = session.exec(query)
+        primary_assets = result.all()
 
     return ListWithCount(results=primary_assets, total_count=total_count)
 

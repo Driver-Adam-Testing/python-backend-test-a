@@ -1,0 +1,7 @@
+
+## Files
+- **[migrate_codebases.py](nodes_v2_sql/migrate_codebases.py.driver.md)**: The `migrate_codebases.py` file contains a SQL script for migrating codebase data, including preparing and inserting primary assets and versions, inserting nodes, and updating derived contents in a database.
+- **[migrate_pages_and_templates.py](nodes_v2_sql/migrate_pages_and_templates.py.driver.md)**: The `migrate_pages_and_templates.py` file contains SQL queries to migrate pages and templates by inserting and updating records across multiple tables in a database schema.
+- **[migrate_pdfs.py](nodes_v2_sql/migrate_pdfs.py.driver.md)**: The `migrate_pdfs.py` file contains a SQL migration script that processes and migrates PDF records from a `derived_contents` table to new tables (`v2_primary_asset`, `v2_version`, and `v2_node`), while maintaining relationships and updating the original table with new node IDs.
+- **[migrate_tags.py](nodes_v2_sql/migrate_tags.py.driver.md)**: The `migrate_tags.py` file contains a SQL script for migrating tag data by associating tags with primary asset IDs and inserting them into the `v2_primary_asset_tag` table.
+- **[migrate_top_level_content.py](nodes_v2_sql/migrate_top_level_content.py.driver.md)**: The `migrate_top_level_content.py` file contains SQL commands to update the `content_kind` of entries in the `derived_contents` table based on their current `content_kind` and a relationship to other entries with a `content_kind` of 'codebase'.

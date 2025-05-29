@@ -7,10 +7,14 @@ from typing import Self
 
 import tree_sitter
 import tree_sitter_c
+import tree_sitter_python
 
 from utils.lang_specialization.symbol_common import RawTreeSitterSymbolData, SymbolKind
 
-LANGUAGES = {"c": tree_sitter.Language(tree_sitter_c.language())}
+LANGUAGES = {
+    "c": tree_sitter.Language(tree_sitter_c.language()),
+    "python": tree_sitter.Language(tree_sitter_python.language()),
+}
 
 
 def symbol_extractor(

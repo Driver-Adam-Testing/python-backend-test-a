@@ -122,7 +122,13 @@ def handle_github_events(
     errant_repos = []
     with ThreadPoolExecutor(max_workers=10) as executor:
         futures = [
-            executor.submit(download_and_upload_repo, org_id, repo, token)
+            executor.submit(
+                download_and_upload_repo,
+                org_id,
+                repo,
+                token,
+                installation_id,
+            )
             for repo in repos_added
         ]
         wait(futures)
@@ -135,6 +141,7 @@ def handle_github_events(
             org_id=org_id,
             repo=repo,
             access_token=token,
+            install_id=installation_id,
             is_push=True,
         )
         if repo_name_or_none is not None:
@@ -484,7 +491,7 @@ def run_codebase_connection(
 ) -> None:
     import tempfile
 
-    from boto3 import resource
+    from boto3 import client, resource
     from database.db import (
         engine,  # We defer the import since we'll have the secrets set here
     )
@@ -504,6 +511,7 @@ def run_codebase_connection(
         is_driverignored,
         is_on_blacklist,
         load_driverignore,
+        parse_presigned_url,
         run_file_stats_and_reencode,
         unpack_archive_to_finalized_path,
     )
@@ -606,7 +614,25 @@ def run_codebase_connection(
 
         s3_resource = resource("s3", endpoint_url=os.environ.get("AWS_S3_ENDPOINT_URL"))
         s3_bucket = s3_resource.Bucket(org_id_bucket)
-        s3_bucket.upload_file(Path(provisional_codebase_name), str(s3_dest))
+        dropzone_bucket, dropzone_key = parse_presigned_url(presigned_url)
+        s3 = client("s3")
+        response = s3.head_object(Bucket=dropzone_bucket, Key=dropzone_key)
+
+        # Extract and print metadata
+        metadata = response.get("Metadata", {})
+        install_id = metadata.get("install_id", None)
+        if install_id is not None:
+            s3_bucket.upload_file(
+                Path(provisional_codebase_name),
+                str(s3_dest),
+                ExtraArgs={"Metadata": {"install_id": install_id}},
+            )
+        else:
+            s3_bucket.upload_file(
+                Path(provisional_codebase_name),
+                str(s3_dest),
+            )
+        # s3_bucket.upload_file(Path(provisional_codebase_name), str(s3_dest))
         print(f"Uploaded {provisional_codebase_name} to {s3_dest}")
         with Session(engine) as session, session.begin():
             # Add directories source contents

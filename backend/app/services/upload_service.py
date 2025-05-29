@@ -38,10 +38,12 @@ class UploadService:
             asset_name = os.path.splitext(file_name)[0]
             asset_kind = PrimaryAssetKind.CODEBASE
             content_type = "application/zip"
+            codebase_settings_auto_commit_docs = False
         elif file_name.lower().endswith(".pdf"):
             asset_name = file_name
             asset_kind = PrimaryAssetKind.FILE
             content_type = "application/pdf"
+            codebase_settings_auto_commit_docs = None
         else:
             raise HTTPException(
                 status_code=400, detail="File must be a zip or pdf file"
@@ -59,6 +61,7 @@ class UploadService:
                     organization_id=org_id,
                     kind=asset_kind,
                     repository_id=None,
+                    codebase_settings_auto_commit_docs=codebase_settings_auto_commit_docs,
                 )
                 self.session.add(new_asset)
                 primary_asset_id = new_asset.id

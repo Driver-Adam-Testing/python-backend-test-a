@@ -234,6 +234,12 @@ class IrData(BaseModel, abc.ABC):
                         kind=OutputConfigKind.JSON_STRICT, payload=cls
                     ),
                 )
+
+                # Kept here for debugging in the future.
+                # print("System Prompt: ", system_prompt)
+                # print("User Prompt: ", cls.user_prompt(symbol))
+                # print("Content Raw: ", content_raw)
+
             except openai.LengthFinishReasonError as _:
                 print("LengthFinishReasonError caught")
                 return None
@@ -327,6 +333,15 @@ class IrData(BaseModel, abc.ABC):
                     output += (
                         f"    - [`{name_part}`]({path_part}#{kind_part}:{name_part})\n"
                     )
+            if (
+                sym.raw.symbol_kind == SymbolKind.CALLABLE_DECLARATION
+                and sym.definition is not None
+            ):
+                kind_part = sym.definition.raw.symbol_kind.name.lower()
+                name_part = sym.definition.raw.name
+                path_part = sym.definition.raw.file_path
+
+                output += f"- **See also**: [`{name_part}`]({path_part}#{kind_part}:{name_part})  (Implementation)\n"
             # if sym.raw.symbol_kind == SymbolKind.CALLABLE and sym.usages:
             #     output += "- **Usages of this function**:\n"
             #     for usage in self._reified_symbol.usages:
@@ -403,7 +418,7 @@ class IrCollection(BaseModel, abc.ABC):
                         symbols_dict[s.name] = []
                     futures[executor.submit(ir_data.from_llm, llm_to_use, s)] = s.name
                 else:
-                    raise ValueError("Unsupport type in RawSymbolCollection")
+                    raise ValueError("Unsupported type in RawSymbolCollection")
 
             for idx, future in enumerate(
                 concurrent.futures.as_completed(futures.keys())
@@ -437,9 +452,8 @@ class IrCollection(BaseModel, abc.ABC):
                 else:
                     id_comment = ""
 
-                output += f"\n---\n### {k} {id_comment}\n"
+                output += f"\n---\n### {k}{id_comment}\n"
                 output += item.render_markdown()
-
         return output
 
     def __str__(self) -> str:
@@ -475,12 +489,27 @@ class DataStructureData(IrData, abc.ABC):
         )
 
 
+class FnDeclData(IrData, abc.ABC):
+    single_sentence: RawContent
+    description: FieldNameWithRawContent
+    inputs: ListedBacktickNameRawContentWithNone
+    output: FieldNameWithRawContent
+
+    @classmethod
+    def default_instance(cls) -> Self:
+        return cls(
+            single_sentence=RawContent(content=""),
+            description=FieldNameWithRawContent(content=""),
+            inputs=ListedBacktickNameRawContentWithNone(content=[]),
+            output=FieldNameWithRawContent(content=""),
+        )
+
+
 class FnData(IrData, abc.ABC):
     single_sentence: RawContent
     inputs: ListedBacktickNameRawContentWithNone
     control_flow: ListedRawContentWithNone
     output: FieldNameWithBulletedContent
-    # TODO can add method to take _symbol_info
 
     @classmethod
     def default_instance(cls) -> Self:

@@ -242,6 +242,7 @@ class LinkedSymbol:
 
     raw: RawTreeSitterSymbolData
     is_definition: bool
+    is_declaration: bool
     definition: Self | None = None
 
 
@@ -296,7 +297,7 @@ class LinkedProject:
             for rsym in raw_syms:
                 def_symbol: LinkedSymbol | None = None
 
-                if not is_definition(rsym) and rsym.name:
+                if not is_definition(rsym) and not is_declaration(rsym) and rsym.name:
                     # Direct definitions in visible files
                     candidates = definitions_by_name.get(rsym.name, [])
                     vis_defs = [
@@ -307,27 +308,46 @@ class LinkedProject:
                     if len(vis_defs) >= 1:
                         # pick first or unify
                         dfpath, def_raw = vis_defs[0]
-                        def_symbol = LinkedSymbol(def_raw, True, None)
+                        def_symbol = LinkedSymbol(
+                            raw=def_raw,
+                            is_definition=True,
+                            is_declaration=False,
+                            definition=None,
+                        )
                     else:
-                        # fallback to a declaration if found
+                        # No direct definition, check for declarations
                         decl_candidates = declarations_by_name.get(rsym.name, [])
                         vis_decls = [
-                            (dpath, draw)
-                            for (dpath, draw) in decl_candidates
+                            (dpath, d_raw)
+                            for (dpath, d_raw) in decl_candidates
                             if dpath in visible_with_self
                         ]
                         if len(vis_decls) >= 1:
                             # pick first for simplicity
-                            (dpath, decl_raw) = vis_decls[0]
+                            _, decl_raw = vis_decls[0]
                             # see if we unified this decl to a known definition
                             maybe_def = decl_to_def.get(decl_raw)
                             if maybe_def is not None:
-                                def_symbol = LinkedSymbol(maybe_def, True, None)
+                                def_symbol = LinkedSymbol(
+                                    raw=maybe_def,
+                                    is_definition=True,
+                                    is_declaration=False,
+                                    definition=None,
+                                )
+
+                elif is_declaration(rsym) and rsym.name and rsym in decl_to_def:
+                    def_symbol = LinkedSymbol(
+                        raw=decl_to_def[rsym],
+                        is_definition=True,
+                        is_declaration=False,
+                        definition=None,
+                    )
 
                 linked_syms.append(
                     LinkedSymbol(
                         raw=rsym,
                         is_definition=is_definition(rsym),
+                        is_declaration=is_declaration(rsym),
                         definition=def_symbol,
                     )
                 )
@@ -358,15 +378,22 @@ class ReifiedProjectIndex:
         for _fpath, ls_list in linked_proj.linked_symbols.items():
             for lsym in ls_list:
                 provisional_map[lsym] = ReifiedSymbol(
-                    raw=lsym.raw, is_definition=lsym.is_definition
+                    raw=lsym.raw,
+                    is_definition=lsym.is_definition,
+                    is_declaration=lsym.is_declaration,
                 )
 
         # (2) Build adjacency from definition => usage
         def_to_usage: dict[LinkedSymbol, list[LinkedSymbol]] = {}
+        def_to_decl: dict[LinkedSymbol, list[LinkedSymbol]] = {}
         for lsym in provisional_map:
             if not lsym.is_definition and lsym.definition is not None:
                 def_ls = lsym.definition
-                def_to_usage.setdefault(def_ls, []).append(lsym)
+
+                if is_declaration(lsym.raw):
+                    def_to_decl.setdefault(def_ls, []).append(lsym)
+                else:  # Usage
+                    def_to_usage.setdefault(def_ls, []).append(lsym)
 
         # (3) Build a first pass final_map that sets .definition and .usages
         final_map: dict[LinkedSymbol, ReifiedSymbol] = {}
@@ -375,8 +402,12 @@ class ReifiedProjectIndex:
             if (not lsym.is_definition) and lsym.definition:
                 new_def = provisional_map[lsym.definition]
             usage_list = [provisional_map[u] for u in def_to_usage.get(lsym, [])]
+            decl_list = [provisional_map[d] for d in def_to_decl.get(lsym, [])]
             final_map[lsym] = replace(
-                reified_sym, definition=new_def, usages=usage_list
+                reified_sym,
+                definition=new_def,
+                usages=usage_list,
+                declarations=decl_list,
             )
 
         # (4) For function definitions, gather calls from the containment map
@@ -423,6 +454,7 @@ class ReifiedProjectIndex:
         GREEN = "\033[92m"
         YELLOW = "\033[93m"
         CYAN = "\033[96m"
+        MAGENTA = "\033[95m"
 
         targets = files if files else sorted(self.file_to_symbols.keys())
 
@@ -440,10 +472,24 @@ class ReifiedProjectIndex:
 
                 if sym.is_definition:
                     usage_count = len(sym.usages)
+                    decl_count = len(sym.declarations)
                     print(
                         f"{GREEN}  DEF: {name} {lines} in {sym_file_path} "
-                        f"has {usage_count} usage(s){RESET}"
+                        f"has {usage_count} usage(s) and {decl_count} declaration(s){RESET}"
                     )
+
+                    # Show declarations for this definition
+                    for decl_sym in sym.declarations:
+                        decl_name = decl_sym.raw.name
+                        decl_lines = (
+                            f"[lines {decl_sym.raw.start_line}-"
+                            f"{decl_sym.raw.end_line}]"
+                        )
+                        decl_file_path = decl_sym.raw.file_path
+                        print(
+                            f"{MAGENTA}    DECL: {decl_name} {decl_lines} "
+                            f"in {decl_file_path}{RESET}"
+                        )
 
                     # If this is a CALLABLE definition, show the calls it makes
                     if sym.raw.symbol_kind == SymbolKind.CALLABLE and sym.calls:
@@ -469,7 +515,27 @@ class ReifiedProjectIndex:
                             f"{YELLOW}    USAGE: {usage_name} {usage_lines} "
                             f"in {usage_file_path}{RESET}"
                         )
-                else:
+                elif sym.is_declaration:
+                    if sym.definition:
+                        def_name = sym.definition.raw.name
+                        def_lines = (
+                            f"[lines {sym.definition.raw.start_line}-"
+                            f"{sym.definition.raw.end_line}]"
+                        )
+                        def_file_path = sym.definition.raw.file_path
+                        print(
+                            f"{MAGENTA}  DECL: {name} {lines} in {sym_file_path} "
+                            f"-> definition: {def_name} {def_lines} "
+                            f"in {def_file_path}{RESET}"
+                        )
+                    else:
+                        print(
+                            f"{MAGENTA}  DECL: {name} {lines} in {sym_file_path} "
+                            "-> definition: None"
+                            f"{RESET}"
+                        )
+
+                else:  # TODO check if usage vs declaration
                     # usage symbol
                     if sym.definition:
                         def_name = sym.definition.raw.name
@@ -523,7 +589,7 @@ def discover_c_and_h_files(project_root: Path) -> list[Path]:
 
 def main() -> None:
     # project_root = Path("/Users/andrewmark/Downloads/sqlite")
-    project_root = Path("/Users/andrewmark/projects/c_test_3")
+    project_root = Path("/Users/andrewmark/projects/chesslib4")
 
     file_paths = discover_c_and_h_files(project_root)
 

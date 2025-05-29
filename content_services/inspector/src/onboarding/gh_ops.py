@@ -3,12 +3,14 @@ import hashlib
 import logging
 import os
 import time
+from datetime import UTC, datetime
 from uuid import UUID
 
 import httpx
 import jwt
+import modal
 import requests
-from onboarding.onboard_utils import AccessTokenError, upload_to_s3_with_metadata
+from onboarding.onboard_utils import AccessTokenError
 from sqlalchemy.orm import selectinload
 from sqlmodel import Session, select
 
@@ -70,6 +72,14 @@ def fetch_default_branch_and_commit(full_repo_name: str, access_token: str) -> s
     return branch_data["commit"]["sha"]
 
 
+def fetch_github_default_branch_name(full_repo_name: str, access_token: str) -> str:
+    headers = {"Authorization": f"token {access_token}"}
+    repo_url = get_github_repo_url(full_repo_name=full_repo_name)
+    repo = requests.get(repo_url, headers=headers)
+    repo_data = repo.json()
+    return repo_data["default_branch"]
+
+
 def generate_codebase_metadata(
     org_id: str,
     full_repo_name: str,
@@ -77,6 +87,7 @@ def generate_codebase_metadata(
     provider: str,
     version_id: str | UUID,
     asset_name: str,
+    install_id: str,
 ) -> dict:
     from database.models_v2_enums import PrimaryAssetKind
 
@@ -88,6 +99,7 @@ def generate_codebase_metadata(
         "repository_id": str(repo_id),  # NOTE: just used for debugging
         "asset_name": asset_name,
         "asset_kind": PrimaryAssetKind.CODEBASE,
+        "install_id": install_id,
     }
 
 
@@ -100,9 +112,19 @@ def download_github_repo_zip(full_name: str, commit: str, access_token: str) -> 
 
 
 def download_and_upload_repo(
-    org_id: str, repo: dict, access_token: str, is_push: bool = False
+    org_id: str,
+    repo: dict,
+    access_token: str,
+    install_id: str,
+    is_push: bool = False,
 ) -> str | None:
     from database.db import engine
+    from database.models_v1 import (
+        InspectorRun,
+        UsageEvent,
+        UsageEventType,
+        UsageSession,
+    )
     from database.models_v2 import (
         PrimaryAsset,
         Version,
@@ -111,6 +133,7 @@ def download_and_upload_repo(
         PrimaryAssetKind,
         VersionStatus,
     )
+    from onboarding.onboard_utils import upload_to_s3_with_metadata
     from sqlalchemy.exc import IntegrityError
 
     if not repo.get("commit"):
@@ -176,10 +199,97 @@ def download_and_upload_repo(
                             version_id = new_version.id
                             break
                         elif version.status == VersionStatus.GENERATING:
-                            print(
-                                f"Version already in generating state for {repo["name"]}, skipping..."
+                            # Delete running version, and restart inspection with the new version,
+                            # this way the docs we generate reflect the most up to date state
+                            run_statement = (
+                                select(InspectorRun)
+                                .where(InspectorRun.version_id == version.id)
+                                .order_by(InspectorRun.created_at.desc())
                             )
-                            return repo
+                            run = session.exec(run_statement).first()
+
+                            if run is not None:
+                                call_id = run.call_id
+                                modal_call = modal.FunctionCall.from_id(call_id)
+                                modal_call.cancel()
+                            # else: the run possibly hasn't been created yet, we'll proceed with the version deletion
+                            session.delete(version)
+                            # Find and delete the usage session for the version
+                            print("Fetching existing usage session...")
+                            usage_session_statement = (
+                                select(UsageSession)
+                                .join(
+                                    UsageEvent, UsageSession.id == UsageEvent.session_id
+                                )
+                                .where(
+                                    UsageSession.session_metadata["version_id"].astext
+                                    == str(version.id)
+                                )
+                                .where(
+                                    UsageEvent.event_type
+                                    == UsageEventType.INSPECTOR_CODE_DIFF_USAGE_DEBIT
+                                )
+                                .options(selectinload(UsageSession.usage_events))
+                            )
+                            usage_session = session.exec(
+                                usage_session_statement
+                            ).first()
+                            print(usage_session)
+                            if usage_session is not None:
+                                usage_event = next(
+                                    (
+                                        event
+                                        for event in usage_session.usage_events
+                                        if event.event_type
+                                        == UsageEventType.INSPECTOR_CODE_DIFF_USAGE_DEBIT.value
+                                    ),
+                                    None,
+                                )
+                                print(
+                                    f"Found {len(usage_session.usage_events)} usage events for version {version.id}"
+                                )
+                                if usage_event is not None:
+                                    new_usage_session = UsageSession(
+                                        status=usage_session.status,
+                                        organization_id=usage_session.organization_id,
+                                        user_id="SYSTEM",
+                                        session_metadata=usage_session.session_metadata,
+                                    )
+                                    session.add(new_usage_session)
+                                    usage_event_credit = UsageEvent(
+                                        **usage_event.dict(
+                                            exclude={
+                                                "id",
+                                                "bytes_in",
+                                                "session_id",
+                                                "timestamp",
+                                                "event_type",
+                                            }
+                                        ),
+                                        event_type=UsageEventType.ADDITIONAL_PLATFORM_USAGE_CREDIT,
+                                        session_id=new_usage_session.id,
+                                        bytes_in=abs(usage_event.bytes_in),
+                                        timestamp=datetime.now(tz=UTC),
+                                    )
+                                    print(usage_event_credit)
+                                    print(
+                                        f"crediting {usage_event_credit.bytes_in} bytes back to version {version.id}"
+                                    )
+                                    session.add(usage_event_credit)
+
+                            new_version = Version(
+                                primary_asset_id=primary_asset.id,
+                                display_name=commit,
+                                status=VersionStatus.GENERATING,  # Immediately jump to generating. This signals run_codebase_connection to start inspection after connection
+                                previous_version_id=version.previous_version_id,
+                            )
+                            session.add(new_version)
+                            version_id = new_version.id
+
+                            print(
+                                f"Version already in generating state for {repo["name"]}, deleting existing version and restarting inspection with new version..."
+                            )
+                            break
                 elif primary_asset.versions[0].status == VersionStatus.CONNECTING:
                     print(
                         f"Version already in connecting state for {repo["name"]}, skipping..."
@@ -195,6 +305,7 @@ def download_and_upload_repo(
                     organization_id=org_id,
                     kind=PrimaryAssetKind.CODEBASE,
                     repository_id=repo["id"],
+                    codebase_settings_auto_commit_docs=False,
                 )
                 session.add(primary_asset)
                 primary_asset_id = primary_asset.id
@@ -224,6 +335,7 @@ def download_and_upload_repo(
         "github",
         version_id,
         repo["name"],
+        install_id,
     )
 
     zip_content = download_github_repo_zip(repo["full_name"], commit, access_token)
@@ -238,3 +350,65 @@ def download_and_upload_repo(
     print(f"Repository {repo['name']} uploaded successfully to {upload_key}.")
 
     return None
+
+
+def get_repo_clone_info_from_id(repo_id: str, github_token: str) -> tuple[str, str]:
+    headers = {
+        "Authorization": f"Bearer {github_token}",
+        "Accept": "application/vnd.github+json",
+    }
+
+    with httpx.Client() as client:
+        resp = client.get(
+            f"https://api.github.com/repositories/{repo_id}", headers=headers
+        )
+        resp.raise_for_status()
+        data = resp.json()
+
+    full_name = data["full_name"]  # e.g., "org/repo"
+    clone_url = f"https://x-access-token:{github_token}@github.com/{full_name}.git"
+    return clone_url, full_name
+
+
+def create_pull_request(
+    full_name: str, branch: str, access_token: str, commit_slug: str
+) -> None:
+    """Create a pull request for the driver docs changes."""
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Accept": "application/vnd.github+json",
+    }
+
+    # First check for existing PRs for this branch
+    with httpx.Client() as client:
+        # Get existing PRs
+        default_branch = fetch_github_default_branch_name(full_name, access_token)
+        response = client.get(
+            f"https://api.github.com/repos/{full_name}/pulls",
+            headers=headers,
+            params={"state": "open", "head": f"{full_name.split('/')[0]}:{branch}"},
+        )
+        response.raise_for_status()
+
+        # Create new PR if none exists
+        logo_image = '<img src="https://raw.githubusercontent.com/driver-ai/driver-assets/main/gray_wordmark.svg" width="100px" />'
+        pr_data = {
+            "title": f"Update driver docs for commit {commit_slug}",
+            "body": f"Automated update of driver documentation for commit {commit_slug}\n<br/>\n{logo_image}",
+            "head": branch,
+            "base": default_branch,
+        }
+
+        try:
+            response = client.post(
+                f"https://api.github.com/repos/{full_name}/pulls",
+                headers=headers,
+                json=pr_data,
+            )
+            response.raise_for_status()
+            print(f"✅ Created PR: {response.json()['html_url']}")
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 422:
+                print("⚠️ No changes to create PR for - branch is up to date with main")
+            else:
+                raise

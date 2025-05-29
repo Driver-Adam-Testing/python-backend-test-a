@@ -366,6 +366,7 @@ def evaluate_file_hex(filepath: Path) -> bool:
 def is_on_blacklist(filepath: Path) -> bool:
     blacklist_dirs = [
         ".git",
+        "driver_docs",
     ]
     blacklist_file_exts = [
         ".svg",

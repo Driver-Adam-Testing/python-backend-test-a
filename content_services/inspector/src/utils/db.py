@@ -1,9 +1,6 @@
 import uuid
 
-from database.models_v1 import (
-    DerivedContent,
-    InspectorRun,
-)
+from database.models_v1 import DerivedContent, InspectorRun
 from database.models_v2 import Node, Version
 from database.models_v2_enums import ContentKind, NodeKind, VersionStatus
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -44,12 +41,16 @@ async def try_get_prev_version(version_id: uuid.UUID) -> None | Version:
 
 
 async def create_inspector_run(version_id: uuid.UUID) -> uuid.UUID:
+    import modal
     from database.db import async_engine
+
+    modal_call_id = modal.current_function_call_id()
 
     async with AsyncSession(async_engine) as session:
         inspector_run = InspectorRun(
             inspection_version_id=None,
             version_id=version_id,
+            call_id=modal_call_id,
         )
         session.add(inspector_run)
         await session.commit()
@@ -115,3 +116,22 @@ async def get_source_code_derived_content(node_id: uuid.UUID) -> DerivedContent:
             DerivedContent.content_kind == ContentKind.CODEBASE_FILE,
         )
         return (await session.exec(statement)).one()
+
+
+def get_usage_balance_in_bytes(
+    org_id: str,
+) -> int:
+    from database.db import engine
+    from shared.interfaces.usage.usage_schema import UsageMetricUnitType
+    from shared.usage.usage_service import UsageService
+    from sqlmodel import Session
+
+    with Session(engine) as session:
+        usage_balance = (
+            UsageService(session)
+            .get_usage_balance(
+                org_id
+            )  # Since our app reports usage in SLOC this function returns the balance in SLOC
+            .convert_to(UsageMetricUnitType.BYTES)  # Convert SLOC to bytes
+        )
+        return usage_balance.balance

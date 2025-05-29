@@ -65,12 +65,12 @@ def parse_c_file(
     list[str],
     dict[RawTreeSitterSymbolData, list[RawTreeSitterSymbolData]],
 ]:
-    from utils.treesitter_driver import CDriverTree
+    from utils.treesitter_driver import CppCDriverTree
 
     code_str = fpath.read_text(encoding="utf8")
     root_rel_path = to_root_relative(fpath, project_root)
 
-    driver = CDriverTree.from_code(code_str, file_path=root_rel_path)
+    driver = CppCDriverTree.from_code(code_str, file_path=root_rel_path)
 
     all_syms = driver.extract_all_symbols()
     containment_map = build_containment_map(all_syms)

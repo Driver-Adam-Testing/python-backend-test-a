@@ -102,6 +102,9 @@ class RawTreeSitterSymbolData(BaseModel):
     end_byte: int
     file_path: Path
     symbol_kind: SymbolKind
+    fully_qualified_parent_path: str | None = (
+        None  # this could be a nested namespace as well. Does nullable make sense here? Is global scope None?
+    )
     symbol_code: (
         None | str
     )  # TODO: this is somewhat a hack since we need the code, but makes symbols bulky

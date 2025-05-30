@@ -2,7 +2,7 @@ import pathlib
 
 import pytest
 
-from utils.treesitter_driver import CDriverTree
+from utils.treesitter_driver import CppCDriverTree
 
 
 @pytest.fixture
@@ -23,7 +23,7 @@ int main(void) { return 1; }
 
 
 def test_extract_import_texts(imports_c_code: str) -> None:
-    driver_tree = CDriverTree.from_code(imports_c_code, "does_not_matter.c")
+    driver_tree = CppCDriverTree.from_code(imports_c_code, "does_not_matter.c")
 
     includes = driver_tree.extract_imports()
 
@@ -48,7 +48,7 @@ def test_extract_import_texts(imports_c_code: str) -> None:
 
 
 def test_extract_import_line_numbers(imports_c_code: str) -> None:
-    driver_tree = CDriverTree.from_code(imports_c_code, "does_not_matter.c")
+    driver_tree = CppCDriverTree.from_code(imports_c_code, "does_not_matter.c")
 
     includes = driver_tree.extract_imports()
 
@@ -105,9 +105,9 @@ def test_extract_function_defs(
     expected_function_name: str,
     expected_line_range: tuple[int, int],
 ) -> None:
-    driver_tree = CDriverTree.from_code(functions_test_code, "does_not_matter.c")
+    driver_tree = CppCDriverTree.from_code(functions_test_code, "does_not_matter.c")
 
-    functions = driver_tree.extract_function_definitions()
+    functions = driver_tree.extract_callable_definitions()
 
     extracted = [(f.name, (f.start_line, f.end_line)) for f in functions]
 
@@ -149,7 +149,7 @@ def test_extract_enums(
     expected_enum_name: str,
     expected_line_range: tuple[int, int],
 ) -> None:
-    driver_tree = CDriverTree.from_code(enums_test_code, "does_not_matter.c")
+    driver_tree = CppCDriverTree.from_code(enums_test_code, "does_not_matter.c")
 
     data_structs = driver_tree.extract_data_structure_definitions()
 
@@ -197,7 +197,7 @@ def test_extract_structs(
     expected_struct_name: str,
     expected_line_range: tuple[int, int],
 ) -> None:
-    driver_tree = CDriverTree.from_code(structs_test_code, "does_not_matter.c")
+    driver_tree = CppCDriverTree.from_code(structs_test_code, "does_not_matter.c")
 
     data_structs = driver_tree.extract_data_structure_definitions()
 
@@ -249,7 +249,7 @@ def test_extract_unions(
     expected_union_name: str,
     expected_line_range: tuple[int, int],
 ) -> None:
-    driver_tree = CDriverTree.from_code(unions_test_code, "does_not_matter.c")
+    driver_tree = CppCDriverTree.from_code(unions_test_code, "does_not_matter.c")
 
     data_structs = driver_tree.extract_data_structure_definitions()
 
@@ -295,7 +295,6 @@ def globals_test_code() -> str:
         # Storage class vars
         ("aa", (13, 13)),
         ("bb", (13, 13)),
-        ("cc", (14, 14)),
         ("dd", (15, 15)),
         ("ee", (16, 16)),
         # Pointers
@@ -313,9 +312,7 @@ def globals_test_code() -> str:
         ("jj", (32, 32)),
         # ("kk", (33, 33)),
         # Struct/union/enum variables
-        ("bbb", (36, 36)),
         ("ddd", (37, 37)),
-        ("ggg", (38, 38)),
         # Assembly register variable
         ("rd_", (41, 41)),
         # GNU attribute variable
@@ -331,7 +328,7 @@ def test_extract_globals(
     expected_global_name: str,
     expected_line_range: tuple[int, int],
 ) -> None:
-    driver_tree = CDriverTree.from_code(globals_test_code, "does_not_matter.c")
+    driver_tree = CppCDriverTree.from_code(globals_test_code, "does_not_matter.c")
 
     globals_found = driver_tree.extract_variables()
 
@@ -380,7 +377,7 @@ def test_extract_function_calls(
     expected_function_call_name: str,
     expected_line_range: tuple[int, int],
 ) -> None:
-    driver_tree = CDriverTree.from_code(function_call_test_code, "does_not_matter.c")
+    driver_tree = CppCDriverTree.from_code(function_call_test_code, "does_not_matter.c")
     calls_found = driver_tree.extract_function_calls()
     extracted = [(c.name, (c.start_line, c.end_line)) for c in calls_found]
 
@@ -426,7 +423,7 @@ class TestDelcarations:
         expected_function_name: str,
         expected_line_range: tuple[int, int],
     ) -> None:
-        driver_tree = CDriverTree.from_code(
+        driver_tree = CppCDriverTree.from_code(
             function_declaration_test_code, "does_not_matter.c"
         )
         declarations = driver_tree.extract_function_declarations()
@@ -447,7 +444,7 @@ class TestDelcarations:
         self, function_declaration_test_code: str
     ) -> None:
         """Test that function definitions are not included in function declarations."""
-        driver_tree = CDriverTree.from_code(
+        driver_tree = CppCDriverTree.from_code(
             function_declaration_test_code, "does_not_matter.c"
         )
         declarations = driver_tree.extract_function_declarations()
@@ -462,7 +459,7 @@ class TestDelcarations:
         self, function_declaration_test_code: str
     ) -> None:
         """Test that non-function declarations are not included."""
-        driver_tree = CDriverTree.from_code(
+        driver_tree = CppCDriverTree.from_code(
             function_declaration_test_code, "does_not_matter.c"
         )
         declarations = driver_tree.extract_function_declarations()

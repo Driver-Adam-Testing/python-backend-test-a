@@ -7,12 +7,14 @@ from typing import Self
 
 import tree_sitter
 import tree_sitter_c
+import tree_sitter_cpp
 import tree_sitter_python
 
 from utils.lang_specialization.symbol_common import RawTreeSitterSymbolData, SymbolKind
 
 LANGUAGES = {
     "c": tree_sitter.Language(tree_sitter_c.language()),
+    "cpp": tree_sitter.Language(tree_sitter_cpp.language()),
     "python": tree_sitter.Language(tree_sitter_python.language()),
 }
 
@@ -61,11 +63,15 @@ class DriverTree(ABC):
         pass
 
     @abstractmethod
-    def extract_function_definitions(self) -> list[RawTreeSitterSymbolData]:
+    def extract_callable_definitions(self) -> list[RawTreeSitterSymbolData]:
         pass
 
     @abstractmethod
     def extract_data_structure_definitions(self) -> list[RawTreeSitterSymbolData]:
+        pass
+
+    @abstractmethod
+    def extract_class_definitions(self) -> list[RawTreeSitterSymbolData]:
         pass
 
     @abstractmethod
@@ -118,22 +124,37 @@ class DriverTreeError(Exception):
     pass
 
 
-def get_function_name_and_params(
+def get_function_name_and_params_and_scope_parts(
     declarator_node: tree_sitter.Node,
-) -> tuple[str | None, tree_sitter.Node | None]:
+) -> tuple[str | None, tree_sitter.Node | None, list[str]]:
     """
     Extract the function name and parameter node from a function declarator.
-    Handles attributes, nested declarators, and parenthesized declarators.
+    Handles attributes, nested declarators, qualified identifiers, and parenthesized declarators.
     """
     if declarator_node.type == "function_declarator":
         name_node = declarator_node.child_by_field_name("declarator")
         params_node = declarator_node.child_by_field_name("parameters")
 
-        if name_node and name_node.type == "identifier":
-            return name_node.text.decode("utf-8"), params_node
+        if name_node and name_node.type in ["identifier", "field_identifier"]:
+            return name_node.text.decode("utf-8"), params_node, []
+        elif name_node and name_node.type == "qualified_identifier":
+            # Handle qualified names like ClassName::methodName or Namespace::Class::method
+            func_name, scope_parts = (
+                _extract_function_name_and_scope_from_qualified_identifier(name_node)
+            )
+            # scope = _extract_scope_from_qualified_identifier(name_node)
+            return func_name, params_node, scope_parts
+        elif name_node and name_node.type == "destructor_name":
+            # Handle destructors like ~ClassName
+            return name_node.text.decode("utf-8"), params_node, []
+        elif name_node and name_node.type == "operator_name":
+            # Handle operator overloads
+            return name_node.text.decode("utf-8"), params_node, []
+        elif name_node and name_node.type == "template_function":
+            return name_node.text.decode("utf-8"), params_node, []
         elif name_node:
             # Recurse into nested declarators (e.g., parenthesized_declarator, pointer_declarator)
-            return get_function_name_and_params(name_node)
+            return get_function_name_and_params_and_scope_parts(name_node)
 
     elif declarator_node.type in {
         "pointer_declarator",
@@ -143,10 +164,62 @@ def get_function_name_and_params(
         # Recurse into nested declarators
         inner_declarator = declarator_node.child_by_field_name("declarator")
         if inner_declarator:
-            return get_function_name_and_params(inner_declarator)
+            return get_function_name_and_params_and_scope_parts(inner_declarator)
+    elif declarator_node.type == "reference_declarator":
+        child_node = declarator_node.children[
+            -1
+        ]  # We get -1 child here, because children[0] appears to just be an & node
+        if child_node.type == "function_declarator":
+            # If it's a reference to a function, recurse into the function declarator
+            return get_function_name_and_params_and_scope_parts(child_node)
+        print(f"Unhandled reference_declarator child type: {child_node.type}")
 
+    print(
+        f"Unhandled declarator type: {declarator_node.type} in {declarator_node.text.decode('utf-8')}"
+    )
     # Unsupported or unhandled declarator type
-    return None, None
+    return None, None, []
+
+
+def _extract_function_name_and_scope_from_qualified_identifier(
+    qualified_node: tree_sitter.Node,
+) -> tuple[str | None, list[str]]:
+    """
+    Extract the function name from a qualified_identifier node.
+
+    qualified_identifier has 'scope' and 'name' fields.
+    The name field can be an identifier or another qualified_identifier.
+    We want the final identifier as the function name.
+
+    Examples:
+    - MyClass::add -> "add"
+    - MyClass::Inner::display -> "display"
+    """
+    scope_node = qualified_node.child_by_field_name("scope")
+    scope_parts = [scope_node.text.decode("utf-8")]
+    name_node = qualified_node.child_by_field_name("name")
+    if not name_node:
+        return None, []
+
+    if name_node.type == "identifier" or name_node.type == "field_identifier":
+        return name_node.text.decode("utf-8"), scope_parts
+    elif name_node.type == "qualified_identifier":
+        # Recursively extract from nested qualified identifier (e.g., MyClass::Inner::display)
+        name, more_scope_parts = (
+            _extract_function_name_and_scope_from_qualified_identifier(name_node)
+        )
+        return name, scope_parts + more_scope_parts
+    elif name_node.type == "destructor_name":
+        # Handle destructors like ~ClassName
+        return name_node.text.decode("utf-8"), scope_parts
+    elif name_node.type == "operator_name":
+        # Handle operator overloads
+        return name_node.text.decode("utf-8"), scope_parts
+
+    print(
+        f"Unhandled name node type: {name_node.type} in {qualified_node.text.decode('utf-8')}"
+    )
+    return None, []
 
 
 def find_identifier_node(node: tree_sitter.Node) -> tree_sitter.Node | None:
@@ -163,8 +236,8 @@ def find_identifier_node(node: tree_sitter.Node) -> tree_sitter.Node | None:
     return None
 
 
-class CDriverTree(DriverTree):
-    language = "c"
+class CppCDriverTree(DriverTree):
+    language = "cpp"
 
     @symbol_extractor
     def extract_imports(self) -> list[RawTreeSitterSymbolData]:
@@ -198,6 +271,9 @@ class CDriverTree(DriverTree):
 
             start_line, end_line = self.get_node_line_range(include_directive_node)
             ts_node = include_path_node
+            fully_qualified_path = self._get_fully_qualified_path_to_parent(
+                include_directive_node
+            )
             includes.append(
                 RawTreeSitterSymbolData(
                     name=include_path_text,
@@ -207,6 +283,7 @@ class CDriverTree(DriverTree):
                     start_byte=ts_node.start_byte,
                     end_byte=ts_node.end_byte,
                     file_path=self.file_path,
+                    fully_qualified_parent_path=fully_qualified_path,
                     symbol_code=node_to_text(ts_node),
                 )
             )
@@ -215,7 +292,7 @@ class CDriverTree(DriverTree):
         return sorted_includes
 
     @symbol_extractor
-    def extract_function_definitions(self) -> list[RawTreeSitterSymbolData]:
+    def extract_callable_definitions(self) -> list[RawTreeSitterSymbolData]:
         query = self.tree_sitter_lang.query("(function_definition) @function_def")
         matches = query.matches(self.tree.root_node)
         functions = []
@@ -223,12 +300,19 @@ class CDriverTree(DriverTree):
         for _pattern_index, captures_by_name in matches:
             function_def = captures_by_name["function_def"][0]
             declarator_node = function_def.child_by_field_name("declarator")
-            func_name, params_node = get_function_name_and_params(declarator_node)
+            func_name, params_node, qualified_scope_parts = (
+                get_function_name_and_params_and_scope_parts(declarator_node)
+            )
             if func_name is None:
                 print("Could not parse function name for node:", declarator_node)
                 func_name = None
             start_line, end_line = self.get_node_line_range(function_def)
             ts_node = function_def
+            fully_qualified_path = (
+                self._get_fully_qualified_path_to_parent(function_def)
+                + "::"
+                + "::".join(qualified_scope_parts)
+            )
             func = RawTreeSitterSymbolData(
                 name=func_name,
                 start_line=start_line,
@@ -237,6 +321,7 @@ class CDriverTree(DriverTree):
                 start_byte=ts_node.start_byte,
                 end_byte=ts_node.end_byte,
                 file_path=self.file_path,
+                fully_qualified_parent_path=fully_qualified_path,
                 symbol_code=node_to_text(ts_node),
             )
             functions.append(func)
@@ -376,6 +461,9 @@ class CDriverTree(DriverTree):
 
             start_line, end_line = self.get_node_line_range(data_structure_node)
             ts_node = data_structure_node
+            fully_qualified_path = self._get_fully_qualified_path_to_parent(
+                data_structure_node
+            )
             ds = RawTreeSitterSymbolData(
                 name=data_structure_name,
                 start_line=start_line,
@@ -384,10 +472,140 @@ class CDriverTree(DriverTree):
                 start_byte=ts_node.start_byte,
                 end_byte=ts_node.end_byte,
                 file_path=self.file_path,
+                fully_qualified_parent_path=fully_qualified_path,
                 symbol_code=node_to_text(ts_node),
             )
 
             results.append(ds)
+
+        results.sort(key=lambda x: x.start_byte)
+        return results
+
+    def _get_fully_qualified_path_to_parent(self, node: tree_sitter.Node) -> str:
+        """
+        Extract the fully qualified path for a node, including namespaces and enclosing types.
+
+        Traverses up the parent hierarchy to find enclosing scopes:
+        - namespace_definition (including anonymous namespaces marked as "(anonymous)")
+        - class_specifier (nested classes)
+        - struct_specifier (nested in structs)
+        - union_specifier (nested in unions)
+        - enum_specifier (nested in enums)
+
+        Returns the path with :: separators. Examples:
+        - "MyNamespace::OuterClass::InnerClass" for named scopes
+        - "(anonymous)::ClassName" for anonymous namespace
+        - "Named::(anonymous)::ClassName" for mixed named/anonymous
+
+        Note: this is the fully qualified path to the PARENT of the node, not the node itself.
+        """
+        path_parts = []
+        current = node.parent
+
+        while current:
+            if current.type == "namespace_definition":
+                name_node = current.child_by_field_name("name")
+                if name_node and name_node.type in [
+                    "identifier",
+                    "namespace_identifier",
+                ]:
+                    path_parts.append(name_node.text.decode("utf-8"))
+                elif not name_node:
+                    # Anonymous namespace - add special marker
+                    path_parts.append("(anonymous)")
+            elif current.type in [
+                "class_specifier",
+                "struct_specifier",
+                "union_specifier",
+                "enum_specifier",
+                "function_definition",
+            ]:
+                name_node = current.child_by_field_name("name")
+                if name_node and name_node.type == "type_identifier":
+                    path_parts.append(name_node.text.decode("utf-8"))
+
+            current = current.parent
+
+        # Reverse to get the correct order (outermost to innermost)
+        path_parts.reverse()
+        return "::".join(path_parts) if path_parts else ""
+
+    @symbol_extractor
+    def extract_class_definitions(self) -> list[RawTreeSitterSymbolData]:
+        results = []
+
+        query_str = """
+            (class_specifier
+                name: (type_identifier) @class.name
+            ) @class.definition
+        """
+
+        try:
+            query = self.tree_sitter_lang.query(query_str)
+            matches = query.matches(self.tree.root_node)
+
+            for _pattern_idx, captures_dict in matches:
+                if "class.definition" in captures_dict:
+                    class_node = captures_dict["class.definition"][0]
+                    class_name_nodes = captures_dict["class.name"]
+                    class_name = class_name_nodes[0].text.decode("utf8")
+
+                    start_line, end_line = self.get_node_line_range(class_node)
+
+                    # Build fully qualified path including namespaces and enclosing types
+                    fully_qualified_path = self._get_fully_qualified_path_to_parent(
+                        class_node
+                    )
+
+                    ds = RawTreeSitterSymbolData(
+                        name=class_name,
+                        start_line=start_line,
+                        end_line=end_line,
+                        symbol_kind=SymbolKind.DATA_STRUCTURE,
+                        start_byte=class_node.start_byte,
+                        end_byte=class_node.end_byte,
+                        file_path=self.file_path,
+                        fully_qualified_parent_path=fully_qualified_path,
+                        symbol_code=node_to_text(class_node),
+                    )
+                    results.append(ds)
+
+        except Exception as e:
+            print(f"Query error for class: {e}")
+
+        # # Handle template classes separately
+        # try:
+        #     template_query = self.tree_sitter_lang.query(
+        #         "(template_declaration) @template_def"
+        #     )
+        #     template_matches = template_query.matches(self.tree.root_node)
+
+        #     for _pattern_idx, captures_dict in template_matches:
+        #         if "template_def" in captures_dict:
+        #             template_node = captures_dict["template_def"][0]
+
+        #             # Look for class_specifier within template
+        #             for child in template_node.children:
+        #                 if child.type == "class_specifier":
+        #                     class_name = self._extract_structure_name(child, "class")
+        #                     if class_name:
+        #                         start_line, end_line = self.get_node_line_range(
+        #                             template_node
+        #                         )
+        #                         ds = RawTreeSitterSymbolData(
+        #                             name=class_name,
+        #                             start_line=start_line,
+        #                             end_line=end_line,
+        #                             symbol_kind=SymbolKind.DATA_STRUCTURE,
+        #                             start_byte=template_node.start_byte,
+        #                             end_byte=template_node.end_byte,
+        #                             file_path=self.file_path,
+        #                             symbol_code=node_to_text(template_node),
+        #                         )
+        #                         results.append(ds)
+        #                         break
+        # except Exception as e:
+        #     print(f"Template query error: {e}")
 
         results.sort(key=lambda x: x.start_byte)
         return results
@@ -437,11 +655,15 @@ class CDriverTree(DriverTree):
                     "pointer_declarator",
                     "array_declarator",
                     "attributed_declarator",
+                    "reference_declarator",
                 ]:
                     id_node = find_identifier_node(child)
                     if id_node:
                         var_name = id_node.text.decode("utf8")
                         ts_node = decl_node
+                        fully_qualified_path = self._get_fully_qualified_path_to_parent(
+                            decl_node
+                        )
                         var = RawTreeSitterSymbolData(
                             name=var_name,
                             start_line=start_line,
@@ -450,6 +672,7 @@ class CDriverTree(DriverTree):
                             start_byte=ts_node.start_byte,
                             end_byte=ts_node.end_byte,
                             file_path=self.file_path,
+                            fully_qualified_parent_path=fully_qualified_path,
                             symbol_code=node_to_text(ts_node),
                         )
                         variables.append(var)
@@ -478,6 +701,7 @@ class CDriverTree(DriverTree):
 
             start_line, end_line = self.get_node_line_range(call_node)
             ts_node = call_node
+            fully_qualified_path = self._get_fully_qualified_path_to_parent(call_node)
             func_call = RawTreeSitterSymbolData(
                 name=func_name,
                 start_line=start_line,
@@ -486,6 +710,7 @@ class CDriverTree(DriverTree):
                 start_byte=ts_node.start_byte,
                 end_byte=ts_node.end_byte,
                 file_path=self.file_path,
+                fully_qualified_parent_path=fully_qualified_path,
                 symbol_code=node_to_text(ts_node),
             )
 
@@ -513,7 +738,9 @@ class CDriverTree(DriverTree):
                 continue
 
             # Ensure it's a function declarator implicitly by calling this and having it return something
-            func_name, params_node = get_function_name_and_params(declarator_node)
+            func_name, params_node = get_function_name_and_params_and_scope_parts(
+                declarator_node
+            )
             if func_name is None:
                 continue
 
@@ -527,6 +754,9 @@ class CDriverTree(DriverTree):
 
             start_line, end_line = self.get_node_line_range(declaration_node)
             ts_node = declaration_node
+            fully_qualified_path = self._get_fully_qualified_path_to_parent(
+                declaration_node
+            )
             func = RawTreeSitterSymbolData(
                 name=func_name,
                 start_line=start_line,
@@ -535,27 +765,10 @@ class CDriverTree(DriverTree):
                 start_byte=ts_node.start_byte,
                 end_byte=ts_node.end_byte,
                 file_path=self.file_path,
+                fully_qualified_parent_path=fully_qualified_path,
                 symbol_code=node_to_text(ts_node),
             )
             declarations.append(func)
 
         sorted_declarations = sorted(declarations, key=lambda x: x.start_byte)
         return sorted_declarations
-
-
-if __name__ == "__main__":
-    """
-    Test code; left with a known case our code does not fully handle yet so you can
-    implement it!
-    """
-
-    code = """typedef struct {
-    int x;
-    int y;
-}
-Point2, *Point2Ptr;
-"""
-    driver_tree = CDriverTree.from_code(code, "does_not_matter.c")
-    data_structures = driver_tree.extract_data_structure_definitions()
-    print(driver_tree.tree.root_node.children)
-    print(data_structures)

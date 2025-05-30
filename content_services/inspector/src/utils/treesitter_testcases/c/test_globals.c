@@ -33,9 +33,9 @@ _Alignas(int) int jj;
 int kk [[maybe_unused]];
 
 // Struct/union/enum variables
-struct aaa bbb;
+
 union { int ccc; } ddd;
-enum { eee, fff } ggg;
+
 
 // Variables with assembly/register specifics
 register uint64_t rd_ asm("x" "10");

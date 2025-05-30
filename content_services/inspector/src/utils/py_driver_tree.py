@@ -187,6 +187,10 @@ class PyDriverTree(DriverTree):
         return sorted_imports
 
     @symbol_extractor
+    def extract_callable_definitions(self) -> list[RawTreeSitterSymbolData]:
+        return []
+
+    @symbol_extractor
     def extract_function_definitions(self) -> list[RawTreeSitterSymbolData]:
         fn_query_str = """
         ;; Free functions and methods
@@ -231,6 +235,10 @@ class PyDriverTree(DriverTree):
     @symbol_extractor
     def extract_data_structure_definitions(self) -> list[RawTreeSitterSymbolData]:
         raise NotImplementedError("Not relevant for Python")
+
+    @symbol_extractor
+    def extract_class_definitions(self) -> list[RawTreeSitterSymbolData]:
+        return []
 
     @symbol_extractor
     def extract_function_calls(self) -> list[RawTreeSitterSymbolData]:

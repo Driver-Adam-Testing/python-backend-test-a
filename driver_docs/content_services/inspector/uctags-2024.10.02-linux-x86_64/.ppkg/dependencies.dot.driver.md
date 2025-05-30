@@ -1,0 +1,2 @@
+# Purpose
+The file contains a Graphviz DOT language representation of a directed graph, illustrating dependencies between software components. The graph defines "uctags" as a node with dependencies on "libjansson," "libyaml," "libxml2," and "libiconv," while "libxml2" further depends on "libiconv" and "libz." This structure is used to visualize and manage the relationships and dependencies between these components.

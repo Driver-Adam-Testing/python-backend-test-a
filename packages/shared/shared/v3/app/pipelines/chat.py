@@ -96,9 +96,7 @@ class ChatPipelineRequest(PipelineRequest):
 
         return history
 
-    def _run(
-        self, client: LlmClient = LlmClient.gpt_4_1_mini()
-    ) -> ChatPipelineResponse:
+    def _run(self, client: LlmClient = LlmClient.gpt_4_1()) -> ChatPipelineResponse:
         history = self._get_or_create_message_history()
 
         information_response, called_tools = client.multi_shot(
@@ -115,7 +113,7 @@ class ChatPipelineRequest(PipelineRequest):
 
     async def _stream(
         self,
-        client: LlmClient = LlmClient.gpt_4_1_mini(),
+        client: LlmClient = LlmClient.gpt_4_1(),
     ) -> AsyncGenerator[LlmStreamResponse, None]:
         history = self._get_or_create_message_history()
 

@@ -75,20 +75,20 @@ except ImportError:
         def fast_function():
             return "fallback"
 
-# 17) Import with getattr pattern: NOT SUPPORTED
+# 15) Import with getattr pattern: NOT SUPPORTED
 def conditional_feature():
     import sys
     feature = getattr(sys, 'some_new_feature', None)
     return feature is not None
 
-# 20) Import with importlib (programmatic import): NOT SUPPORTED
+# 16) Import with importlib (programmatic import): NOT SUPPORTED
 import importlib
 
 def programmatic_import(module_name: str):
     module = importlib.import_module(module_name)
     return module
 
-# 21) Star import with __all__: NOT SUPPORTED
+# 17) Star import with __all__: NOT SUPPORTED
 # (This would typically be in a module that defines __all__)
 __all__ = ['public_function', 'PublicClass', 'PUBLIC_CONSTANT']
 

@@ -5,19 +5,13 @@ from utils.treesitter_driver import DriverTree, node_to_text, symbol_extractor
 
 
 def is_top_level_free_fn(node: tree_sitter.Node) -> bool:
-    if node.type == "decorated_definition":
-        for child in node.children:
-            if child.type == "function_definition":
-                node = child
-                break
-
-    current = node
-    while current.parent:
-        if current.parent.type == "module":
-            return True
-        current = current.parent
-
-    return False
+    return node.parent and (
+        node.parent.type == "module"
+        or (
+            node.parent.type == "decorated_definition"
+            and node.parent.parent.type == "module"
+        )
+    )
 
 
 def is_method(node: tree_sitter.Node) -> bool:
@@ -51,6 +45,29 @@ def get_function_name_and_params(
 
 class PyDriverTree(DriverTree):
     language = "python"
+
+    def _get_fully_qualified_path_to_parent(
+        self, node: tree_sitter.Node, sep: str = "::"
+    ) -> str:
+        path_parts = []
+        current = node.parent
+
+        while current:
+            # print(f"type: {current.type}, text: {current.text.decode('utf-8')}")
+            if current.type == "module":
+                path_parts.append(str(self.file_path.with_suffix("")))
+            elif current.type in [
+                "function_definition",
+                "decorated_definition",
+                "class_definition",
+            ]:
+                name_node = current.child_by_field_name("name")
+                if name_node:
+                    path_parts.append(name_node.text.decode("utf-8"))
+            current = current.parent
+
+        path_parts.reverse()
+        return sep.join(path_parts) if path_parts else ""
 
     @symbol_extractor
     def extract_imports(self) -> list[RawTreeSitterSymbolData]:
@@ -87,6 +104,10 @@ class PyDriverTree(DriverTree):
                             "utf-8"
                         )
                         start_line, end_line = self.get_node_line_range(im_node)
+                        fully_qualified_parent_path = (
+                            self._get_fully_qualified_path_to_parent(node=im_node)
+                        )
+                        print(fully_qualified_parent_path)
                         im = RawTreeSitterSymbolData(
                             name=im_name,
                             start_line=start_line,
@@ -95,6 +116,7 @@ class PyDriverTree(DriverTree):
                             start_byte=im_node.start_byte,
                             end_byte=im_node.end_byte,
                             file_path=self.file_path,
+                            fully_qualified_parent_path=fully_qualified_parent_path,
                             symbol_code=node_to_text(im_node),
                         )
                         imports.append(im)
@@ -107,6 +129,10 @@ class PyDriverTree(DriverTree):
                             0
                         ].text.decode("utf-8")
                         start_line, end_line = self.get_node_line_range(im_node)
+                        fully_qualified_parent_path = (
+                            self._get_fully_qualified_path_to_parent(node=im_node)
+                        )
+                        print(fully_qualified_parent_path)
                         im = RawTreeSitterSymbolData(
                             name=im_name,
                             start_line=start_line,
@@ -115,6 +141,7 @@ class PyDriverTree(DriverTree):
                             start_byte=im_node.start_byte,
                             end_byte=im_node.end_byte,
                             file_path=self.file_path,
+                            fully_qualified_parent_path=fully_qualified_parent_path,
                             symbol_code=node_to_text(im_node),
                         )
                         imports.append(im)
@@ -130,6 +157,10 @@ class PyDriverTree(DriverTree):
                             else "."
                         )
                         start_line, end_line = self.get_node_line_range(im_node)
+                        fully_qualified_parent_path = (
+                            self._get_fully_qualified_path_to_parent(node=im_node)
+                        )
+                        print(fully_qualified_parent_path)
                         for child in children[1:]:
                             if child.type == "dotted_name":
                                 im_name = sep.join(
@@ -157,6 +188,7 @@ class PyDriverTree(DriverTree):
                                 start_byte=im_node.start_byte,
                                 end_byte=im_node.end_byte,
                                 file_path=self.file_path,
+                                fully_qualified_parent_path=fully_qualified_parent_path,
                                 symbol_code=node_to_text(im_node),
                             )
                             imports.append(im)
@@ -164,6 +196,10 @@ class PyDriverTree(DriverTree):
                     if captures_by_name.get("future_module"):
                         im_node = captures_by_name["future_module"][0]
                         start_line, end_line = self.get_node_line_range(im_node)
+                        fully_qualified_parent_path = (
+                            self._get_fully_qualified_path_to_parent(node=im_node)
+                        )
+                        print(fully_qualified_parent_path)
                         for child in im_node.named_children:
                             im_name = ".".join(
                                 ["__future__", child.text.decode("utf-8")]
@@ -176,6 +212,7 @@ class PyDriverTree(DriverTree):
                                 start_byte=im_node.start_byte,
                                 end_byte=im_node.end_byte,
                                 file_path=self.file_path,
+                                fully_qualified_parent_path=fully_qualified_parent_path,
                                 symbol_code=node_to_text(im_node),
                             )
                             imports.append(im)
@@ -196,11 +233,6 @@ class PyDriverTree(DriverTree):
         ;; Free functions and methods
         (function_definition
           name: (identifier) @fn_name) @fn_def
-
-        ;; Decorated free functions and methods
-        (decorated_definition
-          (function_definition
-            name: (identifier) @fn_name) @fn_def)
         """.strip()
         query = self.tree_sitter_lang.query(fn_query_str)
         matches = query.matches(self.tree.root_node)

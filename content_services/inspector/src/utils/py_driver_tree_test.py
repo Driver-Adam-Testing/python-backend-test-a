@@ -28,6 +28,15 @@ def imports_test_code() -> str:
         return f.read()
 
 
+def test_extract_import_duplications(
+    imports_test_code: str,
+) -> None:
+    driver_tree = PyDriverTree.from_code(imports_test_code, "does_not_matter.py")
+    imports = driver_tree.extract_imports()
+
+    assert len(imports) == 40
+
+
 @pytest.mark.parametrize(
     "expected_import_name, expected_line_range",
     [
@@ -119,6 +128,15 @@ def functions_test_code() -> str:
     )
     with open(file_path, encoding="utf-8") as f:
         return f.read()
+
+
+def test_extract_functions_duplications(
+    functions_test_code: str,
+) -> None:
+    driver_tree = PyDriverTree.from_code(functions_test_code, "does_not_matter.py")
+    functions = driver_tree.extract_function_definitions()
+
+    assert len(functions) == 22
 
 
 @pytest.mark.parametrize(

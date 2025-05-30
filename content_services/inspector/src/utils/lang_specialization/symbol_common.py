@@ -117,7 +117,7 @@ class RawTreeSitterSymbolData(BaseModel):
         frozen = True
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=False)
 class ReifiedSymbol:
     """
     Extends LinkedSymbol with a list of usages (if this is a definition).
@@ -133,6 +133,7 @@ class ReifiedSymbol:
         default_factory=list
     )  # Should this be a list? Likely not
     parent: Self | None = None
+    children: list[Self] = field(default_factory=list)
 
 
 class RawSymbolData(BaseModel):

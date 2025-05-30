@@ -382,7 +382,7 @@ class ReifiedProjectIndex:
 
     file_to_symbols: dict[Path, list[ReifiedSymbol]]
     # fqn -> {"functions": [...], "variables": [...]} # TODO track member vars!
-    object_fqns_to_members: dict[str, dict[str, list[ReifiedSymbol]]]
+    # object_fqns_to_members: dict[str, dict[str, list[ReifiedSymbol]]] # TODO: not sure if needed anymore since we add children to the reified symbol
 
     @classmethod
     def from_linked_project(
@@ -473,16 +473,24 @@ class ReifiedProjectIndex:
                 if parent_fqn in obj_symbols:
                     if lsym.raw.symbol_kind == SymbolKind.CALLABLE:
                         obj_members[parent_fqn]["functions"].append(reified)
+                        parent_sym = obj_symbols[parent_fqn]
+                        reified.parent = parent_sym
+                        parent_sym.children.append(reified)
                     # Since we only pull globals, empty right now... TODO
                     elif lsym.raw.symbol_kind == SymbolKind.VARIABLE:
                         obj_members[parent_fqn]["variables"].append(reified)
+                        parent_sym = obj_symbols[parent_fqn]
+                        reified.parent = parent_sym
+                        parent_sym.children.append(reified)
 
         # (6) Group them by file
         file_map: dict[Path, list[ReifiedSymbol]] = {}
         for fpath, ls_list in linked_proj.linked_symbols.items():
             file_map[fpath] = [final_map[ls] for ls in ls_list]
 
-        return cls(file_to_symbols=file_map, object_fqns_to_members=dict(obj_members))
+        return cls(
+            file_to_symbols=file_map
+        )  # , object_fqns_to_members=dict(obj_members))
 
     def get_definition_of(self, symbol: ReifiedSymbol) -> ReifiedSymbol | None:
         return symbol.definition
@@ -492,31 +500,31 @@ class ReifiedProjectIndex:
             return []
         return symbol.usages
 
-    def get_object_members(self, class_fqn: str) -> dict[str, list[ReifiedSymbol]]:
-        return self.object_fqns_to_members.get(
-            class_fqn, {"functions": [], "variables": []}
-        )
+    # def get_object_members(self, class_fqn: str) -> dict[str, list[ReifiedSymbol]]:
+    #     return self.object_fqns_to_members.get(
+    #         class_fqn, {"functions": [], "variables": []}
+    #     )
 
-    def get_member_functions(self, class_fqn: str) -> list[ReifiedSymbol]:
-        return self.object_fqns_to_members.get(class_fqn, {}).get("functions", [])
+    # def get_member_functions(self, class_fqn: str) -> list[ReifiedSymbol]:
+    #     return self.object_fqns_to_members.get(class_fqn, {}).get("functions", [])
 
-    def get_member_variables(self, class_fqn: str) -> list[ReifiedSymbol]:
-        return self.object_fqns_to_members.get(class_fqn, {}).get("variables", [])
+    # def get_member_variables(self, class_fqn: str) -> list[ReifiedSymbol]:
+    #     return self.object_fqns_to_members.get(class_fqn, {}).get("variables", [])
 
-    def get_containing_class(self, symbol: ReifiedSymbol) -> ReifiedSymbol | None:
-        if not symbol.raw.fully_qualified_parent_path:
-            return None
-        parent_fqn = symbol.raw.fully_qualified_parent_path
+    # def get_containing_class(self, symbol: ReifiedSymbol) -> ReifiedSymbol | None:
+    #     if not symbol.raw.fully_qualified_parent_path:
+    #         return None
+    #     parent_fqn = symbol.raw.fully_qualified_parent_path
 
-        for file_symbols in self.file_to_symbols.values():
-            for sym in file_symbols:
-                if (
-                    sym.is_definition
-                    and sym.raw.symbol_kind == SymbolKind.DATA_STRUCTURE
-                    and get_fully_qualified_name(sym.raw) == parent_fqn
-                ):
-                    return sym
-        return None
+    #     for file_symbols in self.file_to_symbols.values():
+    #         for sym in file_symbols:
+    #             if (
+    #                 sym.is_definition
+    #                 and sym.raw.symbol_kind == SymbolKind.DATA_STRUCTURE
+    #                 and get_fully_qualified_name(sym.raw) == parent_fqn
+    #             ):
+    #                 return sym
+    #     return None
 
     def print_summary(self, files: list[Path] | None = None) -> None:
         RESET = "\033[0m"
@@ -553,9 +561,19 @@ class ReifiedProjectIndex:
 
                     # Special handling for classes/structs
                     if sym.raw.symbol_kind == SymbolKind.DATA_STRUCTURE:
-                        members = self.get_object_members(fqn)
-                        member_func_count = len(members["functions"])
-                        member_var_count = len(members["variables"])
+                        members = sym.children
+                        member_functions = [
+                            m
+                            for m in members
+                            if m.raw.symbol_kind == SymbolKind.CALLABLE
+                        ]
+                        member_variables = [
+                            m
+                            for m in members
+                            if m.raw.symbol_kind == SymbolKind.VARIABLE
+                        ]
+                        member_func_count = len(member_functions)
+                        member_var_count = len(member_variables)
                         print(
                             f"{GREEN}  📦 CLASS/STRUCT: {BOLD}{name_display}{RESET}{GREEN} {lines} "
                             f"[{usage_count} usage(s), {decl_count} declaration(s)]{RESET}"
@@ -567,9 +585,9 @@ class ReifiedProjectIndex:
                             )
 
                         # Show member functions
-                        if members["functions"]:
+                        if member_functions:
                             print(f"     {BOLD}Functions:{RESET}")
-                            for member_func in members["functions"]:
+                            for member_func in member_functions:
                                 mf_name = member_func.raw.name
                                 mf_lines = f"[lines {member_func.raw.start_line}-{member_func.raw.end_line}]"
                                 mf_usage_count = len(member_func.usages)
@@ -578,9 +596,9 @@ class ReifiedProjectIndex:
                                 )
 
                         # Show member variables
-                        if members["variables"]:
+                        if member_variables:
                             print(f"     {BOLD}Variables:{RESET}")
-                            for member_var in members["variables"]:
+                            for member_var in member_variables:
                                 mv_name = member_var.raw.name
                                 mv_lines = f"[lines {member_var.raw.start_line}-{member_var.raw.end_line}]"
                                 mv_usage_count = len(member_var.usages)
@@ -602,10 +620,10 @@ class ReifiedProjectIndex:
 
                         # Show the containing class if this is a member
                         if is_member:
-                            containing = self.get_containing_class(sym)
+                            containing = sym.parent
                             if containing:
                                 print(
-                                    f"     {BOLD}Member of:{RESET} {get_fully_qualified_name(containing.raw)}"
+                                    f"     {BOLD}Member of:{RESET} {get_fully_qualified_name(containing.raw)} [lines {containing.raw.start_line}-{containing.raw.end_line}] "
                                 )
 
                     # Show declarations for this definition

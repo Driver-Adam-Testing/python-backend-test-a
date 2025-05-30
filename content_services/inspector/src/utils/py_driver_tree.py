@@ -4,12 +4,36 @@ from utils.lang_specialization.symbol_common import RawTreeSitterSymbolData, Sym
 from utils.treesitter_driver import DriverTree, node_to_text, symbol_extractor
 
 
-def is_top_level_fn(node: tree_sitter.Node) -> bool:
-    return node.parent and node.parent.type == "module"
+def is_top_level_free_fn(node: tree_sitter.Node) -> bool:
+    if node.type == "decorated_definition":
+        for child in node.children:
+            if child.type == "function_definition":
+                node = child
+                break
+
+    current = node
+    while current.parent:
+        if current.parent.type == "module":
+            return True
+        current = current.parent
+
+    return False
 
 
-def is_decorated_fn(node: tree_sitter.Node) -> bool:
-    return node.parent and node.parent.type == "decorated_definition"
+def is_method(node: tree_sitter.Node) -> bool:
+    if node.type == "decorated_definition":
+        for child in node.children:
+            if child.type == "function_definition":
+                node = child
+                break
+
+    current = node
+    while current.parent:
+        if current.parent.type == "class_definition":
+            return True
+        current = current.parent
+
+    return False
 
 
 def get_function_name_and_params(
@@ -180,7 +204,7 @@ class PyDriverTree(DriverTree):
 
         for _pattern_index, captures_by_name in matches:
             fn_def_node = captures_by_name["fn_def"][0]
-            if is_top_level_fn(fn_def_node) or is_decorated_fn(fn_def_node):
+            if is_top_level_free_fn(fn_def_node):
                 fn_name, _params_node = get_function_name_and_params(
                     fn_def_node=fn_def_node
                 )

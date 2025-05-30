@@ -85,67 +85,72 @@ def function_definitions_cpp_code() -> str:
 
 
 @pytest.mark.parametrize(
-    "expected_function_name, expected_start_line, expected_end_line",
+    "expected_function_name, expected_start_line, expected_end_line, expected_parent_path",
     [
         # Basic functions
-        ("printMessage", 6, 8),
-        ("multiply", 11, 13),
-        ("divide", 16, 18),
-        ("maximum", 22, 24),
-        ("fibonacci", 27, 29),
-        ("square", 32, 34),
-        ("swap", 37, 41),
-        ("processVector", 44, 46),
+        ("printMessage", 6, 8, ""),
+        ("multiply", 11, 13, ""),
+        ("divide", 16, 18, ""),
+        ("maximum", 22, 24, ""),
+        ("fibonacci", 27, 29, ""),
+        ("square", 32, 34, ""),
+        ("swap", 37, 41, ""),
+        ("processVector", 44, 46, ""),
         # Namespace functions
-        ("calculateArea", 50, 52),
-        ("complexCalculation", 55, 57),
+        ("calculateArea", 50, 52, "MathUtils"),
+        ("complexCalculation", 55, 57, "MathUtils::Advanced"),
         # Class constructors and methods
-        ("Calculator", 68, 68),  # Default constructor
-        ("Calculator", 71, 71),  # Parameterized constructor
-        ("Calculator", 74, 74),  # Copy constructor
-        ("Calculator", 77, 79),  # Move constructor
-        ("~Calculator", 82, 82),  # Destructor
-        ("operator=", 85, 90),
-        ("operator=", 93, 99),
-        ("getValue", 102, 104),
-        ("setValue", 107, 109),
-        ("operator+", 112, 114),
-        ("operator-", 116, 118),
-        ("operator*", 120, 122),
-        ("operator/", 124, 126),
-        ("operator-", 129, 131),  # Unary minus
-        ("operator++", 134, 137),  # Pre-increment
-        ("operator++", 139, 143),  # Post-increment
-        ("operator==", 146, 148),
-        ("createZero", 151, 153),
+        ("Calculator", 68, 68, "Calculator"),  # Default constructor
+        ("Calculator", 71, 71, "Calculator"),  # Parameterized constructor
+        ("Calculator", 74, 74, "Calculator"),  # Copy constructor
+        ("Calculator", 77, 79, "Calculator"),  # Move constructor
+        ("~Calculator", 82, 82, "Calculator"),  # Destructor
+        ("operator=", 85, 90, "Calculator"),
+        ("operator=", 93, 99, "Calculator"),
+        ("getValue", 102, 104, "Calculator"),
+        ("setValue", 107, 109, "Calculator"),
+        ("operator+", 112, 114, "Calculator"),
+        ("operator-", 116, 118, "Calculator"),
+        ("operator*", 120, 122, "Calculator"),
+        ("operator/", 124, 126, "Calculator"),
+        ("operator-", 129, 131, "Calculator"),  # Unary minus
+        ("operator++", 134, 137, "Calculator"),  # Pre-increment
+        ("operator++", 139, 143, "Calculator"),  # Post-increment
+        ("operator==", 146, 148, "Calculator"),
+        ("createZero", 151, 153, "Calculator"),
         # Template class methods
-        ("Container", 163, 163),
-        ("getData", 165, 167),
-        ("setData", 169, 171),
-        ("convertAndSet", 174, 176),
+        ("Container", 163, 163, "Container"),
+        ("getData", 165, 167, "Container"),
+        ("setData", 169, 171, "Container"),
+        ("convertAndSet", 174, 176, "Container"),
         # Inheritance
-        ("~Shape", 182, 182),
-        ("calculateArea", 183, 183),  # Circle::calculateArea
-        ("draw", 184, 186),  # Circle::draw
-        ("Circle", 194, 194),
-        ("calculateArea", 196, 198),  # Rectangle::calculateArea
-        ("draw", 200, 202),  # Rectangle::draw
-        ("Rectangle", 210, 210),
-        ("calculateArea", 212, 214),
-        ("draw", 216, 218),
+        ("~Shape", 182, 182, "Shape"),
+        (
+            "calculateArea",
+            183,
+            183,
+            "Shape",
+        ),  # Shape::calculateArea #TODO: known failure case, can mark as xfail
+        ("draw", 184, 186, "Shape"),  # Shape::draw
+        ("Circle", 194, 194, "Circle"),
+        ("calculateArea", 196, 198, "Circle"),  # Circle::calculateArea
+        ("draw", 200, 202, "Circle"),  # Circle::draw
+        ("Rectangle", 210, 210, "Rectangle"),
+        ("calculateArea", 212, 214, "Rectangle"),
+        ("draw", 216, 218, "Rectangle"),
         # Lambda demonstrations
-        ("demonstrateLambdas", 222, 234),
+        ("demonstrateLambdas", 222, 234, ""),
         # TODO: we don't handle lambdas yet
-        ("safeDivide", 237, 245),
-        ("maximum<bool>", 249, 251),
+        ("safeDivide", 237, 245, ""),
+        ("maximum<bool>", 249, 251, ""),
         # Friend functions
-        ("operator+", 261, 263),  # Point friend operator
-        ("operator<<", 265, 267),  # Point friend ostream operator
-        ("test", 278, 278),
-        ("operator+", 280, 280),
-        ("add", 284, 286),
-        ("display", 288, 290),
-        ("~MyClass", 292, 292),
+        ("operator+", 261, 263, "Point"),  # Point friend operator
+        ("operator<<", 265, 267, "Point"),  # Point friend ostream operator
+        ("test", 278, 278, "MyClass"),
+        ("operator+", 280, 280, "MyClass"),
+        ("add", 284, 286, "MyClass"),
+        ("display", 288, 290, "MyClass::Inner"),
+        ("~MyClass", 292, 292, "MyClass"),
     ],
 )
 def test_extract_function_definitions(
@@ -153,18 +158,21 @@ def test_extract_function_definitions(
     expected_function_name: str,
     expected_start_line: int,
     expected_end_line: int,
+    expected_parent_path: str,
 ) -> None:
     """Test extraction of C++ function definitions"""
     # TODO: test scopes as well
     driver_tree = CppCDriverTree.from_code(function_definitions_cpp_code, "test.cpp")
     functions = driver_tree.extract_callable_definitions()
 
-    extracted_functions = [(f.name, f.start_line) for f in functions]
+    extracted_functions = [
+        (f.name, f.start_line, f.fully_qualified_parent_path) for f in functions
+    ]
 
     # Check if the expected function is found
     matching_functions = [
-        (name, line)
-        for name, line in extracted_functions
+        (name, line, parent_path)
+        for name, line, parent_path in extracted_functions
         if name == expected_function_name and abs(line - expected_start_line) <= 2
     ]
 
@@ -172,6 +180,13 @@ def test_extract_function_definitions(
         f"Expected function '{expected_function_name}' around line {expected_start_line} "
         f"not found in extracted functions: {extracted_functions}"
     )
+
+    # Verify the fully_qualified_parent_path for the matching function(s)
+    for _name, line, parent_path in matching_functions:
+        assert parent_path == expected_parent_path, (
+            f"Function '{expected_function_name}' at line {line} has parent path '{parent_path}', "
+            f"expected '{expected_parent_path}'"
+        )
 
 
 @pytest.fixture(scope="module")

@@ -306,9 +306,16 @@ class CppCDriverTree(DriverTree):
                 func_name = None
             start_line, end_line = self.get_node_line_range(function_def)
             ts_node = function_def
+            qualified_parent_path = self._get_fully_qualified_path_to_parent(
+                function_def
+            )
             fully_qualified_path = (
-                self._get_fully_qualified_path_to_parent(function_def)
-                + "::"
+                qualified_parent_path
+                + (
+                    "::"
+                    if len(qualified_scope_parts) > 0 and len(qualified_parent_path) > 0
+                    else ""
+                )
                 + "::".join(qualified_scope_parts)
             )
             func = RawTreeSitterSymbolData(

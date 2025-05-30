@@ -185,3 +185,59 @@ def test_extract_function_defs(
         f"Expected function ({expected_function_name}, {expected_line_range}) "
         f"not found in extracted functions: {extracted}"
     )
+
+
+@pytest.fixture(scope="module")
+def class_test_code() -> str:
+    file_path = (
+        pathlib.Path(__file__).parent
+        / "treesitter_testcases"
+        / "python"
+        / "test_classes.py"
+    )
+    with open(file_path, encoding="utf-8") as f:
+        return f.read()
+
+
+def test_extract_classes_duplications(
+    class_test_code: str,
+) -> None:
+    driver_tree = PyDriverTree.from_code(class_test_code, "does_not_matter.py")
+    klasses = driver_tree.extract_class_definitions()
+
+    assert len(klasses) == 17
+
+
+@pytest.mark.parametrize(
+    "expected_class_name, expected_line_range",
+    [
+        ("SimpleClass", (8, 9)),
+        ("Animal", (12, 14)),
+        ("Dog", (16, 18)),
+        ("Mixin", (21, 23)),
+        ("MultipleInheritance", (25, 27)),
+        ("AbstractShape", (30, 33)),
+        ("Rectangle", (35, 41)),
+        ("Point", (45, 48)),
+        ("DecoratedClass", (52, 53)),
+        ("OuterClass", (56, 70)),
+        ("InnerClass", (62, 70)),
+        ("DeeplyNestedClass", (68, 70)),
+        ("MethodTypes", (73, 96)),
+        ("SpecialMethods", (99, 119)),
+        ("GenericContainer", (126, 131)),
+        ("MetaClass", (134, 136)),
+        ("WithMetaclass", (138, 140)),
+    ],
+)
+def test_extract_classes(
+    class_test_code: str, expected_class_name: str, expected_line_range: tuple[int, int]
+) -> None:
+    driver_tree = PyDriverTree.from_code(class_test_code, "does_not_matter.py")
+    klasses = driver_tree.extract_class_definitions()
+    extracted = [(k.name, (k.start_line, k.end_line)) for k in klasses]
+
+    assert (expected_class_name, expected_line_range) in extracted, (
+        f"Expected class ({expected_class_name}, {expected_line_range}) "
+        f"not found in extracted classes: {extracted}"
+    )

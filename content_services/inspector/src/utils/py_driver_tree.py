@@ -58,7 +58,6 @@ class PyDriverTree(DriverTree):
                 path_parts.append(str(self.file_path.with_suffix("")))
             elif current.type in [
                 "function_definition",
-                "decorated_definition",
                 "class_definition",
             ]:
                 name_node = current.child_by_field_name("name")
@@ -247,6 +246,9 @@ class PyDriverTree(DriverTree):
                 if fn_name is None:
                     print(f"Could not parse function name for node: {fn_def_node}")
                 start_line, end_line = self.get_node_line_range(fn_def_node)
+                fully_qualified_parent_path = self._get_fully_qualified_path_to_parent(
+                    node=fn_def_node
+                )
                 # TODO: Consider detecting decorated functions and including the
                 # TODO: decorator lines in the start_line/byte so that this information
                 # TODO: is present downstream for LLMs looking at the source.
@@ -258,6 +260,7 @@ class PyDriverTree(DriverTree):
                     start_byte=fn_def_node.start_byte,
                     end_byte=fn_def_node.end_byte,
                     file_path=self.file_path,
+                    fully_qualified_parent_path=fully_qualified_parent_path,
                     symbol_code=node_to_text(fn_def_node),
                 )
                 functions.append(fn)
@@ -270,7 +273,40 @@ class PyDriverTree(DriverTree):
 
     @symbol_extractor
     def extract_class_definitions(self) -> list[RawTreeSitterSymbolData]:
-        return []
+        klass_query_str = """
+        (class_definition
+          name: (identifier) @class_name) @class_def
+        """.strip()
+        query = self.tree_sitter_lang.query(klass_query_str)
+        matches = query.matches(self.tree.root_node)
+        klasses = []
+
+        for _pat_idx, captures_by_name in matches:
+            klass_node = captures_by_name["class_def"][0]
+            klass_name = klass_node.child_by_field_name("name")
+            if klass_name is None:
+                print(f"Could not parse class name for node: {klass_node}")
+            else:
+                klass_name = klass_name.text.decode("utf-8")
+            start_line, end_line = self.get_node_line_range(klass_node)
+            fully_qualified_parent_path = self._get_fully_qualified_path_to_parent(
+                node=klass_node
+            )
+            klass = RawTreeSitterSymbolData(
+                name=klass_name,
+                start_line=start_line,
+                end_line=end_line,
+                symbol_kind=SymbolKind.CLASS,
+                start_byte=klass_node.start_byte,
+                end_byte=klass_node.end_byte,
+                file_path=self.file_path,
+                fully_qualified_parent_path=fully_qualified_parent_path,
+                symbol_code=node_to_text(klass_node),
+            )
+            klasses.append(klass)
+
+        sorted_klasses = sorted(klasses, key=lambda x: x.start_byte)
+        return sorted_klasses
 
     @symbol_extractor
     def extract_function_calls(self) -> list[RawTreeSitterSymbolData]:

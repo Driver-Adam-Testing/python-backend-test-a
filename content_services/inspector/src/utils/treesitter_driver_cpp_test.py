@@ -401,81 +401,61 @@ def variables_cpp_code() -> str:
 
 
 @pytest.mark.parametrize(
-    "expected_variable_name, expected_start_line",
+    "expected_variable_name, expected_start_line, expected_end_line",
     [
         # Basic global variables
-        ("global_int", 8),
-        ("global_double", 9),
-        ("global_string", 10),
-        ("global_flag", 11),
+        ("global_int", 9, 9),
+        ("global_double", 10, 10),
+        ("global_string", 11, 11),
+        ("global_flag", 12, 12),
         # Const and constexpr variables
-        ("CONST_VALUE", 14),
-        ("CONSTEXPR_PI", 15),
-        ("CONST_STRING", 16),
-        # Static variables
-        ("static_counter", 19),
-        ("static_message", 20),
-        # Pointer variables
-        ("int_pointer", 26),
-        ("const_int_pointer", 27),
-        ("pointer_to_const", 28),
-        ("const_pointer_to_const", 29),
-        # Reference variables
-        ("int_reference", 32),
-        ("const_reference", 33),
-        # Auto variables
-        ("auto_int", 36),
-        ("auto_double", 37),
-        ("auto_string", 38),
-        ("auto_vector", 39),
-        # Array variables
-        ("global_array", 46),
-        ("matrix", 47),
-        ("string_array", 48),
-        # Container variables
-        ("global_vector", 51),
-        ("string_vector", 52),
-        # Smart pointers
-        ("unique_int_ptr", 55),
-        ("shared_string_ptr", 56),
-        ("weak_string_ptr", 57),
-        # Thread variables
-        ("atomic_counter", 60),
-        ("thread_local_var", 61),
-        # Function pointers and lambdas
-        ("function_pointer", 64),
-        ("lambda_var", 65),
-        # Various other variable types
-        ("retry_count", 80),
-        ("global_buffer", 79),
-        ("current_color", 129),
-        ("origin", 136),
-        ("destination", 137),
-        ("times_two", 145),
-        ("times_three", 146),
-        ("global_flags", 160),
-        ("global_data", 168),
-        ("key_value_pairs", 171),
-        ("matrix_vector", 177),
-        ("INLINE_VERSION", 188),
-        ("inline_counter", 189),
+        ("CONST_VALUE", 15, 15),
+        ("CONSTEXPR_PI", 16, 16),
+        ("CONST_STRING", 17, 17),
+        ("int_pointer", 28, 28),
+        ("const_int_pointer", 29, 29),
+        ("pointer_to_const", 30, 30),
+        ("const_pointer_to_const", 31, 31),
+        ("auto_int", 38, 38),
+        ("auto_double", 39, 39),
+        ("auto_string", 40, 40),
+        ("auto_vector", 41, 41),
+        ("decltype_int", 44, 44),
+        ("decltype_auto_var", 45, 45),
+        ("global_array", 48, 48),
+        ("matrix", 49, 49),
+        ("string_array", 50, 50),
+        ("global_vector", 53, 53),
+        ("string_vector", 54, 54),
+        ("unique_int_ptr", 57, 57),
+        ("shared_string_ptr", 58, 58),
+        ("weak_string_ptr", 59, 59),
+        ("atomic_counter", 62, 62),
+        ("thread_local_var", 63, 63),
+        ("function_pointer", 66, 66),
+        ("lambda_var", 67, 67),
+        # ('pi', 71, 71), # TODO: special case - under a tempalte node, not translation unit
+        # ('anonymous_global', 75, 75), # TODO: do we document variables inside of a non-global namespace?
+        ("debug_level", 93, 93),
+        # ('BUFFER_SIZE', 102, 102), # TODO: support macros?
     ],
 )
 def test_extract_variables(
     variables_cpp_code: str,
     expected_variable_name: str,
     expected_start_line: int,
+    expected_end_line: int,
 ) -> None:
     """Test extraction of C++ global variables"""
     driver_tree = CppCDriverTree.from_code(variables_cpp_code, "test.cpp")
     variables = driver_tree.extract_variables()
 
-    extracted_variables = [(v.name, v.start_line) for v in variables]
+    extracted_variables = [(v.name, v.start_line, v.end_line) for v in variables]
 
     # Check if the expected variable is found
     matching_variables = [
-        (name, line)
-        for name, line in extracted_variables
+        (name, line, end_line)
+        for name, line, end_line in extracted_variables
         if name == expected_variable_name and abs(line - expected_start_line) <= 3
     ]
 

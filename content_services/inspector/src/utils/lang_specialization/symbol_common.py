@@ -132,6 +132,7 @@ class ReifiedSymbol:
     declarations: list[Self] = field(
         default_factory=list
     )  # Should this be a list? Likely not
+    parent: Self | None = None
 
 
 class RawSymbolData(BaseModel):

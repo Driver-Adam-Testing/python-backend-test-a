@@ -272,6 +272,7 @@ class LinkedProject:
         """
         # 1) Collect definitions and declarations by name
         definitions_by_fqn: dict[str, list[tuple[str, RawTreeSitterSymbolData]]] = {}
+        definitions_by_name: dict[str, list[tuple[Path, RawTreeSitterSymbolData]]] = {}
         declarations_by_fqn: dict[str, list[tuple[str, RawTreeSitterSymbolData]]] = {}
 
         for fpath, raw_syms in project_vis.file_to_symbols.items():
@@ -281,6 +282,7 @@ class LinkedProject:
                 fqn = get_fully_qualified_name(rsym)
                 if is_definition(rsym):
                     definitions_by_fqn.setdefault(fqn, []).append((fqn, rsym))
+                    definitions_by_name.setdefault(rsym.name, []).append((fpath, rsym))
                 elif is_declaration(rsym):
                     declarations_by_fqn.setdefault(fqn, []).append((fqn, rsym))
                 # else it's a usage or something else
@@ -307,7 +309,10 @@ class LinkedProject:
 
                 if not is_definition(rsym) and not is_declaration(rsym) and rsym.name:
                     # Direct definitions in visible files
-                    candidates = definitions_by_fqn.get(fqn, [])
+                    if rsym.symbol_kind == SymbolKind.CALL:
+                        candidates = definitions_by_name.get(rsym.name, [])
+                    else:
+                        candidates = definitions_by_fqn.get(fqn, [])
                     vis_defs = [
                         (dfpath, dfsym)
                         for (dfpath, dfsym) in candidates
@@ -315,7 +320,10 @@ class LinkedProject:
                     ]
                     if len(vis_defs) >= 1:
                         # pick first or unify
-                        dfpath, def_raw = vis_defs[0]
+                        dfpath, def_raw = vis_defs[
+                            0
+                        ]  # TODO: in C++ taking the first is not always correct due to namespace collisions
+                        # This is true even for FQN though due overloading
                         def_symbol = LinkedSymbol(
                             raw=def_raw,
                             is_definition=True,
@@ -515,10 +523,11 @@ class ReifiedProjectIndex:
         BLUE = "\033[94m"
         GREEN = "\033[92m"
         YELLOW = "\033[93m"
-        CYAN = "\033[96m"
+        # CYAN = "\033[96m"
         MAGENTA = "\033[95m"
         RED = "\033[91m"
         BOLD = "\033[1m"
+        ORANGE = "\033[38;5;208m"
 
         targets = files if files else sorted(self.file_to_symbols.keys())
 
@@ -532,7 +541,7 @@ class ReifiedProjectIndex:
             for sym in reified_syms:
                 name = sym.raw.name
                 lines = f"[lines {sym.raw.start_line}-{sym.raw.end_line}]"
-                sym_file_path = sym.raw.file_path
+                # sym_file_path = sym.raw.file_path
 
                 # Show fully qualified name for C++ symbols
                 fqn = get_fully_qualified_name(sym.raw)
@@ -624,15 +633,17 @@ class ReifiedProjectIndex:
                                 f"{called_func.raw.end_line}]"
                             )
                             c_path = called_func.raw.file_path
-                            print(f"       ↪️  {called_name} {c_lines} in {c_path}")
+                            print(
+                                f"       ↪️  {ORANGE}{called_name} {c_lines} in {c_path}{RESET}"
+                            )
 
                     # Show usages
                     if sym.usages:
                         print(f"     {BOLD}Used in:{RESET}")
-                        for i, usage_sym in enumerate(
+                        for _i, usage_sym in enumerate(
                             sym.usages[:5]
                         ):  # Limit to first 5
-                            usage_name = get_fully_qualified_name(usage_sym.raw)
+                            # usage_name = get_fully_qualified_name(usage_sym.raw)
                             usage_lines = (
                                 f"[lines {usage_sym.raw.start_line}-"
                                 f"{usage_sym.raw.end_line}]"
@@ -671,15 +682,15 @@ class ReifiedProjectIndex:
                             f"{sym.definition.raw.end_line}]"
                         )
                         def_file_path = sym.definition.raw.file_path
-                        print(
-                            f"{CYAN}  🔗 USE: {BOLD}{name_display}{RESET}{CYAN} {lines} "
-                            f"→ {def_name} {def_lines} in {def_file_path}{RESET}"
-                        )
-                    else:
-                        print(
-                            f"{CYAN}  🔗 USE: {BOLD}{name_display}{RESET}{CYAN} {lines} "
-                            f"→ no definition found{RESET}"
-                        )
+                        # print(
+                        #     f"{CYAN}  🔗 USE: {BOLD}{name_display}{RESET}{CYAN} {lines} "
+                        #     f"→ {def_name} {def_lines} in {def_file_path}{RESET}"
+                        # )
+                    # else:
+                    #     print(
+                    #         f"{CYAN}  🔗 USE: {BOLD}{name_display}{RESET}{CYAN} {lines} "
+                    #         f"→ no definition found{RESET}"
+                    #     )
 
 
 def build_c_project_index(
@@ -716,7 +727,7 @@ def discover_c_and_h_files(project_root: Path) -> list[Path]:
 
 def main() -> None:
     # project_root = Path("/Users/andrewmark/Downloads/sqlite")
-    project_root = Path("/Users/andrewmark/projects/chesslib4")
+    project_root = Path("/Users/shaneghiotto/driver/uploaded_codebases/chess-master")
 
     file_paths = discover_c_and_h_files(project_root)
 

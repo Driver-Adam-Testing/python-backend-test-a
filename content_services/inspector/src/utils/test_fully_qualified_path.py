@@ -254,3 +254,133 @@ namespace {
 
     assert outer_class.fully_qualified_parent_path == "(anonymous)"
     assert inner_class.fully_qualified_parent_path == "(anonymous)::OuterAnonClass"
+
+
+def test_extract_function_calls_within_function_definition() -> None:
+    """Test function calls contained within a function definition."""
+    code = """
+void helper_function() {
+    // Helper function
+}
+
+int add(int a, int b) {
+    return a + b;
+}
+
+void main_function() {
+    helper_function();
+    int result = add(5, 10);
+}
+"""
+    driver_tree = CppCDriverTree.from_code(code, "test.cpp")
+    function_calls = driver_tree.extract_function_calls()
+
+    # Find the function calls within main_function
+    calls_in_main = [
+        call
+        for call in function_calls
+        if call.fully_qualified_parent_path == "main_function"
+    ]
+
+    assert len(calls_in_main) == 2
+
+    # Verify the fully qualified parent path for each call
+    helper_call = next(call for call in calls_in_main if call.name == "helper_function")
+    add_call = next(call for call in calls_in_main if call.name == "add")
+
+    assert helper_call.fully_qualified_parent_path == "main_function"
+    assert add_call.fully_qualified_parent_path == "main_function"
+
+
+def test_extract_function_calls_within_class_member_function() -> None:
+    """Test function calls within a class member function definition."""
+    code = """
+void global_helper() {
+    // Global helper function
+}
+
+class Calculator {
+public:
+    void setValue(int value) {
+        this->value = value;
+    }
+
+    void processValue() {
+        global_helper();
+        setValue(42);
+    }
+
+private:
+    int value;
+};
+"""
+    driver_tree = CppCDriverTree.from_code(code, "test.cpp")
+    function_calls = driver_tree.extract_function_calls()
+
+    # Find the function calls within Calculator::processValue
+    calls_in_process_value = [
+        call
+        for call in function_calls
+        if call.fully_qualified_parent_path == "Calculator::processValue"
+    ]
+
+    assert len(calls_in_process_value) == 2
+
+    # Verify the fully qualified parent path for each call
+    global_helper_call = next(
+        call for call in calls_in_process_value if call.name == "global_helper"
+    )
+    set_value_call = next(
+        call for call in calls_in_process_value if call.name == "setValue"
+    )
+
+    assert global_helper_call.fully_qualified_parent_path == "Calculator::processValue"
+    assert set_value_call.fully_qualified_parent_path == "Calculator::processValue"
+
+
+# NOTE: not supporting class function calls due to issues with extracting the fully_qualified path
+# def test_extract_class_member_function_calls_from_free_function() -> None:
+#     """Test calling a class member function from within a free function."""
+#     code = """
+# class Calculator {
+# public:
+#     void setValue(int value) {
+#         this->value = value;
+#     }
+#
+#     int getValue() const {
+#         return value;
+#     }
+#
+# private:
+#     int value;
+# };
+#
+# void use_calculator() {
+#     Calculator calc;
+#     calc.setValue(100);
+#     int result = calc.getValue();
+# }
+# """
+#     driver_tree = CppCDriverTree.from_code(code, "test.cpp")
+#     function_calls = driver_tree.extract_function_calls()
+#
+#     # Find the function calls within use_calculator
+#     calls_in_use_calculator = [
+#         call
+#         for call in function_calls
+#         if call.fully_qualified_parent_path == "use_calculator"
+#     ]
+#
+#     assert len(calls_in_use_calculator) == 2
+#
+#     # Verify the fully qualified parent path for member function calls
+#     set_value_call = next(
+#         call for call in calls_in_use_calculator if call.name == "setValue"
+#     )
+#     get_value_call = next(
+#         call for call in calls_in_use_calculator if call.name == "getValue"
+#     )
+#
+#     assert set_value_call.fully_qualified_parent_path == "use_calculator"
+#     assert get_value_call.fully_qualified_parent_path == "use_calculator"

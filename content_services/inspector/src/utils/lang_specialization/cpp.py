@@ -3,6 +3,7 @@ from typing import Self
 
 from utils.codemap_ctags import extract_symbols_w_ctags
 from utils.models import ChatOpenAI
+from utils.treesitter_driver import CppCDriverTree
 
 from .ir_common import (
     ClassData,
@@ -15,11 +16,11 @@ from .symbol_common import (
     ParserKind,
     RawSymbolCollection,
     RawSymbolData,
+    ReifiedSymbol,
     ScopeRelation,
     SymbolKind,
     code_requires_multi_prompt,
     create_raw_symbol_via_ctags,
-    default_ctags_analysis,
 )
 
 CPP_DATA_STRUCTURES = {"class", "struct", "enum", "union", "typedef"}
@@ -370,72 +371,47 @@ class CppClassRawSymbolCollection(RawSymbolCollection):
 
 
 class CppFreeFnRawSymbolCollection(RawSymbolCollection):
-    data: dict[str, list[RawSymbolData]]
+    data: dict[str, RawSymbolData]
 
     @classmethod
-    def from_static_analysis(cls, code: str, root_rel_path: str) -> Self:
-        is_multi_prompt = code_requires_multi_prompt(code)
-
-        symbols = extract_symbols_w_ctags(
-            root_rel_path=root_rel_path, file_content=code
-        )
-
-        all_fn_names = [
-            s["name"]
-            for s in symbols
-            if s["kind"] in CPP_FUNCTIONS and not s["name"].startswith("__anon")
+    def from_static_analysis(
+        cls, code: str, root_rel_path: Path, reified_symbols: list[ReifiedSymbol] | None
+    ) -> Self | None:
+        func_symbols = [
+            sym for sym in reified_symbols if sym.raw.symbol_kind == SymbolKind.CALLABLE
         ]
+        function_raw_symbol_data = {}
+        is_large_file = code_requires_multi_prompt(code)
 
-        fn_raw_symbol_data = {}
-        for s in symbols:
-            if s["kind"] in CPP_FUNCTIONS and not s["name"].startswith("__anon"):
-                contained_in_class = False
-                if (s.get("scope")) and (s.get("scopeKind") in CPP_DATA_STRUCTURES):
-                    contained_in_class = True
-
-                fn_name = (
-                    s["name"]
-                    if s.get("scopeKind") not in CPP_DATA_STRUCTURES
-                    else s["scope"].split("::")[-1] + "::" + s["name"]
+        for reified_sym in func_symbols:
+            ts_symbol = reified_sym.raw
+            if ts_symbol.name is not None:
+                raw_symbol_data = RawSymbolData.from_tree_sitter_raw_symbol(
+                    ts_symbol=ts_symbol,
+                    path=root_rel_path,
+                    scope=None,
+                    scope_relation=None,
+                    children=[],
+                    reference_code=None,
+                    delimiter=None,
+                    is_large_file=is_large_file,
+                    is_overloaded=False,
+                    use_padding=False,
+                    code=code,
+                    reified_symbol=reified_sym,  # TODO hack!
                 )
-                s["name"] = fn_name
-                if not contained_in_class and all_fn_names.count(s["name"]) == 1:
-                    if fn_name not in fn_raw_symbol_data:
-                        fn_raw_symbol_data[fn_name] = []
-                    fn_raw_symbol_data[fn_name].append(
-                        create_raw_symbol_via_ctags(
-                            ctags_symbol=s,
-                            root_rel_path=root_rel_path,
-                            code=code,
-                            symbol_kind=SymbolKind.CALLABLE,
-                            scope_relation=None,
-                            delimiter="::",
-                            is_multi_prompt=is_multi_prompt,
-                            is_overloaded=False,
-                        )
-                    )
+                function_raw_symbol_data[ts_symbol.name] = raw_symbol_data
 
-                elif not contained_in_class and all_fn_names.count(s["name"]) > 1:
-                    if fn_name not in fn_raw_symbol_data:
-                        fn_raw_symbol_data[fn_name] = []
-                    fn_raw_symbol_data[fn_name].append(
-                        create_raw_symbol_via_ctags(
-                            ctags_symbol=s,
-                            root_rel_path=root_rel_path,
-                            code=code,
-                            symbol_kind=SymbolKind.CALLABLE,
-                            scope_relation=None,
-                            delimiter="::",
-                            is_multi_prompt=is_multi_prompt,
-                            is_overloaded=True,
-                        )
-                    )
-        output = None if len(fn_raw_symbol_data) == 0 else cls(data=fn_raw_symbol_data)
+        output = (
+            None
+            if len(function_raw_symbol_data) == 0
+            else cls(data=function_raw_symbol_data)
+        )
         return output
 
     @classmethod
     def from_llm(cls, code: str, root_rel_path: str) -> Self:
-        raise NotImplementedError("Static analysis should be used for C++ functions")
+        raise NotImplementedError("Static analysis should be used for C functions")
 
     def to_dict(self) -> dict[str, RawSymbolData]:
         return self.data
@@ -446,19 +422,72 @@ class CppVariableRawSymbolCollection(RawSymbolCollection):
 
     @classmethod
     def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
-        return default_ctags_analysis(
-            collection_cls=cls,
-            code=code,
-            root_rel_path=root_rel_path,
-            symbol_kind=SymbolKind.VARIABLE,
-            ctags_kinds=CPP_VARIABLES,
-            delimiter="::",
-            add_symbol_padding=True,
+        driver_tree = CppCDriverTree.from_code(code, root_rel_path)
+        variable_raw_symbol_data = {}
+        is_large_file = code_requires_multi_prompt(code)
+
+        for ts_symbol in driver_tree.extract_variables():
+            if ts_symbol.name is not None:
+                raw_symbol_data = RawSymbolData.from_tree_sitter_raw_symbol(
+                    ts_symbol=ts_symbol,
+                    path=root_rel_path,
+                    scope=None,
+                    scope_relation=None,
+                    children=[],
+                    reference_code=None,
+                    delimiter=None,
+                    is_large_file=is_large_file,
+                    is_overloaded=False,
+                    use_padding=False,
+                    code=code,
+                )
+                variable_raw_symbol_data[ts_symbol.name] = raw_symbol_data
+
+        output = (
+            None
+            if len(variable_raw_symbol_data) == 0
+            else cls(data=variable_raw_symbol_data)
         )
+        return output
 
     @classmethod
     def from_llm(cls, code: str, root_rel_path: str) -> Self:
-        raise NotImplementedError("Static analysis should be used for C++ variables")
+        raise NotImplementedError("Static analysis should be used for C variables")
+
+    def to_dict(self) -> dict[str, RawSymbolData]:
+        return self.data
+
+
+class CppIncludeRawSymbolCollection(RawSymbolCollection):
+    data: dict[str, RawSymbolData]
+
+    @classmethod
+    def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
+        driver_tree = CppCDriverTree.from_code(code, root_rel_path)
+        is_large_file = code_requires_multi_prompt(code)
+
+        import_dict = {}
+        for ts_symbol in driver_tree.extract_imports():
+            raw_symbol_data = RawSymbolData.from_tree_sitter_raw_symbol(
+                ts_symbol=ts_symbol,
+                path=root_rel_path,
+                scope=None,
+                scope_relation=None,
+                children=[],
+                reference_code=None,
+                delimiter=None,
+                is_large_file=is_large_file,
+                is_overloaded=False,
+                use_padding=False,
+                code=code,
+            )
+            import_dict[ts_symbol.name] = raw_symbol_data
+        output = None if len(import_dict) == 0 else cls(data=import_dict)
+        return output
+
+    @classmethod
+    def from_llm(cls, code: str, root_rel_path: str) -> Self:
+        raise NotImplementedError("Static analysis should be used for c imports")
 
     def to_dict(self) -> dict[str, RawSymbolData]:
         return self.data

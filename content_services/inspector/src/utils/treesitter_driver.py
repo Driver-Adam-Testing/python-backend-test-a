@@ -17,9 +17,7 @@ LANGUAGES = {
 }
 
 # TODO: First try to linkn methods to classes in symbol table construction
-# TODO: handle declarations
 # TODO: Fix structs/uniions/enums
-# TODO: check globals and declarations
 # TODO: nice to have: function calls attaching the scope so we can use in symbol table construction
 
 
@@ -387,6 +385,7 @@ class CppCDriverTree(DriverTree):
                   (type_identifier)? @declared_enum.name
                   (enumerator_list) @declared_enum.body
                 ) @declared_enum.definition
+
               ]
             )
 
@@ -405,6 +404,10 @@ class CppCDriverTree(DriverTree):
               (type_identifier)? @enum.name
               (enumerator_list) @enum.body
             ) @enum.definition
+
+            (class_specifier
+                name: (type_identifier) @class.name
+            ) @class.definition
           ]
         )
         """
@@ -445,6 +448,8 @@ class CppCDriverTree(DriverTree):
                     ):
                         continue
                     name_nodes = rest.get("enum.name", [])
+                case {"class.definition": [data_structure_node], **rest}:
+                    name_nodes = rest.get("class.name", [])
                 case {"declared_struct.definition": [data_structure_node], **rest}:
                     name_nodes = rest.get("declared_struct.name", [])
                 case {"declared_union.definition": [data_structure_node], **rest}:
@@ -529,11 +534,23 @@ class CppCDriverTree(DriverTree):
                 "struct_specifier",
                 "union_specifier",
                 "enum_specifier",
-                "function_definition",
             ]:
                 name_node = current.child_by_field_name("name")
                 if name_node and name_node.type == "type_identifier":
                     path_parts.append(name_node.text.decode("utf-8"))
+            elif current.type == "function_definition":
+                declarator_node = current.child_by_field_name("declarator")
+                if declarator_node:
+                    # Function name is typically in the function_declarator
+                    if declarator_node.type == "function_declarator":
+                        name_node = declarator_node.child_by_field_name("declarator")
+                        if name_node and name_node.type in [
+                            "identifier",
+                            "field_identifier",
+                        ]:
+                            path_parts.append(name_node.text.decode("utf-8"))
+                    elif declarator_node.type in ["identifier", "field_identifier"]:
+                        path_parts.append(declarator_node.text.decode("utf-8"))
 
             current = current.parent
 
@@ -696,7 +713,10 @@ class CppCDriverTree(DriverTree):
 
     @symbol_extractor
     def extract_function_calls(self) -> list[RawTreeSitterSymbolData]:
-        query = self.tree_sitter_lang.query("(call_expression) @call")
+        query = self.tree_sitter_lang.query("""
+                                            (call_expression
+                                            function: (identifier) @call.name) @call
+                                            """)
         matches = query.matches(self.tree.root_node)
         function_calls = []
 

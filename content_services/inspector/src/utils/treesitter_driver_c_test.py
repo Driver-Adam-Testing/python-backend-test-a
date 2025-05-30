@@ -402,23 +402,24 @@ def function_call_test_code() -> str:
 
 
 @pytest.mark.parametrize(
-    "expected_function_call_name, expected_line_range",
+    "expected_function_call_name, expected_line_range, expected_fully_qualified_parent_path",
     [
-        ("max", (2, 2)),
-        ("strlen", (2, 2)),
+        ("max", (2, 2), "test_function_calls_as_args"),
+        ("strlen", (2, 2), "test_function_calls_as_args"),
         # Turns out sizeof is NOT a function, but a compile-time operator, so it shouldn't be found
         # ("sizeof", (2, 2)),
-        ("printf", (3, 3)),
-        ("strlen", (3, 3)),
-        ("is_valid", (7, 7)),
-        ("process", (8, 8)),
-        ("handle_error", (10, 10)),
+        ("printf", (3, 3), "test_function_calls_as_args"),
+        ("strlen", (3, 3), "test_function_calls_as_args"),
+        ("is_valid", (7, 7), "test_conditional_calls"),
+        ("process", (8, 8), "test_conditional_calls"),
+        ("handle_error", (10, 10), "test_conditional_calls"),
     ],
 )
 def test_extract_function_calls(
     function_call_test_code: str,
     expected_function_call_name: str,
     expected_line_range: tuple[int, int],
+    expected_fully_qualified_parent_path: str,
 ) -> None:
     driver_tree = CppCDriverTree.from_code(function_call_test_code, "does_not_matter.c")
     calls_found = driver_tree.extract_function_calls()
@@ -426,17 +427,22 @@ def test_extract_function_calls(
         (c.name, (c.start_line, c.end_line), c.fully_qualified_parent_path)
         for c in calls_found
     ]
-    for _, _, fully_qualified_path in extracted:
-        # NOTE: since this is C - everything should just be in the global scope ("")
-        assert (
-            fully_qualified_path == ""
-        ), f"Expected fully qualified path to be empty, but got: {fully_qualified_path}"
+    # NOTE: C calls will still have a fully qualified path, it should be the enclosing function
+    # for _, _, fully_qualified_path in extracted:
+    #     # NOTE: since this is C - everything should just be in the global scope ("")
+    #     assert (
+    #         fully_qualified_path == ""
+    #     ), f"Expected fully qualified path to be empty, but got: {fully_qualified_path}"
 
     dupes = [item for item in extracted if extracted.count(item) > 1]
     assert not dupes, f"Found duplicate calls: {dupes}"
 
-    assert (expected_function_call_name, expected_line_range, "") in extracted, (
-        f"Expected call ({expected_function_call_name}, {expected_line_range}) "
+    assert (
+        expected_function_call_name,
+        expected_line_range,
+        expected_fully_qualified_parent_path,
+    ) in extracted, (
+        f"Expected call ({expected_function_call_name}, {expected_line_range}, {expected_fully_qualified_parent_path}) "
         f"not found in extracted function calls: {extracted}"
     )
 

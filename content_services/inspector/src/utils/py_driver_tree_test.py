@@ -16,10 +16,97 @@ from foo.bar.baz import func
 """
 
 
-def test_extract_import(imports_python: str) -> None:
-    _driver_tree = PyDriverTree.from_code(imports_python, "does_not_matter.py")
+@pytest.fixture(scope="module")
+def imports_test_code() -> str:
+    file_path = (
+        pathlib.Path(__file__).parent
+        / "treesitter_testcases"
+        / "python"
+        / "test_imports.py"
+    )
+    with open(file_path, encoding="utf-8") as f:
+        return f.read()
 
-    assert True
+
+@pytest.mark.parametrize(
+    "expected_import_name, expected_line_range",
+    [
+        ("os", (4, 4)),
+        ("sys", (5, 5)),
+        ("json", (6, 6)),
+        ("numpy", (9, 9)),
+        ("pandas", (10, 10)),
+        ("matplotlib.pyplot", (11, 11)),
+        ("typing.List", (14, 14)),
+        ("typing.Dict", (14, 14)),
+        ("typing.Optional", (14, 14)),
+        ("pathlib.Path", (15, 15)),
+        ("datetime.datetime", (16, 16)),
+        ("datetime.timedelta", (16, 16)),
+        ("collections.defaultdict", (19, 19)),
+        ("functools.wraps", (20, 20)),
+        ("math.*", (23, 23)),
+        ("socket", (26, 26)),
+        ("threading", (26, 26)),
+        ("time", (26, 26)),
+        ("ujson", (30, 30)),
+        ("json", (32, 32)),
+        ("xml.etree.ElementTree", (35, 35)),
+        ("xml.etree.ElementTree.Element", (36, 36)),
+        ("xml.etree.ElementTree.SubElement", (36, 36)),
+        ("email.mime.text", (37, 37)),
+        (".sibling_module", (40, 40)),
+        ("..parent_module", (41, 41)),
+        ("..utils.helper_function", (42, 42)),
+        (".subpackage.submodule", (43, 43)),
+        ("__future__.annotations", (46, 46)),
+        ("__future__.print_function", (47, 47)),
+        ("__future__.unicode_literals", (47, 47)),
+        ("random", (51, 51)),
+        ("secrets.token_hex", (52, 52)),
+        ("very.deeply.nested.package.subpackage.module.VeryLongClassName", (56, 60)),
+        (
+            "very.deeply.nested.package.subpackage.module.another_long_function_name",
+            (56, 60),
+        ),
+        ("very.deeply.nested.package.subpackage.module.SOME_CONSTANT", (56, 60)),
+        ("fast_library.fast_function", (70, 70)),
+        ("slow_library.fast_function", (73, 73)),
+        ("sys", (80, 80)),
+        ("importlib", (85, 85)),
+    ],
+)
+def test_extract_import(
+    imports_test_code: str,
+    expected_import_name: str,
+    expected_line_range: tuple[int, int],
+) -> None:
+    driver_tree = PyDriverTree.from_code(imports_test_code, "does_not_matter.py")
+    imports = driver_tree.extract_imports()
+    extracted = [(im.name, (im.start_line, im.end_line)) for im in imports]
+
+    assert (expected_import_name, expected_line_range) in extracted, (
+        f"Expected function ({expected_import_name}, {expected_line_range}) "
+        f"not found in extracted imports: {extracted}"
+    )
+
+
+@pytest.mark.parametrize(
+    "expected_not_included_import_name",
+    ["some_new_feature", "module", "public_function", "PublicClass", "PUBLIC_CONSTANT"],
+)
+def test_imports_not_supported(
+    imports_test_code: str, expected_not_included_import_name: str
+) -> None:
+    driver_tree = PyDriverTree.from_code(imports_test_code, "does_not_matter.py")
+    imports = driver_tree.extract_imports()
+    assert expected_not_included_import_name in imports_test_code
+
+    extracted_import_names = [im.name for im in imports]
+    assert expected_not_included_import_name not in extracted_import_names, (
+        f"Expected import ({expected_not_included_import_name}) "
+        f"to not be found in extracted imports: {extracted_import_names}"
+    )
 
 
 @pytest.fixture(scope="module")

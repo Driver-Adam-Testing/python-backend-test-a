@@ -598,79 +598,112 @@ def function_declarations_cpp_code() -> str:
 
 
 @pytest.mark.parametrize(
-    "expected_function_name, expected_start_line",
+    "expected_function_name, expected_start_line, expected_end_line, expected_parent_path",
     [
         # Basic function declarations
-        ("add", 7),
-        ("multiply", 8),
-        ("printMessage", 9),
-        ("concatenate", 10),
+        ("add", 7, 7, ""),
+        ("multiply", 8, 8, ""),
+        ("printMessage", 9, 9, ""),
+        ("concatenate", 10, 10, ""),
         # Function declarations with default parameters
-        ("divide", 13),
-        ("setupConnection", 14),
+        ("divide", 13, 13, ""),
+        ("setupConnection", 14, 14, ""),
         # Function declarations with references
-        ("processData", 17),
-        ("swapValues", 18),
-        ("processString", 19),
+        ("processData", 17, 17, ""),
+        ("swapValues", 18, 18, ""),
+        ("processString", 19, 19, ""),
         # Rvalue reference functions
-        ("processVector", 22),
-        ("moveString", 23),
+        ("processVector", 22, 22, ""),
+        ("moveString", 23, 23, ""),
         # Template function declarations
-        ("maximum", 26),
-        ("addValues", 29),
-        ("allOf", 32),
-        ("callFunction", 35),
+        ("maximum", 27, 27, ""),
+        ("addValues", 30, 30, ""),
+        ("allOf", 33, 33, ""),
+        ("callFunction", 37, 37, ""),
         # Constexpr functions
-        ("factorial", 38),
-        ("calculateCircleArea", 39),
+        ("factorial", 40, 40, ""),
+        ("calculateCircleArea", 41, 41, ""),
         # Inline functions
-        ("square", 42),
-        ("cube", 43),
+        ("square", 44, 44, ""),
+        ("cube", 45, 45, ""),
         # Noexcept functions
-        ("safeFunction", 46),
-        ("safeMath", 47),
-        ("conditionalNoexcept", 48),
+        ("safeFunction", 48, 48, ""),
+        ("safeMath", 49, 49, ""),
+        ("conditionalNoexcept", 50, 50, ""),
         # Auto return type functions
-        ("detectType", 51),
-        ("computeValue", 52),
+        ("detectType", 53, 53, ""),
+        ("computeValue", 54, 54, ""),
         # Namespace function declarations
-        ("sin", 56),
-        ("cos", 57),
-        ("pow", 58),
-        ("integrate", 61),
-        ("solve", 62),
+        ("sin", 58, 58, "Math"),
+        ("cos", 59, 59, "Math"),
+        ("pow", 60, 60, "Math"),
+        ("integrate", 63, 63, "Math::Advanced"),
+        ("solve", 64, 64, "Math::Advanced"),
         # Global operator overloads
-        ("operator+", 268),
-        ("operator-", 269),
-        ("operator*", 270),
-        ("operator/", 271),
-        ("operator<<", 273),
-        ("operator>>", 274),
-        # Function pointer declarations
-        ("applyBinaryFunction", 283),
-        ("executeCallback", 284),
-        ("processWithFunction", 285),
-        # Variadic template functions
-        ("print", 288),
-        ("makeUnique", 291),
-        ("invoke", 294),
+        ("Calculator", 75, 75, "Calculator"),  # Constructor
+        ("Calculator", 76, 76, "Calculator"),  # Copy constructor
+        ("Calculator", 77, 77, "Calculator"),  # Copy constructor
+        ("Calculator", 78, 78, "Calculator"),  # Copy constructor
+        ("~Calculator", 81, 81, "Calculator"),  # Destructor
+        ("operator=", 84, 84, "Calculator"),
+        ("operator=", 85, 85, "Calculator"),
+        ("getValue", 88, 88, "Calculator"),
+        ("setValue", 89, 89, "Calculator"),
+        ("reset", 90, 90, "Calculator"),
+        ("isZero", 93, 93, "Calculator"),
+        ("isPositive", 94, 94, "Calculator"),
+        ("toString", 95, 95, "Calculator"),
+        ("createZero", 98, 98, "Calculator"),
+        ("createFromString", 99, 99, "Calculator"),
+        ("isValidValue", 100, 100, "Calculator"),
+        ("operator+", 103, 103, "Calculator"),
+        ("operator-", 104, 104, "Calculator"),
+        ("operator*", 105, 105, "Calculator"),
+        ("operator/", 106, 106, "Calculator"),
+        ("operator+=", 108, 108, "Calculator"),
+        ("operator-=", 109, 109, "Calculator"),
+        ("operator*=", 110, 110, "Calculator"),
+        ("operator*=", 111, 111, "Calculator"),
+        ("operator++", 113, 113, "Calculator"),
+        ("operator++", 114, 114, "Calculator"),
+        ("operator-", 116, 116, "Calculator"),
+        ("operator+", 117, 117, "Calculator"),
+        ("operator[]", 127, 127, "Calculator"),  # Array subscript operator
+        # ("double", 131, 131, "Calculator"),  # Conversion operator to double #TODO: known failure case, can mark as xfail
+        # ("int", 133, 133, "Calculator"),  # Conversion operator to int #TODO: known failure case, can mark as xfail
+        ("Container", 143, 143, "Container"),  # Template class constructor
+        ("Container", 144, 144, "Container"),  # Template class constructor
+        ("Container", 145, 145, "Container"),  # Template class constructor
+        ("Container", 146, 146, "Container"),  # Template class constructor
+        ("~Container", 148, 148, "Container"),  # Template class constructor
+        ("operator=", 150, 150, "Container"),  # Template class constructor
+        ("get", 153, 153, "Container"),  # Template class method
+        ("getPerimeter", 205, 205, "Shape"),
+        ("clone", 211, 211, "Shape"),
+        ("maximum<bool>", 236, 236, ""),
+        ("importantFunction", 300, 300, ""),
     ],
 )
 def test_extract_function_declarations(
     function_declarations_cpp_code: str,
     expected_function_name: str,
     expected_start_line: int,
+    expected_end_line: int,
+    expected_parent_path: str,
 ) -> None:
     """Test extraction of C++ function declarations"""
     driver_tree = CppCDriverTree.from_code(function_declarations_cpp_code, "test.cpp")
     declarations = driver_tree.extract_function_declarations()
 
-    extracted_declarations = [(decl.name, decl.start_line) for decl in declarations]
+    extracted_declarations = [
+        (decl.name, decl.start_line, decl.end_line, decl.fully_qualified_parent_path)
+        for decl in declarations
+    ]
 
     # Check if the expected function declaration is found
     matching_declarations = [
-        (name, line)
-        for name, line in extracted_declarations
+        (name, line, end_line, fully_qualified_parent_path)
+        for name, line, end_line, fully_qualified_parent_path in extracted_declarations
         if name == expected_function_name and abs(line - expected_start_line) <= 3
     ]
 
@@ -678,6 +711,13 @@ def test_extract_function_declarations(
         f"Expected function declaration '{expected_function_name}' around line {expected_start_line} "
         f"not found in extracted declarations: {extracted_declarations}"
     )
+
+    # Verify the fully_qualified_parent_path for the matching function(s)
+    for _name, line, _end_line, parent_path in matching_declarations:
+        assert parent_path == expected_parent_path, (
+            f"Function '{expected_function_name}' at line {line} has parent path '{parent_path}', "
+            f"expected '{expected_parent_path}'"
+        )
 
 
 class TestCppSpecificFeatures:

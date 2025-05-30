@@ -16,6 +16,12 @@ LANGUAGES = {
     "cpp": tree_sitter.Language(tree_sitter_cpp.language()),
 }
 
+# TODO: First try to linkn methods to classes in symbol table construction
+# TODO: handle declarations
+# TODO: Fix structs/uniions/enums
+# TODO: check globals and declarations
+# TODO: nice to have: function calls attaching the scope so we can use in symbol table construction
+
 
 def symbol_extractor(
     method: Callable[..., list[RawTreeSitterSymbolData]],
@@ -731,7 +737,19 @@ class CppCDriverTree(DriverTree):
     @symbol_extractor
     def extract_function_declarations(self) -> list[RawTreeSitterSymbolData]:
         """Extract all function declarations (not definitions) in the C code."""
-        query = self.tree_sitter_lang.query("(declaration) @declaration")
+        query_str = """
+        (
+            [
+              ; Declaration variants
+              ;; Normal declaration
+              (declaration) @declaration
+              ;; Field declaration
+              (field_declaration) @declaration
+            ]
+        )
+        """
+        query = self.tree_sitter_lang.query(query_str)
+        # query = self.tree_sitter_lang.query("(declaration) @declaration")
         matches = query.matches(self.tree.root_node)
         declarations = []
 
@@ -743,8 +761,8 @@ class CppCDriverTree(DriverTree):
                 continue
 
             # Ensure it's a function declarator implicitly by calling this and having it return something
-            func_name, params_node = get_function_name_and_params_and_scope_parts(
-                declarator_node
+            func_name, params_node, qualified_scope_parts = (
+                get_function_name_and_params_and_scope_parts(declarator_node)
             )
             if func_name is None:
                 continue
@@ -759,8 +777,17 @@ class CppCDriverTree(DriverTree):
 
             start_line, end_line = self.get_node_line_range(declaration_node)
             ts_node = declaration_node
-            fully_qualified_path = self._get_fully_qualified_path_to_parent(
+            qualified_parent_path = self._get_fully_qualified_path_to_parent(
                 declaration_node
+            )
+            fully_qualified_path = (
+                qualified_parent_path
+                + (
+                    "::"
+                    if len(qualified_scope_parts) > 0 and len(qualified_parent_path) > 0
+                    else ""
+                )
+                + "::".join(qualified_scope_parts)
             )
             func = RawTreeSitterSymbolData(
                 name=func_name,

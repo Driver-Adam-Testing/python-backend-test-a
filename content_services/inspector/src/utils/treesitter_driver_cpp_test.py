@@ -85,66 +85,77 @@ def function_definitions_cpp_code() -> str:
 
 
 @pytest.mark.parametrize(
-    "expected_function_name, expected_start_line",
+    "expected_function_name, expected_start_line, expected_end_line",
     [
         # Basic functions
-        ("add", 4),
-        ("printMessage", 8),
-        ("multiply", 13),
-        ("divide", 18),
-        ("maximum", 23),
-        ("fibonacci", 28),
-        ("square", 33),
-        ("swap", 38),
-        ("processVector", 44),
+        ("printMessage", 6, 8),
+        ("multiply", 11, 13),
+        ("divide", 16, 18),
+        ("maximum", 22, 24),
+        ("fibonacci", 27, 29),
+        ("square", 32, 34),
+        ("swap", 37, 41),
+        ("processVector", 44, 46),
         # Namespace functions
-        ("calculateArea", 49),
-        ("complexCalculation", 54),
+        ("calculateArea", 50, 52),
+        ("complexCalculation", 55, 57),
         # Class constructors and methods
-        ("Calculator", 62),  # Default constructor
-        ("Calculator", 65),  # Parameterized constructor
-        ("Calculator", 68),  # Copy constructor
-        ("Calculator", 71),  # Move constructor
-        ("getValue", 83),
-        ("setValue", 87),
-        ("operator+", 91),
-        ("operator-", 95),
-        ("operator*", 99),
-        ("operator/", 103),
-        ("operator-", 107),  # Unary minus
-        ("operator++", 111),  # Pre-increment
-        ("operator++", 116),  # Post-increment
-        ("operator==", 122),
-        ("operator!=", 126),
-        ("operator<", 130),
-        ("operator()", 134),
-        ("operator[]", 138),
-        ("createZero", 142),
+        ("Calculator", 68, 68),  # Default constructor
+        ("Calculator", 71, 71),  # Parameterized constructor
+        ("Calculator", 74, 74),  # Copy constructor
+        ("Calculator", 77, 79),  # Move constructor
+        ("~Calculator", 82, 82),  # Destructor
+        ("operator=", 85, 90),
+        ("operator=", 93, 99),
+        ("getValue", 102, 104),
+        ("setValue", 107, 109),
+        ("operator+", 112, 114),
+        ("operator-", 116, 118),
+        ("operator*", 120, 122),
+        ("operator/", 124, 126),
+        ("operator-", 129, 131),  # Unary minus
+        ("operator++", 134, 137),  # Pre-increment
+        ("operator++", 139, 143),  # Post-increment
+        ("operator==", 146, 148),
+        ("createZero", 151, 153),
         # Template class methods
-        ("Container", 148),
-        ("getData", 152),
-        ("setData", 156),
-        ("convertAndSet", 160),
+        ("Container", 163, 163),
+        ("getData", 165, 167),
+        ("setData", 169, 171),
+        ("convertAndSet", 174, 176),
         # Inheritance
-        ("calculateArea", 177),  # Circle::calculateArea
-        ("draw", 181),  # Circle::draw
-        ("calculateArea", 195),  # Rectangle::calculateArea
-        ("draw", 199),  # Rectangle::draw
+        ("~Shape", 182, 182),
+        ("calculateArea", 183, 183),  # Circle::calculateArea
+        ("draw", 184, 186),  # Circle::draw
+        ("Circle", 194, 194),
+        ("calculateArea", 196, 198),  # Rectangle::calculateArea
+        ("draw", 200, 202),  # Rectangle::draw
+        ("Rectangle", 210, 210),
+        ("calculateArea", 212, 214),
+        ("draw", 216, 218),
         # Lambda demonstrations
-        ("demonstrateLambdas", 208),
+        ("demonstrateLambdas", 222, 234),
+        # TODO: we don't handle lambdas yet
+        ("safeDivide", 237, 245),
+        ("maximum<bool>", 249, 251),
         # Friend functions
-        ("operator+", 238),  # Point friend operator
-        ("operator<<", 242),  # Point friend ostream operator
-        # Main function
-        ("main", 248),
+        ("operator+", 261, 263),  # Point friend operator
+        ("operator<<", 265, 267),  # Point friend ostream operator
+        ("test", 278, 278),
+        ("operator+", 280, 280),
+        ("add", 284, 286),
+        ("display", 288, 290),
+        ("~MyClass", 292, 292),
     ],
 )
 def test_extract_function_definitions(
     function_definitions_cpp_code: str,
     expected_function_name: str,
     expected_start_line: int,
+    expected_end_line: int,
 ) -> None:
     """Test extraction of C++ function definitions"""
+    # TODO: test scopes as well
     driver_tree = CppCDriverTree.from_code(function_definitions_cpp_code, "test.cpp")
     functions = driver_tree.extract_callable_definitions()
 

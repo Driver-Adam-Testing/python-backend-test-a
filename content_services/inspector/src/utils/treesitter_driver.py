@@ -122,22 +122,37 @@ class DriverTreeError(Exception):
     pass
 
 
-def get_function_name_and_params(
+def get_function_name_and_params_and_scope_parts(
     declarator_node: tree_sitter.Node,
-) -> tuple[str | None, tree_sitter.Node | None]:
+) -> tuple[str | None, tree_sitter.Node | None, list[str]]:
     """
     Extract the function name and parameter node from a function declarator.
-    Handles attributes, nested declarators, and parenthesized declarators.
+    Handles attributes, nested declarators, qualified identifiers, and parenthesized declarators.
     """
     if declarator_node.type == "function_declarator":
         name_node = declarator_node.child_by_field_name("declarator")
         params_node = declarator_node.child_by_field_name("parameters")
 
-        if name_node and name_node.type == "identifier":
-            return name_node.text.decode("utf-8"), params_node
+        if name_node and name_node.type in ["identifier", "field_identifier"]:
+            return name_node.text.decode("utf-8"), params_node, []
+        elif name_node and name_node.type == "qualified_identifier":
+            # Handle qualified names like ClassName::methodName or Namespace::Class::method
+            func_name, scope_parts = (
+                _extract_function_name_and_scope_from_qualified_identifier(name_node)
+            )
+            # scope = _extract_scope_from_qualified_identifier(name_node)
+            return func_name, params_node, scope_parts
+        elif name_node and name_node.type == "destructor_name":
+            # Handle destructors like ~ClassName
+            return name_node.text.decode("utf-8"), params_node, []
+        elif name_node and name_node.type == "operator_name":
+            # Handle operator overloads
+            return name_node.text.decode("utf-8"), params_node, []
+        elif name_node and name_node.type == "template_function":
+            return name_node.text.decode("utf-8"), params_node, []
         elif name_node:
             # Recurse into nested declarators (e.g., parenthesized_declarator, pointer_declarator)
-            return get_function_name_and_params(name_node)
+            return get_function_name_and_params_and_scope_parts(name_node)
 
     elif declarator_node.type in {
         "pointer_declarator",
@@ -147,10 +162,62 @@ def get_function_name_and_params(
         # Recurse into nested declarators
         inner_declarator = declarator_node.child_by_field_name("declarator")
         if inner_declarator:
-            return get_function_name_and_params(inner_declarator)
+            return get_function_name_and_params_and_scope_parts(inner_declarator)
+    elif declarator_node.type == "reference_declarator":
+        child_node = declarator_node.children[
+            -1
+        ]  # We get -1 child here, because children[0] appears to just be an & node
+        if child_node.type == "function_declarator":
+            # If it's a reference to a function, recurse into the function declarator
+            return get_function_name_and_params_and_scope_parts(child_node)
+        print(f"Unhandled reference_declarator child type: {child_node.type}")
 
+    print(
+        f"Unhandled declarator type: {declarator_node.type} in {declarator_node.text.decode('utf-8')}"
+    )
     # Unsupported or unhandled declarator type
-    return None, None
+    return None, None, []
+
+
+def _extract_function_name_and_scope_from_qualified_identifier(
+    qualified_node: tree_sitter.Node,
+) -> tuple[str | None, list[str]]:
+    """
+    Extract the function name from a qualified_identifier node.
+
+    qualified_identifier has 'scope' and 'name' fields.
+    The name field can be an identifier or another qualified_identifier.
+    We want the final identifier as the function name.
+
+    Examples:
+    - MyClass::add -> "add"
+    - MyClass::Inner::display -> "display"
+    """
+    scope_node = qualified_node.child_by_field_name("scope")
+    scope_parts = [scope_node.text.decode("utf-8")]
+    name_node = qualified_node.child_by_field_name("name")
+    if not name_node:
+        return None, []
+
+    if name_node.type == "identifier" or name_node.type == "field_identifier":
+        return name_node.text.decode("utf-8"), scope_parts
+    elif name_node.type == "qualified_identifier":
+        # Recursively extract from nested qualified identifier (e.g., MyClass::Inner::display)
+        name, more_scope_parts = (
+            _extract_function_name_and_scope_from_qualified_identifier(name_node)
+        )
+        return name, scope_parts + more_scope_parts
+    elif name_node.type == "destructor_name":
+        # Handle destructors like ~ClassName
+        return name_node.text.decode("utf-8"), scope_parts
+    elif name_node.type == "operator_name":
+        # Handle operator overloads
+        return name_node.text.decode("utf-8"), scope_parts
+
+    print(
+        f"Unhandled name node type: {name_node.type} in {qualified_node.text.decode('utf-8')}"
+    )
+    return None, []
 
 
 def find_identifier_node(node: tree_sitter.Node) -> tree_sitter.Node | None:
@@ -202,6 +269,9 @@ class CppCDriverTree(DriverTree):
 
             start_line, end_line = self.get_node_line_range(include_directive_node)
             ts_node = include_path_node
+            fully_qualified_path = self._get_fully_qualified_path_to_parent(
+                include_directive_node
+            )
             includes.append(
                 RawTreeSitterSymbolData(
                     name=include_path_text,
@@ -211,6 +281,7 @@ class CppCDriverTree(DriverTree):
                     start_byte=ts_node.start_byte,
                     end_byte=ts_node.end_byte,
                     file_path=self.file_path,
+                    fully_qualified_parent_path=fully_qualified_path,
                     symbol_code=node_to_text(ts_node),
                 )
             )
@@ -227,12 +298,19 @@ class CppCDriverTree(DriverTree):
         for _pattern_index, captures_by_name in matches:
             function_def = captures_by_name["function_def"][0]
             declarator_node = function_def.child_by_field_name("declarator")
-            func_name, params_node = get_function_name_and_params(declarator_node)
+            func_name, params_node, qualified_scope_parts = (
+                get_function_name_and_params_and_scope_parts(declarator_node)
+            )
             if func_name is None:
                 print("Could not parse function name for node:", declarator_node)
                 func_name = None
             start_line, end_line = self.get_node_line_range(function_def)
             ts_node = function_def
+            fully_qualified_path = (
+                self._get_fully_qualified_path_to_parent(function_def)
+                + "::"
+                + "::".join(qualified_scope_parts)
+            )
             func = RawTreeSitterSymbolData(
                 name=func_name,
                 start_line=start_line,
@@ -241,6 +319,7 @@ class CppCDriverTree(DriverTree):
                 start_byte=ts_node.start_byte,
                 end_byte=ts_node.end_byte,
                 file_path=self.file_path,
+                fully_qualified_parent_path=fully_qualified_path,
                 symbol_code=node_to_text(ts_node),
             )
             functions.append(func)
@@ -380,6 +459,9 @@ class CppCDriverTree(DriverTree):
 
             start_line, end_line = self.get_node_line_range(data_structure_node)
             ts_node = data_structure_node
+            fully_qualified_path = self._get_fully_qualified_path_to_parent(
+                data_structure_node
+            )
             ds = RawTreeSitterSymbolData(
                 name=data_structure_name,
                 start_line=start_line,
@@ -388,6 +470,7 @@ class CppCDriverTree(DriverTree):
                 start_byte=ts_node.start_byte,
                 end_byte=ts_node.end_byte,
                 file_path=self.file_path,
+                fully_qualified_parent_path=fully_qualified_path,
                 symbol_code=node_to_text(ts_node),
             )
 
@@ -433,6 +516,7 @@ class CppCDriverTree(DriverTree):
                 "struct_specifier",
                 "union_specifier",
                 "enum_specifier",
+                "function_definition",
             ]:
                 name_node = current.child_by_field_name("name")
                 if name_node and name_node.type == "type_identifier":
@@ -569,11 +653,15 @@ class CppCDriverTree(DriverTree):
                     "pointer_declarator",
                     "array_declarator",
                     "attributed_declarator",
+                    "reference_declarator",
                 ]:
                     id_node = find_identifier_node(child)
                     if id_node:
                         var_name = id_node.text.decode("utf8")
                         ts_node = decl_node
+                        fully_qualified_path = self._get_fully_qualified_path_to_parent(
+                            decl_node
+                        )
                         var = RawTreeSitterSymbolData(
                             name=var_name,
                             start_line=start_line,
@@ -582,6 +670,7 @@ class CppCDriverTree(DriverTree):
                             start_byte=ts_node.start_byte,
                             end_byte=ts_node.end_byte,
                             file_path=self.file_path,
+                            fully_qualified_parent_path=fully_qualified_path,
                             symbol_code=node_to_text(ts_node),
                         )
                         variables.append(var)
@@ -610,6 +699,7 @@ class CppCDriverTree(DriverTree):
 
             start_line, end_line = self.get_node_line_range(call_node)
             ts_node = call_node
+            fully_qualified_path = self._get_fully_qualified_path_to_parent(call_node)
             func_call = RawTreeSitterSymbolData(
                 name=func_name,
                 start_line=start_line,
@@ -618,6 +708,7 @@ class CppCDriverTree(DriverTree):
                 start_byte=ts_node.start_byte,
                 end_byte=ts_node.end_byte,
                 file_path=self.file_path,
+                fully_qualified_parent_path=fully_qualified_path,
                 symbol_code=node_to_text(ts_node),
             )
 
@@ -645,7 +736,9 @@ class CppCDriverTree(DriverTree):
                 continue
 
             # Ensure it's a function declarator implicitly by calling this and having it return something
-            func_name, params_node = get_function_name_and_params(declarator_node)
+            func_name, params_node = get_function_name_and_params_and_scope_parts(
+                declarator_node
+            )
             if func_name is None:
                 continue
 
@@ -659,6 +752,9 @@ class CppCDriverTree(DriverTree):
 
             start_line, end_line = self.get_node_line_range(declaration_node)
             ts_node = declaration_node
+            fully_qualified_path = self._get_fully_qualified_path_to_parent(
+                declaration_node
+            )
             func = RawTreeSitterSymbolData(
                 name=func_name,
                 start_line=start_line,
@@ -667,6 +763,7 @@ class CppCDriverTree(DriverTree):
                 start_byte=ts_node.start_byte,
                 end_byte=ts_node.end_byte,
                 file_path=self.file_path,
+                fully_qualified_parent_path=fully_qualified_path,
                 symbol_code=node_to_text(ts_node),
             )
             declarations.append(func)

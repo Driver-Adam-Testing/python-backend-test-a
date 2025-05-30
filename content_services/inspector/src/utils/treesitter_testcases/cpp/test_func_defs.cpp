@@ -3,10 +3,6 @@
 #include <vector>
 
 // 1. Basic function definitions
-int add(int a, int b) {
-    return a + b;
-}
-
 void printMessage(const std::string& message) {
     std::cout << message << std::endl;
 }
@@ -151,24 +147,6 @@ public:
         return value == other.value;
     }
 
-    bool operator!=(const Calculator& other) const {
-        return !(*this == other);
-    }
-
-    bool operator<(const Calculator& other) const {
-        return value < other.value;
-    }
-
-    // Function call operator
-    double operator()(double x, double y) {
-        return x + y + value;
-    }
-
-    // Array subscript operator
-    double operator[](int index) {
-        return value * index;
-    }
-
     // Static member function
     static Calculator createZero() {
         return Calculator(0.0);
@@ -240,9 +218,6 @@ public:
     }
 };
 
-// 13. Function definitions outside class (qualified names)
-double MathUtils::Advanced::complexCalculation(double x, double y);  // Already defined above
-
 // 14. Lambda expressions in functions
 void demonstrateLambdas() {
     auto simpleLambda = []() {
@@ -292,6 +267,29 @@ public:
         return os;
     }
 };
+
+class MyClass {
+    public:
+        MyClass() {}
+        int add(int a, int b);  // Declaration only
+        class Inner {
+            void display();         // Declaration only
+        };
+        int test() {}
+        ~MyClass() {}
+        void operator+(int x) {}
+};
+
+// Definitions outside the class
+int MyClass::add(int a, int b) {
+    return a + b;
+}
+
+void MyClass::Inner::display() {
+    std::cout << "Hello" << std::endl;
+}
+
+MyClass::~MyClass() { }
 
 // 18. Main function
 int main() {

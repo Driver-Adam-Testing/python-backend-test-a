@@ -112,8 +112,6 @@ public:
 
     Calculator& operator++();          // Pre-increment
     Calculator operator++(int);        // Post-increment
-    Calculator& operator--();          // Pre-decrement
-    Calculator operator--(int);        // Post-decrement
 
     Calculator operator-() const;      // Unary minus
     Calculator operator+() const;      // Unary plus
@@ -231,6 +229,7 @@ public:
     // Circle-specific declarations
     double getRadius() const;
     void setRadius(double new_radius);
+    double val;
 };
 
 // 16. Function template specialization declarations

@@ -109,6 +109,7 @@ class RawTreeSitterSymbolData(BaseModel):
         None | str
     )  # TODO: this is somewhat a hack since we need the code, but makes symbols bulky
     delimiter: str | None = None
+    base_class_names: tuple[str] | None = None
 
     class Config:
         """
@@ -130,6 +131,7 @@ class ReifiedSymbol:
     definition: Self | None = None
     usages: list[Self] = field(default_factory=list)
     calls: list[Self] = field(default_factory=list)
+    inheritance: list[Self] = field(default_factory=list)  # e.g. base classes
     declarations: list[Self] = field(
         default_factory=list
     )  # Should this be a list? Likely not

@@ -482,6 +482,21 @@ class CppCDriverTree(DriverTree):
             fully_qualified_path = self._get_fully_qualified_path_to_parent(
                 data_structure_node
             )
+            base_class_names = None
+            for child in data_structure_node.children:
+                if child.type == "base_class_clause":
+                    base_class_names = []
+                    for base_child in child.children:
+                        if base_child.type in [
+                            "type_identifier",
+                            "qualified_identifier",
+                        ]:
+                            # Extract base class names from type_identifier nodes
+                            base_class_names.append(base_child.text.decode("utf8"))
+                    print(
+                        f"Found base classes: {base_class_names} in {data_structure_name}"
+                    )
+                    break
             ds = RawTreeSitterSymbolData(
                 name=data_structure_name,
                 start_line=start_line,
@@ -493,6 +508,7 @@ class CppCDriverTree(DriverTree):
                 fully_qualified_parent_path=fully_qualified_path,
                 symbol_code=node_to_text(ts_node),
                 delimiter="::",
+                base_class_names=tuple(base_class_names) if base_class_names else None,
             )
 
             results.append(ds)

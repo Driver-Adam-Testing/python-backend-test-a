@@ -463,6 +463,30 @@ class ReifiedProjectIndex:
 
                     old_reif = final_map[lsym]
                     final_map[lsym] = replace(old_reif, calls=calls_made)
+                elif lsym.raw.symbol_kind == SymbolKind.DATA_STRUCTURE:
+                    # Set inheritance
+                    if lsym.raw.base_class_names is not None:
+                        inherits_from: list[ReifiedSymbol] = []
+                        for base_name in lsym.raw.base_class_names:
+                            if base_name in obj_symbols:
+                                base_sym = obj_symbols[base_name]
+                                inherits_from.append(base_sym)
+                            else:
+                                # check if it's in the same parent as the current symbol
+                                parent_fqn = (
+                                    lsym.raw.fully_qualified_parent_path
+                                    + lsym.raw.delimter
+                                    + base_name
+                                )
+                                if parent_fqn in obj_symbols:
+                                    base_sym = obj_symbols[parent_fqn]
+                                    inherits_from.append(base_sym)
+                        if len(inherits_from):
+                            old_reif = final_map[lsym]
+                            final_map[lsym] = replace(
+                                old_reif,
+                                inheritance=inherits_from,
+                            )
 
         # (5) Build object membership dicts
         for lsym, reified in final_map.items():
@@ -605,6 +629,11 @@ class ReifiedProjectIndex:
                                 print(
                                     f"{RED}       📌 {mv_name} {mv_lines} [{mv_usage_count} usage(s)]{RESET}"
                                 )
+                        if sym.inheritance:
+                            print(
+                                f"     {BOLD}Inheritance:{RESET} "
+                                f"{', '.join(get_fully_qualified_name(i.raw) for i in sym.inheritance)}"
+                            )
                     else:
                         # Check if this is a member function
                         is_member = sym.raw.fully_qualified_parent_path is not None

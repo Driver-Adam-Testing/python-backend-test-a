@@ -241,3 +241,60 @@ def test_extract_classes(
         f"Expected class ({expected_class_name}, {expected_line_range}) "
         f"not found in extracted classes: {extracted}"
     )
+
+
+@pytest.fixture(scope="module")
+def global_vars_test_code() -> str:
+    file_path = (
+        pathlib.Path(__file__).parent
+        / "treesitter_testcases"
+        / "python"
+        / "test_variables.py"
+    )
+    with open(file_path, encoding="utf-8") as f:
+        return f.read()
+
+
+def test_extract_global_vars_duplications(
+    global_vars_test_code: str,
+) -> None:
+    driver_tree = PyDriverTree.from_code(global_vars_test_code, "does_not_matter.py")
+    global_vars = driver_tree.extract_variables()
+
+    assert len(global_vars) == 16
+
+
+@pytest.mark.parametrize(
+    "expected_gbl_var_name, expected_line_range",
+    [
+        ("simple_var", (7, 7)),
+        ("number_var", (8, 8)),
+        ("API_VERSION", (11, 11)),
+        ("MAX_CONNECTIONS", (12, 12)),
+        ("typed_string", (15, 15)),
+        ("typed_list", (16, 16)),
+        ("FINAL_CONSTANT", (19, 19)),
+        ("FINAL_NUMBER", (20, 20)),
+        ("a", (23, 23)),
+        ("b", (23, 23)),
+        ("c", (23, 23)),
+        ("ALLOWED_EXTENSIONS", (26, 26)),
+        ("ERROR_CODES", (27, 31)),
+        ("global_counter", (51, 51)),
+        ("global_registry", (52, 52)),
+        ("module_scope", (60, 60)),
+    ],
+)
+def test_extract_global_vars(
+    global_vars_test_code: str,
+    expected_gbl_var_name: str,
+    expected_line_range: tuple[int, int],
+) -> None:
+    driver_tree = PyDriverTree.from_code(global_vars_test_code, "does_not_matter.py")
+    global_vars = driver_tree.extract_variables()
+    extracted = [(gv.name, (gv.start_line, gv.end_line)) for gv in global_vars]
+
+    assert (expected_gbl_var_name, expected_line_range) in extracted, (
+        f"Expected global variable ({expected_gbl_var_name}, {expected_line_range}) "
+        f"not found in extracted global variables: {extracted}"
+    )

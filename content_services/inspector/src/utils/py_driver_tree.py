@@ -283,7 +283,7 @@ class PyDriverTree(DriverTree):
 
         for _pat_idx, captures_by_name in matches:
             klass_node = captures_by_name["class_def"][0]
-            klass_name = klass_node.child_by_field_name("name")
+            klass_name = captures_by_name["class_name"][0]
             if klass_name is None:
                 print(f"Could not parse class name for node: {klass_node}")
             else:
@@ -314,7 +314,76 @@ class PyDriverTree(DriverTree):
 
     @symbol_extractor
     def extract_variables(self) -> list[RawTreeSitterSymbolData]:
-        return []
+        global_var_query_str = """
+        ;; Single variable assignment
+        (module
+          (expression_statement
+            (assignment
+              left: (identifier) @global_name)) @global_expression)
+
+        ;; Multiple assignment / tuple unpacking
+        (module
+          (expression_statement
+            (assignment
+              left: (pattern_list
+                (identifier) @global_name)) @global_expression))
+        """.strip()
+        query = self.tree_sitter_lang.query(global_var_query_str)
+        matches = query.matches(self.tree.root_node)
+        gbl_vars = []
+
+        for pat_idx, captures_by_name in matches:
+            gbl_expr_node = captures_by_name["global_expression"][0]
+            if pat_idx == 0:  # Single assignment
+                gbl_name = captures_by_name["global_name"][0]
+                if gbl_name is None:
+                    print(
+                        f"Could not parse global variable name for node: {gbl_expr_node}"
+                    )
+                    continue
+                else:
+                    gbl_name = gbl_name.text.decode("utf-8")
+                start_line, end_line = self.get_node_line_range(gbl_expr_node)
+                fully_qualified_parent_path = self._get_fully_qualified_path_to_parent(
+                    node=gbl_expr_node
+                )
+
+                gbl = RawTreeSitterSymbolData(
+                    name=gbl_name,
+                    start_line=start_line,
+                    end_line=end_line,
+                    symbol_kind=SymbolKind.VARIABLE,
+                    start_byte=gbl_expr_node.start_byte,
+                    end_byte=gbl_expr_node.end_byte,
+                    file_path=self.file_path,
+                    fully_qualified_parent_path=fully_qualified_parent_path,
+                    symbol_code=node_to_text(gbl_expr_node),
+                )
+                gbl_vars.append(gbl)
+            elif pat_idx == 1:  # Multiple assignment
+                # Handle all identifiers in the pattern_list
+                for gbl_name_node in captures_by_name["global_name"]:
+                    gbl_name = gbl_name_node.text.decode("utf-8")
+                    start_line, end_line = self.get_node_line_range(gbl_expr_node)
+                    fully_qualified_parent_path = (
+                        self._get_fully_qualified_path_to_parent(node=gbl_expr_node)
+                    )
+
+                    gbl = RawTreeSitterSymbolData(
+                        name=gbl_name,
+                        start_line=start_line,
+                        end_line=end_line,
+                        symbol_kind=SymbolKind.VARIABLE,
+                        start_byte=gbl_expr_node.start_byte,
+                        end_byte=gbl_expr_node.end_byte,
+                        file_path=self.file_path,
+                        fully_qualified_parent_path=fully_qualified_parent_path,
+                        symbol_code=node_to_text(gbl_expr_node),
+                    )
+                    gbl_vars.append(gbl)
+
+        sorted_gbl_vars = sorted(gbl_vars, key=lambda x: x.start_byte)
+        return sorted_gbl_vars
 
     @symbol_extractor
     def extract_classes(self) -> list[RawTreeSitterSymbolData]:

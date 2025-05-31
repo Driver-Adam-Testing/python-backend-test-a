@@ -284,6 +284,32 @@ def enums_cpp_code() -> str:
         return f.read()
 
 
+@pytest.fixture(scope="module")
+def structs_cpp_code() -> str:
+    """Load C++ structs test file"""
+    file_path = (
+        pathlib.Path(__file__).parent
+        / "treesitter_testcases"
+        / "cpp"
+        / "test_structs.cpp"
+    )
+    with open(file_path, encoding="utf-8") as f:
+        return f.read()
+
+
+@pytest.fixture(scope="module")
+def unions_cpp_code() -> str:
+    """Load C++ unions test file"""
+    file_path = (
+        pathlib.Path(__file__).parent
+        / "treesitter_testcases"
+        / "cpp"
+        / "test_unions.cpp"
+    )
+    with open(file_path, encoding="utf-8") as f:
+        return f.read()
+
+
 @pytest.mark.parametrize(
     "expected_enum_name, expected_start_line, expected_end_line, expected_parent_path",
     [
@@ -349,6 +375,121 @@ def test_extract_enums(
         )
         assert parent_path == expected_parent_path, (
             f"Enum '{expected_enum_name}' at line {start_line} has parent path '{parent_path}', "
+            f"expected '{expected_parent_path}'"
+        )
+
+
+@pytest.mark.parametrize(
+    "expected_struct_name, expected_start_line, expected_end_line, expected_parent_path",
+    [
+        ("BasicStruct", 7, 16, ""),
+        ("AccessStruct", 19, 30, ""),
+        ("BaseStruct", 33, 38, ""),
+        ("DerivedStruct", 40, 44, ""),
+        ("TemplateStruct", 48, 56, ""),
+        ("NamespacedStruct", 60, 63, "StructNamespace"),
+        ("DeeplyNested", 66, 69, "StructNamespace::NestedNamespace"),
+        ("InnerStruct", 76, 80, "ContainerClass"),
+        ("PrivateStruct", 83, 86, "ContainerClass"),
+        ("UsesForward", 92, 95, ""),
+        ("ForwardDeclared", 97, 100, ""),
+        ("AnonymousNamespaceStruct", 104, 107, "(anonymous)"),
+        ("StaticStruct", 111, 119, ""),
+        ("AggregateStruct", 123, 127, ""),
+        ("ModernStruct", 130, 138, ""),
+    ],
+)
+def test_extract_cpp_structs(
+    structs_cpp_code: str,
+    expected_struct_name: str,
+    expected_start_line: int,
+    expected_end_line: int,
+    expected_parent_path: str,
+) -> None:
+    """Test extraction of C++ struct definitions with C++ specific features"""
+    driver_tree = CppCDriverTree.from_code(structs_cpp_code, "test.cpp")
+    data_structures = driver_tree.extract_data_structure_definitions()
+
+    extracted_structures = [
+        (ds.name, ds.start_line, ds.end_line, ds.fully_qualified_parent_path)
+        for ds in data_structures
+    ]
+
+    matching_structures = [
+        (name, start_line, end_line, parent_path)
+        for name, start_line, end_line, parent_path in extracted_structures
+        if name == expected_struct_name and abs(start_line - expected_start_line) <= 3
+    ]
+
+    assert len(matching_structures) > 0, (
+        f"Expected struct '{expected_struct_name}' around line {expected_start_line}-{expected_end_line} "
+        f"not found in extracted structures: {extracted_structures}"
+    )
+
+    # Verify the line ranges and fully_qualified_parent_path for the matching struct(s)
+    for _name, start_line, end_line, parent_path in matching_structures:
+        assert abs(end_line - expected_end_line) <= 3, (
+            f"Struct '{expected_struct_name}' at line {start_line} ends at line {end_line}, "
+            f"expected around {expected_end_line}"
+        )
+        assert parent_path == expected_parent_path, (
+            f"Struct '{expected_struct_name}' at line {start_line} has parent path '{parent_path}', "
+            f"expected '{expected_parent_path}'"
+        )
+
+
+@pytest.mark.parametrize(
+    "expected_union_name, expected_start_line, expected_end_line, expected_parent_path",
+    [
+        ("BasicUnion", 7, 15, ""),
+        ("FunctionUnion", 18, 34, ""),
+        ("ComplexUnion", 37, 52, ""),
+        (None, 56, 59, "(anonymous)"),  # Anonymous union in namespace
+        ("NamespacedUnion", 64, 70, "UnionNamespace"),
+        ("DeeplyNested", 73, 78, "UnionNamespace::Inner"),
+        ("PublicUnion", 85, 91, "ContainerClass"),
+        ("PrivateUnion", 94, 99, "ContainerClass"),
+        ("TaggedUnion", 108, 132, ""),
+        ("TemplateUnionContainer", 136, 161, ""),
+        ("StaticUnion", 164, 177, ""),
+    ],
+)
+def test_extract_cpp_unions(
+    unions_cpp_code: str,
+    expected_union_name: str | None,
+    expected_start_line: int,
+    expected_end_line: int,
+    expected_parent_path: str,
+) -> None:
+    """Test extraction of C++ union definitions with C++ specific features"""
+    driver_tree = CppCDriverTree.from_code(unions_cpp_code, "test.cpp")
+    data_structures = driver_tree.extract_data_structure_definitions()
+
+    extracted_structures = [
+        (ds.name, ds.start_line, ds.end_line, ds.fully_qualified_parent_path)
+        for ds in data_structures
+    ]
+
+    # Check if the expected union is found
+    matching_structures = [
+        (name, start_line, end_line, parent_path)
+        for name, start_line, end_line, parent_path in extracted_structures
+        if name == expected_union_name and abs(start_line - expected_start_line) <= 3
+    ]
+
+    assert len(matching_structures) > 0, (
+        f"Expected union '{expected_union_name}' around line {expected_start_line}-{expected_end_line} "
+        f"not found in extracted structures: {extracted_structures}"
+    )
+
+    # Verify the line ranges and fully_qualified_parent_path for the matching union(s)
+    for _name, start_line, end_line, parent_path in matching_structures:
+        assert abs(end_line - expected_end_line) <= 3, (
+            f"Union '{expected_union_name}' at line {start_line} ends at line {end_line}, "
+            f"expected around {expected_end_line}"
+        )
+        assert parent_path == expected_parent_path, (
+            f"Union '{expected_union_name}' at line {start_line} has parent path '{parent_path}', "
             f"expected '{expected_parent_path}'"
         )
 
@@ -906,3 +1047,169 @@ def test_cpp_vs_c_differences() -> None:
 
     assert "MyClass" in function_names, "Should extract constructor"
     assert "templateFunction" in function_names, "Should extract template function"
+
+
+@pytest.fixture(scope="module")
+def inheritance_cpp_code() -> str:
+    """Load C++ inheritance test file"""
+    file_path = (
+        pathlib.Path(__file__).parent
+        / "treesitter_testcases"
+        / "cpp"
+        / "test_inheritance.cpp"
+    )
+    with open(file_path, encoding="utf-8") as f:
+        return f.read()
+
+
+@pytest.mark.parametrize(
+    "expected_class_name, expected_base_classes, expected_start_line",
+    [
+        # Simple inheritance cases
+        ("PublicDerived", ["Base"], 5),
+        ("PrivateDerived", ["Base"], 8),
+        ("ProtectedDerived", ["Base"], 11),
+        ("DefaultClassDerived", ["Base"], 14),
+        ("DefaultStructDerived", ["Base"], 15),
+        ("VirtualDerived", ["VirtualBase"], 19),
+        
+        # Multiple inheritance
+        ("MultipleInheritance", ["BaseA", "BaseB", "BaseC"], 25),
+        ("FlyingMammal", ["Mammal", "Bird"], 31),
+        
+        # Template and qualified inheritance
+        ("TemplateInheritance", ["TemplateBase<int>"], 37),
+        ("QualifiedInheritance", ["NS::NamespacedBase"], 44),
+        ("InheritFromNested", ["Outer::Inner"], 52),
+        ("ComplexTemplateInheritance", ["ComplexTemplate<std::string, 42>"], 58),
+        
+        # Mixed inheritance
+        ("MixedInheritance", ["MixedBase1", "MixedBase2"], 63),
+        
+        # Very long inheritance list
+        ("VeryLongInheritance", ["LongBase1", "LongBase2", "LongBase3", "LongBase4", "LongBase5"], 71),
+        
+        # Abstract base inheritance
+        ("ConcreteA", ["AbstractBase"], 89),
+        ("ConcreteB", ["AbstractBase"], 94),
+        
+        # Deep hierarchy
+        ("Level2", ["Level1"], 101),
+        ("Level3", ["Level2"], 102),
+        ("Level4", ["Level3"], 103),
+        
+        # Forward declared inheritance
+        ("ForwardInheritance", ["ForwardDeclaredBase"], 107),
+        
+        # Template class inheritance
+        ("TemplateDerived", ["TemplateBaseClass<U>"], 120),
+        
+        # Anonymous namespace inheritance
+        ("InheritFromAnonymous", ["AnonymousBase"], 131),
+    ],
+)
+def test_inheritance_base_class_extraction(
+    inheritance_cpp_code: str,
+    expected_class_name: str,
+    expected_base_classes: list[str],
+    expected_start_line: int,
+) -> None:
+    """Test extraction of base class information from inheritance declarations"""
+    driver_tree = CppCDriverTree.from_code(inheritance_cpp_code, "test_inheritance.cpp")
+    data_structures = driver_tree.extract_data_structure_definitions()
+    
+    # Find the expected class
+    matching_classes = [
+        ds for ds in data_structures
+        if ds.name == expected_class_name and abs(ds.start_line - expected_start_line) <= 3
+    ]
+    
+    assert len(matching_classes) > 0, (
+        f"Expected class '{expected_class_name}' around line {expected_start_line} "
+        f"not found in extracted structures"
+    )
+    
+    found_class = matching_classes[0]
+    
+    # Verify base class extraction
+    if expected_base_classes:
+        assert found_class.base_class_names is not None, (
+            f"Class '{expected_class_name}' should have base classes but none were extracted"
+        )
+        assert len(found_class.base_class_names) == len(expected_base_classes), (
+            f"Class '{expected_class_name}' should have {len(expected_base_classes)} base classes, "
+            f"but found {len(found_class.base_class_names)}: {found_class.base_class_names}"
+        )
+        
+        for expected_base in expected_base_classes:
+            assert expected_base in found_class.base_class_names, (
+                f"Expected base class '{expected_base}' not found in {found_class.base_class_names} "
+                f"for class '{expected_class_name}'"
+            )
+    else:
+        assert found_class.base_class_names is None or len(found_class.base_class_names) == 0, (
+            f"Class '{expected_class_name}' should not have base classes but found: "
+            f"{found_class.base_class_names}"
+        )
+
+
+def test_inheritance_edge_cases() -> None:
+    """Test edge cases in inheritance extraction"""
+    edge_case_code = """
+    // Empty base class list (should not happen in valid C++, but test robustness)
+    class EmptyInheritance : {};
+    
+    // Inheritance with very long template parameters
+    template<typename T, typename U, typename V, int N, bool B>
+    class VeryLongTemplate {};
+    
+    class LongTemplateInheritance : public VeryLongTemplate<std::string, int, double, 42, true> {};
+    
+    // Nested template inheritance
+    template<typename T>
+    class Outer {
+        template<typename U>
+        class Inner {};
+    };
+    
+    class NestedTemplateInheritance : public Outer<int>::Inner<double> {};
+    """
+    
+    driver_tree = CppCDriverTree.from_code(edge_case_code, "test_edge_cases.cpp")
+    data_structures = driver_tree.extract_data_structure_definitions()
+    
+    # Find LongTemplateInheritance
+    long_template_classes = [ds for ds in data_structures if ds.name == "LongTemplateInheritance"]
+    assert len(long_template_classes) > 0, "Should extract LongTemplateInheritance"
+    
+    long_template_class = long_template_classes[0]
+    assert long_template_class.base_class_names is not None, "Should have base classes"
+    assert len(long_template_class.base_class_names) == 1, "Should have exactly one base class"
+    # The base class name should include the full template specification
+    expected_base = "VeryLongTemplate<std::string, int, double, 42, true>"
+    assert long_template_class.base_class_names[0] == expected_base, (
+        f"Expected base class '{expected_base}', got '{long_template_class.base_class_names[0]}'"
+    )
+
+
+def test_no_inheritance_classes() -> None:
+    """Test that classes without inheritance don't have base_class_names"""
+    no_inheritance_code = """
+    class StandaloneClass {
+    public:
+        void method() {}
+    };
+    
+    struct StandaloneStruct {
+        int value;
+    };
+    """
+    
+    driver_tree = CppCDriverTree.from_code(no_inheritance_code, "test_no_inheritance.cpp")
+    data_structures = driver_tree.extract_data_structure_definitions()
+    
+    for ds in data_structures:
+        if ds.name in ["StandaloneClass", "StandaloneStruct"]:
+            assert ds.base_class_names is None or len(ds.base_class_names) == 0, (
+                f"Class/struct '{ds.name}' should not have base classes but found: {ds.base_class_names}"
+            )

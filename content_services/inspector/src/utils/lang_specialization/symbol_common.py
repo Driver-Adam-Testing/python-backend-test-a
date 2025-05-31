@@ -109,7 +109,7 @@ class RawTreeSitterSymbolData(BaseModel):
         None | str
     )  # TODO: this is somewhat a hack since we need the code, but makes symbols bulky
     delimiter: str | None = None
-    base_class_names: tuple[str] | None = None
+    base_class_names: list[str] | None = None
 
     class Config:
         """

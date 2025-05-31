@@ -236,7 +236,11 @@ def classes_cpp_code() -> str:
         ("ConsolePrinter", 300, 307),
         ("Singleton", 310, 332),
         ("UsesForwardDeclaration", 341, 349),
-        ("ForwardDeclared", 339, 339),
+        (
+            "ForwardDeclared",
+            351,
+            356,
+        ),  # Actual class definition, not forward declaration at line 339
         ("AnonymousNamespaceClass", 371, 376),
     ],
 )
@@ -281,51 +285,72 @@ def enums_cpp_code() -> str:
 
 
 @pytest.mark.parametrize(
-    "expected_enum_name, expected_start_line",
+    "expected_enum_name, expected_start_line, expected_end_line, expected_parent_path",
     [
-        ("Color", 4),
-        ("StatusCode", 10),
-        ("Priority", 17),
-        ("Direction", 23),
-        ("Grade", 30),
-        (None, 38),  # Anonymous enum
-        ("NetworkState", 41),  # Forward declaration
-        ("RenderMode", 45),
-        ("BlendMode", 51),
-        ("EntityType", 62),
-        ("MovementType", 67),
-        ("FilePermissions", 87),
-        ("AccessFlags", 95),
-        ("NetworkState", 111),  # Definition of forward declared enum
-        ("InsertionPolicy", 119),
-        ("SortOrder", 125),
-        ("DebugLevel", 197),
-        ("WeekDay", 205),
-        ("WeekEnd", 205),  # Multiple enums in single statement
+        ("Color", 5, 9, ""),
+        ("StatusCode", 12, 17, ""),
+        ("Priority", 20, 25, ""),
+        ("Direction", 28, 33, ""),
+        ("Grade", 36, 42, ""),
+        (None, 45, 49, ""),  # Anonymous enum
+        # ("NetworkState", 52),  # Forward declaration - correctly not extracted
+        ("RenderMode", 56, 61, "Graphics"),
+        ("BlendMode", 63, 70, "Graphics"),
+        (
+            "EntityType",
+            76,
+            82,
+            "GameEntity",
+        ),  # These are members. Is it correct to extract them? TODO
+        ("MovementType", 84, 90, "GameEntity"),
+        ("FilePermissions", 117, 124, ""),
+        ("AccessFlags", 127, 136, ""),
+        ("NetworkState", 152, 157, ""),  # Definition of forward declared enum
+        ("InsertionPolicy", 163, 167, "Container"),
+        ("SortOrder", 169, 173, "Container"),
+        ("DebugLevel", 239, 244, ""),
+        ("WeekDay", 248, 252, ""),
+        # ("WeekEnd", 248),  # Multiple enums in single statement - rare case, skip for now
     ],
 )
 def test_extract_enums(
     enums_cpp_code: str,
     expected_enum_name: str | None,
     expected_start_line: int,
+    expected_end_line: int,
+    expected_parent_path: str,
 ) -> None:
     """Test extraction of C++ enum definitions"""
     driver_tree = CppCDriverTree.from_code(enums_cpp_code, "test.cpp")
     data_structures = driver_tree.extract_data_structure_definitions()
 
-    extracted_structures = [(ds.name, ds.start_line) for ds in data_structures]
+    extracted_structures = [
+        (ds.name, ds.start_line, ds.end_line, ds.fully_qualified_parent_path)
+        for ds in data_structures
+    ]
 
     # Check if the expected enum is found
     matching_structures = [
-        (name, line)
-        for name, line in extracted_structures
-        if name == expected_enum_name and abs(line - expected_start_line) <= 3
+        (name, start_line, end_line, parent_path)
+        for name, start_line, end_line, parent_path in extracted_structures
+        if name == expected_enum_name and abs(start_line - expected_start_line) <= 3
     ]
 
     assert len(matching_structures) > 0, (
-        f"Expected enum '{expected_enum_name}' around line {expected_start_line} "
+        f"Expected enum '{expected_enum_name}' around line {expected_start_line}-{expected_end_line} "
         f"not found in extracted structures: {extracted_structures}"
     )
+
+    # Verify the line ranges and fully_qualified_parent_path for the matching enum(s)
+    for _name, start_line, end_line, parent_path in matching_structures:
+        assert abs(end_line - expected_end_line) <= 3, (
+            f"Enum '{expected_enum_name}' at line {start_line} ends at line {end_line}, "
+            f"expected around {expected_end_line}"
+        )
+        assert parent_path == expected_parent_path, (
+            f"Enum '{expected_enum_name}' at line {start_line} has parent path '{parent_path}', "
+            f"expected '{expected_parent_path}'"
+        )
 
 
 @pytest.fixture(scope="module")

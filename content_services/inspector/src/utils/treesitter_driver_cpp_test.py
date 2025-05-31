@@ -284,6 +284,32 @@ def enums_cpp_code() -> str:
         return f.read()
 
 
+@pytest.fixture(scope="module")
+def structs_cpp_code() -> str:
+    """Load C++ structs test file"""
+    file_path = (
+        pathlib.Path(__file__).parent
+        / "treesitter_testcases"
+        / "cpp"
+        / "test_structs.cpp"
+    )
+    with open(file_path, encoding="utf-8") as f:
+        return f.read()
+
+
+@pytest.fixture(scope="module")
+def unions_cpp_code() -> str:
+    """Load C++ unions test file"""
+    file_path = (
+        pathlib.Path(__file__).parent
+        / "treesitter_testcases"
+        / "cpp"
+        / "test_unions.cpp"
+    )
+    with open(file_path, encoding="utf-8") as f:
+        return f.read()
+
+
 @pytest.mark.parametrize(
     "expected_enum_name, expected_start_line, expected_end_line, expected_parent_path",
     [
@@ -349,6 +375,121 @@ def test_extract_enums(
         )
         assert parent_path == expected_parent_path, (
             f"Enum '{expected_enum_name}' at line {start_line} has parent path '{parent_path}', "
+            f"expected '{expected_parent_path}'"
+        )
+
+
+@pytest.mark.parametrize(
+    "expected_struct_name, expected_start_line, expected_end_line, expected_parent_path",
+    [
+        ("BasicStruct", 7, 16, ""),
+        ("AccessStruct", 19, 30, ""),
+        ("BaseStruct", 33, 38, ""),
+        ("DerivedStruct", 40, 44, ""),
+        ("TemplateStruct", 48, 56, ""),
+        ("NamespacedStruct", 60, 63, "StructNamespace"),
+        ("DeeplyNested", 66, 69, "StructNamespace::NestedNamespace"),
+        ("InnerStruct", 76, 80, "ContainerClass"),
+        ("PrivateStruct", 83, 86, "ContainerClass"),
+        ("UsesForward", 92, 95, ""),
+        ("ForwardDeclared", 97, 100, ""),
+        ("AnonymousNamespaceStruct", 104, 107, "(anonymous)"),
+        ("StaticStruct", 111, 119, ""),
+        ("AggregateStruct", 123, 127, ""),
+        ("ModernStruct", 130, 138, ""),
+    ],
+)
+def test_extract_cpp_structs(
+    structs_cpp_code: str,
+    expected_struct_name: str,
+    expected_start_line: int,
+    expected_end_line: int,
+    expected_parent_path: str,
+) -> None:
+    """Test extraction of C++ struct definitions with C++ specific features"""
+    driver_tree = CppCDriverTree.from_code(structs_cpp_code, "test.cpp")
+    data_structures = driver_tree.extract_data_structure_definitions()
+
+    extracted_structures = [
+        (ds.name, ds.start_line, ds.end_line, ds.fully_qualified_parent_path)
+        for ds in data_structures
+    ]
+
+    matching_structures = [
+        (name, start_line, end_line, parent_path)
+        for name, start_line, end_line, parent_path in extracted_structures
+        if name == expected_struct_name and abs(start_line - expected_start_line) <= 3
+    ]
+
+    assert len(matching_structures) > 0, (
+        f"Expected struct '{expected_struct_name}' around line {expected_start_line}-{expected_end_line} "
+        f"not found in extracted structures: {extracted_structures}"
+    )
+
+    # Verify the line ranges and fully_qualified_parent_path for the matching struct(s)
+    for _name, start_line, end_line, parent_path in matching_structures:
+        assert abs(end_line - expected_end_line) <= 3, (
+            f"Struct '{expected_struct_name}' at line {start_line} ends at line {end_line}, "
+            f"expected around {expected_end_line}"
+        )
+        assert parent_path == expected_parent_path, (
+            f"Struct '{expected_struct_name}' at line {start_line} has parent path '{parent_path}', "
+            f"expected '{expected_parent_path}'"
+        )
+
+
+@pytest.mark.parametrize(
+    "expected_union_name, expected_start_line, expected_end_line, expected_parent_path",
+    [
+        ("BasicUnion", 7, 15, ""),
+        ("FunctionUnion", 18, 34, ""),
+        ("ComplexUnion", 37, 52, ""),
+        (None, 56, 59, "(anonymous)"),  # Anonymous union in namespace
+        ("NamespacedUnion", 64, 70, "UnionNamespace"),
+        ("DeeplyNested", 73, 78, "UnionNamespace::Inner"),
+        ("PublicUnion", 85, 91, "ContainerClass"),
+        ("PrivateUnion", 94, 99, "ContainerClass"),
+        ("TaggedUnion", 108, 132, ""),
+        ("TemplateUnionContainer", 136, 161, ""),
+        ("StaticUnion", 164, 177, ""),
+    ],
+)
+def test_extract_cpp_unions(
+    unions_cpp_code: str,
+    expected_union_name: str | None,
+    expected_start_line: int,
+    expected_end_line: int,
+    expected_parent_path: str,
+) -> None:
+    """Test extraction of C++ union definitions with C++ specific features"""
+    driver_tree = CppCDriverTree.from_code(unions_cpp_code, "test.cpp")
+    data_structures = driver_tree.extract_data_structure_definitions()
+
+    extracted_structures = [
+        (ds.name, ds.start_line, ds.end_line, ds.fully_qualified_parent_path)
+        for ds in data_structures
+    ]
+
+    # Check if the expected union is found
+    matching_structures = [
+        (name, start_line, end_line, parent_path)
+        for name, start_line, end_line, parent_path in extracted_structures
+        if name == expected_union_name and abs(start_line - expected_start_line) <= 3
+    ]
+
+    assert len(matching_structures) > 0, (
+        f"Expected union '{expected_union_name}' around line {expected_start_line}-{expected_end_line} "
+        f"not found in extracted structures: {extracted_structures}"
+    )
+
+    # Verify the line ranges and fully_qualified_parent_path for the matching union(s)
+    for _name, start_line, end_line, parent_path in matching_structures:
+        assert abs(end_line - expected_end_line) <= 3, (
+            f"Union '{expected_union_name}' at line {start_line} ends at line {end_line}, "
+            f"expected around {expected_end_line}"
+        )
+        assert parent_path == expected_parent_path, (
+            f"Union '{expected_union_name}' at line {start_line} has parent path '{parent_path}', "
             f"expected '{expected_parent_path}'"
         )
 

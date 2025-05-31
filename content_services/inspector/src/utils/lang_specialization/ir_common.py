@@ -342,6 +342,34 @@ class IrData(BaseModel, abc.ABC):
                 path_part = sym.definition.raw.file_path
 
                 output += f"- **See also**: [`{name_part}`]({path_part}#{kind_part}:{name_part})  (Implementation)\n"
+            if (
+                sym.raw.symbol_kind == SymbolKind.DATA_STRUCTURE
+                and len(sym.children) > 0
+            ):
+                if len(sym.children) >= 0:
+                    output += "- **Member Functions**:\n"
+                    for child_symbol in sym.children:
+                        if child_symbol.raw.symbol_kind == SymbolKind.CALLABLE:
+                            parent = child_symbol.parent
+                            link_name_part = child_symbol.raw.name
+                            if parent is not None:
+                                rendered_name_part = (
+                                    parent.raw.name
+                                    + child_symbol.raw.delimiter
+                                    + child_symbol.raw.name
+                                )
+                            else:
+                                rendered_name_part = child_symbol.raw.name
+                            kind_part = child_symbol.raw.symbol_kind.name.lower()
+                            path_part = child_symbol.raw.file_path
+                            output += f"    - [`{rendered_name_part}`]({path_part}#{kind_part}:{link_name_part})\n"
+                if sym.inheritance is not None and len(sym.inheritance) > 0:
+                    output += "- **Inherits from**:\n"
+                    for inherited_class in sym.inheritance:
+                        kind_part = inherited_class.raw.symbol_kind.name.lower()
+                        name_part = inherited_class.raw.name
+                        path_part = inherited_class.raw.file_path
+                        output += f"    - [`{name_part}`]({path_part}#{kind_part}:{name_part})\n"
             # if sym.raw.symbol_kind == SymbolKind.CALLABLE and sym.usages:
             #     output += "- **Usages of this function**:\n"
             #     for usage in self._reified_symbol.usages:
@@ -371,7 +399,17 @@ class IrData(BaseModel, abc.ABC):
                     if child_symbol.scope
                     else child_symbol.name
                 )
-                child_dictionary[label_name] += f"\n---\n#### {scoped_name}\n"
+                if child_content._reified_symbol is not None:
+                    kind_part = (
+                        child_content._reified_symbol.raw.symbol_kind.name.lower()
+                    )
+                    name_part = child_content._reified_symbol.raw.name
+                    id_comment = f"<!-- {{{{#{kind_part}:{name_part}}}}} -->"
+                else:
+                    id_comment = ""
+                child_dictionary[label_name] += (
+                    f"\n---\n#### {scoped_name}{id_comment}\n"
+                )
                 child_dictionary[label_name] += child_content.render_markdown()
             else:
                 child_dictionary[label_name] += f"    - {child_symbol.name}\n"

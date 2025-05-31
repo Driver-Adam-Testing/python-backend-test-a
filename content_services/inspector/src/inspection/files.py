@@ -470,7 +470,7 @@ def comprehend_file_top_down(
                         if language == Lang.CPP:
                             # We still defer to the generic header template if c++, but we use C language specialization
                             # for C headers.
-                            language = Lang.C_OR_CPP_HEADER
+                            language = Lang.CPP
 
                     match language:
                         case Lang.C:
@@ -570,7 +570,7 @@ def comprehend_file_top_down(
                 if language == Lang.CPP:
                     # We still defer to the generic header template if c++, but we use C language specialization
                     # for C headers.
-                    language = Lang.C_OR_CPP_HEADER
+                    language = Lang.CPP
 
             template = TEMPLATE_DATA[file_kind.kind][language]
             long_template = Template(template=template)

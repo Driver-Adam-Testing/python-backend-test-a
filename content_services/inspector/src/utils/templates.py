@@ -10,6 +10,7 @@ from pydantic import BaseModel, ValidationError
 
 from utils.lang_specialization.symbol_common import ReifiedSymbol, SymbolKind
 from utils.models import ChatOpenAI, OutputConfig, OutputConfigKind
+from utils.symbol_table import get_fully_qualified_name
 
 
 def _arity(fn: Callable) -> int:
@@ -109,20 +110,12 @@ class Template(BaseModel):
                                         SymbolKind.CALLABLE_DECLARATION,
                                     }
                                 ):
-                                    parent = symbol.parent
-                                    link_name_part = symbol.raw.name
-                                    if parent is not None:
-                                        rendered_name_part = (
-                                            parent.raw.name
-                                            + symbol.raw.delimiter
-                                            + symbol.raw.name
-                                        )
-                                    else:
-                                        rendered_name_part = symbol.raw.name
+                                    name_part = symbol.raw.name
+                                    fqn = get_fully_qualified_name(symbol.raw)
                                     kind_part = symbol.raw.symbol_kind.name.lower()
                                     path_part = symbol.raw.file_path
 
-                                    repl_text = f"[`{rendered_name_part}`]({path_part}#{kind_part}:{link_name_part})"
+                                    repl_text = f"[`{name_part}`]({path_part}#{kind_part}:{fqn})"
                                     break
                             return repl_text
 

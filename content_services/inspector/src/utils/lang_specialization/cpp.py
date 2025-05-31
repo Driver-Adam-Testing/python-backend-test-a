@@ -12,6 +12,7 @@ from .ir_common import (
     VariableData,
 )
 from .symbol_common import (
+    ParserKind,
     RawSymbolCollection,
     RawSymbolData,
     ReifiedSymbol,
@@ -300,7 +301,73 @@ class CppDataStructureRawSymbolCollection(RawSymbolCollection):
                     code=code,
                     reified_symbol=ds_symbol,
                 )
+                for child in ds_symbol.children:
+                    if (
+                        child.raw.symbol_kind == SymbolKind.CALLABLE
+                        and child.raw.file_path == ds_symbol.raw.file_path
+                    ):
+                        raw_symbol_data.children.append(
+                            RawSymbolData.from_tree_sitter_raw_symbol(
+                                ts_symbol=child.raw,
+                                path=root_rel_path,
+                                scope=ds_symbol.raw.name,
+                                scope_relation=ScopeRelation.METHOD,
+                                children=[],
+                                reference_code=None,
+                                delimiter="::",
+                                is_large_file=is_large_file,
+                                is_overloaded=False,
+                                use_padding=False,
+                                code=code,
+                                reified_symbol=child,
+                            )
+                        )
                 data_structure_raw_symbol_data[ds_symbol.raw.name] = raw_symbol_data
+        callable_symbols_with_parent = [
+            sym
+            for sym in reified_symbols
+            if sym.raw.symbol_kind == SymbolKind.CALLABLE and sym.parent is not None
+        ]
+        for callable_symbol in callable_symbols_with_parent:
+            if callable_symbol.parent.raw.symbol_kind == SymbolKind.DATA_STRUCTURE:
+                parent_name = callable_symbol.parent.raw.name
+                if parent_name not in data_structure_raw_symbol_data:
+                    data_structure_raw_symbol_data[parent_name] = RawSymbolData(
+                        parser_kind=ParserKind.TREE_SITTER,
+                        symbol_kind=SymbolKind.DATA_STRUCTURE,
+                        name=parent_name,
+                        path=root_rel_path,
+                        scope=None,
+                        scope_relation=None,
+                        children=[],
+                        start_line=0,
+                        end_line=0,
+                        symbol_code=None,
+                        file_code=None,
+                        reference_code=None,
+                        delimiter="::",
+                    )
+                if (
+                    callable_symbol.raw.name
+                    not in data_structure_raw_symbol_data[parent_name].children
+                    and callable_symbol.raw.name is not None
+                ):
+                    data_structure_raw_symbol_data[parent_name].children.append(
+                        RawSymbolData.from_tree_sitter_raw_symbol(
+                            ts_symbol=callable_symbol.raw,
+                            path=root_rel_path,
+                            scope=parent_name,
+                            scope_relation=ScopeRelation.METHOD,
+                            children=[],
+                            reference_code=None,
+                            delimiter="::",
+                            is_large_file=is_large_file,
+                            is_overloaded=False,
+                            use_padding=False,
+                            code=code,
+                            reified_symbol=callable_symbol,
+                        )
+                    )
         output = (
             None
             if len(data_structure_raw_symbol_data) == 0
@@ -429,12 +496,19 @@ class CppFreeFnRawSymbolCollection(RawSymbolCollection):
         func_symbols = [
             sym for sym in reified_symbols if sym.raw.symbol_kind == SymbolKind.CALLABLE
         ]
+
         function_raw_symbol_data = {}
         is_large_file = code_requires_multi_prompt(code)
 
         for reified_sym in func_symbols:
+            symbol_parent_kind = (
+                reified_sym.parent.raw.symbol_kind if reified_sym.parent else None
+            )
             ts_symbol = reified_sym.raw
-            if ts_symbol.name is not None:
+            if (
+                ts_symbol.name is not None
+                and symbol_parent_kind != SymbolKind.DATA_STRUCTURE
+            ):
                 raw_symbol_data = RawSymbolData.from_tree_sitter_raw_symbol(
                     ts_symbol=ts_symbol,
                     path=root_rel_path,

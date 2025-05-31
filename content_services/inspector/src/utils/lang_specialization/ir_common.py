@@ -349,10 +349,19 @@ class IrData(BaseModel, abc.ABC):
                 output += "- **Member Functions**:\n"
                 for child_symbol in sym.children:
                     if child_symbol.raw.symbol_kind == SymbolKind.CALLABLE:
+                        parent = child_symbol.parent
+                        link_name_part = child_symbol.raw.name
+                        if parent is not None:
+                            rendered_name_part = (
+                                parent.raw.name
+                                + child_symbol.raw.delimiter
+                                + child_symbol.raw.name
+                            )
+                        else:
+                            rendered_name_part = child_symbol.raw.name
                         kind_part = child_symbol.raw.symbol_kind.name.lower()
-                        name_part = child_symbol.raw.name
                         path_part = child_symbol.raw.file_path
-                        output += f"    - [`{name_part}`]({path_part}#{kind_part}:{name_part})\n"
+                        output += f"    - [`{rendered_name_part}`]({path_part}#{kind_part}:{link_name_part})\n"
             # if sym.raw.symbol_kind == SymbolKind.CALLABLE and sym.usages:
             #     output += "- **Usages of this function**:\n"
             #     for usage in self._reified_symbol.usages:
@@ -382,7 +391,17 @@ class IrData(BaseModel, abc.ABC):
                     if child_symbol.scope
                     else child_symbol.name
                 )
-                child_dictionary[label_name] += f"\n---\n#### {scoped_name}\n"
+                if child_content._reified_symbol is not None:
+                    kind_part = (
+                        child_content._reified_symbol.raw.symbol_kind.name.lower()
+                    )
+                    name_part = child_content._reified_symbol.raw.name
+                    id_comment = f"<!-- {{{{#{kind_part}:{name_part}}}}} -->"
+                else:
+                    id_comment = ""
+                child_dictionary[label_name] += (
+                    f"\n---\n#### {scoped_name}{id_comment}\n"
+                )
                 child_dictionary[label_name] += child_content.render_markdown()
             else:
                 child_dictionary[label_name] += f"    - {child_symbol.name}\n"

@@ -109,11 +109,20 @@ class Template(BaseModel):
                                         SymbolKind.CALLABLE_DECLARATION,
                                     }
                                 ):
-                                    name_part = symbol.raw.name
+                                    parent = symbol.parent
+                                    link_name_part = symbol.raw.name
+                                    if parent is not None:
+                                        rendered_name_part = (
+                                            parent.raw.name
+                                            + symbol.raw.delimiter
+                                            + symbol.raw.name
+                                        )
+                                    else:
+                                        rendered_name_part = symbol.raw.name
                                     kind_part = symbol.raw.symbol_kind.name.lower()
                                     path_part = symbol.raw.file_path
 
-                                    repl_text = f"[`{name_part}`]({path_part}#{kind_part}:{name_part})"
+                                    repl_text = f"[`{rendered_name_part}`]({path_part}#{kind_part}:{link_name_part})"
                                     break
                             return repl_text
 

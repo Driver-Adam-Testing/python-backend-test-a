@@ -108,6 +108,7 @@ class RawTreeSitterSymbolData(BaseModel):
     symbol_code: (
         None | str
     )  # TODO: this is somewhat a hack since we need the code, but makes symbols bulky
+    delimiter: str | None = None
 
     class Config:
         """
@@ -169,31 +170,36 @@ class RawSymbolData(BaseModel):
         is_large_file: bool,
         is_overloaded: bool,
         use_padding: bool,
-        code: str,
+        code: str | None,
         reified_symbol: ReifiedSymbol | None = None,  # TODO this is a hack. fix
     ) -> Self:
         # Copied logic from ctags symbol construction below
         file_code = None
 
-        if use_padding:
-            start_line = max(0, ts_symbol.start_line - BLIND_PADDING_TOP)
-            end_line = ts_symbol.end_line + BLIND_PADDING_BOTTOM
-        else:
-            start_line = ts_symbol.start_line
-            end_line = ts_symbol.end_line
-        s_code = "\n".join(code.split("\n")[start_line - 1 : end_line + 1])
-        if is_large_file or is_overloaded:
-            from shared.chunking.text_splitter import split_text
+        if code is not None:
+            if use_padding:
+                start_line = max(0, ts_symbol.start_line - BLIND_PADDING_TOP)
+                end_line = ts_symbol.end_line + BLIND_PADDING_BOTTOM
+            else:
+                start_line = ts_symbol.start_line
+                end_line = ts_symbol.end_line
+            s_code = "\n".join(code.split("\n")[start_line - 1 : end_line + 1])
+            if is_large_file or is_overloaded:
+                from shared.chunking.text_splitter import split_text
 
-            s_code_chunks = split_text(
-                text=s_code,
-                chunk_size=CHUNK_SIZE,
-                chunk_overlap=CHUNK_OVERLAP,
-            )
-            symbol_code = s_code_chunks[0].text if len(s_code_chunks) > 1 else s_code
+                s_code_chunks = split_text(
+                    text=s_code,
+                    chunk_size=CHUNK_SIZE,
+                    chunk_overlap=CHUNK_OVERLAP,
+                )
+                symbol_code = (
+                    s_code_chunks[0].text if len(s_code_chunks) > 1 else s_code
+                )
+            else:
+                symbol_code = s_code
+                file_code = code
         else:
-            symbol_code = s_code
-            file_code = code
+            symbol_code = ts_symbol.symbol_code
 
         raw_symbol = cls(
             parser_kind=ParserKind.TREE_SITTER,

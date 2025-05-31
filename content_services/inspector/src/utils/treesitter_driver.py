@@ -73,10 +73,6 @@ class DriverTree(ABC):
         pass
 
     @abstractmethod
-    def extract_class_definitions(self) -> list[RawTreeSitterSymbolData]:
-        pass
-
-    @abstractmethod
     def extract_function_calls(self) -> list[RawTreeSitterSymbolData]:
         pass
 
@@ -287,6 +283,7 @@ class CppCDriverTree(DriverTree):
                     file_path=self.file_path,
                     fully_qualified_parent_path=fully_qualified_path,
                     symbol_code=node_to_text(ts_node),
+                    delimiter="::",
                 )
             )
         sorted_includes = sorted(includes, key=lambda x: x.start_byte)
@@ -332,6 +329,7 @@ class CppCDriverTree(DriverTree):
                 file_path=self.file_path,
                 fully_qualified_parent_path=fully_qualified_path,
                 symbol_code=node_to_text(ts_node),
+                delimiter="::",
             )
             functions.append(func)
         sorted_functions = sorted(functions, key=lambda x: x.start_byte)
@@ -407,6 +405,7 @@ class CppCDriverTree(DriverTree):
 
             (class_specifier
                 name: (type_identifier) @class.name
+                body: (field_declaration_list)? @class.body
             ) @class.definition
           ]
         )
@@ -449,6 +448,9 @@ class CppCDriverTree(DriverTree):
                         continue
                     name_nodes = rest.get("enum.name", [])
                 case {"class.definition": [data_structure_node], **rest}:
+                    if rest.get("class.body") is None:
+                        # Skip classes without a body (forward declarations)
+                        continue
                     name_nodes = rest.get("class.name", [])
                 case {"declared_struct.definition": [data_structure_node], **rest}:
                     name_nodes = rest.get("declared_struct.name", [])
@@ -490,6 +492,7 @@ class CppCDriverTree(DriverTree):
                 file_path=self.file_path,
                 fully_qualified_parent_path=fully_qualified_path,
                 symbol_code=node_to_text(ts_node),
+                delimiter="::",
             )
 
             results.append(ds)
@@ -558,85 +561,86 @@ class CppCDriverTree(DriverTree):
         path_parts.reverse()
         return "::".join(path_parts) if path_parts else ""
 
-    @symbol_extractor
-    def extract_class_definitions(self) -> list[RawTreeSitterSymbolData]:
-        results = []
+    # @symbol_extractor
+    # def extract_class_definitions(self) -> list[RawTreeSitterSymbolData]:
+    #     results = []
 
-        query_str = """
-            (class_specifier
-                name: (type_identifier) @class.name
-            ) @class.definition
-        """
+    #     query_str = """
+    #         (class_specifier
+    #             name: (type_identifier) @class.name
+    #         ) @class.definition
+    #     """
 
-        try:
-            query = self.tree_sitter_lang.query(query_str)
-            matches = query.matches(self.tree.root_node)
+    #     try:
+    #         query = self.tree_sitter_lang.query(query_str)
+    #         matches = query.matches(self.tree.root_node)
 
-            for _pattern_idx, captures_dict in matches:
-                if "class.definition" in captures_dict:
-                    class_node = captures_dict["class.definition"][0]
-                    class_name_nodes = captures_dict["class.name"]
-                    class_name = class_name_nodes[0].text.decode("utf8")
+    #         for _pattern_idx, captures_dict in matches:
+    #             if "class.definition" in captures_dict:
+    #                 class_node = captures_dict["class.definition"][0]
+    #                 class_name_nodes = captures_dict["class.name"]
+    #                 class_name = class_name_nodes[0].text.decode("utf8")
 
-                    start_line, end_line = self.get_node_line_range(class_node)
+    #                 start_line, end_line = self.get_node_line_range(class_node)
 
-                    # Build fully qualified path including namespaces and enclosing types
-                    fully_qualified_path = self._get_fully_qualified_path_to_parent(
-                        class_node
-                    )
+    #                 # Build fully qualified path including namespaces and enclosing types
+    #                 fully_qualified_path = self._get_fully_qualified_path_to_parent(
+    #                     class_node
+    #                 )
 
-                    ds = RawTreeSitterSymbolData(
-                        name=class_name,
-                        start_line=start_line,
-                        end_line=end_line,
-                        symbol_kind=SymbolKind.DATA_STRUCTURE,
-                        start_byte=class_node.start_byte,
-                        end_byte=class_node.end_byte,
-                        file_path=self.file_path,
-                        fully_qualified_parent_path=fully_qualified_path,
-                        symbol_code=node_to_text(class_node),
-                    )
-                    results.append(ds)
+    #                 ds = RawTreeSitterSymbolData(
+    #                     name=class_name,
+    #                     start_line=start_line,
+    #                     end_line=end_line,
+    #                     symbol_kind=SymbolKind.DATA_STRUCTURE,
+    #                     start_byte=class_node.start_byte,
+    #                     end_byte=class_node.end_byte,
+    #                     file_path=self.file_path,
+    #                     fully_qualified_parent_path=fully_qualified_path,
+    #                     symbol_code=node_to_text(class_node),
+    #                     delimiter="::",
+    #                 )
+    #                 results.append(ds)
 
-        except Exception as e:
-            print(f"Query error for class: {e}")
+    #     except Exception as e:
+    #         print(f"Query error for class: {e}")
 
-        # # Handle template classes separately
-        # try:
-        #     template_query = self.tree_sitter_lang.query(
-        #         "(template_declaration) @template_def"
-        #     )
-        #     template_matches = template_query.matches(self.tree.root_node)
+    #     # # Handle template classes separately
+    #     # try:
+    #     #     template_query = self.tree_sitter_lang.query(
+    #     #         "(template_declaration) @template_def"
+    #     #     )
+    #     #     template_matches = template_query.matches(self.tree.root_node)
 
-        #     for _pattern_idx, captures_dict in template_matches:
-        #         if "template_def" in captures_dict:
-        #             template_node = captures_dict["template_def"][0]
+    #     #     for _pattern_idx, captures_dict in template_matches:
+    #     #         if "template_def" in captures_dict:
+    #     #             template_node = captures_dict["template_def"][0]
 
-        #             # Look for class_specifier within template
-        #             for child in template_node.children:
-        #                 if child.type == "class_specifier":
-        #                     class_name = self._extract_structure_name(child, "class")
-        #                     if class_name:
-        #                         start_line, end_line = self.get_node_line_range(
-        #                             template_node
-        #                         )
-        #                         ds = RawTreeSitterSymbolData(
-        #                             name=class_name,
-        #                             start_line=start_line,
-        #                             end_line=end_line,
-        #                             symbol_kind=SymbolKind.DATA_STRUCTURE,
-        #                             start_byte=template_node.start_byte,
-        #                             end_byte=template_node.end_byte,
-        #                             file_path=self.file_path,
-        #                             symbol_code=node_to_text(template_node),
-        #                         )
-        #                         results.append(ds)
-        #                         break
-        # except Exception as e:
-        #     print(f"Template query error: {e}")
+    #     #             # Look for class_specifier within template
+    #     #             for child in template_node.children:
+    #     #                 if child.type == "class_specifier":
+    #     #                     class_name = self._extract_structure_name(child, "class")
+    #     #                     if class_name:
+    #     #                         start_line, end_line = self.get_node_line_range(
+    #     #                             template_node
+    #     #                         )
+    #     #                         ds = RawTreeSitterSymbolData(
+    #     #                             name=class_name,
+    #     #                             start_line=start_line,
+    #     #                             end_line=end_line,
+    #     #                             symbol_kind=SymbolKind.DATA_STRUCTURE,
+    #     #                             start_byte=template_node.start_byte,
+    #     #                             end_byte=template_node.end_byte,
+    #     #                             file_path=self.file_path,
+    #     #                             symbol_code=node_to_text(template_node),
+    #     #                         )
+    #     #                         results.append(ds)
+    #     #                         break
+    #     # except Exception as e:
+    #     #     print(f"Template query error: {e}")
 
-        results.sort(key=lambda x: x.start_byte)
-        return results
+    #     results.sort(key=lambda x: x.start_byte)
+    #     return results
 
     @symbol_extractor
     def extract_variables(self) -> list[RawTreeSitterSymbolData]:
@@ -702,6 +706,7 @@ class CppCDriverTree(DriverTree):
                             file_path=self.file_path,
                             fully_qualified_parent_path=fully_qualified_path,
                             symbol_code=node_to_text(ts_node),
+                            delimiter="::",
                         )
                         variables.append(var)
 
@@ -743,6 +748,7 @@ class CppCDriverTree(DriverTree):
                 file_path=self.file_path,
                 fully_qualified_parent_path=fully_qualified_path,
                 symbol_code=node_to_text(ts_node),
+                delimiter="::",
             )
 
             function_calls.append(func_call)
@@ -819,6 +825,7 @@ class CppCDriverTree(DriverTree):
                 file_path=self.file_path,
                 fully_qualified_parent_path=fully_qualified_path,
                 symbol_code=node_to_text(ts_node),
+                delimiter="::",
             )
             declarations.append(func)
 

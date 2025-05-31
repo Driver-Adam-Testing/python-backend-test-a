@@ -344,6 +344,14 @@ class IrData(BaseModel, abc.ABC):
                 path_part = sym.definition.raw.file_path
 
                 output += f"- **See also**: [`{name_part}`]({path_part}#{kind_part}:{name_part})  (Implementation)\n"
+
+            if sym.raw.symbol_kind == SymbolKind.CALLABLE and sym.parent is not None:
+                # Link member functions to their object definiton
+                kind_part = sym.parent.raw.symbol_kind.name.lower()
+                name_part = get_fully_qualified_name(sym.parent.raw)
+                path_part = sym.parent.raw.file_path
+
+                output += f"- **See also**: [`{name_part}`]({path_part}#{kind_part}:{name_part})  (Data Structure)\n"
             if (
                 sym.raw.symbol_kind == SymbolKind.DATA_STRUCTURE
                 and len(sym.children) > 0

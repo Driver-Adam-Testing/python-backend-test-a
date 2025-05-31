@@ -1,3 +1,5 @@
+from collections.abc import Callable
+
 import tree_sitter
 
 from utils.lang_specialization.symbol_common import RawTreeSitterSymbolData, SymbolKind
@@ -15,27 +17,38 @@ def is_top_level_free_fn(node: tree_sitter.Node) -> bool:
 
 
 def is_method(node: tree_sitter.Node) -> bool:
-    if node.type == "decorated_definition":
-        for child in node.children:
-            if child.type == "function_definition":
-                node = child
-                break
-
-    current = node
-    while current.parent:
-        if current.parent.type == "class_definition":
-            return True
-        current = current.parent
-
-    return False
+    return node.parent and (
+        node.parent.type == "class_definition"
+        or (
+            node.parent.type == "decorated_definition"
+            and node.parent.parent.type == "class_definition"
+        )
+    )
 
 
-def get_function_name_and_params(
-    fn_def_node: tree_sitter.Node,
+# def is_method(node: tree_sitter.Node) -> bool:
+#     if node.type == "decorated_definition":
+#         for child in node.children:
+#             if child.type == "function_definition":
+#                 node = child
+#                 break
+#
+#     current = node
+#     while current.parent:
+#         if current.parent.type == "class_definition":
+#             return True
+#         current = current.parent
+#
+#     return False
+#
+
+
+def get_callable_name_and_params(
+    callable_def_node: tree_sitter.Node,
 ) -> tuple[str | None, tree_sitter.Node]:
-    if fn_def_node.type == "function_definition":
-        name_node = fn_def_node.child_by_field_name("name")
-        params_node = fn_def_node.child_by_field_name("parameters")
+    if callable_def_node.type == "function_definition":
+        name_node = callable_def_node.child_by_field_name("name")
+        params_node = callable_def_node.child_by_field_name("parameters")
 
         if name_node is not None and name_node.type == "identifier":
             return name_node.text.decode("utf-8"), params_node
@@ -207,50 +220,63 @@ class PyDriverTree(DriverTree):
 
     @symbol_extractor
     def extract_callable_definitions(self) -> list[RawTreeSitterSymbolData]:
-        return []
+        free_fns = self.extract_function_definitions()
+        methods = self.extract_method_definitions()
+        return free_fns + methods
 
     @symbol_extractor
     def extract_function_definitions(self) -> list[RawTreeSitterSymbolData]:
-        fn_query_str = """
-        ;; Free functions and methods
+        return self._extract_callable_definitions_by_kind(kind_fn=is_top_level_free_fn)
+
+    @symbol_extractor
+    def extract_method_definitions(self) -> list[RawTreeSitterSymbolData]:
+        return self._extract_callable_definitions_by_kind(kind_fn=is_method())
+
+    @symbol_extractor
+    def _extract_callable_definitions_by_kind(
+        self, kind_fn: Callable[[tree_sitter.Node], bool]
+    ) -> list[RawTreeSitterSymbolData]:
+        callable_query_str = """
+        ;; All callables -- free functions and methods
         (function_definition
-          name: (identifier) @fn_name) @fn_def
+          name: (identifier) @callable_name) @callable_def
         """.strip()
-        query = self.tree_sitter_lang.query(fn_query_str)
+        query = self.tree_sitter_lang.query(callable_query_str)
         matches = query.matches(self.tree.root_node)
-        functions = []
+        callables = []
 
         for _pattern_index, captures_by_name in matches:
-            fn_def_node = captures_by_name["fn_def"][0]
-            if is_top_level_free_fn(fn_def_node):
-                fn_name, _params_node = get_function_name_and_params(
-                    fn_def_node=fn_def_node
+            callable_def_node = captures_by_name["callable_def"][0]
+            if kind_fn(callable_def_node):
+                callable_name, _params_node = get_callable_name_and_params(
+                    callable_def_node=callable_def_node
                 )
-                if fn_name is None:
-                    print(f"Could not parse function name for node: {fn_def_node}")
-                start_line, end_line = self.get_node_line_range(fn_def_node)
+                if callable_name is None:
+                    print(
+                        f"Could not parse function name for node: {callable_def_node}"
+                    )
+                start_line, end_line = self.get_node_line_range(callable_def_node)
                 fully_qualified_parent_path = self._get_fully_qualified_path_to_parent(
-                    node=fn_def_node
+                    node=callable_def_node
                 )
                 # TODO: Consider detecting decorated functions and including the
                 # TODO: decorator lines in the start_line/byte so that this information
                 # TODO: is present downstream for LLMs looking at the source.
-                fn = RawTreeSitterSymbolData(
-                    name=fn_name,
+                fn_like = RawTreeSitterSymbolData(
+                    name=callable_name,
                     start_line=start_line,
                     end_line=end_line,
                     symbol_kind=SymbolKind.CALLABLE,
-                    start_byte=fn_def_node.start_byte,
-                    end_byte=fn_def_node.end_byte,
+                    start_byte=callable_def_node.start_byte,
+                    end_byte=callable_def_node.end_byte,
                     file_path=self.file_path,
                     fully_qualified_parent_path=fully_qualified_parent_path,
-                    symbol_code=node_to_text(fn_def_node),
+                    symbol_code=node_to_text(callable_def_node),
                 )
-                functions.append(fn)
-        sorted_functions = sorted(functions, key=lambda x: x.start_byte)
-        return sorted_functions
+                callables.append(fn_like)
+        sorted_callables = sorted(callables, key=lambda x: x.start_byte)
+        return sorted_callables
 
-    @symbol_extractor
     def extract_data_structure_definitions(self) -> list[RawTreeSitterSymbolData]:
         raise NotImplementedError("Not relevant for Python")
 

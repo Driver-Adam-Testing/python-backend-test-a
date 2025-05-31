@@ -17,6 +17,7 @@ from utils.lang_specialization.symbol_common import (
     SymbolKind,
 )
 from utils.models import ChatOpenAI, OutputConfig, OutputConfigKind
+from utils.symbol_table import get_fully_qualified_name
 from utils.threadpool import FastShutdownThreadPoolExecutor
 
 MAX_SYMBOLS_PER_WORKER = 50
@@ -306,6 +307,7 @@ class IrData(BaseModel, abc.ABC):
             ):
                 seen_func_names = set()
                 for called_func in self._reified_symbol.calls:
+                    # TODO: this will require additional work to make work
                     kind_part = called_func.raw.symbol_kind.name.lower()
                     name_part = re.escape(called_func.raw.name)  # escape special chars
                     path_part = called_func.raw.file_path
@@ -324,7 +326,7 @@ class IrData(BaseModel, abc.ABC):
                 output += "- **Functions called**:\n"
                 seen_name_parts = defaultdict(list)
                 for called_func in self._reified_symbol.calls:
-                    name_part = called_func.raw.name
+                    name_part = get_fully_qualified_name(called_func.raw)
                     seen_name_parts[name_part].append(called_func)
                 for name_part, calls in seen_name_parts.items():
                     kind_part = calls[0].raw.symbol_kind.name.lower()
@@ -338,7 +340,7 @@ class IrData(BaseModel, abc.ABC):
                 and sym.definition is not None
             ):
                 kind_part = sym.definition.raw.symbol_kind.name.lower()
-                name_part = sym.definition.raw.name
+                name_part = get_fully_qualified_name(sym.definition.raw)
                 path_part = sym.definition.raw.file_path
 
                 output += f"- **See also**: [`{name_part}`]({path_part}#{kind_part}:{name_part})  (Implementation)\n"
@@ -350,24 +352,15 @@ class IrData(BaseModel, abc.ABC):
                     output += "- **Member Functions**:\n"
                     for child_symbol in sym.children:
                         if child_symbol.raw.symbol_kind == SymbolKind.CALLABLE:
-                            parent = child_symbol.parent
-                            link_name_part = child_symbol.raw.name
-                            if parent is not None:
-                                rendered_name_part = (
-                                    parent.raw.name
-                                    + child_symbol.raw.delimiter
-                                    + child_symbol.raw.name
-                                )
-                            else:
-                                rendered_name_part = child_symbol.raw.name
+                            name_part = get_fully_qualified_name(child_symbol.raw)
                             kind_part = child_symbol.raw.symbol_kind.name.lower()
                             path_part = child_symbol.raw.file_path
-                            output += f"    - [`{rendered_name_part}`]({path_part}#{kind_part}:{link_name_part})\n"
+                            output += f"    - [`{name_part}`]({path_part}#{kind_part}:{name_part})\n"
                 if sym.inheritance is not None and len(sym.inheritance) > 0:
                     output += "- **Inherits from**:\n"
                     for inherited_class in sym.inheritance:
                         kind_part = inherited_class.raw.symbol_kind.name.lower()
-                        name_part = inherited_class.raw.name
+                        name_part = get_fully_qualified_name(inherited_class.raw)
                         path_part = inherited_class.raw.file_path
                         output += f"    - [`{name_part}`]({path_part}#{kind_part}:{name_part})\n"
             # if sym.raw.symbol_kind == SymbolKind.CALLABLE and sym.usages:
@@ -403,7 +396,9 @@ class IrData(BaseModel, abc.ABC):
                     kind_part = (
                         child_content._reified_symbol.raw.symbol_kind.name.lower()
                     )
-                    name_part = child_content._reified_symbol.raw.name
+                    name_part = get_fully_qualified_name(
+                        child_content._reified_symbol.raw
+                    )
                     id_comment = f"<!-- {{{{#{kind_part}:{name_part}}}}} -->"
                 else:
                     id_comment = ""
@@ -485,7 +480,7 @@ class IrCollection(BaseModel, abc.ABC):
             for item in v:
                 if item._reified_symbol is not None:
                     kind_part = item._reified_symbol.raw.symbol_kind.name.lower()
-                    name_part = item._reified_symbol.raw.name
+                    name_part = get_fully_qualified_name(item._reified_symbol.raw)
                     id_comment = f"<!-- {{{{#{kind_part}:{name_part}}}}} -->"
                 else:
                     id_comment = ""

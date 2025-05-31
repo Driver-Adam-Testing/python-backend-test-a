@@ -484,7 +484,9 @@ class CppCDriverTree(DriverTree):
             )
             base_class_names = None
             for child in data_structure_node.children:
-                if child.type == "base_class_clause":
+                if (
+                    child.type == "base_class_clause"
+                ):  # TODO: add test cases for this extraction
                     base_class_names = []
                     for base_child in child.children:
                         if base_child.type in [

@@ -633,7 +633,7 @@ class CSymbolTableTask(Task):
         self.c_and_h_files = {
             codebase_root / rel_path
             for rel_path in nodes_relative_paths
-            if rel_path.suffix in {".c", ".h", ".cpp", ".hpp"}
+            if rel_path.suffix in {".c", ".h", ".cpp", ".cc", ".cxx", ".hpp", ".hxx"}
         }
         self.has_c_files = any(
             p.suffix == ".c" or p.suffix == ".cpp" for p in self.c_and_h_files

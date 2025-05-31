@@ -53,6 +53,8 @@ class FieldNameWithBackTickContent(MdRenderable):
     content: str
 
     def render_markdown(self, doc_label: str) -> str:
+        if len(self.content) == 0:
+            return ""
         return f"- **{snake_case_to_spaced_string(doc_label)}**: `{self.content}`\n"
 
 
@@ -69,6 +71,8 @@ class FieldNameWithRawContent(MdRenderable):
     content: str
 
     def render_markdown(self, doc_label: str) -> str:
+        if len(self.content) == 0:
+            return ""
         return f"- **{snake_case_to_spaced_string(doc_label)}**: {self.content}\n"
 
 

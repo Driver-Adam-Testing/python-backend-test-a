@@ -1,14 +1,17 @@
 from pathlib import Path
 from typing import Self
 
+from pydantic import PrivateAttr
 from utils.models import ChatOpenAI
 from utils.treesitter_driver import CppCDriverTree
 
 from .ir_common import (
-    ClassData,
+    FieldNameWithBackTickContent,
+    FieldNameWithRawContent,
     FnData,
     IrCollection,
     IrData,
+    ListedBacktickNameRawContentNoNone,
     VariableData,
 )
 from .symbol_common import (
@@ -84,8 +87,8 @@ Your job is to describe the data structure. **Always respond using exactly the f
         ...
     ],
     "description": <one paragraph description of the data structure>,
-    "inherits_from": [<list of parent classes or structs>],
 }
+IMPORTANT: Members should ONLY include attributes, fields, or properties of the data structure. Do not include methods, class functions, or any function declarations in the members list of the data structure.
 
 Return JSON according to the schema above. Do not use the format ```json ... ```, just return the JSON data.
 """
@@ -228,7 +231,22 @@ class CppFnCollection(IrCollection):
         return cls.from_llm_with_ir_data(CppFnData, llm, symbols_list)
 
 
-class CppClassData(ClassData):
+class CppDataStructureData(IrData):
+    type: FieldNameWithBackTickContent
+    members: ListedBacktickNameRawContentNoNone
+    description: FieldNameWithRawContent
+    _supported_child_ordering: list[str] = PrivateAttr(
+        default=[ScopeRelation.METHOD, ScopeRelation.NESTED_CLASS]
+    )
+
+    @classmethod
+    def default_instance(cls) -> Self:
+        return cls(
+            description=FieldNameWithRawContent(content=""),
+            type=FieldNameWithBackTickContent(content=""),
+            members=ListedBacktickNameRawContentNoNone(content=[]),
+        )
+
     @classmethod
     def system_prompt(cls) -> str:
         return DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON
@@ -261,11 +279,11 @@ class CppClassData(ClassData):
 
 
 class CppDataStructureCollection(IrCollection):
-    data: dict[str, CppClassData | list[CppClassData]]
+    data: dict[str, CppDataStructureData | list[CppDataStructureData]]
 
     @classmethod
     def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
-        return cls.from_llm_with_ir_data(CppClassData, llm, symbols_list)
+        return cls.from_llm_with_ir_data(CppDataStructureData, llm, symbols_list)
 
 
 # Symbol Extraction Classes
@@ -304,7 +322,8 @@ class CppDataStructureRawSymbolCollection(RawSymbolCollection):
                 for child in ds_symbol.children:
                     if (
                         child.raw.symbol_kind == SymbolKind.CALLABLE
-                        and child.raw.file_path == ds_symbol.raw.file_path
+                        and child.raw.file_path
+                        == ds_symbol.raw.file_path  # NOTE: This means that only children in the same file will be documented in the scope of the class
                     ):
                         raw_symbol_data.children.append(
                             RawSymbolData.from_tree_sitter_raw_symbol(
@@ -346,6 +365,7 @@ class CppDataStructureRawSymbolCollection(RawSymbolCollection):
                         file_code=None,
                         reference_code=None,
                         delimiter="::",
+                        reified_symbol=callable_symbol.parent,
                     )
                 if (
                     callable_symbol.raw.name

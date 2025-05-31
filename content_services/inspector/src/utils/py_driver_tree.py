@@ -71,19 +71,11 @@ class PyDriverTree(DriverTree):
     @symbol_extractor
     def extract_imports(self) -> list[RawTreeSitterSymbolData]:
         import_query_str = """
-        ;; Standard direct import
-        (import_statement
-          (dotted_name) @dotted_name_direct) @import_direct
-
-        ;; Direct import with alias
-        (import_statement
-          (aliased_import
-            name: (dotted_name) @aliased_name_direct
-            alias: (identifier) @alias_name_direct)) @import_alias_direct
+        ;; All direct imports (with or without alias)
+        (import_statement) @import_direct
 
         ;; Import using `from`
-        (import_from_statement
-          (dotted_name) @dotted_name_from) @import_from
+        (import_from_statement) @import_from
 
         ;; Imports from `future`
         (future_import_statement) @future_module
@@ -94,57 +86,49 @@ class PyDriverTree(DriverTree):
 
         for pat_idx, captures_by_name in matches:
             match pat_idx:
-                case 0:  # Direct imports
-                    if captures_by_name.get("import_direct") and captures_by_name.get(
-                        "dotted_name_direct"
-                    ):
+                case 0:  # All direct imports (with or without aliases)
+                    if captures_by_name.get("import_direct"):
                         im_node = captures_by_name["import_direct"][0]
-                        im_name = captures_by_name["dotted_name_direct"][0].text.decode(
-                            "utf-8"
-                        )
                         start_line, end_line = self.get_node_line_range(im_node)
                         fully_qualified_parent_path = (
                             self._get_fully_qualified_path_to_parent(node=im_node)
                         )
-                        print(fully_qualified_parent_path)
-                        im = RawTreeSitterSymbolData(
-                            name=im_name,
-                            start_line=start_line,
-                            end_line=end_line,
-                            symbol_kind=SymbolKind.IMPORT,
-                            start_byte=im_node.start_byte,
-                            end_byte=im_node.end_byte,
-                            file_path=self.file_path,
-                            fully_qualified_parent_path=fully_qualified_parent_path,
-                            symbol_code=node_to_text(im_node),
-                        )
-                        imports.append(im)
-                case 1:  # Direct imports with aliases
-                    if captures_by_name.get(
-                        "import_alias_direct"
-                    ) and captures_by_name.get("aliased_name_direct"):
-                        im_node = captures_by_name["import_alias_direct"][0]
-                        im_name = captures_by_name["aliased_name_direct"][
-                            0
-                        ].text.decode("utf-8")
-                        start_line, end_line = self.get_node_line_range(im_node)
-                        fully_qualified_parent_path = (
-                            self._get_fully_qualified_path_to_parent(node=im_node)
-                        )
-                        print(fully_qualified_parent_path)
-                        im = RawTreeSitterSymbolData(
-                            name=im_name,
-                            start_line=start_line,
-                            end_line=end_line,
-                            symbol_kind=SymbolKind.IMPORT,
-                            start_byte=im_node.start_byte,
-                            end_byte=im_node.end_byte,
-                            file_path=self.file_path,
-                            fully_qualified_parent_path=fully_qualified_parent_path,
-                            symbol_code=node_to_text(im_node),
-                        )
-                        imports.append(im)
-                case 2:  # All from x import y
+
+                        # Handle different types of direct imports by examining child nodes
+                        for child in im_node.named_children:
+                            if child.type == "aliased_import":
+                                # Direct import with alias: import numpy as np
+                                name_node = child.child_by_field_name("name")
+                                if name_node:
+                                    im_name = name_node.text.decode("utf-8")
+                                    im = RawTreeSitterSymbolData(
+                                        name=im_name,
+                                        start_line=start_line,
+                                        end_line=end_line,
+                                        symbol_kind=SymbolKind.IMPORT,
+                                        start_byte=im_node.start_byte,
+                                        end_byte=im_node.end_byte,
+                                        file_path=self.file_path,
+                                        fully_qualified_parent_path=fully_qualified_parent_path,
+                                        symbol_code=node_to_text(im_node),
+                                    )
+                                    imports.append(im)
+                            elif child.type == "dotted_name":
+                                # Direct import without alias: import os
+                                im_name = child.text.decode("utf-8")
+                                im = RawTreeSitterSymbolData(
+                                    name=im_name,
+                                    start_line=start_line,
+                                    end_line=end_line,
+                                    symbol_kind=SymbolKind.IMPORT,
+                                    start_byte=im_node.start_byte,
+                                    end_byte=im_node.end_byte,
+                                    file_path=self.file_path,
+                                    fully_qualified_parent_path=fully_qualified_parent_path,
+                                    symbol_code=node_to_text(im_node),
+                                )
+                                imports.append(im)
+                case 1:  # All from x import y
                     if captures_by_name.get("import_from"):
                         im_node = captures_by_name["import_from"][0]
                         children = im_node.named_children
@@ -159,7 +143,6 @@ class PyDriverTree(DriverTree):
                         fully_qualified_parent_path = (
                             self._get_fully_qualified_path_to_parent(node=im_node)
                         )
-                        print(fully_qualified_parent_path)
                         for child in children[1:]:
                             if child.type == "dotted_name":
                                 im_name = sep.join(
@@ -191,7 +174,7 @@ class PyDriverTree(DriverTree):
                                 symbol_code=node_to_text(im_node),
                             )
                             imports.append(im)
-                case 3:  # `__future__` imports
+                case 2:  # `__future__` imports
                     if captures_by_name.get("future_module"):
                         im_node = captures_by_name["future_module"][0]
                         start_line, end_line = self.get_node_line_range(im_node)

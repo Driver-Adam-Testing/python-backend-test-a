@@ -34,7 +34,7 @@ def test_extract_import_duplications(
     driver_tree = PyDriverTree.from_code(imports_test_code, "does_not_matter.py")
     imports = driver_tree.extract_imports()
 
-    assert len(imports) == 40
+    assert len(imports) == 41
 
 
 @pytest.mark.parametrize(
@@ -79,6 +79,7 @@ def test_extract_import_duplications(
             (56, 60),
         ),
         ("very.deeply.nested.package.subpackage.module.SOME_CONSTANT", (56, 60)),
+        ("hashlib", (65, 65)),
         ("fast_library.fast_function", (70, 70)),
         ("slow_library.fast_function", (73, 73)),
         ("sys", (80, 80)),

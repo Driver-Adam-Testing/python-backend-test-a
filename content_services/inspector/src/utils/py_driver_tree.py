@@ -26,23 +26,6 @@ def is_method(node: tree_sitter.Node) -> bool:
     )
 
 
-# def is_method(node: tree_sitter.Node) -> bool:
-#     if node.type == "decorated_definition":
-#         for child in node.children:
-#             if child.type == "function_definition":
-#                 node = child
-#                 break
-#
-#     current = node
-#     while current.parent:
-#         if current.parent.type == "class_definition":
-#             return True
-#         current = current.parent
-#
-#     return False
-#
-
-
 def get_callable_name_and_params(
     callable_def_node: tree_sitter.Node,
 ) -> tuple[str | None, tree_sitter.Node]:

@@ -299,3 +299,84 @@ def test_extract_global_vars(
         f"Expected global variable ({expected_gbl_var_name}, {expected_line_range}) "
         f"not found in extracted global variables: {extracted}"
     )
+
+
+@pytest.fixture(scope="module")
+def methods_test_code() -> str:
+    file_path = (
+        pathlib.Path(__file__).parent
+        / "treesitter_testcases"
+        / "python"
+        / "test_methods.py"
+    )
+    with open(file_path, encoding="utf-8") as f:
+        return f.read()
+
+
+@pytest.mark.parametrize(
+    "expected_method_name, expected_line_range",
+    [
+        ("__init__", (9, 10)),
+        ("instance_method", (12, 13)),
+        ("method_with_params", (15, 16)),
+        ("__init__", (22, 24)),
+        ("get_count", (27, 28)),
+        ("create_default", (31, 32)),
+        ("utility_function", (35, 36)),
+        ("static_with_types", (39, 40)),
+        ("__init__", (44, 46)),
+        ("value", (49, 50)),
+        ("value", (53, 55)),
+        ("value", (58, 60)),
+        ("computed", (63, 66)),
+        ("read_only", (69, 70)),
+        ("__init__", (74, 75)),
+        ("__str__", (77, 78)),
+        ("__repr__", (80, 81)),
+        ("__len__", (83, 84)),
+        ("__init__", (88, 90)),
+        ("__enter__", (92, 95)),
+        ("__exit__", (97, 100)),
+        ("__init__", (104, 105)),
+        ("async_method", (107, 109)),
+        ("async_generator", (111, 114)),
+        ("__aenter__", (116, 118)),
+        ("__aexit__", (120, 122)),
+        ("required_method", (129, 130)),
+        ("another_required", (133, 134)),
+        ("concrete_method", (136, 137)),
+        ("required_method", (140, 141)),
+        ("another_required", (143, 144)),
+        ("decorated_method", (155, 156)),
+        ("decorated_static", (160, 161)),
+        ("decorated_class", (165, 166)),
+        ("public_method", (170, 171)),
+        ("_protected_method", (173, 174)),
+        ("__private_method", (176, 177)),
+        ("method_with_many_params", (181, 195)),
+        ("outer_method", (199, 200)),
+        ("inner_method", (203, 204)),
+    ],
+)
+def test_extract_methods(
+    methods_test_code: str,
+    expected_method_name: str,
+    expected_line_range: tuple[int, int],
+) -> None:
+    driver_tree = PyDriverTree.from_code(methods_test_code, "does_not_matter.py")
+    methods = driver_tree.extract_method_definitions()
+    extracted = [(m.name, (m.start_line, m.end_line)) for m in methods]
+
+    assert (expected_method_name, expected_line_range) in extracted, (
+        f"Expected method ({expected_method_name}, {expected_line_range}) "
+        f"not found in extracted global methods: {extracted}"
+    )
+
+
+def test_extract_methods_duplications_and_no_free_fns(
+    methods_test_code: str,
+) -> None:
+    driver_tree = PyDriverTree.from_code(methods_test_code, "does_not_matter.py")
+    methods = driver_tree.extract_method_definitions()
+
+    assert len(methods) == 40

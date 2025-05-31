@@ -18,10 +18,11 @@ def is_top_level_free_fn(node: tree_sitter.Node) -> bool:
 
 def is_method(node: tree_sitter.Node) -> bool:
     return node.parent and (
-        node.parent.type == "class_definition"
+        (node.parent.type == "block" and node.parent.parent.type == "class_definition")
         or (
             node.parent.type == "decorated_definition"
-            and node.parent.parent.type == "class_definition"
+            and node.parent.parent.type == "block"
+            and node.parent.parent.parent.type == "class_definition"
         )
     )
 
@@ -213,7 +214,7 @@ class PyDriverTree(DriverTree):
 
     @symbol_extractor
     def extract_method_definitions(self) -> list[RawTreeSitterSymbolData]:
-        return self._extract_callable_definitions_by_kind(kind_fn=is_method())
+        return self._extract_callable_definitions_by_kind(kind_fn=is_method)
 
     @symbol_extractor
     def _extract_callable_definitions_by_kind(

@@ -633,9 +633,11 @@ class CSymbolTableTask(Task):
         self.c_and_h_files = {
             codebase_root / rel_path
             for rel_path in nodes_relative_paths
-            if rel_path.suffix in {".c", ".h"}
+            if rel_path.suffix in {".c", ".h", ".cpp", ".hpp"}
         }
-        self.has_c_files = any(p.suffix == ".c" for p in self.c_and_h_files)
+        self.has_c_files = any(
+            p.suffix == ".c" or p.suffix == ".cpp" for p in self.c_and_h_files
+        )
         super().__init__(
             task_name=task_name,
             node=root_node,
@@ -644,6 +646,8 @@ class CSymbolTableTask(Task):
     async def run_implementation(
         self, dependent_results: dict[Task, TaskResult]
     ) -> TaskResult:
+        print("Running CSymbolTableTask")
+        print(self.has_c_files)
         if self.has_c_files:
             loop = asyncio.get_running_loop()
             with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:

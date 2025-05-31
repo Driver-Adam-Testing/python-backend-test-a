@@ -27,6 +27,7 @@ inspection_image = (
             "/shared_pkg",
             "tree-sitter==0.24.0",
             "tree-sitter-c==0.23.4",
+            "tree-sitter-cpp==0.23.2",
             "gitignore-parser",
             "chardet",
         ]

@@ -500,6 +500,7 @@ def comprehend_file_top_down(
                         llm=llm,
                         root_rel_path=node.root_rel_path,
                         code=source_code,
+                        language=language,
                         reified_symbols=reified_symbols,
                         code_chunks=chunk_texts,
                         max_num_chunks_to_use=max_num_chunks,
@@ -578,6 +579,7 @@ def comprehend_file_top_down(
                 llm=llm,
                 root_rel_path=node.root_rel_path,
                 code=source_code,
+                language=language,
                 reified_symbols=reified_symbols,
                 max_num_chunks_to_use=max_num_chunks,
             )

@@ -3,6 +3,7 @@ from typing import Self
 
 from pydantic import PrivateAttr
 from utils.models import ChatOpenAI
+from utils.symbol_table import get_fully_qualified_name
 from utils.treesitter_driver import CppCDriverTree
 
 from .ir_common import (
@@ -240,7 +241,17 @@ class CppDataStructureData(IrData):
     )
 
     @classmethod
-    def default_instance(cls) -> Self:
+    def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
+        if reified_symbol is not None:
+            name_part = get_fully_qualified_name(reified_symbol.raw)
+            kind_part = reified_symbol.raw.symbol_kind.name.lower()
+            path_part = reified_symbol.raw.file_path
+            link = f"[See definition]({path_part}#{kind_part}:{name_part})"
+            return cls(
+                description=FieldNameWithRawContent(content=link),
+                type=FieldNameWithBackTickContent(content=""),
+                members=ListedBacktickNameRawContentNoNone(content=[]),
+            )
         return cls(
             description=FieldNameWithRawContent(content=""),
             type=FieldNameWithBackTickContent(content=""),

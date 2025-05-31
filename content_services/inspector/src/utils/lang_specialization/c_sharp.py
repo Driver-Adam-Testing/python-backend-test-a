@@ -15,6 +15,7 @@ from .ir_common import (
 from .symbol_common import (
     RawSymbolCollection,
     RawSymbolData,
+    ReifiedSymbol,
     ScopeRelation,
     SymbolKind,
     code_requires_multi_prompt,
@@ -250,7 +251,7 @@ class CsEnumData(IrData):
         return mapping.get(child.symbol_kind)
 
     @classmethod
-    def default_instance(cls) -> Self:
+    def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
         return cls(description=FieldNameWithRawContent(content=""))
 
 
@@ -285,7 +286,7 @@ class CsVariableData(IrData):
         raise NotImplementedError("Variables should not have children")
 
     @classmethod
-    def default_instance(cls) -> Self:
+    def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
         return cls(description=FieldNameWithRawContent(content=""))
 
 
@@ -354,7 +355,7 @@ class CsStructData(IrData):
         return mapping.get(child.symbol_kind)
 
     @classmethod
-    def default_instance(cls) -> Self:
+    def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
         return cls(
             description=FieldNameWithRawContent(content=""),
             implements=ListedRawContentNoNone(content=[]),
@@ -416,7 +417,7 @@ class CsClassData(IrData):
         return mapping.get(child.symbol_kind)
 
     @classmethod
-    def default_instance(cls) -> Self:
+    def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
         return cls(
             description=FieldNameWithRawContent(content=""),
             inherits_from=ListedRawContentNoNone(content=[]),
@@ -471,7 +472,7 @@ class CsInterfaceData(IrData):
         return mapping.get(child.symbol_kind)
 
     @classmethod
-    def default_instance(cls) -> Self:
+    def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
         return cls(
             interfaces_inherited=ListedRawContentNoNone(content=[]),
             description=FieldNameWithRawContent(content=""),

@@ -1047,3 +1047,169 @@ def test_cpp_vs_c_differences() -> None:
 
     assert "MyClass" in function_names, "Should extract constructor"
     assert "templateFunction" in function_names, "Should extract template function"
+
+
+@pytest.fixture(scope="module")
+def inheritance_cpp_code() -> str:
+    """Load C++ inheritance test file"""
+    file_path = (
+        pathlib.Path(__file__).parent
+        / "treesitter_testcases"
+        / "cpp"
+        / "test_inheritance.cpp"
+    )
+    with open(file_path, encoding="utf-8") as f:
+        return f.read()
+
+
+@pytest.mark.parametrize(
+    "expected_class_name, expected_base_classes, expected_start_line",
+    [
+        # Simple inheritance cases
+        ("PublicDerived", ["Base"], 5),
+        ("PrivateDerived", ["Base"], 8),
+        ("ProtectedDerived", ["Base"], 11),
+        ("DefaultClassDerived", ["Base"], 14),
+        ("DefaultStructDerived", ["Base"], 15),
+        ("VirtualDerived", ["VirtualBase"], 19),
+        
+        # Multiple inheritance
+        ("MultipleInheritance", ["BaseA", "BaseB", "BaseC"], 25),
+        ("FlyingMammal", ["Mammal", "Bird"], 31),
+        
+        # Template and qualified inheritance
+        ("TemplateInheritance", ["TemplateBase<int>"], 37),
+        ("QualifiedInheritance", ["NS::NamespacedBase"], 44),
+        ("InheritFromNested", ["Outer::Inner"], 52),
+        ("ComplexTemplateInheritance", ["ComplexTemplate<std::string, 42>"], 58),
+        
+        # Mixed inheritance
+        ("MixedInheritance", ["MixedBase1", "MixedBase2"], 63),
+        
+        # Very long inheritance list
+        ("VeryLongInheritance", ["LongBase1", "LongBase2", "LongBase3", "LongBase4", "LongBase5"], 71),
+        
+        # Abstract base inheritance
+        ("ConcreteA", ["AbstractBase"], 89),
+        ("ConcreteB", ["AbstractBase"], 94),
+        
+        # Deep hierarchy
+        ("Level2", ["Level1"], 101),
+        ("Level3", ["Level2"], 102),
+        ("Level4", ["Level3"], 103),
+        
+        # Forward declared inheritance
+        ("ForwardInheritance", ["ForwardDeclaredBase"], 107),
+        
+        # Template class inheritance
+        ("TemplateDerived", ["TemplateBaseClass<U>"], 120),
+        
+        # Anonymous namespace inheritance
+        ("InheritFromAnonymous", ["AnonymousBase"], 131),
+    ],
+)
+def test_inheritance_base_class_extraction(
+    inheritance_cpp_code: str,
+    expected_class_name: str,
+    expected_base_classes: list[str],
+    expected_start_line: int,
+) -> None:
+    """Test extraction of base class information from inheritance declarations"""
+    driver_tree = CppCDriverTree.from_code(inheritance_cpp_code, "test_inheritance.cpp")
+    data_structures = driver_tree.extract_data_structure_definitions()
+    
+    # Find the expected class
+    matching_classes = [
+        ds for ds in data_structures
+        if ds.name == expected_class_name and abs(ds.start_line - expected_start_line) <= 3
+    ]
+    
+    assert len(matching_classes) > 0, (
+        f"Expected class '{expected_class_name}' around line {expected_start_line} "
+        f"not found in extracted structures"
+    )
+    
+    found_class = matching_classes[0]
+    
+    # Verify base class extraction
+    if expected_base_classes:
+        assert found_class.base_class_names is not None, (
+            f"Class '{expected_class_name}' should have base classes but none were extracted"
+        )
+        assert len(found_class.base_class_names) == len(expected_base_classes), (
+            f"Class '{expected_class_name}' should have {len(expected_base_classes)} base classes, "
+            f"but found {len(found_class.base_class_names)}: {found_class.base_class_names}"
+        )
+        
+        for expected_base in expected_base_classes:
+            assert expected_base in found_class.base_class_names, (
+                f"Expected base class '{expected_base}' not found in {found_class.base_class_names} "
+                f"for class '{expected_class_name}'"
+            )
+    else:
+        assert found_class.base_class_names is None or len(found_class.base_class_names) == 0, (
+            f"Class '{expected_class_name}' should not have base classes but found: "
+            f"{found_class.base_class_names}"
+        )
+
+
+def test_inheritance_edge_cases() -> None:
+    """Test edge cases in inheritance extraction"""
+    edge_case_code = """
+    // Empty base class list (should not happen in valid C++, but test robustness)
+    class EmptyInheritance : {};
+    
+    // Inheritance with very long template parameters
+    template<typename T, typename U, typename V, int N, bool B>
+    class VeryLongTemplate {};
+    
+    class LongTemplateInheritance : public VeryLongTemplate<std::string, int, double, 42, true> {};
+    
+    // Nested template inheritance
+    template<typename T>
+    class Outer {
+        template<typename U>
+        class Inner {};
+    };
+    
+    class NestedTemplateInheritance : public Outer<int>::Inner<double> {};
+    """
+    
+    driver_tree = CppCDriverTree.from_code(edge_case_code, "test_edge_cases.cpp")
+    data_structures = driver_tree.extract_data_structure_definitions()
+    
+    # Find LongTemplateInheritance
+    long_template_classes = [ds for ds in data_structures if ds.name == "LongTemplateInheritance"]
+    assert len(long_template_classes) > 0, "Should extract LongTemplateInheritance"
+    
+    long_template_class = long_template_classes[0]
+    assert long_template_class.base_class_names is not None, "Should have base classes"
+    assert len(long_template_class.base_class_names) == 1, "Should have exactly one base class"
+    # The base class name should include the full template specification
+    expected_base = "VeryLongTemplate<std::string, int, double, 42, true>"
+    assert long_template_class.base_class_names[0] == expected_base, (
+        f"Expected base class '{expected_base}', got '{long_template_class.base_class_names[0]}'"
+    )
+
+
+def test_no_inheritance_classes() -> None:
+    """Test that classes without inheritance don't have base_class_names"""
+    no_inheritance_code = """
+    class StandaloneClass {
+    public:
+        void method() {}
+    };
+    
+    struct StandaloneStruct {
+        int value;
+    };
+    """
+    
+    driver_tree = CppCDriverTree.from_code(no_inheritance_code, "test_no_inheritance.cpp")
+    data_structures = driver_tree.extract_data_structure_definitions()
+    
+    for ds in data_structures:
+        if ds.name in ["StandaloneClass", "StandaloneStruct"]:
+            assert ds.base_class_names is None or len(ds.base_class_names) == 0, (
+                f"Class/struct '{ds.name}' should not have base classes but found: {ds.base_class_names}"
+            )

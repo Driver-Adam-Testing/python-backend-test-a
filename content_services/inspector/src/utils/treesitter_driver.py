@@ -17,7 +17,6 @@ LANGUAGES = {
 }
 
 # TODO: First try to linkn methods to classes in symbol table construction
-# TODO: Fix structs/uniions/enums
 # TODO: nice to have: function calls attaching the scope so we can use in symbol table construction
 
 
@@ -231,6 +230,107 @@ def find_identifier_node(node: tree_sitter.Node) -> tree_sitter.Node | None:
         result = find_identifier_node(child)
         if result:
             return result
+    return None
+
+
+@dataclass
+class BaseClassInfo:
+    name: str
+    access_specifier: str | None = None  # "public", "private", "protected"
+    is_virtual: bool = False
+
+    def __str__(self) -> str:
+        parts = []
+        if self.is_virtual:
+            parts.append("virtual")
+        if self.access_specifier:
+            parts.append(self.access_specifier)
+        parts.append(self.name)
+        return " ".join(parts)
+
+
+def extract_base_class_info(base_class_clause: tree_sitter.Node) -> list[BaseClassInfo]:
+    """
+    Extract base class information from a base_class_clause node.
+
+    Returns a list of BaseClassInfo objects containing:
+    - name: The base class name (including templates and qualified names)
+    - access_specifier: "public", "private", "protected", or None for default
+    - is_virtual: True if virtual inheritance is used
+
+    Handles:
+    - Access specifiers (public, private, protected)
+    - Virtual inheritance
+    - Template base classes
+    - Qualified names (namespace::Class)
+    - Complex template expressions
+    """
+    if base_class_clause.type != "base_class_clause":
+        return []
+
+    base_classes = []
+
+    # Look for base_class_specifier nodes within the base_class_clause
+    for child in base_class_clause.children:
+        if child.type == "base_class_specifier":
+            base_class_info = _extract_single_base_class(child)
+            if base_class_info:
+                base_classes.append(base_class_info)
+        elif child.type in [
+            "type_identifier",
+            "qualified_identifier",
+            "template_type",
+            "scoped_type_identifier",
+            "dependent_type_identifier",
+        ]:
+            # Fallback for simpler cases where there's no base_class_specifier wrapper
+            base_class_name = child.text.decode("utf8")
+            if base_class_name:
+                base_classes.append(BaseClassInfo(name=base_class_name))
+        # Don't add anything else to avoid including access specifiers and punctuation
+    return base_classes
+
+
+def _extract_single_base_class(
+    base_class_specifier: tree_sitter.Node,
+) -> BaseClassInfo | None:
+    """Extract information from a single base_class_specifier node."""
+    name = None
+    access_specifier = None
+    is_virtual = False
+
+    for child in base_class_specifier.children:
+        if child.type == "virtual":
+            is_virtual = True
+        elif child.type in ["public", "private", "protected"]:
+            access_specifier = child.type
+        elif child.type in [
+            "type_identifier",
+            "qualified_identifier",
+            "template_type",
+            "template_argument_list",  # Handle template arguments
+            "scoped_type_identifier",  # Handle scoped template types
+            "dependent_type_identifier",  # Handle dependent template types
+        ]:
+            name = child.text.decode("utf8")
+        elif name is None:
+            # Fallback: if we haven't found a name yet and this child has text content,
+            # it might be the base class name (handle unknown node types gracefully)
+            child_text = child.text.decode("utf8").strip()
+            if child_text and not child_text in [
+                "virtual",
+                "public",
+                "private",
+                "protected",
+                ":",
+                ",",
+            ]:
+                name = child_text
+
+    if name:
+        return BaseClassInfo(
+            name=name, access_specifier=access_specifier, is_virtual=is_virtual
+        )
     return None
 
 
@@ -482,20 +582,10 @@ class CppCDriverTree(DriverTree):
             fully_qualified_path = self._get_fully_qualified_path_to_parent(
                 data_structure_node
             )
-            base_class_names = None
+            base_class_info = None
             for child in data_structure_node.children:
                 if child.type == "base_class_clause":
-                    base_class_names = []
-                    for base_child in child.children:
-                        if base_child.type in [
-                            "type_identifier",
-                            "qualified_identifier",
-                        ]:
-                            # Extract base class names from type_identifier nodes
-                            base_class_names.append(base_child.text.decode("utf8"))
-                    print(
-                        f"Found base classes: {base_class_names} in {data_structure_name}"
-                    )
+                    base_class_info = extract_base_class_info(child)
                     break
             ds = RawTreeSitterSymbolData(
                 name=data_structure_name,
@@ -508,7 +598,9 @@ class CppCDriverTree(DriverTree):
                 fully_qualified_parent_path=fully_qualified_path,
                 symbol_code=node_to_text(ts_node),
                 delimiter="::",
-                base_class_names=tuple(base_class_names) if base_class_names else None,
+                base_class_names=[bc.name for bc in base_class_info]
+                if base_class_info
+                else None,
             )
 
             results.append(ds)

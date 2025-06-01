@@ -334,6 +334,23 @@ def _extract_single_base_class(
     return None
 
 
+def maybe_use_template_declaration_parent(node: tree_sitter.Node) -> tree_sitter.Node:
+    """
+    If the direct parent of the node is a template_declaration, return the parent.
+    Otherwise, return the original node.
+
+    This handles cases where template declarations wrap data structures or functions:
+    - template<typename T> class MyClass { ... }
+    - template<typename T> void myFunction() { ... }
+
+    In these cases, we want to include the template declaration in our extraction
+    rather than just the inner class/function definition.
+    """
+    if node.parent and node.parent.type == "template_declaration":
+        return node.parent
+    return node
+
+
 class CppCDriverTree(DriverTree):
     language = "cpp"
 
@@ -405,6 +422,10 @@ class CppCDriverTree(DriverTree):
             if func_name is None:
                 print("Could not parse function name for node:", declarator_node)
                 continue
+
+            # Check if this function definition is wrapped in a template_declaration
+            function_def = maybe_use_template_declaration_parent(function_def)
+
             start_line, end_line = self.get_node_line_range(function_def)
             ts_node = function_def
             qualified_parent_path = self._get_fully_qualified_path_to_parent(
@@ -566,6 +587,12 @@ class CppCDriverTree(DriverTree):
                     name_nodes = rest.get("enum.name", [])
                 case _:
                     raise DriverTreeError("Unexpected case in extract_data_structures")
+
+            # If direct parent of data_structure_node is a node of kind template_declaration, we actually want that
+            # included.
+            data_structure_node = maybe_use_template_declaration_parent(
+                data_structure_node
+            )
 
             # Convert the name node (if any) into text; note we assume a single type, but typedefs could
             # actually declare multiple. There's a test case that shows it. < TODO
@@ -911,6 +938,9 @@ class CppCDriverTree(DriverTree):
             )
             if has_body:
                 continue
+
+            # Check if this function declaration is wrapped in a template_declaration
+            declaration_node = maybe_use_template_declaration_parent(declaration_node)
 
             start_line, end_line = self.get_node_line_range(declaration_node)
             ts_node = declaration_node

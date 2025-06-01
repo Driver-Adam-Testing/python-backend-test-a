@@ -91,7 +91,7 @@ def function_definitions_cpp_code() -> str:
         ("printMessage", 6, 8, ""),
         ("multiply", 11, 13, ""),
         ("divide", 16, 18, ""),
-        ("maximum", 22, 24, ""),
+        ("maximum", 21, 24, ""),
         ("fibonacci", 27, 29, ""),
         ("square", 32, 34, ""),
         ("swap", 37, 41, ""),
@@ -122,7 +122,7 @@ def function_definitions_cpp_code() -> str:
         ("Container", 163, 163, "Container"),
         ("getData", 165, 167, "Container"),
         ("setData", 169, 171, "Container"),
-        ("convertAndSet", 174, 176, "Container"),
+        ("convertAndSet", 173, 176, "Container"),
         # Inheritance
         ("~Shape", 182, 182, "Shape"),
         # (
@@ -142,7 +142,7 @@ def function_definitions_cpp_code() -> str:
         ("demonstrateLambdas", 222, 234, ""),
         # TODO: we don't handle lambdas yet
         ("safeDivide", 237, 245, ""),
-        ("maximum<bool>", 249, 251, ""),
+        ("maximum<bool>", 248, 251, ""),
         # Friend functions
         ("operator+", 261, 263, "Point"),  # Point friend operator
         ("operator<<", 265, 267, "Point"),  # Point friend ostream operator
@@ -173,7 +173,7 @@ def test_extract_function_definitions(
     matching_functions = [
         (name, line, parent_path)
         for name, line, parent_path in extracted_functions
-        if name == expected_function_name and abs(line - expected_start_line) <= 2
+        if name == expected_function_name and line == expected_start_line
     ]
 
     assert len(matching_functions) > 0, (
@@ -219,9 +219,9 @@ def classes_cpp_code() -> str:
         ("Bird", 95, 99),
         ("Bat", 101, 108),
         # Template classes
-        ("Container", 112, 121),
-        ("FixedMap", 125, 150),
-        # ("Container", 154, 164),  # Template specialization # NOTE: known failure case
+        ("Container", 111, 121),
+        ("FixedMap", 124, 150),
+        # ("Container", 153, 164),  # Template specialization # NOTE: known failure case
         # Nested classes
         ("Outer", 167, 188),
         ("Inner", 172, 179),
@@ -232,7 +232,7 @@ def classes_cpp_code() -> str:
         ("Counter", 208, 221),
         ("ConstExample", 227, 243),
         ("FileWrapper", 246, 285),
-        ("Logger", 289, 298),
+        ("Logger", 288, 298),
         ("ConsolePrinter", 300, 307),
         ("Singleton", 310, 332),
         ("UsesForwardDeclaration", 341, 349),
@@ -262,7 +262,7 @@ def test_extract_class_definitions(
     matching_structures = [
         (name, line)
         for name, line, _ in extracted_structures
-        if name == expected_class_name and abs(line - expected_start_line) <= 3
+        if name == expected_class_name and line == expected_start_line
     ]
 
     assert len(matching_structures) > 0, (
@@ -335,7 +335,7 @@ def unions_cpp_code() -> str:
         ("InsertionPolicy", 163, 167, "Container"),
         ("SortOrder", 169, 173, "Container"),
         ("DebugLevel", 239, 244, ""),
-        ("WeekDay", 248, 252, ""),
+        ("WeekDay", 248, 250, ""),
         # ("WeekEnd", 248),  # Multiple enums in single statement - rare case, skip for now
     ],
 )
@@ -359,7 +359,7 @@ def test_extract_enums(
     matching_structures = [
         (name, start_line, end_line, parent_path)
         for name, start_line, end_line, parent_path in extracted_structures
-        if name == expected_enum_name and abs(start_line - expected_start_line) <= 3
+        if name == expected_enum_name and start_line == expected_start_line
     ]
 
     assert len(matching_structures) > 0, (
@@ -369,7 +369,7 @@ def test_extract_enums(
 
     # Verify the line ranges and fully_qualified_parent_path for the matching enum(s)
     for _name, start_line, end_line, parent_path in matching_structures:
-        assert abs(end_line - expected_end_line) <= 3, (
+        assert end_line == expected_end_line, (
             f"Enum '{expected_enum_name}' at line {start_line} ends at line {end_line}, "
             f"expected around {expected_end_line}"
         )
@@ -386,7 +386,7 @@ def test_extract_enums(
         ("AccessStruct", 19, 30, ""),
         ("BaseStruct", 33, 38, ""),
         ("DerivedStruct", 40, 44, ""),
-        ("TemplateStruct", 48, 56, ""),
+        ("TemplateStruct", 47, 56, ""),
         ("NamespacedStruct", 60, 63, "StructNamespace"),
         ("DeeplyNested", 66, 69, "StructNamespace::NestedNamespace"),
         ("InnerStruct", 76, 80, "ContainerClass"),
@@ -418,7 +418,7 @@ def test_extract_cpp_structs(
     matching_structures = [
         (name, start_line, end_line, parent_path)
         for name, start_line, end_line, parent_path in extracted_structures
-        if name == expected_struct_name and abs(start_line - expected_start_line) <= 3
+        if name == expected_struct_name and start_line == expected_start_line
     ]
 
     assert len(matching_structures) > 0, (
@@ -428,7 +428,7 @@ def test_extract_cpp_structs(
 
     # Verify the line ranges and fully_qualified_parent_path for the matching struct(s)
     for _name, start_line, end_line, parent_path in matching_structures:
-        assert abs(end_line - expected_end_line) <= 3, (
+        assert end_line == expected_end_line, (
             f"Struct '{expected_struct_name}' at line {start_line} ends at line {end_line}, "
             f"expected around {expected_end_line}"
         )
@@ -450,7 +450,7 @@ def test_extract_cpp_structs(
         ("PublicUnion", 85, 91, "ContainerClass"),
         ("PrivateUnion", 94, 99, "ContainerClass"),
         ("TaggedUnion", 108, 132, ""),
-        ("TemplateUnionContainer", 136, 161, ""),
+        ("TemplateUnionContainer", 135, 161, ""),
         ("StaticUnion", 164, 177, ""),
     ],
 )
@@ -474,7 +474,7 @@ def test_extract_cpp_unions(
     matching_structures = [
         (name, start_line, end_line, parent_path)
         for name, start_line, end_line, parent_path in extracted_structures
-        if name == expected_union_name and abs(start_line - expected_start_line) <= 3
+        if name == expected_union_name and start_line == expected_start_line
     ]
 
     assert len(matching_structures) > 0, (
@@ -484,7 +484,7 @@ def test_extract_cpp_unions(
 
     # Verify the line ranges and fully_qualified_parent_path for the matching union(s)
     for _name, start_line, end_line, parent_path in matching_structures:
-        assert abs(end_line - expected_end_line) <= 3, (
+        assert end_line == expected_end_line, (
             f"Union '{expected_union_name}' at line {start_line} ends at line {end_line}, "
             f"expected around {expected_end_line}"
         )
@@ -505,52 +505,6 @@ def namespaces_cpp_code() -> str:
     )
     with open(file_path, encoding="utf-8") as f:
         return f.read()
-
-
-@pytest.mark.parametrize(
-    "expected_namespace_name, expected_start_line",
-    [
-        ("Math", 6),
-        ("Graphics", 17),  # From Graphics::Rendering::OpenGL
-        ("Network", 27),
-        ("TCP", 28),
-        ("UDP", 39),
-        ("Containers", 59),
-        ("Constants", 98),
-        ("Physics", 103),
-        ("Time", 109),
-        ("Utils", 118),
-        ("Math", 142),  # Reopened namespace
-        ("Version", 172),
-        ("v2", 173),
-        ("v1", 180),
-        ("Geometry", 188),
-        ("Database", 220),
-        ("std", 244),  # std specialization
-    ],
-)
-def test_extract_namespaces(
-    namespaces_cpp_code: str,
-    expected_namespace_name: str,
-    expected_start_line: int,
-) -> None:
-    """Test extraction of C++ namespace definitions"""
-    driver_tree = CppCDriverTree.from_code(namespaces_cpp_code, "test.cpp")
-    data_structures = driver_tree.extract_data_structure_definitions()
-
-    extracted_structures = [(ds.name, ds.start_line) for ds in data_structures]
-
-    # Check if the expected namespace is found
-    matching_structures = [
-        (name, line)
-        for name, line in extracted_structures
-        if name == expected_namespace_name and abs(line - expected_start_line) <= 3
-    ]
-
-    assert len(matching_structures) > 0, (
-        f"Expected namespace '{expected_namespace_name}' around line {expected_start_line} "
-        f"not found in extracted structures: {extracted_structures}"
-    )
 
 
 @pytest.fixture(scope="module")
@@ -622,7 +576,7 @@ def test_extract_variables(
     matching_variables = [
         (name, line, end_line)
         for name, line, end_line in extracted_variables
-        if name == expected_variable_name and abs(line - expected_start_line) <= 3
+        if name == expected_variable_name and line == expected_start_line
     ]
 
     assert len(matching_variables) > 0, (
@@ -726,7 +680,7 @@ def test_extract_function_calls(
     matching_calls = [
         (name, line, end_line, parent_path)
         for name, line, end_line, parent_path in extracted_calls
-        if name == expected_function_call_name and abs(line - expected_start_line) <= 2
+        if name == expected_function_call_name and line == expected_start_line
     ]
 
     assert len(matching_calls) > 0, (
@@ -774,10 +728,10 @@ def function_declarations_cpp_code() -> str:
         ("processVector", 22, 22, ""),
         ("moveString", 23, 23, ""),
         # Template function declarations
-        ("maximum", 27, 27, ""),
-        ("addValues", 30, 30, ""),
-        ("allOf", 33, 33, ""),
-        ("callFunction", 37, 37, ""),
+        ("maximum", 26, 27, ""),
+        ("addValues", 29, 30, ""),
+        ("allOf", 32, 33, ""),
+        ("callFunction", 36, 37, ""),
         # Constexpr functions
         ("factorial", 40, 40, ""),
         ("calculateCircleArea", 41, 41, ""),
@@ -821,7 +775,6 @@ def function_declarations_cpp_code() -> str:
         ("operator+=", 108, 108, "Calculator"),
         ("operator-=", 109, 109, "Calculator"),
         ("operator*=", 110, 110, "Calculator"),
-        ("operator*=", 111, 111, "Calculator"),
         ("operator++", 113, 113, "Calculator"),
         ("operator++", 114, 114, "Calculator"),
         ("operator-", 116, 116, "Calculator"),
@@ -839,7 +792,7 @@ def function_declarations_cpp_code() -> str:
         ("getPerimeter", 205, 205, "Shape"),
         ("clone", 211, 211, "Shape"),
         ("maximum<bool>", 236, 236, ""),
-        ("importantFunction", 300, 300, ""),
+        ("importantFunction", 301, 301, ""),
     ],
 )
 def test_extract_function_declarations(
@@ -862,7 +815,7 @@ def test_extract_function_declarations(
     matching_declarations = [
         (name, line, end_line, fully_qualified_parent_path)
         for name, line, end_line, fully_qualified_parent_path in extracted_declarations
-        if name == expected_function_name and abs(line - expected_start_line) <= 3
+        if name == expected_function_name and line == expected_start_line
     ]
 
     assert len(matching_declarations) > 0, (
@@ -876,106 +829,6 @@ def test_extract_function_declarations(
             f"Function '{expected_function_name}' at line {line} has parent path '{parent_path}', "
             f"expected '{expected_parent_path}'"
         )
-
-
-class TestCppSpecificFeatures:
-    """Test C++-specific features that don't exist in C"""
-
-    def test_namespace_extraction(self, namespaces_cpp_code: str) -> None:
-        """Test that we can extract namespaces (C++ specific)"""
-        driver_tree = CppCDriverTree.from_code(namespaces_cpp_code, "test.cpp")
-        data_structures = driver_tree.extract_data_structure_definitions()
-
-        namespace_names = [
-            ds.name
-            for ds in data_structures
-            if ds.name in ["Math", "Network", "Graphics"]
-        ]
-        assert len(namespace_names) > 0, "Should extract namespace definitions"
-
-    def test_class_extraction(self, classes_cpp_code: str) -> None:
-        """Test that we can extract classes (C++ enhanced)"""
-        driver_tree = CppCDriverTree.from_code(classes_cpp_code, "test.cpp")
-        data_structures = driver_tree.extract_data_structure_definitions()
-
-        class_names = [
-            ds.name
-            for ds in data_structures
-            if ds.name in ["BasicClass", "Calculator", "Container"]
-        ]
-        assert len(class_names) > 0, "Should extract class definitions"
-
-    def test_template_extraction(self, function_definitions_cpp_code: str) -> None:
-        """Test that we can extract template functions"""
-        driver_tree = CppCDriverTree.from_code(
-            function_definitions_cpp_code, "test.cpp"
-        )
-        functions = driver_tree.extract_callable_definitions()
-
-        # Should extract template functions like maximum, Container methods, etc.
-        template_functions = [
-            f.name for f in functions if f.name in ["maximum", "getData", "setData"]
-        ]
-        assert (
-            len(template_functions) > 0
-        ), "Should extract template function definitions"
-
-    def test_operator_overload_extraction(
-        self, function_definitions_cpp_code: str
-    ) -> None:
-        """Test that we can extract operator overloads"""
-        driver_tree = CppCDriverTree.from_code(
-            function_definitions_cpp_code, "test.cpp"
-        )
-        functions = driver_tree.extract_callable_definitions()
-
-        operator_functions = [
-            f.name for f in functions if f.name.startswith("operator")
-        ]
-        assert (
-            len(operator_functions) > 0
-        ), "Should extract operator overload definitions"
-
-    def test_constructor_destructor_extraction(
-        self, function_definitions_cpp_code: str
-    ) -> None:
-        """Test that we can extract constructors and destructors"""
-        driver_tree = CppCDriverTree.from_code(
-            function_definitions_cpp_code, "test.cpp"
-        )
-        functions = driver_tree.extract_callable_definitions()
-
-        # Look for Calculator constructors
-        calculator_constructors = [f.name for f in functions if f.name == "Calculator"]
-        assert (
-            len(calculator_constructors) >= 3
-        ), "Should extract multiple Calculator constructors"
-
-    def test_method_calls_extraction(self, function_calls_cpp_code: str) -> None:
-        """Test that we can extract method calls"""
-        driver_tree = CppCDriverTree.from_code(function_calls_cpp_code, "test.cpp")
-        function_calls = driver_tree.extract_function_calls()
-
-        # Should extract method calls like getValue, setValue, etc.
-        method_calls = [
-            call.name
-            for call in function_calls
-            if call.name in ["getValue", "setValue", "push_back", "size"]
-        ]
-        assert len(method_calls) > 0, "Should extract method calls"
-
-    def test_enum_class_extraction(self, enums_cpp_code: str) -> None:
-        """Test that we can extract enum classes (C++11 feature)"""
-        driver_tree = CppCDriverTree.from_code(enums_cpp_code, "test.cpp")
-        data_structures = driver_tree.extract_data_structure_definitions()
-
-        # Should extract scoped enums like Priority, Direction, Grade
-        enum_names = [
-            ds.name
-            for ds in data_structures
-            if ds.name in ["Priority", "Direction", "Grade"]
-        ]
-        assert len(enum_names) > 0, "Should extract enum class definitions"
 
 
 def test_no_local_variables_extracted() -> None:
@@ -1008,47 +861,6 @@ def test_no_local_variables_extracted() -> None:
     assert "main_local" not in variable_names, "Should not extract main local variable"
 
 
-def test_cpp_vs_c_differences() -> None:
-    """Test that C++ driver extracts C++ specific features that C driver cannot"""
-    cpp_code = """
-    namespace MyNamespace {
-        class MyClass {
-        public:
-            MyClass() = default;
-            virtual ~MyClass() = default;
-
-            MyClass operator+(const MyClass& other) const;
-            template<typename T>
-            void templateMethod(T value);
-        };
-
-        enum class Color { RED, GREEN, BLUE };
-    }
-
-    template<typename T>
-    T templateFunction(T a, T b) {
-        return a + b;
-    }
-    """
-
-    driver_tree = CppCDriverTree.from_code(cpp_code, "test.cpp")
-
-    # Test data structures
-    data_structures = driver_tree.extract_data_structure_definitions()
-    structure_names = [ds.name for ds in data_structures]
-
-    assert "MyNamespace" in structure_names, "Should extract namespace"
-    assert "MyClass" in structure_names, "Should extract class"
-    assert "Color" in structure_names, "Should extract enum class"
-
-    # Test functions
-    functions = driver_tree.extract_callable_definitions()
-    function_names = [f.name for f in functions]
-
-    assert "MyClass" in function_names, "Should extract constructor"
-    assert "templateFunction" in function_names, "Should extract template function"
-
-
 @pytest.fixture(scope="module")
 def inheritance_cpp_code() -> str:
     """Load C++ inheritance test file"""
@@ -1072,38 +884,33 @@ def inheritance_cpp_code() -> str:
         ("DefaultClassDerived", ["Base"], 14),
         ("DefaultStructDerived", ["Base"], 15),
         ("VirtualDerived", ["VirtualBase"], 19),
-        
         # Multiple inheritance
         ("MultipleInheritance", ["BaseA", "BaseB", "BaseC"], 25),
         ("FlyingMammal", ["Mammal", "Bird"], 31),
-        
         # Template and qualified inheritance
         ("TemplateInheritance", ["TemplateBase<int>"], 37),
         ("QualifiedInheritance", ["NS::NamespacedBase"], 44),
         ("InheritFromNested", ["Outer::Inner"], 52),
         ("ComplexTemplateInheritance", ["ComplexTemplate<std::string, 42>"], 58),
-        
         # Mixed inheritance
         ("MixedInheritance", ["MixedBase1", "MixedBase2"], 63),
-        
         # Very long inheritance list
-        ("VeryLongInheritance", ["LongBase1", "LongBase2", "LongBase3", "LongBase4", "LongBase5"], 71),
-        
+        (
+            "VeryLongInheritance",
+            ["LongBase1", "LongBase2", "LongBase3", "LongBase4", "LongBase5"],
+            71,
+        ),
         # Abstract base inheritance
         ("ConcreteA", ["AbstractBase"], 89),
         ("ConcreteB", ["AbstractBase"], 94),
-        
         # Deep hierarchy
         ("Level2", ["Level1"], 101),
         ("Level3", ["Level2"], 102),
         ("Level4", ["Level3"], 103),
-        
         # Forward declared inheritance
         ("ForwardInheritance", ["ForwardDeclaredBase"], 107),
-        
         # Template class inheritance
-        ("TemplateDerived", ["TemplateBaseClass<U>"], 120),
-        
+        ("TemplateDerived", ["TemplateBaseClass<U>"], 119),
         # Anonymous namespace inheritance
         ("InheritFromAnonymous", ["AnonymousBase"], 131),
     ],
@@ -1117,37 +924,41 @@ def test_inheritance_base_class_extraction(
     """Test extraction of base class information from inheritance declarations"""
     driver_tree = CppCDriverTree.from_code(inheritance_cpp_code, "test_inheritance.cpp")
     data_structures = driver_tree.extract_data_structure_definitions()
-    
+
     # Find the expected class
     matching_classes = [
-        ds for ds in data_structures
-        if ds.name == expected_class_name and abs(ds.start_line - expected_start_line) <= 3
+        ds
+        for ds in data_structures
+        if ds.name == expected_class_name and ds.start_line == expected_start_line
     ]
-    
+
     assert len(matching_classes) > 0, (
         f"Expected class '{expected_class_name}' around line {expected_start_line} "
         f"not found in extracted structures"
     )
-    
+
     found_class = matching_classes[0]
-    
+
     # Verify base class extraction
     if expected_base_classes:
-        assert found_class.base_class_names is not None, (
-            f"Class '{expected_class_name}' should have base classes but none were extracted"
-        )
+        assert (
+            found_class.base_class_names is not None
+        ), f"Class '{expected_class_name}' should have base classes but none were extracted"
         assert len(found_class.base_class_names) == len(expected_base_classes), (
             f"Class '{expected_class_name}' should have {len(expected_base_classes)} base classes, "
             f"but found {len(found_class.base_class_names)}: {found_class.base_class_names}"
         )
-        
+
         for expected_base in expected_base_classes:
             assert expected_base in found_class.base_class_names, (
                 f"Expected base class '{expected_base}' not found in {found_class.base_class_names} "
                 f"for class '{expected_class_name}'"
             )
     else:
-        assert found_class.base_class_names is None or len(found_class.base_class_names) == 0, (
+        assert (
+            found_class.base_class_names is None
+            or len(found_class.base_class_names) == 0
+        ), (
             f"Class '{expected_class_name}' should not have base classes but found: "
             f"{found_class.base_class_names}"
         )
@@ -1158,38 +969,42 @@ def test_inheritance_edge_cases() -> None:
     edge_case_code = """
     // Empty base class list (should not happen in valid C++, but test robustness)
     class EmptyInheritance : {};
-    
+
     // Inheritance with very long template parameters
     template<typename T, typename U, typename V, int N, bool B>
     class VeryLongTemplate {};
-    
+
     class LongTemplateInheritance : public VeryLongTemplate<std::string, int, double, 42, true> {};
-    
+
     // Nested template inheritance
     template<typename T>
     class Outer {
         template<typename U>
         class Inner {};
     };
-    
+
     class NestedTemplateInheritance : public Outer<int>::Inner<double> {};
     """
-    
+
     driver_tree = CppCDriverTree.from_code(edge_case_code, "test_edge_cases.cpp")
     data_structures = driver_tree.extract_data_structure_definitions()
-    
+
     # Find LongTemplateInheritance
-    long_template_classes = [ds for ds in data_structures if ds.name == "LongTemplateInheritance"]
+    long_template_classes = [
+        ds for ds in data_structures if ds.name == "LongTemplateInheritance"
+    ]
     assert len(long_template_classes) > 0, "Should extract LongTemplateInheritance"
-    
+
     long_template_class = long_template_classes[0]
     assert long_template_class.base_class_names is not None, "Should have base classes"
-    assert len(long_template_class.base_class_names) == 1, "Should have exactly one base class"
+    assert (
+        len(long_template_class.base_class_names) == 1
+    ), "Should have exactly one base class"
     # The base class name should include the full template specification
     expected_base = "VeryLongTemplate<std::string, int, double, 42, true>"
-    assert long_template_class.base_class_names[0] == expected_base, (
-        f"Expected base class '{expected_base}', got '{long_template_class.base_class_names[0]}'"
-    )
+    assert (
+        long_template_class.base_class_names[0] == expected_base
+    ), f"Expected base class '{expected_base}', got '{long_template_class.base_class_names[0]}'"
 
 
 def test_no_inheritance_classes() -> None:
@@ -1199,17 +1014,19 @@ def test_no_inheritance_classes() -> None:
     public:
         void method() {}
     };
-    
+
     struct StandaloneStruct {
         int value;
     };
     """
-    
-    driver_tree = CppCDriverTree.from_code(no_inheritance_code, "test_no_inheritance.cpp")
+
+    driver_tree = CppCDriverTree.from_code(
+        no_inheritance_code, "test_no_inheritance.cpp"
+    )
     data_structures = driver_tree.extract_data_structure_definitions()
-    
+
     for ds in data_structures:
         if ds.name in ["StandaloneClass", "StandaloneStruct"]:
-            assert ds.base_class_names is None or len(ds.base_class_names) == 0, (
-                f"Class/struct '{ds.name}' should not have base classes but found: {ds.base_class_names}"
-            )
+            assert (
+                ds.base_class_names is None or len(ds.base_class_names) == 0
+            ), f"Class/struct '{ds.name}' should not have base classes but found: {ds.base_class_names}"

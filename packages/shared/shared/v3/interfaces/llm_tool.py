@@ -71,13 +71,13 @@ class LlmTool(LlmParseable, ABC):
 
         thread = threading.Thread(target=target)
         thread.start()
-        thread.join(timeout=12)
+        thread.join(timeout=25)
 
         if thread.is_alive():
             print(
-                f"Execution of {self.__class__.__name__, self.tool_call_id} timed out after 12 seconds."
+                f"Execution of {self.__class__.__name__, self.tool_call_id} timed out after 25 seconds."
             )
-            self._error_message = "Execution timed out after 12 seconds."
+            self._error_message = f"Execution of {self.__class__.__name__, self.tool_call_id} timed out after 25 seconds."
             return LlmMessage(
                 content=f"{TOOL_ERROR_MESSAGE.wrap(self._error_message)}",
                 message_kind=MessageKind.TOOL_CALL_RESPONSE,

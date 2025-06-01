@@ -121,6 +121,30 @@ class DriverTreeError(Exception):
     pass
 
 
+def get_class_name_and_scope_parts(
+    class_specifier_node: tree_sitter.Node,
+) -> tuple[str | None, list[str]]:
+    if class_specifier_node.type == "class_specifier":
+        name_node = class_specifier_node.child_by_field_name("name")
+        if name_node and name_node.type == "type_identifier":
+            name = name_node.text.decode("utf-8")
+            scope_parts = []
+            return name, scope_parts
+        elif name_node and name_node.type == "qualified_identifier":
+            # Handle qualified names like ClassName::methodName or Namespace::Class::method
+            name, scope_parts = _extract_name_and_scope_from_qualified_identifier(
+                name_node
+            )
+            return name, scope_parts
+        else:
+            print(
+                f"Unhandled class name node type: {name_node.type} in {class_specifier_node.text.decode('utf-8')}"
+            )
+            return None, []
+    print("Unhandled class specifier node type:", class_specifier_node.type)
+    return None, []
+
+
 def get_function_name_and_params_and_scope_parts(
     declarator_node: tree_sitter.Node,
 ) -> tuple[str | None, tree_sitter.Node | None, list[str]]:
@@ -136,8 +160,8 @@ def get_function_name_and_params_and_scope_parts(
             return name_node.text.decode("utf-8"), params_node, []
         elif name_node and name_node.type == "qualified_identifier":
             # Handle qualified names like ClassName::methodName or Namespace::Class::method
-            func_name, scope_parts = (
-                _extract_function_name_and_scope_from_qualified_identifier(name_node)
+            func_name, scope_parts = _extract_name_and_scope_from_qualified_identifier(
+                name_node
             )
             # scope = _extract_scope_from_qualified_identifier(name_node)
             return func_name, params_node, scope_parts
@@ -178,7 +202,7 @@ def get_function_name_and_params_and_scope_parts(
     return None, None, []
 
 
-def _extract_function_name_and_scope_from_qualified_identifier(
+def _extract_name_and_scope_from_qualified_identifier(
     qualified_node: tree_sitter.Node,
 ) -> tuple[str | None, list[str]]:
     """
@@ -198,12 +222,16 @@ def _extract_function_name_and_scope_from_qualified_identifier(
     if not name_node:
         return None, []
 
-    if name_node.type == "identifier" or name_node.type == "field_identifier":
+    if (
+        name_node.type == "identifier"
+        or name_node.type == "field_identifier"
+        or name_node.type == "type_identifier"
+    ):
         return name_node.text.decode("utf-8"), scope_parts
     elif name_node.type == "qualified_identifier":
         # Recursively extract from nested qualified identifier (e.g., MyClass::Inner::display)
-        name, more_scope_parts = (
-            _extract_function_name_and_scope_from_qualified_identifier(name_node)
+        name, more_scope_parts = _extract_name_and_scope_from_qualified_identifier(
+            name_node
         )
         return name, scope_parts + more_scope_parts
     elif name_node.type == "destructor_name":
@@ -528,6 +556,11 @@ class CppCDriverTree(DriverTree):
                 name: (type_identifier) @class.name
                 body: (field_declaration_list)? @class.body
             ) @class.definition
+
+            (class_specifier
+                name: (qualified_identifier) @class.name
+                body: (field_declaration_list)? @class.body
+            ) @class.qualified_definition
           ]
         )
         """
@@ -573,6 +606,11 @@ class CppCDriverTree(DriverTree):
                         # Skip classes without a body (forward declarations)
                         continue
                     name_nodes = rest.get("class.name", [])
+                case {"class.qualified_definition": [data_structure_node], **rest}:
+                    if rest.get("class.body") is None:
+                        # Skip classes without a body (forward declarations)
+                        continue
+                    name_nodes = rest.get("class.name", [])
                 case {"declared_struct.definition": [data_structure_node], **rest}:
                     name_nodes = rest.get("declared_struct.name", [])
                 case {"declared_union.definition": [data_structure_node], **rest}:
@@ -596,11 +634,18 @@ class CppCDriverTree(DriverTree):
 
             # Convert the name node (if any) into text; note we assume a single type, but typedefs could
             # actually declare multiple. There's a test case that shows it. < TODO
+            scope_parts = []
             if len(name_nodes) > 0:
                 name_node = name_nodes[0]
-                data_structure_name = self.source_bytes[
-                    name_node.start_byte : name_node.end_byte
-                ].decode("utf8")
+                if name_node.type == "qualified_identifier":
+                    # Handle qualified identifiers like Namespace::ClassName
+                    data_structure_name, scope_parts = (
+                        _extract_name_and_scope_from_qualified_identifier(name_node)
+                    )
+                else:
+                    data_structure_name = self.source_bytes[
+                        name_node.start_byte : name_node.end_byte
+                    ].decode("utf8")
             else:
                 print("Could not parse name for node:", data_structure_node)
                 continue  # No name found, skip this data structure
@@ -609,6 +654,15 @@ class CppCDriverTree(DriverTree):
             ts_node = data_structure_node
             fully_qualified_path = self._get_fully_qualified_path_to_parent(
                 data_structure_node
+            )
+            fully_qualified_path = (
+                fully_qualified_path
+                + (
+                    "::"
+                    if len(scope_parts) > 0 and len(fully_qualified_path) > 0
+                    else ""
+                )
+                + "::".join(scope_parts)
             )
             base_class_info = None
             for child in data_structure_node.children:
@@ -677,7 +731,10 @@ class CppCDriverTree(DriverTree):
                 "enum_specifier",
             ]:
                 name_node = current.child_by_field_name("name")
-                if name_node and name_node.type == "type_identifier":
+                if name_node and name_node.type in [
+                    "type_identifier",
+                    "qualified_identifier",
+                ]:
                     path_parts.append(name_node.text.decode("utf-8"))
             elif current.type == "function_definition":
                 declarator_node = current.child_by_field_name("declarator")
@@ -698,87 +755,6 @@ class CppCDriverTree(DriverTree):
         # Reverse to get the correct order (outermost to innermost)
         path_parts.reverse()
         return "::".join(path_parts) if path_parts else ""
-
-    # @symbol_extractor
-    # def extract_class_definitions(self) -> list[RawTreeSitterSymbolData]:
-    #     results = []
-
-    #     query_str = """
-    #         (class_specifier
-    #             name: (type_identifier) @class.name
-    #         ) @class.definition
-    #     """
-
-    #     try:
-    #         query = self.tree_sitter_lang.query(query_str)
-    #         matches = query.matches(self.tree.root_node)
-
-    #         for _pattern_idx, captures_dict in matches:
-    #             if "class.definition" in captures_dict:
-    #                 class_node = captures_dict["class.definition"][0]
-    #                 class_name_nodes = captures_dict["class.name"]
-    #                 class_name = class_name_nodes[0].text.decode("utf8")
-
-    #                 start_line, end_line = self.get_node_line_range(class_node)
-
-    #                 # Build fully qualified path including namespaces and enclosing types
-    #                 fully_qualified_path = self._get_fully_qualified_path_to_parent(
-    #                     class_node
-    #                 )
-
-    #                 ds = RawTreeSitterSymbolData(
-    #                     name=class_name,
-    #                     start_line=start_line,
-    #                     end_line=end_line,
-    #                     symbol_kind=SymbolKind.DATA_STRUCTURE,
-    #                     start_byte=class_node.start_byte,
-    #                     end_byte=class_node.end_byte,
-    #                     file_path=self.file_path,
-    #                     fully_qualified_parent_path=fully_qualified_path,
-    #                     symbol_code=node_to_text(class_node),
-    #                     delimiter="::",
-    #                 )
-    #                 results.append(ds)
-
-    #     except Exception as e:
-    #         print(f"Query error for class: {e}")
-
-    #     # # Handle template classes separately
-    #     # try:
-    #     #     template_query = self.tree_sitter_lang.query(
-    #     #         "(template_declaration) @template_def"
-    #     #     )
-    #     #     template_matches = template_query.matches(self.tree.root_node)
-
-    #     #     for _pattern_idx, captures_dict in template_matches:
-    #     #         if "template_def" in captures_dict:
-    #     #             template_node = captures_dict["template_def"][0]
-
-    #     #             # Look for class_specifier within template
-    #     #             for child in template_node.children:
-    #     #                 if child.type == "class_specifier":
-    #     #                     class_name = self._extract_structure_name(child, "class")
-    #     #                     if class_name:
-    #     #                         start_line, end_line = self.get_node_line_range(
-    #     #                             template_node
-    #     #                         )
-    #     #                         ds = RawTreeSitterSymbolData(
-    #     #                             name=class_name,
-    #     #                             start_line=start_line,
-    #     #                             end_line=end_line,
-    #     #                             symbol_kind=SymbolKind.DATA_STRUCTURE,
-    #     #                             start_byte=template_node.start_byte,
-    #     #                             end_byte=template_node.end_byte,
-    #     #                             file_path=self.file_path,
-    #     #                             symbol_code=node_to_text(template_node),
-    #     #                         )
-    #     #                         results.append(ds)
-    #     #                         break
-    #     # except Exception as e:
-    #     #     print(f"Template query error: {e}")
-
-    #     results.sort(key=lambda x: x.start_byte)
-    #     return results
 
     @symbol_extractor
     def extract_variables(self) -> list[RawTreeSitterSymbolData]:

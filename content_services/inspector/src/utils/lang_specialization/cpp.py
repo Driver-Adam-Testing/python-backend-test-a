@@ -211,6 +211,12 @@ class CppFnData(FnData):
     @classmethod
     def user_prompt(cls, symbol: RawSymbolData) -> str:
         user_prompt = f"{FUNCTIONS_FOUND_USER_PROMPT}{symbol.name}\n\nFunction Code:\n\n{symbol.symbol_code}"
+        if (
+            symbol.reified_symbol is not None
+            and symbol.reified_symbol.parent is not None
+            and symbol.reified_symbol.parent.raw.symbol_code is not None
+        ):
+            user_prompt += f"\n\nParent data structure code:\n\n{symbol.reified_symbol.parent.raw.symbol_code}"
         if symbol.file_code:
             user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
         return user_prompt
@@ -265,11 +271,15 @@ class CppDataStructureData(IrData):
     @classmethod
     def user_prompt(cls, symbol: RawSymbolData) -> str:
         user_prompt = f"{DATA_STRUCTURES_FOUND_USER_PROMPT}{symbol.name}\n\nCode containing Data Structure:\n\n{symbol.symbol_code}"
+        if len(symbol.reified_symbol.children) > 0:
+            user_prompt += (
+                "\n\nCode of data structure functions defined outside the file:"
+            )
+            for child in symbol.reified_symbol.children:
+                if child.raw.file_path != symbol.reified_symbol.raw.file_path:
+                    user_prompt += f"\n\n{child.raw.symbol_code}"
         if symbol.file_code:
             user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
-        # for child in symbol.children:
-        #     # TODO: what if the class function implementation code is already in the class code?
-        #     pass
         return user_prompt
 
     @classmethod

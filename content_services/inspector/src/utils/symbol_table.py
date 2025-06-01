@@ -478,7 +478,7 @@ class ReifiedProjectIndex:
                                 # check if it's in the same parent as the current symbol
                                 parent_fqn = (
                                     lsym.raw.fully_qualified_parent_path
-                                    + lsym.raw.delimter
+                                    + lsym.raw.delimiter
                                     + base_name
                                 )
                                 if parent_fqn in obj_symbols:
@@ -777,7 +777,7 @@ def discover_c_and_h_files(project_root: Path) -> list[Path]:
 
 def main() -> None:
     # project_root = Path("/Users/andrewmark/Downloads/sqlite")
-    project_root = Path("/Users/shaneghiotto/driver/uploaded_codebases/chess-master")
+    project_root = Path("/Users/shaneghiotto/driver/uploaded_codebases/abseil_test")
 
     file_paths = discover_c_and_h_files(project_root)
 

@@ -19,6 +19,7 @@ from .symbol_common import (
     ParserKind,
     RawSymbolCollection,
     RawSymbolData,
+    ReifiedSymbol,
     ScopeRelation,
     SymbolKind,
     code_requires_multi_prompt,
@@ -290,7 +291,7 @@ class RustMacroData(IrData):
         raise NotImplementedError("Macros should not have children")
 
     @classmethod
-    def default_instance(cls) -> Self:
+    def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
         return cls(
             type=FieldNameWithBackTickContent(content=""),
             description=FieldNameWithRawContent(content=""),
@@ -335,7 +336,7 @@ class RustTraitData(IrData):
         raise NotImplementedError("Traits should not have children")
 
     @classmethod
-    def default_instance(cls) -> Self:
+    def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
         return cls(
             trait_bounds=ListedRawContentNoNone(content=[]),
             generic_types=ListedRawContentNoNone(content=[]),
@@ -391,7 +392,7 @@ class RustDataStructureData(IrData):
         return mapping.get(child.symbol_kind)
 
     @classmethod
-    def default_instance(cls) -> Self:
+    def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
         return cls(
             type=FieldNameWithBackTickContent(content="N/A"),
             members=ListedBacktickNameRawContentNoNone(content=[]),

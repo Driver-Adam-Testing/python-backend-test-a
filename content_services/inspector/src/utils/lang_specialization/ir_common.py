@@ -53,6 +53,8 @@ class FieldNameWithBackTickContent(MdRenderable):
     content: str
 
     def render_markdown(self, doc_label: str) -> str:
+        if len(self.content) == 0:
+            return ""
         return f"- **{snake_case_to_spaced_string(doc_label)}**: `{self.content}`\n"
 
 
@@ -69,6 +71,8 @@ class FieldNameWithRawContent(MdRenderable):
     content: str
 
     def render_markdown(self, doc_label: str) -> str:
+        if len(self.content) == 0:
+            return ""
         return f"- **{snake_case_to_spaced_string(doc_label)}**: {self.content}\n"
 
 
@@ -211,7 +215,7 @@ class IrData(BaseModel, abc.ABC):
 
     @classmethod
     @abc.abstractmethod
-    def default_instance(cls) -> Self:
+    def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
         pass
 
     @classmethod
@@ -222,7 +226,7 @@ class IrData(BaseModel, abc.ABC):
     ) -> Self:
         if symbol.symbol_code is None:
             # handle C++ classes defined in header
-            cls_instance = cls.default_instance()
+            cls_instance = cls.default_instance(reified_symbol=symbol.reified_symbol)
         else:
             try:
                 system_prompt = cls.system_prompt()
@@ -508,7 +512,7 @@ class VariableData(IrData):
     use: FieldNameWithRawContent
 
     @classmethod
-    def default_instance(cls) -> Self:
+    def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
         return cls(
             type=FieldNameWithBackTickContent(content=""),
             description=FieldNameWithRawContent(content=""),
@@ -522,7 +526,7 @@ class DataStructureData(IrData, abc.ABC):
     description: FieldNameWithRawContent
 
     @classmethod
-    def default_instance(cls) -> Self:
+    def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
         return cls(
             type=FieldNameWithBackTickContent(content=""),
             members=ListedBacktickNameRawContentNoNone(content=[]),
@@ -537,7 +541,7 @@ class FnDeclData(IrData, abc.ABC):
     output: FieldNameWithRawContent
 
     @classmethod
-    def default_instance(cls) -> Self:
+    def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
         return cls(
             single_sentence=RawContent(content=""),
             description=FieldNameWithRawContent(content=""),
@@ -553,7 +557,7 @@ class FnData(IrData, abc.ABC):
     output: FieldNameWithBulletedContent
 
     @classmethod
-    def default_instance(cls) -> Self:
+    def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
         return cls(
             single_sentence=RawContent(content=""),
             inputs=ListedBacktickNameRawContentWithNone(content=[]),
@@ -572,7 +576,7 @@ class ClassData(IrData, abc.ABC):
     )
 
     @classmethod
-    def default_instance(cls) -> Self:
+    def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
         return cls(
             description=FieldNameWithRawContent(content="Implemented elsewhere"),
             type=FieldNameWithBackTickContent(content="N/A"),

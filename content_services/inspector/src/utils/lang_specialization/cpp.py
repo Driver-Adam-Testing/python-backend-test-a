@@ -1,14 +1,18 @@
 from pathlib import Path
 from typing import Self
 
+from pydantic import PrivateAttr
 from utils.models import ChatOpenAI
+from utils.symbol_table import get_fully_qualified_name
 from utils.treesitter_driver import CppCDriverTree
 
 from .ir_common import (
-    ClassData,
+    FieldNameWithBackTickContent,
+    FieldNameWithRawContent,
     FnData,
     IrCollection,
     IrData,
+    ListedBacktickNameRawContentNoNone,
     VariableData,
 )
 from .symbol_common import (
@@ -84,8 +88,8 @@ Your job is to describe the data structure. **Always respond using exactly the f
         ...
     ],
     "description": <one paragraph description of the data structure>,
-    "inherits_from": [<list of parent classes or structs>],
 }
+IMPORTANT: Members should ONLY include attributes, fields, or properties of the data structure. Do not include methods, class functions, or any function declarations in the members list of the data structure.
 
 Return JSON according to the schema above. Do not use the format ```json ... ```, just return the JSON data.
 """
@@ -207,6 +211,12 @@ class CppFnData(FnData):
     @classmethod
     def user_prompt(cls, symbol: RawSymbolData) -> str:
         user_prompt = f"{FUNCTIONS_FOUND_USER_PROMPT}{symbol.name}\n\nFunction Code:\n\n{symbol.symbol_code}"
+        if (
+            symbol.reified_symbol is not None
+            and symbol.reified_symbol.parent is not None
+            and symbol.reified_symbol.parent.raw.symbol_code is not None
+        ):
+            user_prompt += f"\n\nParent data structure code:\n\n{symbol.reified_symbol.parent.raw.symbol_code}"
         if symbol.file_code:
             user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
         return user_prompt
@@ -228,7 +238,32 @@ class CppFnCollection(IrCollection):
         return cls.from_llm_with_ir_data(CppFnData, llm, symbols_list)
 
 
-class CppClassData(ClassData):
+class CppDataStructureData(IrData):
+    type: FieldNameWithBackTickContent
+    members: ListedBacktickNameRawContentNoNone
+    description: FieldNameWithRawContent
+    _supported_child_ordering: list[str] = PrivateAttr(
+        default=[ScopeRelation.METHOD, ScopeRelation.NESTED_CLASS]
+    )
+
+    @classmethod
+    def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
+        if reified_symbol is not None:
+            name_part = get_fully_qualified_name(reified_symbol.raw)
+            kind_part = reified_symbol.raw.symbol_kind.name.lower()
+            path_part = reified_symbol.raw.file_path
+            link = f"[See definition]({path_part}#{kind_part}:{name_part})"
+            return cls(
+                description=FieldNameWithRawContent(content=link),
+                type=FieldNameWithBackTickContent(content=""),
+                members=ListedBacktickNameRawContentNoNone(content=[]),
+            )
+        return cls(
+            description=FieldNameWithRawContent(content=""),
+            type=FieldNameWithBackTickContent(content=""),
+            members=ListedBacktickNameRawContentNoNone(content=[]),
+        )
+
     @classmethod
     def system_prompt(cls) -> str:
         return DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON
@@ -236,11 +271,15 @@ class CppClassData(ClassData):
     @classmethod
     def user_prompt(cls, symbol: RawSymbolData) -> str:
         user_prompt = f"{DATA_STRUCTURES_FOUND_USER_PROMPT}{symbol.name}\n\nCode containing Data Structure:\n\n{symbol.symbol_code}"
+        if len(symbol.reified_symbol.children) > 0:
+            user_prompt += (
+                "\n\nCode of data structure functions defined outside the file:"
+            )
+            for child in symbol.reified_symbol.children:
+                if child.raw.file_path != symbol.reified_symbol.raw.file_path:
+                    user_prompt += f"\n\n{child.raw.symbol_code}"
         if symbol.file_code:
             user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
-        # for child in symbol.children:
-        #     # TODO: what if the class function implementation code is already in the class code?
-        #     pass
         return user_prompt
 
     @classmethod
@@ -261,11 +300,11 @@ class CppClassData(ClassData):
 
 
 class CppDataStructureCollection(IrCollection):
-    data: dict[str, CppClassData | list[CppClassData]]
+    data: dict[str, CppDataStructureData | list[CppDataStructureData]]
 
     @classmethod
     def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
-        return cls.from_llm_with_ir_data(CppClassData, llm, symbols_list)
+        return cls.from_llm_with_ir_data(CppDataStructureData, llm, symbols_list)
 
 
 # Symbol Extraction Classes
@@ -304,7 +343,8 @@ class CppDataStructureRawSymbolCollection(RawSymbolCollection):
                 for child in ds_symbol.children:
                     if (
                         child.raw.symbol_kind == SymbolKind.CALLABLE
-                        and child.raw.file_path == ds_symbol.raw.file_path
+                        and child.raw.file_path
+                        == ds_symbol.raw.file_path  # NOTE: This means that only children in the same file will be documented in the scope of the class
                     ):
                         raw_symbol_data.children.append(
                             RawSymbolData.from_tree_sitter_raw_symbol(
@@ -346,11 +386,17 @@ class CppDataStructureRawSymbolCollection(RawSymbolCollection):
                         file_code=None,
                         reference_code=None,
                         delimiter="::",
+                        reified_symbol=callable_symbol.parent,
                     )
                 if (
-                    callable_symbol.raw.name
-                    not in data_structure_raw_symbol_data[parent_name].children
-                    and callable_symbol.raw.name is not None
+                    callable_symbol.raw.name is not None
+                    and callable_symbol.raw.name
+                    not in [
+                        child.name
+                        for child in data_structure_raw_symbol_data[
+                            parent_name
+                        ].children
+                    ]
                 ):
                     data_structure_raw_symbol_data[parent_name].children.append(
                         RawSymbolData.from_tree_sitter_raw_symbol(

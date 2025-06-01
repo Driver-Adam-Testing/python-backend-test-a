@@ -774,7 +774,7 @@ def discover_c_and_h_files(project_root: Path) -> list[Path]:
 
 def main() -> None:
     # project_root = Path("/Users/andrewmark/Downloads/sqlite")
-    project_root = Path("/Users/shaneghiotto/driver/uploaded_codebases/chess-master")
+    project_root = Path("/Users/shaneghiotto/driver/uploaded_codebases/abseil_test")
 
     file_paths = discover_c_and_h_files(project_root)
 

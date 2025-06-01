@@ -636,7 +636,7 @@ class CSymbolTableTask(Task):
             if rel_path.suffix in {".c", ".h", ".cpp", ".cc", ".cxx", ".hpp", ".hxx"}
         }
         self.has_c_files = any(
-            p.suffix == ".c" or p.suffix == ".cpp" for p in self.c_and_h_files
+            p.suffix in [".c", ".cpp", ".cc", ".cxx"] for p in self.c_and_h_files
         )
         super().__init__(
             task_name=task_name,

@@ -317,7 +317,7 @@ def _extract_single_base_class(
             # Fallback: if we haven't found a name yet and this child has text content,
             # it might be the base class name (handle unknown node types gracefully)
             child_text = child.text.decode("utf8").strip()
-            if child_text and not child_text in [
+            if child_text and child_text not in [
                 "virtual",
                 "public",
                 "private",
@@ -404,7 +404,7 @@ class CppCDriverTree(DriverTree):
             )
             if func_name is None:
                 print("Could not parse function name for node:", declarator_node)
-                func_name = None
+                continue
             start_line, end_line = self.get_node_line_range(function_def)
             ts_node = function_def
             qualified_parent_path = self._get_fully_qualified_path_to_parent(
@@ -575,7 +575,8 @@ class CppCDriverTree(DriverTree):
                     name_node.start_byte : name_node.end_byte
                 ].decode("utf8")
             else:
-                data_structure_name = None  # If we didn't capture a name...
+                print("Could not parse name for node:", data_structure_node)
+                continue  # No name found, skip this data structure
 
             start_line, end_line = self.get_node_line_range(data_structure_node)
             ts_node = data_structure_node

@@ -379,9 +379,14 @@ class CppDataStructureRawSymbolCollection(RawSymbolCollection):
                         reified_symbol=callable_symbol.parent,
                     )
                 if (
-                    callable_symbol.raw.name
-                    not in data_structure_raw_symbol_data[parent_name].children
-                    and callable_symbol.raw.name is not None
+                    callable_symbol.raw.name is not None
+                    and callable_symbol.raw.name
+                    not in [
+                        child.name
+                        for child in data_structure_raw_symbol_data[
+                            parent_name
+                        ].children
+                    ]
                 ):
                     data_structure_raw_symbol_data[parent_name].children.append(
                         RawSymbolData.from_tree_sitter_raw_symbol(

@@ -376,6 +376,20 @@ namespace {
     };
 }
 
+class Parent {
+public:
+    class Nested;
+    virtual void doSomething() {
+        std::cout << "Parent doing something" << std::endl;
+    }
+};
+class Parent::Nested {
+public:
+    void nestedMethod() {
+        std::cout << "Nested method in Parent class" << std::endl;
+    }
+};
+
 int main() {
     BasicClass bc(42);
     Circle circle(5.0);

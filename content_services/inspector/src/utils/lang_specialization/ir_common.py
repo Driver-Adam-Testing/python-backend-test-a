@@ -36,6 +36,12 @@ def compute_num_workers(num_symbols: int) -> int:
     )
 
 
+def escape_markdown_characters(text: str) -> str:
+    markdown_special_chars = r"\`*_{}[]()#+-.!~"
+    escaped_text = re.sub(rf"([{re.escape(markdown_special_chars)}])", r"\\\1", text)
+    return escaped_text
+
+
 class MdRenderable(BaseModel, abc.ABC):
     @abc.abstractmethod
     def render_markdown(self, doc_label: str) -> str:
@@ -414,6 +420,7 @@ class IrData(BaseModel, abc.ABC):
                     id_comment = f"<!-- {{{{#{kind_part}:{name_part}}}}} -->"
                 else:
                     id_comment = ""
+                scoped_name = escape_markdown_characters(scoped_name)
                 child_dictionary[label_name] += (
                     f"\n---\n#### {scoped_name}{id_comment}\n"
                 )
@@ -497,6 +504,7 @@ class IrCollection(BaseModel, abc.ABC):
                 else:
                     id_comment = ""
 
+                k = escape_markdown_characters(k)
                 output += f"\n---\n### {k}{id_comment}\n"
                 output += item.render_markdown()
         return output

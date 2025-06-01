@@ -1,4 +1,5 @@
 from collections import defaultdict
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -106,12 +107,23 @@ class ParsedProject:
 
     @classmethod
     def from_files(
-        cls, file_paths: list[Path], project_root: Path, num_workers: int | None = None
+        cls,
+        file_paths: list[Path],
+        project_root: Path,
+        parse_file_fn: Callable[
+            [Path, Path],
+            tuple[
+                list[RawTreeSitterSymbolData],
+                list[str],
+                dict[RawTreeSitterSymbolData, list[RawTreeSitterSymbolData]],
+            ],
+        ] = parse_c_file,
+        num_workers: int | None = None,
     ) -> Self:
         def parse_and_handle(abs_fpath: Path) -> tuple[Path, list, list, dict]:
             rel_fpath = to_root_relative(abs_fpath, project_root)
             try:
-                symbols, includes, containment_map = parse_c_file(
+                symbols, includes, containment_map = parse_file_fn(
                     abs_fpath, project_root
                 )
                 print(f"Parsing {rel_fpath}... done.")
@@ -193,7 +205,12 @@ class ParsedProjectWithVisibility:
 
     @classmethod
     def from_parsed_project(
-        cls, parsed: ParsedProject, num_workers: int | None
+        cls,
+        parsed: ParsedProject,
+        num_workers: int | None,
+        resolver_fn: Callable[
+            [Path, str, set[Path]], Path | None
+        ] = resolve_include_path,
     ) -> Self:
         """
         Build a map from each file -> all files it can 'see' transitively.
@@ -207,7 +224,7 @@ class ParsedProjectWithVisibility:
 
         def dfs(current: Path, visited: set[Path]) -> None:
             for inc_str in includes_map.get(current, []):
-                inc_path = resolve_include_path(current, inc_str, project_files)
+                inc_path = resolver_fn(current, inc_str, project_files)
                 if inc_path and inc_path not in visited:
                     visited.add(inc_path)
                     dfs(inc_path, visited)

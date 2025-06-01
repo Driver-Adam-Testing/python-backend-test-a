@@ -53,7 +53,7 @@ class PyDriverTree(DriverTree):
     language = "python"
 
     def _get_fully_qualified_path_to_parent(
-        self, node: tree_sitter.Node, sep: str = "::"
+        self, node: tree_sitter.Node, sep: str = "."
     ) -> str:
         path_parts = []
         current = node.parent
@@ -72,6 +72,7 @@ class PyDriverTree(DriverTree):
             current = current.parent
 
         path_parts.reverse()
+
         return sep.join(path_parts) if path_parts else ""
 
     @symbol_extractor

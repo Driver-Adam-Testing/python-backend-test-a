@@ -475,7 +475,7 @@ class ReifiedProjectIndex:
                                 # check if it's in the same parent as the current symbol
                                 parent_fqn = (
                                     lsym.raw.fully_qualified_parent_path
-                                    + lsym.raw.delimter
+                                    + lsym.raw.delimiter
                                     + base_name
                                 )
                                 if parent_fqn in obj_symbols:

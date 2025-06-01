@@ -2,6 +2,7 @@ from collections import defaultdict
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, replace
+from os import sep
 from pathlib import Path
 from typing import Self
 
@@ -12,9 +13,9 @@ from utils.lang_specialization.symbol_common import (
 )
 
 
-def get_fully_qualified_name(sym: RawTreeSitterSymbolData) -> str:
+def get_fully_qualified_name(sym: RawTreeSitterSymbolData, sep: str = "::") -> str:
     if sym.fully_qualified_parent_path and sym.name:
-        return f"{sym.fully_qualified_parent_path}::{sym.name}"
+        return f"{sym.fully_qualified_parent_path}{sep}{sym.name}"
     return sym.name or ""  # TODO is this correct? What if name is None?
 
 
@@ -285,7 +286,9 @@ class LinkedProject:
 
     @classmethod
     def from_parsed_project_with_visibility(
-        cls, project_vis: ParsedProjectWithVisibility
+        cls,
+        project_vis: ParsedProjectWithVisibility,
+        sep: str = "::",
     ) -> Self:
         """
         Link usage -> definition across all files that are transitively visible.
@@ -299,7 +302,7 @@ class LinkedProject:
             for rsym in raw_syms:
                 if rsym.name is None:
                     continue
-                fqn = get_fully_qualified_name(rsym)
+                fqn = get_fully_qualified_name(sym=rsym, sep=sep)
                 if is_definition(rsym):
                     definitions_by_fqn.setdefault(fqn, []).append((fqn, rsym))
                     definitions_by_name.setdefault(rsym.name, []).append((fpath, rsym))
@@ -325,7 +328,7 @@ class LinkedProject:
             linked_syms: list[LinkedSymbol] = []
             for rsym in raw_syms:
                 def_symbol: LinkedSymbol | None = None
-                fqn = get_fully_qualified_name(rsym)
+                fqn = get_fully_qualified_name(sym=rsym, sep=sep)
 
                 if not is_definition(rsym) and not is_declaration(rsym) and rsym.name:
                     # Direct definitions in visible files
@@ -458,7 +461,7 @@ class ReifiedProjectIndex:
 
             # Track class/object definitions
             if lsym.is_definition and lsym.raw.symbol_kind == SymbolKind.DATA_STRUCTURE:
-                fqn = get_fully_qualified_name(lsym.raw)
+                fqn = get_fully_qualified_name(sym=lsym.raw, sep=sep)
                 obj_symbols[fqn] = final_map[lsym]
 
         # (4) For function definitions, gather calls from the containment map
@@ -570,7 +573,7 @@ class ReifiedProjectIndex:
     #                 return sym
     #     return None
 
-    def print_summary(self, files: list[Path] | None = None) -> None:
+    def print_summary(self, files: list[Path] | None = None, sep: str = "::") -> None:
         RESET = "\033[0m"
         BLUE = "\033[94m"
         GREEN = "\033[92m"
@@ -596,7 +599,7 @@ class ReifiedProjectIndex:
                 # sym_file_path = sym.raw.file_path
 
                 # Show fully qualified name for C++ symbols
-                fqn = get_fully_qualified_name(sym.raw)
+                fqn = get_fully_qualified_name(sym=sym.raw, sep=sep)
                 name_display = fqn if sym.raw.fully_qualified_parent_path else name
 
                 if sym.is_definition:
@@ -652,7 +655,7 @@ class ReifiedProjectIndex:
                         if sym.inheritance:
                             print(
                                 f"     {BOLD}Inheritance:{RESET} "
-                                f"{', '.join(get_fully_qualified_name(i.raw) for i in sym.inheritance)}"
+                                f"{', '.join(get_fully_qualified_name(i.raw, sep) for i in sym.inheritance)}"
                             )
                     else:
                         # Check if this is a member function
@@ -672,14 +675,16 @@ class ReifiedProjectIndex:
                             containing = sym.parent
                             if containing:
                                 print(
-                                    f"     {BOLD}Member of:{RESET} {get_fully_qualified_name(containing.raw)} [lines {containing.raw.start_line}-{containing.raw.end_line}] "
+                                    f"     {BOLD}Member of:{RESET} {get_fully_qualified_name(containing.raw, sep)} [lines {containing.raw.start_line}-{containing.raw.end_line}] "
                                 )
 
                     # Show declarations for this definition
                     if sym.declarations:
                         print(f"     {BOLD}Declarations:{RESET}")
                         for decl_sym in sym.declarations:
-                            decl_name = get_fully_qualified_name(decl_sym.raw)
+                            decl_name = get_fully_qualified_name(
+                                sym=decl_sym.raw, sep=sep
+                            )
                             decl_lines = (
                                 f"[lines {decl_sym.raw.start_line}-"
                                 f"{decl_sym.raw.end_line}]"
@@ -694,7 +699,9 @@ class ReifiedProjectIndex:
                     if sym.raw.symbol_kind == SymbolKind.CALLABLE and sym.calls:
                         print(f"     {BOLD}Calls {len(sym.calls)} function(s):{RESET}")
                         for called_func in sym.calls:
-                            called_name = get_fully_qualified_name(called_func.raw)
+                            called_name = get_fully_qualified_name(
+                                sym=called_func.raw, sep=sep
+                            )
                             c_lines = (
                                 f"[lines {called_func.raw.start_line}-"
                                 f"{called_func.raw.end_line}]"
@@ -710,7 +717,7 @@ class ReifiedProjectIndex:
                         for _i, usage_sym in enumerate(
                             sym.usages[:5]
                         ):  # Limit to first 5
-                            # usage_name = get_fully_qualified_name(usage_sym.raw)
+                            # usage_name = get_fully_qualified_name(sym=usage_sym.raw, sep=sep)
                             usage_lines = (
                                 f"[lines {usage_sym.raw.start_line}-"
                                 f"{usage_sym.raw.end_line}]"
@@ -725,7 +732,9 @@ class ReifiedProjectIndex:
 
                 elif sym.is_declaration:
                     if sym.definition:
-                        def_name = get_fully_qualified_name(sym.definition.raw)
+                        def_name = get_fully_qualified_name(
+                            sym=sym.definition.raw, sep=sep
+                        )
                         def_lines = (
                             f"[lines {sym.definition.raw.start_line}-"
                             f"{sym.definition.raw.end_line}]"
@@ -743,7 +752,9 @@ class ReifiedProjectIndex:
 
                 else:  # usage
                     if sym.definition:
-                        def_name = get_fully_qualified_name(sym.definition.raw)
+                        def_name = get_fully_qualified_name(
+                            sym=sym.definition.raw, sep=sep
+                        )
                         def_lines = (
                             f"[lines {sym.definition.raw.start_line}-"
                             f"{sym.definition.raw.end_line}]"

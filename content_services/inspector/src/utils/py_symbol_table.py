@@ -10,8 +10,10 @@ if str(src_dir) not in sys.path:
 from utils.lang_specialization.symbol_common import RawTreeSitterSymbolData, SymbolKind
 from utils.py_driver_tree import PyDriverTree
 from utils.symbol_table import (
+    LinkedProject,
     ParsedProject,
     ParsedProjectWithVisibility,
+    ReifiedProjectIndex,
     build_containment_map,
     to_root_relative,
 )
@@ -56,9 +58,6 @@ def resolve_import_path(
 
     import_str_pathified = Path(import_str.replace(".", sep)).with_suffix(".py")
 
-    print(f"\n\n\nPROJECT FILES: {project_files_lst}")
-    print(f"\n\nTrying to resolve: {import_str_pathified}")
-
     # 1) For cases like `import my_module` implemented in `/some_path/my_module.py`
     candidate = import_str_pathified
     for idx, f in enumerate(project_files_lst):
@@ -79,29 +78,48 @@ def resolve_import_path(
     return None
 
 
-def main() -> (
-    tuple[
-        list[RawTreeSitterSymbolData],
-        list[str],
-        dict[RawTreeSitterSymbolData, list[RawTreeSitterSymbolData]],
-    ]
-):
-    project_root = Path(
-        "/Users/daniel/Documents/moved_content_from_python_backend/infinity-core/"
-    )
-
-    file_paths = discover_py_files(project_root=project_root)
+def build_py_project_index(
+    file_paths: list[Path], project_root: Path
+) -> ReifiedProjectIndex:
+    """
+    Orchestrate the 4 passes:
+      1) Parse each file
+      2) Determine transitive visibility among those files
+      3) Link usage -> definition
+      4) definition -> usage
+    """
+    print("==> Parsing files...")
     parsed = ParsedProject.from_files(
         file_paths=file_paths,
         project_root=project_root,
         parse_file_fn=parse_py_file,
-        num_workers=1,
+        num_workers=8,
     )
-    parsed_with_visibility = ParsedProjectWithVisibility.from_parsed_project(
-        parsed=parsed, resolver_fn=resolve_import_path, num_workers=1
+    print("==> Resolving includes and visibility...")
+    project_vis = ParsedProjectWithVisibility.from_parsed_project(
+        parsed=parsed, resolver_fn=resolve_import_path, num_workers=8
     )
+    print("==> Linking symbols...")
+    linked = LinkedProject.from_parsed_project_with_visibility(
+        project_vis=project_vis, sep="."
+    )
+    print("==> Reifying symbol graph...")
+    reified = ReifiedProjectIndex.from_linked_project(
+        linked_proj=linked, file_to_containment_map=parsed.file_to_containment_map
+    )
+    print("==> Done building index.")
+    return reified
 
-    return parsed, parsed_with_visibility
+
+def main() -> ReifiedProjectIndex:
+    project_root = Path(
+        "/Users/daniel/Documents/moved_content_from_python_backend/infinity-core/"
+    )
+    file_paths = discover_py_files(project_root=project_root)
+    index = build_py_project_index(file_paths=file_paths, project_root=project_root)
+    index.print_summary()
+
+    return index
 
 
 if __name__ == "__main__":

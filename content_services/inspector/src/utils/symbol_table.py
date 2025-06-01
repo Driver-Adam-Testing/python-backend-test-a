@@ -56,8 +56,11 @@ def build_containment_map(
             if parent is child:
                 continue
             if (
-                parent.start_byte <= child.start_byte
+                parent.start_byte < child.start_byte
                 and child.end_byte <= parent.end_byte
+            ) or (
+                parent.start_byte <= child.start_byte
+                and child.end_byte < parent.end_byte
             ):
                 child_map[parent].append(child)
     return dict(child_map)

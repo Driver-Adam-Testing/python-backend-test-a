@@ -149,16 +149,16 @@ def test_extract_functions_duplications(
         ("typed_function", (26, 27)),
         ("async_function", (30, 32)),
         ("generator_function", (35, 37)),
-        ("cached_function", (41, 42)),  # TODO: Consider capturing the decorator lines
+        ("cached_function", (40, 42)),
         ("my_decorator", (44, 49)),
         (
             "decorated_function",
-            (52, 53),
-        ),  # TODO: Consider capturing the decorator lines
+            (51, 53),
+        ),
         (
             "multiple_decorators",
-            (58, 59),
-        ),  # TODO: Consider capturing the decorator lines
+            (56, 59),
+        ),
         ("outer_function", (62, 67)),
         ("function_factory", (74, 77)),
         ("fibonacci", (80, 83)),
@@ -169,7 +169,7 @@ def test_extract_functions_duplications(
         ("literal_function", (122, 123)),
         ("generic_function", (130, 131)),
         ("property_function", (134, 135)),
-        ("context_manager_function", (141, 146)),
+        ("context_manager_function", (140, 146)),
         ("complex_annotations", (149, 155)),
     ],
 )
@@ -219,8 +219,8 @@ def test_extract_classes_duplications(
         ("MultipleInheritance", (25, 27)),
         ("AbstractShape", (30, 33)),
         ("Rectangle", (35, 41)),
-        ("Point", (45, 48)),
-        ("DecoratedClass", (52, 53)),
+        ("Point", (44, 48)),
+        ("DecoratedClass", (51, 53)),
         ("OuterClass", (56, 70)),
         ("InnerClass", (62, 70)),
         ("DeeplyNestedClass", (68, 70)),
@@ -320,16 +320,16 @@ def methods_test_code() -> str:
         ("instance_method", (12, 13)),
         ("method_with_params", (15, 16)),
         ("__init__", (22, 24)),
-        ("get_count", (27, 28)),
-        ("create_default", (31, 32)),
-        ("utility_function", (35, 36)),
-        ("static_with_types", (39, 40)),
+        ("get_count", (26, 28)),
+        ("create_default", (30, 32)),
+        ("utility_function", (34, 36)),
+        ("static_with_types", (38, 40)),
         ("__init__", (44, 46)),
-        ("value", (49, 50)),
-        ("value", (53, 55)),
-        ("value", (58, 60)),
-        ("computed", (63, 66)),
-        ("read_only", (69, 70)),
+        ("value", (48, 50)),
+        ("value", (52, 55)),
+        ("value", (57, 60)),
+        ("computed", (62, 66)),
+        ("read_only", (68, 70)),
         ("__init__", (74, 75)),
         ("__str__", (77, 78)),
         ("__repr__", (80, 81)),
@@ -342,14 +342,14 @@ def methods_test_code() -> str:
         ("async_generator", (111, 114)),
         ("__aenter__", (116, 118)),
         ("__aexit__", (120, 122)),
-        ("required_method", (129, 130)),
-        ("another_required", (133, 134)),
+        ("required_method", (128, 130)),
+        ("another_required", (132, 134)),
         ("concrete_method", (136, 137)),
         ("required_method", (140, 141)),
         ("another_required", (143, 144)),
-        ("decorated_method", (155, 156)),
-        ("decorated_static", (160, 161)),
-        ("decorated_class", (165, 166)),
+        ("decorated_method", (154, 156)),
+        ("decorated_static", (158, 161)),
+        ("decorated_class", (163, 166)),
         ("public_method", (170, 171)),
         ("_protected_method", (173, 174)),
         ("__private_method", (176, 177)),
@@ -369,7 +369,7 @@ def test_extract_methods(
 
     assert (expected_method_name, expected_line_range) in extracted, (
         f"Expected method ({expected_method_name}, {expected_line_range}) "
-        f"not found in extracted global methods: {extracted}"
+        f"not found in extracted methods: {extracted}"
     )
 
 

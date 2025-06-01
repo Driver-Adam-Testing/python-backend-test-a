@@ -3,7 +3,16 @@ from collections.abc import Callable
 import tree_sitter
 
 from utils.lang_specialization.symbol_common import RawTreeSitterSymbolData, SymbolKind
-from utils.treesitter_driver import DriverTree, node_to_text, symbol_extractor
+from utils.treesitter_driver import DriverTree, symbol_extractor
+
+
+def py_node_to_text(source_bytes: bytes, node: tree_sitter.Node) -> str:
+    start = node.start_byte
+    end = node.end_byte
+
+    # Walk backwdard to include semantically-meaningful leading indentation in Python.
+    line_start = source_bytes.rfind(b"\n", 0, start) + 1
+    return source_bytes[line_start:end].decode("utf-8")
 
 
 def is_top_level_free_fn(node: tree_sitter.Node) -> bool:
@@ -107,7 +116,9 @@ class PyDriverTree(DriverTree):
                                         end_byte=im_node.end_byte,
                                         file_path=self.file_path,
                                         fully_qualified_parent_path=fully_qualified_parent_path,
-                                        symbol_code=node_to_text(im_node),
+                                        symbol_code=py_node_to_text(
+                                            self.source_bytes, im_node
+                                        ),
                                     )
                                     imports.append(im)
                             elif child.type == "dotted_name":
@@ -122,7 +133,9 @@ class PyDriverTree(DriverTree):
                                     end_byte=im_node.end_byte,
                                     file_path=self.file_path,
                                     fully_qualified_parent_path=fully_qualified_parent_path,
-                                    symbol_code=node_to_text(im_node),
+                                    symbol_code=py_node_to_text(
+                                        self.source_bytes, im_node
+                                    ),
                                 )
                                 imports.append(im)
                 case 1:  # All from x import y
@@ -168,7 +181,7 @@ class PyDriverTree(DriverTree):
                                 end_byte=im_node.end_byte,
                                 file_path=self.file_path,
                                 fully_qualified_parent_path=fully_qualified_parent_path,
-                                symbol_code=node_to_text(im_node),
+                                symbol_code=py_node_to_text(self.source_bytes, im_node),
                             )
                             imports.append(im)
                 case 2:  # `__future__` imports
@@ -192,7 +205,7 @@ class PyDriverTree(DriverTree):
                                 end_byte=im_node.end_byte,
                                 file_path=self.file_path,
                                 fully_qualified_parent_path=fully_qualified_parent_path,
-                                symbol_code=node_to_text(im_node),
+                                symbol_code=py_node_to_text(self.source_bytes, im_node),
                             )
                             imports.append(im)
                 case _:
@@ -208,15 +221,12 @@ class PyDriverTree(DriverTree):
         methods = self.extract_method_definitions()
         return free_fns + methods
 
-    @symbol_extractor
     def extract_function_definitions(self) -> list[RawTreeSitterSymbolData]:
         return self._extract_callable_definitions_by_kind(kind_fn=is_top_level_free_fn)
 
-    @symbol_extractor
     def extract_method_definitions(self) -> list[RawTreeSitterSymbolData]:
         return self._extract_callable_definitions_by_kind(kind_fn=is_method)
 
-    @symbol_extractor
     def _extract_callable_definitions_by_kind(
         self, kind_fn: Callable[[tree_sitter.Node], bool]
     ) -> list[RawTreeSitterSymbolData]:
@@ -243,19 +253,36 @@ class PyDriverTree(DriverTree):
                 fully_qualified_parent_path = self._get_fully_qualified_path_to_parent(
                     node=callable_def_node
                 )
-                # TODO: Consider detecting decorated functions and including the
-                # TODO: decorator lines in the start_line/byte so that this information
-                # TODO: is present downstream for LLMs looking at the source.
+                if callable_def_node.parent.type == "decorated_definition":
+                    start_line, end_line = self.get_node_line_range(
+                        callable_def_node.parent
+                    )
+                    start_byte, end_byte = (
+                        callable_def_node.parent.start_byte,
+                        callable_def_node.parent.end_byte,
+                    )
+                    symbol_code = py_node_to_text(
+                        source_bytes=self.source_bytes, node=callable_def_node.parent
+                    )
+                else:
+                    start_line, end_line = self.get_node_line_range(callable_def_node)
+                    start_byte, end_byte = (
+                        callable_def_node.start_byte,
+                        callable_def_node.end_byte,
+                    )
+                    symbol_code = py_node_to_text(
+                        source_bytes=self.source_bytes, node=callable_def_node
+                    )
                 fn_like = RawTreeSitterSymbolData(
                     name=callable_name,
                     start_line=start_line,
                     end_line=end_line,
                     symbol_kind=SymbolKind.CALLABLE,
-                    start_byte=callable_def_node.start_byte,
-                    end_byte=callable_def_node.end_byte,
+                    start_byte=start_byte,
+                    end_byte=end_byte,
                     file_path=self.file_path,
                     fully_qualified_parent_path=fully_qualified_parent_path,
-                    symbol_code=node_to_text(callable_def_node),
+                    symbol_code=symbol_code,
                 )
                 callables.append(fn_like)
         sorted_callables = sorted(callables, key=lambda x: x.start_byte)
@@ -281,7 +308,24 @@ class PyDriverTree(DriverTree):
                 print(f"Could not parse class name for node: {klass_node}")
             else:
                 klass_name = klass_name.text.decode("utf-8")
-            start_line, end_line = self.get_node_line_range(klass_node)
+            if klass_node.child_by_field_name("superclasses"):
+                base_class_names = []
+                for bc in klass_node.child_by_field_name("superclasses").children:
+                    if bc.type == "identifier":
+                        base_class_names.append(bc.text.decode("utf-8"))
+            else:
+                base_class_names = None
+            if klass_node.parent.type == "decorated_definition":
+                start_line, end_line = self.get_node_line_range(klass_node.parent)
+                start_byte, end_byte = (
+                    klass_node.parent.start_byte,
+                    klass_node.parent.end_byte,
+                )
+                symbol_code = py_node_to_text(self.source_bytes, klass_node.parent)
+            else:
+                start_line, end_line = self.get_node_line_range(klass_node)
+                start_byte, end_byte = klass_node.start_byte, klass_node.end_byte
+                symbol_code = py_node_to_text(self.source_bytes, klass_node)
             fully_qualified_parent_path = self._get_fully_qualified_path_to_parent(
                 node=klass_node
             )
@@ -290,11 +334,12 @@ class PyDriverTree(DriverTree):
                 start_line=start_line,
                 end_line=end_line,
                 symbol_kind=SymbolKind.CLASS,
-                start_byte=klass_node.start_byte,
-                end_byte=klass_node.end_byte,
+                start_byte=start_byte,
+                end_byte=end_byte,
                 file_path=self.file_path,
                 fully_qualified_parent_path=fully_qualified_parent_path,
-                symbol_code=node_to_text(klass_node),
+                base_class_names=base_class_names,
+                symbol_code=symbol_code,
             )
             klasses.append(klass)
 
@@ -350,7 +395,7 @@ class PyDriverTree(DriverTree):
                     end_byte=gbl_expr_node.end_byte,
                     file_path=self.file_path,
                     fully_qualified_parent_path=fully_qualified_parent_path,
-                    symbol_code=node_to_text(gbl_expr_node),
+                    symbol_code=py_node_to_text(self.source_bytes, gbl_expr_node),
                 )
                 gbl_vars.append(gbl)
             elif pat_idx == 1:  # Multiple assignment
@@ -371,13 +416,9 @@ class PyDriverTree(DriverTree):
                         end_byte=gbl_expr_node.end_byte,
                         file_path=self.file_path,
                         fully_qualified_parent_path=fully_qualified_parent_path,
-                        symbol_code=node_to_text(gbl_expr_node),
+                        symbol_code=py_node_to_text(self.source_bytes, gbl_expr_node),
                     )
                     gbl_vars.append(gbl)
 
         sorted_gbl_vars = sorted(gbl_vars, key=lambda x: x.start_byte)
         return sorted_gbl_vars
-
-    @symbol_extractor
-    def extract_classes(self) -> list[RawTreeSitterSymbolData]:
-        return []

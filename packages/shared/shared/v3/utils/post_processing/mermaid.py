@@ -7,11 +7,9 @@ from modal import Function
 from shared.prompts.task.codeblock_syntax_mermaid import (
     PROMPT as CODEBLOCK_SYNTAX_MERMAID_PROMPT,
 )
-from shared.v3.app.static.messages.copy_editor_messages import (
-    CopyEditorSystemMessage,
-)
 from shared.v3.app.static.messages.software_expertise import SoftwareExpertiseMessage
 from shared.v3.globals.global_messages import GlobalSystemMessage
+from shared.v3.interfaces.llm_message import LlmMessage, MessageKind
 from shared.v3.interfaces.llm_message_history import LlmMessageHistory
 from shared.v3.llms.clients.llm_client import LlmClient
 
@@ -55,19 +53,21 @@ def _fix_with_llm(
         resp = client.single_shot(
             message_history=LlmMessageHistory(
                 messages=[
-                    GlobalSystemMessage.system_message(),
-                    CopyEditorSystemMessage.system_message(),
-                    SoftwareExpertiseMessage.system_message(),
+                    GlobalSystemMessage(),
+                    SoftwareExpertiseMessage(),
+                    LlmMessage(
+                        message_kind=MessageKind.USER,
+                        content=(
+                            "The following Mermaid diagram fails to render. "
+                            "Please return **only** the corrected diagram inside a single "
+                            "mermaid code block.\n\n"
+                            f"Error message:\n{error}\n\n"
+                            f"{CODEBLOCK_SYNTAX_MERMAID_PROMPT}\n\n"
+                            f"```mermaid\n{diagram}\n```"
+                        ),
+                    ),
                 ]
-            ),
-            prompt=(
-                "The following Mermaid diagram fails to render. "
-                "Please return **only** the corrected diagram inside a single "
-                "mermaid code block.\n\n"
-                f"Error message:\n{error}\n\n"
-                f"{CODEBLOCK_SYNTAX_MERMAID_PROMPT}\n\n"
-                f"```mermaid\n{diagram}\n```"
-            ),
+            )
         )
 
         diagram = _extract_mermaid_interior(resp.content)

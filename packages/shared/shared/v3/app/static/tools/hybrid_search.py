@@ -19,7 +19,7 @@ from shared.v3.interfaces.llm_tool import (
 )
 from shared.v3.utils.references import Reference
 from sqlalchemy.orm import selectinload
-from sqlmodel import select, text
+from sqlmodel import select
 
 
 class HybridSearchTool(LlmTool):
@@ -40,7 +40,6 @@ class HybridSearchTool(LlmTool):
         embedded_query: list[float] = batch_embed_text([self.search_query])[0]
 
         with get_session() as session:
-            session.exec(text("set ivfflat.probes = 38;"))
             results = session.exec(
                 select(
                     ChunkAndEmbedding,

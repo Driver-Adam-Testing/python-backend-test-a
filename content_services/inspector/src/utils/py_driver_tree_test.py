@@ -5,24 +5,13 @@ import pytest
 from utils.py_driver_tree import PyDriverTree
 
 
-@pytest.fixture
-def imports_python() -> str:
-    return """import pathlib
-from graphlib import TopologicalSorter
-# import os
-from pathlib import Path as PlPath
-
-from foo.bar.baz import func
-"""
-
-
 @pytest.fixture(scope="module")
 def imports_test_code() -> str:
     file_path = (
         pathlib.Path(__file__).parent
         / "treesitter_testcases"
         / "python"
-        / "test_imports.py"
+        / "tst_imports.py"
     )
     with open(file_path, encoding="utf-8") as f:
         return f.read()
@@ -125,7 +114,7 @@ def functions_test_code() -> str:
         pathlib.Path(__file__).parent
         / "treesitter_testcases"
         / "python"
-        / "test_functions.py"
+        / "tst_functions.py"
     )
     with open(file_path, encoding="utf-8") as f:
         return f.read()
@@ -194,7 +183,7 @@ def class_test_code() -> str:
         pathlib.Path(__file__).parent
         / "treesitter_testcases"
         / "python"
-        / "test_classes.py"
+        / "tst_classes.py"
     )
     with open(file_path, encoding="utf-8") as f:
         return f.read()
@@ -250,7 +239,7 @@ def global_vars_test_code() -> str:
         pathlib.Path(__file__).parent
         / "treesitter_testcases"
         / "python"
-        / "test_variables.py"
+        / "tst_variables.py"
     )
     with open(file_path, encoding="utf-8") as f:
         return f.read()
@@ -307,7 +296,7 @@ def methods_test_code() -> str:
         pathlib.Path(__file__).parent
         / "treesitter_testcases"
         / "python"
-        / "test_methods.py"
+        / "tst_methods.py"
     )
     with open(file_path, encoding="utf-8") as f:
         return f.read()
@@ -388,7 +377,7 @@ def calls_test_code() -> str:
         pathlib.Path(__file__).parent
         / "treesitter_testcases"
         / "python"
-        / "test_calls.py"
+        / "tst_calls.py"
     )
     with open(file_path, encoding="utf-8") as f:
         return f.read()

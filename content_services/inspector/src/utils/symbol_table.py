@@ -383,7 +383,6 @@ class ReifiedProjectIndex:
 
     file_to_symbols: dict[Path, list[ReifiedSymbol]]
     # fqn -> {"functions": [...], "variables": [...]} # TODO track member vars!
-    # object_fqns_to_members: dict[str, dict[str, list[ReifiedSymbol]]] # TODO: not sure if needed anymore since we add children to the reified symbol
 
     @classmethod
     def from_linked_project(
@@ -525,32 +524,6 @@ class ReifiedProjectIndex:
             return []
         return symbol.usages
 
-    # def get_object_members(self, class_fqn: str) -> dict[str, list[ReifiedSymbol]]:
-    #     return self.object_fqns_to_members.get(
-    #         class_fqn, {"functions": [], "variables": []}
-    #     )
-
-    # def get_member_functions(self, class_fqn: str) -> list[ReifiedSymbol]:
-    #     return self.object_fqns_to_members.get(class_fqn, {}).get("functions", [])
-
-    # def get_member_variables(self, class_fqn: str) -> list[ReifiedSymbol]:
-    #     return self.object_fqns_to_members.get(class_fqn, {}).get("variables", [])
-
-    # def get_containing_class(self, symbol: ReifiedSymbol) -> ReifiedSymbol | None:
-    #     if not symbol.raw.fully_qualified_parent_path:
-    #         return None
-    #     parent_fqn = symbol.raw.fully_qualified_parent_path
-
-    #     for file_symbols in self.file_to_symbols.values():
-    #         for sym in file_symbols:
-    #             if (
-    #                 sym.is_definition
-    #                 and sym.raw.symbol_kind == SymbolKind.DATA_STRUCTURE
-    #                 and get_fully_qualified_name(sym.raw) == parent_fqn
-    #             ):
-    #                 return sym
-    #     return None
-
     def print_summary(self, files: list[Path] | None = None) -> None:
         RESET = "\033[0m"
         BLUE = "\033[94m"
@@ -630,10 +603,10 @@ class ReifiedProjectIndex:
                                 print(
                                     f"{RED}       📌 {mv_name} {mv_lines} [{mv_usage_count} usage(s)]{RESET}"
                                 )
-                        if sym.inheritance:
+                        if sym.inherits_from:
                             print(
                                 f"     {BOLD}Inheritance:{RESET} "
-                                f"{', '.join(get_fully_qualified_name(i.raw) for i in sym.inheritance)}"
+                                f"{', '.join(get_fully_qualified_name(i.raw) for i in sym.inherits_from)}"
                             )
                     else:
                         # Check if this is a member function

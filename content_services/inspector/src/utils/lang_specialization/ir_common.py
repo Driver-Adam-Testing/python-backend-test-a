@@ -374,9 +374,9 @@ class IrData(BaseModel, abc.ABC):
                             output += (
                                 f"    - [`{fqn}`]({path_part}#{kind_part}:{fqn})\n"
                             )
-                if sym.inheritance is not None and len(sym.inheritance) > 0:
+                if sym.inherits_from is not None and len(sym.inherits_from) > 0:
                     output += "- **Inherits from**:\n"
-                    for inherited_class in sym.inheritance:
+                    for inherited_class in sym.inherits_from:
                         kind_part = inherited_class.raw.symbol_kind.name.lower()
                         fqn = get_fully_qualified_name(inherited_class.raw)
                         path_part = inherited_class.raw.file_path

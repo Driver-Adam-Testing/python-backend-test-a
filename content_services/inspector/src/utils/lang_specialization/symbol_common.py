@@ -131,7 +131,7 @@ class ReifiedSymbol:
     definition: Self | None = None
     usages: list[Self] = field(default_factory=list)
     calls: list[Self] = field(default_factory=list)
-    inheritance: list[Self] = field(default_factory=list)  # e.g. base classes
+    inherits_from: list[Self] = field(default_factory=list)
     declarations: list[Self] = field(
         default_factory=list
     )  # Should this be a list? Likely not

@@ -2,7 +2,6 @@ from collections import defaultdict
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, replace
-from os import sep
 from pathlib import Path
 from typing import Self
 
@@ -461,7 +460,7 @@ class ReifiedProjectIndex:
 
             # Track class/object definitions
             if lsym.is_definition and lsym.raw.symbol_kind == SymbolKind.DATA_STRUCTURE:
-                fqn = get_fully_qualified_name(sym=lsym.raw, sep=sep)
+                fqn = get_fully_qualified_name(sym=lsym.raw)
                 obj_symbols[fqn] = final_map[lsym]
 
         # (4) For function definitions, gather calls from the containment map
@@ -805,7 +804,7 @@ def discover_c_and_h_files(project_root: Path) -> list[Path]:
 
 def main() -> None:
     # project_root = Path("/Users/andrewmark/Downloads/sqlite")
-    project_root = Path("/Users/shaneghiotto/driver/uploaded_codebases/abseil_test")
+    project_root = Path("/Users/shaneghiotto/driver/uploaded_codebases/cpp_test3")
 
     file_paths = discover_c_and_h_files(project_root)
 

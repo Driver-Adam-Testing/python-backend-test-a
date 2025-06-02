@@ -381,6 +381,13 @@ class IrData(BaseModel, abc.ABC):
                         name_part = get_fully_qualified_name(inherited_class.raw)
                         path_part = inherited_class.raw.file_path
                         output += f"    - [`{name_part}`]({path_part}#{kind_part}:{name_part})\n"
+                elif (
+                    sym.raw.base_class_names is not None
+                    and len(sym.raw.base_class_names) > 0
+                ):
+                    output += "- **Inherits from**:\n"
+                    for base_class_name in sym.raw.base_class_names:
+                        output += f"    - `{base_class_name}`\n"
             # if sym.raw.symbol_kind == SymbolKind.CALLABLE and sym.usages:
             #     output += "- **Usages of this function**:\n"
             #     for usage in self._reified_symbol.usages:

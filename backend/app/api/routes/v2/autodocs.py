@@ -117,6 +117,20 @@ def run_autodoc(
                     status_code=400,
                     detail="Architecture Overview requires at least one codebase source tuned",
                 )
+        case AutoDocConfigKind.CUSTOM:
+            code_node_count = 0
+            for document_source in document_sources:
+                if (
+                    document_source.source_node.version.primary_asset.kind
+                    == PrimaryAssetKind.CODEBASE
+                ):
+                    code_node_count += 1
+            if code_node_count == 0:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Custom Overview requires at least one codebase source tuned",
+                )
+
         case _:
             raise HTTPException(
                 status_code=400,

@@ -332,11 +332,12 @@ class LinkedProject:
                         )
                     else:
                         # No direct definition, check for declarations
-                        decl_candidates = declarations_by_fqn.get(fqn, [])
+                        # TODO: this works for C, but C++ may have issues with namespaces that limit this
+                        decl_candidates = declarations_by_fqn.get(rsym.name, [])
                         vis_decls = [
                             (dpath, d_raw)
                             for (dpath, d_raw) in decl_candidates
-                            if dpath in visible_with_self
+                            if d_raw.file_path in visible_with_self
                         ]
                         if len(vis_decls) >= 1:
                             # pick first for simplicity
@@ -555,7 +556,7 @@ class ReifiedProjectIndex:
         BLUE = "\033[94m"
         GREEN = "\033[92m"
         YELLOW = "\033[93m"
-        # CYAN = "\033[96m"
+        CYAN = "\033[96m"
         MAGENTA = "\033[95m"
         RED = "\033[91m"
         BOLD = "\033[1m"
@@ -729,15 +730,15 @@ class ReifiedProjectIndex:
                             f"{sym.definition.raw.end_line}]"
                         )
                         def_file_path = sym.definition.raw.file_path
-                        # print(
-                        #     f"{CYAN}  🔗 USE: {BOLD}{name_display}{RESET}{CYAN} {lines} "
-                        #     f"→ {def_name} {def_lines} in {def_file_path}{RESET}"
-                        # )
-                    # else:
-                    #     print(
-                    #         f"{CYAN}  🔗 USE: {BOLD}{name_display}{RESET}{CYAN} {lines} "
-                    #         f"→ no definition found{RESET}"
-                    #     )
+                        print(
+                            f"{CYAN}  🔗 USE: {BOLD}{name_display}{RESET}{CYAN} {lines} "
+                            f"→ {def_name} {def_lines} in {def_file_path}{RESET}"
+                        )
+                    else:
+                        print(
+                            f"{CYAN}  🔗 USE: {BOLD}{name_display}{RESET}{CYAN} {lines} "
+                            f"→ no definition found{RESET}"
+                        )
 
 
 def build_c_project_index(
@@ -774,7 +775,7 @@ def discover_c_and_h_files(project_root: Path) -> list[Path]:
 
 def main() -> None:
     # project_root = Path("/Users/andrewmark/Downloads/sqlite")
-    project_root = Path("/Users/shaneghiotto/driver/uploaded_codebases/abseil_test")
+    project_root = Path("/Users/shaneghiotto/driver/uploaded_codebases/chesslib6")
 
     file_paths = discover_c_and_h_files(project_root)
 

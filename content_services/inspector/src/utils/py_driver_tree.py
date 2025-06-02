@@ -1,9 +1,101 @@
 from collections.abc import Callable
+from dataclasses import dataclass
+from enum import StrEnum
 
 import tree_sitter
 
 from utils.lang_specialization.symbol_common import RawTreeSitterSymbolData, SymbolKind
 from utils.treesitter_driver import DriverTree, symbol_extractor
+
+PY_BUILT_IN_FN_SET = frozenset(
+    [
+        "abs",
+        "aiter",
+        "all",
+        "anext",
+        "any",
+        "ascii",
+        "bin",
+        "bool",
+        "breakpoint",
+        "bytearray",
+        "bytes",
+        "callable",
+        "chr",
+        "classmethod",
+        "compile",
+        "complex",
+        "delattr",
+        "dict",
+        "dir",
+        "divmod",
+        "enumerate",
+        "eval",
+        "exec",
+        "filter",
+        "float",
+        "format",
+        "frozenset",
+        "getattr",
+        "globals",
+        "hasattr",
+        "hash",
+        "help",
+        "hex",
+        "id",
+        "input",
+        "int",
+        "isinstance",
+        "issubclass",
+        "iter",
+        "len",
+        "list",
+        "locals",
+        "map",
+        "max",
+        "memoryview",
+        "min",
+        "next",
+        "object",
+        "oct",
+        "open",
+        "ord",
+        "pow",
+        "print",
+        "property",
+        "range",
+        "repr",
+        "reversed",
+        "round",
+        "set",
+        "setattr",
+        "slice",
+        "sorted",
+        "staticmethod",
+        "str",
+        "sum",
+        "super",
+        "tuple",
+        "type",
+        "vars",
+        "zip",
+        "__import__",
+    ]
+)
+
+
+class PyCallKind(StrEnum):
+    BUILT_IN = "built-in"
+    FREE_FN = "free_function"
+    OBJ_METHOD = "object_method"
+    CLS_CONSTRUCTOR = "class_constructor"
+    CLS_OR_STATIC_METHOD = "class_or_static_method"
+
+
+@dataclass(frozen=True)
+class PyCall:
+    name: str
+    kind: PyCallKind
 
 
 def py_node_to_text(source_bytes: bytes, node: tree_sitter.Node) -> str:
@@ -59,7 +151,6 @@ class PyDriverTree(DriverTree):
         current = node.parent
 
         while current:
-            # print(f"type: {current.type}, text: {current.text.decode('utf-8')}")
             if current.type == "module":
                 path_parts.append(str(self.file_path.with_suffix("")))
             elif current.type in [
@@ -192,7 +283,6 @@ class PyDriverTree(DriverTree):
                         fully_qualified_parent_path = (
                             self._get_fully_qualified_path_to_parent(node=im_node)
                         )
-                        print(fully_qualified_parent_path)
                         for child in im_node.named_children:
                             im_name = ".".join(
                                 ["__future__", child.text.decode("utf-8")]
@@ -347,9 +437,91 @@ class PyDriverTree(DriverTree):
         sorted_klasses = sorted(klasses, key=lambda x: x.start_byte)
         return sorted_klasses
 
+    def extract_calls(self) -> tuple[list[RawTreeSitterSymbolData], list[PyCall]]:
+        calls_query_str = """
+        ;; free function calls
+        (call
+          function: (identifier) @fn_ident) @fn_call
+        ;; object method calls
+        (call
+          function: (attribute
+                      object: (_) @object
+                      attribute: (identifier) @method_ident)) @method_call
+        """.strip()
+        query = self.tree_sitter_lang.query(calls_query_str)
+        matches = query.matches(self.tree.root_node)
+        calls_symbol, calls_kind = [], []
+        for pat_idx, captures_by_name in matches:
+            if pat_idx == 0:  # Free functions
+                call_node = captures_by_name["fn_call"][0]
+                # TODO Check if no name
+                fn_name = captures_by_name["fn_ident"][0].text.decode("utf-8")
+                if fn_name in PY_BUILT_IN_FN_SET:
+                    kind = PyCallKind.BUILT_IN
+                # TODO: Risky heuristic based on idiomatic Python conventions only.
+                elif fn_name[0].isupper():
+                    kind = PyCallKind.CLS_CONSTRUCTOR
+                else:
+                    kind = PyCallKind.FREE_FN
+                start_line, end_line = self.get_node_line_range(call_node)
+                start_byte, end_byte = call_node.start_byte, call_node.end_byte
+                fully_qualified_parent_path = self._get_fully_qualified_path_to_parent(
+                    node=call_node
+                )
+                call = RawTreeSitterSymbolData(
+                    name=fn_name,
+                    start_line=start_line,
+                    end_line=end_line,
+                    symbol_kind=SymbolKind.CALL,
+                    start_byte=start_byte,
+                    end_byte=end_byte,
+                    file_path=self.file_path,
+                    fully_qualified_parent_path=fully_qualified_parent_path,
+                    symbol_code=py_node_to_text(self.source_bytes, call_node),
+                )
+                calls_symbol.append(call)
+                calls_kind.append(PyCall(name=fn_name, kind=kind))
+            elif pat_idx == 1:  # Object methods
+                call_node = captures_by_name["method_call"][0]
+                # TODO Check if no name
+                method_name = captures_by_name["method_ident"][0].text.decode("utf-8")
+                # # TODO: Risky heuristic based on idiomatic Python conventions only.
+                # try:
+                #     object_name = captures_by_name["object"][0].text.decode("utf-8")
+                # except Exception as _e:
+                #     object_name = None
+                # if object_name and object_name[0].isupper():
+                #     kind = PyCallKind.CLS_OR_STATIC_METHOD
+                # else:
+                #     kind = PyCallKind.OBJ_METHOD
+                kind = PyCallKind.OBJ_METHOD
+                start_line, end_line = self.get_node_line_range(call_node)
+                start_byte, end_byte = call_node.start_byte, call_node.end_byte
+                fully_qualified_parent_path = self._get_fully_qualified_path_to_parent(
+                    node=call_node
+                )
+                call = RawTreeSitterSymbolData(
+                    name=method_name,
+                    start_line=start_line,
+                    end_line=end_line,
+                    symbol_kind=SymbolKind.CALL,
+                    start_byte=start_byte,
+                    end_byte=end_byte,
+                    file_path=self.file_path,
+                    fully_qualified_parent_path=fully_qualified_parent_path,
+                    symbol_code=py_node_to_text(self.source_bytes, call_node),
+                )
+                calls_symbol.append(call)
+                calls_kind.append(PyCall(name=method_name, kind=kind))
+
+        return calls_symbol, calls_kind
+
     @symbol_extractor
     def extract_function_calls(self) -> list[RawTreeSitterSymbolData]:
-        return []
+        # TODO: take advantage of extracted kind information
+        calls, _calls_kind = self.extract_calls()
+
+        return calls
 
     @symbol_extractor
     def extract_variables(self) -> list[RawTreeSitterSymbolData]:

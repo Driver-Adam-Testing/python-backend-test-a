@@ -380,3 +380,121 @@ def test_extract_methods_duplications_and_no_free_fns(
     methods = driver_tree.extract_method_definitions()
 
     assert len(methods) == 40
+
+
+@pytest.fixture(scope="module")
+def calls_test_code() -> str:
+    file_path = (
+        pathlib.Path(__file__).parent
+        / "treesitter_testcases"
+        / "python"
+        / "test_calls.py"
+    )
+    with open(file_path, encoding="utf-8") as f:
+        return f.read()
+
+
+@pytest.mark.parametrize(
+    "expected_name, expected_kind, expected_line_range",
+    [
+        ("len", "built-in", (14, 14)),
+        ("upper", "object_method", (15, 15)),
+        ("join", "object_method", (16, 16)),
+        ("max", "built-in", (19, 19)),
+        ("min", "built-in", (20, 20)),
+        ("sum", "built-in", (21, 21)),
+        ("str", "built-in", (22, 22)),
+        ("range", "built-in", (23, 23)),
+        ("list", "built-in", (23, 23)),
+        ("strip", "object_method", (26, 26)),
+        ("replace", "object_method", (27, 27)),
+        ("Path", "class_constructor", (28, 28)),
+        ("replace", "object_method", (31, 31)),
+        ("upper", "object_method", (31, 31)),
+        ("strip", "object_method", (31, 31)),
+        ("as_posix", "object_method", (32, 32)),
+        ("absolute", "object_method", (32, 32)),
+        ("Path", "class_constructor", (32, 32)),
+        ("Example", "class_constructor", (47, 47)),
+        ("method", "object_method", (48, 48)),
+        ("class_method", "object_method", (49, 49)),  # TODO: impl class/static methods
+        ("static_method", "object_method", (50, 50)),  # TODO: impl class/static methods
+        ("len", "built-in", (53, 53)),  # TODO: need to check byte offsets for same line
+        ("len", "built-in", (53, 53)),
+        ("min", "built-in", (53, 53)),
+        ("max", "built-in", (53, 53)),
+        ("print", "built-in", (54, 54)),
+        ("len", "built-in", (54, 54)),
+        ("print", "built-in", (54, 54)),
+        ("max", "built-in", (59, 59)),
+        ("square", "free_function", (64, 64)),
+        (
+            "dumps",
+            "object_method",
+            (68, 68),
+        ),  # This should be a free function, but requires extra parsing.
+        (
+            "getcwd",
+            "object_method",
+            (69, 69),
+        ),  # This should be a free function, but requires extra parsing.
+        ("print", "built-in", (73, 73)),
+        ("foo", "free_function", (78, 78)),
+        ("bar", "free_function", (79, 79)),
+        ("bar", "free_function", (82, 85)),
+        ("enumerate", "built-in", (88, 88)),
+        ("str", "built-in", (89, 89)),
+        ("len", "built-in", (91, 91)),
+        ("pop", "object_method", (92, 92)),
+        ("len", "built-in", (94, 94)),
+        ("capitalize", "object_method", (95, 95)),
+        ("str", "built-in", (99, 99)),
+        ("len", "built-in", (100, 100)),
+        ("max", "built-in", (103, 103)),
+        (
+            "sleep",
+            "object_method",
+            (109, 109),
+        ),  # This should be a free function, but requires extra parsing.
+        ("some_async_function", "free_function", (110, 110)),
+        ("Path", "class_constructor", (117, 117)),
+        ("list", "built-in", (118, 118)),
+        ("dict", "built-in", (119, 119)),
+        ("len", "built-in", (123, 123)),
+        ("sum", "built-in", (124, 124)),
+        ("min", "built-in", (125, 125)),
+        ("values", "object_method", (125, 125)),
+        ("max", "built-in", (122, 126)),
+        ("method", "object_method", (135, 135)),
+        ("super", "built-in", (135, 135)),
+        ("len", "built-in", (142, 142)),
+        ("PropertyExample", "class_constructor", (144, 144)),
+        ("getattr", "built-in", (147, 147)),
+    ],
+)
+def test_extract_calls(
+    calls_test_code: str,
+    expected_name: str,
+    expected_kind: str,
+    expected_line_range: tuple[int, int],
+) -> None:
+    driver_tree = PyDriverTree.from_code(calls_test_code, "does_not_matter.py")
+    calls_symbols, calls_kinds = driver_tree.extract_calls()
+    extracted = [
+        (cs.name, str(ck.kind), (cs.start_line, cs.end_line))
+        for (cs, ck) in zip(calls_symbols, calls_kinds)
+    ]
+
+    assert (expected_name, expected_kind, expected_line_range) in extracted, (
+        f"Expected call ({expected_name}) of kind ({expected_kind}) in ({expected_line_range}) "
+        f"not found in extracted calls: {extracted}"
+    )
+
+
+def test_extract_calls_duplications_or_false_positives(
+    calls_test_code: str,
+) -> None:
+    driver_tree = PyDriverTree.from_code(calls_test_code, "does_not_matter.py")
+    calls_symbols, _ = driver_tree.extract_calls()
+
+    assert len(calls_symbols) == 61

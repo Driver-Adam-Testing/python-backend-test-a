@@ -48,7 +48,7 @@ def parse_py_file(
 
 
 def discover_py_files(project_root: Path) -> list[Path]:
-    return [p.resolve() for p in project_root.rglob("*") if p.suffix.lower() in (".py")]
+    return [p.resolve() for p in project_root.rglob("*.py") if p.is_file()]
 
 
 def resolve_import_path(
@@ -116,8 +116,9 @@ def main() -> ReifiedProjectIndex:
         "/Users/daniel/Documents/moved_content_from_python_backend/infinity-core/"
     )
     file_paths = discover_py_files(project_root=project_root)
+    print(file_paths)
     index = build_py_project_index(file_paths=file_paths, project_root=project_root)
-    index.print_summary()
+    index.print_summary(sep=".")
 
     return index
 

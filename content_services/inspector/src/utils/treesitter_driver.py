@@ -307,12 +307,17 @@ def extract_base_class_info(base_class_clause: tree_sitter.Node) -> list[BaseCla
         elif child.type in [
             "type_identifier",
             "qualified_identifier",
-            "template_type",
             "scoped_type_identifier",
             "dependent_type_identifier",
         ]:
             # Fallback for simpler cases where there's no base_class_specifier wrapper
             base_class_name = child.text.decode("utf8")
+            if base_class_name:
+                base_classes.append(BaseClassInfo(name=base_class_name))
+        elif child.type == "template_type":
+            name_node = child.child_by_field_name("name")
+            # TODO: could this be a qualified identifier too?
+            base_class_name = name_node.text.decode("utf8") if name_node else None
             if base_class_name:
                 base_classes.append(BaseClassInfo(name=base_class_name))
         # Don't add anything else to avoid including access specifiers and punctuation
@@ -628,7 +633,7 @@ class CppCDriverTree(DriverTree):
 
             # If direct parent of data_structure_node is a node of kind template_declaration, we actually want that
             # included.
-            data_structure_node = maybe_use_template_declaration_parent(
+            new_data_structure_node = maybe_use_template_declaration_parent(
                 data_structure_node
             )
 
@@ -647,13 +652,13 @@ class CppCDriverTree(DriverTree):
                         name_node.start_byte : name_node.end_byte
                     ].decode("utf8")
             else:
-                print("Could not parse name for node:", data_structure_node)
+                print("Could not parse name for node:", new_data_structure_node)
                 continue  # No name found, skip this data structure
 
-            start_line, end_line = self.get_node_line_range(data_structure_node)
-            ts_node = data_structure_node
+            start_line, end_line = self.get_node_line_range(new_data_structure_node)
+            ts_node = new_data_structure_node
             fully_qualified_path = self._get_fully_qualified_path_to_parent(
-                data_structure_node
+                new_data_structure_node
             )
             fully_qualified_path = (
                 fully_qualified_path

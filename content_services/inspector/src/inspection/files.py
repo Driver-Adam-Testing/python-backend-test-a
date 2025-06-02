@@ -467,8 +467,6 @@ def comprehend_file_top_down(
                         print(
                             f"Disambiguated header file `{node.root_rel_path}` to be `{language}`"
                         )
-                        if language == Lang.CPP:
-                            language = Lang.CPP
 
                     match language:
                         case Lang.C:
@@ -566,8 +564,6 @@ def comprehend_file_top_down(
                 print(
                     f"Disambiguated header file `{node.root_rel_path}` to be `{language}`"
                 )
-                if language == Lang.CPP:
-                    language = Lang.CPP
 
             template = TEMPLATE_DATA[file_kind.kind][language]
             long_template = Template(template=template)

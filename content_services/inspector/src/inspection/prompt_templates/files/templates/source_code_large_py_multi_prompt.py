@@ -1,14 +1,15 @@
 from utils.lang_specialization.default_multi_context import (
     SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT_MULTI_CONTEXT,
     SOURCE_CODE_PURPOSE_FROM_CHUNKS,
-    default_imports_checker_multi_prompt,
 )
+from utils.lang_specialization.ir_common import ListData
 from utils.lang_specialization.python import (
     SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_PY,
     PyClassCollection,
     PyClassRawSymbolCollection,
     PyFnCollection,
     PyFnRawSymbolCollection,
+    PyImportRawSymbolCollection,
     PyVariableCollection,
     PyVariableRawSymbolCollection,
 )
@@ -22,12 +23,11 @@ SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_PY = [
         SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT_MULTI_CONTEXT,
         SOURCE_CODE_PURPOSE_FROM_CHUNKS,
     ),
-    # NOTE: for simplicity this only looks at the first file chunk for imports (making assumptions about the structure of the file)
     (
-        S.MULTI_LLM_COND_JSON,
+        S.FN_COND_JSON,
         "# Imports and Dependencies",
-        default_imports_checker_multi_prompt,
-        lambda _llm, output, _code: output,
+        PyImportRawSymbolCollection.from_static_analysis,
+        lambda _llm, output, _code: ListData(data=list(output.data.keys())),
         None,
     ),
     (

@@ -14,7 +14,8 @@ from utils.lang_specialization.symbol_common import (
 
 def get_fully_qualified_name(sym: RawTreeSitterSymbolData, sep: str = "::") -> str:
     if sym.fully_qualified_parent_path and sym.name:
-        return f"{sym.fully_qualified_parent_path}{sep}{sym.name}"
+        return f"{sym.fully_qualified_parent_path}{sym.delimiter}{sym.name}"
+        # return f"{sym.fully_qualified_parent_path}{sep}{sym.name}"
     return sym.name or ""  # TODO is this correct? What if name is None?
 
 

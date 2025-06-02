@@ -526,6 +526,7 @@ class CppVariableRawSymbolCollection(RawSymbolCollection):
         return self.data
 
 
+# TODO: Make a base class in `ir_common.py` that just takes in a tree.
 class CppIncludeRawSymbolCollection(RawSymbolCollection):
     data: dict[str, RawSymbolData]
 

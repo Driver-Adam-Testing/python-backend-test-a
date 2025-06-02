@@ -18,6 +18,7 @@ from modal_funcs import (
 from sqlmodel import delete, select
 from utils.dag import LiteNode
 from utils.db import get_source_code_derived_content
+from utils.py_symbol_table import build_py_project_index
 from utils.symbol_table import build_c_project_index
 from utils.task import SerializationMethod, Task, TaskResult
 
@@ -638,6 +639,11 @@ class CSymbolTableTask(Task):
         self.has_c_files = any(
             p.suffix in [".c", ".cpp", ".cc", ".cxx"] for p in self.c_and_h_files
         )
+        self.py_files = {
+            codebase_root / rel_path
+            for rel_path in nodes_relative_paths
+            if rel_path.suffix in {".py"}
+        }
         super().__init__(
             task_name=task_name,
             node=root_node,
@@ -648,13 +654,21 @@ class CSymbolTableTask(Task):
     ) -> TaskResult:
         print("Running CSymbolTableTask")
         print(self.has_c_files)
-        if self.has_c_files:
+        if len(self.py_files) > 0:
+            index_builder = build_py_project_index
+            files = self.py_files
+        elif self.has_c_files:
+            index_builder = build_c_project_index
+            files = self.c_and_h_files
+        else:
+            index_builder = None
+        if index_builder:
             loop = asyncio.get_running_loop()
             with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
                 result = await loop.run_in_executor(
                     pool,
-                    build_c_project_index,
-                    self.c_and_h_files,
+                    index_builder,
+                    files,
                     self.codebase_root / self.codebase_name,
                 )
             return TaskResult(data=result, serialization=SerializationMethod.PICKLE)

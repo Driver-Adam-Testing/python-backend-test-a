@@ -211,6 +211,7 @@ class PyDriverTree(DriverTree):
                                         symbol_code=py_node_to_text(
                                             self.source_bytes, im_node
                                         ),
+                                        delimiter=".",
                                     )
                                     imports.append(im)
                             elif child.type == "dotted_name":
@@ -228,6 +229,7 @@ class PyDriverTree(DriverTree):
                                     symbol_code=py_node_to_text(
                                         self.source_bytes, im_node
                                     ),
+                                    delimiter=".",
                                 )
                                 imports.append(im)
                 case 1:  # All from x import y
@@ -274,6 +276,7 @@ class PyDriverTree(DriverTree):
                                 file_path=self.file_path,
                                 fully_qualified_parent_path=fully_qualified_parent_path,
                                 symbol_code=py_node_to_text(self.source_bytes, im_node),
+                                delimiter=".",
                             )
                             imports.append(im)
                 case 2:  # `__future__` imports
@@ -297,6 +300,7 @@ class PyDriverTree(DriverTree):
                                 file_path=self.file_path,
                                 fully_qualified_parent_path=fully_qualified_parent_path,
                                 symbol_code=py_node_to_text(self.source_bytes, im_node),
+                                delimiter=".",
                             )
                             imports.append(im)
                 case _:
@@ -374,15 +378,16 @@ class PyDriverTree(DriverTree):
                     file_path=self.file_path,
                     fully_qualified_parent_path=fully_qualified_parent_path,
                     symbol_code=symbol_code,
+                    delimiter=".",
                 )
                 callables.append(fn_like)
         sorted_callables = sorted(callables, key=lambda x: x.start_byte)
         return sorted_callables
 
-    def extract_data_structure_definitions(self) -> list[RawTreeSitterSymbolData]:
-        raise NotImplementedError("Not relevant for Python")
-
     @symbol_extractor
+    def extract_data_structure_definitions(self) -> list[RawTreeSitterSymbolData]:
+        return self.extract_class_definitions()
+
     def extract_class_definitions(self) -> list[RawTreeSitterSymbolData]:
         klass_query_str = """
         (class_definition
@@ -424,13 +429,14 @@ class PyDriverTree(DriverTree):
                 name=klass_name,
                 start_line=start_line,
                 end_line=end_line,
-                symbol_kind=SymbolKind.CLASS,
+                symbol_kind=SymbolKind.DATA_STRUCTURE,
                 start_byte=start_byte,
                 end_byte=end_byte,
                 file_path=self.file_path,
                 fully_qualified_parent_path=fully_qualified_parent_path,
                 base_class_names=base_class_names,
                 symbol_code=symbol_code,
+                delimiter=".",
             )
             klasses.append(klass)
 
@@ -456,6 +462,7 @@ class PyDriverTree(DriverTree):
                 call_node = captures_by_name["fn_call"][0]
                 # TODO Check if no name
                 fn_name = captures_by_name["fn_ident"][0].text.decode("utf-8")
+                # TODO: Will be incorrect if someone shadows a built-in.
                 if fn_name in PY_BUILT_IN_FN_SET:
                     kind = PyCallKind.BUILT_IN
                 # TODO: Risky heuristic based on idiomatic Python conventions only.
@@ -478,6 +485,7 @@ class PyDriverTree(DriverTree):
                     file_path=self.file_path,
                     fully_qualified_parent_path=fully_qualified_parent_path,
                     symbol_code=py_node_to_text(self.source_bytes, call_node),
+                    delimiter=".",
                 )
                 calls_symbol.append(call)
                 calls_kind.append(PyCall(name=fn_name, kind=kind))
@@ -510,6 +518,7 @@ class PyDriverTree(DriverTree):
                     file_path=self.file_path,
                     fully_qualified_parent_path=fully_qualified_parent_path,
                     symbol_code=py_node_to_text(self.source_bytes, call_node),
+                    delimiter=".",
                 )
                 calls_symbol.append(call)
                 calls_kind.append(PyCall(name=method_name, kind=kind))
@@ -569,6 +578,7 @@ class PyDriverTree(DriverTree):
                     file_path=self.file_path,
                     fully_qualified_parent_path=fully_qualified_parent_path,
                     symbol_code=py_node_to_text(self.source_bytes, gbl_expr_node),
+                    delimiter=".",
                 )
                 gbl_vars.append(gbl)
             elif pat_idx == 1:  # Multiple assignment
@@ -590,6 +600,7 @@ class PyDriverTree(DriverTree):
                         file_path=self.file_path,
                         fully_qualified_parent_path=fully_qualified_parent_path,
                         symbol_code=py_node_to_text(self.source_bytes, gbl_expr_node),
+                        delimiter=".",
                     )
                     gbl_vars.append(gbl)
 

@@ -18,9 +18,6 @@ LANGUAGES = {
     "python": tree_sitter.Language(tree_sitter_python.language()),
 }
 
-# TODO: First try to linkn methods to classes in symbol table construction
-# TODO: nice to have: function calls attaching the scope so we can use in symbol table construction
-
 
 def symbol_extractor(
     method: Callable[..., list[RawTreeSitterSymbolData]],

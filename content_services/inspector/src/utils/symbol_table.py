@@ -354,11 +354,12 @@ class LinkedProject:
                         )
                     else:
                         # No direct definition, check for declarations
-                        decl_candidates = declarations_by_fqn.get(fqn, [])
+                        # TODO: this works for C, but C++ may have issues with namespaces that limit this
+                        decl_candidates = declarations_by_fqn.get(rsym.name, [])
                         vis_decls = [
                             (dpath, d_raw)
                             for (dpath, d_raw) in decl_candidates
-                            if dpath in visible_with_self
+                            if d_raw.file_path in visible_with_self
                         ]
                         if len(vis_decls) >= 1:
                             # pick first for simplicity
@@ -404,7 +405,6 @@ class ReifiedProjectIndex:
 
     file_to_symbols: dict[Path, list[ReifiedSymbol]]
     # fqn -> {"functions": [...], "variables": [...]} # TODO track member vars!
-    # object_fqns_to_members: dict[str, dict[str, list[ReifiedSymbol]]] # TODO: not sure if needed anymore since we add children to the reified symbol
 
     @classmethod
     def from_linked_project(
@@ -546,38 +546,12 @@ class ReifiedProjectIndex:
             return []
         return symbol.usages
 
-    # def get_object_members(self, class_fqn: str) -> dict[str, list[ReifiedSymbol]]:
-    #     return self.object_fqns_to_members.get(
-    #         class_fqn, {"functions": [], "variables": []}
-    #     )
-
-    # def get_member_functions(self, class_fqn: str) -> list[ReifiedSymbol]:
-    #     return self.object_fqns_to_members.get(class_fqn, {}).get("functions", [])
-
-    # def get_member_variables(self, class_fqn: str) -> list[ReifiedSymbol]:
-    #     return self.object_fqns_to_members.get(class_fqn, {}).get("variables", [])
-
-    # def get_containing_class(self, symbol: ReifiedSymbol) -> ReifiedSymbol | None:
-    #     if not symbol.raw.fully_qualified_parent_path:
-    #         return None
-    #     parent_fqn = symbol.raw.fully_qualified_parent_path
-
-    #     for file_symbols in self.file_to_symbols.values():
-    #         for sym in file_symbols:
-    #             if (
-    #                 sym.is_definition
-    #                 and sym.raw.symbol_kind == SymbolKind.DATA_STRUCTURE
-    #                 and get_fully_qualified_name(sym.raw) == parent_fqn
-    #             ):
-    #                 return sym
-    #     return None
-
     def print_summary(self, files: list[Path] | None = None, sep: str = "::") -> None:
         RESET = "\033[0m"
         BLUE = "\033[94m"
         GREEN = "\033[92m"
         YELLOW = "\033[93m"
-        # CYAN = "\033[96m"
+        CYAN = "\033[96m"
         MAGENTA = "\033[95m"
         RED = "\033[91m"
         BOLD = "\033[1m"
@@ -651,10 +625,10 @@ class ReifiedProjectIndex:
                                 print(
                                     f"{RED}       📌 {mv_name} {mv_lines} [{mv_usage_count} usage(s)]{RESET}"
                                 )
-                        if sym.inheritance:
+                        if sym.inherits_from:
                             print(
                                 f"     {BOLD}Inheritance:{RESET} "
-                                f"{', '.join(get_fully_qualified_name(i.raw, sep) for i in sym.inheritance)}"
+                                f"{', '.join(get_fully_qualified_name(i.raw, sep) for i in sym.inherits_from)}"
                             )
                     else:
                         # Check if this is a member function
@@ -759,15 +733,15 @@ class ReifiedProjectIndex:
                             f"{sym.definition.raw.end_line}]"
                         )
                         def_file_path = sym.definition.raw.file_path
-                        # print(
-                        #     f"{CYAN}  🔗 USE: {BOLD}{name_display}{RESET}{CYAN} {lines} "
-                        #     f"→ {def_name} {def_lines} in {def_file_path}{RESET}"
-                        # )
-                    # else:
-                    #     print(
-                    #         f"{CYAN}  🔗 USE: {BOLD}{name_display}{RESET}{CYAN} {lines} "
-                    #         f"→ no definition found{RESET}"
-                    #     )
+                        print(
+                            f"{CYAN}  🔗 USE: {BOLD}{name_display}{RESET}{CYAN} {lines} "
+                            f"→ {def_name} {def_lines} in {def_file_path}{RESET}"
+                        )
+                    else:
+                        print(
+                            f"{CYAN}  🔗 USE: {BOLD}{name_display}{RESET}{CYAN} {lines} "
+                            f"→ no definition found{RESET}"
+                        )
 
 
 def build_c_project_index(
@@ -804,7 +778,7 @@ def discover_c_and_h_files(project_root: Path) -> list[Path]:
 
 def main() -> None:
     # project_root = Path("/Users/andrewmark/Downloads/sqlite")
-    project_root = Path("/Users/shaneghiotto/driver/uploaded_codebases/cpp_test3")
+    project_root = Path("/Users/shaneghiotto/driver/uploaded_codebases/chesslib6")
 
     file_paths = discover_c_and_h_files(project_root)
 

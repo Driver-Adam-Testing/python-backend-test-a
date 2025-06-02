@@ -467,10 +467,6 @@ def comprehend_file_top_down(
                         print(
                             f"Disambiguated header file `{node.root_rel_path}` to be `{language}`"
                         )
-                        if language == Lang.CPP:
-                            # We still defer to the generic header template if c++, but we use C language specialization
-                            # for C headers.
-                            language = Lang.CPP
 
                     match language:
                         case Lang.C:
@@ -568,10 +564,6 @@ def comprehend_file_top_down(
                 print(
                     f"Disambiguated header file `{node.root_rel_path}` to be `{language}`"
                 )
-                if language == Lang.CPP:
-                    # We still defer to the generic header template if c++, but we use C language specialization
-                    # for C headers.
-                    language = Lang.CPP
 
             template = TEMPLATE_DATA[file_kind.kind][language]
             long_template = Template(template=template)

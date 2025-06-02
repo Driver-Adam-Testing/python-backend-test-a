@@ -261,7 +261,7 @@ class CDeclarationRawSymbolCollection(RawSymbolCollection):
 
     @classmethod
     def from_llm(cls, code: str, root_rel_path: str) -> Self:
-        raise NotImplementedError("Static analysis should be used for c imports")
+        raise NotImplementedError("Static analysis should be used for c decl")
 
     def to_dict(self) -> dict[str, RawSymbolData]:
         return self.data

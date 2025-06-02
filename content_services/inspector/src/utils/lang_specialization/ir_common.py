@@ -315,17 +315,17 @@ class IrData(BaseModel, abc.ABC):
                 and self._reified_symbol.raw.symbol_kind == SymbolKind.CALLABLE
                 and self._reified_symbol.calls
             ):
-                seen_func_names = set()
+                seen = set()
                 for called_func in self._reified_symbol.calls:
-                    # TODO: this will require additional work to make work
                     kind_part = called_func.raw.symbol_kind.name.lower()
                     name_part = re.escape(called_func.raw.name)  # escape special chars
+                    fqn = get_fully_qualified_name(called_func.raw)
                     path_part = called_func.raw.file_path
 
-                    if name_part in seen_func_names:
+                    if fqn in seen:
                         continue
-                    seen_func_names.add(name_part)
-                    link = f"[`{called_func.raw.name}`]({path_part}#{kind_part}:{called_func.raw.name})"
+                    seen.add(fqn)
+                    link = f"[`{name_part}`]({path_part}#{kind_part}:{fqn})"
 
                     rendered = re.sub(rf"`{name_part}`", link, rendered)
 
@@ -336,32 +336,30 @@ class IrData(BaseModel, abc.ABC):
                 output += "- **Functions called**:\n"
                 seen_name_parts = defaultdict(list)
                 for called_func in self._reified_symbol.calls:
-                    name_part = get_fully_qualified_name(called_func.raw)
-                    seen_name_parts[name_part].append(called_func)
-                for name_part, calls in seen_name_parts.items():
+                    fqn = get_fully_qualified_name(called_func.raw)
+                    seen_name_parts[fqn].append(called_func)
+                for fqn, calls in seen_name_parts.items():
                     kind_part = calls[0].raw.symbol_kind.name.lower()
                     path_part = calls[0].raw.file_path
 
-                    output += (
-                        f"    - [`{name_part}`]({path_part}#{kind_part}:{name_part})\n"
-                    )
+                    output += f"    - [`{fqn}`]({path_part}#{kind_part}:{fqn})\n"
             if (
                 sym.raw.symbol_kind == SymbolKind.CALLABLE_DECLARATION
                 and sym.definition is not None
             ):
                 kind_part = sym.definition.raw.symbol_kind.name.lower()
-                name_part = get_fully_qualified_name(sym.definition.raw)
+                fqn = get_fully_qualified_name(sym.definition.raw)
                 path_part = sym.definition.raw.file_path
 
-                output += f"- **See also**: [`{name_part}`]({path_part}#{kind_part}:{name_part})  (Implementation)\n"
+                output += f"- **See also**: [`{fqn}`]({path_part}#{kind_part}:{fqn})  (Implementation)\n"
 
             if sym.raw.symbol_kind == SymbolKind.CALLABLE and sym.parent is not None:
                 # Link member functions to their object definiton
                 kind_part = sym.parent.raw.symbol_kind.name.lower()
-                name_part = get_fully_qualified_name(sym.parent.raw)
+                fqn = get_fully_qualified_name(sym.parent.raw)
                 path_part = sym.parent.raw.file_path
 
-                output += f"- **See also**: [`{name_part}`]({path_part}#{kind_part}:{name_part})  (Data Structure)\n"
+                output += f"- **See also**: [`{fqn}`]({path_part}#{kind_part}:{fqn})  (Data Structure)\n"
             if (
                 sym.raw.symbol_kind == SymbolKind.DATA_STRUCTURE
                 and len(sym.children) > 0
@@ -370,17 +368,19 @@ class IrData(BaseModel, abc.ABC):
                     output += "- **Member Functions**:\n"
                     for child_symbol in sym.children:
                         if child_symbol.raw.symbol_kind == SymbolKind.CALLABLE:
-                            name_part = get_fully_qualified_name(child_symbol.raw)
+                            fqn = get_fully_qualified_name(child_symbol.raw)
                             kind_part = child_symbol.raw.symbol_kind.name.lower()
                             path_part = child_symbol.raw.file_path
-                            output += f"    - [`{name_part}`]({path_part}#{kind_part}:{name_part})\n"
-                if sym.inheritance is not None and len(sym.inheritance) > 0:
+                            output += (
+                                f"    - [`{fqn}`]({path_part}#{kind_part}:{fqn})\n"
+                            )
+                if sym.inherits_from is not None and len(sym.inherits_from) > 0:
                     output += "- **Inherits from**:\n"
-                    for inherited_class in sym.inheritance:
+                    for inherited_class in sym.inherits_from:
                         kind_part = inherited_class.raw.symbol_kind.name.lower()
-                        name_part = get_fully_qualified_name(inherited_class.raw)
+                        fqn = get_fully_qualified_name(inherited_class.raw)
                         path_part = inherited_class.raw.file_path
-                        output += f"    - [`{name_part}`]({path_part}#{kind_part}:{name_part})\n"
+                        output += f"    - [`{fqn}`]({path_part}#{kind_part}:{fqn})\n"
                 elif (
                     sym.raw.base_class_names is not None
                     and len(sym.raw.base_class_names) > 0
@@ -421,10 +421,8 @@ class IrData(BaseModel, abc.ABC):
                     kind_part = (
                         child_content._reified_symbol.raw.symbol_kind.name.lower()
                     )
-                    name_part = get_fully_qualified_name(
-                        child_content._reified_symbol.raw
-                    )
-                    id_comment = f"<!-- {{{{#{kind_part}:{name_part}}}}} -->"
+                    fqn = get_fully_qualified_name(child_content._reified_symbol.raw)
+                    id_comment = f"<!-- {{{{#{kind_part}:{fqn}}}}} -->"
                 else:
                     id_comment = ""
                 scoped_name = escape_markdown_characters(scoped_name)

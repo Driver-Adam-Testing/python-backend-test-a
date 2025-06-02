@@ -16,6 +16,7 @@ from .ir_common import (
 from .symbol_common import (
     RawSymbolCollection,
     RawSymbolData,
+    ReifiedSymbol,
     ScopeRelation,
     SymbolKind,
     code_requires_multi_prompt,
@@ -260,7 +261,7 @@ class RubyClassData(IrData):
         return mapping.get(child.scope_relation)
 
     @classmethod
-    def default_instance(cls) -> Self:
+    def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
         return cls(
             description=FieldNameWithRawContent(content=""),
             inherits_from=ListedRawContentNoNone(content=[]),
@@ -320,7 +321,7 @@ class RubyModuleData(IrData):
         return mapping.get(child.scope_relation)
 
     @classmethod
-    def default_instance(cls) -> Self:
+    def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
         return cls(
             description=FieldNameWithRawContent(content=""),
             includes=ListedRawContentNoNone(content=[]),

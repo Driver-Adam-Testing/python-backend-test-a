@@ -1,25 +1,28 @@
 from pathlib import Path
 from typing import Self
 
-from utils.codemap_ctags import extract_symbols_w_ctags
+from pydantic import PrivateAttr
 from utils.models import ChatOpenAI
+from utils.symbol_table import get_fully_qualified_name
+from utils.treesitter_driver import CppCDriverTree
 
 from .ir_common import (
-    ClassData,
+    FieldNameWithBackTickContent,
+    FieldNameWithRawContent,
     FnData,
     IrCollection,
     IrData,
+    ListedBacktickNameRawContentNoNone,
     VariableData,
 )
 from .symbol_common import (
     ParserKind,
     RawSymbolCollection,
     RawSymbolData,
+    ReifiedSymbol,
     ScopeRelation,
     SymbolKind,
     code_requires_multi_prompt,
-    create_raw_symbol_via_ctags,
-    default_ctags_analysis,
 )
 
 CPP_DATA_STRUCTURES = {"class", "struct", "enum", "union", "typedef"}
@@ -85,8 +88,8 @@ Your job is to describe the data structure. **Always respond using exactly the f
         ...
     ],
     "description": <one paragraph description of the data structure>,
-    "inherits_from": [<list of parent classes or structs>],
 }
+IMPORTANT: Members should ONLY include attributes, fields, or properties of the data structure. Do not include methods, class functions, or any function declarations in the members list of the data structure.
 
 Return JSON according to the schema above. Do not use the format ```json ... ```, just return the JSON data.
 """
@@ -208,6 +211,12 @@ class CppFnData(FnData):
     @classmethod
     def user_prompt(cls, symbol: RawSymbolData) -> str:
         user_prompt = f"{FUNCTIONS_FOUND_USER_PROMPT}{symbol.name}\n\nFunction Code:\n\n{symbol.symbol_code}"
+        if (
+            symbol.reified_symbol is not None
+            and symbol.reified_symbol.parent is not None
+            and symbol.reified_symbol.parent.raw.symbol_code is not None
+        ):
+            user_prompt += f"\n\nParent data structure code:\n\n{symbol.reified_symbol.parent.raw.symbol_code}"
         if symbol.file_code:
             user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
         return user_prompt
@@ -229,7 +238,32 @@ class CppFnCollection(IrCollection):
         return cls.from_llm_with_ir_data(CppFnData, llm, symbols_list)
 
 
-class CppClassData(ClassData):
+class CppDataStructureData(IrData):
+    type: FieldNameWithBackTickContent
+    members: ListedBacktickNameRawContentNoNone
+    description: FieldNameWithRawContent
+    _supported_child_ordering: list[str] = PrivateAttr(
+        default=[ScopeRelation.METHOD, ScopeRelation.NESTED_CLASS]
+    )
+
+    @classmethod
+    def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
+        if reified_symbol is not None:
+            name_part = get_fully_qualified_name(reified_symbol.raw)
+            kind_part = reified_symbol.raw.symbol_kind.name.lower()
+            path_part = reified_symbol.raw.file_path
+            link = f"[See definition]({path_part}#{kind_part}:{name_part})"
+            return cls(
+                description=FieldNameWithRawContent(content=link),
+                type=FieldNameWithBackTickContent(content=""),
+                members=ListedBacktickNameRawContentNoNone(content=[]),
+            )
+        return cls(
+            description=FieldNameWithRawContent(content=""),
+            type=FieldNameWithBackTickContent(content=""),
+            members=ListedBacktickNameRawContentNoNone(content=[]),
+        )
+
     @classmethod
     def system_prompt(cls) -> str:
         return DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON
@@ -237,6 +271,13 @@ class CppClassData(ClassData):
     @classmethod
     def user_prompt(cls, symbol: RawSymbolData) -> str:
         user_prompt = f"{DATA_STRUCTURES_FOUND_USER_PROMPT}{symbol.name}\n\nCode containing Data Structure:\n\n{symbol.symbol_code}"
+        if len(symbol.reified_symbol.children) > 0:
+            user_prompt += (
+                "\n\nCode of data structure functions defined outside the file:"
+            )
+            for child in symbol.reified_symbol.children:
+                if child.raw.file_path != symbol.reified_symbol.raw.file_path:
+                    user_prompt += f"\n\n{child.raw.symbol_code}"
         if symbol.file_code:
             user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
         return user_prompt
@@ -258,184 +299,187 @@ class CppClassData(ClassData):
         return mapping.get(child.symbol_kind)
 
 
-class CppClassCollection(IrCollection):
-    data: dict[str, CppClassData | list[CppClassData]]
+class CppDataStructureCollection(IrCollection):
+    data: dict[str, CppDataStructureData | list[CppDataStructureData]]
 
     @classmethod
     def from_llm(cls, llm: ChatOpenAI, symbols_list: RawSymbolCollection) -> Self:
-        return cls.from_llm_with_ir_data(CppClassData, llm, symbols_list)
+        return cls.from_llm_with_ir_data(CppDataStructureData, llm, symbols_list)
 
 
 # Symbol Extraction Classes
-class CppClassRawSymbolCollection(RawSymbolCollection):
+class CppDataStructureRawSymbolCollection(RawSymbolCollection):
     data: dict[str, RawSymbolData]
 
     @classmethod
-    def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
-        is_multi_prompt = code_requires_multi_prompt(code)
+    def from_static_analysis(
+        cls, code: str, root_rel_path: Path, reified_symbols: list[ReifiedSymbol]
+    ) -> Self | None:
+        # driver_tree = CppCDriverTree.from_code(code, root_rel_path)
+        ds_symbols = [
+            sym
+            for sym in reified_symbols
+            if sym.raw.symbol_kind == SymbolKind.DATA_STRUCTURE
+        ]
+        data_structure_raw_symbol_data = {}
+        is_large_file = code_requires_multi_prompt(code)
 
-        symbols = extract_symbols_w_ctags(
-            root_rel_path=root_rel_path, file_content=code
-        )
-
-        global_method_counts = {}
-        class_raw_symbol_data = {}
-        for s in symbols:
-            if s["kind"] in CPP_FUNCTIONS and not s["name"].startswith("__anon"):
-                global_method_counts[s["name"]] = (
-                    global_method_counts.get(s["name"], 0) + 1
-                )
-            if s["kind"] in CPP_DATA_STRUCTURES and not s["name"].startswith("__anon"):
-                use_padding = False
-                if s["kind"] == "typedef":
-                    use_padding = True
-                class_raw_symbol_data[s["name"]] = create_raw_symbol_via_ctags(
-                    ctags_symbol=s,
-                    root_rel_path=root_rel_path,
-                    code=code,
-                    symbol_kind=SymbolKind.DATA_STRUCTURE,
+        for ds_symbol in ds_symbols:
+            if ds_symbol.raw.name is not None:
+                raw_symbol_data = RawSymbolData.from_tree_sitter_raw_symbol(
+                    ts_symbol=ds_symbol.raw,
+                    path=root_rel_path,
+                    scope=None,
                     scope_relation=None,
+                    children=[],
+                    reference_code=None,
                     delimiter="::",
-                    is_multi_prompt=is_multi_prompt,
-                    use_padding=use_padding,
+                    is_large_file=is_large_file,
+                    is_overloaded=False,
+                    use_padding=False,
+                    code=code,
+                    reified_symbol=ds_symbol,
                 )
-
-        for s in symbols:
-            if (
-                (s.get("scope"))
-                and not s["name"].startswith("__anon")
-                and (s["kind"] in CPP_FUNCTIONS)
-                and s["scopeKind"] in CPP_DATA_STRUCTURES
-            ):
-                if s["scope"].split("::")[-1] not in class_raw_symbol_data:
-                    # Case where class is defined elsewhere (e.g. header), but methods for the class are defined in file
-                    class_raw_symbol_data[s["scope"].split("::")[-1]] = RawSymbolData(
-                        parser_kind=ParserKind.UCTAGS,
+                for child in ds_symbol.children:
+                    if (
+                        child.raw.symbol_kind == SymbolKind.CALLABLE
+                        and child.raw.file_path
+                        == ds_symbol.raw.file_path  # NOTE: This means that only children in the same file will be documented in the scope of the class
+                    ):
+                        raw_symbol_data.children.append(
+                            RawSymbolData.from_tree_sitter_raw_symbol(
+                                ts_symbol=child.raw,
+                                path=root_rel_path,
+                                scope=ds_symbol.raw.name,
+                                scope_relation=ScopeRelation.METHOD,
+                                children=[],
+                                reference_code=None,
+                                delimiter="::",
+                                is_large_file=is_large_file,
+                                is_overloaded=False,
+                                use_padding=False,
+                                code=code,
+                                reified_symbol=child,
+                            )
+                        )
+                data_structure_raw_symbol_data[ds_symbol.raw.name] = raw_symbol_data
+        callable_symbols_with_parent = [
+            sym
+            for sym in reified_symbols
+            if sym.raw.symbol_kind == SymbolKind.CALLABLE and sym.parent is not None
+        ]
+        for callable_symbol in callable_symbols_with_parent:
+            if callable_symbol.parent.raw.symbol_kind == SymbolKind.DATA_STRUCTURE:
+                parent_name = callable_symbol.parent.raw.name
+                if parent_name not in data_structure_raw_symbol_data:
+                    data_structure_raw_symbol_data[parent_name] = RawSymbolData(
+                        parser_kind=ParserKind.TREE_SITTER,
                         symbol_kind=SymbolKind.DATA_STRUCTURE,
-                        name=s["scope"].split("::")[-1],
+                        name=parent_name,
                         path=root_rel_path,
                         scope=None,
                         scope_relation=None,
                         children=[],
-                        start_line=s["line"],
-                        end_line=s["end"],
+                        start_line=0,
+                        end_line=0,
                         symbol_code=None,
                         file_code=None,
                         reference_code=None,
                         delimiter="::",
+                        reified_symbol=callable_symbol.parent,
                     )
-
-                is_overloaded = global_method_counts[s["name"]] > 1
-                class_raw_symbol_data[s["scope"].split("::")[-1]].children.append(
-                    create_raw_symbol_via_ctags(
-                        ctags_symbol=s,
-                        root_rel_path=root_rel_path,
-                        code=code,
-                        symbol_kind=SymbolKind.CALLABLE,
-                        scope_relation=ScopeRelation.METHOD,
-                        delimiter="::",
-                        is_multi_prompt=is_multi_prompt,
-                        is_overloaded=is_overloaded,
-                    )
-                )
-            elif (
-                (s.get("scope"))
-                and not s["name"].startswith("__anon")
-                and (s["kind"] in CPP_DATA_STRUCTURES)
-                and (s["scopeKind"] in CPP_DATA_STRUCTURES)
-            ):
-                if s["scope"].split("::")[-1] in class_raw_symbol_data:
-                    class_raw_symbol_data[s["scope"].split("::")[-1]].children.append(
-                        create_raw_symbol_via_ctags(
-                            ctags_symbol=s,
-                            root_rel_path=root_rel_path,
-                            code=code,
-                            symbol_kind=SymbolKind.DATA_STRUCTURE,
-                            scope_relation=ScopeRelation.NESTED_CLASS,
+                if (
+                    callable_symbol.raw.name is not None
+                    and callable_symbol.raw.name
+                    not in [
+                        child.name
+                        for child in data_structure_raw_symbol_data[
+                            parent_name
+                        ].children
+                    ]
+                ):
+                    data_structure_raw_symbol_data[parent_name].children.append(
+                        RawSymbolData.from_tree_sitter_raw_symbol(
+                            ts_symbol=callable_symbol.raw,
+                            path=root_rel_path,
+                            scope=parent_name,
+                            scope_relation=ScopeRelation.METHOD,
+                            children=[],
+                            reference_code=None,
                             delimiter="::",
-                            is_multi_prompt=is_multi_prompt,
+                            is_large_file=is_large_file,
+                            is_overloaded=False,
+                            use_padding=False,
+                            code=code,
+                            reified_symbol=callable_symbol,
                         )
                     )
         output = (
-            None if len(class_raw_symbol_data) == 0 else cls(data=class_raw_symbol_data)
+            None
+            if len(data_structure_raw_symbol_data) == 0
+            else cls(data=data_structure_raw_symbol_data)
         )
         return output
 
     @classmethod
     def from_llm(cls, code: str, root_rel_path: str) -> Self:
-        raise NotImplementedError("Static analysis should be used for C++ classes")
+        raise NotImplementedError(
+            "Static analysis should be used for C data structures"
+        )
 
     def to_dict(self) -> dict[str, RawSymbolData]:
         return self.data
 
 
 class CppFreeFnRawSymbolCollection(RawSymbolCollection):
-    data: dict[str, list[RawSymbolData]]
+    data: dict[str, RawSymbolData]
 
     @classmethod
-    def from_static_analysis(cls, code: str, root_rel_path: str) -> Self:
-        is_multi_prompt = code_requires_multi_prompt(code)
-
-        symbols = extract_symbols_w_ctags(
-            root_rel_path=root_rel_path, file_content=code
-        )
-
-        all_fn_names = [
-            s["name"]
-            for s in symbols
-            if s["kind"] in CPP_FUNCTIONS and not s["name"].startswith("__anon")
+    def from_static_analysis(
+        cls, code: str, root_rel_path: Path, reified_symbols: list[ReifiedSymbol] | None
+    ) -> Self | None:
+        func_symbols = [
+            sym for sym in reified_symbols if sym.raw.symbol_kind == SymbolKind.CALLABLE
         ]
 
-        fn_raw_symbol_data = {}
-        for s in symbols:
-            if s["kind"] in CPP_FUNCTIONS and not s["name"].startswith("__anon"):
-                contained_in_class = False
-                if (s.get("scope")) and (s.get("scopeKind") in CPP_DATA_STRUCTURES):
-                    contained_in_class = True
+        function_raw_symbol_data = {}
+        is_large_file = code_requires_multi_prompt(code)
 
-                fn_name = (
-                    s["name"]
-                    if s.get("scopeKind") not in CPP_DATA_STRUCTURES
-                    else s["scope"].split("::")[-1] + "::" + s["name"]
+        for reified_sym in func_symbols:
+            symbol_parent_kind = (
+                reified_sym.parent.raw.symbol_kind if reified_sym.parent else None
+            )
+            ts_symbol = reified_sym.raw
+            if (
+                ts_symbol.name is not None
+                and symbol_parent_kind != SymbolKind.DATA_STRUCTURE
+            ):
+                raw_symbol_data = RawSymbolData.from_tree_sitter_raw_symbol(
+                    ts_symbol=ts_symbol,
+                    path=root_rel_path,
+                    scope=None,
+                    scope_relation=None,
+                    children=[],
+                    reference_code=None,
+                    delimiter=None,
+                    is_large_file=is_large_file,
+                    is_overloaded=False,
+                    use_padding=False,
+                    code=code,
+                    reified_symbol=reified_sym,  # TODO hack!
                 )
-                s["name"] = fn_name
-                if not contained_in_class and all_fn_names.count(s["name"]) == 1:
-                    if fn_name not in fn_raw_symbol_data:
-                        fn_raw_symbol_data[fn_name] = []
-                    fn_raw_symbol_data[fn_name].append(
-                        create_raw_symbol_via_ctags(
-                            ctags_symbol=s,
-                            root_rel_path=root_rel_path,
-                            code=code,
-                            symbol_kind=SymbolKind.CALLABLE,
-                            scope_relation=None,
-                            delimiter="::",
-                            is_multi_prompt=is_multi_prompt,
-                            is_overloaded=False,
-                        )
-                    )
+                function_raw_symbol_data[ts_symbol.name] = raw_symbol_data
 
-                elif not contained_in_class and all_fn_names.count(s["name"]) > 1:
-                    if fn_name not in fn_raw_symbol_data:
-                        fn_raw_symbol_data[fn_name] = []
-                    fn_raw_symbol_data[fn_name].append(
-                        create_raw_symbol_via_ctags(
-                            ctags_symbol=s,
-                            root_rel_path=root_rel_path,
-                            code=code,
-                            symbol_kind=SymbolKind.CALLABLE,
-                            scope_relation=None,
-                            delimiter="::",
-                            is_multi_prompt=is_multi_prompt,
-                            is_overloaded=True,
-                        )
-                    )
-        output = None if len(fn_raw_symbol_data) == 0 else cls(data=fn_raw_symbol_data)
+        output = (
+            None
+            if len(function_raw_symbol_data) == 0
+            else cls(data=function_raw_symbol_data)
+        )
         return output
 
     @classmethod
     def from_llm(cls, code: str, root_rel_path: str) -> Self:
-        raise NotImplementedError("Static analysis should be used for C++ functions")
+        raise NotImplementedError("Static analysis should be used for C functions")
 
     def to_dict(self) -> dict[str, RawSymbolData]:
         return self.data
@@ -446,19 +490,72 @@ class CppVariableRawSymbolCollection(RawSymbolCollection):
 
     @classmethod
     def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
-        return default_ctags_analysis(
-            collection_cls=cls,
-            code=code,
-            root_rel_path=root_rel_path,
-            symbol_kind=SymbolKind.VARIABLE,
-            ctags_kinds=CPP_VARIABLES,
-            delimiter="::",
-            add_symbol_padding=True,
+        driver_tree = CppCDriverTree.from_code(code, root_rel_path)
+        variable_raw_symbol_data = {}
+        is_large_file = code_requires_multi_prompt(code)
+
+        for ts_symbol in driver_tree.extract_variables():
+            if ts_symbol.name is not None:
+                raw_symbol_data = RawSymbolData.from_tree_sitter_raw_symbol(
+                    ts_symbol=ts_symbol,
+                    path=root_rel_path,
+                    scope=None,
+                    scope_relation=None,
+                    children=[],
+                    reference_code=None,
+                    delimiter=None,
+                    is_large_file=is_large_file,
+                    is_overloaded=False,
+                    use_padding=False,
+                    code=code,
+                )
+                variable_raw_symbol_data[ts_symbol.name] = raw_symbol_data
+
+        output = (
+            None
+            if len(variable_raw_symbol_data) == 0
+            else cls(data=variable_raw_symbol_data)
         )
+        return output
 
     @classmethod
     def from_llm(cls, code: str, root_rel_path: str) -> Self:
-        raise NotImplementedError("Static analysis should be used for C++ variables")
+        raise NotImplementedError("Static analysis should be used for C variables")
+
+    def to_dict(self) -> dict[str, RawSymbolData]:
+        return self.data
+
+
+class CppIncludeRawSymbolCollection(RawSymbolCollection):
+    data: dict[str, RawSymbolData]
+
+    @classmethod
+    def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
+        driver_tree = CppCDriverTree.from_code(code, root_rel_path)
+        is_large_file = code_requires_multi_prompt(code)
+
+        import_dict = {}
+        for ts_symbol in driver_tree.extract_imports():
+            raw_symbol_data = RawSymbolData.from_tree_sitter_raw_symbol(
+                ts_symbol=ts_symbol,
+                path=root_rel_path,
+                scope=None,
+                scope_relation=None,
+                children=[],
+                reference_code=None,
+                delimiter=None,
+                is_large_file=is_large_file,
+                is_overloaded=False,
+                use_padding=False,
+                code=code,
+            )
+            import_dict[ts_symbol.name] = raw_symbol_data
+        output = None if len(import_dict) == 0 else cls(data=import_dict)
+        return output
+
+    @classmethod
+    def from_llm(cls, code: str, root_rel_path: str) -> Self:
+        raise NotImplementedError("Static analysis should be used for c++ imports")
 
     def to_dict(self) -> dict[str, RawSymbolData]:
         return self.data

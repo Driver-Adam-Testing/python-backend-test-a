@@ -18,6 +18,7 @@ from .ir_common import (
 from .symbol_common import (
     RawSymbolCollection,
     RawSymbolData,
+    ReifiedSymbol,
     ScopeRelation,
     SymbolKind,
     code_requires_multi_prompt,
@@ -204,7 +205,7 @@ class JavaMethodData(IrData):
         raise NotImplementedError("Methods should not have children")
 
     @classmethod
-    def default_instance(cls) -> Self:
+    def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
         return cls(
             single_sentence=RawContent(content=""),
             inputs=ListedBacktickNameRawContentWithNone(content=[]),
@@ -240,7 +241,7 @@ class JavaFieldData(IrData):
         raise NotImplementedError("fields should not have children")
 
     @classmethod
-    def default_instance(cls) -> Self:
+    def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
         return cls(
             type=FieldNameWithBackTickContent(content=""),
             description=FieldNameWithRawContent(content=""),
@@ -295,7 +296,7 @@ class JavaClassData(IrData):
         return mapping.get(child.symbol_kind)
 
     @classmethod
-    def default_instance(cls) -> Self:
+    def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
         return cls(
             modifiers=ListedRawContentNoNone(content=[]),
             interfaces_implemented=ListedRawContentNoNone(content=[]),
@@ -356,7 +357,7 @@ class JavaInterfaceData(IrData):
         return mapping.get(child.symbol_kind)
 
     @classmethod
-    def default_instance(cls) -> Self:
+    def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
         return cls(
             interfaces_extended=ListedRawContentNoNone(content=[]),
             description=FieldNameWithRawContent(content=""),

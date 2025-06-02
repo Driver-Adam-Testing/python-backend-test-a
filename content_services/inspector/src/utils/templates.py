@@ -8,8 +8,9 @@ from typing import Any, Self
 
 from pydantic import BaseModel, ValidationError
 
-from utils.lang_specialization.symbol_common import ReifiedSymbol, SymbolKind
+from utils.lang_specialization.symbol_common import Lang, ReifiedSymbol, SymbolKind
 from utils.models import ChatOpenAI, OutputConfig, OutputConfigKind
+from utils.symbol_table import get_fully_qualified_name
 
 
 def _arity(fn: Callable) -> int:
@@ -71,6 +72,7 @@ class Template(BaseModel):
         llm: ChatOpenAI,
         root_rel_path: Path,
         code: str,
+        language: Lang,
         reified_symbols: list[ReifiedSymbol] | None,
         code_chunks: list[str] | None = None,
         max_num_chunks_to_use: int | None = None,
@@ -101,19 +103,25 @@ class Template(BaseModel):
 
                             repl_text = m[0]
                             for symbol in reified_symbols:
-                                if (
-                                    found_name == symbol.raw.name
-                                    and symbol.raw.symbol_kind
-                                    in {
+                                if language == Lang.CPP:
+                                    linkable_symbol_kinds = {
+                                        SymbolKind.CALLABLE,
+                                    }
+                                elif language == Lang.C:
+                                    linkable_symbol_kinds = {
                                         SymbolKind.CALLABLE,
                                         SymbolKind.CALLABLE_DECLARATION,
                                     }
+                                if (
+                                    found_name == symbol.raw.name
+                                    and symbol.raw.symbol_kind in linkable_symbol_kinds
                                 ):
                                     name_part = symbol.raw.name
+                                    fqn = get_fully_qualified_name(symbol.raw)
                                     kind_part = symbol.raw.symbol_kind.name.lower()
                                     path_part = symbol.raw.file_path
 
-                                    repl_text = f"[`{name_part}`]({path_part}#{kind_part}:{name_part})"
+                                    repl_text = f"[`{name_part}`]({path_part}#{kind_part}:{fqn})"
                                     break
                             return repl_text
 

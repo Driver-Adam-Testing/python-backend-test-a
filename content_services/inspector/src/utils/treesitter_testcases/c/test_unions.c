@@ -37,13 +37,13 @@ union {
    The embedded struct has no tag and no name, so its members
    are referenced as outVar.x and outVar.y if we switch to
    that part of the union. */
-union Outer {
-    int i;
-    struct {
-        double x;
-        double y;
-    };
-};
+// union Outer { // NOTE: we will test this in C++ for nesting
+//     int i;
+//     struct {
+//         double x;
+//         double y;
+//     };
+// };
 
 /* 8) Combined union definition + variable declarations in one statement. */
 union Combined {

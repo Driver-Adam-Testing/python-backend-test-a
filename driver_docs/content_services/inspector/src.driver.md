@@ -1,0 +1,10 @@
+## Folders
+- **[inspection](src/inspection.driver.md)**: The `inspection` folder in the `python-backend` codebase contains modules and templates designed to analyze and summarize software code and metadata, with functionality for handling files, folders, symbols, and codebase descriptions using language models.
+- **[onboarding](src/onboarding.driver.md)**: The `onboarding` folder in the `python-backend` codebase contains scripts and configurations for managing the onboarding process of GitHub and GitLab repositories, including repository interactions, file operations, and language definitions.
+- **[utils](src/utils.driver.md)**: The `utils` folder in the `python-backend` codebase contains a variety of utility modules and test cases for tasks such as code symbol analysis, database operations, file tree management, and language model interactions, along with specialized folders for handling recursive Fibonacci implementations, language-specific code symbol extraction, and C programming test cases.
+
+## Files
+- **[common.py](src/common.py.driver.md)**: The `common.py` file initializes a Modal application named "inspector-v2".
+- **[main.py](src/main.py.driver.md)**: The `main.py` file in the `python-backend` codebase is responsible for inspecting and processing codebase versions, managing tasks related to code inspection, handling exceptions, and updating codebase statuses using a variety of utilities and external services.
+- **[modal_funcs.py](src/modal_funcs.py.driver.md)**: The `modal_funcs.py` file in the `python-backend` codebase defines several functions for generating and exporting technical documentation using a modal framework, including functions for creating tech docs for files, symbols, folders, and top-level codebases, as well as exporting these documents to a zip file and pushing them to S3.
+- **[tasks.py](src/tasks.py.driver.md)**: The `tasks.py` file in the `python-backend` codebase defines various asynchronous tasks for generating and managing technical documentation, symbol information, and embeddings for codebases, utilizing semaphores to manage concurrency and database operations for storing derived content.

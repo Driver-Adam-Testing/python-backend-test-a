@@ -1,0 +1,6 @@
+## Folders
+- **[src](autodocs/src.driver.md)**: The `src` folder in the `python-backend` codebase contains configuration files, utility classes, and scripts for generating structured documentation, including a README generator, a comprehensive documentation system using AI models, and a Modal application for asynchronous documentation updates.
+
+## Files
+- **[poetry.lock](autodocs/poetry.lock.driver.md)**: The `poetry.lock` file in the `python-backend` codebase is a crucial component for managing Python project dependencies with the Poetry tool, ensuring consistent installation of exact package versions across environments by locking specific versions and providing comprehensive metadata, including package details, dependencies, optional features, and integrity verification through SHA-256 hashes, thereby maintaining stability, security, and compatibility in the development environment.
+- **[pyproject.toml](autodocs/pyproject.toml.driver.md)**: The `pyproject.toml` file in the `python-backend` codebase specifies the project metadata and dependencies for the `autodocs` package, including Python version and various libraries, and is used to create a virtual environment for local development.

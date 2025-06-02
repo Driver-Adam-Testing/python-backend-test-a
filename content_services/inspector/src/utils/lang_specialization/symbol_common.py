@@ -102,9 +102,14 @@ class RawTreeSitterSymbolData(BaseModel):
     end_byte: int
     file_path: Path
     symbol_kind: SymbolKind
+    fully_qualified_parent_path: str | None = (
+        None  # this could be a nested namespace as well. Does nullable make sense here? Is global scope None?
+    )
     symbol_code: (
         None | str
     )  # TODO: this is somewhat a hack since we need the code, but makes symbols bulky
+    delimiter: str | None = None
+    base_class_names: tuple[str, ...] | None = None
 
     class Config:
         """
@@ -114,7 +119,7 @@ class RawTreeSitterSymbolData(BaseModel):
         frozen = True
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=False)
 class ReifiedSymbol:
     """
     Extends LinkedSymbol with a list of usages (if this is a definition).
@@ -126,9 +131,12 @@ class ReifiedSymbol:
     definition: Self | None = None
     usages: list[Self] = field(default_factory=list)
     calls: list[Self] = field(default_factory=list)
+    inherits_from: list[Self] = field(default_factory=list)
     declarations: list[Self] = field(
         default_factory=list
     )  # Should this be a list? Likely not
+    parent: Self | None = None
+    children: list[Self] = field(default_factory=list)
 
 
 class RawSymbolData(BaseModel):
@@ -164,31 +172,36 @@ class RawSymbolData(BaseModel):
         is_large_file: bool,
         is_overloaded: bool,
         use_padding: bool,
-        code: str,
+        code: str | None,
         reified_symbol: ReifiedSymbol | None = None,  # TODO this is a hack. fix
     ) -> Self:
         # Copied logic from ctags symbol construction below
         file_code = None
 
-        if use_padding:
-            start_line = max(0, ts_symbol.start_line - BLIND_PADDING_TOP)
-            end_line = ts_symbol.end_line + BLIND_PADDING_BOTTOM
-        else:
-            start_line = ts_symbol.start_line
-            end_line = ts_symbol.end_line
-        s_code = "\n".join(code.split("\n")[start_line - 1 : end_line + 1])
-        if is_large_file or is_overloaded:
-            from shared.chunking.text_splitter import split_text
+        if code is not None:
+            if use_padding:
+                start_line = max(0, ts_symbol.start_line - BLIND_PADDING_TOP)
+                end_line = ts_symbol.end_line + BLIND_PADDING_BOTTOM
+            else:
+                start_line = ts_symbol.start_line
+                end_line = ts_symbol.end_line
+            s_code = "\n".join(code.split("\n")[start_line - 1 : end_line + 1])
+            if is_large_file or is_overloaded:
+                from shared.chunking.text_splitter import split_text
 
-            s_code_chunks = split_text(
-                text=s_code,
-                chunk_size=CHUNK_SIZE,
-                chunk_overlap=CHUNK_OVERLAP,
-            )
-            symbol_code = s_code_chunks[0].text if len(s_code_chunks) > 1 else s_code
+                s_code_chunks = split_text(
+                    text=s_code,
+                    chunk_size=CHUNK_SIZE,
+                    chunk_overlap=CHUNK_OVERLAP,
+                )
+                symbol_code = (
+                    s_code_chunks[0].text if len(s_code_chunks) > 1 else s_code
+                )
+            else:
+                symbol_code = s_code
+                file_code = code
         else:
-            symbol_code = s_code
-            file_code = code
+            symbol_code = ts_symbol.symbol_code
 
         raw_symbol = cls(
             parser_kind=ParserKind.TREE_SITTER,

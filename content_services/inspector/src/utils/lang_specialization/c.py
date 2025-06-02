@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Self
 
 from utils.models import ChatOpenAI
-from utils.treesitter_driver import CDriverTree
+from utils.treesitter_driver import CppCDriverTree
 
 from .ir_common import (
     DataStructureData,
@@ -261,7 +261,7 @@ class CDeclarationRawSymbolCollection(RawSymbolCollection):
 
     @classmethod
     def from_llm(cls, code: str, root_rel_path: str) -> Self:
-        raise NotImplementedError("Static analysis should be used for c imports")
+        raise NotImplementedError("Static analysis should be used for c decl")
 
     def to_dict(self) -> dict[str, RawSymbolData]:
         return self.data
@@ -310,7 +310,7 @@ class CIncludeRawSymbolCollection(RawSymbolCollection):
 
     @classmethod
     def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
-        driver_tree = CDriverTree.from_code(code, root_rel_path)
+        driver_tree = CppCDriverTree.from_code(code, root_rel_path)
         is_large_file = code_requires_multi_prompt(code)
 
         import_dict = {}
@@ -432,7 +432,7 @@ class CDataStructureRawSymbolCollection(RawSymbolCollection):
 
     @classmethod
     def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
-        driver_tree = CDriverTree.from_code(code, root_rel_path)
+        driver_tree = CppCDriverTree.from_code(code, root_rel_path)
         data_structure_raw_symbol_data = {}
         is_large_file = code_requires_multi_prompt(code)
 
@@ -521,7 +521,7 @@ class CVariableRawSymbolCollection(RawSymbolCollection):
 
     @classmethod
     def from_static_analysis(cls, code: str, root_rel_path: Path) -> Self | None:
-        driver_tree = CDriverTree.from_code(code, root_rel_path)
+        driver_tree = CppCDriverTree.from_code(code, root_rel_path)
         variable_raw_symbol_data = {}
         is_large_file = code_requires_multi_prompt(code)
 

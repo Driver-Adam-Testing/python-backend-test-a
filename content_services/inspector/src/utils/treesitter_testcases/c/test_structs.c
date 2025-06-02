@@ -33,13 +33,13 @@ struct {
 } global_data;
 
 /* 7) Struct containing an anonymous (unnamed) nested struct. */
-struct Outer {
-    int i;
-    struct {
-        float x;
-        float y;
-    };
-};
+// struct Outer { // NOTE: we will test this in C++ for nesting
+//     int i;
+//     struct {
+//         float x;
+//         float y;
+//     };
+// };
 
 /* 8) Combined struct definition + variable declarations. */
 struct Point {

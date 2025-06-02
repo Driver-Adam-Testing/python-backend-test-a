@@ -17,6 +17,7 @@ from utils.lang_specialization.symbol_common import (
     SymbolKind,
 )
 from utils.models import ChatOpenAI, OutputConfig, OutputConfigKind
+from utils.symbol_table import get_fully_qualified_name
 from utils.threadpool import FastShutdownThreadPoolExecutor
 
 MAX_SYMBOLS_PER_WORKER = 50
@@ -33,6 +34,12 @@ def compute_num_workers(num_symbols: int) -> int:
         ceil(num_symbols / MAX_SYMBOLS_PER_WORKER),
         MAX_WORKERS_FOR_SYMBOLS,
     )
+
+
+def escape_markdown_characters(text: str) -> str:
+    markdown_special_chars = r"\`*_{}[]()#+-.!~"
+    escaped_text = re.sub(rf"([{re.escape(markdown_special_chars)}])", r"\\\1", text)
+    return escaped_text
 
 
 class MdRenderable(BaseModel, abc.ABC):
@@ -52,6 +59,8 @@ class FieldNameWithBackTickContent(MdRenderable):
     content: str
 
     def render_markdown(self, doc_label: str) -> str:
+        if len(self.content) == 0:
+            return ""
         return f"- **{snake_case_to_spaced_string(doc_label)}**: `{self.content}`\n"
 
 
@@ -68,6 +77,8 @@ class FieldNameWithRawContent(MdRenderable):
     content: str
 
     def render_markdown(self, doc_label: str) -> str:
+        if len(self.content) == 0:
+            return ""
         return f"- **{snake_case_to_spaced_string(doc_label)}**: {self.content}\n"
 
 
@@ -210,7 +221,7 @@ class IrData(BaseModel, abc.ABC):
 
     @classmethod
     @abc.abstractmethod
-    def default_instance(cls) -> Self:
+    def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
         pass
 
     @classmethod
@@ -221,7 +232,7 @@ class IrData(BaseModel, abc.ABC):
     ) -> Self:
         if symbol.symbol_code is None:
             # handle C++ classes defined in header
-            cls_instance = cls.default_instance()
+            cls_instance = cls.default_instance(reified_symbol=symbol.reified_symbol)
         else:
             try:
                 system_prompt = cls.system_prompt()
@@ -304,16 +315,17 @@ class IrData(BaseModel, abc.ABC):
                 and self._reified_symbol.raw.symbol_kind == SymbolKind.CALLABLE
                 and self._reified_symbol.calls
             ):
-                seen_func_names = set()
+                seen = set()
                 for called_func in self._reified_symbol.calls:
                     kind_part = called_func.raw.symbol_kind.name.lower()
                     name_part = re.escape(called_func.raw.name)  # escape special chars
+                    fqn = get_fully_qualified_name(called_func.raw)
                     path_part = called_func.raw.file_path
 
-                    if name_part in seen_func_names:
+                    if fqn in seen:
                         continue
-                    seen_func_names.add(name_part)
-                    link = f"[`{called_func.raw.name}`]({path_part}#{kind_part}:{called_func.raw.name})"
+                    seen.add(fqn)
+                    link = f"[`{name_part}`]({path_part}#{kind_part}:{fqn})"
 
                     rendered = re.sub(rf"`{name_part}`", link, rendered)
 
@@ -324,24 +336,58 @@ class IrData(BaseModel, abc.ABC):
                 output += "- **Functions called**:\n"
                 seen_name_parts = defaultdict(list)
                 for called_func in self._reified_symbol.calls:
-                    name_part = called_func.raw.name
-                    seen_name_parts[name_part].append(called_func)
-                for name_part, calls in seen_name_parts.items():
+                    fqn = get_fully_qualified_name(called_func.raw)
+                    seen_name_parts[fqn].append(called_func)
+                for fqn, calls in seen_name_parts.items():
                     kind_part = calls[0].raw.symbol_kind.name.lower()
                     path_part = calls[0].raw.file_path
 
-                    output += (
-                        f"    - [`{name_part}`]({path_part}#{kind_part}:{name_part})\n"
-                    )
+                    output += f"    - [`{fqn}`]({path_part}#{kind_part}:{fqn})\n"
             if (
                 sym.raw.symbol_kind == SymbolKind.CALLABLE_DECLARATION
                 and sym.definition is not None
             ):
                 kind_part = sym.definition.raw.symbol_kind.name.lower()
-                name_part = sym.definition.raw.name
+                fqn = get_fully_qualified_name(sym.definition.raw)
                 path_part = sym.definition.raw.file_path
 
-                output += f"- **See also**: [`{name_part}`]({path_part}#{kind_part}:{name_part})  (Implementation)\n"
+                output += f"- **See also**: [`{fqn}`]({path_part}#{kind_part}:{fqn})  (Implementation)\n"
+
+            if sym.raw.symbol_kind == SymbolKind.CALLABLE and sym.parent is not None:
+                # Link member functions to their object definiton
+                kind_part = sym.parent.raw.symbol_kind.name.lower()
+                fqn = get_fully_qualified_name(sym.parent.raw)
+                path_part = sym.parent.raw.file_path
+
+                output += f"- **See also**: [`{fqn}`]({path_part}#{kind_part}:{fqn})  (Data Structure)\n"
+            if (
+                sym.raw.symbol_kind == SymbolKind.DATA_STRUCTURE
+                and len(sym.children) > 0
+            ):
+                if len(sym.children) >= 0:
+                    output += "- **Member Functions**:\n"
+                    for child_symbol in sym.children:
+                        if child_symbol.raw.symbol_kind == SymbolKind.CALLABLE:
+                            fqn = get_fully_qualified_name(child_symbol.raw)
+                            kind_part = child_symbol.raw.symbol_kind.name.lower()
+                            path_part = child_symbol.raw.file_path
+                            output += (
+                                f"    - [`{fqn}`]({path_part}#{kind_part}:{fqn})\n"
+                            )
+                if sym.inherits_from is not None and len(sym.inherits_from) > 0:
+                    output += "- **Inherits from**:\n"
+                    for inherited_class in sym.inherits_from:
+                        kind_part = inherited_class.raw.symbol_kind.name.lower()
+                        fqn = get_fully_qualified_name(inherited_class.raw)
+                        path_part = inherited_class.raw.file_path
+                        output += f"    - [`{fqn}`]({path_part}#{kind_part}:{fqn})\n"
+                elif (
+                    sym.raw.base_class_names is not None
+                    and len(sym.raw.base_class_names) > 0
+                ):
+                    output += "- **Inherits from**:\n"
+                    for base_class_name in sym.raw.base_class_names:
+                        output += f"    - `{base_class_name}`\n"
             # if sym.raw.symbol_kind == SymbolKind.CALLABLE and sym.usages:
             #     output += "- **Usages of this function**:\n"
             #     for usage in self._reified_symbol.usages:
@@ -371,7 +417,18 @@ class IrData(BaseModel, abc.ABC):
                     if child_symbol.scope
                     else child_symbol.name
                 )
-                child_dictionary[label_name] += f"\n---\n#### {scoped_name}\n"
+                if child_content._reified_symbol is not None:
+                    kind_part = (
+                        child_content._reified_symbol.raw.symbol_kind.name.lower()
+                    )
+                    fqn = get_fully_qualified_name(child_content._reified_symbol.raw)
+                    id_comment = f"<!-- {{{{#{kind_part}:{fqn}}}}} -->"
+                else:
+                    id_comment = ""
+                scoped_name = escape_markdown_characters(scoped_name)
+                child_dictionary[label_name] += (
+                    f"\n---\n#### {scoped_name}{id_comment}\n"
+                )
                 child_dictionary[label_name] += child_content.render_markdown()
             else:
                 child_dictionary[label_name] += f"    - {child_symbol.name}\n"
@@ -447,11 +504,12 @@ class IrCollection(BaseModel, abc.ABC):
             for item in v:
                 if item._reified_symbol is not None:
                     kind_part = item._reified_symbol.raw.symbol_kind.name.lower()
-                    name_part = item._reified_symbol.raw.name
+                    name_part = get_fully_qualified_name(item._reified_symbol.raw)
                     id_comment = f"<!-- {{{{#{kind_part}:{name_part}}}}} -->"
                 else:
                     id_comment = ""
 
+                k = escape_markdown_characters(k)
                 output += f"\n---\n### {k}{id_comment}\n"
                 output += item.render_markdown()
         return output
@@ -467,7 +525,7 @@ class VariableData(IrData):
     use: FieldNameWithRawContent
 
     @classmethod
-    def default_instance(cls) -> Self:
+    def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
         return cls(
             type=FieldNameWithBackTickContent(content=""),
             description=FieldNameWithRawContent(content=""),
@@ -481,7 +539,7 @@ class DataStructureData(IrData, abc.ABC):
     description: FieldNameWithRawContent
 
     @classmethod
-    def default_instance(cls) -> Self:
+    def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
         return cls(
             type=FieldNameWithBackTickContent(content=""),
             members=ListedBacktickNameRawContentNoNone(content=[]),
@@ -496,7 +554,7 @@ class FnDeclData(IrData, abc.ABC):
     output: FieldNameWithRawContent
 
     @classmethod
-    def default_instance(cls) -> Self:
+    def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
         return cls(
             single_sentence=RawContent(content=""),
             description=FieldNameWithRawContent(content=""),
@@ -512,7 +570,7 @@ class FnData(IrData, abc.ABC):
     output: FieldNameWithBulletedContent
 
     @classmethod
-    def default_instance(cls) -> Self:
+    def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
         return cls(
             single_sentence=RawContent(content=""),
             inputs=ListedBacktickNameRawContentWithNone(content=[]),
@@ -531,7 +589,7 @@ class ClassData(IrData, abc.ABC):
     )
 
     @classmethod
-    def default_instance(cls) -> Self:
+    def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
         return cls(
             description=FieldNameWithRawContent(content="Implemented elsewhere"),
             type=FieldNameWithBackTickContent(content="N/A"),

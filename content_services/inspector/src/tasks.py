@@ -2,7 +2,7 @@ import asyncio
 import concurrent.futures
 import uuid
 from pathlib import Path
-from typing import Optional, Self, Union
+from typing import Optional, Union
 
 from database.models_v1 import (
     ChunkAndEmbedding,
@@ -18,8 +18,7 @@ from modal_funcs import (
 from sqlmodel import delete, select
 from utils.dag import LiteNode
 from utils.db import get_source_code_derived_content
-from utils.py_symbol_table import build_py_project_index
-from utils.symbol_table import build_c_project_index
+from utils.symbol_table import build_symbol_table
 from utils.task import SerializationMethod, Task, TaskResult
 
 TechDocsTask = Union["FileTechDocTask", "FolderTechDocTask", "TopLevelDocsTask"]
@@ -162,9 +161,7 @@ class FileTechDocTask(Task):
             # TODO: if the symbol_table_task is here, task_result_data SHOULD be not None (maybe an empty list of symbols though).
             # Should we assert and fail out inspector, or continue?
             if task_result_data is not None:
-                reified_symbols = task_result_data.file_to_symbols.get(
-                    self.node.root_rel_path
-                )
+                reified_symbols = task_result_data.get(self.node.root_rel_path)
             else:
                 reified_symbols = None
         else:
@@ -631,19 +628,7 @@ class CSymbolTableTask(Task):
     ) -> None:
         self.codebase_name = codebase_name
         self.codebase_root = codebase_root
-        self.c_and_h_files = {
-            codebase_root / rel_path
-            for rel_path in nodes_relative_paths
-            if rel_path.suffix in {".c", ".h", ".cpp", ".cc", ".cxx", ".hpp", ".hxx"}
-        }
-        self.has_c_files = any(
-            p.suffix in [".c", ".cpp", ".cc", ".cxx"] for p in self.c_and_h_files
-        )
-        self.py_files = {
-            codebase_root / rel_path
-            for rel_path in nodes_relative_paths
-            if rel_path.suffix in {".py"}
-        }
+        self.files = {codebase_root / rel_path for rel_path in nodes_relative_paths}
         super().__init__(
             task_name=task_name,
             node=root_node,
@@ -653,26 +638,18 @@ class CSymbolTableTask(Task):
         self, dependent_results: dict[Task, TaskResult]
     ) -> TaskResult:
         print("Running CSymbolTableTask")
-        print(self.has_c_files)
-        if len(self.py_files) > 0:
-            index_builder = build_py_project_index
-            files = self.py_files
-        elif self.has_c_files:
-            index_builder = build_c_project_index
-            files = self.c_and_h_files
-        else:
-            index_builder = None
-        if index_builder:
-            loop = asyncio.get_running_loop()
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-                result = await loop.run_in_executor(
-                    pool,
-                    index_builder,
-                    files,
-                    self.codebase_root / self.codebase_name,
-                )
-            return TaskResult(data=result, serialization=SerializationMethod.PICKLE)
-        return TaskResult(data=None, serialization=SerializationMethod.PICKLE)
+        # Pass all files to the unified builder - it will group by language automatically
+        loop = asyncio.get_running_loop()
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+            file_to_symbols = await loop.run_in_executor(
+                pool,
+                build_symbol_table,
+                self.files,
+                self.codebase_root / self.codebase_name,
+            )
+        return TaskResult(
+            data=file_to_symbols, serialization=SerializationMethod.PICKLE
+        )
 
     async def post_run_io(
         self,
@@ -680,8 +657,3 @@ class CSymbolTableTask(Task):
         dependent_io_results: dict["Task", dict[str, any]],
     ) -> dict[str, any]:
         return {}
-
-    def self_or_none(self, absolute_path: Path) -> Self | None:
-        if absolute_path in self.c_and_h_files and self.has_c_files:
-            return self
-        return None

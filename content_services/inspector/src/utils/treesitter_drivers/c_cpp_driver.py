@@ -1,123 +1,15 @@
-from abc import ABC, abstractmethod
-from collections.abc import Callable
 from dataclasses import dataclass
-from inspect import getmembers, ismethod
-from pathlib import Path
-from typing import Self
 
 import tree_sitter
-import tree_sitter_c
-import tree_sitter_cpp
-import tree_sitter_python
 
 from utils.lang_specialization.symbol_common import RawTreeSitterSymbolData, SymbolKind
 
-LANGUAGES = {
-    "c": tree_sitter.Language(tree_sitter_c.language()),
-    "cpp": tree_sitter.Language(tree_sitter_cpp.language()),
-    "python": tree_sitter.Language(tree_sitter_python.language()),
-}
+from .base import DriverTree, DriverTreeError, symbol_extractor
 
 
-def symbol_extractor(
-    method: Callable[..., list[RawTreeSitterSymbolData]],
-) -> Callable[..., list[RawTreeSitterSymbolData]]:
-    method._is_symbol_extractor = True
-    return method
-
-
-@dataclass
-class DriverTree(ABC):
-    """A Driver specific use of tree-sitter.
-
-    DriverTree will be used to develop abstract syntax trees (ASTs) of single methods, code files, or entire repositories.
-    Subclasses will implement language-specific behaviors such as extracting imports/includes.
-    """
-
-    tree_sitter_lang: tree_sitter.Language
-    tree: tree_sitter.Tree
-    # symbols: List[tree_sitter.Node]
-    source_bytes: bytes
-    file_path: Path
-    language: str = ""
-
-    @classmethod
-    def from_code(cls, code_str: str, file_path: Path | str) -> Self:
-        if not cls.language:
-            raise DriverTreeError(
-                f"No language specified for {cls.__name__}. Override the 'language' attribute."
-            )
-        ts_lang = LANGUAGES[cls.language]
-        parser = tree_sitter.Parser(ts_lang)
-        source_bytes = bytes(code_str, "utf8")
-        tree = parser.parse(source_bytes)
-        return cls(
-            tree=tree,
-            tree_sitter_lang=ts_lang,
-            source_bytes=source_bytes,
-            file_path=Path(file_path),
-        )
-
-    @abstractmethod
-    def extract_imports(self) -> list[RawTreeSitterSymbolData]:
-        pass
-
-    @abstractmethod
-    def extract_callable_definitions(self) -> list[RawTreeSitterSymbolData]:
-        pass
-
-    @abstractmethod
-    def extract_data_structure_definitions(self) -> list[RawTreeSitterSymbolData]:
-        pass
-
-    @abstractmethod
-    def extract_function_calls(self) -> list[RawTreeSitterSymbolData]:
-        pass
-
-    # @abstractmethod
-    # def extract_data_structure_instances(self) -> list[RawTreeSitterSymbolData]:
-    #     pass
-
-    @abstractmethod
-    def extract_variables(self) -> list[RawTreeSitterSymbolData]:
-        pass
-
-    def get_node_line_range(self, node: tree_sitter.Node) -> tuple[int, int]:
-        """Returns the 1-based line range of a Tree-sitter node."""
-        # Syntax nodes store their position in the source code both in raw bytes and row/column coordinates.
-        # In a point (row, column), rows and columns are zero-based.
-        # The row field represents the number of newlines before a given position, while the column is the byte offset
-        # from the start of the row.
-        # See: https://tree-sitter.github.io/tree-sitter/using-parsers/2-basic-parsing.html?highlight=row#syntax-nodes
-
-        start_line = node.start_point.row + 1  # Convert 0-based row to 1-based
-        end_line = node.end_point.row + 1
-
-        # Check if the last byte in the node's span is a newline; adjust if needed
-        if self.source_bytes[node.end_byte - 1 : node.end_byte] == b"\n":
-            end_line -= 1
-
-        return start_line, end_line
-
-    def extract_all_symbols(self) -> list[RawTreeSitterSymbolData]:
-        all_symbols: list[RawTreeSitterSymbolData] = []
-
-        for _, method in getmembers(self, predicate=ismethod):
-            if getattr(method, "_is_symbol_extractor", False):
-                try:
-                    all_symbols.extend(method())
-                except NotImplementedError:
-                    continue
-
-        return sorted(all_symbols, key=lambda s: s.start_line)
-
-
-def node_to_text(node: tree_sitter.Node) -> str:
-    return node.text.decode("utf8")
-
-
-class DriverTreeError(Exception):
-    pass
+def node_to_text(node):
+    """Helper function to extract text from a tree-sitter node."""
+    return node.text.decode("utf-8")
 
 
 def get_class_name_and_scope_parts(
@@ -383,8 +275,12 @@ def maybe_use_template_declaration_parent(node: tree_sitter.Node) -> tree_sitter
     return node
 
 
+@dataclass
 class CppCDriverTree(DriverTree):
-    language = "cpp"
+    """Shared driver for both C and C++ - they use the same TreeSitter grammar."""
+
+    language = "cpp"  # Uses cpp grammar for both C and C++
+    extensions = {".c", ".h", ".cpp", ".cc", ".cxx", ".hpp", ".hxx"}
 
     @symbol_extractor
     def extract_imports(self) -> list[RawTreeSitterSymbolData]:
@@ -498,76 +394,76 @@ class CppCDriverTree(DriverTree):
         """
 
         query_str = """
-        (
-          [
-            ; Typedef variants
-            ;; struct typedef
-            (type_definition
-              type: (struct_specifier)
-              declarator: (type_identifier) @struct.name
-            ) @struct.typedef
-
-            ;; union typedef
-            (type_definition
-              type: (union_specifier)
-              declarator: (type_identifier) @union.name
-            ) @union.typedef
-
-            ;; enum typedef
-            (type_definition
-              type: (enum_specifier)
-              declarator: (type_identifier) @enum.name
-            ) @enum.typedef
-
-            ; Direct declarations (wrapped in declaration)
-            (declaration
+            (
               [
+                ; Typedef variants
+                ;; struct typedef
+                (type_definition
+                  type: (struct_specifier)
+                  declarator: (type_identifier) @struct.name
+                ) @struct.typedef
+
+                ;; union typedef
+                (type_definition
+                  type: (union_specifier)
+                  declarator: (type_identifier) @union.name
+                ) @union.typedef
+
+                ;; enum typedef
+                (type_definition
+                  type: (enum_specifier)
+                  declarator: (type_identifier) @enum.name
+                ) @enum.typedef
+
+                ; Direct declarations (wrapped in declaration)
+                (declaration
+                  [
+                    (struct_specifier
+                      (type_identifier)? @declared_struct.name
+                      (field_declaration_list) @declared_struct.body
+                    ) @declared_struct.definition
+
+                    (union_specifier
+                      (type_identifier)? @declared_union.name
+                      (field_declaration_list) @declared_union.body
+                    ) @declared_union.definition
+
+                    (enum_specifier
+                      (type_identifier)? @declared_enum.name
+                      (enumerator_list) @declared_enum.body
+                    ) @declared_enum.definition
+
+                  ]
+                )
+
+                ; Bare specifiers (exclude in post-processing if they're inside a type_definition or declaration)
                 (struct_specifier
-                  (type_identifier)? @declared_struct.name
-                  (field_declaration_list) @declared_struct.body
-                ) @declared_struct.definition
+                  (type_identifier)? @struct.name
+                  (field_declaration_list) @struct.body
+                ) @struct.definition
 
                 (union_specifier
-                  (type_identifier)? @declared_union.name
-                  (field_declaration_list) @declared_union.body
-                ) @declared_union.definition
+                  (type_identifier)? @union.name
+                  (field_declaration_list) @union.body
+                ) @union.definition
 
                 (enum_specifier
-                  (type_identifier)? @declared_enum.name
-                  (enumerator_list) @declared_enum.body
-                ) @declared_enum.definition
+                  (type_identifier)? @enum.name
+                  (enumerator_list) @enum.body
+                ) @enum.definition
 
+                (class_specifier
+                    name: (type_identifier) @class.name
+                    body: (field_declaration_list)? @class.body
+                ) @class.definition
+
+                (class_specifier
+                    name: (qualified_identifier) @class.name
+                    body: (field_declaration_list)? @class.body
+                ) @class.qualified_definition
               ]
             )
-
-            ; Bare specifiers (exclude in post-processing if they're inside a type_definition or declaration)
-            (struct_specifier
-              (type_identifier)? @struct.name
-              (field_declaration_list) @struct.body
-            ) @struct.definition
-
-            (union_specifier
-              (type_identifier)? @union.name
-              (field_declaration_list) @union.body
-            ) @union.definition
-
-            (enum_specifier
-              (type_identifier)? @enum.name
-              (enumerator_list) @enum.body
-            ) @enum.definition
-
-            (class_specifier
-                name: (type_identifier) @class.name
-                body: (field_declaration_list)? @class.body
-            ) @class.definition
-
-            (class_specifier
-                name: (qualified_identifier) @class.name
-                body: (field_declaration_list)? @class.body
-            ) @class.qualified_definition
-          ]
-        )
-        """
+            """
 
         query = self.tree_sitter_lang.query(query_str)
         matches = query.matches(self.tree.root_node)
@@ -837,9 +733,9 @@ class CppCDriverTree(DriverTree):
     @symbol_extractor
     def extract_function_calls(self) -> list[RawTreeSitterSymbolData]:
         query = self.tree_sitter_lang.query("""
-                                            (call_expression
-                                            function: (identifier) @call.name) @call
-                                            """)
+                                                (call_expression
+                                                function: (identifier) @call.name) @call
+                                                """)
         matches = query.matches(self.tree.root_node)
         function_calls = []
 
@@ -882,16 +778,16 @@ class CppCDriverTree(DriverTree):
     def extract_function_declarations(self) -> list[RawTreeSitterSymbolData]:
         """Extract all function declarations (not definitions) in the C code."""
         query_str = """
-        (
-            [
-              ; Declaration variants
-              ;; Normal declaration
-              (declaration) @declaration
-              ;; Field declaration
-              (field_declaration) @declaration
-            ]
-        )
-        """
+            (
+                [
+                  ; Declaration variants
+                  ;; Normal declaration
+                  (declaration) @declaration
+                  ;; Field declaration
+                  (field_declaration) @declaration
+                ]
+            )
+            """
         query = self.tree_sitter_lang.query(query_str)
         # query = self.tree_sitter_lang.query("(declaration) @declaration")
         matches = query.matches(self.tree.root_node)

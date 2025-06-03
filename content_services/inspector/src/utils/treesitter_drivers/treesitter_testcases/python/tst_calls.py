@@ -1,9 +1,8 @@
 """Test cases for Python function and method calls."""
 
-import os
 import json
+import os
 from pathlib import Path
-from typing import List
 
 # Test data
 data = [1, 2, 3, 4, 5]
@@ -31,18 +30,20 @@ path_obj = Path("test.txt")
 processed = text.strip().upper().replace("HELLO", "HI")
 path_result = Path("some/path").parent.absolute().as_posix()
 
+
 # 5) Method calls on class instances
 class Example:
     def method(self, x, y=10):
         return x + y
-    
+
     @classmethod
     def class_method(cls):
         return "class"
-    
+
     @staticmethod
     def static_method():
         return "static"
+
 
 example = Example()
 instance_result = example.method(5)
@@ -60,20 +61,23 @@ unpacked_args = max(*args)
 # unpacked_kwargs = some_function(**kwargs)  # Would need a function that accepts x,y
 
 # 8) Lambda calls
-square = lambda x: x ** 2
+square = lambda x: x**2
 squared_value = square(5)
-immediate_lambda = (lambda x, y: x + y)(10, 20) # Not supported
+immediate_lambda = (lambda x, y: x + y)(10, 20)  # Not supported
 
 # 9) Module function calls
 json_string = json.dumps(numbers)
 current_dir = os.getcwd()
 
+
 # 10) Standard free functions
 def foo() -> None:
     print("Hello, World!")
 
+
 def bar(x: int, y: int) -> int:
     return x + y
+
 
 foo()
 bar(1, 2)
@@ -94,24 +98,29 @@ while len(data) > 0:
 if len(text) > 0:
     result = text.capitalize()
 
+
 # 13) Function calls in class definitions
 class WithCallsInDefinition:
     default_value = str(42)
     computed = len("class_name")
-    
+
     def method_with_calls(self):
         return max(self.default_value, self.computed)
 
+
 # 14) Async function calls (would need to be in async context)
 import asyncio
+
 
 async def async_example():
     await asyncio.sleep(1)
     result = await some_async_function()
     return result
 
+
 async def some_async_function():
     return "async_result"
+
 
 # 22) Calls to constructors
 path_instance = Path("/some/path")
@@ -122,18 +131,21 @@ dict_instance = dict(a=1, b=2)
 complex_call = max(
     len(text) if text else 0,
     sum(data) if data else 0,
-    min(numbers.values()) if numbers else 0
+    min(numbers.values()) if numbers else 0,
 )
+
 
 # 24) Super() calls
 class Parent:
     def method(self):
         return "parent"
 
+
 class Child(Parent):
     def method(self):
         parent_result = super().method()
         return f"child extends {parent_result}"
+
 
 # 25) Property access that looks like method calls
 class PropertyExample:
@@ -141,7 +153,8 @@ class PropertyExample:
     def computed_value(self):
         return len("property")
 
+
 prop_example = PropertyExample()
 # This is property access, not a method call: prop_example.computed_value
 # But this would be: getattr(prop_example, "computed_value")
-attr_value = getattr(prop_example, "computed_value")
+attr_value = prop_example.computed_value

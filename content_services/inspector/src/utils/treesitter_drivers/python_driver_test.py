@@ -2,7 +2,7 @@ import pathlib
 
 import pytest
 
-from utils.py_driver_tree import PyDriverTree
+from .python_driver import PyDriverTree
 
 
 @pytest.fixture(scope="module")

@@ -68,8 +68,8 @@ class LongBase2 {};
 class LongBase3 {};
 class LongBase4 {};
 class LongBase5 {};
-class VeryLongInheritance : public LongBase1, 
-                           protected LongBase2, 
+class VeryLongInheritance : public LongBase1,
+                           protected LongBase2,
                            private LongBase3,
                            virtual public LongBase4,
                            virtual protected LongBase5 {};

@@ -17,7 +17,7 @@ from utils.lang_specialization.symbol_common import (
     SymbolKind,
 )
 from utils.models import ChatOpenAI, OutputConfig, OutputConfigKind
-from utils.symbol_table import get_fully_qualified_name
+from utils.symbol_table.utils import get_fully_qualified_name
 from utils.threadpool import FastShutdownThreadPoolExecutor
 
 MAX_SYMBOLS_PER_WORKER = 50

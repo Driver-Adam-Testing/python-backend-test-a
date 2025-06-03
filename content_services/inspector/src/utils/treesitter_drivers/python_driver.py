@@ -5,7 +5,8 @@ from enum import StrEnum
 import tree_sitter
 
 from utils.lang_specialization.symbol_common import RawTreeSitterSymbolData, SymbolKind
-from utils.treesitter_driver import DriverTree, symbol_extractor
+
+from .base import DriverTree, symbol_extractor
 
 PY_BUILT_IN_FN_SET = frozenset(
     [
@@ -141,8 +142,10 @@ def get_callable_name_and_params(
     return None, None
 
 
+@dataclass
 class PyDriverTree(DriverTree):
     language = "python"
+    extensions = {".py"}
 
     def _get_fully_qualified_path_to_parent(
         self, node: tree_sitter.Node, sep: str = "."
@@ -153,31 +156,27 @@ class PyDriverTree(DriverTree):
         while current:
             if current.type == "module":
                 path_parts.append(str(self.file_path.with_suffix("")))
-            elif current.type in [
-                "function_definition",
-                "class_definition",
-            ]:
+            elif current.type in ["function_definition", "class_definition"]:
                 name_node = current.child_by_field_name("name")
                 if name_node:
                     path_parts.append(name_node.text.decode("utf-8"))
             current = current.parent
 
         path_parts.reverse()
-
-        return sep.join(path_parts) if path_parts else ""
+        return sep.join(path_parts)
 
     @symbol_extractor
     def extract_imports(self) -> list[RawTreeSitterSymbolData]:
         import_query_str = """
-        ;; All direct imports (with or without alias)
-        (import_statement) @import_direct
+          ;; All direct imports (with or without alias)
+          (import_statement) @import_direct
 
-        ;; Import using `from`
-        (import_from_statement) @import_from
+          ;; Import using `from`
+          (import_from_statement) @import_from
 
-        ;; Imports from `future`
-        (future_import_statement) @future_module
-        """.strip()
+          ;; Imports from `future`
+          (future_import_statement) @future_module
+          """.strip()
         query = self.tree_sitter_lang.query(import_query_str)
         matches = query.matches(self.tree.root_node)
         imports = []
@@ -326,10 +325,10 @@ class PyDriverTree(DriverTree):
         self, kind_fn: Callable[[tree_sitter.Node], bool]
     ) -> list[RawTreeSitterSymbolData]:
         callable_query_str = """
-        ;; All callables -- free functions and methods
-        (function_definition
-          name: (identifier) @callable_name) @callable_def
-        """.strip()
+          ;; All callables -- free functions and methods
+          (function_definition
+            name: (identifier) @callable_name) @callable_def
+          """.strip()
         query = self.tree_sitter_lang.query(callable_query_str)
         matches = query.matches(self.tree.root_node)
         callables = []
@@ -390,9 +389,9 @@ class PyDriverTree(DriverTree):
 
     def extract_class_definitions(self) -> list[RawTreeSitterSymbolData]:
         klass_query_str = """
-        (class_definition
-          name: (identifier) @class_name) @class_def
-        """.strip()
+          (class_definition
+            name: (identifier) @class_name) @class_def
+          """.strip()
         query = self.tree_sitter_lang.query(klass_query_str)
         matches = query.matches(self.tree.root_node)
         klasses = []
@@ -445,15 +444,15 @@ class PyDriverTree(DriverTree):
 
     def extract_calls(self) -> tuple[list[RawTreeSitterSymbolData], list[PyCall]]:
         calls_query_str = """
-        ;; free function calls
-        (call
-          function: (identifier) @fn_ident) @fn_call
-        ;; object method calls
-        (call
-          function: (attribute
-                      object: (_) @object
-                      attribute: (identifier) @method_ident)) @method_call
-        """.strip()
+          ;; free function calls
+          (call
+            function: (identifier) @fn_ident) @fn_call
+          ;; object method calls
+          (call
+            function: (attribute
+                        object: (_) @object
+                        attribute: (identifier) @method_ident)) @method_call
+          """.strip()
         query = self.tree_sitter_lang.query(calls_query_str)
         matches = query.matches(self.tree.root_node)
         calls_symbol, calls_kind = [], []
@@ -535,19 +534,19 @@ class PyDriverTree(DriverTree):
     @symbol_extractor
     def extract_variables(self) -> list[RawTreeSitterSymbolData]:
         global_var_query_str = """
-        ;; Single variable assignment
-        (module
-          (expression_statement
-            (assignment
-              left: (identifier) @global_name)) @global_expression)
+          ;; Single variable assignment
+          (module
+            (expression_statement
+              (assignment
+                left: (identifier) @global_name)) @global_expression)
 
-        ;; Multiple assignment / tuple unpacking
-        (module
-          (expression_statement
-            (assignment
-              left: (pattern_list
-                (identifier) @global_name)) @global_expression))
-        """.strip()
+          ;; Multiple assignment / tuple unpacking
+          (module
+            (expression_statement
+              (assignment
+                left: (pattern_list
+                  (identifier) @global_name)) @global_expression))
+          """.strip()
         query = self.tree_sitter_lang.query(global_var_query_str)
         matches = query.matches(self.tree.root_node)
         gbl_vars = []

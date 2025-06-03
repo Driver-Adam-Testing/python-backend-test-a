@@ -1,36 +1,42 @@
 """Test cases for Python class definitions."""
 
 import abc
-from typing import Optional, List
 from dataclasses import dataclass
+
 
 # 1) Simple class definition
 class SimpleClass:
     pass
+
 
 # 2) Class with simple inheritance
 class Animal:
     def __init__(self, name: str):
         self.name = name
 
+
 class Dog(Animal):
     def bark(self):
         return f"{self.name} barks!"
+
 
 # 3) Class with multiple inheritance
 class Mixin:
     def mixin_method(self):
         return "mixin"
 
+
 class MultipleInheritance(Animal, Mixin):
     def combined_method(self):
         return f"{self.name} uses {self.mixin_method()}"
+
 
 # 4) Abstract base class
 class AbstractShape(abc.ABC):
     @abc.abstractmethod
     def area(self):
         pass
+
 
 class Rectangle(AbstractShape):
     def __init__(self, width: float, height: float):
@@ -40,17 +46,20 @@ class Rectangle(AbstractShape):
     def area(self):
         return self.width * self.height
 
+
 # 5) Dataclass
 @dataclass
 class Point:
     x: float
     y: float
-    z: Optional[float] = None
+    z: float | None = None
+
 
 # 6) Class with decorators
 @dataclass
 class DecoratedClass:
     value: int
+
 
 # 7) Nested classes
 class OuterClass:
@@ -68,6 +77,7 @@ class OuterClass:
         class DeeplyNestedClass:
             def nested_method(self):
                 return "deeply nested"
+
 
 # 8) Class with various method types
 class MethodTypes:
@@ -95,9 +105,10 @@ class MethodTypes:
     def value_property(self, value):
         self._value = value
 
+
 # 9) Class with special methods
 class SpecialMethods:
-    def __init__(self, data: List[int]):
+    def __init__(self, data: list[int]):
         self.data = data
 
     def __str__(self):
@@ -118,10 +129,12 @@ class SpecialMethods:
     def __exit__(self, exc_type, exc_val, exc_tb):
         pass
 
-# 10) Generic class with type parameters
-from typing import TypeVar, Generic
 
-T = TypeVar('T')
+# 10) Generic class with type parameters
+from typing import Generic, TypeVar
+
+T = TypeVar("T")
+
 
 class GenericContainer(Generic[T]):
     def __init__(self, item: T):
@@ -130,10 +143,12 @@ class GenericContainer(Generic[T]):
     def get_item(self) -> T:
         return self.item
 
+
 # 11) Metaclass example
 class MetaClass(type):
     def __new__(cls, name, bases, namespace):
         return super().__new__(cls, name, bases, namespace)
+
 
 class WithMetaclass(metaclass=MetaClass):
     def method(self):

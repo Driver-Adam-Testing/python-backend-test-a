@@ -11,91 +11,7 @@ from utils.lang_specialization.symbol_common import (
     SymbolKind,
 )
 
-
-def get_fully_qualified_name(sym: RawTreeSitterSymbolData, sep: str = "::") -> str:
-    if sym.fully_qualified_parent_path and sym.name:
-        return f"{sym.fully_qualified_parent_path}{sym.delimiter}{sym.name}"
-        # return f"{sym.fully_qualified_parent_path}{sep}{sym.name}"
-    return sym.name or ""  # TODO is this correct? What if name is None?
-
-
-def to_root_relative(fpath: Path, project_root: Path) -> Path:
-    """Convert /abs/path/to/root/foo.c -> root/foo.c"""
-    # TODO move to util file
-    return Path(project_root.name) / fpath.relative_to(project_root)
-
-
-def is_definition(sym: RawTreeSitterSymbolData) -> bool:
-    """
-    Simple heuristic for whether a raw symbol is considered a 'definition'
-    (as opposed to a usage or forward declaration).
-    """
-    return sym.symbol_kind in {
-        # SymbolKind.VARIABLE,
-        SymbolKind.CALLABLE,
-        SymbolKind.DATA_STRUCTURE,
-    }
-
-
-def is_declaration(sym: RawTreeSitterSymbolData) -> bool:
-    return sym.symbol_kind == SymbolKind.CALLABLE_DECLARATION
-
-
-def build_containment_map(
-    symbols: list[RawTreeSitterSymbolData],
-) -> dict[RawTreeSitterSymbolData, list[RawTreeSitterSymbolData]]:
-    """
-    Return a mapping of parent_symbol -> list of child_symbols
-    where each child is fully within the parent's [start_byte, end_byte].
-    """
-    child_map: dict[RawTreeSitterSymbolData, list[RawTreeSitterSymbolData]] = (
-        defaultdict(list)
-    )
-
-    # Compare all pairs (O(n^2) :(
-    for parent in symbols:
-        for child in symbols:
-            if parent is child:
-                continue
-            if (
-                parent.start_byte < child.start_byte
-                and child.end_byte <= parent.end_byte
-            ) or (
-                parent.start_byte <= child.start_byte
-                and child.end_byte < parent.end_byte
-            ):
-                child_map[parent].append(child)
-    return dict(child_map)
-
-
-def parse_c_file(
-    fpath: Path,
-    project_root: Path,
-) -> tuple[
-    list[RawTreeSitterSymbolData],
-    list[str],
-    dict[RawTreeSitterSymbolData, list[RawTreeSitterSymbolData]],
-]:
-    from utils.treesitter_driver import CppCDriverTree
-
-    code_str = fpath.read_text(encoding="utf8")
-    root_rel_path = to_root_relative(fpath, project_root)
-
-    driver = CppCDriverTree.from_code(code_str, file_path=root_rel_path)
-
-    all_syms = driver.extract_all_symbols()
-    containment_map = build_containment_map(all_syms)
-
-    includes: list[str] = []
-    non_import_symbols: list[RawTreeSitterSymbolData] = []
-
-    for sym in all_syms:
-        if sym.symbol_kind == SymbolKind.IMPORT and sym.name is not None:
-            includes.append(sym.name)
-        else:
-            non_import_symbols.append(sym)
-
-    return non_import_symbols, includes, containment_map
+from .utils import get_fully_qualified_name, is_declaration, is_definition
 
 
 @dataclass(frozen=True)
@@ -118,10 +34,12 @@ class ParsedProject:
                 list[str],
                 dict[RawTreeSitterSymbolData, list[RawTreeSitterSymbolData]],
             ],
-        ] = parse_c_file,
+        ],
         num_workers: int | None = None,
     ) -> Self:
         def parse_and_handle(abs_fpath: Path) -> tuple[Path, list, list, dict]:
+            from .utils import to_root_relative
+
             rel_fpath = to_root_relative(abs_fpath, project_root)
             try:
                 symbols, includes, containment_map = parse_file_fn(
@@ -168,31 +86,6 @@ class ParsedProject:
         )
 
 
-def resolve_include_path(
-    current_file: Path, include_str: str, project_files: set[Path]
-) -> Path | None:
-    """
-    Minimal attempt: if `current_file.parent/include_str` is in the project, return it.
-    Otherwise, look for a file in project_files that ends with include_str as a fallback.
-    If collisions happen, pick the first or None.
-    """
-    # 1) Direct local path approach
-    candidate = (current_file.parent / include_str).resolve()
-    if candidate in project_files:
-        return candidate
-
-    # 2) Fallback: see which project files end with include_str
-    #    e.g. "foo/bar.h" might match ".../some/path/foo/bar.h"
-    possible_matches = [pf for pf in project_files if str(pf).endswith(include_str)]
-    if not possible_matches:
-        return None
-    if len(possible_matches) == 1:
-        return possible_matches[0]
-
-    # If multiple matches remain, pick one. Crudely, we just pick the first.
-    return possible_matches[0]
-
-
 @dataclass(frozen=True)
 class ParsedProjectWithVisibility:
     """
@@ -209,9 +102,7 @@ class ParsedProjectWithVisibility:
         cls,
         parsed: ParsedProject,
         num_workers: int | None,
-        resolver_fn: Callable[
-            [Path, str, set[Path]], Path | None
-        ] = resolve_include_path,
+        resolver_fn: Callable[[Path, str, set[Path]], Path | None],
     ) -> Self:
         """
         Build a map from each file -> all files it can 'see' transitively.
@@ -442,7 +333,6 @@ class ReifiedProjectIndex:
     """
 
     file_to_symbols: dict[Path, list[ReifiedSymbol]]
-    # fqn -> {"functions": [...], "variables": [...]} # TODO track member vars!
 
     @classmethod
     def from_linked_project(
@@ -568,260 +458,4 @@ class ReifiedProjectIndex:
         for fpath, ls_list in linked_proj.linked_symbols.items():
             file_map[fpath] = [final_map[ls] for ls in ls_list]
 
-        return cls(
-            file_to_symbols=file_map
-        )  # , object_fqns_to_members=dict(obj_members))
-
-    def get_definition_of(self, symbol: ReifiedSymbol) -> ReifiedSymbol | None:
-        return symbol.definition
-
-    def get_usages_of(self, symbol: ReifiedSymbol) -> list[ReifiedSymbol]:
-        if not symbol.is_definition:
-            return []
-        return symbol.usages
-
-    def print_summary(self, files: list[Path] | None = None, sep: str = "::") -> None:
-        RESET = "\033[0m"
-        BLUE = "\033[94m"
-        GREEN = "\033[92m"
-        YELLOW = "\033[93m"
-        CYAN = "\033[96m"
-        MAGENTA = "\033[95m"
-        RED = "\033[91m"
-        BOLD = "\033[1m"
-        ORANGE = "\033[38;5;208m"
-
-        targets = files if files else sorted(self.file_to_symbols.keys())
-
-        for fpath in targets:
-            reified_syms = self.file_to_symbols.get(fpath)
-            if reified_syms is None:
-                print(f"{YELLOW}No symbols found for {fpath}{RESET}")
-                continue
-
-            print(f"\n{BOLD}{BLUE}File: {fpath}{RESET}")
-            for sym in reified_syms:
-                name = sym.raw.name
-                lines = f"[lines {sym.raw.start_line}-{sym.raw.end_line}]"
-                # sym_file_path = sym.raw.file_path
-
-                # Show fully qualified name for C++ symbols
-                fqn = get_fully_qualified_name(sym=sym.raw, sep=sep)
-                name_display = fqn if sym.raw.fully_qualified_parent_path else name
-
-                if sym.is_definition:
-                    usage_count = len(sym.usages)
-                    decl_count = len(sym.declarations)
-
-                    # Special handling for classes/structs
-                    if sym.raw.symbol_kind == SymbolKind.DATA_STRUCTURE:
-                        members = sym.children
-                        member_functions = [
-                            m
-                            for m in members
-                            if m.raw.symbol_kind == SymbolKind.CALLABLE
-                        ]
-                        member_variables = [
-                            m
-                            for m in members
-                            if m.raw.symbol_kind == SymbolKind.VARIABLE
-                        ]
-                        member_func_count = len(member_functions)
-                        member_var_count = len(member_variables)
-                        print(
-                            f"{GREEN}  📦 CLASS/STRUCT: {BOLD}{name_display}{RESET}{GREEN} {lines} "
-                            f"[{usage_count} usage(s), {decl_count} declaration(s)]{RESET}"
-                        )
-
-                        if member_func_count > 0 or member_var_count > 0:
-                            print(
-                                f"     {BOLD}Members:{RESET} {member_func_count} function(s), {member_var_count} variable(s)"
-                            )
-
-                        # Show member functions
-                        if member_functions:
-                            print(f"     {BOLD}Functions:{RESET}")
-                            for member_func in member_functions:
-                                mf_name = member_func.raw.name
-                                mf_lines = f"[lines {member_func.raw.start_line}-{member_func.raw.end_line}]"
-                                mf_usage_count = len(member_func.usages)
-                                print(
-                                    f"{RED}       🔧 {mf_name} {mf_lines} [{mf_usage_count} usage(s)]{RESET}"
-                                )
-
-                        # Show member variables
-                        if member_variables:
-                            print(f"     {BOLD}Variables:{RESET}")
-                            for member_var in member_variables:
-                                mv_name = member_var.raw.name
-                                mv_lines = f"[lines {member_var.raw.start_line}-{member_var.raw.end_line}]"
-                                mv_usage_count = len(member_var.usages)
-                                print(
-                                    f"{RED}       📌 {mv_name} {mv_lines} [{mv_usage_count} usage(s)]{RESET}"
-                                )
-                        if sym.inherits_from:
-                            print(
-                                f"     {BOLD}Inheritance:{RESET} "
-                                f"{', '.join(get_fully_qualified_name(i.raw, sep) for i in sym.inherits_from)}"
-                            )
-                    else:
-                        # Check if this is a member function
-                        is_member = sym.raw.fully_qualified_parent_path is not None
-                        icon = (
-                            "🔧" if sym.raw.symbol_kind == SymbolKind.CALLABLE else "📍"
-                        )
-                        member_prefix = "MEMBER " if is_member else ""
-
-                        print(
-                            f"{GREEN}  {icon} {member_prefix}DEF: {BOLD}{name_display}{RESET}{GREEN} {lines} "
-                            f"[{usage_count} usage(s), {decl_count} declaration(s)]{RESET}"
-                        )
-
-                        # Show the containing class if this is a member
-                        if is_member:
-                            containing = sym.parent
-                            if containing:
-                                print(
-                                    f"     {BOLD}Member of:{RESET} {get_fully_qualified_name(containing.raw, sep)} [lines {containing.raw.start_line}-{containing.raw.end_line}] "
-                                )
-
-                    # Show declarations for this definition
-                    if sym.declarations:
-                        print(f"     {BOLD}Declarations:{RESET}")
-                        for decl_sym in sym.declarations:
-                            decl_name = get_fully_qualified_name(
-                                sym=decl_sym.raw, sep=sep
-                            )
-                            decl_lines = (
-                                f"[lines {decl_sym.raw.start_line}-"
-                                f"{decl_sym.raw.end_line}]"
-                            )
-                            decl_file_path = decl_sym.raw.file_path
-                            print(
-                                f"{MAGENTA}       📄 {decl_name} {decl_lines} "
-                                f"in {decl_file_path}{RESET}"
-                            )
-
-                    # If this is a CALLABLE definition, show the calls it makes
-                    if sym.raw.symbol_kind == SymbolKind.CALLABLE and sym.calls:
-                        print(f"     {BOLD}Calls {len(sym.calls)} function(s):{RESET}")
-                        for called_func in sym.calls:
-                            called_name = get_fully_qualified_name(
-                                sym=called_func.raw, sep=sep
-                            )
-                            c_lines = (
-                                f"[lines {called_func.raw.start_line}-"
-                                f"{called_func.raw.end_line}]"
-                            )
-                            c_path = called_func.raw.file_path
-                            print(
-                                f"       ↪️  {ORANGE}{called_name} {c_lines} in {c_path}{RESET}"
-                            )
-
-                    # Show usages
-                    if sym.usages:
-                        print(f"     {BOLD}Used in:{RESET}")
-                        for _i, usage_sym in enumerate(
-                            sym.usages[:5]
-                        ):  # Limit to first 5
-                            # usage_name = get_fully_qualified_name(sym=usage_sym.raw, sep=sep)
-                            usage_lines = (
-                                f"[lines {usage_sym.raw.start_line}-"
-                                f"{usage_sym.raw.end_line}]"
-                            )
-                            usage_file_path = usage_sym.raw.file_path
-                            print(
-                                f"{YELLOW}       🔗 {usage_lines} "
-                                f"in {usage_file_path}{RESET}"
-                            )
-                        if len(sym.usages) > 5:
-                            print(f"       ... and {len(sym.usages) - 5} more usage(s)")
-
-                elif sym.is_declaration:
-                    if sym.definition:
-                        def_name = get_fully_qualified_name(
-                            sym=sym.definition.raw, sep=sep
-                        )
-                        def_lines = (
-                            f"[lines {sym.definition.raw.start_line}-"
-                            f"{sym.definition.raw.end_line}]"
-                        )
-                        def_file_path = sym.definition.raw.file_path
-                        print(
-                            f"{MAGENTA}  📄 DECL: {BOLD}{name_display}{RESET}{MAGENTA} {lines} "
-                            f"→ {def_name} {def_lines} in {def_file_path}{RESET}"
-                        )
-                    else:
-                        print(
-                            f"{MAGENTA}  📄 DECL: {BOLD}{name_display}{RESET}{MAGENTA} {lines} "
-                            f"→ no definition found{RESET}"
-                        )
-
-                else:  # usage
-                    if sym.definition:
-                        def_name = get_fully_qualified_name(
-                            sym=sym.definition.raw, sep=sep
-                        )
-                        def_lines = (
-                            f"[lines {sym.definition.raw.start_line}-"
-                            f"{sym.definition.raw.end_line}]"
-                        )
-                        def_file_path = sym.definition.raw.file_path
-                        print(
-                            f"{CYAN}  🔗 USE: {BOLD}{name_display}{RESET}{CYAN} {lines} "
-                            f"→ {def_name} {def_lines} in {def_file_path}{RESET}"
-                        )
-                    else:
-                        print(
-                            f"{CYAN}  🔗 USE: {BOLD}{name_display}{RESET}{CYAN} {lines} "
-                            f"→ no definition found{RESET}"
-                        )
-
-
-def build_c_project_index(
-    file_paths: list[Path], project_root: Path
-) -> ReifiedProjectIndex:
-    """
-    Orchestrate the 4 passes:
-      1) Parse each file
-      2) Determine transitive visibility among those files
-      3) Link usage -> definition
-      4) definition -> usage
-    """
-    print("==> Parsing files...")
-    parsed = ParsedProject.from_files(file_paths, project_root, num_workers=8)
-    print("==> Resolving includes and visibility...")
-    project_vis = ParsedProjectWithVisibility.from_parsed_project(parsed, num_workers=8)
-    print("==> Linking symbols...")
-    linked = LinkedProject.from_parsed_project_with_visibility(project_vis)
-    print("==> Reifying symbol graph...")
-    reified = ReifiedProjectIndex.from_linked_project(
-        linked, parsed.file_to_containment_map
-    )
-    print("==> Done building index.")
-    return reified
-
-
-def discover_c_and_h_files(project_root: Path) -> list[Path]:
-    return [
-        p.resolve()
-        for p in project_root.rglob("*")
-        if p.suffix.lower() in (".c", ".h", ".cpp", ".cc", ".cxx", ".hpp", ".hxx")
-    ]
-
-
-def main() -> None:
-    # project_root = Path("/Users/andrewmark/Downloads/sqlite")
-    project_root = Path("/Users/shaneghiotto/driver/uploaded_codebases/chess-master")
-
-    file_paths = discover_c_and_h_files(project_root)
-
-    index = build_c_project_index(file_paths, project_root)
-
-    # focus_file = Path("sqlite/src/btree.c")  # Note this is project-relative
-    # index.print_summary([focus_file])
-    index.print_summary()
-
-
-if __name__ == "__main__":
-    main()
+        return cls(file_to_symbols=file_map)

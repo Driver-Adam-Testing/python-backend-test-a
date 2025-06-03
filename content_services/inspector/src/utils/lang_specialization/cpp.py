@@ -3,9 +3,9 @@ from typing import Self
 
 from pydantic import PrivateAttr
 from utils.models import ChatOpenAI
-from utils.symbol_table import get_fully_qualified_name
-from utils.treesitter_driver import CppCDriverTree
+from utils.treesitter_drivers.c_cpp_driver import CppCDriverTree
 
+from ..symbol_table.utils import get_fully_qualified_name
 from .ir_common import (
     FieldNameWithBackTickContent,
     FieldNameWithRawContent,

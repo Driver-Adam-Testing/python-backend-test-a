@@ -12,4 +12,4 @@ class PythonLanguageProvider(LanguageProvider):
 
     @classmethod
     def get_resolver(cls) -> PythonResolver:
-        return PythonResolver()  # pass tree as arg! just take class TODO!
+        return PythonResolver()

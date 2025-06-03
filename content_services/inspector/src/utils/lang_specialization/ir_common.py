@@ -393,7 +393,7 @@ class IrData(BaseModel, abc.ABC):
 
                 output += f"- **See also**: [`{fqn}`]({path_part}#{kind_part}:{fqn})  (Data Structure)\n"
             if sym.raw.symbol_kind == SymbolKind.DATA_STRUCTURE:
-                if len(sym.children) >= 0:
+                if len(sym.children) > 0:
                     output += "- **Member Functions**:\n"
                     for child_symbol in sym.children:
                         if child_symbol.raw.symbol_kind == SymbolKind.CALLABLE:

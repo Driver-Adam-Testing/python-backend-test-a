@@ -68,7 +68,11 @@ def resolve_import_path(
             return None
 
     # 2) For `from my_module import fn` or `import my_module.fn` in `/some_path/my_module.py`
-    candidate = import_str_pathified.parent.with_suffix(".py")
+    try:
+        candidate = import_str_pathified.parent.with_suffix(".py")
+    except ValueError:
+        # import_str_pathified.parent is just "/" or similar in this case, and can't be resolved
+        return None
     for idx, f in enumerate(project_files_lst):
         if str(candidate) in str(f):
             return project_files_lst[idx]
@@ -113,7 +117,7 @@ def build_py_project_index(
 
 def main() -> ReifiedProjectIndex:
     project_root = Path(
-        "/Users/daniel/Documents/moved_content_from_python_backend/infinity-core/"
+        "/Users/shaneghiotto/driver/uploaded_codebases/python-backend"
     )
     file_paths = discover_py_files(project_root=project_root)
     print(file_paths)

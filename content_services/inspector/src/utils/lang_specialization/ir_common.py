@@ -29,6 +29,12 @@ def snake_case_to_spaced_string(snake_case: str) -> str:
     return " ".join(item.capitalize() for item in split_str)
 
 
+def ensure_enclosed_with_backticks(raw_str: str) -> str:
+    start = "" if raw_str.startswith("`") else "`"
+    end = "" if raw_str.endswith("`") else "`"
+    return start + raw_str + end
+
+
 def compute_num_workers(num_symbols: int) -> int:
     return min(
         ceil(num_symbols / MAX_SYMBOLS_PER_WORKER),
@@ -111,6 +117,32 @@ class ListedBacktickNameRawContentWithNone(MdRenderable):
         if len(self.content) > 0:
             for item in self.content:
                 output_str += item.render_markdown(doc_label)
+        else:
+            output_str += "    - None\n"
+        return output_str
+
+
+class ListedBackTickRawContentNoNone(MdRenderable):
+    content: list[str]
+
+    def render_markdown(self, doc_label: str) -> str:
+        output_str = ""
+        if len(self.content) > 0:
+            output_str += f"- **{snake_case_to_spaced_string(doc_label)}**:\n"
+            for item in self.content:
+                output_str += f"    - {ensure_enclosed_with_backticks(item)}\n"
+        return output_str
+
+
+class ListedBackTickRawContentWithNone(MdRenderable):
+    content: list[str]
+
+    def render_markdown(self, doc_label: str) -> str:
+        output_str = ""
+        output_str += f"- **{snake_case_to_spaced_string(doc_label)}**:\n"
+        if len(self.content) > 0:
+            for item in self.content:
+                output_str += f"    - {ensure_enclosed_with_backticks(item)}\n"
         else:
             output_str += "    - None\n"
         return output_str
@@ -372,7 +404,7 @@ class IrData(BaseModel, abc.ABC):
                                 f"    - [`{fqn}`]({path_part}#{kind_part}:{fqn})\n"
                             )
                 if sym.inherits_from is not None and len(sym.inherits_from) > 0:
-                    output += "- **Inherits from**:\n"
+                    output += "- **Inherits From**:\n"
                     for inherited_class in sym.inherits_from:
                         kind_part = inherited_class.raw.symbol_kind.name.lower()
                         fqn = get_fully_qualified_name(inherited_class.raw)
@@ -382,7 +414,7 @@ class IrData(BaseModel, abc.ABC):
                     sym.raw.base_class_names is not None
                     and len(sym.raw.base_class_names) > 0
                 ):
-                    output += "- **Inherits from**:\n"
+                    output += "- **Inherits From**:\n"
                     for base_class_name in sym.raw.base_class_names:
                         output += f"    - `{base_class_name}`\n"
             # if sym.raw.symbol_kind == SymbolKind.CALLABLE and sym.usages:
@@ -580,7 +612,6 @@ class ClassData(IrData, abc.ABC):
     type: FieldNameWithBackTickContent
     members: ListedBacktickNameRawContentNoNone
     description: FieldNameWithRawContent
-    inherits_from: ListedRawContentNoNone
     _supported_child_ordering: list[str] = PrivateAttr(
         default=[ScopeRelation.METHOD, ScopeRelation.NESTED_CLASS]
     )

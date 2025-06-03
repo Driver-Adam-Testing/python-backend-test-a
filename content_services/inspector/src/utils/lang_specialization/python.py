@@ -1,14 +1,22 @@
 from pathlib import Path
 from typing import Self
 
+from pydantic import PrivateAttr
 from utils.models import ChatOpenAI
 from utils.treesitter_drivers.python_driver import PyDriverTree
 
 from .ir_common import (
-    ClassData,
-    FnData,
+    FieldNameWithBackTickContent,
+    FieldNameWithBulletedContent,
+    FieldNameWithRawContent,
     IrCollection,
     IrData,
+    ListedBacktickNameRawContentNoNone,
+    ListedBacktickNameRawContentWithNone,
+    ListedBackTickRawContentNoNone,
+    ListedRawContentNoNone,
+    ListedRawContentWithNone,
+    RawContent,
     VariableData,
 )
 from .symbol_common import (
@@ -77,9 +85,11 @@ You will be given the name of a class to document and the source code where the 
 
 IMPORTANT: members should ONLY include instance and class variables or properties of the class. Do **not** include methods in the members list of the data structure.
 
+For the list of decorators, provide the decorator name prepended with @ for each identified decorator (e.g.: `@dataclass`). **ONLY** include decorators applied to the class itself, if any, not decorators applied to instance variables, class variables, methods, etc. of the class.
+
 Your job is to describe the class. **Always respond using exactly the following JSON schema**:
 {
-    "type": <class, dataclass, etc.>,
+    "decorators": [<`@decorator1_name`>, <`@decorator2_name`>, ...],
     "members": [
         {"name": <member_name1>, "content": <Terse 1 sentence description of the first instance or class variable>},
         {"name": <member_name2>, "content": <Terse 1 sentence description of the second instance or class variable>},
@@ -173,9 +183,12 @@ You focus on writing technical documentation for functions and methods. You are 
 
 You will be given the name of a function or a method to document and the source code where the function or method is defined.
 
+For the list of decorators applied to this function or method, provide the decorator name prepended with @ for each identified decorator (e.g.: `@classmethod`).
+
 Your job is to describe the function or method. **Always respond using exactly the following JSON schema**:
 {
     "single_sentence": <terse single sentence description of the function or method>,
+    "decorators": [<`@decorator1_name`>, <`@decorator2_name`>, ...],
     "inputs": [
         {"name": <input_arg1>, "content": <description of input argument 1>},
         {"name": <input_arg2>, "content": <description of input argument 2>},
@@ -258,7 +271,22 @@ class PyVariableCollection(IrCollection):
         return cls.from_llm_with_ir_data(PyVariableData, llm, symbols_list)
 
 
-class PyFnData(FnData):
+class PyFnData(IrData):
+    single_sentence: RawContent
+    decorators: ListedBackTickRawContentNoNone
+    inputs: ListedBacktickNameRawContentWithNone
+    control_flow: ListedRawContentWithNone
+    output: FieldNameWithBulletedContent
+
+    @classmethod
+    def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
+        return cls(
+            single_sentence=RawContent(content=""),
+            inputs=ListedBacktickNameRawContentWithNone(content=[]),
+            control_flow=ListedBacktickNameRawContentWithNone(content=[]),
+            output=FieldNameWithBulletedContent(content=""),
+        )
+
     @classmethod
     def system_prompt(cls) -> str:
         return FUNCTIONS_OR_METHODS_FOUND_SYSTEM_PROMPT_JSON
@@ -296,7 +324,23 @@ class PyFnCollection(IrCollection):
         return cls.from_llm_with_ir_data(PyFnData, llm, symbols_list)
 
 
-class PyClassData(ClassData):
+class PyClassData(IrData):
+    decorators: ListedBackTickRawContentNoNone
+    members: ListedBacktickNameRawContentNoNone
+    description: FieldNameWithRawContent
+    _supported_child_ordering: list[str] = PrivateAttr(
+        default=[ScopeRelation.METHOD, ScopeRelation.NESTED_CLASS]
+    )
+
+    @classmethod
+    def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
+        return cls(
+            description=FieldNameWithRawContent(content="Implemented elsewhere"),
+            type=FieldNameWithBackTickContent(content="N/A"),
+            members=ListedBacktickNameRawContentNoNone(content=[]),
+            inherits_from=ListedRawContentNoNone(content=[]),
+        )
+
     @classmethod
     def system_prompt(cls) -> str:
         return CLASSES_FOUND_SYSTEM_PROMPT_JSON

@@ -360,10 +360,7 @@ class IrData(BaseModel, abc.ABC):
                 path_part = sym.parent.raw.file_path
 
                 output += f"- **See also**: [`{fqn}`]({path_part}#{kind_part}:{fqn})  (Data Structure)\n"
-            if (
-                sym.raw.symbol_kind == SymbolKind.DATA_STRUCTURE
-                and len(sym.children) > 0
-            ):
+            if sym.raw.symbol_kind == SymbolKind.DATA_STRUCTURE:
                 if len(sym.children) >= 0:
                     output += "- **Member Functions**:\n"
                     for child_symbol in sym.children:

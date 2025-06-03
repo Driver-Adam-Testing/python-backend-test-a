@@ -270,6 +270,8 @@ class LinkedSymbol:
     raw: RawTreeSitterSymbolData
     is_definition: bool
     is_declaration: bool
+    is_base_class: bool = False
+    base_name: str | None = None
     definition: Self | None = None
 
 
@@ -382,6 +384,41 @@ class LinkedProject:
                         is_declaration=False,
                         definition=None,
                     )
+                elif (
+                    is_definition(rsym)
+                    and rsym.symbol_kind == SymbolKind.DATA_STRUCTURE
+                ):
+                    # For DATA_STRUCTURE, we look for base classes
+                    if (
+                        rsym.base_class_names is not None
+                        and len(rsym.base_class_names) > 0
+                    ):
+                        for base_name in rsym.base_class_names:
+                            candidates = definitions_by_name.get(base_name, [])
+                            fqn_candidates = definitions_by_fqn.get(base_name, [])
+                            for fqn_candidate in fqn_candidates:
+                                if fqn_candidate not in candidates:
+                                    candidates.append(fqn_candidate)
+                            vis_defs = [
+                                (dfpath, dfsym)
+                                for (dfpath, dfsym) in candidates
+                                if dfpath in visible_with_self
+                            ]
+                            if len(vis_defs) >= 1:
+                                # pick first or unify
+                                dfpath, def_raw = vis_defs[0]
+                                # TODO: hack. Better way is to extract base classes in DriverTree classes
+                                # and use other symbol table mechanics to link them
+                                linked_syms.append(
+                                    LinkedSymbol(
+                                        raw=def_raw,
+                                        is_definition=False,
+                                        is_declaration=False,
+                                        is_base_class=True,
+                                        base_name=base_name,
+                                        definition=None,
+                                    )
+                                )
 
                 linked_syms.append(
                     LinkedSymbol(
@@ -490,20 +527,16 @@ class ReifiedProjectIndex:
                     # Set inheritance
                     if lsym.raw.base_class_names is not None:
                         inherits_from: list[ReifiedSymbol] = []
-                        for base_name in lsym.raw.base_class_names:
-                            if base_name in obj_symbols:
-                                base_sym = obj_symbols[base_name]
-                                inherits_from.append(base_sym)
-                            else:
-                                # check if it's in the same parent as the current symbol
-                                parent_fqn = (
-                                    lsym.raw.fully_qualified_parent_path
-                                    + lsym.raw.delimiter
-                                    + base_name
-                                )
-                                if parent_fqn in obj_symbols:
-                                    base_sym = obj_symbols[parent_fqn]
-                                    inherits_from.append(base_sym)
+                        for base_class in lsym.raw.base_class_names:
+                            # Find a matching linked symbol
+                            for base_ls in ls_list:
+                                if (
+                                    base_ls.is_base_class
+                                    and base_ls.base_name == base_class
+                                ):
+                                    # We found a base class in the same file
+                                    inherits_from.append(final_map[base_ls])
+                                    break
                         if len(inherits_from):
                             old_reif = final_map[lsym]
                             final_map[lsym] = replace(
@@ -779,7 +812,7 @@ def discover_c_and_h_files(project_root: Path) -> list[Path]:
 
 def main() -> None:
     # project_root = Path("/Users/andrewmark/Downloads/sqlite")
-    project_root = Path("/Users/shaneghiotto/driver/uploaded_codebases/chesslib6")
+    project_root = Path("/Users/shaneghiotto/driver/uploaded_codebases/chess-master")
 
     file_paths = discover_c_and_h_files(project_root)
 

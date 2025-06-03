@@ -319,7 +319,7 @@ class CppDataStructureRawSymbolCollection(RawSymbolCollection):
         ds_symbols = [
             sym
             for sym in reified_symbols
-            if sym.raw.symbol_kind == SymbolKind.DATA_STRUCTURE
+            if sym.raw.symbol_kind == SymbolKind.DATA_STRUCTURE and sym.is_definition
         ]
         data_structure_raw_symbol_data = {}
         is_large_file = code_requires_multi_prompt(code)

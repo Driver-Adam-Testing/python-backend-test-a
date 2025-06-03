@@ -407,8 +407,17 @@ class PyDriverTree(DriverTree):
             if klass_node.child_by_field_name("superclasses"):
                 base_class_names = []
                 for bc in klass_node.child_by_field_name("superclasses").children:
-                    if bc.type == "identifier":
+                    # `identifier`: class MyClass(BaseModel)
+                    # `attribute`: class MyClass(abc.ABC)
+                    # `call`: class MyClass(MyBaseClassFactory()) -- rare dynamic programming
+                    if (
+                        bc.type == "identifier"
+                        or bc.type == "attribute"
+                        or bc.type == "call"
+                    ):
                         base_class_names.append(bc.text.decode("utf-8"))
+                    else:
+                        print(f"Could not include parsed superclass: {bc}")
             else:
                 base_class_names = None
             if klass_node.parent.type == "decorated_definition":

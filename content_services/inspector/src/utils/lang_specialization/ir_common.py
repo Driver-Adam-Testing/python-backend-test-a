@@ -372,7 +372,7 @@ class IrData(BaseModel, abc.ABC):
                                 f"    - [`{fqn}`]({path_part}#{kind_part}:{fqn})\n"
                             )
                 if sym.inherits_from is not None and len(sym.inherits_from) > 0:
-                    output += "- **Inherits from**:\n"
+                    output += "- **Inherits From**:\n"
                     for inherited_class in sym.inherits_from:
                         kind_part = inherited_class.raw.symbol_kind.name.lower()
                         fqn = get_fully_qualified_name(inherited_class.raw)
@@ -382,7 +382,7 @@ class IrData(BaseModel, abc.ABC):
                     sym.raw.base_class_names is not None
                     and len(sym.raw.base_class_names) > 0
                 ):
-                    output += "- **Inherits from**:\n"
+                    output += "- **Inherits From**:\n"
                     for base_class_name in sym.raw.base_class_names:
                         output += f"    - `{base_class_name}`\n"
             # if sym.raw.symbol_kind == SymbolKind.CALLABLE and sym.usages:
@@ -580,7 +580,6 @@ class ClassData(IrData, abc.ABC):
     type: FieldNameWithBackTickContent
     members: ListedBacktickNameRawContentNoNone
     description: FieldNameWithRawContent
-    inherits_from: ListedRawContentNoNone
     _supported_child_ordering: list[str] = PrivateAttr(
         default=[ScopeRelation.METHOD, ScopeRelation.NESTED_CLASS]
     )

@@ -117,7 +117,7 @@ def build_py_project_index(
 
 def main() -> ReifiedProjectIndex:
     project_root = Path(
-        "/Users/shaneghiotto/driver/uploaded_codebases/python-backend"
+        "/Users/daniel/Documents/moved_content_from_python_backend/infinity-core"
     )
     file_paths = discover_py_files(project_root=project_root)
     print(file_paths)

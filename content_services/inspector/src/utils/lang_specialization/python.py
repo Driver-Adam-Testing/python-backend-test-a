@@ -79,7 +79,7 @@ IMPORTANT: members should ONLY include instance and class variables or propertie
 
 Your job is to describe the class. **Always respond using exactly the following JSON schema**:
 {
-    "type": <class, dataclass, etc.>,
+    "type": <class, dataclass, ABC, etc.>,
     "members": [
         {"name": <member_name1>, "content": <Terse 1 sentence description of the first instance or class variable>},
         {"name": <member_name2>, "content": <Terse 1 sentence description of the second instance or class variable>},

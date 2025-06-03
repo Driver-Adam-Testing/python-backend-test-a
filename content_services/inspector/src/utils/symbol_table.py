@@ -485,7 +485,7 @@ class ReifiedProjectIndex:
                             old_reif = final_map[lsym]
                             final_map[lsym] = replace(
                                 old_reif,
-                                inheritance=inherits_from,
+                                inherits_from=inherits_from,
                             )
 
         # (5) Build object membership dicts

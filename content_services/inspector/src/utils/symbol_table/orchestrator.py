@@ -71,13 +71,13 @@ def _build_language_symbol_table(
     parsed = ParsedProject.from_files(
         file_paths,
         project_root,
-        parse_file_fn=parser.parse_file,
+        parser=parser,
         num_workers=num_workers,
     )
 
     print("==> Resolving includes and visibility...")
     project_vis = ParsedProjectWithVisibility.from_parsed_project(
-        parsed, resolver_fn=resolver.resolve_import, num_workers=num_workers
+        parsed, resolver=resolver, num_workers=num_workers
     )
 
     print("==> Linking symbols...")

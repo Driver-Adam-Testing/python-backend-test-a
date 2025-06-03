@@ -10,9 +10,12 @@ from ..utils import build_containment_map, to_root_relative
 class CCppParser(SymbolParser):
     language = "c_cpp"  # Shared parser for both C and C++
     fqn_delimiter = "::"
+    tree = CppCDriverTree  # Use the C/C++ driver tree
 
     def parse_file(
-        self, fpath: Path, project_root: Path
+        self,
+        fpath: Path,
+        project_root: Path,
     ) -> tuple[
         list[RawTreeSitterSymbolData],  # symbols
         list[str],  # imports
@@ -21,7 +24,7 @@ class CCppParser(SymbolParser):
         code_str = fpath.read_text(encoding="utf8")
         root_rel_path = to_root_relative(fpath, project_root)
 
-        driver = CppCDriverTree.from_code(code_str, file_path=root_rel_path)
+        driver = self.tree.from_code(code_str, file_path=root_rel_path)
 
         all_syms = driver.extract_all_symbols()
         containment_map = build_containment_map(all_syms)

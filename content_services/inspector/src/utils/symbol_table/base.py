@@ -12,10 +12,13 @@ class SymbolParser(ABC):
     # Required class attributes
     language: ClassVar[str]
     fqn_delimiter: ClassVar[str]
+    tree: type[DriverTree]
 
     @abstractmethod
     def parse_file(
-        self, fpath: Path, project_root: Path
+        self,
+        fpath: Path,
+        project_root: Path,
     ) -> tuple[
         list[RawTreeSitterSymbolData],  # symbols
         list[str],  # imports
@@ -23,7 +26,7 @@ class SymbolParser(ABC):
     ]:
         """Parse a single file and return symbols, imports, and containment."""
 
-    def __init_subclass__(cls, **kwargs):
+    def __init_subclass__(cls, **kwargs) -> None:
         super().__init_subclass__(**kwargs)
         if not hasattr(cls, "language") or not cls.language:
             raise TypeError(f"{cls.__name__} must define 'language' class attribute")
@@ -31,6 +34,8 @@ class SymbolParser(ABC):
             raise TypeError(
                 f"{cls.__name__} must define 'fqn_delimiter' class attribute"
             )
+        if not hasattr(cls, "tree") or not cls.tree:
+            raise TypeError(f"{cls.__name__} must define 'tree' class attribute")
 
 
 class ImportResolver(ABC):
@@ -44,7 +49,7 @@ class ImportResolver(ABC):
     ) -> Path | None:
         """Resolve an import string to a project file path."""
 
-    def __init_subclass__(cls, **kwargs):
+    def __init_subclass__(cls, **kwargs) -> None:
         super().__init_subclass__(**kwargs)
         if not hasattr(cls, "language") or not cls.language:
             raise TypeError(f"{cls.__name__} must define 'language' class attribute")
@@ -54,11 +59,6 @@ class LanguageProvider(ABC):
     """Abstract base that ensures complete language implementation."""
 
     language: ClassVar[str]
-
-    @classmethod
-    @abstractmethod
-    def get_driver_class(cls) -> type[DriverTree]:
-        """Return the TreeSitter driver class."""
 
     @classmethod
     @abstractmethod
@@ -80,7 +80,7 @@ class LanguageProvider(ABC):
         """Get FQN delimiter - derived from parser."""
         return cls.get_parser().fqn_delimiter
 
-    def __init_subclass__(cls, **kwargs):
+    def __init_subclass__(cls, **kwargs) -> None:
         super().__init_subclass__(**kwargs)
         if not hasattr(cls, "language") or not cls.language:
             raise TypeError(f"{cls.__name__} must define 'language' class attribute")

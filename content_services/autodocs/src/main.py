@@ -199,5 +199,5 @@ def main(
     from database.models_v2_enums import AutoDocConfigKind
 
     run_autodoc.remote(
-        page_node_id=page_node_id, config_kind=AutoDocConfigKind.ADI_DRIVER
+        page_node_id=page_node_id, config_kind=AutoDocConfigKind.ARCHITECTURE
     )

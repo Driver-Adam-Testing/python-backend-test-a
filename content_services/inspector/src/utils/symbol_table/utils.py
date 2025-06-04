@@ -106,8 +106,8 @@ def disambiguate_call(
     calling_symbol: RawTreeSitterSymbolData,
 ) -> int | None:
     """
-    Use heuristics first, then LLM to disambiguate which candidate is the correct one for a call.
-    Returns the index of the correct candidate.
+    Use LM to disambiguate which candidate is the correct one for a call.
+    Returns the index of the correct candidate. We use a cache if possible to avoid the LLM call.
     """
 
     cache_key = _get_cache_key(candidates, call_symbol, calling_symbol)

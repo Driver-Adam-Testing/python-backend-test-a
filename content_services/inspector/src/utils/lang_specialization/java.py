@@ -13,6 +13,7 @@ from .ir_common import (
     IrData,
     ListedBacktickNameRawContentWithNone,
     ListedBacktickNameTypeRawContentNoNone,
+    ListedCommaCombinedBackTickRawContentNoNone,
     ListedRawContentNoNone,
     RawContent,
 )
@@ -196,7 +197,7 @@ Field to document:
 
 class JavaMethodData(IrData):
     single_sentence: RawContent
-    modifiers: ListedRawContentNoNone
+    modifiers: ListedCommaCombinedBackTickRawContentNoNone
     inputs: ListedBacktickNameRawContentWithNone
     control_flow: ListedRawContentNoNone
     output: FieldNameWithBulletedContent
@@ -227,7 +228,7 @@ class JavaMethodData(IrData):
             inputs=ListedBacktickNameRawContentWithNone(content=[]),
             control_flow=ListedRawContentNoNone(content=[]),
             output=FieldNameWithBulletedContent(content=""),
-            modifiers=ListedRawContentNoNone(content=[]),
+            modifiers=ListedCommaCombinedBackTickRawContentNoNone(content=[]),
         )
 
 
@@ -235,7 +236,7 @@ class JavaFieldData(IrData):
     type: FieldNameWithBackTickContent
     description: FieldNameWithRawContent
     use: FieldNameWithRawContent
-    modifiers: ListedRawContentNoNone
+    modifiers: ListedCommaCombinedBackTickRawContentNoNone
 
     @classmethod
     def system_prompt(cls) -> str:
@@ -262,12 +263,12 @@ class JavaFieldData(IrData):
             type=FieldNameWithBackTickContent(content=""),
             description=FieldNameWithRawContent(content=""),
             use=FieldNameWithRawContent(content=""),
-            modifiers=ListedRawContentNoNone(content=[]),
+            modifiers=ListedCommaCombinedBackTickRawContentNoNone(content=[]),
         )
 
 
 class JavaClassData(IrData):
-    modifiers: ListedRawContentNoNone
+    modifiers: ListedCommaCombinedBackTickRawContentNoNone
     description: FieldNameWithRawContent
     fields: ListedBacktickNameTypeRawContentNoNone
     _supported_child_ordering: list[str] = PrivateAttr(
@@ -313,7 +314,7 @@ class JavaClassData(IrData):
     @classmethod
     def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
         return cls(
-            modifiers=ListedRawContentNoNone(content=[]),
+            modifiers=ListedCommaCombinedBackTickRawContentNoNone(content=[]),
             interfaces_implemented=ListedRawContentNoNone(content=[]),
             classes_extended=ListedRawContentNoNone(content=[]),
             description=FieldNameWithRawContent(content=""),

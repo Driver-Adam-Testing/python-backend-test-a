@@ -249,7 +249,7 @@ class LinkedProject:
                                 index = disambiguate_call_w_llm(
                                     vis_defs, rsym, calling_symbol[0][1]
                                 )
-                                if index is not None:
+                                if index is not None and index < len(vis_defs):
                                     dfpath, def_raw = vis_defs[index]
                                     # TODO: if we fail to get here, default to first element
                         def_symbol = LinkedSymbol(

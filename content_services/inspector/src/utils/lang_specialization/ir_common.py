@@ -17,7 +17,7 @@ from utils.lang_specialization.symbol_common import (
     SymbolKind,
 )
 from utils.models import ChatOpenAI, OutputConfig, OutputConfigKind
-from utils.symbol_table.utils import get_fully_qualified_name
+from utils.symbol_table.utils import get_fully_qualified_name, is_data_structure
 from utils.threadpool import FastShutdownThreadPoolExecutor
 
 MAX_SYMBOLS_PER_WORKER = 50
@@ -421,11 +421,21 @@ class IrData(BaseModel, abc.ABC):
                 kind_part = sym.parent.raw.symbol_kind.name.lower()
                 fqn = get_fully_qualified_name(sym.parent.raw)
                 path_part = sym.parent.raw.file_path
+                parent_label = (
+                    "Base Class"
+                    if sym.parent.raw.symbol_kind == SymbolKind.CLASS
+                    else "Data Structure"
+                )
 
-                output += f"- **See also**: [`{fqn}`]({path_part}#{kind_part}:{fqn})  (Data Structure)\n"
-            if sym.raw.symbol_kind == SymbolKind.DATA_STRUCTURE:
+                output += f"- **See also**: [`{fqn}`]({path_part}#{kind_part}:{fqn})  ({parent_label})\n"
+            if is_data_structure(sym.raw):
+                member_label = (
+                    "Methods"
+                    if sym.raw.symbol_kind == SymbolKind.CLASS
+                    else "Member Functions"
+                )
                 if len(sym.children) > 0:
-                    output += "- **Member Functions**:\n"
+                    output += f"- **{member_label}**:\n"
                     for child_symbol in sym.children:
                         if child_symbol.raw.symbol_kind == SymbolKind.CALLABLE:
                             fqn = get_fully_qualified_name(child_symbol.raw)

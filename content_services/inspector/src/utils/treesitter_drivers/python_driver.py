@@ -437,7 +437,7 @@ class PyDriverTree(DriverTree):
                 name=klass_name,
                 start_line=start_line,
                 end_line=end_line,
-                symbol_kind=SymbolKind.DATA_STRUCTURE,
+                symbol_kind=SymbolKind.CLASS,
                 start_byte=start_byte,
                 end_byte=end_byte,
                 file_path=self.file_path,

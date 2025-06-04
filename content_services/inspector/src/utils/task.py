@@ -20,6 +20,41 @@ from utils.dag import LiteNode, NodeStatus
 TaskName = str
 
 
+@dataclass
+class ProgressState:
+    """Tracks progress state for the inspector run"""
+
+    total_work_units: int = 0
+    completed_work_units: int = 0
+    task_count: int = 0
+    completed_task_count: int = 0
+
+    @property
+    def percent_complete(self) -> float:
+        """Calculate percentage completion based on work units"""
+        if self.total_work_units == 0:
+            return 0.0
+        return (self.completed_work_units / self.total_work_units) * 100.0
+
+    @property
+    def task_percent_complete(self) -> float:
+        """Calculate percentage completion based on task count"""
+        if self.task_count == 0:
+            return 0.0
+        return (self.completed_task_count / self.task_count) * 100.0
+
+
+class TaskWorkUnits:
+    """Defines work unit constants for each task type"""
+
+    SYMBOL_TABLE = 30
+    FILE_TECH_DOC = 10
+    FOLDER_TECH_DOC = 10
+    TOP_LEVEL_DOCS = 20
+    SYMBOLS = 10
+    EMBEDDING = 1
+
+
 class SerializationMethod(str, Enum):
     JSON = "json"  # NOTE: we use JSON here in case of python version upgrade, we maintain backwards compatibility.
     PICKLE = "pickle"  # NOTE: use this sparingly, due to concern about backwards compatibilty with python upgrade
@@ -185,6 +220,12 @@ class Task(abc.ABC):
     ) -> dict[str, any]:
         raise NotImplementedError
 
+    @property
+    @abstractmethod
+    def work_units(self) -> int:
+        """Return the work units for this task"""
+        raise NotImplementedError
+
     # TODO this could get really long, but does it matter?
     @property
     def stable_id(self) -> str:
@@ -228,6 +269,7 @@ class TaskManager:
     write_executor: ThreadPoolExecutor = field(
         default_factory=lambda: ThreadPoolExecutor(max_workers=5)
     )
+    progress_state: ProgressState = field(default_factory=ProgressState)
 
     @classmethod
     def with_s3_persistence(
@@ -238,12 +280,49 @@ class TaskManager:
     ) -> "TaskManager":
         return cls(*args, persistence=S3TaskResultPersistence(bucket_name), **kwargs)
 
+    def _initialize_progress(self) -> None:
+        """Initialize progress tracking by calculating total work units and task count"""
+        self.progress_state.total_work_units = sum(
+            task.work_units for task in self.tasks
+        )
+        self.progress_state.task_count = len(self.tasks)
+        self.progress_state.completed_work_units = 0
+        self.progress_state.completed_task_count = 0
+        print(
+            f"Initialized progress tracking: {self.progress_state.total_work_units} total work units, {self.progress_state.task_count} tasks"
+        )
+
+    def _update_progress(self, completed_task: "Task", threshold: float = 1.0) -> None:
+        """Update progress state when a task completes"""
+        self.progress_state.completed_work_units += completed_task.work_units
+        self.progress_state.completed_task_count += 1
+
+        # Only print progress if we've crossed a percentage threshold
+        if (
+            self.progress_state.percent_complete % threshold
+            < (
+                self.progress_state.percent_complete
+                - completed_task.work_units
+                * 100.0
+                / self.progress_state.total_work_units
+            )
+            % threshold
+        ):
+            color = "\033[92m"
+            reset = "\033[0m"
+            print(
+                f"{color}Progress: {self.progress_state.percent_complete:.1f}% ({self.progress_state.completed_work_units}/{self.progress_state.total_work_units} work units, {self.progress_state.completed_task_count}/{self.progress_state.task_count} tasks){reset}"
+            )
+
     async def run_tasks(
         self,
         run_id: UUID,
         result_loading_config: list[tuple[UUID, set[NodeStatus]]] | None = None,
     ) -> dict[type[Task], TaskResult]:
         result_loading_config = result_loading_config or []
+
+        # Initialize progress tracking
+        self._initialize_progress()
 
         if len(result_loading_config) > 0 and self.persistence:
             # We can block the event loop with blocking IO when loading the state we aren't running
@@ -394,6 +473,9 @@ class TaskManager:
 
         task_hash_str = task.hashed_stable_id
         await self.write_queue.put((task_hash_str, result))
+
+        # Update progress tracking
+        self._update_progress(task)
 
         return result
 

@@ -11,7 +11,13 @@ from utils.lang_specialization.symbol_common import (
 )
 
 from .base import ImportResolver, SymbolParser
-from .utils import get_fully_qualified_name, is_declaration, is_definition
+from .utils import (
+    disambiguate_call_w_llm,
+    get_fully_qualified_name,
+    is_data_structure,
+    is_declaration,
+    is_definition,
+)
 
 
 @dataclass(frozen=True)
@@ -239,6 +245,19 @@ class LinkedProject:
                             0
                         ]  # TODO: in C++ taking the first is not always correct due to namespace collisions
                         # This is true even for FQN though due overloading
+                        if rsym.symbol_kind == SymbolKind.CALL and len(vis_defs) > 1:
+                            # Disambiguate
+                            calling_symbol = definitions_by_fqn.get(
+                                rsym.fully_qualified_parent_path, []
+                            )
+                            # TODO: disambiguate calling symbol !
+                            if len(calling_symbol) > 0:
+                                index = disambiguate_call_w_llm(
+                                    vis_defs, rsym, calling_symbol[0][1]
+                                )
+                                if index is not None:
+                                    dfpath, def_raw = vis_defs[index]
+                                    # TODO: if we fail to get here, default to first element
                         def_symbol = LinkedSymbol(
                             raw=def_raw,
                             is_definition=True,
@@ -274,10 +293,7 @@ class LinkedProject:
                         is_declaration=False,
                         definition=None,
                     )
-                elif (
-                    is_definition(rsym)
-                    and rsym.symbol_kind == SymbolKind.DATA_STRUCTURE
-                ):
+                elif is_definition(rsym) and is_data_structure(rsym):
                     # For DATA_STRUCTURE, we look for base classes
                     if (
                         rsym.base_class_names is not None
@@ -386,7 +402,7 @@ class ReifiedProjectIndex:
             )
 
             # Track class/object definitions
-            if lsym.is_definition and lsym.raw.symbol_kind == SymbolKind.DATA_STRUCTURE:
+            if lsym.is_definition and is_data_structure(lsym.raw):
                 fqn = get_fully_qualified_name(sym=lsym.raw)
                 obj_symbols[fqn] = final_map[lsym]
 
@@ -412,7 +428,7 @@ class ReifiedProjectIndex:
 
                     old_reif = final_map[lsym]
                     final_map[lsym] = replace(old_reif, calls=calls_made)
-                elif lsym.raw.symbol_kind == SymbolKind.DATA_STRUCTURE:
+                elif is_data_structure(lsym.raw):
                     # Set inheritance
                     if lsym.raw.base_class_names is not None:
                         inherits_from: list[ReifiedSymbol] = []

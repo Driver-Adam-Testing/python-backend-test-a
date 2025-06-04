@@ -13,7 +13,7 @@ from .ir_common import (
     IrData,
     ListedBacktickNameRawContentNoNone,
     ListedBacktickNameRawContentWithNone,
-    ListedBackTickRawContentNoNone,
+    ListedCommaCombinedBackTickRawContentNoNone,
     ListedRawContentNoNone,
     ListedRawContentWithNone,
     RawContent,
@@ -85,7 +85,7 @@ You will be given the name of a class to document and the source code where the 
 
 IMPORTANT: members should ONLY include instance and class variables or properties of the class. Do **not** include methods in the members list of the data structure.
 
-For the list of decorators, provide the decorator name prepended with @ for each identified decorator (e.g.: `@dataclass`). **ONLY** include decorators applied to the class itself, if any, not decorators applied to instance variables, class variables, methods, etc. of the class.
+For the list of decorators, provide the decorator name prepended with @ for each identified decorator (e.g.: `@dataclass`). Only provide the name of each decorator and **DO NOT** list or inlcude arguments to decorators (e.g., provide `@dataclass` in your lost and not `@dataclass(frozen=True)` in your list of decorators). **ONLY** include decorators applied to the class itself, if any, not decorators applied to instance variables, class variables, methods, etc. of the class.
 
 Your job is to describe the class. **Always respond using exactly the following JSON schema**:
 {
@@ -183,7 +183,7 @@ You focus on writing technical documentation for functions and methods. You are 
 
 You will be given the name of a function or a method to document and the source code where the function or method is defined.
 
-For the list of decorators applied to this function or method, provide the decorator name prepended with @ for each identified decorator (e.g.: `@classmethod`).
+For the list of decorators applied to this function or method, provide the decorator name prepended with @ for each identified decorator (e.g.: `@classmethod`). Only provide the name of each decorator and **DO NOT** list or include any arguments provided to the decorator (e.g., write `@log` not `@log(level="DEBUG")` in your list of decorators).
 
 Your job is to describe the function or method. **Always respond using exactly the following JSON schema**:
 {
@@ -273,10 +273,10 @@ class PyVariableCollection(IrCollection):
 
 class PyFnData(IrData):
     single_sentence: RawContent
-    decorators: ListedBackTickRawContentNoNone
+    decorators: ListedCommaCombinedBackTickRawContentNoNone
     inputs: ListedBacktickNameRawContentWithNone
     control_flow: ListedRawContentWithNone
-    output: FieldNameWithBulletedContent
+    output: FieldNameWithRawContent
 
     @classmethod
     def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
@@ -325,7 +325,7 @@ class PyFnCollection(IrCollection):
 
 
 class PyClassData(IrData):
-    decorators: ListedBackTickRawContentNoNone
+    decorators: ListedCommaCombinedBackTickRawContentNoNone
     members: ListedBacktickNameRawContentNoNone
     description: FieldNameWithRawContent
     _supported_child_ordering: list[str] = PrivateAttr(
@@ -356,7 +356,7 @@ class PyClassData(IrData):
     def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
         mapping = {
             SymbolKind.CALLABLE: PyFnData,
-            SymbolKind.DATA_STRUCTURE: None,  # for child classes and structs we just list them
+            SymbolKind.CLASS: None,  # for child classes and structs we just list them
         }
         return mapping.get(symbol.symbol_kind)
 
@@ -364,7 +364,7 @@ class PyClassData(IrData):
     def child_to_field_name(cls, child: RawSymbolData) -> str:
         mapping = {
             SymbolKind.CALLABLE: ScopeRelation.METHOD,
-            SymbolKind.DATA_STRUCTURE: ScopeRelation.NESTED_CLASS,
+            SymbolKind.CLASS: ScopeRelation.NESTED_CLASS,
         }
         return mapping.get(child.symbol_kind)
 
@@ -438,10 +438,7 @@ class PyFnRawSymbolCollection(RawSymbolCollection):
                 reified_sym.parent.raw.symbol_kind if reified_sym.parent else None
             )
             ts_symbol = reified_sym.raw
-            if (
-                ts_symbol.name is not None
-                and symbol_parent_kind != SymbolKind.DATA_STRUCTURE
-            ):
+            if ts_symbol.name is not None and symbol_parent_kind != SymbolKind.CLASS:
                 raw_symbol_data = RawSymbolData.from_tree_sitter_raw_symbol(
                     ts_symbol=ts_symbol,
                     path=root_rel_path,
@@ -483,7 +480,7 @@ class PyClassRawSymbolCollection(RawSymbolCollection):
         ds_symbols = [
             sym
             for sym in reified_symbols
-            if sym.raw.symbol_kind == SymbolKind.DATA_STRUCTURE and sym.is_definition
+            if sym.raw.symbol_kind == SymbolKind.CLASS and sym.is_definition
         ]
         data_structure_raw_symbol_data = {}
         is_large_file = code_requires_multi_prompt(code)
@@ -533,12 +530,12 @@ class PyClassRawSymbolCollection(RawSymbolCollection):
             if sym.raw.symbol_kind == SymbolKind.CALLABLE and sym.parent is not None
         ]
         for callable_symbol in callable_symbols_with_parent:
-            if callable_symbol.parent.raw.symbol_kind == SymbolKind.DATA_STRUCTURE:
+            if callable_symbol.parent.raw.symbol_kind == SymbolKind.CLASS:
                 parent_name = callable_symbol.parent.raw.name
                 if parent_name not in data_structure_raw_symbol_data:
                     data_structure_raw_symbol_data[parent_name] = RawSymbolData(
                         parser_kind=ParserKind.TREE_SITTER,
-                        symbol_kind=SymbolKind.DATA_STRUCTURE,
+                        symbol_kind=SymbolKind.CLASS,
                         name=parent_name,
                         path=root_rel_path,
                         scope=None,

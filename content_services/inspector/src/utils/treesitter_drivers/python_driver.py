@@ -415,8 +415,6 @@ class PyDriverTree(DriverTree):
                         or bc.type == "call"
                     ):
                         base_class_names.append(bc.text.decode("utf-8"))
-                    else:
-                        print(f"Could not include parsed superclass: {bc}")
             else:
                 base_class_names = None
             if klass_node.parent.type == "decorated_definition":
@@ -437,7 +435,7 @@ class PyDriverTree(DriverTree):
                 name=klass_name,
                 start_line=start_line,
                 end_line=end_line,
-                symbol_kind=SymbolKind.DATA_STRUCTURE,
+                symbol_kind=SymbolKind.CLASS,
                 start_byte=start_byte,
                 end_byte=end_byte,
                 file_path=self.file_path,

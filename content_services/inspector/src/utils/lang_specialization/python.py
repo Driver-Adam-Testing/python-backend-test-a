@@ -13,7 +13,7 @@ from .ir_common import (
     IrData,
     ListedBacktickNameRawContentNoNone,
     ListedBacktickNameRawContentWithNone,
-    ListedBackTickRawContentNoNone,
+    ListedCommaCombinedBackTickRawContentNoNone,
     ListedRawContentNoNone,
     ListedRawContentWithNone,
     RawContent,
@@ -273,7 +273,7 @@ class PyVariableCollection(IrCollection):
 
 class PyFnData(IrData):
     single_sentence: RawContent
-    decorators: ListedBackTickRawContentNoNone
+    decorators: ListedCommaCombinedBackTickRawContentNoNone
     inputs: ListedBacktickNameRawContentWithNone
     control_flow: ListedRawContentWithNone
     output: FieldNameWithBulletedContent
@@ -325,7 +325,7 @@ class PyFnCollection(IrCollection):
 
 
 class PyClassData(IrData):
-    decorators: ListedBackTickRawContentNoNone
+    decorators: ListedCommaCombinedBackTickRawContentNoNone
     members: ListedBacktickNameRawContentNoNone
     description: FieldNameWithRawContent
     _supported_child_ordering: list[str] = PrivateAttr(

@@ -122,6 +122,36 @@ class ListedBacktickNameRawContentWithNone(MdRenderable):
         return output_str
 
 
+class ListedCommaCombinedBackTickRawContentNoNone(MdRenderable):
+    content: list[str]
+
+    def render_markdown(self, doc_label: str) -> str:
+        output_str = ""
+        if len(self.content) > 0:
+            output_str += f"- **{snake_case_to_spaced_string(doc_label)}**:"
+            for item in self.content[:-1]:
+                output_str += f" {ensure_enclosed_with_backticks(item)},"
+            last_item = self.content[-1]
+            output_str += f" {ensure_enclosed_with_backticks(last_item)}\n"
+        return output_str
+
+
+class ListedCommaCombinedBackTickRawContentWithNone(MdRenderable):
+    content: list[str]
+
+    def render_markdown(self, doc_label: str) -> str:
+        output_str = ""
+        output_str += f"- **{snake_case_to_spaced_string(doc_label)}**:"
+        if len(self.content) > 0:
+            for item in self.content[:-1]:
+                output_str += f" {ensure_enclosed_with_backticks(item)},"
+            last_item = self.content[-1]
+            output_str += f" {ensure_enclosed_with_backticks(last_item)}\n"
+        else:
+            output_str += " None\n"
+        return output_str
+
+
 class ListedBackTickRawContentNoNone(MdRenderable):
     content: list[str]
 

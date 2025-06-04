@@ -18,7 +18,7 @@ def main() -> None:
     parser.add_argument(
         "project_path",
         nargs="?",
-        default="/Users/andrewmark/Downloads/cpp_and_py",
+        default="/Users/andrewmark/Downloads/chesslib7",
         help="Path to the project directory",
     )
     args = parser.parse_args()

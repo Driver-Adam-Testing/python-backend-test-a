@@ -6,7 +6,7 @@ import tree_sitter
 
 from utils.lang_specialization.symbol_common import RawTreeSitterSymbolData, SymbolKind
 
-from .base import DriverTree, symbol_extractor
+from .base import DriverTree
 
 PY_BUILT_IN_FN_SET = frozenset(
     [
@@ -165,7 +165,9 @@ class PyDriverTree(DriverTree):
         path_parts.reverse()
         return sep.join(path_parts)
 
-    @symbol_extractor
+    def extract_function_declarations(self) -> list[RawTreeSitterSymbolData]:
+        return []
+
     def extract_imports(self) -> list[RawTreeSitterSymbolData]:
         import_query_str = """
           ;; All direct imports (with or without alias)
@@ -309,7 +311,6 @@ class PyDriverTree(DriverTree):
         sorted_imports = sorted(imports, key=lambda x: x.start_byte)
         return sorted_imports
 
-    @symbol_extractor
     def extract_callable_definitions(self) -> list[RawTreeSitterSymbolData]:
         free_fns = self.extract_function_definitions()
         methods = self.extract_method_definitions()
@@ -383,7 +384,6 @@ class PyDriverTree(DriverTree):
         sorted_callables = sorted(callables, key=lambda x: x.start_byte)
         return sorted_callables
 
-    @symbol_extractor
     def extract_data_structure_definitions(self) -> list[RawTreeSitterSymbolData]:
         return self.extract_class_definitions()
 
@@ -531,14 +531,12 @@ class PyDriverTree(DriverTree):
 
         return calls_symbol, calls_kind
 
-    @symbol_extractor
     def extract_function_calls(self) -> list[RawTreeSitterSymbolData]:
         # TODO: take advantage of extracted kind information
         calls, _calls_kind = self.extract_calls()
 
         return calls
 
-    @symbol_extractor
     def extract_variables(self) -> list[RawTreeSitterSymbolData]:
         global_var_query_str = """
           ;; Single variable assignment

@@ -14,13 +14,11 @@ class JavaResolver(ImportResolver):
         Resolve Java import statements to project files.
         """
         project_files_lst = list(project_files)
-        print("Import str: ", import_str)
 
         import_str_pathified = Path(import_str.replace(".", sep)).with_suffix(".java")
 
         # 1) For cases like `import com.abc.ClassName` implemented in `/com/abc/ClassName.java`
         candidate = import_str_pathified
-        print(candidate)
         for idx, f in enumerate(project_files_lst):
             if str(candidate) in str(f):
                 return [project_files_lst[idx]]

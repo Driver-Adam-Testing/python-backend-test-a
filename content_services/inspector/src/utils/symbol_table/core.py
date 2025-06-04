@@ -120,7 +120,8 @@ class ParsedProjectWithVisibility:
                     for p in inc_path:
                         if p not in visited:
                             visited.add(p)
-                            dfs(p, visited)
+                            # NOTE: Right now we only reach here in Java,
+                            # and for Java we don't do DFS here since imports must be explicit
                 else:
                     if inc_path and inc_path not in visited:
                         visited.add(inc_path)
@@ -255,7 +256,7 @@ class LinkedProject:
                                 index = disambiguate_call_w_llm(
                                     vis_defs, rsym, calling_symbol[0][1]
                                 )
-                                if index is not None:
+                                if index is not None and index < len(vis_defs):
                                     dfpath, def_raw = vis_defs[index]
                                     # TODO: if we fail to get here, default to first element
                         def_symbol = LinkedSymbol(

@@ -27,6 +27,7 @@ def is_definition(sym: RawTreeSitterSymbolData) -> bool:
         SymbolKind.DATA_STRUCTURE,
         SymbolKind.VARIABLE,
         SymbolKind.CLASS,
+        SymbolKind.INTERFACE,
     }
 
 

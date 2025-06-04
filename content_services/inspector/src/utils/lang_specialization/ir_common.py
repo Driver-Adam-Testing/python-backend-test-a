@@ -113,12 +113,13 @@ class ListedBacktickNameRawContentWithNone(MdRenderable):
 
     def render_markdown(self, doc_label: str) -> str:
         output_str = ""
-        output_str += f"- **{snake_case_to_spaced_string(doc_label)}**:\n"
+        output_str += f"- **{snake_case_to_spaced_string(doc_label)}**:"
         if len(self.content) > 0:
+            output_str += "\n"
             for item in self.content:
                 output_str += item.render_markdown(doc_label)
         else:
-            output_str += "    - None\n"
+            output_str += " None\n"
         return output_str
 
 

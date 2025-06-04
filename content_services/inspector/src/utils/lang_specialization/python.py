@@ -276,7 +276,7 @@ class PyFnData(IrData):
     decorators: ListedCommaCombinedBackTickRawContentNoNone
     inputs: ListedBacktickNameRawContentWithNone
     control_flow: ListedRawContentWithNone
-    output: FieldNameWithBulletedContent
+    output: FieldNameWithRawContent
 
     @classmethod
     def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:

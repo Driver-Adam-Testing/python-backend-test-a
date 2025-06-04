@@ -12,6 +12,7 @@ from utils.lang_specialization.symbol_common import (
 
 from .base import ImportResolver, SymbolParser
 from .utils import (
+    disambiguate_call_w_llm,
     get_fully_qualified_name,
     is_data_structure,
     is_declaration,
@@ -238,6 +239,19 @@ class LinkedProject:
                             0
                         ]  # TODO: in C++ taking the first is not always correct due to namespace collisions
                         # This is true even for FQN though due overloading
+                        if rsym.symbol_kind == SymbolKind.CALL and len(vis_defs) > 1:
+                            # Disambiguate
+                            calling_symbol = definitions_by_fqn.get(
+                                rsym.fully_qualified_parent_path, []
+                            )
+                            # TODO: disambiguate calling symbol !
+                            if len(calling_symbol) > 0:
+                                index = disambiguate_call_w_llm(
+                                    vis_defs, rsym, calling_symbol[0][1]
+                                )
+                                if index is not None:
+                                    dfpath, def_raw = vis_defs[index]
+                                    # TODO: if we fail to get here, default to first element
                         def_symbol = LinkedSymbol(
                             raw=def_raw,
                             is_definition=True,

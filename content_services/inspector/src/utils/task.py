@@ -311,7 +311,7 @@ class TaskManager:
             color = "\033[92m"
             reset = "\033[0m"
             print(
-                f"{color}Progress: {self.progress_state.percent_complete:.1f}% ({self.progress_state.completed_work_units}/{self.progress_state.total_work_units} work units, {self.progress_state.completed_task_count}/{self.progress_state.task_count} tasks){reset}"
+                f"{color}[PROGRESS]: {self.progress_state.percent_complete:.1f}% ({self.progress_state.completed_work_units}/{self.progress_state.total_work_units} work units, {self.progress_state.completed_task_count}/{self.progress_state.task_count} tasks){reset}"
             )
 
     async def run_tasks(

@@ -78,14 +78,33 @@ class OpenAiStrictWithSystemClient(LlmClient):
         if response_type:
             completion_kwargs["response_format"] = response_type
 
-        stream = await self.async_client.chat.completions.create(
-            **completion_kwargs,
-            stream=True,
-        )
+        try:
+            stream = await self.async_client.chat.completions.create(
+                **completion_kwargs,
+                stream=True,
+            )
+        except Exception:
+            # If we get an error, rewind the message history and try again. We'll lose the last iteration's tool call request.
+            print(
+                f"Message history length before rewind: {len(message_history.messages)}"
+            )
+            message_history.rewind_past_last_tool_call_request()
+            print(
+                f"Message history length after rewind: {len(message_history.messages)}"
+            )
+            try:
+                completion_kwargs["messages"] = message_history.to_openai_strict()
+                stream = await self.async_client.chat.completions.create(
+                    **completion_kwargs,
+                    stream=True,
+                )
+            except Exception as e:
+                raise e
 
         tool_calls: list[dict] = []
         final_content: str = ""
 
+        # TODO: Make a universal .from_stream_chunk method on the LlmMessage
         async for chunk in stream:
             delta = chunk.choices[0].delta
 

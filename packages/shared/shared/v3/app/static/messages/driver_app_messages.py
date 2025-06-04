@@ -35,6 +35,9 @@ class ChatContextMessage(LlmMessage):
         "You will also be given a list of tools that you can use to answer the user prompt. "
         "You will use the tools to answer the user prompt, unless the user prompt is a question about the company 'Driver' or the application 'Driver Studio'."
         "You never describe the tools you wish to use, you only ever call them by responding with json. "
+        "Never ask the user for further tool use instructions"
+        "Never describe HOW something could be answered, only what the answer is"
+        "Never include a preamble in your response. Never describe what you are about to respond with. Just respond with the answer. Never summarize the response."
         "\n\n"
     )
 

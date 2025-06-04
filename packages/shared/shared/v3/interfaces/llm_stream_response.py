@@ -4,6 +4,7 @@ from uuid import UUID
 
 from pydantic import BaseModel
 from shared.v3.utils.encoder import UUIDEncoder
+from shared.v3.utils.references import Reference
 
 
 class LlmStreamResponseKind(str, enum.Enum):
@@ -13,6 +14,7 @@ class LlmStreamResponseKind(str, enum.Enum):
     END_SESSION = "END_SESSION"
     START_SESSION = "START_SESSION"
     RESPONSE_FULL = "RESPONSE_FULL"
+    REFERENCES = "REFERENCES"
 
 
 class LlmStreamResponse(BaseModel):
@@ -64,6 +66,7 @@ class ResponseFullStreamResponse(LlmStreamResponse):
     content: str
 
     def __init__(self, **data: dict[str, any]) -> None:
+        # TODO: Move this to a pipeline hook to ensure that it's correct, perhaps?
         from shared.v3.utils.post_processing.mermaid import (
             fix_mermaid_syntax_in_response,
         )
@@ -71,3 +74,8 @@ class ResponseFullStreamResponse(LlmStreamResponse):
         if "```mermaid" in data.get("content", ""):
             data["content"] = fix_mermaid_syntax_in_response(data["content"])
         super().__init__(**data)
+
+
+class ReferenceStreamResponse(LlmStreamResponse):
+    kind: LlmStreamResponseKind = LlmStreamResponseKind.REFERENCES
+    references: list[Reference]

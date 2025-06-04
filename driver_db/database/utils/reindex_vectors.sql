@@ -23,11 +23,11 @@ BEGIN
     FROM "chunkandembedding";
 
     -- 3) Calculate new_probes as the floor of the square root of new_lists
-    new_probes := floor(sqrt(new_lists))::int;
+    new_probes := floor(sqrt(new_lists / 2))::int;
 
     -- 4) Compare new_lists to current_lists
-    IF new_lists > current_lists * 1.5 THEN
-        SET maintenance_work_mem = '4GB';
+    IF new_lists > current_lists * 1.2 THEN
+        SET maintenance_work_mem = '16GB';
         RAISE NOTICE 'Current lists = %, new lists = %, new_probes = %, proceeding with re-index.',
             current_lists, new_lists, new_probes;
 

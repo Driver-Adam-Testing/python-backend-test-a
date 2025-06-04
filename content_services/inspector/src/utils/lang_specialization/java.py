@@ -12,6 +12,7 @@ from .ir_common import (
     IrCollection,
     IrData,
     ListedBacktickNameRawContentWithNone,
+    ListedBacktickNameTypeRawContentNoNone,
     ListedRawContentNoNone,
     RawContent,
 )
@@ -110,10 +111,13 @@ You will be given the name of an class to document and the source code where the
 Your job is to describe the class. **Always respond using exactly the following JSON schema**:
 {
     "description": <one paragraph description of the class>,
-    "interfaces_implemented": [<list of interfaces this class implements if any>],
-    "classes_extended": [<list of classes this class extends if any>],
+    "fields": [
+        {"name": <field_name1>, "content": <Terse 1 sentence description of the first field>},
+        {"name": <field_name2>, "content": <Terse 1 sentence description of the second field>},
+    ]
     "modifiers": [<list of modifiers of the class, e.g. public, private, protected, abstract, or final. Can be an empty list.>],
 }
+IMPORTANT: Fields documented here are only variables in the class, NOT methods.
 
 Return JSON according to the schema above. Do not use the format ```json ... ```, just return the JSON data.
 """
@@ -265,6 +269,7 @@ class JavaFieldData(IrData):
 class JavaClassData(IrData):
     modifiers: ListedRawContentNoNone
     description: FieldNameWithRawContent
+    fields: ListedBacktickNameTypeRawContentNoNone
     _supported_child_ordering: list[str] = PrivateAttr(
         default=[
             ScopeRelation.METHOD,
@@ -348,7 +353,7 @@ class JavaInterfaceData(IrData):
     @classmethod
     def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
         mapping = {
-            SymbolKind.CALLABLE: JavaMethodData,
+            SymbolKind.CALLABLE: None,  # Just list them
             SymbolKind.CLASS: None,  # for child classes just list them
             SymbolKind.INTERFACE: None,  # for child interfaces just list them
             SymbolKind.VARIABLE: JavaFieldData,

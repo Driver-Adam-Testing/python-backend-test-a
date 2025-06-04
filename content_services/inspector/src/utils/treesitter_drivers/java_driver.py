@@ -15,9 +15,13 @@ def is_class_method(node: tree_sitter.Node) -> bool:
     """Check if a method declaration is inside a class body."""
     parent = node.parent
     while parent:
-        if parent.type == "class_body":
+        if (
+            parent.type == "class_body"
+            or parent.type == "enum_body"
+            or parent.type == "interface_body"
+        ):
             return True
-        if parent.type in ["interface_body", "program"]:
+        if parent.type in ["program"]:
             return False
         parent = parent.parent
     return False

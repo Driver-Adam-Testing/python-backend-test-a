@@ -25,7 +25,6 @@ def is_definition(sym: RawTreeSitterSymbolData) -> bool:
     return sym.symbol_kind in {
         SymbolKind.CALLABLE,
         SymbolKind.DATA_STRUCTURE,
-        SymbolKind.VARIABLE,
         SymbolKind.CLASS,
         SymbolKind.INTERFACE,
     }
@@ -39,6 +38,7 @@ def is_data_structure(sym: RawTreeSitterSymbolData) -> bool:
     return (
         sym.symbol_kind == SymbolKind.DATA_STRUCTURE
         or sym.symbol_kind == SymbolKind.CLASS
+        or sym.symbol_kind == SymbolKind.INTERFACE
     )
 
 

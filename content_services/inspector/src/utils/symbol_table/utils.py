@@ -1,9 +1,42 @@
 import textwrap
+import threading
 from collections import defaultdict
 from pathlib import Path
 
 from utils.lang_specialization.symbol_common import RawTreeSitterSymbolData, SymbolKind
 from utils.models import ChatOpenAI
+
+_disambiguation_cache: dict = {}
+
+# Just to be safe, in case we start trying to multithread this
+_cache_lock = threading.Lock()
+
+
+def _get_cache_key(
+    candidates: list[tuple[Path, RawTreeSitterSymbolData]],
+    call_symbol: RawTreeSitterSymbolData,
+    calling_symbol: RawTreeSitterSymbolData,
+) -> tuple[str, str, str | None, frozenset[tuple[str, str | None]]]:
+    return (
+        call_symbol.name,
+        calling_symbol.name,
+        calling_symbol.fully_qualified_parent_path,
+        frozenset(
+            (cand.name, cand.fully_qualified_parent_path) for _, cand in candidates
+        ),
+    )
+
+
+def _build_candidate_map(
+    candidates: list[tuple[Path, RawTreeSitterSymbolData]],
+) -> dict[tuple[str, str | None], int]:
+    """
+    This allows us to convert cached identities back to indices efficiently
+    """
+    return {
+        (cand.name, cand.fully_qualified_parent_path): idx
+        for idx, (_, cand) in enumerate(candidates)
+    }
 
 
 def get_fully_qualified_name(sym: RawTreeSitterSymbolData, sep: str = "::") -> str:
@@ -67,17 +100,42 @@ def build_containment_map(
     return dict(child_map)
 
 
-def disambiguate_call_w_llm(
-    candidates: list[Path, RawTreeSitterSymbolData],
+def disambiguate_call(
+    candidates: list[tuple[Path, RawTreeSitterSymbolData]],
     call_symbol: RawTreeSitterSymbolData,
     calling_symbol: RawTreeSitterSymbolData,
 ) -> int | None:
     """
-    Use the LLM to disambiguate which candidate is the correct one for a call.
-    Returns the index of the correct candidate.
+    Use LM to disambiguate which candidate is the correct one for a call.
+    Returns the index of the correct candidate. We use a cache if possible to avoid the LLM call.
     """
-    print("Disambiguating call with LLM...")
-    print(f"Call symbol: {call_symbol.name} in {call_symbol.file_path}")
+
+    cache_key = _get_cache_key(candidates, call_symbol, calling_symbol)
+    cached_identity = None
+
+    with _cache_lock:
+        if cache_key in _disambiguation_cache:
+            cached_identity = _disambiguation_cache[cache_key]
+            if cached_identity is None:
+                return None
+
+    # If we have a cached result, check if it applies to current candidates
+    # We have a cached result, but candidates might be in different order now,
+    # so we map back
+    if cached_identity is not None:
+        candidate_map = _build_candidate_map(candidates)
+        if cached_identity in candidate_map:
+            print(f"[CACHE] Hit for call '{call_symbol.name}' -> {cached_identity}")
+            return candidate_map[cached_identity]
+        else:
+            print(
+                f"Warning: Cached candidate {cached_identity} not found in current candidates"
+            )
+
+    # Cache miss - proceed with LLM
+    print(
+        f"[LLM] Disambiguating call '{call_symbol.name}' with {len(candidates)} candidates in {call_symbol.file_path}"
+    )
     system_prompt = textwrap.dedent("""\
         You are a software engineering expert that disambiguates function calls when there are multiple candidates.
 
@@ -120,6 +178,23 @@ def disambiguate_call_w_llm(
         candidate_idx = int(candidate_idx_raw.strip())
     except ValueError:
         print("Failed to parse an integer from LLM response:", candidate_idx_raw)
-        return None
+        candidate_idx = None
+
+    # Cache the result
+    # Cache value is the identity of chosen function (name, fully_qualified_parent_path) or None
+    #   - None means LLM failed - not sure how likely or if we want to cache this
+    #   - Identity allows us to find the function regardless of candidate ordering
+
+    if candidate_idx is not None and 0 <= candidate_idx < len(candidates):
+        chosen_candidate = candidates[candidate_idx][1]
+        cached_value = (
+            chosen_candidate.name,
+            chosen_candidate.fully_qualified_parent_path,
+        )
+    else:
+        cached_value = None
+
+    with _cache_lock:
+        _disambiguation_cache[cache_key] = cached_value
 
     return candidate_idx

@@ -12,7 +12,7 @@ from utils.lang_specialization.symbol_common import (
 
 from .base import ImportResolver, SymbolParser
 from .utils import (
-    disambiguate_call_w_llm,
+    disambiguate_call,
     get_fully_qualified_name,
     is_data_structure,
     is_declaration,
@@ -246,7 +246,7 @@ class LinkedProject:
                             )
                             # TODO: disambiguate calling symbol !
                             if len(calling_symbol) > 0:
-                                index = disambiguate_call_w_llm(
+                                index = disambiguate_call(
                                     vis_defs, rsym, calling_symbol[0][1]
                                 )
                                 if index is not None and index < len(vis_defs):

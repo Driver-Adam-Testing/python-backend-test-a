@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import ClassVar
 
 import tree_sitter
 
@@ -7,7 +8,7 @@ from utils.lang_specialization.symbol_common import RawTreeSitterSymbolData, Sym
 from .base import DriverTree, DriverTreeError, symbol_extractor
 
 
-def node_to_text(node):
+def node_to_text(node: tree_sitter.Node) -> str:
     """Helper function to extract text from a tree-sitter node."""
     return node.text.decode("utf-8")
 
@@ -280,7 +281,7 @@ class CppCDriverTree(DriverTree):
     """Shared driver for both C and C++ - they use the same TreeSitter grammar."""
 
     language = "cpp"  # Uses cpp grammar for both C and C++
-    extensions = {".c", ".h", ".cpp", ".cc", ".cxx", ".hpp", ".hxx"}
+    extensions: ClassVar[set] = {".c", ".h", ".cpp", ".cc", ".cxx", ".hpp", ".hxx"}
 
     @symbol_extractor
     def extract_imports(self) -> list[RawTreeSitterSymbolData]:
@@ -348,7 +349,7 @@ class CppCDriverTree(DriverTree):
                 get_function_name_and_params_and_scope_parts(declarator_node)
             )
             if func_name is None:
-                print("Could not parse function name for node:", declarator_node)
+                # print("Could not parse function name for node:", declarator_node)
                 continue
 
             # Check if this function definition is wrapped in a template_declaration

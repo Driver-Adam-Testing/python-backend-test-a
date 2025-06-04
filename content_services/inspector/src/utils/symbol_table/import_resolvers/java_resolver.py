@@ -25,16 +25,7 @@ class JavaResolver(ImportResolver):
             elif str(candidate.parent) == ".":
                 return None
 
-        # try:
-        #     candidate = import_str_pathified.parent.with_suffix(".java")
-        # except ValueError:
-        #     # import_str_pathified.parent is just "/" or similar in this case, and can't be resolved
-        #     return None
-        # for idx, f in enumerate(project_files_lst):
-        #     if str(candidate) in str(f):
-        #         return project_files_lst[idx]
-
-        # 3) TODO: Figure out how to handle package imports e.g. `package com.xyz` and `import com.abc.*`
+        # 2) Attempt at handling package imports e.g. `package com.xyz` and `import com.abc.*`
         package_str = import_str.replace(".", sep)
         packages = []
         for idx, f in enumerate(project_files_lst):

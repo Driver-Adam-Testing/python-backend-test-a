@@ -515,7 +515,7 @@ class JavaInterfaceRawSymbolCollection(RawSymbolCollection):
             interface_symbols = [
                 sym
                 for sym in reified_symbols
-                if sym.raw.symbol_kind == SymbolKind.INTERFACE
+                if sym.raw.symbol_kind == SymbolKind.INTERFACE and sym.is_definition
             ]
         else:
             # Fallback to direct tree-sitter extraction

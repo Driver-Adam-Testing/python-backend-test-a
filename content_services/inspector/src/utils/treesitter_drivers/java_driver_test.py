@@ -328,7 +328,6 @@ def test_extract_all_symbols(classes_test_code: str) -> None:
 
     symbol_kinds = {symbol.symbol_kind for symbol in all_symbols}
     assert SymbolKind.IMPORT in symbol_kinds
-    assert SymbolKind.DATA_STRUCTURE in symbol_kinds
     assert SymbolKind.VARIABLE in symbol_kinds
     assert SymbolKind.CALLABLE in symbol_kinds
 

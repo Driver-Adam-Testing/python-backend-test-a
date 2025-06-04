@@ -230,7 +230,7 @@ def disambiguate_call(
 
     # Cache the result
     # Cache value is the identity of chosen function (name, fully_qualified_parent_path) or None
-    #   - None means "LLM couldn't decide" - avoid re-calling LLM for impossible cases
+    #   - None means LLM failed - not sure how likely or if we want to cache this
     #   - Identity allows us to find the function regardless of candidate ordering
 
     if candidate_idx is not None and 0 <= candidate_idx < len(candidates):

@@ -104,10 +104,11 @@ def disambiguate_call(
     candidates: list[tuple[Path, RawTreeSitterSymbolData]],
     call_symbol: RawTreeSitterSymbolData,
     calling_symbol: RawTreeSitterSymbolData,
-) -> int | None:
+    use_llm: bool,
+) -> tuple[int | None, bool]:
     """
-    Use LM to disambiguate which candidate is the correct one for a call.
-    Returns the index of the correct candidate. We use a cache if possible to avoid the LLM call.
+    Use LLM (or cached result) to disambiguate which candidate is the correct one for a call.
+    Returns (index of the correct candidate, whether LLM was called).
     """
 
     cache_key = _get_cache_key(candidates, call_symbol, calling_symbol)
@@ -117,7 +118,7 @@ def disambiguate_call(
         if cache_key in _disambiguation_cache:
             cached_identity = _disambiguation_cache[cache_key]
             if cached_identity is None:
-                return None
+                return None, False
 
     # If we have a cached result, check if it applies to current candidates
     # We have a cached result, but candidates might be in different order now,
@@ -126,11 +127,17 @@ def disambiguate_call(
         candidate_map = _build_candidate_map(candidates)
         if cached_identity in candidate_map:
             print(f"[CACHE] Hit for call '{call_symbol.name}' -> {cached_identity}")
-            return candidate_map[cached_identity]
+            return candidate_map[cached_identity], False
         else:
             print(
                 f"Warning: Cached candidate {cached_identity} not found in current candidates"
             )
+
+    if not use_llm:
+        print(
+            f"[FALLBACK] LLM cap reached for file {call_symbol.file_path}, using first candidate for call '{call_symbol.name}'"
+        )
+        return 0, False
 
     # Cache miss - proceed with LLM
     print(
@@ -197,4 +204,4 @@ def disambiguate_call(
     with _cache_lock:
         _disambiguation_cache[cache_key] = cached_value
 
-    return candidate_idx
+    return candidate_idx, True

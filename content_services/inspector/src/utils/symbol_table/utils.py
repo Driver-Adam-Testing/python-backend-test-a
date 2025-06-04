@@ -100,49 +100,6 @@ def build_containment_map(
     return dict(child_map)
 
 
-def _heuristic_disambiguate(
-    candidates: list[tuple[Path, RawTreeSitterSymbolData]],
-    call_symbol: RawTreeSitterSymbolData,
-    calling_symbol: RawTreeSitterSymbolData,
-) -> int | None:
-    """
-    Apply heuristic rules to disambiguate function calls without using LLM.
-    Returns index of best candidate or None if uncertain.
-    """
-    if len(candidates) <= 1:
-        return 0 if candidates else None
-
-    # Prefer candidates with matching namespace/scope
-    if calling_symbol.fully_qualified_parent_path:
-        matching_scope_candidates = [
-            (idx, candidate)
-            for idx, (_, candidate) in enumerate(candidates)
-            if candidate.fully_qualified_parent_path
-            == calling_symbol.fully_qualified_parent_path
-        ]
-        if len(matching_scope_candidates) == 1:
-            print(
-                f"[HEURISTIC] Matching-scope match for call '{call_symbol.name}' in scope {calling_symbol.fully_qualified_parent_path}"
-            )
-            return matching_scope_candidates[0][0]
-
-    # If only 2 candidates and they have very similar signatures, pick the first
-    if len(candidates) == 2:
-        _, cand1 = candidates[0]
-        _, cand2 = candidates[1]
-        if (
-            cand1.name == cand2.name
-            and cand1.symbol_kind == cand2.symbol_kind
-            and abs(len(cand1.symbol_code or "") - len(cand2.symbol_code or "")) < 100
-        ):
-            print(
-                f"[HEURISTIC] Similar candidates for call '{call_symbol.name}', choosing first"
-            )
-            return 0
-
-    return None
-
-
 def disambiguate_call(
     candidates: list[tuple[Path, RawTreeSitterSymbolData]],
     call_symbol: RawTreeSitterSymbolData,
@@ -152,11 +109,6 @@ def disambiguate_call(
     Use heuristics first, then LLM to disambiguate which candidate is the correct one for a call.
     Returns the index of the correct candidate.
     """
-
-    # Try heuristic disambiguation first
-    heuristic_result = _heuristic_disambiguate(candidates, call_symbol, calling_symbol)
-    if heuristic_result is not None:
-        return heuristic_result
 
     cache_key = _get_cache_key(candidates, call_symbol, calling_symbol)
     cached_identity = None

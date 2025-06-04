@@ -2,7 +2,7 @@ import pathlib
 
 import pytest
 
-from utils.treesitter_driver import CppCDriverTree
+from .c_cpp_driver import CppCDriverTree
 
 
 @pytest.fixture

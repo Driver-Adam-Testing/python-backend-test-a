@@ -17,7 +17,7 @@ from utils.lang_specialization.symbol_common import (
     SymbolKind,
 )
 from utils.models import ChatOpenAI, OutputConfig, OutputConfigKind
-from utils.symbol_table import get_fully_qualified_name
+from utils.symbol_table.utils import get_fully_qualified_name, is_data_structure
 from utils.threadpool import FastShutdownThreadPoolExecutor
 
 MAX_SYMBOLS_PER_WORKER = 50
@@ -27,6 +27,12 @@ MAX_WORKERS_FOR_SYMBOLS = 10
 def snake_case_to_spaced_string(snake_case: str) -> str:
     split_str = snake_case.split("_")
     return " ".join(item.capitalize() for item in split_str)
+
+
+def ensure_enclosed_with_backticks(raw_str: str) -> str:
+    start = "" if raw_str.startswith("`") else "`"
+    end = "" if raw_str.endswith("`") else "`"
+    return start + raw_str + end
 
 
 def compute_num_workers(num_symbols: int) -> int:
@@ -107,10 +113,67 @@ class ListedBacktickNameRawContentWithNone(MdRenderable):
 
     def render_markdown(self, doc_label: str) -> str:
         output_str = ""
+        output_str += f"- **{snake_case_to_spaced_string(doc_label)}**:"
+        if len(self.content) > 0:
+            output_str += "\n"
+            for item in self.content:
+                output_str += item.render_markdown(doc_label)
+        else:
+            output_str += " None\n"
+        return output_str
+
+
+class ListedCommaCombinedBackTickRawContentNoNone(MdRenderable):
+    content: list[str]
+
+    def render_markdown(self, doc_label: str) -> str:
+        output_str = ""
+        if len(self.content) > 0:
+            output_str += f"- **{snake_case_to_spaced_string(doc_label)}**:"
+            for item in self.content[:-1]:
+                output_str += f" {ensure_enclosed_with_backticks(item)},"
+            last_item = self.content[-1]
+            output_str += f" {ensure_enclosed_with_backticks(last_item)}\n"
+        return output_str
+
+
+class ListedCommaCombinedBackTickRawContentWithNone(MdRenderable):
+    content: list[str]
+
+    def render_markdown(self, doc_label: str) -> str:
+        output_str = ""
+        output_str += f"- **{snake_case_to_spaced_string(doc_label)}**:"
+        if len(self.content) > 0:
+            for item in self.content[:-1]:
+                output_str += f" {ensure_enclosed_with_backticks(item)},"
+            last_item = self.content[-1]
+            output_str += f" {ensure_enclosed_with_backticks(last_item)}\n"
+        else:
+            output_str += " None\n"
+        return output_str
+
+
+class ListedBackTickRawContentNoNone(MdRenderable):
+    content: list[str]
+
+    def render_markdown(self, doc_label: str) -> str:
+        output_str = ""
+        if len(self.content) > 0:
+            output_str += f"- **{snake_case_to_spaced_string(doc_label)}**:\n"
+            for item in self.content:
+                output_str += f"    - {ensure_enclosed_with_backticks(item)}\n"
+        return output_str
+
+
+class ListedBackTickRawContentWithNone(MdRenderable):
+    content: list[str]
+
+    def render_markdown(self, doc_label: str) -> str:
+        output_str = ""
         output_str += f"- **{snake_case_to_spaced_string(doc_label)}**:\n"
         if len(self.content) > 0:
             for item in self.content:
-                output_str += item.render_markdown(doc_label)
+                output_str += f"    - {ensure_enclosed_with_backticks(item)}\n"
         else:
             output_str += "    - None\n"
         return output_str
@@ -358,14 +421,21 @@ class IrData(BaseModel, abc.ABC):
                 kind_part = sym.parent.raw.symbol_kind.name.lower()
                 fqn = get_fully_qualified_name(sym.parent.raw)
                 path_part = sym.parent.raw.file_path
+                parent_label = (
+                    "Base Class"
+                    if sym.parent.raw.symbol_kind == SymbolKind.CLASS
+                    else "Data Structure"
+                )
 
-                output += f"- **See also**: [`{fqn}`]({path_part}#{kind_part}:{fqn})  (Data Structure)\n"
-            if (
-                sym.raw.symbol_kind == SymbolKind.DATA_STRUCTURE
-                and len(sym.children) > 0
-            ):
-                if len(sym.children) >= 0:
-                    output += "- **Member Functions**:\n"
+                output += f"- **See also**: [`{fqn}`]({path_part}#{kind_part}:{fqn})  ({parent_label})\n"
+            if is_data_structure(sym.raw):
+                member_label = (
+                    "Methods"
+                    if sym.raw.symbol_kind == SymbolKind.CLASS
+                    else "Member Functions"
+                )
+                if len(sym.children) > 0:
+                    output += f"- **{member_label}**:\n"
                     for child_symbol in sym.children:
                         if child_symbol.raw.symbol_kind == SymbolKind.CALLABLE:
                             fqn = get_fully_qualified_name(child_symbol.raw)
@@ -375,7 +445,7 @@ class IrData(BaseModel, abc.ABC):
                                 f"    - [`{fqn}`]({path_part}#{kind_part}:{fqn})\n"
                             )
                 if sym.inherits_from is not None and len(sym.inherits_from) > 0:
-                    output += "- **Inherits from**:\n"
+                    output += "- **Inherits From**:\n"
                     for inherited_class in sym.inherits_from:
                         kind_part = inherited_class.raw.symbol_kind.name.lower()
                         fqn = get_fully_qualified_name(inherited_class.raw)
@@ -385,7 +455,7 @@ class IrData(BaseModel, abc.ABC):
                     sym.raw.base_class_names is not None
                     and len(sym.raw.base_class_names) > 0
                 ):
-                    output += "- **Inherits from**:\n"
+                    output += "- **Inherits From**:\n"
                     for base_class_name in sym.raw.base_class_names:
                         output += f"    - `{base_class_name}`\n"
             # if sym.raw.symbol_kind == SymbolKind.CALLABLE and sym.usages:
@@ -583,7 +653,6 @@ class ClassData(IrData, abc.ABC):
     type: FieldNameWithBackTickContent
     members: ListedBacktickNameRawContentNoNone
     description: FieldNameWithRawContent
-    inherits_from: ListedRawContentNoNone
     _supported_child_ordering: list[str] = PrivateAttr(
         default=[ScopeRelation.METHOD, ScopeRelation.NESTED_CLASS]
     )

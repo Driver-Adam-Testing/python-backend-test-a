@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Self
 
 from utils.models import ChatOpenAI
-from utils.treesitter_driver import CppCDriverTree
+from utils.treesitter_drivers.c_cpp_driver import CppCDriverTree
 
 from .ir_common import (
     DataStructureData,

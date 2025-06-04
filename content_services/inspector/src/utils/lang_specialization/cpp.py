@@ -3,9 +3,9 @@ from typing import Self
 
 from pydantic import PrivateAttr
 from utils.models import ChatOpenAI
-from utils.symbol_table import get_fully_qualified_name
-from utils.treesitter_driver import CppCDriverTree
+from utils.treesitter_drivers.c_cpp_driver import CppCDriverTree
 
+from ..symbol_table.utils import get_fully_qualified_name
 from .ir_common import (
     FieldNameWithBackTickContent,
     FieldNameWithRawContent,
@@ -319,7 +319,7 @@ class CppDataStructureRawSymbolCollection(RawSymbolCollection):
         ds_symbols = [
             sym
             for sym in reified_symbols
-            if sym.raw.symbol_kind == SymbolKind.DATA_STRUCTURE
+            if sym.raw.symbol_kind == SymbolKind.DATA_STRUCTURE and sym.is_definition
         ]
         data_structure_raw_symbol_data = {}
         is_large_file = code_requires_multi_prompt(code)
@@ -526,6 +526,7 @@ class CppVariableRawSymbolCollection(RawSymbolCollection):
         return self.data
 
 
+# TODO: Make a base class in `ir_common.py` that just takes in a tree.
 class CppIncludeRawSymbolCollection(RawSymbolCollection):
     data: dict[str, RawSymbolData]
 

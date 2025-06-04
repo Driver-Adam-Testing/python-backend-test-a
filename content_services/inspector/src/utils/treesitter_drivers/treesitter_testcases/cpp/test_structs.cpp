@@ -6,11 +6,11 @@
 // Basic struct with constructors (C++ feature)
 struct BasicStruct {
     int value;
-    
+
     BasicStruct() : value(0) {}
     BasicStruct(int v) : value(v) {}
     ~BasicStruct() {}
-    
+
     void setValue(int v) { value = v; }
     int getValue() const { return value; }
 };
@@ -20,11 +20,11 @@ struct AccessStruct {
 public:
     int public_value;
     AccessStruct() : public_value(0), private_value(0) {}
-    
+
 private:
     int private_value;
     void privateMethod() {}
-    
+
 protected:
     void protectedMethod() {}
 };
@@ -47,10 +47,10 @@ struct DerivedStruct : public BaseStruct {
 template<typename T>
 struct TemplateStruct {
     T data;
-    
+
     TemplateStruct() {}
     TemplateStruct(const T& value) : data(value) {}
-    
+
     void set(const T& value) { data = value; }
     const T& get() const { return data; }
 };
@@ -61,7 +61,7 @@ namespace StructNamespace {
         int value;
         NamespacedStruct(int v) : value(v) {}
     };
-    
+
     namespace NestedNamespace {
         struct DeeplyNested {
             double data;
@@ -78,7 +78,7 @@ public:
         InnerStruct(int v) : inner_value(v) {}
         void method() {}
     };
-    
+
 private:
     struct PrivateStruct {
         int secret;
@@ -111,9 +111,9 @@ namespace {
 struct StaticStruct {
     static int counter;
     static const int CONSTANT = 100;
-    
+
     int instance_value;
-    
+
     StaticStruct() : instance_value(++counter) {}
     static int getCounter() { return counter; }
 };
@@ -129,7 +129,7 @@ struct AggregateStruct {
 // Struct with deleted/defaulted functions (C++11 feature)
 struct ModernStruct {
     int value;
-    
+
     ModernStruct() = default;
     ModernStruct(int v) : value(v) {}
     ModernStruct(const ModernStruct&) = delete;

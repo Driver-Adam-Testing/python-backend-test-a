@@ -10,7 +10,7 @@ from pydantic import BaseModel, ValidationError
 
 from utils.lang_specialization.symbol_common import Lang, ReifiedSymbol, SymbolKind
 from utils.models import ChatOpenAI, OutputConfig, OutputConfigKind
-from utils.symbol_table import get_fully_qualified_name
+from utils.symbol_table.utils import get_fully_qualified_name
 
 
 def _arity(fn: Callable) -> int:
@@ -103,7 +103,7 @@ class Template(BaseModel):
 
                             repl_text = m[0]
                             for symbol in reified_symbols:
-                                if language == Lang.CPP:
+                                if language == Lang.CPP or language == Lang.PYTHON:
                                     linkable_symbol_kinds = {
                                         SymbolKind.CALLABLE,
                                     }

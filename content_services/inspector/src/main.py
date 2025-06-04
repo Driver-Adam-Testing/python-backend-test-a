@@ -552,7 +552,12 @@ async def inspect_files(
         bucket_name=os.environ["BUCKET_NAME"], tasks=tasks, serial_exe=False
     )
 
+    print(f"Starting inspection with {len(tasks)} tasks")
     await task_manager.run_tasks(run_id, result_loading_config=result_loading_config)
+
+    print(
+        f"Inspection completed! Final progress: {task_manager.progress_state.percent_complete:.1f}%"
+    )
 
 
 def get_file_content(path: Path) -> str:

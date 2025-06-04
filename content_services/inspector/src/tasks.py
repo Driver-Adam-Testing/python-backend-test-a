@@ -19,7 +19,7 @@ from sqlmodel import delete, select
 from utils.dag import LiteNode
 from utils.db import get_source_code_derived_content
 from utils.symbol_table import build_symbol_table
-from utils.task import SerializationMethod, Task, TaskResult
+from utils.task import SerializationMethod, Task, TaskResult, TaskWorkUnits
 
 TechDocsTask = Union["FileTechDocTask", "FolderTechDocTask", "TopLevelDocsTask"]
 
@@ -70,6 +70,10 @@ class FolderTechDocTask(Task):
                 child_nodes_to_docs=child_nodes_to_docs,
             )
         return TaskResult(data={"docs": docs}, serialization=SerializationMethod.JSON)
+
+    @property
+    def work_units(self) -> int:
+        return TaskWorkUnits.FOLDER_TECH_DOC
 
     async def post_run_io(
         self,
@@ -182,6 +186,10 @@ class FileTechDocTask(Task):
             },
             serialization=SerializationMethod.JSON,
         )
+
+    @property
+    def work_units(self) -> int:
+        return TaskWorkUnits.FILE_TECH_DOC
 
     async def post_run_io(
         self,
@@ -299,6 +307,10 @@ class SymbolsTask(Task):
             data={"symbols": symbols}, serialization=SerializationMethod.JSON
         )
 
+    @property
+    def work_units(self) -> int:
+        return TaskWorkUnits.SYMBOLS
+
     async def post_run_io(
         self,
         task_result: TaskResult,
@@ -374,6 +386,10 @@ class TopLevelDocsTask(Task):
         )
 
         return TaskResult(data={"docs": docs}, serialization=SerializationMethod.JSON)
+
+    @property
+    def work_units(self) -> int:
+        return TaskWorkUnits.TOP_LEVEL_DOCS
 
     async def post_run_io(
         self,
@@ -479,6 +495,10 @@ class EmbeddingTask(Task):
         self, dependent_results: dict["Task", TaskResult]
     ) -> dict[str, any]:
         return TaskResult(data={}, serialization=SerializationMethod.JSON)
+
+    @property
+    def work_units(self) -> int:
+        return TaskWorkUnits.EMBEDDING
 
     async def post_run_io(
         self,
@@ -650,6 +670,10 @@ class CSymbolTableTask(Task):
         return TaskResult(
             data=file_to_symbols, serialization=SerializationMethod.PICKLE
         )
+
+    @property
+    def work_units(self) -> int:
+        return TaskWorkUnits.SYMBOL_TABLE
 
     async def post_run_io(
         self,

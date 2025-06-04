@@ -530,7 +530,13 @@ class IrData(BaseModel, abc.ABC):
                 )
                 child_dictionary[label_name] += child_content.render_markdown()
             else:
-                child_dictionary[label_name] += f"- `{child_symbol.name}`\n"
+                if child_symbol.reified_symbol is not None:
+                    kind_part = child_symbol.reified_symbol.raw.symbol_kind.name.lower()
+                    fqn = get_fully_qualified_name(child_symbol.reified_symbol.raw)
+                    id_comment = f"<!-- {{{{#{kind_part}:{fqn}}}}} -->"
+                else:
+                    id_comment = ""
+                child_dictionary[label_name] += f"- `{child_symbol.name}`{id_comment}\n"
 
         for _, label_content in child_dictionary.items():
             output += label_content

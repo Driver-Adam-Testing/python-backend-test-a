@@ -1,9 +1,42 @@
 import textwrap
+import threading
 from collections import defaultdict
 from pathlib import Path
 
 from utils.lang_specialization.symbol_common import RawTreeSitterSymbolData, SymbolKind
 from utils.models import ChatOpenAI
+
+_disambiguation_cache: dict = {}
+
+# Just to be safe, in case we start trying to multithread this
+_cache_lock = threading.Lock()
+
+
+def _get_cache_key(
+    candidates: list[tuple[Path, RawTreeSitterSymbolData]],
+    call_symbol: RawTreeSitterSymbolData,
+    calling_symbol: RawTreeSitterSymbolData,
+) -> tuple[str, str, str | None, frozenset[tuple[str, str | None]]]:
+    return (
+        call_symbol.name,
+        calling_symbol.name,
+        calling_symbol.fully_qualified_parent_path,
+        frozenset(
+            (cand.name, cand.fully_qualified_parent_path) for _, cand in candidates
+        ),
+    )
+
+
+def _build_candidate_map(
+    candidates: list[tuple[Path, RawTreeSitterSymbolData]],
+) -> dict[tuple[str, str | None], int]:
+    """
+    This allows us to convert cached identities back to indices efficiently
+    """
+    return {
+        (cand.name, cand.fully_qualified_parent_path): idx
+        for idx, (_, cand) in enumerate(candidates)
+    }
 
 
 def get_fully_qualified_name(sym: RawTreeSitterSymbolData, sep: str = "::") -> str:
@@ -67,17 +100,90 @@ def build_containment_map(
     return dict(child_map)
 
 
-def disambiguate_call_w_llm(
-    candidates: list[Path, RawTreeSitterSymbolData],
+def _heuristic_disambiguate(
+    candidates: list[tuple[Path, RawTreeSitterSymbolData]],
     call_symbol: RawTreeSitterSymbolData,
     calling_symbol: RawTreeSitterSymbolData,
 ) -> int | None:
     """
-    Use the LLM to disambiguate which candidate is the correct one for a call.
+    Apply heuristic rules to disambiguate function calls without using LLM.
+    Returns index of best candidate or None if uncertain.
+    """
+    if len(candidates) <= 1:
+        return 0 if candidates else None
+
+    # Prefer candidates with matching namespace/scope
+    if calling_symbol.fully_qualified_parent_path:
+        matching_scope_candidates = [
+            (idx, candidate)
+            for idx, (_, candidate) in enumerate(candidates)
+            if candidate.fully_qualified_parent_path
+            == calling_symbol.fully_qualified_parent_path
+        ]
+        if len(matching_scope_candidates) == 1:
+            print(
+                f"[HEURISTIC] Matching-scope match for call '{call_symbol.name}' in scope {calling_symbol.fully_qualified_parent_path}"
+            )
+            return matching_scope_candidates[0][0]
+
+    # If only 2 candidates and they have very similar signatures, pick the first
+    if len(candidates) == 2:
+        _, cand1 = candidates[0]
+        _, cand2 = candidates[1]
+        if (
+            cand1.name == cand2.name
+            and cand1.symbol_kind == cand2.symbol_kind
+            and abs(len(cand1.symbol_code or "") - len(cand2.symbol_code or "")) < 100
+        ):
+            print(
+                f"[HEURISTIC] Similar candidates for call '{call_symbol.name}', choosing first"
+            )
+            return 0
+
+    return None
+
+
+def disambiguate_call(
+    candidates: list[tuple[Path, RawTreeSitterSymbolData]],
+    call_symbol: RawTreeSitterSymbolData,
+    calling_symbol: RawTreeSitterSymbolData,
+) -> int | None:
+    """
+    Use heuristics first, then LLM to disambiguate which candidate is the correct one for a call.
     Returns the index of the correct candidate.
     """
-    print("Disambiguating call with LLM...")
-    print(f"Call symbol: {call_symbol.name} in {call_symbol.file_path}")
+
+    # Try heuristic disambiguation first
+    heuristic_result = _heuristic_disambiguate(candidates, call_symbol, calling_symbol)
+    if heuristic_result is not None:
+        return heuristic_result
+
+    cache_key = _get_cache_key(candidates, call_symbol, calling_symbol)
+    cached_identity = None
+
+    with _cache_lock:
+        if cache_key in _disambiguation_cache:
+            cached_identity = _disambiguation_cache[cache_key]
+            if cached_identity is None:
+                return None
+
+    # If we have a cached result, check if it applies to current candidates
+    # We have a cached result, but candidates might be in different order now,
+    # so we map back
+    if cached_identity is not None:
+        candidate_map = _build_candidate_map(candidates)
+        if cached_identity in candidate_map:
+            print(f"[CACHE] Hit for call '{call_symbol.name}' -> {cached_identity}")
+            return candidate_map[cached_identity]
+        else:
+            print(
+                f"Warning: Cached candidate {cached_identity} not found in current candidates"
+            )
+
+    # Cache miss - proceed with LLM
+    print(
+        f"[LLM] Disambiguating call '{call_symbol.name}' with {len(candidates)} candidates in {call_symbol.file_path}"
+    )
     system_prompt = textwrap.dedent("""\
         You are a software engineering expert that disambiguates function calls when there are multiple candidates.
 
@@ -120,6 +226,23 @@ def disambiguate_call_w_llm(
         candidate_idx = int(candidate_idx_raw.strip())
     except ValueError:
         print("Failed to parse an integer from LLM response:", candidate_idx_raw)
-        return None
+        candidate_idx = None
+
+    # Cache the result
+    # Cache value is the identity of chosen function (name, fully_qualified_parent_path) or None
+    #   - None means "LLM couldn't decide" - avoid re-calling LLM for impossible cases
+    #   - Identity allows us to find the function regardless of candidate ordering
+
+    if candidate_idx is not None and 0 <= candidate_idx < len(candidates):
+        chosen_candidate = candidates[candidate_idx][1]
+        cached_value = (
+            chosen_candidate.name,
+            chosen_candidate.fully_qualified_parent_path,
+        )
+    else:
+        cached_value = None
+
+    with _cache_lock:
+        _disambiguation_cache[cache_key] = cached_value
 
     return candidate_idx

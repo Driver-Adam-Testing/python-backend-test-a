@@ -22,8 +22,6 @@ TaskName = str
 
 @dataclass
 class ProgressState:
-    """Tracks progress state for the inspector run"""
-
     total_work_units: int = 0
     completed_work_units: int = 0
     task_count: int = 0
@@ -223,7 +221,6 @@ class Task(abc.ABC):
     @property
     @abstractmethod
     def work_units(self) -> int:
-        """Return the work units for this task"""
         raise NotImplementedError
 
     # TODO this could get really long, but does it matter?
@@ -281,7 +278,6 @@ class TaskManager:
         return cls(*args, persistence=S3TaskResultPersistence(bucket_name), **kwargs)
 
     def _initialize_progress(self) -> None:
-        """Initialize progress tracking by calculating total work units and task count"""
         self.progress_state.total_work_units = sum(
             task.work_units for task in self.tasks
         )
@@ -293,7 +289,6 @@ class TaskManager:
         )
 
     def _update_progress(self, completed_task: "Task", threshold: float = 1.0) -> None:
-        """Update progress state when a task completes"""
         self.progress_state.completed_work_units += completed_task.work_units
         self.progress_state.completed_task_count += 1
 
@@ -321,7 +316,6 @@ class TaskManager:
     ) -> dict[type[Task], TaskResult]:
         result_loading_config = result_loading_config or []
 
-        # Initialize progress tracking
         self._initialize_progress()
 
         if len(result_loading_config) > 0 and self.persistence:
@@ -474,7 +468,6 @@ class TaskManager:
         task_hash_str = task.hashed_stable_id
         await self.write_queue.put((task_hash_str, result))
 
-        # Update progress tracking
         self._update_progress(task)
 
         return result

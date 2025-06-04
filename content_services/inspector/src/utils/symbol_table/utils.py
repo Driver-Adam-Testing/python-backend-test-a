@@ -23,6 +23,7 @@ def is_definition(sym: RawTreeSitterSymbolData) -> bool:
     return sym.symbol_kind in {
         SymbolKind.CALLABLE,
         SymbolKind.DATA_STRUCTURE,
+        SymbolKind.VARIABLE,
     }
 
 

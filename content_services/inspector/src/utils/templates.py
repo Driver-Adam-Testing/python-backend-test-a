@@ -103,7 +103,11 @@ class Template(BaseModel):
 
                             repl_text = m[0]
                             for symbol in reified_symbols:
-                                if language == Lang.CPP or language == Lang.PYTHON:
+                                if (
+                                    language == Lang.CPP
+                                    or language == Lang.PYTHON
+                                    or language == Lang.JAVA
+                                ):
                                     linkable_symbol_kinds = {
                                         SymbolKind.CALLABLE,
                                     }

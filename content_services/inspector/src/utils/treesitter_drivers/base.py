@@ -7,6 +7,7 @@ from typing import ClassVar, Self
 import tree_sitter
 import tree_sitter_c
 import tree_sitter_cpp
+import tree_sitter_java
 import tree_sitter_python
 
 from utils.lang_specialization.symbol_common import RawTreeSitterSymbolData
@@ -15,6 +16,7 @@ LANGUAGES = {
     "c": tree_sitter.Language(tree_sitter_c.language()),
     "cpp": tree_sitter.Language(tree_sitter_cpp.language()),
     "python": tree_sitter.Language(tree_sitter_python.language()),
+    "java": tree_sitter.Language(tree_sitter_java.language()),
 }
 
 
@@ -101,7 +103,7 @@ class DriverTree(ABC):
 
         return start_line, end_line
 
-    def __init_subclass__(cls, **kwargs):
+    def __init_subclass__(cls, **kwargs) -> None:  # noqa: ANN003
         """Validate that subclasses define required class attributes."""
         super().__init_subclass__(**kwargs)
         if not hasattr(cls, "language") or not cls.language:

@@ -26,7 +26,7 @@ class SymbolParser(ABC):
     ]:
         """Parse a single file and return symbols, imports, and containment."""
 
-    def __init_subclass__(cls, **kwargs) -> None:
+    def __init_subclass__(cls, **kwargs) -> None:  # noqa: ANN003
         super().__init_subclass__(**kwargs)
         if not hasattr(cls, "language") or not cls.language:
             raise TypeError(f"{cls.__name__} must define 'language' class attribute")
@@ -49,7 +49,7 @@ class ImportResolver(ABC):
     ) -> Path | None:
         """Resolve an import string to a project file path."""
 
-    def __init_subclass__(cls, **kwargs) -> None:
+    def __init_subclass__(cls, **kwargs) -> None:  # noqa: ANN003
         super().__init_subclass__(**kwargs)
         if not hasattr(cls, "language") or not cls.language:
             raise TypeError(f"{cls.__name__} must define 'language' class attribute")
@@ -80,7 +80,7 @@ class LanguageProvider(ABC):
         """Get FQN delimiter - derived from parser."""
         return cls.get_parser().fqn_delimiter
 
-    def __init_subclass__(cls, **kwargs) -> None:
+    def __init_subclass__(cls, **kwargs) -> None:  # noqa: ANN003
         super().__init_subclass__(**kwargs)
         if not hasattr(cls, "language") or not cls.language:
             raise TypeError(f"{cls.__name__} must define 'language' class attribute")

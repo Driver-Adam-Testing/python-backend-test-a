@@ -1,12 +1,13 @@
 from utils.lang_specialization.default_multi_context import (
     SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT_MULTI_CONTEXT,
     SOURCE_CODE_PURPOSE_FROM_CHUNKS,
-    default_imports_checker_multi_prompt,
 )
+from utils.lang_specialization.ir_common import ListData
 from utils.lang_specialization.java import (
     SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_JAVA,
     JavaClassCollection,
     JavaClassRawSymbolCollection,
+    JavaImportRawSymbolCollection,
     JavaInterfaceCollection,
     JavaInterfaceRawSymbolCollection,
 )
@@ -21,10 +22,10 @@ SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_JAVA = [
         SOURCE_CODE_PURPOSE_FROM_CHUNKS,
     ),
     (
-        S.MULTI_LLM_COND_JSON,
+        S.FN_COND_JSON,
         "# Imports and Dependencies",
-        default_imports_checker_multi_prompt,
-        lambda _llm, output, _code: output,
+        JavaImportRawSymbolCollection.from_static_analysis,
+        lambda _llm, output, _code: ListData(data=list(output.data.keys())),
         None,
     ),
     (

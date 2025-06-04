@@ -19,6 +19,8 @@ from .utils import (
     is_definition,
 )
 
+MAX_LLM_CALLS_PER_FILE = 100
+
 
 @dataclass(frozen=True)
 class ParsedProject:
@@ -224,6 +226,8 @@ class LinkedProject:
             visible_files = project_vis.visibility_map.get(fpath, set())
             visible_with_self = {fpath, *visible_files}
 
+            llm_calls_made_this_file = 0
+
             linked_syms: list[LinkedSymbol] = []
             for rsym in raw_syms:
                 def_symbol: LinkedSymbol | None = None
@@ -253,9 +257,14 @@ class LinkedProject:
                             )
                             # TODO: disambiguate calling symbol !
                             if len(calling_symbol) > 0:
-                                index = disambiguate_call(
-                                    vis_defs, rsym, calling_symbol[0][1]
+                                use_llm = (
+                                    llm_calls_made_this_file < MAX_LLM_CALLS_PER_FILE
                                 )
+                                index, llm_called = disambiguate_call(
+                                    vis_defs, rsym, calling_symbol[0][1], use_llm
+                                )
+                                if llm_called:
+                                    llm_calls_made_this_file += 1
                                 if index is not None and index < len(vis_defs):
                                     dfpath, def_raw = vis_defs[index]
                                     # TODO: if we fail to get here, default to first element

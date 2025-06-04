@@ -116,9 +116,16 @@ class ParsedProjectWithVisibility:
         def dfs(current: Path, visited: set[Path]) -> None:
             for inc_str in includes_map.get(current, []):
                 inc_path = resolver.resolve_import(current, inc_str, project_files)
-                if inc_path and inc_path not in visited:
-                    visited.add(inc_path)
-                    dfs(inc_path, visited)
+                if isinstance(inc_path, list):
+                    for p in inc_path:
+                        if p not in visited:
+                            visited.add(p)
+                            # NOTE: Right now we only reach here in Java,
+                            # and for Java we don't do DFS here since imports must be explicit
+                else:
+                    if inc_path and inc_path not in visited:
+                        visited.add(inc_path)
+                        dfs(inc_path, visited)
 
         def compute_visited(fpath: Path) -> set[Path]:
             visited: set[Path] = {fpath}

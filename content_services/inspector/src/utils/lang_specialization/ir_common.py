@@ -96,6 +96,27 @@ class NamedContent(MdRenderable):
         return f"    - `{self.name}`: {self.content}\n"
 
 
+class NamedTypedContent(MdRenderable):
+    name: str
+    content: str
+    type: str
+
+    def render_markdown(self, doc_label: str) -> str:
+        return f"    - `{self.name}`: `{self.type}` {self.content}\n"
+
+
+class ListedBacktickNameTypeRawContentNoNone(MdRenderable):
+    content: list[NamedTypedContent]
+
+    def render_markdown(self, doc_label: str) -> str:
+        output_str = ""
+        if len(self.content) > 0:
+            output_str += f"- **{snake_case_to_spaced_string(doc_label)}**:\n"
+            for item in self.content:
+                output_str += item.render_markdown(doc_label)
+        return output_str
+
+
 class ListedBacktickNameRawContentNoNone(MdRenderable):
     content: list[NamedContent]
 
@@ -434,7 +455,15 @@ class IrData(BaseModel, abc.ABC):
                     if sym.raw.symbol_kind == SymbolKind.CLASS
                     else "Member Functions"
                 )
-                if len(sym.children) > 0:
+                inherit_label = (
+                    "Inherits From"
+                    if sym.raw.file_path.suffix != ".java"
+                    else "Extends/Implements"
+                )
+                if (
+                    len(sym.children) > 0
+                    and sym.raw.symbol_kind != SymbolKind.INTERFACE
+                ):
                     output += f"- **{member_label}**:\n"
                     for child_symbol in sym.children:
                         if child_symbol.raw.symbol_kind == SymbolKind.CALLABLE:
@@ -445,7 +474,7 @@ class IrData(BaseModel, abc.ABC):
                                 f"    - [`{fqn}`]({path_part}#{kind_part}:{fqn})\n"
                             )
                 if sym.inherits_from is not None and len(sym.inherits_from) > 0:
-                    output += "- **Inherits From**:\n"
+                    output += f"- **{inherit_label}**:\n"
                     for inherited_class in sym.inherits_from:
                         kind_part = inherited_class.raw.symbol_kind.name.lower()
                         fqn = get_fully_qualified_name(inherited_class.raw)
@@ -455,7 +484,7 @@ class IrData(BaseModel, abc.ABC):
                     sym.raw.base_class_names is not None
                     and len(sym.raw.base_class_names) > 0
                 ):
-                    output += "- **Inherits From**:\n"
+                    output += f"- **{inherit_label}**:\n"
                     for base_class_name in sym.raw.base_class_names:
                         output += f"    - `{base_class_name}`\n"
             # if sym.raw.symbol_kind == SymbolKind.CALLABLE and sym.usages:
@@ -501,7 +530,13 @@ class IrData(BaseModel, abc.ABC):
                 )
                 child_dictionary[label_name] += child_content.render_markdown()
             else:
-                child_dictionary[label_name] += f"    - {child_symbol.name}\n"
+                if child_symbol.reified_symbol is not None:
+                    kind_part = child_symbol.reified_symbol.raw.symbol_kind.name.lower()
+                    fqn = get_fully_qualified_name(child_symbol.reified_symbol.raw)
+                    id_comment = f"<!-- {{{{#{kind_part}:{fqn}}}}} -->"
+                else:
+                    id_comment = ""
+                child_dictionary[label_name] += f"- `{child_symbol.name}`{id_comment}\n"
 
         for _, label_content in child_dictionary.items():
             output += label_content

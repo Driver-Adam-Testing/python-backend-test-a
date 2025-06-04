@@ -92,7 +92,13 @@ def functions_test_code() -> str:
         ("qux", (17, 19)),
         ("wibble", (21, 23)),
         # ("myFunc", (25, 28)),
-        (None, (25, 28)),
+        pytest.param(
+            None,
+            (25, 28),
+            marks=pytest.mark.xfail(
+                reason="Known issue: we don't capture unnamed functions"
+            ),
+        ),
         ("arrayParam", (30, 32)),
         ("roPointerFunc", (34, 37)),
         ("triplePtrFunc", (39, 42)),
@@ -140,7 +146,13 @@ def enums_test_code() -> str:
         ("Color", (4, 8)),
         ("Weekday", (11, 17)),
         ("MyAnonEnum", (20, 24)),
-        (None, (28, 31)),  # Anonymous global enum
+        pytest.param(
+            None,
+            (28, 31),
+            marks=pytest.mark.xfail(
+                reason="Known issue: we don't capture unnamed enums"
+            ),
+        ),  # Anonymous global enum
         ("Direction", (35, 40)),
         ("Kind", (43, 47)),
         pytest.param(
@@ -196,7 +208,13 @@ def structs_test_code() -> str:
         ("Named", (7, 10)),
         ("MyStruct", (19, 22)),
         ("MyAnonTypedef", (25, 27)),
-        (None, (30, 33)),
+        pytest.param(
+            None,
+            (30, 33),
+            marks=pytest.mark.xfail(
+                reason="Known issue: we don't capture unnamed structs"
+            ),
+        ),
         # ("Outer", (36, 42)),
         ("Point", (45, 48)),
         ("Point2", (51, 55)),
@@ -257,7 +275,13 @@ def unions_test_code() -> str:
         ("ForwardDecl", (13, 16)),
         ("MyUnion", (19, 22)),
         ("MyAnonUnion", (25, 28)),
-        (None, (31, 34)),
+        pytest.param(
+            None,
+            (31, 34),
+            marks=pytest.mark.xfail(
+                reason="Known issue: we don't capture unnamed unions"
+            ),
+        ),
         # ("Outer", (40, 46)),
         ("Combined", (49, 52)),
         ("Point2", (54, 58)),

@@ -191,12 +191,13 @@ class ListedBackTickRawContentWithNone(MdRenderable):
 
     def render_markdown(self, doc_label: str) -> str:
         output_str = ""
-        output_str += f"- **{snake_case_to_spaced_string(doc_label)}**:\n"
+        output_str += f"- **{snake_case_to_spaced_string(doc_label)}**:"
         if len(self.content) > 0:
+            output_str += "\n"
             for item in self.content:
                 output_str += f"    - {ensure_enclosed_with_backticks(item)}\n"
         else:
-            output_str += "    - None\n"
+            output_str += " None\n"
         return output_str
 
 
@@ -217,12 +218,13 @@ class ListedRawContentWithNone(MdRenderable):
 
     def render_markdown(self, doc_label: str) -> str:
         output_str = ""
-        output_str += f"- **{snake_case_to_spaced_string(doc_label)}**:\n"
+        output_str += f"- **{snake_case_to_spaced_string(doc_label)}**:"
         if len(self.content) > 0:
+            output_str += "\n"
             for item in self.content:
                 output_str += f"    - {item}\n"
         else:
-            output_str += "    - None\n"
+            output_str += " None\n"
         return output_str
 
 
@@ -231,14 +233,15 @@ class NestedListedRawContent(MdRenderable):
 
     def render_markdown(self, doc_label: str) -> str:
         output_str = ""
-        output_str += f"- **{snake_case_to_spaced_string(doc_label)}**:\n"
+        output_str += f"- **{snake_case_to_spaced_string(doc_label)}**:"
         if len(self.content) > 0:
+            output_str += "\n"
             for idx, item in enumerate(self.content):
                 output_str += f"    - Block {idx+1}\n"
                 for subitem in item:
                     output_str += f"        - {subitem}\n"
         else:
-            output_str += "    - None\n"
+            output_str += " None\n"
         return output_str
 
 

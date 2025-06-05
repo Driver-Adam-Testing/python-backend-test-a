@@ -5,7 +5,7 @@ import tree_sitter
 
 from utils.lang_specialization.symbol_common import RawTreeSitterSymbolData, SymbolKind
 
-from .base import DriverTree, DriverTreeError, symbol_extractor
+from .base import DriverTree, DriverTreeError
 
 
 def node_to_text(node: tree_sitter.Node) -> str:
@@ -283,7 +283,6 @@ class CppCDriverTree(DriverTree):
     language = "cpp"  # Uses cpp grammar for both C and C++
     extensions: ClassVar[set] = {".c", ".h", ".cpp", ".cc", ".cxx", ".hpp", ".hxx"}
 
-    @symbol_extractor
     def extract_imports(self) -> list[RawTreeSitterSymbolData]:
         """Extract all #include directives and their target text from the C code."""
         query = self.tree_sitter_lang.query(
@@ -336,7 +335,6 @@ class CppCDriverTree(DriverTree):
 
         return sorted_includes
 
-    @symbol_extractor
     def extract_callable_definitions(self) -> list[RawTreeSitterSymbolData]:
         query = self.tree_sitter_lang.query("(function_definition) @function_def")
         matches = query.matches(self.tree.root_node)
@@ -385,7 +383,6 @@ class CppCDriverTree(DriverTree):
         sorted_functions = sorted(functions, key=lambda x: x.start_byte)
         return sorted_functions
 
-    @symbol_extractor
     def extract_data_structure_definitions(self) -> list[RawTreeSitterSymbolData]:
         """
         Extract struct, union, and enum tags and typedefs, ignoring forward declarations.
@@ -657,7 +654,6 @@ class CppCDriverTree(DriverTree):
         path_parts.reverse()
         return "::".join(path_parts) if path_parts else ""
 
-    @symbol_extractor
     def extract_variables(self) -> list[RawTreeSitterSymbolData]:
         query = self.tree_sitter_lang.query(
             """
@@ -731,7 +727,6 @@ class CppCDriverTree(DriverTree):
     # TODO we really need to swap to byte position since we often have
     # multiple calls per line to disambiguate
 
-    @symbol_extractor
     def extract_function_calls(self) -> list[RawTreeSitterSymbolData]:
         query = self.tree_sitter_lang.query("""
                                                 (call_expression
@@ -775,7 +770,6 @@ class CppCDriverTree(DriverTree):
     # def extract_data_structure_instances(self) -> list[RawTreeSitterSymbolData]:
     #     pass
 
-    @symbol_extractor
     def extract_function_declarations(self) -> list[RawTreeSitterSymbolData]:
         """Extract all function declarations (not definitions) in the C code."""
         query_str = """

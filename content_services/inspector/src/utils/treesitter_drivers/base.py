@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import ClassVar, Self
@@ -18,13 +17,6 @@ LANGUAGES = {
     "python": tree_sitter.Language(tree_sitter_python.language()),
     "java": tree_sitter.Language(tree_sitter_java.language()),
 }
-
-
-def symbol_extractor(
-    method: Callable[..., list[RawTreeSitterSymbolData]],
-) -> Callable[..., list[RawTreeSitterSymbolData]]:
-    method._is_symbol_extractor = True
-    return method
 
 
 class DriverTreeError(Exception):
@@ -81,6 +73,10 @@ class DriverTree(ABC):
     def extract_variables(self) -> list[RawTreeSitterSymbolData]:
         pass
 
+    @abstractmethod
+    def extract_function_declarations(self) -> list[RawTreeSitterSymbolData]:
+        pass
+
     # TODO!!! consider resurrecting decorator for symbol extractors
     def extract_all_symbols(self) -> list[RawTreeSitterSymbolData]:
         """Extract all symbols from the source code."""
@@ -90,6 +86,7 @@ class DriverTree(ABC):
         symbols.extend(self.extract_data_structure_definitions())
         symbols.extend(self.extract_function_calls())
         symbols.extend(self.extract_variables())
+        symbols.extend(self.extract_function_declarations())
         return symbols
 
     def get_node_line_range(self, node: tree_sitter.Node) -> tuple[int, int]:

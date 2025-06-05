@@ -19,7 +19,7 @@ from .utils import (
     is_definition,
 )
 
-MAX_LLM_CALLS_PER_FILE = 100
+MAX_LLM_CALLS_PER_FILE = 25
 
 
 @dataclass(frozen=True)

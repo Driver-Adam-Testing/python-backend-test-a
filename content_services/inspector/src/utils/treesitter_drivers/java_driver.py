@@ -4,7 +4,7 @@ import tree_sitter
 
 from utils.lang_specialization.symbol_common import RawTreeSitterSymbolData, SymbolKind
 
-from .base import DriverTree, symbol_extractor
+from .base import DriverTree
 
 
 def java_node_to_text(node: tree_sitter.Node) -> str:
@@ -111,7 +111,9 @@ class JavaDriverTree(DriverTree):
         symbols.extend(self.extract_variables())
         return sorted(symbols, key=lambda x: x.start_byte)
 
-    @symbol_extractor
+    def extract_function_declarations(self) -> list[RawTreeSitterSymbolData]:
+        return []
+
     def extract_imports(self) -> list[RawTreeSitterSymbolData]:
         """Extract all import statements and package declarations from Java code."""
         import_query_str = """
@@ -192,21 +194,18 @@ class JavaDriverTree(DriverTree):
 
         return sorted(imports, key=lambda x: x.start_byte)
 
-    @symbol_extractor
     def extract_callable_definitions(self) -> list[RawTreeSitterSymbolData]:
         """Extract all method and constructor declarations."""
         methods = self.extract_method_definitions()
         constructors = self.extract_constructor_definitions()
         return methods + constructors
 
-    # @symbol_extractor
     def extract_method_definitions(self) -> list[RawTreeSitterSymbolData]:
         """Extract method declarations (excluding constructors)."""
         return self._extract_callable_definitions_by_type(
             "method_declaration", is_class_method
         )
 
-    # @symbol_extractor
     def extract_constructor_definitions(self) -> list[RawTreeSitterSymbolData]:
         """Extract constructor declarations."""
         return self._extract_callable_definitions_by_type(
@@ -257,7 +256,6 @@ class JavaDriverTree(DriverTree):
 
         return sorted(callables, key=lambda x: x.start_byte)
 
-    @symbol_extractor
     def extract_data_structure_definitions(self) -> list[RawTreeSitterSymbolData]:
         """Extract class, interface, and enum declarations."""
         classes = self.extract_class_definitions()
@@ -265,7 +263,6 @@ class JavaDriverTree(DriverTree):
         enums = self.extract_enum_definitions()
         return classes + interfaces + enums
 
-    # @symbol_extractor
     def extract_class_definitions(self) -> list[RawTreeSitterSymbolData]:
         """Extract class declarations."""
         class_query_str = """
@@ -335,7 +332,6 @@ class JavaDriverTree(DriverTree):
 
         return sorted(classes, key=lambda x: x.start_byte)
 
-    # @symbol_extractor
     def extract_interface_definitions(self) -> list[RawTreeSitterSymbolData]:
         """Extract interface declarations."""
         interface_query_str = """
@@ -393,7 +389,6 @@ class JavaDriverTree(DriverTree):
 
         return sorted(interfaces, key=lambda x: x.start_byte)
 
-    # @symbol_extractor
     def extract_enum_definitions(self) -> list[RawTreeSitterSymbolData]:
         """Extract enum declarations."""
         enum_query_str = """
@@ -435,13 +430,11 @@ class JavaDriverTree(DriverTree):
 
         return sorted(enums, key=lambda x: x.start_byte)
 
-    @symbol_extractor
     def extract_variables(self) -> list[RawTreeSitterSymbolData]:
         """Extract field declarations and local variables."""
         fields = self.extract_field_definitions()
         return fields
 
-    # @symbol_extractor
     def extract_field_definitions(self) -> list[RawTreeSitterSymbolData]:
         """Extract field declarations from classes and interfaces."""
         field_query_str = """
@@ -484,7 +477,6 @@ class JavaDriverTree(DriverTree):
 
         return sorted(fields, key=lambda x: x.start_byte)
 
-    @symbol_extractor
     def extract_function_calls(self) -> list[RawTreeSitterSymbolData]:
         """Extract method invocations."""
         call_query_str = """

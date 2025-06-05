@@ -31,7 +31,7 @@ class Lang(IntEnum):
     DEFAULT = 10
 
     @classmethod
-    def from_ext_and_source(cls, ext: str, source: str) -> Self:
+    def from_ext(cls, ext: str) -> Self:
         match ext:
             case ".c":
                 return cls.C

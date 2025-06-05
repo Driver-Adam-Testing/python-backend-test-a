@@ -675,7 +675,7 @@ class FnData(IrData, abc.ABC):
     single_sentence: RawContent
     inputs: ListedBacktickNameRawContentWithNone
     control_flow: ListedRawContentWithNone
-    output: FieldNameWithBulletedContent
+    output: FieldNameWithRawContent
 
     @classmethod
     def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
@@ -683,7 +683,7 @@ class FnData(IrData, abc.ABC):
             single_sentence=RawContent(content=""),
             inputs=ListedBacktickNameRawContentWithNone(content=[]),
             control_flow=ListedBacktickNameRawContentWithNone(content=[]),
-            output=FieldNameWithBulletedContent(content=""),
+            output=FieldNameWithRawContent(content=""),
         )
 
 

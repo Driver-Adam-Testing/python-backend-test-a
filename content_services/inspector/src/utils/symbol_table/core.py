@@ -239,11 +239,22 @@ class LinkedProject:
                         candidates = definitions_by_name.get(rsym.name, [])
                     else:
                         candidates = definitions_by_fqn.get(fqn, [])
-                    vis_defs = [
+                    candidate_defs = [
                         (dfpath, dfsym)
                         for (dfpath, dfsym) in candidates
                         if dfpath in visible_with_self
                     ]
+                    vis_defs = []
+                    for candidate_def in candidate_defs:
+                        if (
+                            candidate_def[1].file_path == rsym.file_path
+                            and candidate_def[1].start_byte < rsym.start_byte
+                            and candidate_def[1].end_byte >= rsym.end_byte
+                        ):
+                            # This would only occur in the case of a recursion.
+                            # So we choose to not link it to itself.
+                            continue
+                        vis_defs.append(candidate_def)
                     if len(vis_defs) >= 1:
                         # pick first or unify
                         dfpath, def_raw = vis_defs[
@@ -268,12 +279,16 @@ class LinkedProject:
                                 if index is not None and index < len(vis_defs):
                                     dfpath, def_raw = vis_defs[index]
                                     # TODO: if we fail to get here, default to first element
-                        def_symbol = LinkedSymbol(
-                            raw=def_raw,
-                            is_definition=True,
-                            is_declaration=False,
-                            definition=None,
-                        )
+                                else:
+                                    dfpath = None
+                                    def_raw = None
+                        if def_raw is not None:
+                            def_symbol = LinkedSymbol(
+                                raw=def_raw,
+                                is_definition=True,
+                                is_declaration=False,
+                                definition=None,
+                            )
                     else:
                         # No direct definition, check for declarations
                         # TODO: this works for C, but C++ may have issues with namespaces that limit this

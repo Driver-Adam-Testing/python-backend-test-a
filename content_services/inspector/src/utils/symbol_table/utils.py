@@ -157,9 +157,13 @@ def disambiguate_call(
         Candidate <Candidate Number>:
         <Candidate Name> at <Fully Qualified Parent Path>
         <Candidate Code>
-        You only respond with a single integer to indicate the index of the correct candidate, starting from 0.
+
+        It is possible that NO candidate provided is the correct one, in which case you should return a sentence describing why no candidate matched.
+
+        In the case that a candidate does match, you only respond with a single integer to indicate the index of the correct candidate, starting from 0.
     """)
 
+    # TODO: would be great to get the includes added to the user prompt as well
     user_prompt = (
         f"Here is a function in {calling_symbol.file_path}:\n"
         f"{calling_symbol.symbol_code}\n\n"

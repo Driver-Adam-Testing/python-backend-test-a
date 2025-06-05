@@ -1,7 +1,7 @@
 from collections import defaultdict
 from pathlib import Path
 
-from utils.lang_specialization.symbol_common import ReifiedSymbol, SymbolKind
+from utils.lang_specialization.symbol_common import Lang, ReifiedSymbol, SymbolKind
 
 from .base import LanguageProvider
 from .core import (
@@ -10,7 +10,7 @@ from .core import (
     ParsedProjectWithVisibility,
     ReifiedProjectIndex,
 )
-from .language_utils import detect_language, get_language_providers
+from .language_utils import get_language_providers
 from .utils import get_fully_qualified_name
 
 
@@ -30,11 +30,16 @@ def build_symbol_table(
     unsupported_files: list[Path] = []
 
     for file_path in file_paths:
-        lang = detect_language(file_path)
-        if lang:
-            language_groups[lang].append(file_path)
-        else:
-            unsupported_files.append(file_path)
+        lang = Lang.from_ext(file_path.suffix)
+        match lang:
+            case Lang.C | Lang.CPP | Lang.C_OR_CPP_HEADER:
+                language_groups["c_cpp"].append(file_path)
+            case Lang.PYTHON:
+                language_groups["python"].append(file_path)
+            case Lang.JAVA:
+                language_groups["java"].append(file_path)
+            case _:
+                unsupported_files.append(file_path)
 
     if unsupported_files:
         print(

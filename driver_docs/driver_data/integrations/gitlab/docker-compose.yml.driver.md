@@ -1,0 +1,2 @@
+# Purpose
+This YAML file is a Docker Compose configuration that defines a service for running a GitLab Enterprise Edition instance in a Docker container. It specifies the use of the `gitlab/gitlab-ee:17.3.5-ee.0` image, sets the container's platform, name, and restart policy, and maps the necessary ports for HTTP, HTTPS, and SSH access. Additionally, it mounts host directories to the container for configuration, logs, and data persistence, and sets an environment variable for the GitLab root password.

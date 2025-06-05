@@ -17,6 +17,7 @@ from .ir_common import (
 from .symbol_common import (
     RawSymbolCollection,
     RawSymbolData,
+    ReifiedSymbol,
     SymbolKind,
     default_ctags_analysis,
 )
@@ -211,7 +212,7 @@ class VerilogModuleData(IrData):
         raise NotImplementedError("Modules should not have children")
 
     @classmethod
-    def default_instance(cls) -> Self:
+    def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
         return cls(
             description=FieldNameWithRawContent(content=""),
             constants=ListedBacktickNameRawContentWithNone(content=[]),

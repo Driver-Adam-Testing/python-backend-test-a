@@ -32,6 +32,9 @@ image = (
             "/shared_pkg",
             "tree-sitter==0.24.0",
             "tree-sitter-c==0.23.4",
+            "tree-sitter-cpp==0.23.2",
+            "tree-sitter-java==0.23.5",
+            "tree-sitter-python==0.23.6",
         ]
     )  # TODO lock versions down
     .add_local_python_source(
@@ -239,7 +242,9 @@ def export_tech_docs_to_zip(
                 elif node.kind == NodeKind.CODEBASE_DIRECTORY:
                     doc_file_path = node_path.with_suffix(".driver.md")
                 content = replace_driver_compatible_links_with_markdown_links(
-                    derived_content.content, Path(*doc_file_path.parts[1:])
+                    derived_content.content,
+                    Path(*doc_file_path.parts[1:]),
+                    node_path.suffix,
                 )
                 file_path = Path(temp_dir) / doc_file_path
                 file_path.parent.mkdir(parents=True, exist_ok=True)

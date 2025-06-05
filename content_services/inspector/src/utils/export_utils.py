@@ -2,6 +2,19 @@ import re
 from os.path import relpath
 from pathlib import Path
 
+EXTENSION_TO_DELIMITER = {
+    ".cpp": "::",
+    ".cc": "::",
+    ".cxx": "::",
+    ".c": "::",
+    ".h": "::",
+    ".hpp": "::",
+    ".hxx": "::",
+    ".py": ".",
+}
+
+UNSUPPORTED_CHARACTERS_IN_GFM_ANCHORS = ["~"]
+
 
 def extract_markdown_links(text: str) -> list:
     """
@@ -19,7 +32,9 @@ def extract_markdown_links(text: str) -> list:
 
 
 def replace_driver_compatible_links_with_markdown_links(
-    text: str, source_path: str
+    text: str,
+    source_path: str,
+    file_extension: str,
 ) -> str:
     """
     Replaces the URL part of markdown-style hyperlinks like
@@ -32,6 +47,10 @@ def replace_driver_compatible_links_with_markdown_links(
     Returns:
         str: The modified text with updated hyperlinks.
     """
+    # NOTE: for current doc rendering of class methods we do f"{class_name}{EXTENSION_TO_DELIMITER[file_extension]}{method_name}"
+    # BUT the links are constructed as f"({file_path}#{symbol_kind}:{fqn})" where fqn can include things like the
+    # namespace, etc.
+    # This means that the auto-generated anchor tags in Github flavored markdown do not match the FQN and we must account for this.
     extract_link_pattern = r"\[[^\]]+\]\(([^)]+)\)"
     extracted_link = re.findall(extract_link_pattern, text)
     if not extracted_link:
@@ -50,8 +69,20 @@ def replace_driver_compatible_links_with_markdown_links(
             if new_url == ".":
                 new_url = ""
             if anchor_tag:
-                anchor_name = anchor_tag.split(":")[1]
-                new_url += "#" + anchor_name
+                # TODO: with special character stripping, we need to add an incrementor to the link_name to dedupe in some cases
+                fqn = ":".join(
+                    anchor_tag.split(":")[1:]
+                )  # This remove the CALLABLE/DATA_STRUCTURE prefix
+                delimiter = EXTENSION_TO_DELIMITER.get(file_extension)
+                if delimiter is None:
+                    raise ValueError(f"Unsupported file extension: {file_extension}")
+                # Join with "" because Github Flavored Markdown strips out special characters from the auto-anchortags
+                link_name = "".join(
+                    fqn.split(delimiter)[-2:]
+                )  # NOTE: this is strongly coupled to how we're choosing to render the names in the tech docs (e.g. `ClassName::methodName`)
+                for char in UNSUPPORTED_CHARACTERS_IN_GFM_ANCHORS:
+                    link_name = link_name.replace(char, "")
+                new_url += "#" + link_name
             text = text.replace(link, new_url)
         except ValueError as e:
             # This specifically errors in the case of this file, since the tech doc contains an invalid link

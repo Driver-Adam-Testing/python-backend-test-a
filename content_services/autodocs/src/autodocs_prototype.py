@@ -22,7 +22,6 @@ from pydantic import BaseModel
 from rich.console import Console
 from rich.markdown import Markdown
 from shared.chunking.text_splitter import get_num_tokens, split_text
-from shared.v3.utils.post_processing.mermaid import fix_mermaid_syntax_in_response
 from tqdm.asyncio import tqdm_asyncio
 from utils.models import ChatOpenAI, OutputConfig, OutputConfigKind
 
@@ -2284,6 +2283,10 @@ Your output is the full content of the document with editing updates based on yo
         resume: bool = False,
         page_id: str | None = None,
     ) -> str:
+        from shared.v3.utils.post_processing.mermaid import (
+            fix_mermaid_syntax_in_response,
+        )
+
         llm_tagging = ChatOpenAI(
             model=self.llm.tag_model, temperature=0, request_timeout=300
         )

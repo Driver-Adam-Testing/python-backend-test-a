@@ -432,7 +432,7 @@ class CppDataStructureRawSymbolCollection(RawSymbolCollection):
 
 
 class CppFreeFnRawSymbolCollection(RawSymbolCollection):
-    data: dict[str, RawSymbolData]
+    data: dict[str, list[RawSymbolData]]
 
     @classmethod
     def from_static_analysis(
@@ -444,6 +444,9 @@ class CppFreeFnRawSymbolCollection(RawSymbolCollection):
 
         function_raw_symbol_data = {}
         is_large_file = code_requires_multi_prompt(code)
+        all_fn_names = [
+            sym.raw.name for sym in func_symbols if sym.raw.name is not None
+        ]
 
         for reified_sym in func_symbols:
             symbol_parent_kind = (
@@ -454,21 +457,40 @@ class CppFreeFnRawSymbolCollection(RawSymbolCollection):
                 ts_symbol.name is not None
                 and symbol_parent_kind != SymbolKind.DATA_STRUCTURE
             ):
-                raw_symbol_data = RawSymbolData.from_tree_sitter_raw_symbol(
-                    ts_symbol=ts_symbol,
-                    path=root_rel_path,
-                    scope=None,
-                    scope_relation=None,
-                    children=[],
-                    reference_code=None,
-                    delimiter=None,
-                    is_large_file=is_large_file,
-                    is_overloaded=False,
-                    use_padding=False,
-                    code=code,
-                    reified_symbol=reified_sym,  # TODO hack!
-                )
-                function_raw_symbol_data[ts_symbol.name] = raw_symbol_data
+                if all_fn_names.count(ts_symbol.name) > 1:
+                    if ts_symbol.name not in function_raw_symbol_data:
+                        function_raw_symbol_data[ts_symbol.name] = []
+                    raw_symbol_data = RawSymbolData.from_tree_sitter_raw_symbol(
+                        ts_symbol=ts_symbol,
+                        path=root_rel_path,
+                        scope=None,
+                        scope_relation=None,
+                        children=[],
+                        reference_code=None,
+                        delimiter=None,
+                        is_large_file=is_large_file,
+                        is_overloaded=True,
+                        use_padding=False,
+                        code=code,
+                        reified_symbol=reified_sym,  # TODO hack!
+                    )
+                    function_raw_symbol_data[ts_symbol.name].append(raw_symbol_data)
+                else:
+                    raw_symbol_data = RawSymbolData.from_tree_sitter_raw_symbol(
+                        ts_symbol=ts_symbol,
+                        path=root_rel_path,
+                        scope=None,
+                        scope_relation=None,
+                        children=[],
+                        reference_code=None,
+                        delimiter=None,
+                        is_large_file=is_large_file,
+                        is_overloaded=False,
+                        use_padding=False,
+                        code=code,
+                        reified_symbol=reified_sym,  # TODO hack!
+                    )
+                    function_raw_symbol_data[ts_symbol.name] = [raw_symbol_data]
 
         output = (
             None

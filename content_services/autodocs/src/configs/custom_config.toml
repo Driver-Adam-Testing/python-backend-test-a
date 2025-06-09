@@ -1,0 +1,22 @@
+[llm]
+tag_model = "gpt-4o"
+section_init_model = "o3-mini"
+section_update_model = "gpt-4o"
+section_format_model = "o3-mini"
+assembly_model = "o3-mini"
+copy_editor_model = "gpt-4o"
+
+[document]
+goal = "Write an overarching and detailed architecture document for the codebase."
+fmt = "defined_sections" # "from_example" "undefined" "architecture" "legacy_modernization"
+use_tagging = true
+config_name = "Architecture Custom"
+config_version = "[V1]"
+
+[[sections]]
+title = "Overview"
+level = 1
+required = true
+instruction = "An introduction to this library, highlighting purpose, scope, and capabilities."
+content_structure = "2 -- 3 paragraphs."
+section_creation_method= "scatter_gather"

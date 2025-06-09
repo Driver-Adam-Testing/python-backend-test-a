@@ -2283,6 +2283,10 @@ Your output is the full content of the document with editing updates based on yo
         resume: bool = False,
         page_id: str | None = None,
     ) -> str:
+        from shared.v3.utils.post_processing.mermaid import (
+            fix_mermaid_syntax_in_response,
+        )
+
         llm_tagging = ChatOpenAI(
             model=self.llm.tag_model, temperature=0, request_timeout=300
         )
@@ -2555,6 +2559,7 @@ Your output is the full content of the document with editing updates based on yo
         )
         final_document += "\n\nMade with ❤️ by [Driver](https://www.driver.ai/)"
         final_doc_revisions.append(final_document)
+        final_doc_revisions.append(fix_mermaid_syntax_in_response(text=final_document))
         self.save_state(
             revisions=revisions,
             init_state=init_state,

@@ -1,0 +1,7 @@
+
+## Files
+- **[llm_client.py](clients/llm_client.py.driver.md)**: The `llm_client.py` file defines an abstract base class `LlmClient` for managing interactions with various language model APIs, providing methods for generating single and multi-shot responses, both synchronously and asynchronously, while allowing for tool integration and configuration-based subclass selection.
+- **[llm_client_claude.py](clients/llm_client_claude.py.driver.md)**: The `llm_client_claude.py` file implements a client for interacting with Anthropic's Claude models, converting messages to the expected format and handling message generation with specific configurations.
+- **[llm_client_openai_chat.py](clients/llm_client_openai_chat.py.driver.md)**: The `llm_client_openai_chat.py` file implements an OpenAI Chat client for interacting with OpenAI's Chat models, supporting both synchronous and asynchronous message generation with tool integration capabilities.
+- **[llm_client_openai_o1.py](clients/llm_client_openai_o1.py.driver.md)**: The `llm_client_openai_o1.py` file defines the `OpenAiO1SeriesClient` class, a specialized LLM client for interacting with OpenAI's O-Series models, focusing on JSON strictness and flexible tool integration.
+- **[llm_client_openai_strict.py](clients/llm_client_openai_strict.py.driver.md)**: The `llm_client_openai_strict.py` file implements a client for interacting with OpenAI's API in strict mode, providing both synchronous and asynchronous methods for generating and streaming language model messages with support for tool integration.

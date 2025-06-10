@@ -1,14 +1,15 @@
 from utils.lang_specialization.cpp import (
     SOURCE_CODE_SMALL_PURPOSE_USER_PROMPT,
     SOURCE_CODE_SMALL_SYSTEM_PROMPT_GENERAL_CPP,
-    CppClassCollection,
-    CppClassRawSymbolCollection,
+    CppDataStructureCollection,
+    CppDataStructureRawSymbolCollection,
     CppFnCollection,
     CppFreeFnRawSymbolCollection,
+    CppIncludeRawSymbolCollection,
     CppVariableCollection,
     CppVariableRawSymbolCollection,
 )
-from utils.lang_specialization.default import default_imports_checker
+from utils.lang_specialization.ir_common import ListData
 from utils.templates import S
 
 SOURCE_CODE_SMALL_TEMPLATE_CPP = [
@@ -19,10 +20,10 @@ SOURCE_CODE_SMALL_TEMPLATE_CPP = [
         SOURCE_CODE_SMALL_PURPOSE_USER_PROMPT,
     ),
     (
-        S.LLM_COND_JSON,
+        S.FN_COND_JSON,
         "# Imports and Dependencies",
-        default_imports_checker,
-        lambda _llm, output, _code: output,
+        CppIncludeRawSymbolCollection.from_static_analysis,
+        lambda _llm, output, _code: ListData(data=list(output.data.keys())),
         None,
     ),
     (
@@ -35,8 +36,8 @@ SOURCE_CODE_SMALL_TEMPLATE_CPP = [
     (
         S.FN_COND_JSON,
         "# Data Structures",
-        CppClassRawSymbolCollection.from_static_analysis,
-        CppClassCollection.from_llm,
+        CppDataStructureRawSymbolCollection.from_static_analysis,
+        CppDataStructureCollection.from_llm,
         None,
     ),
     (

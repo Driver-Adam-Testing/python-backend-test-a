@@ -1,4 +1,5 @@
 import abc
+import textwrap
 from dataclasses import dataclass, field
 from enum import Enum, IntEnum, StrEnum, auto
 from pathlib import Path
@@ -30,7 +31,7 @@ class Lang(IntEnum):
     DEFAULT = 10
 
     @classmethod
-    def from_ext_and_source(cls, ext: str, source: str) -> Self:
+    def from_ext(cls, ext: str) -> Self:
         match ext:
             case ".c":
                 return cls.C
@@ -101,6 +102,14 @@ class RawTreeSitterSymbolData(BaseModel):
     end_byte: int
     file_path: Path
     symbol_kind: SymbolKind
+    fully_qualified_parent_path: str | None = (
+        None  # this could be a nested namespace as well. Does nullable make sense here? Is global scope None?
+    )
+    symbol_code: (
+        None | str
+    )  # TODO: this is somewhat a hack since we need the code, but makes symbols bulky
+    delimiter: str | None = None
+    base_class_names: tuple[str, ...] | None = None
 
     class Config:
         """
@@ -110,7 +119,7 @@ class RawTreeSitterSymbolData(BaseModel):
         frozen = True
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=False)
 class ReifiedSymbol:
     """
     Extends LinkedSymbol with a list of usages (if this is a definition).
@@ -118,9 +127,16 @@ class ReifiedSymbol:
 
     raw: RawTreeSitterSymbolData
     is_definition: bool
+    is_declaration: bool
     definition: Self | None = None
     usages: list[Self] = field(default_factory=list)
     calls: list[Self] = field(default_factory=list)
+    inherits_from: list[Self] = field(default_factory=list)
+    declarations: list[Self] = field(
+        default_factory=list
+    )  # Should this be a list? Likely not
+    parent: Self | None = None
+    children: list[Self] = field(default_factory=list)
 
 
 class RawSymbolData(BaseModel):
@@ -156,31 +172,36 @@ class RawSymbolData(BaseModel):
         is_large_file: bool,
         is_overloaded: bool,
         use_padding: bool,
-        code: str,
+        code: str | None,
         reified_symbol: ReifiedSymbol | None = None,  # TODO this is a hack. fix
     ) -> Self:
         # Copied logic from ctags symbol construction below
         file_code = None
 
-        if use_padding:
-            start_line = max(0, ts_symbol.start_line - BLIND_PADDING_TOP)
-            end_line = ts_symbol.end_line + BLIND_PADDING_BOTTOM
-        else:
-            start_line = ts_symbol.start_line
-            end_line = ts_symbol.end_line
-        s_code = "\n".join(code.split("\n")[start_line - 1 : end_line + 1])
-        if is_large_file or is_overloaded:
-            from shared.chunking.text_splitter import split_text
+        if code is not None:
+            if use_padding:
+                start_line = max(0, ts_symbol.start_line - BLIND_PADDING_TOP)
+                end_line = ts_symbol.end_line + BLIND_PADDING_BOTTOM
+            else:
+                start_line = ts_symbol.start_line
+                end_line = ts_symbol.end_line
+            s_code = "\n".join(code.split("\n")[start_line - 1 : end_line + 1])
+            if is_large_file or is_overloaded:
+                from shared.chunking.text_splitter import split_text
 
-            s_code_chunks = split_text(
-                text=s_code,
-                chunk_size=CHUNK_SIZE,
-                chunk_overlap=CHUNK_OVERLAP,
-            )
-            symbol_code = s_code_chunks[0].text if len(s_code_chunks) > 1 else s_code
+                s_code_chunks = split_text(
+                    text=s_code,
+                    chunk_size=CHUNK_SIZE,
+                    chunk_overlap=CHUNK_OVERLAP,
+                )
+                symbol_code = (
+                    s_code_chunks[0].text if len(s_code_chunks) > 1 else s_code
+                )
+            else:
+                symbol_code = s_code
+                file_code = code
         else:
-            symbol_code = s_code
-            file_code = code
+            symbol_code = ts_symbol.symbol_code
 
         raw_symbol = cls(
             parser_kind=ParserKind.TREE_SITTER,
@@ -223,21 +244,28 @@ class RawSymbolCollection(BaseModel, abc.ABC):
 
 def disambiguate_header(code: str, fallback: Lang) -> Lang:
     llm = ChatOpenAI(model="gpt-4o", temperature=0, request_timeout=60)
-    system_prompt = """
-    You are a software engineering expert that determines whether a header file corresponds to the C or C++ language.
+    system_prompt = textwrap.dedent("""\
+        You are a software engineering expert that determines whether a header file corresponds to C or C++ code.
 
-    Header files ('.h' extension) are used both in C and C++. You will be given source code from a header file and will answer whether it corresponds to C or C++ code.
+        Header files ('.h' extension) are used in both C and C++. Many C headers are written to be compatible with both languages.
+        In particular, the use of `#ifdef __cplusplus` and `extern "C"` does not by itself indicate that the code is C++.
+        These constructs are commonly used to allow a C header to be included in a C++ project.
 
-    You will be given the source code in the following format:
+        You will be given source code from a header file and must answer whether the code corresponds to:
+        - 0 if the code is valid as C (even if it includes compatibility for C++)
+        - 1 if the code is valid only as C++ or uses C++-only features (e.g., templates, classes, namespaces, overloading, references)
 
-    File contents:
+        Assume the code will be compiled as-is and determine the minimal language required for the code to compile correctly.
+        You will be given the source code in the following format:
 
-    <file_contents>
+        File contents:
 
-    You only respond with a single number to indicate your response:
-    - 0 if the code corresponds to C
-    - 1 if the code corresponds to C++
-    """
+        <file_contents>
+
+        You only respond with a single number to indicate your response:
+        - 0 if the code corresponds to C
+        - 1 if the code corresponds to C++
+    """)
     user_prompt = f"File contents:\n\n{code}"
 
     try:

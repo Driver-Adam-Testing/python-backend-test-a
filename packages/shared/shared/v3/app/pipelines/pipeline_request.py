@@ -12,7 +12,6 @@ from shared.v3 import LlmClient
 from shared.v3.interfaces.llm_stream_response import (
     EndSessionStreamResponse,
     LlmStreamResponse,
-    LlmStreamResponseKind,
     StartSessionStreamResponse,
 )
 from shared.v3.utils.datasource import DataSource
@@ -99,14 +98,12 @@ class PipelineRequest(BaseModel, ABC):
         self, client: LlmClient = None
     ) -> AsyncGenerator["LlmStreamResponse", None]:
         yield StartSessionStreamResponse(
-            kind=LlmStreamResponseKind.START_SESSION,
             llm_session_id=self.llm_session.id,
             execution_call_id=modal.current_function_call_id(),
         )
         async for response in self._stream():
             yield response
         yield EndSessionStreamResponse(
-            kind=LlmStreamResponseKind.END_SESSION,
             llm_session_id=self.llm_session.id,
         )
 

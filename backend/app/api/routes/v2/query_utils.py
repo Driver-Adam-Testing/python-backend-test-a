@@ -188,12 +188,10 @@ def apply_sorting_to_query(
         parts = sort_field.split(".")
 
         if len(parts) == 1:
-            # CASE 1: Direct column sorting (no dot-notation)
             if not hasattr(model, sort_field):
                 raise HTTPException(status_code=400, detail="Invalid sort field")
             sort_column = getattr(model, sort_field)
         else:
-            # CASE 2: Dot notation -> interpret each part except the last as a relationship
             current_model = model
             for rel_part in parts[:-1]:
                 if not hasattr(current_model, rel_part):
@@ -211,12 +209,10 @@ def apply_sorting_to_query(
                         status_code=400,
                         detail=f"'{rel_part}' is not a valid relationship on '{current_model.__name__}'.",
                     )
-                # Join the relationship
                 related_model = rel_attr.property.mapper.class_
                 query = query.outerjoin(rel_attr)
                 current_model = related_model
 
-            # The final part is the actual column we want to sort on in the related model
             col_name = parts[-1]
             if not hasattr(current_model, col_name):
                 raise HTTPException(
@@ -225,11 +221,20 @@ def apply_sorting_to_query(
                 )
             sort_column = getattr(current_model, col_name)
 
-        # Apply the sorting direction
         if pagination.sort_direction == SortDirection.ASC:
-            query = query.order_by(sort_column.asc())
+            if model.id:
+                query = query.order_by(sort_column.asc(), model.id).distinct(
+                    sort_column, model.id
+                )
+            else:
+                query = query.order_by(sort_column.asc())
         else:
-            query = query.order_by(sort_column.desc())
+            if model.id:
+                query = query.order_by(sort_column.desc(), model.id).distinct(
+                    sort_column, model.id
+                )
+            else:
+                query = query.order_by(sort_column.desc())
 
     # Apply pagination
     query = query.limit(pagination.limit).offset(pagination.offset)

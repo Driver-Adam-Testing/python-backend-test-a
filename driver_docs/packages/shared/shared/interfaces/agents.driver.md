@@ -1,0 +1,8 @@
+
+## Files
+- **[agent_configuration.py](agents/agent_configuration.py.driver.md)**: The `agent_configuration.py` file defines the `AgentConfiguration` class, which specifies the configuration for an agent, including model selection, system prompts, iterations, tool configurations, and methods to retrieve tools and format system prompts.
+- **[block_kind.py](agents/block_kind.py.driver.md)**: The `block_kind.py` file defines an enumeration `BlockKind` representing different types of blocks such as LIST, TABLE, DIAGRAM, CODE, TEXT, and ANY.
+- **[block_response.py](agents/block_response.py.driver.md)**: The `block_response.py` file defines an abstract base class `BlockResponse` that extends `BaseModel` and requires the implementation of a `to_markdown` method.
+- **[data_scope.py](agents/data_scope.py.driver.md)**: The `data_scope.py` file defines the `DataScope` class, which manages the scope of an agent's operation by handling nodes accessible to the agent, including methods for retrieving nodes by identifier, creating child data scopes, and generating human-readable summaries.
+- **[pipeline_configuration.py](agents/pipeline_configuration.py.driver.md)**: The `pipeline_configuration.py` file defines classes and enums for configuring and executing pipeline steps in an agent-based system, including step types, input, and response handling.
+- **[prompt.py](agents/prompt.py.driver.md)**: The `prompt.py` file defines a `PromptWithContext` class that manages user prompts with additional context, providing functionality to convert the context into an XML format and update it with additional information.

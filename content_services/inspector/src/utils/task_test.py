@@ -122,6 +122,7 @@ class SleepTask(Task):
         task_name: str,
         sleep_time: float,
         dependencies: tuple[Task, ...] | None = None,
+        work_units: int = 1,
     ) -> None:
         dependencies = dependencies or tuple()
 
@@ -134,6 +135,7 @@ class SleepTask(Task):
             dependencies=dependencies,
         )
         self.sleep_time = sleep_time
+        self._work_units = work_units
 
         self.captured_io_results = None  # Captures `dependent_io_results` in `post_run_io` for assertions about what was injected
 
@@ -159,6 +161,10 @@ class SleepTask(Task):
         # Store the dependent IO results for validation in the test
         self.captured_io_results = dependent_io_results
         return {"io_completed": True}
+
+    @property
+    def work_units(self) -> int:
+        return self._work_units
 
 
 class TestTaskManager:

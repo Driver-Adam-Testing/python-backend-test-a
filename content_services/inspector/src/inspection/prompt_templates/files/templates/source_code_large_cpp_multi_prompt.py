@@ -1,17 +1,18 @@
 from utils.lang_specialization.cpp import (
     SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_CPP,
-    CppClassCollection,
-    CppClassRawSymbolCollection,
+    CppDataStructureCollection,
+    CppDataStructureRawSymbolCollection,
     CppFnCollection,
     CppFreeFnRawSymbolCollection,
+    CppIncludeRawSymbolCollection,
     CppVariableCollection,
     CppVariableRawSymbolCollection,
 )
 from utils.lang_specialization.default_multi_context import (
     SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT_MULTI_CONTEXT,
     SOURCE_CODE_PURPOSE_FROM_CHUNKS,
-    default_imports_checker_multi_prompt,
 )
+from utils.lang_specialization.ir_common import ListData
 from utils.templates import S
 
 SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CPP = [
@@ -22,12 +23,11 @@ SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CPP = [
         SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT_MULTI_CONTEXT,
         SOURCE_CODE_PURPOSE_FROM_CHUNKS,
     ),
-    # NOTE: for simplicity this only looks at the first file chunk for imports (making assumptions about the structure of the file)
     (
-        S.MULTI_LLM_COND_JSON,
+        S.FN_COND_JSON,
         "# Imports and Dependencies",
-        default_imports_checker_multi_prompt,
-        lambda _llm, output, _code: output,
+        CppIncludeRawSymbolCollection.from_static_analysis,
+        lambda _llm, output, _code: ListData(data=list(output.data.keys())),
         None,
     ),
     (
@@ -40,8 +40,8 @@ SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CPP = [
     (
         S.FN_COND_JSON,
         "# Data Structures",
-        CppClassRawSymbolCollection.from_static_analysis,
-        CppClassCollection.from_llm,
+        CppDataStructureRawSymbolCollection.from_static_analysis,
+        CppDataStructureCollection.from_llm,
         None,
     ),
     (

@@ -1,5 +1,9 @@
+import asyncio
+import inspect
 import json
+import threading
 from abc import ABC, abstractmethod
+from functools import partial
 
 from shared.v3.globals.constants import (
     FORMAT_TOOL_CALL_REQUEST_f_class_name__example_json__docstring,
@@ -29,6 +33,7 @@ class LlmTool(LlmParseable, ABC):
 
     _references: ReferenceSet = ReferenceSet(references=[])
     _error_message: str | None = None
+    one_sentence_rationale_for_calling_the_tool: str | None = None
 
     @property
     def tool_call_id(self) -> str | None:
@@ -57,10 +62,22 @@ class LlmTool(LlmParseable, ABC):
     ) -> LlmMessage:
         self._tool_call_id = tool_call_id
         self._tool_datasource = datasource
-        try:
-            self._execute()
-        except Exception as e:
-            self._error_message = str(e)
+
+        def target() -> None:
+            try:
+                self._execute()
+            except Exception as e:
+                self._error_message = str(e)
+
+        thread = threading.Thread(target=target)
+        thread.start()
+        thread.join(timeout=25)
+
+        if thread.is_alive():
+            print(
+                f"Execution of {self.__class__.__name__, self.tool_call_id} timed out after 25 seconds."
+            )
+            self._error_message = f"Execution of {self.__class__.__name__, self.tool_call_id} timed out after 25 seconds."
             return LlmMessage(
                 content=f"{TOOL_ERROR_MESSAGE.wrap(self._error_message)}",
                 message_kind=MessageKind.TOOL_CALL_RESPONSE,
@@ -68,7 +85,47 @@ class LlmTool(LlmParseable, ABC):
                     id=self.tool_call_id or None, name=self.__class__.__name__
                 ),
             )
+
+        if self._error_message:
+            return LlmMessage(
+                content=f"{TOOL_ERROR_MESSAGE.wrap(self._error_message)}",
+                message_kind=MessageKind.TOOL_CALL_RESPONSE,
+                tool_response=LlmMessage.ToolCallResponse(
+                    id=self.tool_call_id or None, name=self.__class__.__name__
+                ),
+            )
+
         return self.to_tool_call_response_message()
+
+    async def aexecute(
+        self,
+        tool_call_id: str,
+        datasource: DataSource | None = None,
+    ) -> LlmMessage:
+        """
+        Non-blocking wrapper around `execute`.
+
+        • If a future tool replaces `execute` with an `async def`, we await it.
+        • Otherwise we off-load the current sync implementation (which itself
+          runs a secondary thread) to the event-loop executor so the loop stays
+          free for other I/O.
+        """
+        try:
+            if inspect.iscoroutinefunction(self.execute):
+                return await self.execute(tool_call_id, datasource)
+
+            loop = asyncio.get_running_loop()
+            fn = partial(self.execute, tool_call_id=tool_call_id, datasource=datasource)
+            return await loop.run_in_executor(None, fn)
+        except Exception as e:
+            error_message = f"Error during execution: {e!s}"
+            return LlmMessage(
+                content=error_message,
+                message_kind=MessageKind.TOOL_CALL_RESPONSE,
+                tool_response=LlmMessage.ToolCallResponse(
+                    id=tool_call_id, name=self.__class__.__name__
+                ),
+            )
 
     @abstractmethod
     def _execute(self) -> None:

@@ -90,7 +90,7 @@ class LlmMessageHistory:
             return message_history
 
     def add_message(
-        self, message: LlmMessage, debug: bool = True
+        self, message: LlmMessage, debug: bool | None = None
     ) -> "LlmMessageHistory":
         # TODO: Would it make sense to automatically yield messages that make sense to yield here? Ignore them if we aren't in a streaming context?
         """
@@ -109,6 +109,8 @@ class LlmMessageHistory:
                 session.add(pm)
                 session.commit()
                 session.refresh(pm)
+        if debug is None:
+            debug = self.debug
         if debug:
             message.print_to_console()
         return self
@@ -449,3 +451,27 @@ class LlmMessageHistory:
         Returns the last message in the message history.
         """
         return self.messages[-1]
+
+    def rewind_past_last_tool_call_request(self) -> None:
+        """
+        Removes all TOOL_CALL_RESPONSE messages that follow the most recent
+        TOOL_CALL_REQUEST, then removes that TOOL_CALL_REQUEST itself.
+
+        USER and ASSISTANT messages are preserved if we encounter one
+        while scanning backwards, we leave it in place and keep walking
+        until we find the corresponding TOOL_CALL_REQUEST.
+        """
+        # Walk the history from the newest message to the oldest.
+        for idx in range(len(self.messages) - 1, -1, -1):
+            message = self.messages[idx]
+            print("REWINDING PAST", message.message_kind)
+
+            if message.message_kind == MessageKind.TOOL_CALL_RESPONSE:
+                print("REMOVING TOOL_CALL_RESPONSE", message.message_kind)
+                self.remove_message(message)
+                continue
+
+            if message.message_kind == MessageKind.TOOL_CALL_REQUEST:
+                print("REMOVING TOOL_CALL_REQUEST", message.message_kind)
+                self.remove_message(message)
+                break

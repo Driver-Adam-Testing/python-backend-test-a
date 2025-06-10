@@ -61,7 +61,7 @@ class UsageService:
                 event_metadata=None,
             )
 
-            llm_session.send_event(usage_metric)
+            llm_session.commit_event_now(usage_metric)
             print(f"Session ended: {llm_session.session_id}")
 
     def get_usage_balance(self, organization_id: str) -> UsageBalance:
@@ -201,7 +201,11 @@ class UsageService:
 
         onboarding_usage_events = self.usage_event_repository.get_usage_events_by_types(
             organization_id=organization_id,
-            event_types=[UsageEventType.ONBOARDING_USAGE_DEBIT],
+            event_types=[
+                UsageEventType.ONBOARDING_USAGE_DEBIT,
+                UsageEventType.INSPECTOR_CODE_DIFF_USAGE_DEBIT,
+                UsageEventType.ADDITIONAL_PLATFORM_USAGE_CREDIT,
+            ],
             limit=limit,
             offset=offset,
             sort_direction=sort_direction,
@@ -239,7 +243,7 @@ class UsageService:
             charges.append(
                 UsageCharge(
                     asset_name=asset_name,
-                    event_type=UsageEventType.ONBOARDING_USAGE_DEBIT,
+                    event_type=onboarding_usage_event.event_type,
                     timestamp=onboarding_usage_event.timestamp,
                     bytes=onboarding_usage_event.bytes_in,
                 )

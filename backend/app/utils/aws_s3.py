@@ -46,15 +46,20 @@ def parse_presigned_url(url: str) -> tuple[str, str]:
 
 
 def generate_put_presigned_url(
-    key: str, content_type: str, metadata: dict | None = None, expires: int = 3600
+    key: str,
+    content_type: str,
+    metadata: dict | None = None,
+    expires: int = 3600,
+    bucket: str | None = None,
 ) -> str:
     if metadata is None:
         metadata = {}
-    bucket = (
-        settings.DROPZONE_BUCKET_NAME
-        if not settings.USE_LEGACY_DROPZONE
-        else f"{settings.ENVIRONMENT}-{settings.AWS_S3_CODE_BUCKET_SUFFIX}"
-    )
+    if bucket is None:
+        bucket = (
+            settings.DROPZONE_BUCKET_NAME
+            if not settings.USE_LEGACY_DROPZONE
+            else f"{settings.ENVIRONMENT}-{settings.AWS_S3_CODE_BUCKET_SUFFIX}"
+        )
     return s3_client.generate_presigned_url(
         ClientMethod="put_object",
         Params={

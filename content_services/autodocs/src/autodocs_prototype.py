@@ -22,6 +22,7 @@ from pydantic import BaseModel
 from rich.console import Console
 from rich.markdown import Markdown
 from shared.chunking.text_splitter import get_num_tokens, split_text
+from shared.v3.utils.post_processing.mermaid import fix_mermaid_syntax_in_response
 from tqdm.asyncio import tqdm_asyncio
 from utils.models import ChatOpenAI, OutputConfig, OutputConfigKind
 
@@ -2555,6 +2556,7 @@ Your output is the full content of the document with editing updates based on yo
         )
         final_document += "\n\nMade with ❤️ by [Driver](https://www.driver.ai/)"
         final_doc_revisions.append(final_document)
+        final_doc_revisions.append(fix_mermaid_syntax_in_response(text=final_document))
         self.save_state(
             revisions=revisions,
             init_state=init_state,

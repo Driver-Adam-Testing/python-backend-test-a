@@ -49,7 +49,9 @@ class PrimaryAsset(SQLModel, table=True):  # type: ignore
         ondelete="SET NULL",
         default=None,
     )
-    codebase_settings_auto_commit_docs: bool | None = Field(default=None, nullable=True)
+    codebase_settings_auto_commit_docs: bool | None = Field(
+        default=None, nullable=True
+    )  # TODO: a temporary place until we have a RepoSettings table (or similar)
     created_at: None | datetime = Field(
         sa_column=Column(
             DateTime(timezone=True), server_default=func.now(), nullable=False

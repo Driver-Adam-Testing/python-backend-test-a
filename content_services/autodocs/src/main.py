@@ -74,6 +74,9 @@ async def run_autodoc(
     page_node_id: uuid.UUID,
     config_kind: Any,  # noqa: ANN401 #TODO: the actual type is a deferred import here, not sure how to resolve?
 ) -> None:
+    import hashlib
+
+    import boto3
     from database.db import get_session
     from database.models_v1 import DerivedContent, DocumentSource
     from database.models_v2 import Node, Version
@@ -106,7 +109,10 @@ async def run_autodoc(
                 pdfs=[],
             )
 
+            org_id = None
             for source in document_sources:
+                if not org_id:
+                    org_id = source.source_node.version.primary_asset.organization_id
                 if (
                     source.source_node.version.primary_asset.kind
                     == PrimaryAssetKind.CODEBASE
@@ -133,6 +139,21 @@ async def run_autodoc(
                 config = AutoDocCfg.from_file(
                     "/autodocs_configs/architecture_modal.toml"
                 )
+            case AutoDocConfigKind.CUSTOM:
+                if org_id:
+                    hashed_org_id = hashlib.sha256(org_id.encode()).hexdigest()[:63]
+                    key = f"{page_node_id}/custom_config.toml"
+
+                    s3 = boto3.client("s3")
+                    # download the file from S3
+                    s3.download_file(
+                        hashed_org_id,
+                        key,
+                        "/autodocs_configs/custom_config.toml",
+                    )
+                    config = AutoDocCfg.from_file(
+                        "/autodocs_configs/custom_config.toml"
+                    )
             case _:
                 raise ValueError(f"Unsupported config kind: {config_kind}")
         config.scope = scope
@@ -199,5 +220,5 @@ def main(
     from database.models_v2_enums import AutoDocConfigKind
 
     run_autodoc.remote(
-        page_node_id=page_node_id, config_kind=AutoDocConfigKind.ADI_DRIVER
+        page_node_id=page_node_id, config_kind=AutoDocConfigKind.ARCHITECTURE
     )

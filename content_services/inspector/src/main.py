@@ -8,13 +8,11 @@ from uuid import UUID
 import modal
 from onboarding.onboard import (
     connect_unconnected_repos,
-    handle_github_events,
-    handle_gitlab_events,
-    run_codebase_connection,
 )
 
 inspection_image = (
     modal.Image.debian_slim(python_version="3.12")
+    .apt_install("git")
     .add_local_dir(local_path="../../driver_db", remote_path="/driver_db", copy=True)
     .add_local_dir(
         local_path="../../packages/shared", remote_path="/shared_pkg", copy=True
@@ -29,6 +27,9 @@ inspection_image = (
             "/shared_pkg",
             "tree-sitter==0.24.0",
             "tree-sitter-c==0.23.4",
+            "tree-sitter-cpp==0.23.2",
+            "tree-sitter-java==0.23.5",
+            "tree-sitter-python==0.23.6",
             "gitignore-parser",
             "chardet",
         ]
@@ -140,7 +141,7 @@ async def get_result_loading_config(
     proxy=modal.Proxy.from_name("pg-proxy")
     if os.environ["MODAL_ENVIRONMENT"] in ["dev", "prod"]
     else None,
-    memory="2048",
+    memory=4096,
     timeout=3600 * 8,
     region="us-east",
     max_containers=5,
@@ -155,6 +156,7 @@ async def inspect_db(
     import boto3
     from database.models_v2_enums import NodeKind as DbNodeKind
     from database.models_v2_enums import VersionStatus
+    from modal_funcs import export_tech_docs_to_zip
     from onboarding.onboard_utils import (
         process_and_upload_all_files_in_parallel,
         set_codebase_status,
@@ -165,6 +167,11 @@ async def inspect_db(
         get_analyzable_nodes_by_version_id,
         get_version_by_id,
         try_get_prev_version,
+    )
+    from utils.git_diff import (
+        CodeDiffParams,
+        InsufficientBalanceError,
+        compute_and_log_code_diff_size_in_bytes,
     )
     from utils.io import download_all_source_files_in_parallel
 
@@ -220,6 +227,10 @@ async def inspect_db(
                 )
                 download_path = Path(download_dir) / f"{version_id}.zip"
                 print(f"downloading zip to {download_path}")
+                metadata = s3_client.head_object(
+                    Bucket=org_hashed_id, Key=download_archive_key
+                )
+                install_id = metadata["Metadata"].get("install_id")
                 s3_client.download_file(
                     org_hashed_id, download_archive_key, download_path
                 )
@@ -256,6 +267,8 @@ async def inspect_db(
                     download_root=download_root,
                     max_workers=8,
                 )
+                install_id = None  # TODO: install id is attached to the zip, and is not available on rerun/resume
+                # NOTE: can still achieve PR of docs by running export_tech_docs_to_zip manually with install_id via local entrypoint
                 print("Download complete")
 
             codebase_dag: FileTreeDag = build_dag(
@@ -290,13 +303,41 @@ async def inspect_db(
                 for node in previous_codebase_dag.topological_sort():
                     print(node.root_rel_path, node.status)
 
-                diff_dag = codebase_dag.compute_diff(previous_codebase_dag)
+                diff_dag = codebase_dag.compute_diff(
+                    previous_codebase_dag, delete_file_nodes=False
+                )
                 print("Diff dag computed")
 
                 print("======= Nodes from diff dag =======")
                 for node in diff_dag.topological_sort():
                     print(node.root_rel_path, node.status)
 
+                print("======= Computing diff size in bytes =======")
+                changed_nodes = diff_dag.topological_sort(
+                    changed_nodes_only=True, files_only=True
+                )
+                try:
+                    # @andrew: We calculate the diff size in bytes, log it while not turning on billing for code diffs
+                    compute_and_log_code_diff_size_in_bytes(
+                        CodeDiffParams(
+                            codebase_name=codebase_name,
+                            version_id=str(version.id),
+                            primary_asset_id=str(version.primary_asset_id),
+                            org_id=org_id,
+                            previous_download_root=previous_download_root,
+                            download_root=download_root,
+                            changed_nodes=changed_nodes,
+                        )
+                    )
+                except InsufficientBalanceError as ibe:
+                    print(
+                        f"Insufficient balance for org {org_id} to process codebase {codebase_name} {ibe}"
+                    )
+                    set_codebase_status_in_container.remote(
+                        version_id, VersionStatus.INSUFFICIENT_BALANCE.value
+                    )
+                    # I chose to return here vs re-raising the error because it will get caught and swalloed by the outer try/catch
+                    return
             if previous_version is not None:
                 sorted_nodes = diff_dag.topological_sort()
             else:
@@ -313,7 +354,7 @@ async def inspect_db(
             nodes_with_id: list[tuple[Node, uuid.UUID | None]] = [
                 (node, path_to_db_node_id[node.root_rel_path])
                 for node in sorted_nodes
-                if node.root_rel_path != Path(".")
+                if node.root_rel_path != Path(".") and node.status != NodeStatus.REMOVED
             ]
 
             print("======= Nodes with source content id =======")
@@ -342,6 +383,7 @@ async def inspect_db(
         raise
     else:
         set_codebase_status_in_container.remote(version_id, "GENERATION_COMPLETE")
+        export_tech_docs_to_zip.remote(version_id, install_id)
 
 
 def hash_file(file_path: Path) -> str:
@@ -510,7 +552,12 @@ async def inspect_files(
         bucket_name=os.environ["BUCKET_NAME"], tasks=tasks, serial_exe=False
     )
 
+    print(f"Starting inspection with {len(tasks)} tasks")
     await task_manager.run_tasks(run_id, result_loading_config=result_loading_config)
+
+    print(
+        f"Inspection completed! Final progress: {task_manager.progress_state.percent_complete:.1f}%"
+    )
 
 
 def get_file_content(path: Path) -> str:
@@ -573,533 +620,6 @@ def main(
 
 
 @app.local_entrypoint()
-def test_handle_github_events() -> None:
-    import json
-
-    body = json.loads("""
-        {
-            "action": "created",
-            "installation": {
-                "id": 60598324,
-                "client_id": "Iv1.2cdbf00b132438f4",
-                "account": {
-                "login": "ghiotto1",
-                "id": 1228798,
-                "node_id": "MDQ6VXNlcjEyMjg3OTg=",
-                "avatar_url": "https://avatars.githubusercontent.com/u/1228798?v=4",
-                "gravatar_id": "",
-                "url": "https://api.github.com/users/ghiotto1",
-                "html_url": "https://github.com/ghiotto1",
-                "followers_url": "https://api.github.com/users/ghiotto1/followers",
-                "following_url": "https://api.github.com/users/ghiotto1/following{/other_user}",
-                "gists_url": "https://api.github.com/users/ghiotto1/gists{/gist_id}",
-                "starred_url": "https://api.github.com/users/ghiotto1/starred{/owner}{/repo}",
-                "subscriptions_url": "https://api.github.com/users/ghiotto1/subscriptions",
-                "organizations_url": "https://api.github.com/users/ghiotto1/orgs",
-                "repos_url": "https://api.github.com/users/ghiotto1/repos",
-                "events_url": "https://api.github.com/users/ghiotto1/events{/privacy}",
-                "received_events_url": "https://api.github.com/users/ghiotto1/received_events",
-                "type": "User",
-                "user_view_type": "public",
-                "site_admin": false
-                },
-                "repository_selection": "all",
-                "access_tokens_url": "https://api.github.com/app/installations/60597730/access_tokens",
-                "repositories_url": "https://api.github.com/installation/repositories",
-                "html_url": "https://github.com/settings/installations/60597730",
-                "app_id": 869041,
-                "app_slug": "driverai-gh-demo",
-                "target_id": 1228798,
-                "target_type": "User",
-                "permissions": {
-                "contents": "read",
-                "metadata": "read",
-                "pull_requests": "read",
-                "repository_hooks": "read"
-                },
-                "events": [
-                "create",
-                "delete",
-                "fork",
-                "membership",
-                "organization",
-                "pull_request",
-                "push",
-                "repository"
-                ],
-                "created_at": "2025-02-05T13:30:32.000-08:00",
-                "updated_at": "2025-02-05T13:30:33.000-08:00",
-                "single_file_name": null,
-                "has_multiple_single_files": false,
-                "single_file_paths": [
-
-                ],
-                "suspended_by": null,
-                "suspended_at": null
-            },
-            "repositories": [
-                {
-                "id": 10464543,
-                "node_id": "MDEwOlJlcG9zaXRvcnkxMDQ2NDU0Mw==",
-                "name": "dotfiles",
-                "full_name": "ghiotto1/dotfiles",
-                "private": false
-                },
-                {
-                "id": 116281345,
-                "node_id": "MDEwOlJlcG9zaXRvcnkxMTYyODEzNDU=",
-                "name": "spam-detection",
-                "full_name": "ghiotto1/spam-detection",
-                "private": false
-                }
-            ],
-            "requester": null,
-            "sender": {
-                "login": "ghiotto1",
-                "id": 1228798,
-                "node_id": "MDQ6VXNlcjEyMjg3OTg=",
-                "avatar_url": "https://avatars.githubusercontent.com/u/1228798?v=4",
-                "gravatar_id": "",
-                "url": "https://api.github.com/users/ghiotto1",
-                "html_url": "https://github.com/ghiotto1",
-                "followers_url": "https://api.github.com/users/ghiotto1/followers",
-                "following_url": "https://api.github.com/users/ghiotto1/following{/other_user}",
-                "gists_url": "https://api.github.com/users/ghiotto1/gists{/gist_id}",
-                "starred_url": "https://api.github.com/users/ghiotto1/starred{/owner}{/repo}",
-                "subscriptions_url": "https://api.github.com/users/ghiotto1/subscriptions",
-                "organizations_url": "https://api.github.com/users/ghiotto1/orgs",
-                "repos_url": "https://api.github.com/users/ghiotto1/repos",
-                "events_url": "https://api.github.com/users/ghiotto1/events{/privacy}",
-                "received_events_url": "https://api.github.com/users/ghiotto1/received_events",
-                "type": "User",
-                "user_view_type": "public",
-                "site_admin": false
-            }
-            }
-    """)
-
-    installation_id = str(body["installation"]["id"])
-    repositories = body["repositories"]
-    repos_added = []
-    repos_deleted = []
-    repos_pushed = []
-    for repo in repositories:
-        repos_added.append(
-            {
-                "id": repo["id"],
-                "name": repo["name"],
-                "full_name": repo["full_name"],
-            }
-        )
-
-    org_id = "org_s76pU1v8LAYhTOWB"
-
-    handle_github_events.remote(
-        installation_id,
-        org_id,
-        repos_added,
-        repos_deleted,
-        repos_pushed,
-    )
-
-
-@app.local_entrypoint()
-def test_handle_gitlab_events() -> None:
-    import json
-
-    raw_body = """
-    {
-        "provider_name": "Gitlab Enterprise Self Managed", "provider_kind": "GITLAB_ENTERPRISE_SELF_MANAGED", "repo_name": "serverless-ness", "org": "onthebeach/sub-group", "last_updated": "2023-11-02T17:48:28.000+01:00", "metadata": {"id": 5, "description": null, "name": "serverless-ness", "name_with_namespace": "onthebeach / sub-group / serverless-ness", "path": "serverless-ness", "path_with_namespace": "onthebeach/sub-group/serverless-ness", "created_at": "2025-01-10T12:16:13.533Z", "default_branch": "master", "tag_list": [], "topics": [], "ssh_url_to_repo": "git@driver-gitlab.ngrok.io:onthebeach/sub-group/serverless-ness.git", "http_url_to_repo": "http://driver-gitlab.ngrok.io/onthebeach/sub-group/serverless-ness.git", "web_url": "http://driver-gitlab.ngrok.io/onthebeach/sub-group/serverless-ness", "readme_url": "http://driver-gitlab.ngrok.io/onthebeach/sub-group/serverless-ness/-/blob/master/README.md", "forks_count": 0, "avatar_url": null, "star_count": 0, "last_activity_at": "2025-01-10T12:16:16.256Z", "namespace": {"id": 43, "name": "sub-group", "path": "sub-group", "kind": "group", "full_path": "onthebeach/sub-group", "parent_id": 36, "avatar_url": null, "web_url": "http://driver-gitlab.ngrok.io/groups/onthebeach/sub-group"}, "_links": {"self": "http://driver-gitlab.ngrok.io/api/v4/projects/5", "issues": "http://driver-gitlab.ngrok.io/api/v4/projects/5/issues", "merge_requests": "http://driver-gitlab.ngrok.io/api/v4/projects/5/merge_requests", "repo_branches": "http://driver-gitlab.ngrok.io/api/v4/projects/5/repository/branches", "labels": "http://driver-gitlab.ngrok.io/api/v4/projects/5/labels", "events": "http://driver-gitlab.ngrok.io/api/v4/projects/5/events", "members": "http://driver-gitlab.ngrok.io/api/v4/projects/5/members", "cluster_agents": "http://driver-gitlab.ngrok.io/api/v4/projects/5/cluster_agents"}, "packages_enabled": true, "empty_repo": false, "archived": false, "visibility": "private", "resolve_outdated_diff_discussions": false, "container_expiration_policy": {"cadence": "1d", "enabled": false, "keep_n": 10, "older_than": "90d", "name_regex": ".*", "name_regex_keep": null, "next_run_at": "2025-01-11T12:16:16.323Z"}, "repository_object_format": "sha1", "issues_enabled": true, "merge_requests_enabled": true, "wiki_enabled": true, "jobs_enabled": true, "snippets_enabled": true, "container_registry_enabled": true, "service_desk_enabled": false, "service_desk_address": null, "can_create_merge_request_in": true, "issues_access_level": "enabled", "repository_access_level": "enabled", "merge_requests_access_level": "enabled", "forking_access_level": "enabled", "wiki_access_level": "enabled", "builds_access_level": "enabled", "snippets_access_level": "enabled", "pages_access_level": "private", "analytics_access_level": "enabled", "container_registry_access_level": "enabled", "security_and_compliance_access_level": "private", "releases_access_level": "enabled", "environments_access_level": "enabled", "feature_flags_access_level": "enabled", "infrastructure_access_level": "enabled", "monitor_access_level": "enabled", "model_experiments_access_level": "enabled", "model_registry_access_level": "enabled", "emails_disabled": false, "emails_enabled": true, "shared_runners_enabled": true, "lfs_enabled": true, "creator_id": 35, "import_url": null, "import_type": "gitlab_project", "import_status": "finished", "import_error": null, "open_issues_count": 0, "description_html": "", "updated_at": "2025-01-10T12:16:18.425Z", "ci_default_git_depth": 20, "ci_forward_deployment_enabled": true, "ci_forward_deployment_rollback_allowed": true, "ci_job_token_scope_enabled": false, "ci_separated_caches": true, "ci_allow_fork_pipelines_to_run_in_parent_project": true, "ci_id_token_sub_claim_components": ["project_path", "ref_type", "ref"], "build_git_strategy": "fetch", "keep_latest_artifact": true, "restrict_user_defined_variables": false, "ci_pipeline_variables_minimum_override_role": "maintainer", "runners_token": "GR1348941ebgdPJxxkjPSppzdxZmP", "runner_token_expiration_interval": null, "group_runners_enabled": true, "auto_cancel_pending_pipelines": "enabled", "build_timeout": 3600, "auto_devops_enabled": true, "auto_devops_deploy_strategy": "continuous", "ci_push_repository_for_job_token_allowed": false, "ci_config_path": null, "public_jobs": true, "shared_with_groups": [], "only_allow_merge_if_pipeline_succeeds": false, "allow_merge_on_skipped_pipeline": null, "request_access_enabled": true, "only_allow_merge_if_all_discussions_are_resolved": false, "remove_source_branch_after_merge": true, "printing_merge_request_link_enabled": true, "merge_method": "merge", "squash_option": "default_off", "enforce_auth_checks_on_uploads": true, "suggestion_commit_message": null, "merge_commit_template": null, "squash_commit_template": null, "issue_branch_template": null, "warn_about_potentially_unwanted_characters": true, "autoclose_referenced_issues": true, "approvals_before_merge": 0, "mirror": false, "external_authorization_classification_label": null, "marked_for_deletion_at": null, "marked_for_deletion_on": null, "requirements_enabled": true, "requirements_access_level": "enabled", "security_and_compliance_enabled": true, "pre_receive_secret_detection_enabled": false, "compliance_frameworks": [], "issues_template": null, "merge_requests_template": null, "ci_restrict_pipeline_cancellation_role": "developer", "merge_pipelines_enabled": false, "merge_trains_enabled": false, "merge_trains_skip_train_allowed": false, "only_allow_merge_if_all_status_checks_passed": false, "allow_pipeline_trigger_approve_deployment": false, "prevent_merge_without_jira_issue": false, "permissions": {"project_access": null, "group_access": {"access_level": 40, "notification_level": 3}}}, "latest_commit": {"repository_url": "http://driver-gitlab.ngrok.io/onthebeach/sub-group/serverless-ness.git", "default_branch": "master", "commit": {"id": "049dfd3cf98b69791c4b22a2438daf0a89a7e98f", "message": "Initialized from 'Serverless Framework/JS' project templateTemplate repository: https://gitlab.com/gitlab-org/project-templates/serverless-frameworkCommit SHA: a2a5b57371d276dcc6f529c71aa2e77d43b4db34", "author": "GitLab", "date": "2023-11-02T17:48:28.000+01:00"}}, "default_branch": "master", "installation_id": "1802a3a5-c387-4631-8710-dbc961f39d8c"
-    }
-    """
-    body = json.loads(raw_body)
-
-    installation_id = str(body["installation_id"])
-    repos_added = [body]
-    repos_deleted = []
-    repos_pushed = []
-
-    org_id = "org_s76pU1v8LAYhTOWB"
-
-    handle_gitlab_events.remote(
-        installation_id,
-        org_id,
-        repos_added,
-        repos_deleted,
-        repos_pushed,
-    )
-
-
-@app.local_entrypoint()
-def local_connect() -> None:
-    presigned_url = "https://development-codebase-dropzone.s3.us-east-1.amazonaws.com/codebases/6b00f9ade1094692d388c5dc385d7dccc474504aa5778cb5389f732f36ef641/spam-detection.zip?response-content-disposition=inline&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEDcaCXVzLWVhc3QtMSJHMEUCIDb4lgoSFbgsjOCrn8KqTgEvJCqneR7D%2FLoBicug%2FN8VAiEAxqEgXXbcUAx5QF1dgCBZKM%2Fn3sST6vJEQUpKoLTl%2BEsqtQQITxABGgw1NTAwODI3NjExMDkiDOCQGpznimsTef0tFyqSBLjkfZ44%2FFeWpkDD04jMWokfR1rBPrTU9dBLze%2FNIcI6uHp6Fw60wyQomXxV4Tb3dV7v9GHCRfr97N%2BzsnmxVNt%2FNCjx02HHGa7AiGFqr%2FcLyOWMDmT%2BB%2FXl3yEBwcv4zGeJtKgDt4q%2FnkS9v3PszUAvaBKO8XudD8JM6AaEL1W5LGQ1MQmIRn45gYI4RVA4sUqQOrEFWMgPPdOXoNH%2BDiOaqFdMdLpQuJNEcg7HNyLPb2%2BR6CdkxfYEAuoHXESy8gU4xNPm2ZsDRCsyDfyernHiEKHAY9e%2BxceWUonvhlHWZzdxWEW0djo2fSDO44Q6WvdqDGKFIfJt%2Bexn5dEfij5iScD4ZuKpQAsrxPA9NsUOf%2Fd17OqzTj7mSIchaUaNHpqYVDsFx%2B0ciBAL%2B224TbKZ5Wh3mQ1cCQPmI7YW9Ww7lKRoP44RJt4kZp38oT8sf4adigJ8ZfK%2FHk%2Fv%2BpPtIVA9T%2FQj1ghwXRnECI7ayWf2ttgR%2F3HMz6eDfYkjEiwiG1DLT%2FDUN56jK3srUDkZ2AxXM4eX%2BYBb5jjGc6Idn2zeS%2F%2FOhPoHW%2F%2Fd8g5ZlIjwTGH65CF4%2FHAUSfrn8sH%2B5BmVofxovg%2BQfnYIbsPh2RhaDBbMsBIwe%2FS7T3tOLqotrZZaHHC%2BiYS3e0h89qM99JtrdNaou%2FBpg1vH0h5KB1rucJVZGs%2FmUyDjGOSN4VZnASuXMP27j70GOsUCNX74rhYcMEGe2YvXpi0vfWVque7MXHUOVBHv2XIXsd2DFTxqpzdViHNiusKhpoLx6Pd1i1Z0p%2BPvafxwO3jboHkXf8j3lRpcYpO8A5jyxnXBOp0rkpMt12lm4kjQkk18GGP5klw6fEjnZIf3McPF4CUhX5LVJbwXhagg7f7Cfu6PT8qBkkhpqsMRCy6kqyL8yfaAKhKdg8JZCxFqdr6ZsBxgpNzq3uktJfzy8hgUATqGSsm7qBQUXJUy1hCJ%2B9OYWHlZaGvqxBd3bznWaGfV%2Bx4a95o7z0MRZyw0%2FP1Nzwj%2Fm0j6Q%2FFO9W81zA7T7dLNYP8kc5lp6YsaiX04C1PVeoeI38dcg9DMm71aYS56AVEPSb%2Bf5GmsQtsLt22KYIpI%2F6ph8S%2F9PsDkWsR5xTm1B7cnzKE7PB8bMNGx2zYE2q6v1qSosQ%3D%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAYAE342GKXYB6FPCY%2F20250205%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20250205T220805Z&X-Amz-Expires=7200&X-Amz-SignedHeaders=host&X-Amz-Signature=942c1c5225bce1d7517927819c71a65dd46f8c48dba33239b12cd193937ca0a4"
-    archive_name = "spam-detection.zip"
-    org_id = "org_s76pU1v8LAYhTOWB"
-    provider = "github"
-    version_id = "db0b396f-8902-4325-98f4-b92dfb44b679"
-
-    run_codebase_connection.remote(
-        presigned_url,
-        archive_name,
-        org_id,
-        version_id,
-        provider,
-    )
-    # inspect_db.remote(version_id = 'e308eccc-8105-4cd4-8163-c591b507057d')
-
-
-@app.local_entrypoint()
-def github_auth_change() -> None:
-    import json
-
-    org_id = "org_s76pU1v8LAYhTOWB"
-
-    remove_event = json.loads("""
-    {
-        "action": "removed",
-        "installation": {
-            "id": 60598324,
-            "client_id": "Iv1.2cdbf00b132438f4",
-            "account": {
-            "login": "ghiotto1",
-            "id": 1228798,
-            "node_id": "MDQ6VXNlcjEyMjg3OTg=",
-            "avatar_url": "https://avatars.githubusercontent.com/u/1228798?v=4",
-            "gravatar_id": "",
-            "url": "https://api.github.com/users/ghiotto1",
-            "html_url": "https://github.com/ghiotto1",
-            "followers_url": "https://api.github.com/users/ghiotto1/followers",
-            "following_url": "https://api.github.com/users/ghiotto1/following{/other_user}",
-            "gists_url": "https://api.github.com/users/ghiotto1/gists{/gist_id}",
-            "starred_url": "https://api.github.com/users/ghiotto1/starred{/owner}{/repo}",
-            "subscriptions_url": "https://api.github.com/users/ghiotto1/subscriptions",
-            "organizations_url": "https://api.github.com/users/ghiotto1/orgs",
-            "repos_url": "https://api.github.com/users/ghiotto1/repos",
-            "events_url": "https://api.github.com/users/ghiotto1/events{/privacy}",
-            "received_events_url": "https://api.github.com/users/ghiotto1/received_events",
-            "type": "User",
-            "user_view_type": "public",
-            "site_admin": false
-            },
-            "repository_selection": "selected",
-            "access_tokens_url": "https://api.github.com/app/installations/60597730/access_tokens",
-            "repositories_url": "https://api.github.com/installation/repositories",
-            "html_url": "https://github.com/settings/installations/60597730",
-            "app_id": 869041,
-            "app_slug": "driverai-gh-demo",
-            "target_id": 1228798,
-            "target_type": "User",
-            "permissions": {
-            "contents": "read",
-            "metadata": "read",
-            "pull_requests": "read",
-            "repository_hooks": "read"
-            },
-            "events": [
-            "create",
-            "delete",
-            "fork",
-            "membership",
-            "organization",
-            "pull_request",
-            "push",
-            "repository"
-            ],
-            "created_at": "2025-02-05T13:30:32.000-08:00",
-            "updated_at": "2025-02-05T13:35:25.000-08:00",
-            "single_file_name": null,
-            "has_multiple_single_files": false,
-            "single_file_paths": [
-
-            ],
-            "suspended_by": null,
-            "suspended_at": null
-        },
-        "repository_selection": "selected",
-        "repositories_added": [
-
-        ],
-        "repositories_removed": [
-            {
-            "id": 10464543,
-            "node_id": "MDEwOlJlcG9zaXRvcnkxMDQ2NDU0Mw==",
-            "name": "dotfiles",
-            "full_name": "ghiotto1/dotfiles",
-            "private": false
-            }
-        ],
-        "requester": null,
-        "sender": {
-            "login": "ghiotto1",
-            "id": 1228798,
-            "node_id": "MDQ6VXNlcjEyMjg3OTg=",
-            "avatar_url": "https://avatars.githubusercontent.com/u/1228798?v=4",
-            "gravatar_id": "",
-            "url": "https://api.github.com/users/ghiotto1",
-            "html_url": "https://github.com/ghiotto1",
-            "followers_url": "https://api.github.com/users/ghiotto1/followers",
-            "following_url": "https://api.github.com/users/ghiotto1/following{/other_user}",
-            "gists_url": "https://api.github.com/users/ghiotto1/gists{/gist_id}",
-            "starred_url": "https://api.github.com/users/ghiotto1/starred{/owner}{/repo}",
-            "subscriptions_url": "https://api.github.com/users/ghiotto1/subscriptions",
-            "organizations_url": "https://api.github.com/users/ghiotto1/orgs",
-            "repos_url": "https://api.github.com/users/ghiotto1/repos",
-            "events_url": "https://api.github.com/users/ghiotto1/events{/privacy}",
-            "received_events_url": "https://api.github.com/users/ghiotto1/received_events",
-            "type": "User",
-            "user_view_type": "public",
-            "site_admin": false
-        }
-    }
-    """)
-    add_github_event = json.loads("""
-        {
-        "action": "added",
-        "installation": {
-            "id": 60598324,
-            "client_id": "Iv1.2cdbf00b132438f4",
-            "account": {
-            "login": "ghiotto1",
-            "id": 1228798,
-            "node_id": "MDQ6VXNlcjEyMjg3OTg=",
-            "avatar_url": "https://avatars.githubusercontent.com/u/1228798?v=4",
-            "gravatar_id": "",
-            "url": "https://api.github.com/users/ghiotto1",
-            "html_url": "https://github.com/ghiotto1",
-            "followers_url": "https://api.github.com/users/ghiotto1/followers",
-            "following_url": "https://api.github.com/users/ghiotto1/following{/other_user}",
-            "gists_url": "https://api.github.com/users/ghiotto1/gists{/gist_id}",
-            "starred_url": "https://api.github.com/users/ghiotto1/starred{/owner}{/repo}",
-            "subscriptions_url": "https://api.github.com/users/ghiotto1/subscriptions",
-            "organizations_url": "https://api.github.com/users/ghiotto1/orgs",
-            "repos_url": "https://api.github.com/users/ghiotto1/repos",
-            "events_url": "https://api.github.com/users/ghiotto1/events{/privacy}",
-            "received_events_url": "https://api.github.com/users/ghiotto1/received_events",
-            "type": "User",
-            "user_view_type": "public",
-            "site_admin": false
-            },
-            "repository_selection": "selected",
-            "access_tokens_url": "https://api.github.com/app/installations/60597730/access_tokens",
-            "repositories_url": "https://api.github.com/installation/repositories",
-            "html_url": "https://github.com/settings/installations/60597730",
-            "app_id": 869041,
-            "app_slug": "driverai-gh-demo",
-            "target_id": 1228798,
-            "target_type": "User",
-            "permissions": {
-            "contents": "read",
-            "metadata": "read",
-            "pull_requests": "read",
-            "repository_hooks": "read"
-            },
-            "events": [
-            "create",
-            "delete",
-            "fork",
-            "membership",
-            "organization",
-            "pull_request",
-            "push",
-            "repository"
-            ],
-            "created_at": "2025-02-05T13:30:32.000-08:00",
-            "updated_at": "2025-02-05T13:35:25.000-08:00",
-            "single_file_name": null,
-            "has_multiple_single_files": false,
-            "single_file_paths": [
-
-            ],
-            "suspended_by": null,
-            "suspended_at": null
-        },
-        "repository_selection": "selected",
-        "repositories_added": [
-            {
-            "id": 116281345,
-            "node_id": "MDEwOlJlcG9zaXRvcnkxMTYyODEzNDU=",
-            "name": "spam-detection",
-            "full_name": "ghiotto1/spam-detection",
-            "private": false
-            }
-        ],
-        "repositories_removed": [
-
-        ],
-        "requester": null,
-        "sender": {
-            "login": "ghiotto1",
-            "id": 1228798,
-            "node_id": "MDQ6VXNlcjEyMjg3OTg=",
-            "avatar_url": "https://avatars.githubusercontent.com/u/1228798?v=4",
-            "gravatar_id": "",
-            "url": "https://api.github.com/users/ghiotto1",
-            "html_url": "https://github.com/ghiotto1",
-            "followers_url": "https://api.github.com/users/ghiotto1/followers",
-            "following_url": "https://api.github.com/users/ghiotto1/following{/other_user}",
-            "gists_url": "https://api.github.com/users/ghiotto1/gists{/gist_id}",
-            "starred_url": "https://api.github.com/users/ghiotto1/starred{/owner}{/repo}",
-            "subscriptions_url": "https://api.github.com/users/ghiotto1/subscriptions",
-            "organizations_url": "https://api.github.com/users/ghiotto1/orgs",
-            "repos_url": "https://api.github.com/users/ghiotto1/repos",
-            "events_url": "https://api.github.com/users/ghiotto1/events{/privacy}",
-            "received_events_url": "https://api.github.com/users/ghiotto1/received_events",
-            "type": "User",
-            "user_view_type": "public",
-            "site_admin": false
-        }
-    }
-    """)
-
-    installation_id = str(add_github_event["installation"]["id"])
-    org_id = "org_s76pU1v8LAYhTOWB"
-    repos_added = []
-    repos_removed = []
-    for repo in add_github_event["repositories_added"]:
-        repos_added.append(
-            {
-                "id": repo["id"],
-                "name": repo["name"],
-                "full_name": repo["full_name"],
-            }
-        )
-    for repo in remove_event["repositories_removed"]:
-        repos_removed.append(
-            {
-                "id": repo["id"],
-                "name": repo["name"],
-                "full_name": repo["full_name"],
-            }
-        )
-    handle_github_events.remote(
-        installation_id,
-        org_id,
-        repos_added,
-        repos_removed,
-        [],
-    )
-
-
-@app.local_entrypoint()
-def github_delete_test() -> None:
-    import json
-
-    body = json.loads("""
-    {
-        "action": "deleted",
-        "installation": {
-            "id": 60598324,
-            "client_id": "Iv1.2cdbf00b132438f4",
-            "account": {
-            "login": "ghiotto1",
-            "id": 1228798,
-            "node_id": "MDQ6VXNlcjEyMjg3OTg=",
-            "avatar_url": "https://avatars.githubusercontent.com/u/1228798?v=4",
-            "gravatar_id": "",
-            "url": "https://api.github.com/users/ghiotto1",
-            "html_url": "https://github.com/ghiotto1",
-            "followers_url": "https://api.github.com/users/ghiotto1/followers",
-            "following_url": "https://api.github.com/users/ghiotto1/following{/other_user}",
-            "gists_url": "https://api.github.com/users/ghiotto1/gists{/gist_id}",
-            "starred_url": "https://api.github.com/users/ghiotto1/starred{/owner}{/repo}",
-            "subscriptions_url": "https://api.github.com/users/ghiotto1/subscriptions",
-            "organizations_url": "https://api.github.com/users/ghiotto1/orgs",
-            "repos_url": "https://api.github.com/users/ghiotto1/repos",
-            "events_url": "https://api.github.com/users/ghiotto1/events{/privacy}",
-            "received_events_url": "https://api.github.com/users/ghiotto1/received_events",
-            "type": "User",
-            "user_view_type": "public",
-            "site_admin": false
-            },
-            "repository_selection": "selected",
-            "access_tokens_url": "https://api.github.com/app/installations/60597730/access_tokens",
-            "repositories_url": "https://api.github.com/installation/repositories",
-            "html_url": "https://github.com/settings/installations/60597730",
-            "app_id": 869041,
-            "app_slug": "driverai-gh-demo",
-            "target_id": 1228798,
-            "target_type": "User",
-            "permissions": {
-            "contents": "read",
-            "metadata": "read",
-            "pull_requests": "read",
-            "repository_hooks": "read"
-            },
-            "events": [
-            "create",
-            "delete",
-            "fork",
-            "membership",
-            "organization",
-            "pull_request",
-            "push",
-            "repository"
-            ],
-            "created_at": "2025-02-05T13:30:32.000-08:00",
-            "updated_at": "2025-02-05T13:35:25.000-08:00",
-            "single_file_name": null,
-            "has_multiple_single_files": false,
-            "single_file_paths": [
-
-            ],
-            "suspended_by": null,
-            "suspended_at": null
-        },
-        "repositories": [
-            {
-            "id": 116281345,
-            "node_id": "MDEwOlJlcG9zaXRvcnkxMTYyODEzNDU=",
-            "name": "spam-detection",
-            "full_name": "ghiotto1/spam-detection",
-            "private": false
-            }
-        ],
-        "sender": {
-            "login": "ghiotto1",
-            "id": 1228798,
-            "node_id": "MDQ6VXNlcjEyMjg3OTg=",
-            "avatar_url": "https://avatars.githubusercontent.com/u/1228798?v=4",
-            "gravatar_id": "",
-            "url": "https://api.github.com/users/ghiotto1",
-            "html_url": "https://github.com/ghiotto1",
-            "followers_url": "https://api.github.com/users/ghiotto1/followers",
-            "following_url": "https://api.github.com/users/ghiotto1/following{/other_user}",
-            "gists_url": "https://api.github.com/users/ghiotto1/gists{/gist_id}",
-            "starred_url": "https://api.github.com/users/ghiotto1/starred{/owner}{/repo}",
-            "subscriptions_url": "https://api.github.com/users/ghiotto1/subscriptions",
-            "organizations_url": "https://api.github.com/users/ghiotto1/orgs",
-            "repos_url": "https://api.github.com/users/ghiotto1/repos",
-            "events_url": "https://api.github.com/users/ghiotto1/events{/privacy}",
-            "received_events_url": "https://api.github.com/users/ghiotto1/received_events",
-            "type": "User",
-            "user_view_type": "public",
-            "site_admin": false
-        }
-    }
-    """)
-    installation_id = str(body["installation"]["id"])
-    org_id = "org_s76pU1v8LAYhTOWB"
-    # repos_added = []
-    repos_removed = []
-    for repo in body["repositories"]:
-        repos_removed.append(
-            {
-                "id": repo["id"],
-                "name": repo["name"],
-                "full_name": repo["full_name"],
-            }
-        )
-
-    handle_github_events.remote(
-        installation_id,
-        org_id,
-        [],
-        repos_removed,
-        [],
-    )
-
-
-@app.local_entrypoint()
 def test_inspect_db() -> None:
     version_str = "db0b396f-8902-4325-98f4-b92dfb44b679"
     inspect_db.remote(version_str)
@@ -1145,14 +665,3 @@ def send_exception_email(exception_details: str) -> None:
         print(f"Email sent: {response.status_code}")
     except Exception as e:
         print(f"Error sending email: {e}")
-
-
-onboarding_and_inspect_image = (
-    modal.Image.debian_slim(python_version="3.12")
-    .add_local_dir(local_path="../../driver_db", remote_path="/driver_db", copy=True)
-    .pip_install("/driver_db")
-    .pip_install("requests")
-    .pip_install("boto3")
-    .pip_install("gitignore-parser")
-    .pip_install("tree-sitter>=0.24.0", "tree-sitter-c>=0.23.4")
-)

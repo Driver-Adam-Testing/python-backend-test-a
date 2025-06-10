@@ -11,9 +11,10 @@ EXTENSION_TO_DELIMITER = {
     ".hpp": "::",
     ".hxx": "::",
     ".py": ".",
+    ".java": ".",
 }
 
-UNSUPPORTED_CHARACTERS_IN_GFM_ANCHORS = ["~"]
+UNSUPPORTED_CHARACTERS_IN_GFM_ANCHORS = ["~", "=", "!", "(", ")", "&", "|", "+"]
 
 
 def extract_markdown_links(text: str) -> list:
@@ -70,18 +71,30 @@ def replace_driver_compatible_links_with_markdown_links(
                 new_url = ""
             if anchor_tag:
                 # TODO: with special character stripping, we need to add an incrementor to the link_name to dedupe in some cases
+                tag_type = anchor_tag.split(":")[0]
                 fqn = ":".join(
                     anchor_tag.split(":")[1:]
                 )  # This remove the CALLABLE/DATA_STRUCTURE prefix
                 delimiter = EXTENSION_TO_DELIMITER.get(file_extension)
+                if file_extension == ".py":
+                    ## Python includes the full module path in the FQN, so we need to strip it down e.g. 'path/to/file.ClassName.methodName'
+                    fqn = ".".join(fqn.split(".")[1:])
                 if delimiter is None:
                     raise ValueError(f"Unsupported file extension: {file_extension}")
                 # Join with "" because Github Flavored Markdown strips out special characters from the auto-anchortags
-                link_name = "".join(
-                    fqn.split(delimiter)[-2:]
-                )  # NOTE: this is strongly coupled to how we're choosing to render the names in the tech docs (e.g. `ClassName::methodName`)
+                print(tag_type)
+                if tag_type == "callable":
+                    link_name = "".join(  # NOTE: we do an empty join here because the GFM anchor tags strip out special characters (including : and .)
+                        fqn.split(delimiter)[-2:]
+                    )  # NOTE: this is strongly coupled to how we're choosing to render the names in the tech docs (e.g. `ClassName::methodName`)
+                    # TODO: entities with namespaces in C++ in the links may be broken here
+                else:
+                    # When documenting data structures, we only display the name of the data structure,
+                    # so we can just take the last part of the FQN.
+                    link_name = fqn.split(delimiter)[-1]
                 for char in UNSUPPORTED_CHARACTERS_IN_GFM_ANCHORS:
                     link_name = link_name.replace(char, "")
+                # link_name = link_name.split("%")[0] #TODO: there is some potential weirdness with URL encoded links.
                 new_url += "#" + link_name
             text = text.replace(link, new_url)
         except ValueError as e:

@@ -620,6 +620,17 @@ def main(
 
 
 @app.local_entrypoint()
+def test_export(
+    version_id: str,
+    install_id: str | None = None,
+) -> None:
+    """Export tech docs to zip"""
+    from modal_funcs import export_tech_docs_to_zip
+
+    export_tech_docs_to_zip.remote(version_id, install_id)
+
+
+@app.local_entrypoint()
 def test_inspect_db() -> None:
     version_str = "db0b396f-8902-4325-98f4-b92dfb44b679"
     inspect_db.remote(version_str)

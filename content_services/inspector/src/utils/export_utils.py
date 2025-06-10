@@ -89,6 +89,8 @@ def replace_driver_compatible_links_with_markdown_links(
                     )  # NOTE: this is strongly coupled to how we're choosing to render the names in the tech docs (e.g. `ClassName::methodName`)
                     # TODO: entities with namespaces in C++ in the links may be broken here
                 else:
+                    # When documenting data structures, we only display the name of the data structure,
+                    # so we can just take the last part of the FQN.
                     link_name = fqn.split(delimiter)[-1]
                 for char in UNSUPPORTED_CHARACTERS_IN_GFM_ANCHORS:
                     link_name = link_name.replace(char, "")

@@ -84,7 +84,7 @@ def replace_driver_compatible_links_with_markdown_links(
                 # Join with "" because Github Flavored Markdown strips out special characters from the auto-anchortags
                 print(tag_type)
                 if tag_type == "callable":
-                    link_name = "".join(
+                    link_name = "".join(  # NOTE: we do an empty join here because the GFM anchor tags strip out special characters (including : and .)
                         fqn.split(delimiter)[-2:]
                     )  # NOTE: this is strongly coupled to how we're choosing to render the names in the tech docs (e.g. `ClassName::methodName`)
                     # TODO: entities with namespaces in C++ in the links may be broken here

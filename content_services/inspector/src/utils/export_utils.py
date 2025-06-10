@@ -92,7 +92,7 @@ def replace_driver_compatible_links_with_markdown_links(
                     link_name = fqn.split(delimiter)[-1]
                 for char in UNSUPPORTED_CHARACTERS_IN_GFM_ANCHORS:
                     link_name = link_name.replace(char, "")
-                link_name = link_name.split("%")[0]
+                # link_name = link_name.split("%")[0] #TODO: there is some potential weirdness with URL encoded links.
                 new_url += "#" + link_name
             text = text.replace(link, new_url)
         except ValueError as e:

@@ -459,6 +459,13 @@ class CppCDriverTree(DriverTree):
                     name: (qualified_identifier) @class.name
                     body: (field_declaration_list)? @class.body
                 ) @class.qualified_definition
+
+                ; class declaration with macro before name
+                ; this is actually an error with tree-sitter parsing that we must handle
+                (function_definition
+                  type: (class_specifier)
+                  declarator: (identifier) @class.name
+                ) @class.macro_definition
               ]
             )
             """
@@ -521,6 +528,8 @@ class CppCDriverTree(DriverTree):
                     name_nodes = rest.get("union.name", [])
                 case {"enum.typedef": [data_structure_node], **rest}:
                     name_nodes = rest.get("enum.name", [])
+                case {"class.macro_definition": [data_structure_node], **rest}:
+                    name_nodes = rest.get("class.name", [])
                 case _:
                     raise DriverTreeError("Unexpected case in extract_data_structures")
 

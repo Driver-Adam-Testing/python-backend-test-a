@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.routes.public import healthcheck
+from app.api.routes.api import healthcheck
 
 api_router = APIRouter()
 

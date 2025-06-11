@@ -112,6 +112,7 @@ def verify_jwt(token: str) -> dict:
     HTTPException(401)
         If the token is invalid or cannot be verified.
     """
+
     header = jwt.get_unverified_header(token)
     rsa_key = _get_rsa_key(get_jwks(), header["kid"])
     if not rsa_key:
@@ -147,6 +148,7 @@ def verify_api_key(raw_key: str) -> dict:
 
         now = int(time.time())
         # Shape chosen to match Auth0 tokens consumed elsewhere
+        # TODO: Either ensure that this user exists in Auth0 (or use a cache)
         return {
             "org_id": rec.organization_id,
             "org_name": "",  # TODO: populate when available

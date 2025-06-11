@@ -1,3 +1,19 @@
+"""
+auth.py - authentication helpers for Driver FastAPI apps.
+
+Responsibilities
+----------------
+* Verify & decode Auth0 JWTs (RS256).
+* Verify API keys stored in the v2_api_key table.
+* Provide FastAPI dependencies:
+    * `require_jwt`
+    * `require_api_key`
+* Helper Pydantic models (`User`, `M2M`).
+* Permission dependency factory (`require_permission`).
+
+NOTE: Path based auth enforcement moved to router level dependencies.
+"""
+
 from __future__ import annotations
 
 import json
@@ -7,26 +23,22 @@ from urllib.request import urlopen
 
 import jwt
 from database.models_v2 import ApiKey
-from fastapi import Depends, HTTPException, Request, Response
-from fastapi.responses import JSONResponse
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi import Depends, HTTPException
+from fastapi.security import APIKeyHeader, HTTPAuthorizationCredentials, HTTPBearer
 from jwt import PyJWTError
 from jwt.algorithms import RSAAlgorithm
 from pydantic import BaseModel, Field
 from shared.utils.decorators import expiring_cache
 from sqlmodel import select
-from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.core.config import settings
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-# ---------------------------------------------------------------------
-#  CONSTANTS
-# ---------------------------------------------------------------------
 ALGORITHMS = ["RS256"]
 
+# Permission strings we embed in JWTs
 ORG_MANAGER = "organization:management"
 CONTENT_EDITOR = "content:editor"
 CONTENT_READONLY = "content:readonly"
@@ -34,121 +46,24 @@ USAGE_CREDITOR = "usage_credit:management"
 SUBSCRIPTION_MANAGER = "subscription:management"
 GIT_PROVIDER_MANAGER = "git_provider:management"
 
-UNPROTECTED_PATHS = [
+# Paths that do NOT require authentication
+UNPROTECTED_PATHS = {
     "/login",
-    "/api/v1/healthcheck/",
+    "/studio/v1/healthcheck/",
     "/docs",
-    "/api/v1/openapi.json",
+    "/studio/v1/openapi.json",
     "/redoc",
-    "/api/v1/sandbox/apollo-sandbox/",
-    "/api/v1/git-provider/github/webhook",
-    "/api/v1/git-provider/github/callback",
-    "/api/v1/git-provider/app/callback",
-    "/api/v1/git-provider/app/webhook",
-]
+    "/studio/v1/sandbox/apollo-sandbox/",
+    "/studio/v1/git-provider/github/webhook",
+    "/studio/v1/git-provider/github/callback",
+    "/studio/v1/git-provider/app/callback",
+    "/studio/v1/git-provider/app/webhook",
+}
 
-JWT_SCHEME = HTTPBearer(auto_error=False)  # we handle errors ourselves
 API_KEY_HEADER_NAME = "X-API-Key"
 
-
-@expiring_cache(3600)
-def get_jwks() -> dict:
-    jwks_url = f"https://{settings.AUTH0_DOMAIN}/.well-known/jwks.json"
-    return json.loads(urlopen(jwks_url).read())
-
-
-def get_rsa_key(jwks: dict, kid: str) -> dict:
-    for key in jwks["keys"]:
-        if key["kid"] == kid:
-            return {
-                "kty": key["kty"],
-                "kid": key["kid"],
-                "use": key["use"],
-                "n": key["n"],
-                "e": key["e"],
-            }
-    return {}
-
-
-def verify_jwt(token: str) -> dict:
-    """Decode & verify Auth0 RS256 JWT."""
-    unverified_header = jwt.get_unverified_header(token)
-    rsa_key = get_rsa_key(get_jwks(), unverified_header["kid"])
-    if not rsa_key:
-        raise HTTPException(status_code=401, detail="Unable to find appropriate key")
-
-    try:
-        public_key = RSAAlgorithm.from_jwk(json.dumps(rsa_key))
-        return jwt.decode(
-            token,
-            public_key,
-            algorithms=ALGORITHMS,
-            audience=settings.AUTH0_AUDIENCE,
-            issuer=f"https://{settings.AUTH0_DOMAIN}/",
-        )
-    except PyJWTError:
-        raise HTTPException(status_code=401, detail="Unauthorized")
-
-
-def verify_api_key(key: str) -> dict:
-    """
-    Look up the ApiKey row with the supplied raw key, and build a payload resembling Auth0's so the User model still works.
-    """
-    from database.db import get_session
-
-    with get_session() as db:
-        key = db.exec(select(ApiKey).where(ApiKey.salted_key == key)).one_or_none()
-        if key:
-            # Build a payload resembling Auth0's so the User model still works
-            now = int(time.time())
-            return {
-                "org_id": key.organization_id,
-                "org_name": "",  # fill if you have it
-                "sub": key.user_id,
-                "iss": "api_key",
-                "aud": [],
-                "iat": now,
-                "exp": now + 10 * 365 * 24 * 3600,  # arbitrary distant future
-                "scope": "",
-                "azp": "",
-                "permissions": [],
-                "user_email": "",
-                "user_full_name": "",
-            }
-    raise HTTPException(status_code=401, detail="Invalid API key")
-
-
-class AuthMiddleware(BaseHTTPMiddleware):
-    async def dispatch(
-        self, request: Request, call_next: Callable
-    ) -> JSONResponse | Response:
-        if (
-            request.method in ("GET", "POST") and request.url.path in UNPROTECTED_PATHS
-        ) or request.method == "OPTIONS":
-            # health checks & other public routes
-            return await call_next(request)
-
-        auth_header = request.headers.get("Authorization")
-        api_key_header = request.headers.get(API_KEY_HEADER_NAME)
-
-        try:
-            if auth_header and auth_header.startswith("Bearer "):
-                token = auth_header[len("Bearer ") :]
-                request.state.token_payload = verify_jwt(token)
-
-            elif api_key_header:
-                request.state.token_payload = verify_api_key(api_key_header)
-
-            else:
-                return JSONResponse(
-                    status_code=401, content="Missing authentication credentials"
-                )
-
-        except HTTPException as exc:
-            return JSONResponse(status_code=exc.status_code, content=exc.detail)
-
-        # validated → continue to route
-        return await call_next(request)
+_jwt_scheme = HTTPBearer(auto_error=False)
+_api_key_scheme = APIKeyHeader(name=API_KEY_HEADER_NAME, auto_error=False)
 
 
 class User(BaseModel):
@@ -173,48 +88,113 @@ class M2M(BaseModel):
     audience: list[str] | str = Field(..., alias="aud")
     issued_at: int = Field(..., alias="iat")
     expiration: int = Field(..., alias="exp")
-    authorized_party: str = Field(..., alias="azp")
+    authorized_party: str = Field("", alias="azp")
 
 
-# ---------------------------------------------------------------------
-def get_token_payload(request: Request) -> dict:
-    return request.state.token_payload
+@expiring_cache(3600)
+def get_jwks() -> dict:
+    """Fetch Auth0 JWKS (memoised for 1 hour)."""
+    jwks_url = f"https://{settings.AUTH0_DOMAIN}/.well-known/jwks.json"
+    return json.loads(urlopen(jwks_url).read())
 
 
-def get_current_user(
-    credentials: HTTPAuthorizationCredentials | None = Depends(JWT_SCHEME),
-    token_payload: dict = Depends(get_token_payload),
-) -> User | None:
-    # For both JWT and API-key payloads we set "sub" → user id
-    if token_payload.get("sub"):
-        return User(**token_payload)
-    return None
+def _get_rsa_key(jwks: dict, kid: str) -> dict:
+    """Return the JWK that matches *kid* (or {})."""
+    return next((k for k in jwks["keys"] if k["kid"] == kid), {})
 
 
-def get_current_m2m(
-    credentials: HTTPAuthorizationCredentials | None = Depends(JWT_SCHEME),
-    token_payload: dict = Depends(get_token_payload),
-) -> M2M | None:
-    # Treat payloads that have *no* userId/sub as M2M
-    if not token_payload.get("sub"):
-        return M2M(**token_payload)
-    return None
+def verify_jwt(token: str) -> dict:
+    """
+    Verify an Auth0 RS256 JWT and return its payload.
+
+    Raises
+    ------
+    HTTPException(401)
+        If the token is invalid or cannot be verified.
+    """
+    header = jwt.get_unverified_header(token)
+    rsa_key = _get_rsa_key(get_jwks(), header["kid"])
+    if not rsa_key:
+        raise HTTPException(401, "Unable to find appropriate key")
+
+    try:
+        public_key = RSAAlgorithm.from_jwk(json.dumps(rsa_key))
+        return jwt.decode(
+            token,
+            public_key,
+            algorithms=ALGORITHMS,
+            audience=settings.AUTH0_AUDIENCE,
+            issuer=f"https://{settings.AUTH0_DOMAIN}/",
+        )
+    except PyJWTError:
+        raise HTTPException(401, "Unauthorized")
+
+
+def verify_api_key(raw_key: str) -> dict:
+    """
+    Validate *raw_key* against the v2_api_key table and return a
+    JWT-shaped payload so downstream code can treat it like a user JWT.
+    """
+    from database.db import get_session
+
+    with get_session() as db:
+        rec: ApiKey | None = db.exec(
+            select(ApiKey).where(ApiKey.key == raw_key)
+        ).one_or_none()
+
+        if not rec:
+            raise HTTPException(401, "Invalid API key")
+
+        now = int(time.time())
+        # Shape chosen to match Auth0 tokens consumed elsewhere
+        return {
+            "org_id": rec.organization_id,
+            "org_name": "",  # TODO: populate when available
+            "sub": rec.user_id,
+            "iss": "api_key",
+            "aud": [],
+            "iat": now,
+            "exp": now + 10 * 365 * 24 * 3600,  # 10 years
+            "scope": "",
+            "azp": "",
+            "permissions": [],
+            "user_email": "",
+            "user_full_name": "",
+        }
+
+
+def require_jwt(
+    creds: HTTPAuthorizationCredentials | None = Depends(_jwt_scheme),
+) -> dict:
+    """Dependency: assert request carries a valid Bearer token."""
+    if not creds or not creds.credentials:
+        raise HTTPException(401, "Missing Bearer token")
+    return User(**verify_jwt(creds.credentials))
+
+
+def require_api_key(key: str | None = Depends(_api_key_scheme)) -> dict:
+    """Dependency: assert request carries a valid X-API-Key header."""
+    if not key:
+        raise HTTPException(401, "Missing X-API-Key header")
+    return User(**verify_api_key(key))
+
+
+# Aliases that save typing in route signatures
+UserToken = Annotated[User, Depends(require_jwt)]
+M2MToken = Annotated[M2M, Depends(require_api_key)]
 
 
 def require_permission(permission: str) -> Callable[[dict[str, Any]], bool]:
-    def dependency(
-        user: dict[str, Any] = Depends(get_current_user),
-        token_payload: dict[str, Any] = Depends(get_token_payload),
-    ) -> bool:
-        if permission not in token_payload.get("permissions", []):
-            raise HTTPException(status_code=403, detail="Insufficient permissions")
+    """Factory that returns a dependency enforcing *permission* in JWT."""
+
+    def dep(payload: dict[str, Any] = Depends(require_jwt)) -> bool:
+        if permission not in payload.get("permissions", []):
+            raise HTTPException(403, "Insufficient permissions")
         return True
 
-    return dependency
+    return dep
 
 
-UserToken = Annotated[User, Depends(get_current_user)]
-M2MToken = Annotated[M2M, Depends(get_current_m2m)]
 ContentEditorPermission = Depends(require_permission(CONTENT_EDITOR))
 ContentReadonlyPermission = Depends(require_permission(CONTENT_READONLY))
 OrgManagerPermission = Depends(require_permission(ORG_MANAGER))

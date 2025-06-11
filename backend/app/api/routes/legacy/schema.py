@@ -1,11 +1,12 @@
 import strawberry
-from fastapi import Depends
-from strawberry.fastapi import BaseContext, GraphQLRouter
-from strawberry.schema.config import StrawberryConfig
-
-from app.api.auth import get_current_m2m, get_current_user
+from app.api.auth import require_jwt
 from app.api.routes.legacy.scalars import JSON
 from app.api.session import get_db
+from fastapi import Depends
+from pydantic import BaseModel
+from sqlmodel import Session
+from strawberry.fastapi import BaseContext, GraphQLRouter
+from strawberry.schema.config import StrawberryConfig
 
 from .logging_extension import LoggingExtension
 from .mutations import Mutation
@@ -21,7 +22,7 @@ schema = strawberry.Schema(
 
 
 class Context(BaseContext):
-    def __init__(self, session, user, m2m):
+    def __init__(self, session: Session, user: BaseModel, m2m: BaseModel) -> None:
         self.session = session
         self.user = user
         self.m2m = m2m
@@ -29,9 +30,9 @@ class Context(BaseContext):
 
 
 async def get_context(
-    user=Depends(get_current_user),
-    m2m=Depends(get_current_m2m),
-    session=Depends(get_db),
+    user: BaseModel = Depends(require_jwt),
+    m2m: BaseModel = Depends(require_jwt),
+    session: Session = Depends(get_db),
 ) -> Context:
     context = Context(session, user, m2m)
     return context

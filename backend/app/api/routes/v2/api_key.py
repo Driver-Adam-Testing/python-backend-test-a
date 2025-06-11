@@ -1,4 +1,3 @@
-import secrets
 from uuid import UUID
 
 from database.models_v2 import ApiKey
@@ -22,9 +21,8 @@ def create_api_key(
     session: CurrentSession,
     user: UserToken,
 ) -> ApiKey:
-    salted_key = secrets.token_hex(32)
+    print(user)
     api_key = ApiKey(
-        salted_key=salted_key,
         organization_id=user.organization_id,
         user_id=user.user_id,
     )

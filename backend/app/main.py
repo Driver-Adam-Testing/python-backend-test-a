@@ -6,13 +6,13 @@ from logging import Formatter, LogRecord
 from typing import Literal
 
 import sentry_sdk
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
 from starlette.middleware.cors import CORSMiddleware
 
 from app.api.api_router import api_router
-from app.api.auth import AuthMiddleware
+from app.api.auth import require_api_key, require_jwt
 from app.api.logging_middleware import LoggingMiddleware
 from app.api.studio_router import studio_router
 from app.core.config import settings
@@ -117,10 +117,13 @@ if settings.BACKEND_CORS_ORIGINS:
     )
 
 app.add_middleware(LoggingMiddleware)
-app.add_middleware(AuthMiddleware)
 
-app.include_router(studio_router, prefix=settings.STUDIO_V1_STR)
-app.include_router(api_router, prefix=settings.API_V1_STR)
+app.include_router(
+    studio_router, prefix=settings.STUDIO_V1_STR, dependencies=[Depends(require_jwt)]
+)
+app.include_router(
+    api_router, prefix=settings.API_V1_STR, dependencies=[Depends(require_api_key)]
+)
 
 
 @app.exception_handler(Exception)

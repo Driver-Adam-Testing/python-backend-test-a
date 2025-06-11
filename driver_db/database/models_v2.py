@@ -1,4 +1,6 @@
 import hashlib
+import secrets
+import string
 import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
@@ -17,6 +19,7 @@ from sqlalchemy import (
     DateTime,
     Index,
     Integer,
+    String,
     desc,
     func,
 )
@@ -426,8 +429,19 @@ class AutoDocStatusHistory(SQLModel, table=True):
 
 class ApiKey(SQLModel, table=True):
     __tablename__ = "v2_api_key"
+
+    def gen_drv_key() -> str:
+        PREFIX = "drv"
+        ENTROPY = 32
+        ALPHABET = string.ascii_letters + string.digits
+        random_part = "".join(secrets.choice(ALPHABET) for _ in range(ENTROPY))
+        return f"{PREFIX}-{random_part}"
+
     id: UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    salted_key: str = Field(nullable=False)
+    key: str = Field(
+        default_factory=gen_drv_key,
+        sa_column=Column(String, unique=True, nullable=False, index=True),
+    )
     organization_id: str = Field(nullable=False)
     user_id: str = Field(nullable=False)
     created_at: None | datetime = Field(

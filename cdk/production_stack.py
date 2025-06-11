@@ -40,7 +40,7 @@ class ProductionStack(Stack):
             "AssetOnboardingLambda",
             AssetOnboardingLambdaParams(
                 environment="production",
-                api_url="https://api.us1.driverai.com/api/v1",
+                api_url="https://api.us1.driverai.com/studio/v1",
                 auth0_url="https://auth.driverai.com",
                 dropzone_bucket=self.backend.dropzone_bucket,
                 use_legacy_dropzone=True,

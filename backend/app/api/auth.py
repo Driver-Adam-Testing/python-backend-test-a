@@ -1,19 +1,3 @@
-"""
-auth.py - authentication helpers for Driver FastAPI apps.
-
-Responsibilities
-----------------
-* Verify & decode Auth0 JWTs (RS256).
-* Verify API keys stored in the v2_api_key table.
-* Provide FastAPI dependencies:
-    * `require_jwt`
-    * `require_api_key`
-* Helper Pydantic models (`User`, `M2M`).
-* Permission dependency factory (`require_permission`).
-
-NOTE: Path based auth enforcement moved to router level dependencies.
-"""
-
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Annotated, Any

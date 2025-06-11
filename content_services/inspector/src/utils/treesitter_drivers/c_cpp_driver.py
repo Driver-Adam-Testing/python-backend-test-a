@@ -153,6 +153,13 @@ def find_identifier_node(node: tree_sitter.Node) -> tree_sitter.Node | None:
     return None
 
 
+def contains_node_types(node: tree_sitter.Node, node_types: set[str]) -> bool:
+    """Recursively check if a node contains any of the specified node types anywhere in its subtree"""
+    return node.type in node_types or any(
+        contains_node_types(child, node_types) for child in node.children
+    )
+
+
 @dataclass
 class BaseClassInfo:
     name: str
@@ -694,9 +701,9 @@ class CppCDriverTree(DriverTree):
 
             start_line, end_line = self.get_node_line_range(decl_node)
 
-            if any(child.type == "function_declarator" for child in decl_node.children):
-                continue
-            if any(child.type == "type_definition" for child in decl_node.children):
+            if contains_node_types(
+                decl_node, {"function_declarator", "type_definition"}
+            ):
                 continue
 
             # Find the identifier node(s) in this declaration

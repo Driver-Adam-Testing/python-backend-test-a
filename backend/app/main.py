@@ -22,10 +22,11 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.cors import CORSMiddleware
 
 from app.api.api_router import api_router
-from app.api.auth import require_api_key, require_jwt
 from app.api.logging_middleware import LoggingMiddleware
 from app.api.studio_router import studio_router
 from app.api.unprotected_router import unprotected_router  # NEW
+from app.auth.api_key_middleware import require_api_key
+from app.auth.jwt_middleware import require_jwt
 from app.core.config import settings
 
 if TYPE_CHECKING:

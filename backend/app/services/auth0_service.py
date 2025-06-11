@@ -4,7 +4,8 @@ from auth0.authentication import Database, GetToken, Users
 from auth0.management import Auth0
 from fastapi.encoders import jsonable_encoder
 
-from app.api.auth import ORG_MANAGER, UserToken
+from app.auth.models import User as UserToken
+from app.auth.permissions import ORG_MANAGER
 from app.core.config import settings
 from app.schemas.auth0_schema import (
     CreateInvitationInput,
@@ -23,6 +24,12 @@ class Auth0Service:
         self.auth0_mgmt_client_secret = settings.AUTH0_MGMT_API_CLIENT_SECRET
         self.auth0_domain = settings.AUTH0_DOMAIN
         self.auth0_client_id = settings.AUTH0_CLIENT_ID
+
+        print(self.auth0_mgmt_domain)
+        print(self.auth0_mgmt_client_id)
+        print(self.auth0_mgmt_client_secret)
+        print(self.auth0_domain)
+        print(self.auth0_client_id)
 
     def get_mgmt_api_token(self: "Auth0Service") -> str:
         get_token = GetToken(
@@ -66,6 +73,7 @@ class Auth0Service:
         try:
             mgmt_api_token = self.get_mgmt_api_token()
             management_api = Auth0(self.auth0_mgmt_domain, mgmt_api_token)
+
             return management_api.users.list_organizations(user.user_id, per_page=100)
         except Exception as e:
             logger.error(

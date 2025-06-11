@@ -1,7 +1,7 @@
 import strawberry
-from app.api.auth import require_jwt
 from app.api.routes.legacy.scalars import JSON
 from app.api.session import get_db
+from app.auth.jwt_middleware import require_jwt
 from fastapi import Depends
 from pydantic import BaseModel
 from sqlmodel import Session

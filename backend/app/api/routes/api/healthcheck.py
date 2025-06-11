@@ -9,7 +9,7 @@ router = APIRouter()
 @router.get("/")
 async def healthcheck() -> None:
     return {
-        "status": f"healthy - but unsure of myself. (how relatable) it's {datetime.now()}"
+        "status": f"healthy, but unsure of myself. (how relatable) it's {datetime.now()} right now"
     }
 
 

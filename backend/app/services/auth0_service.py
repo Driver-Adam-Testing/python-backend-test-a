@@ -25,12 +25,6 @@ class Auth0Service:
         self.auth0_domain = settings.AUTH0_DOMAIN
         self.auth0_client_id = settings.AUTH0_CLIENT_ID
 
-        print(self.auth0_mgmt_domain)
-        print(self.auth0_mgmt_client_id)
-        print(self.auth0_mgmt_client_secret)
-        print(self.auth0_domain)
-        print(self.auth0_client_id)
-
     def get_mgmt_api_token(self: "Auth0Service") -> str:
         get_token = GetToken(
             self.auth0_mgmt_domain,

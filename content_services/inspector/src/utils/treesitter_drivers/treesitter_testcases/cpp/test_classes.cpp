@@ -390,6 +390,14 @@ public:
     }
 };
 
+#define THIS_IS_A_MACRO
+class THIS_IS_A_MACRO ClassName {
+public:
+    void method() {
+        std::cout << "Method in THIS_IS_A_MACRO ClassName" << std::endl;
+    }
+};
+
 int main() {
     BasicClass bc(42);
     Circle circle(5.0);

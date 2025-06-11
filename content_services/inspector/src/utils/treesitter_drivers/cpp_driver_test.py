@@ -243,6 +243,7 @@ def classes_cpp_code() -> str:
         ),  # Actual class definition, not forward declaration at line 339
         ("AnonymousNamespaceClass", 371, 376),
         ("Nested", 386, 391),
+        ("ClassName", 394, 399),
     ],
 )
 def test_extract_class_definitions(

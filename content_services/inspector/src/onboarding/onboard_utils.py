@@ -715,18 +715,17 @@ def calculate_directory_stats_v2(
 
     from shared.usage.utils import bytes_to_sloc
 
-    # Pre-filter valid directories
+    # Pre-filter valid directories using list comprehension
     driverignore = load_driverignore(root_dir)
-    valid_dirs = []
-    for directory in all_directories:
-        dir_path = Path(directory)
-        is_ignored = is_driverignored(dir_path, driverignore)
-        if not is_on_blacklist(dir_path) and not is_ignored:
-            valid_dirs.append(directory)
+    valid_dirs = {
+        directory
+        for directory in all_directories
+        if not is_on_blacklist(Path(directory))
+        and not is_driverignored(Path(directory), driverignore)
+    }
 
-    dir_stats = {}
-    for directory in valid_dirs:
-        dir_stats[directory] = {
+    def create_empty_stats() -> dict[str, int | defaultdict]:
+        return {
             "analyzable_bytes": 0,
             "analyzable_files": 0,
             "total_bytes": 0,
@@ -737,16 +736,14 @@ def calculate_directory_stats_v2(
             "analyzable_bytes_by_extension": defaultdict(int),
         }
 
-    valid_dirs = set(valid_dirs)
+    dir_stats = {directory: create_empty_stats() for directory in valid_dirs}
 
     for file_path, file_stats in codebase_stats.items():
-        file_parents = []
-        current = file_path.parent
-        while current != temp_dir and current != current.parent:
-            dir_str = str(current)
-            if dir_str in valid_dirs:
-                file_parents.append(dir_str)
-            current = current.parent
+        file_parents = [
+            str(parent)
+            for parent in file_path.parents
+            if parent != temp_dir and str(parent) in valid_dirs
+        ]
 
         # Update stats for all parent directories
         for directory in file_parents:

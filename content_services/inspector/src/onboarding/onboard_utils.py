@@ -528,13 +528,15 @@ def analyze_binary_file(filepath: Path) -> dict:
 
 
 def run_file_stats_and_reencode(
-    local_path: Path, driverignore: Callable | None
+    local_path: Path,
+    codebase_root: Path,
 ) -> dict:
     # Evaluate file-processability before reencoding
     # due to file encoding nastiness w/ binary files
     file_size_processable = evaluate_file_size_processable(local_path)
     is_binary = evaluate_file_binary(local_path)
     is_blacklisted = is_on_blacklist(local_path)
+    driverignore = load_driverignore(codebase_root)
     is_ignored = is_driverignored(local_path, driverignore)
 
     file_stats = {}

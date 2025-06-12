@@ -1,7 +1,12 @@
 import hashlib
 import os
 import re
-from concurrent.futures import ThreadPoolExecutor, wait
+from concurrent.futures import (
+    ProcessPoolExecutor,
+    ThreadPoolExecutor,
+    as_completed,
+    wait,
+)
 from pathlib import Path
 from uuid import uuid4
 
@@ -31,6 +36,26 @@ image = (
         "src/onboarding/languages.yml", "/linguist/languages.yml", copy=True
     )
 )
+
+
+def collect_file_paths(extracted_path: Path) -> tuple[list[Path], list[Path]]:
+    """Collect all files under extracted_path."""
+    all_files = []
+    all_directories = []
+    for root, _, files in os.walk(extracted_path):
+        all_directories.append(root)
+        for filename in files:
+            local_path = Path(root) / filename
+            all_files.append(local_path)
+    return all_files, all_directories
+
+
+def process_file(local_path_and_extracted_path: tuple[Path, Path]) -> tuple[Path, dict]:
+    from onboarding.onboard_utils import run_file_stats_and_reencode
+
+    """Wrapper for multiprocessing, unpacks arguments."""
+    local_path, extracted_path = local_path_and_extracted_path
+    return local_path, run_file_stats_and_reencode(local_path, extracted_path)
 
 
 @app.function(
@@ -481,6 +506,8 @@ def connect_unconnected_repos() -> None:
     timeout=60 * 60 * 9,
     region="us-east",
     max_containers=5,
+    memory=2048,
+    cpu=32.0,
 )
 def run_codebase_connection(
     presigned_url: str,
@@ -512,7 +539,6 @@ def run_codebase_connection(
         is_on_blacklist,
         load_driverignore,
         parse_presigned_url,
-        run_file_stats_and_reencode,
         unpack_archive_to_finalized_path,
     )
     from shared.usage.utils import bytes_to_sloc
@@ -582,22 +608,26 @@ def run_codebase_connection(
         all_directories = []
         codebase_stats = {}
         analyzable_bytes = 0
-        for root, _, files in os.walk(extracted_path):
-            all_directories.append(root)
-            for filename in files:
-                local_path = Path(root) / filename
 
-                file_stats = run_file_stats_and_reencode(
-                    local_path=local_path,
-                    driverignore=driverignore,
-                )
-                codebase_stats[local_path] = file_stats
-                if (
-                    file_stats["is_analyzable"]
-                    and not file_stats["is_blacklisted"]
-                    and not file_stats.get("is_ignored", False)
-                ):
-                    analyzable_bytes += file_stats["size"]
+        all_files, all_directories = collect_file_paths(extracted_path)
+        tasks = [(file_path, extracted_path) for file_path in all_files]
+        with ProcessPoolExecutor(max_workers=24) as executor:
+            futures = {executor.submit(process_file, task): task[0] for task in tasks}
+            for idx, future in enumerate(as_completed(futures)):
+                local_path = futures[future]
+                try:
+                    path, file_stats = future.result()
+                    codebase_stats[path] = file_stats
+                    if (
+                        file_stats["is_analyzable"]
+                        and not file_stats["is_blacklisted"]
+                        and not file_stats.get("is_ignored", False)
+                    ):
+                        analyzable_bytes += file_stats["size"]
+                except Exception as e:
+                    print(f"Error processing {local_path}: {e}")
+                if idx % 100 == 0:
+                    print(f"Processed {idx} files...")
         if analyzable_bytes == 0:
             # TODO: add status_reason to database when available
             print(

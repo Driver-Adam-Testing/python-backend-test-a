@@ -401,8 +401,25 @@ def test_extract_globals(
             fully_qualified_path == ""
         ), f"Expected fully qualified path to be empty, but got: {fully_qualified_path}"
 
+    # Function declarations should NOT be picked up as globals
+    function_declaration_names = {
+        "functionDecl",
+        "fn",
+        "staticFunc",
+        "externFunc",
+        "getStruct",
+        "funcPtr",
+        "getString",
+        "getVolatilePtr",
+    }
+
     for g in globals_found:
-        assert g.name != "localVar"
+        assert (
+            g.name != "localVar"
+        ), "Local variable 'localVar' should not be extracted as global"
+        assert (
+            g.name not in function_declaration_names
+        ), f"Function declaration '{g.name}' should not be extracted as global variable"
 
     dupes = [item for item in extracted if extracted.count(item) > 1]
     assert not dupes, f"Found duplicate declarations: {dupes}"

@@ -533,7 +533,6 @@ def run_codebase_connection(
     )
     from database.models_v2_enums import VersionStatus
     from onboarding.onboard_utils import (
-        calculate_directory_stats,
         create_bucket_if_dne,
         download_file_from_presigned_url,
         parse_presigned_url,
@@ -625,30 +624,44 @@ def run_codebase_connection(
                     print(
                         f"Processed {len(tasks)} files. Analyzable bytes: {analyzable_bytes}."
                     )
-        with ThreadPoolExecutor(max_workers=28) as thread_executor:
-            import time
+        # with ThreadPoolExecutor(max_workers=28) as thread_executor:
+        #     import time
+        #
+        #     start_time = time.time()
+        #     folder_futures = {
+        #         thread_executor.submit(
+        #             calculate_directory_stats,
+        #             directory,
+        #             codebase_stats,
+        #             extracted_path,
+        #             temp_dir,
+        #         )
+        #         for directory in all_directories
+        #     }
+        #     for idx, folder_future in enumerate(as_completed(folder_futures)):
+        #         directory_stats, relative_path = folder_future.result()
+        #         folder_results.append((directory_stats, relative_path))
+        #         if idx % 100 == 0:
+        #             print(f"Processed {idx}/{len(folder_futures)} directories...")
+        #         if idx == len(folder_futures) - 1:
+        #             print(f"Processed {len(folder_futures)} directories")
+        #     print(
+        #         f"Duration for directory stats: {time.time() - start_time:.2f} seconds"
+        #     )
+        import time
 
-            start_time = time.time()
-            folder_futures = {
-                thread_executor.submit(
-                    calculate_directory_stats,
-                    directory,
-                    codebase_stats,
-                    extracted_path,
-                    temp_dir,
-                )
-                for directory in all_directories
-            }
-            for idx, folder_future in enumerate(as_completed(folder_futures)):
-                directory_stats, relative_path = folder_future.result()
-                folder_results.append((directory_stats, relative_path))
-                if idx % 100 == 0:
-                    print(f"Processed {idx}/{len(folder_futures)} directories...")
-                if idx == len(folder_futures) - 1:
-                    print(f"Processed {len(folder_futures)} directories")
-            print(
-                f"Duration for directory stats: {time.time() - start_time:.2f} seconds"
-            )
+        from onboarding.onboard_utils import calculate_directory_stats_v2
+
+        start_time = time.time()
+
+        # O(n) instead of O(n^2) per-dir
+        folder_results = calculate_directory_stats_v2(
+            all_directories, codebase_stats, extracted_path, Path(temp_dir)
+        )
+
+        print(
+            f"Processed {len(folder_results)} directories in {time.time() - start_time:.2f} seconds (O(n) algorithm)"
+        )
         if analyzable_bytes == 0:
             # TODO: add status_reason to database when available
             print(

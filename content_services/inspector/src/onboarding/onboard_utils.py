@@ -705,6 +705,115 @@ def upload_to_s3_with_metadata(
         ) from e
 
 
+def calculate_directory_stats_v2(
+    all_directories: list[Path],
+    codebase_stats: dict[Path, dict],
+    root_dir: Path,
+    temp_dir: Path,
+) -> list[tuple[dict | None, str | None]]:
+    from collections import defaultdict
+
+    from shared.usage.utils import bytes_to_sloc
+
+    # Pre-filter valid directories
+    driverignore = load_driverignore(root_dir)
+    valid_dirs = []
+    for directory in all_directories:
+        dir_path = Path(directory)
+        is_ignored = is_driverignored(dir_path, driverignore)
+        if not is_on_blacklist(dir_path) and not is_ignored:
+            valid_dirs.append(directory)
+
+    dir_stats = {}
+    for directory in valid_dirs:
+        dir_stats[directory] = {
+            "analyzable_bytes": 0,
+            "analyzable_files": 0,
+            "total_bytes": 0,
+            "total_files": 0,
+            "analyzable_files_by_type": defaultdict(int),
+            "analyzable_bytes_by_type": defaultdict(int),
+            "analyzable_files_by_extension": defaultdict(int),
+            "analyzable_bytes_by_extension": defaultdict(int),
+        }
+
+    valid_dirs = set(valid_dirs)
+
+    for file_path, file_stats in codebase_stats.items():
+        file_parents = []
+        current = file_path.parent
+        while current != temp_dir and current != current.parent:
+            dir_str = str(current)
+            if dir_str in valid_dirs:
+                file_parents.append(dir_str)
+            current = current.parent
+
+        # Update stats for all parent directories
+        for directory in file_parents:
+            stats = dir_stats[directory]
+            stats["total_bytes"] += file_stats["size"]
+            stats["total_files"] += 1
+
+            if (
+                file_stats["is_analyzable"]
+                and not file_stats["is_blacklisted"]
+                and not file_stats.get("is_ignored", False)
+            ):
+                file_type = file_stats.get("language") or "Other"
+                file_extension = file_path.suffix
+
+                stats["analyzable_files_by_type"][file_type] += 1
+                stats["analyzable_bytes_by_type"][file_type] += file_stats["size"]
+                stats["analyzable_files_by_extension"][file_extension] += 1
+                stats["analyzable_bytes_by_extension"][file_extension] += file_stats[
+                    "size"
+                ]
+                stats["analyzable_bytes"] += file_stats["size"]
+                stats["analyzable_files"] += 1
+
+    # Convert to expected output format
+    results = []
+    for directory in all_directories:
+        if directory in dir_stats:
+            stats = dir_stats[directory]
+            final_stats = {
+                "analyzable_bytes": stats["analyzable_bytes"],
+                "analyzable_files": stats["analyzable_files"],
+                "analyzable_sloc": bytes_to_sloc(stats["analyzable_bytes"]),
+                "total_bytes": stats["total_bytes"],
+                "total_files": stats["total_files"],
+                "total_sloc": bytes_to_sloc(stats["total_bytes"]),
+                "analyzable_files_by_type": dict(stats["analyzable_files_by_type"]),
+                "analyzable_bytes_by_type": dict(stats["analyzable_bytes_by_type"]),
+                "analyzable_sloc_by_type": {
+                    t: bytes_to_sloc(b)
+                    for t, b in stats["analyzable_bytes_by_type"].items()
+                },
+                "analyzable_files_by_extension": dict(
+                    stats["analyzable_files_by_extension"]
+                ),
+                "analyzable_bytes_by_extension": dict(
+                    stats["analyzable_bytes_by_extension"]
+                ),
+                "analyzable_sloc_by_extension": {
+                    e: bytes_to_sloc(b)
+                    for e, b in stats["analyzable_bytes_by_extension"].items()
+                },
+            }
+
+            directory_path = Path(directory).relative_to(temp_dir)
+            relative_path = (
+                str(directory_path)
+                if str(directory_path).endswith("/")
+                else f"{directory_path}/"
+            )
+            results.append((final_stats, relative_path))
+        else:
+            results.append((None, None))
+
+    return results
+
+
 def calculate_directory_stats(
     directory: str,
     codebase_stats: dict[Path, dict],

@@ -611,7 +611,7 @@ def run_codebase_connection(
 
         all_files, all_directories = collect_file_paths(extracted_path)
         tasks = [(file_path, extracted_path) for file_path in all_files]
-        with ProcessPoolExecutor(max_workers=31) as executor:
+        with ProcessPoolExecutor(max_workers=28) as executor:
             futures = {executor.submit(process_file, task): task[0] for task in tasks}
             for idx, future in enumerate(as_completed(futures)):
                 path, file_stats = future.result()
@@ -623,7 +623,7 @@ def run_codebase_connection(
                 ):
                     analyzable_bytes += file_stats["size"]
                 if idx % 100 == 0:
-                    print(f"Processed {idx} files...")
+                    print(f"Processed {idx}/{len(tasks)} files...")
         if analyzable_bytes == 0:
             # TODO: add status_reason to database when available
             print(

@@ -611,21 +611,17 @@ def run_codebase_connection(
 
         all_files, all_directories = collect_file_paths(extracted_path)
         tasks = [(file_path, extracted_path) for file_path in all_files]
-        with ProcessPoolExecutor(max_workers=24) as executor:
+        with ProcessPoolExecutor(max_workers=31) as executor:
             futures = {executor.submit(process_file, task): task[0] for task in tasks}
             for idx, future in enumerate(as_completed(futures)):
-                local_path = futures[future]
-                try:
-                    path, file_stats = future.result()
-                    codebase_stats[path] = file_stats
-                    if (
-                        file_stats["is_analyzable"]
-                        and not file_stats["is_blacklisted"]
-                        and not file_stats.get("is_ignored", False)
-                    ):
-                        analyzable_bytes += file_stats["size"]
-                except Exception as e:
-                    print(f"Error processing {local_path}: {e}")
+                path, file_stats = future.result()
+                codebase_stats[path] = file_stats
+                if (
+                    file_stats["is_analyzable"]
+                    and not file_stats["is_blacklisted"]
+                    and not file_stats.get("is_ignored", False)
+                ):
+                    analyzable_bytes += file_stats["size"]
                 if idx % 100 == 0:
                     print(f"Processed {idx} files...")
         if analyzable_bytes == 0:

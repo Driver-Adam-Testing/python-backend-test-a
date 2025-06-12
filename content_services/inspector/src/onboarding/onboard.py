@@ -533,15 +533,12 @@ def run_codebase_connection(
     )
     from database.models_v2_enums import VersionStatus
     from onboarding.onboard_utils import (
+        calculate_directory_stats,
         create_bucket_if_dne,
         download_file_from_presigned_url,
-        is_driverignored,
-        is_on_blacklist,
-        load_driverignore,
         parse_presigned_url,
         unpack_archive_to_finalized_path,
     )
-    from shared.usage.utils import bytes_to_sloc
     from sqlalchemy.exc import IntegrityError
     from sqlmodel import Session, select, update
 
@@ -570,7 +567,6 @@ def run_codebase_connection(
         codebase_name = str(extracted_path.relative_to(temp_dir))
         print("Codebase name: ", codebase_name)
         print("Unpacked archive to: ", extracted_path)
-        driverignore = load_driverignore(codebase_root=extracted_path)
 
         try:
             with Session(engine) as session, session.begin():
@@ -611,6 +607,7 @@ def run_codebase_connection(
 
         all_files, all_directories = collect_file_paths(extracted_path)
         tasks = [(file_path, extracted_path) for file_path in all_files]
+        folder_results = []
         with ProcessPoolExecutor(max_workers=28) as executor:
             futures = {executor.submit(process_file, task): task[0] for task in tasks}
             for idx, future in enumerate(as_completed(futures)):
@@ -624,6 +621,34 @@ def run_codebase_connection(
                     analyzable_bytes += file_stats["size"]
                 if idx % 100 == 0:
                     print(f"Processed {idx}/{len(tasks)} files...")
+                if idx == len(tasks) - 1:
+                    print(
+                        f"Processed {len(tasks)} files. Analyzable bytes: {analyzable_bytes}."
+                    )
+        with ThreadPoolExecutor(max_workers=28) as thread_executor:
+            import time
+
+            start_time = time.time()
+            folder_futures = {
+                thread_executor.submit(
+                    calculate_directory_stats,
+                    directory,
+                    codebase_stats,
+                    extracted_path,
+                    temp_dir,
+                )
+                for directory in all_directories
+            }
+            for idx, folder_future in enumerate(as_completed(folder_futures)):
+                directory_stats, relative_path = folder_future.result()
+                folder_results.append((directory_stats, relative_path))
+                if idx % 100 == 0:
+                    print(f"Processed {idx}/{len(folder_futures)} directories...")
+                if idx == len(folder_futures) - 1:
+                    print(f"Processed {len(folder_futures)} directories")
+            print(
+                f"Duration for directory stats: {time.time() - start_time:.2f} seconds"
+            )
         if analyzable_bytes == 0:
             # TODO: add status_reason to database when available
             print(
@@ -662,102 +687,8 @@ def run_codebase_connection(
         print(f"Uploaded {provisional_codebase_name} to {s3_dest}")
         with Session(engine) as session, session.begin():
             # Add directories source contents
-            for directory in all_directories:
-                directory_stats = {
-                    "analyzable_bytes": 0,
-                    "analyzable_files": 0,
-                    "analyzable_sloc": 0,
-                    "total_bytes": 0,
-                    "total_files": 0,
-                    "total_sloc": 0,
-                    "analyzable_files_by_type": {},
-                    "analyzable_bytes_by_type": {},
-                    "analyzable_sloc_by_type": {},
-                    "analyzable_files_by_extension": {},
-                    "analyzable_bytes_by_extension": {},
-                    "analyzable_sloc_by_extension": {},
-                }
-                directory_path = Path(directory).relative_to(temp_dir)
-                is_ignored = is_driverignored(Path(directory), driverignore)
-                if not is_on_blacklist(Path(directory)) and not is_ignored:
-                    # TODO: add a trailing slash here
-                    for file_path in codebase_stats:
-                        if str(file_path).startswith(directory):
-                            file_stats = codebase_stats[file_path]
-                            directory_stats["total_bytes"] += file_stats["size"]
-                            directory_stats["total_files"] += 1
-                            if (
-                                file_stats["is_analyzable"]
-                                and not file_stats["is_blacklisted"]
-                                and not file_stats.get("is_ignored", False)
-                            ):
-                                file_type = file_stats.get("language")
-
-                                if file_type is None:
-                                    file_type = "Other"
-                                if (
-                                    file_type
-                                    not in directory_stats["analyzable_files_by_type"]
-                                ):
-                                    directory_stats["analyzable_files_by_type"][
-                                        file_type
-                                    ] = 0
-                                    directory_stats["analyzable_bytes_by_type"][
-                                        file_type
-                                    ] = 0
-                                directory_stats["analyzable_files_by_type"][
-                                    file_type
-                                ] += 1
-                                directory_stats["analyzable_bytes_by_type"][
-                                    file_type
-                                ] += file_stats["size"]
-
-                                file_extension = file_path.suffix
-                                if (
-                                    file_extension
-                                    not in directory_stats[
-                                        "analyzable_files_by_extension"
-                                    ]
-                                ):
-                                    directory_stats["analyzable_files_by_extension"][
-                                        file_extension
-                                    ] = 0
-                                    directory_stats["analyzable_bytes_by_extension"][
-                                        file_extension
-                                    ] = 0
-                                directory_stats["analyzable_files_by_extension"][
-                                    file_extension
-                                ] += 1
-                                directory_stats["analyzable_bytes_by_extension"][
-                                    file_extension
-                                ] += file_stats["size"]
-                                directory_stats["analyzable_bytes"] += file_stats[
-                                    "size"
-                                ]
-                                directory_stats["analyzable_files"] += 1
-                    directory_stats["analyzable_sloc"] = bytes_to_sloc(
-                        directory_stats["analyzable_bytes"]
-                    )
-                    directory_stats["total_sloc"] = bytes_to_sloc(
-                        directory_stats["total_bytes"]
-                    )
-                    for type, bytes in directory_stats[
-                        "analyzable_bytes_by_type"
-                    ].items():
-                        directory_stats["analyzable_sloc_by_type"][type] = (
-                            bytes_to_sloc(bytes)
-                        )
-                    for ext, bytes in directory_stats[
-                        "analyzable_bytes_by_extension"
-                    ].items():
-                        directory_stats["analyzable_sloc_by_extension"][ext] = (
-                            bytes_to_sloc(bytes)
-                        )
-                    relative_path = (
-                        str(directory_path)
-                        if str(directory_path).endswith("/")
-                        else f"{directory_path}/"
-                    )
+            for directory_stats, relative_path in folder_results:
+                if directory_stats is not None:
                     dir_node = Node(
                         version_id=version_id,
                         relative_path=relative_path,
@@ -765,7 +696,9 @@ def run_codebase_connection(
                         misc_metadata=directory_stats,
                     )
                     session.add(dir_node)
-                    print(f"Created but not committed source content for: {directory}.")
+                    print(
+                        f"Created but not committed source content for: {relative_path}."
+                    )
 
             # Add file source contents
             for file_path in codebase_stats:

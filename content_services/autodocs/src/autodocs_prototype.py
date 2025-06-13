@@ -18,7 +18,7 @@ import pymupdf4llm
 from aiolimiter import AsyncLimiter
 from database.models_v2_enums import AutoDocStatusMessageKind, ContentKind
 from google import genai
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from rich.console import Console
 from rich.markdown import Markdown
 from shared.chunking.text_splitter import get_num_tokens, split_text
@@ -441,31 +441,20 @@ class SectionCreationMethod(StrEnum):
 
 
 class LlmCfg(BaseModel):
-    tag_model: str
-    section_init_model: str
-    section_update_model: str
-    section_format_model: str
-    assembly_model: str
-    copy_editor_model: str
-
-    @classmethod
-    def default(cls) -> Self:
-        return cls(
-            tag_model="gpt-4o",
-            section_init_model="o3-mini",
-            section_update_model="gpt-4o",
-            section_format_model="o3-mini",
-            assembly_model="o3-mini",
-            copy_editor_model="gpt-4o",
-        )
+    tag_model: str = "gpt-4o"
+    section_init_model: str = "o3-mini"
+    section_update_model: str = "gpt-4o"
+    section_format_model: str = "o3-mini"
+    assembly_model: str = "o3-mini"
+    copy_editor_model: str = "gpt-4o"
 
 
 class DocumentCfg(BaseModel):
     goal: str
-    fmt: DocKind
-    use_tagging: bool
-    config_name: str
-    config_version: str
+    fmt: DocKind = DocKind.DEFINED_SECTIONS
+    use_tagging: bool = True
+    config_name: str = ""
+    config_version: str = ""
 
 
 class FullyQualifiedDriverPathPdf(BaseModel):
@@ -479,17 +468,13 @@ class FullyQualifiedDriverPathCode(BaseModel):
 
 
 class Scope(BaseModel):
-    preamble: str
-    pdfs: list[FullyQualifiedDriverPathPdf]
-    code: list[FullyQualifiedDriverPathCode]
-
-    @classmethod
-    def default(cls) -> Self:
-        return cls(
-            preamble="",
-            code=[],
-            pdfs=[],
-        )
+    preamble: str = ""
+    pdfs: list[FullyQualifiedDriverPathPdf] = Field(
+        default_factory=list[FullyQualifiedDriverPathPdf]
+    )
+    code: list[FullyQualifiedDriverPathCode] = Field(
+        default_factory=list[FullyQualifiedDriverPathCode]
+    )
 
 
 class SectionCfg(BaseModel):
@@ -498,7 +483,9 @@ class SectionCfg(BaseModel):
     required: bool = True  # this setting is ignored when committed_with is not None
     instruction: str
     content_structure: str
-    section_creation_method: SectionCreationMethod
+    section_creation_method: SectionCreationMethod = (
+        SectionCreationMethod.SCATTER_GATHER
+    )
     committed_with: str = None
 
 
@@ -1371,28 +1358,17 @@ Your output should be markdown formatted text.
 
 
 class AutoDocCfg(BaseModel):
-    llm: LlmCfg
+    llm: LlmCfg = Field(default_factory=LlmCfg)
     document: DocumentCfg
-    scope: Scope
+    scope: Scope = Field(default_factory=Scope)
     sections: list[SectionCfg]
 
     @classmethod
     def from_file(cls, toml_file: str) -> Self:
         with open(toml_file, "rb") as f:
             raw_data = tomllib.load(f)
-        llm_raw_default = LlmCfg.default().model_dump()
-        if "llm" in raw_data:
-            raw_data["llm"] = {**llm_raw_default, **raw_data["llm"]}
-        else:
-            raw_data.setdefault("llm", llm_raw_default)
+        cfg = cls.model_validate(raw_data)
 
-        scope_raw_default = Scope.default().model_dump()
-        if "scope" in raw_data:
-            raw_data["scope"] = {**scope_raw_default, **raw_data["scope"]}
-        else:
-            raw_data.setdefault("scope", scope_raw_default)
-        raw_data.setdefault("sections", [])
-        cfg = cls(**raw_data)
         if "substitutions" in raw_data:
             mapping = {item["key"]: item["value"] for item in raw_data["substitutions"]}
             for section in cfg.sections:
@@ -1765,7 +1741,6 @@ Your output is the full content of the document with editing updates based on yo
         )
         cfg = state["cfg"]
         cfg_cls = AutoDocInitState(**cfg)
-
         return cfg_cls, annotations
 
     async def _annotate_file(

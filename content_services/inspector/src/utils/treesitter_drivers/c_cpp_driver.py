@@ -85,11 +85,11 @@ def get_function_name_and_params_and_scope_parts(
         if child_node.type == "function_declarator":
             # If it's a reference to a function, recurse into the function declarator
             return get_function_name_and_params_and_scope_parts(child_node)
-        print(f"Unhandled reference_declarator child type: {child_node.type}")
+        # print(f"Unhandled reference_declarator child type: {child_node.type}")
 
-    print(
-        f"Unhandled declarator type: {declarator_node.type} in {declarator_node.text.decode('utf-8')}"
-    )
+    # print(
+    #     f"Unhandled declarator type: {declarator_node.type} in {declarator_node.text.decode('utf-8')}"
+    # )
     # Unsupported or unhandled declarator type
     return None, None, []
 
@@ -151,6 +151,13 @@ def find_identifier_node(node: tree_sitter.Node) -> tree_sitter.Node | None:
         if result:
             return result
     return None
+
+
+def contains_node_types(node: tree_sitter.Node, node_types: set[str]) -> bool:
+    """Recursively check if a node contains any of the specified node types anywhere in its subtree"""
+    return node.type in node_types or any(
+        contains_node_types(child, node_types) for child in node.children
+    )
 
 
 @dataclass
@@ -694,9 +701,9 @@ class CppCDriverTree(DriverTree):
 
             start_line, end_line = self.get_node_line_range(decl_node)
 
-            if any(child.type == "function_declarator" for child in decl_node.children):
-                continue
-            if any(child.type == "type_definition" for child in decl_node.children):
+            if contains_node_types(
+                decl_node, {"function_declarator", "type_definition"}
+            ):
                 continue
 
             # Find the identifier node(s) in this declaration

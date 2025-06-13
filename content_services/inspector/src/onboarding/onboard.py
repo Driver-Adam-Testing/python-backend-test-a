@@ -1,7 +1,13 @@
 import hashlib
 import os
 import re
-from concurrent.futures import ThreadPoolExecutor, wait
+import subprocess
+from concurrent.futures import (
+    ProcessPoolExecutor,
+    ThreadPoolExecutor,
+    as_completed,
+    wait,
+)
 from pathlib import Path
 from uuid import uuid4
 
@@ -16,6 +22,7 @@ from database.models_v2_enums import (
 image = (
     modal.Image.debian_slim(python_version="3.12")
     .apt_install("tree")
+    .apt_install("ripgrep")
     .add_local_dir("../../driver_db/", remote_path="/driver_db", copy=True)
     .add_local_dir(
         local_path="../../packages/shared", remote_path="/packages/shared", copy=True
@@ -31,6 +38,53 @@ image = (
         "src/onboarding/languages.yml", "/linguist/languages.yml", copy=True
     )
 )
+
+
+def collect_file_paths(extracted_path: Path) -> tuple[list[Path], list[Path]]:
+    """Collect all files under extracted_path."""
+    file_list = os.listdir(extracted_path)
+    if ".driverignore" in file_list:
+        cmd = [
+            "rg",
+            "--files",
+            "--hidden",
+            "--ignore-file=.driverignore",
+            "--no-ignore-parent",
+            "--no-ignore-vcs",
+        ]
+    else:
+        cmd = ["rg", "--files", "--hidden", "--no-ignore-parent", "--no-ignore-vcs"]
+    try:
+        result = subprocess.run(
+            cmd,
+            cwd=extracted_path,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except subprocess.CalledProcessError as e:
+        print(f"A subprocess error occurred: {e.stderr}")
+        raise
+    output = result.stdout
+    all_files = [
+        extracted_path / Path(file_path.strip()) for file_path in output.splitlines()
+    ]
+    all_directories = set()
+    all_directories.add(extracted_path)
+    for file_path in all_files:
+        parents = file_path.relative_to(extracted_path).parents
+        for parent in parents:
+            all_directories.add(extracted_path / parent)
+    all_directories = list(all_directories)
+    return all_files, all_directories
+
+
+def process_file(local_path_and_extracted_path: tuple[Path, Path]) -> tuple[Path, dict]:
+    from onboarding.onboard_utils import run_file_stats_and_reencode
+
+    """Wrapper for multiprocessing, unpacks arguments."""
+    local_path, extracted_path = local_path_and_extracted_path
+    return local_path, run_file_stats_and_reencode(local_path, extracted_path)
 
 
 @app.function(
@@ -481,6 +535,8 @@ def connect_unconnected_repos() -> None:
     timeout=60 * 60 * 9,
     region="us-east",
     max_containers=5,
+    memory=2048,
+    cpu=32.0,
 )
 def run_codebase_connection(
     presigned_url: str,
@@ -490,6 +546,7 @@ def run_codebase_connection(
     provider: str = "manual",
 ) -> None:
     import tempfile
+    import time
 
     from boto3 import client, resource
     from database.db import (
@@ -506,16 +563,12 @@ def run_codebase_connection(
     )
     from database.models_v2_enums import VersionStatus
     from onboarding.onboard_utils import (
+        calculate_directory_stats,
         create_bucket_if_dne,
         download_file_from_presigned_url,
-        is_driverignored,
-        is_on_blacklist,
-        load_driverignore,
         parse_presigned_url,
-        run_file_stats_and_reencode,
         unpack_archive_to_finalized_path,
     )
-    from shared.usage.utils import bytes_to_sloc
     from sqlalchemy.exc import IntegrityError
     from sqlmodel import Session, select, update
 
@@ -544,7 +597,6 @@ def run_codebase_connection(
         codebase_name = str(extracted_path.relative_to(temp_dir))
         print("Codebase name: ", codebase_name)
         print("Unpacked archive to: ", extracted_path)
-        driverignore = load_driverignore(codebase_root=extracted_path)
 
         try:
             with Session(engine) as session, session.begin():
@@ -582,22 +634,37 @@ def run_codebase_connection(
         all_directories = []
         codebase_stats = {}
         analyzable_bytes = 0
-        for root, _, files in os.walk(extracted_path):
-            all_directories.append(root)
-            for filename in files:
-                local_path = Path(root) / filename
 
-                file_stats = run_file_stats_and_reencode(
-                    local_path=local_path,
-                    driverignore=driverignore,
-                )
-                codebase_stats[local_path] = file_stats
+        all_files, all_directories = collect_file_paths(extracted_path)
+        tasks = [(file_path, extracted_path) for file_path in all_files]
+        folder_results = []
+        with ProcessPoolExecutor(max_workers=28) as executor:
+            futures = {executor.submit(process_file, task): task[0] for task in tasks}
+            for idx, future in enumerate(as_completed(futures)):
+                path, file_stats = future.result()
+                codebase_stats[path] = file_stats
                 if (
                     file_stats["is_analyzable"]
                     and not file_stats["is_blacklisted"]
                     and not file_stats.get("is_ignored", False)
                 ):
                     analyzable_bytes += file_stats["size"]
+                if idx % 100 == 0:
+                    print(f"Processed {idx}/{len(tasks)} files...")
+                if idx == len(tasks) - 1:
+                    print(
+                        f"Processed {len(tasks)} files. Analyzable bytes: {analyzable_bytes}."
+                    )
+        start_time = time.time()
+
+        # O(n) instead of O(n^2) per-dir
+        folder_results = calculate_directory_stats(
+            all_directories, codebase_stats, Path(temp_dir)
+        )
+
+        print(
+            f"Processed {len(folder_results)} directories in {time.time() - start_time:.2f} seconds (O(n) algorithm)"
+        )
         if analyzable_bytes == 0:
             # TODO: add status_reason to database when available
             print(
@@ -636,102 +703,8 @@ def run_codebase_connection(
         print(f"Uploaded {provisional_codebase_name} to {s3_dest}")
         with Session(engine) as session, session.begin():
             # Add directories source contents
-            for directory in all_directories:
-                directory_stats = {
-                    "analyzable_bytes": 0,
-                    "analyzable_files": 0,
-                    "analyzable_sloc": 0,
-                    "total_bytes": 0,
-                    "total_files": 0,
-                    "total_sloc": 0,
-                    "analyzable_files_by_type": {},
-                    "analyzable_bytes_by_type": {},
-                    "analyzable_sloc_by_type": {},
-                    "analyzable_files_by_extension": {},
-                    "analyzable_bytes_by_extension": {},
-                    "analyzable_sloc_by_extension": {},
-                }
-                directory_path = Path(directory).relative_to(temp_dir)
-                is_ignored = is_driverignored(Path(directory), driverignore)
-                if not is_on_blacklist(Path(directory)) and not is_ignored:
-                    # TODO: add a trailing slash here
-                    for file_path in codebase_stats:
-                        if str(file_path).startswith(directory):
-                            file_stats = codebase_stats[file_path]
-                            directory_stats["total_bytes"] += file_stats["size"]
-                            directory_stats["total_files"] += 1
-                            if (
-                                file_stats["is_analyzable"]
-                                and not file_stats["is_blacklisted"]
-                                and not file_stats.get("is_ignored", False)
-                            ):
-                                file_type = file_stats.get("language")
-
-                                if file_type is None:
-                                    file_type = "Other"
-                                if (
-                                    file_type
-                                    not in directory_stats["analyzable_files_by_type"]
-                                ):
-                                    directory_stats["analyzable_files_by_type"][
-                                        file_type
-                                    ] = 0
-                                    directory_stats["analyzable_bytes_by_type"][
-                                        file_type
-                                    ] = 0
-                                directory_stats["analyzable_files_by_type"][
-                                    file_type
-                                ] += 1
-                                directory_stats["analyzable_bytes_by_type"][
-                                    file_type
-                                ] += file_stats["size"]
-
-                                file_extension = file_path.suffix
-                                if (
-                                    file_extension
-                                    not in directory_stats[
-                                        "analyzable_files_by_extension"
-                                    ]
-                                ):
-                                    directory_stats["analyzable_files_by_extension"][
-                                        file_extension
-                                    ] = 0
-                                    directory_stats["analyzable_bytes_by_extension"][
-                                        file_extension
-                                    ] = 0
-                                directory_stats["analyzable_files_by_extension"][
-                                    file_extension
-                                ] += 1
-                                directory_stats["analyzable_bytes_by_extension"][
-                                    file_extension
-                                ] += file_stats["size"]
-                                directory_stats["analyzable_bytes"] += file_stats[
-                                    "size"
-                                ]
-                                directory_stats["analyzable_files"] += 1
-                    directory_stats["analyzable_sloc"] = bytes_to_sloc(
-                        directory_stats["analyzable_bytes"]
-                    )
-                    directory_stats["total_sloc"] = bytes_to_sloc(
-                        directory_stats["total_bytes"]
-                    )
-                    for type, bytes in directory_stats[
-                        "analyzable_bytes_by_type"
-                    ].items():
-                        directory_stats["analyzable_sloc_by_type"][type] = (
-                            bytes_to_sloc(bytes)
-                        )
-                    for ext, bytes in directory_stats[
-                        "analyzable_bytes_by_extension"
-                    ].items():
-                        directory_stats["analyzable_sloc_by_extension"][ext] = (
-                            bytes_to_sloc(bytes)
-                        )
-                    relative_path = (
-                        str(directory_path)
-                        if str(directory_path).endswith("/")
-                        else f"{directory_path}/"
-                    )
+            for directory_stats, relative_path in folder_results:
+                if directory_stats is not None:
                     dir_node = Node(
                         version_id=version_id,
                         relative_path=relative_path,
@@ -739,7 +712,9 @@ def run_codebase_connection(
                         misc_metadata=directory_stats,
                     )
                     session.add(dir_node)
-                    print(f"Created but not committed source content for: {directory}.")
+                    print(
+                        f"Created but not committed source content for: {relative_path}."
+                    )
 
             # Add file source contents
             for file_path in codebase_stats:

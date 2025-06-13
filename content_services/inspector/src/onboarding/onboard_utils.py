@@ -4,7 +4,7 @@ import re
 import shutil
 import time
 import zipfile
-from collections.abc import Callable, Iterable
+from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from enum import Enum
 from functools import cache
@@ -16,7 +16,6 @@ import requests
 from boto3 import resource
 from botocore.client import ClientError
 from database.models_v2 import Version
-from gitignore_parser import parse_gitignore
 from sqlmodel import Session
 
 
@@ -107,27 +106,6 @@ def download_file_from_s3(
         s3_bucket.download_file(str(s3_path_to_file), download_destination)
     except Exception as e:
         raise e
-
-
-def is_driverignored(file_path: Path, driverignore: Callable | None) -> bool:
-    if driverignore is None:
-        return False
-
-    # this will be True if the file is directly ignored OR parent directory WITH trailing slash
-    # is contained within the .driverignore
-    if driverignore(file_path):
-        return True
-
-    # Due to bug in gitignore_parser with directories without trailing slashes,
-    # check all parent directories as well
-    for parent_dir in file_path.parents:
-        try:
-            if driverignore(parent_dir):
-                return True
-        except ValueError:
-            # Due to usage of temporary directory, the relative pathing has an error here.
-            pass
-    return False
 
 
 def download_file_from_presigned_url(
@@ -403,14 +381,6 @@ def is_on_blacklist(filepath: Path) -> bool:
     return is_blacklisted
 
 
-def load_driverignore(codebase_root: Path) -> Callable | None:
-    file_list = os.listdir(codebase_root)
-    if ".driverignore" in file_list:
-        driverignore = parse_gitignore(Path(codebase_root) / ".driverignore")
-        return driverignore
-    return None
-
-
 def reencode_file(filepath: Path) -> None:
     is_utf8 = False
     decoded_str = None
@@ -528,14 +498,14 @@ def analyze_binary_file(filepath: Path) -> dict:
 
 
 def run_file_stats_and_reencode(
-    local_path: Path, driverignore: Callable | None
+    local_path: Path,
+    codebase_root: Path,
 ) -> dict:
     # Evaluate file-processability before reencoding
     # due to file encoding nastiness w/ binary files
     file_size_processable = evaluate_file_size_processable(local_path)
     is_binary = evaluate_file_binary(local_path)
     is_blacklisted = is_on_blacklist(local_path)
-    is_ignored = is_driverignored(local_path, driverignore)
 
     file_stats = {}
 
@@ -552,7 +522,7 @@ def run_file_stats_and_reencode(
         file_stats = analyze_binary_file(local_path)
         file_stats["is_analyzable"] = False
     file_stats["is_blacklisted"] = is_blacklisted
-    file_stats["is_ignored"] = is_ignored
+    file_stats["is_ignored"] = False  # if we make it here now, it is not ignored
 
     if file_stats["is_analyzable"]:
         file_type = get_file_type_from_extension(file_stats["extension"])
@@ -701,3 +671,107 @@ def upload_to_s3_with_metadata(
         raise Exception(
             f"Failed uploading codebase version {metadata['version_id']} to {upload_key}."
         ) from e
+
+
+def calculate_directory_stats(
+    all_directories: list[Path],
+    codebase_stats: dict[Path, dict],
+    temp_dir: Path,
+) -> list[tuple[dict | None, str | None]]:
+    from collections import defaultdict
+
+    from shared.usage.utils import bytes_to_sloc
+
+    # Pre-filter valid directories using list comprehension
+    valid_dirs = {
+        str(directory)
+        for directory in all_directories
+        if not is_on_blacklist(Path(directory))
+    }
+
+    def create_empty_stats() -> dict[str, int | defaultdict]:
+        return {
+            "analyzable_bytes": 0,
+            "analyzable_files": 0,
+            "total_bytes": 0,
+            "total_files": 0,
+            "analyzable_files_by_type": defaultdict(int),
+            "analyzable_bytes_by_type": defaultdict(int),
+            "analyzable_files_by_extension": defaultdict(int),
+            "analyzable_bytes_by_extension": defaultdict(int),
+        }
+
+    dir_stats = {directory: create_empty_stats() for directory in valid_dirs}
+
+    for file_path, file_stats in codebase_stats.items():
+        file_parents = [
+            str(parent)
+            for parent in file_path.parents
+            if parent != temp_dir and str(parent) in valid_dirs
+        ]
+
+        # Update stats for all parent directories
+        for directory in file_parents:
+            stats = dir_stats[directory]
+            stats["total_bytes"] += file_stats["size"]
+            stats["total_files"] += 1
+
+            if (
+                file_stats["is_analyzable"]
+                and not file_stats["is_blacklisted"]
+                and not file_stats.get("is_ignored", False)
+            ):
+                file_type = file_stats.get("language") or "Other"
+                file_extension = file_path.suffix
+
+                stats["analyzable_files_by_type"][file_type] += 1
+                stats["analyzable_bytes_by_type"][file_type] += file_stats["size"]
+                stats["analyzable_files_by_extension"][file_extension] += 1
+                stats["analyzable_bytes_by_extension"][file_extension] += file_stats[
+                    "size"
+                ]
+                stats["analyzable_bytes"] += file_stats["size"]
+                stats["analyzable_files"] += 1
+
+    # Convert to expected output format
+    results = []
+    for directory in all_directories:
+        directory = str(directory)
+        if directory in dir_stats:
+            stats = dir_stats[directory]
+            final_stats = {
+                "analyzable_bytes": stats["analyzable_bytes"],
+                "analyzable_files": stats["analyzable_files"],
+                "analyzable_sloc": bytes_to_sloc(stats["analyzable_bytes"]),
+                "total_bytes": stats["total_bytes"],
+                "total_files": stats["total_files"],
+                "total_sloc": bytes_to_sloc(stats["total_bytes"]),
+                "analyzable_files_by_type": dict(stats["analyzable_files_by_type"]),
+                "analyzable_bytes_by_type": dict(stats["analyzable_bytes_by_type"]),
+                "analyzable_sloc_by_type": {
+                    t: bytes_to_sloc(b)
+                    for t, b in stats["analyzable_bytes_by_type"].items()
+                },
+                "analyzable_files_by_extension": dict(
+                    stats["analyzable_files_by_extension"]
+                ),
+                "analyzable_bytes_by_extension": dict(
+                    stats["analyzable_bytes_by_extension"]
+                ),
+                "analyzable_sloc_by_extension": {
+                    e: bytes_to_sloc(b)
+                    for e, b in stats["analyzable_bytes_by_extension"].items()
+                },
+            }
+
+            directory_path = Path(directory).relative_to(temp_dir)
+            relative_path = (
+                str(directory_path)
+                if str(directory_path).endswith("/")
+                else f"{directory_path}/"
+            )
+            results.append((final_stats, relative_path))
+        else:
+            results.append((None, None))
+
+    return results

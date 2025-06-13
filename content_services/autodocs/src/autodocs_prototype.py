@@ -441,12 +441,12 @@ class SectionCreationMethod(StrEnum):
 
 
 class LlmCfg(BaseModel):
-    tag_model: str = "gpt-4o"
+    tag_model: str = "gpt-4.1"
     section_init_model: str = "o3-mini"
-    section_update_model: str = "gpt-4o"
+    section_update_model: str = "gpt-4.1"
     section_format_model: str = "o3-mini"
     assembly_model: str = "o3-mini"
-    copy_editor_model: str = "gpt-4o"
+    copy_editor_model: str = "gpt-4.1"
 
 
 class DocumentCfg(BaseModel):

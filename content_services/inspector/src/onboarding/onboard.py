@@ -1,6 +1,7 @@
 import hashlib
 import os
 import re
+import subprocess
 from concurrent.futures import (
     ProcessPoolExecutor,
     ThreadPoolExecutor,
@@ -21,6 +22,7 @@ from database.models_v2_enums import (
 image = (
     modal.Image.debian_slim(python_version="3.12")
     .apt_install("tree")
+    .apt_install("ripgrep")
     .add_local_dir("../../driver_db/", remote_path="/driver_db", copy=True)
     .add_local_dir(
         local_path="../../packages/shared", remote_path="/packages/shared", copy=True
@@ -40,13 +42,40 @@ image = (
 
 def collect_file_paths(extracted_path: Path) -> tuple[list[Path], list[Path]]:
     """Collect all files under extracted_path."""
-    all_files = []
-    all_directories = []
-    for root, _, files in os.walk(extracted_path):
-        all_directories.append(root)
-        for filename in files:
-            local_path = Path(root) / filename
-            all_files.append(local_path)
+    file_list = os.listdir(extracted_path)
+    if ".driverignore" in file_list:
+        cmd = [
+            "rg",
+            "--files",
+            "--hidden",
+            "--ignore-file=.driverignore",
+            "--no-ignore-parent",
+            "--no-ignore-vcs",
+        ]
+    else:
+        cmd = ["rg", "--files", "--hidden", "--no-ignore-parent", "--no-ignore-vcs"]
+    try:
+        result = subprocess.run(
+            cmd,
+            cwd=extracted_path,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except subprocess.CalledProcessError as e:
+        print(f"A subprocess error occurred: {e.stderr}")
+        raise
+    output = result.stdout
+    all_files = [
+        extracted_path / Path(file_path.strip()) for file_path in output.splitlines()
+    ]
+    all_directories = set()
+    all_directories.add(extracted_path)
+    for file_path in all_files:
+        parents = file_path.relative_to(extracted_path).parents
+        for parent in parents:
+            all_directories.add(extracted_path / parent)
+    all_directories = list(all_directories)
     return all_files, all_directories
 
 
@@ -517,6 +546,7 @@ def run_codebase_connection(
     provider: str = "manual",
 ) -> None:
     import tempfile
+    import time
 
     from boto3 import client, resource
     from database.db import (
@@ -533,6 +563,7 @@ def run_codebase_connection(
     )
     from database.models_v2_enums import VersionStatus
     from onboarding.onboard_utils import (
+        calculate_directory_stats,
         create_bucket_if_dne,
         download_file_from_presigned_url,
         parse_presigned_url,
@@ -624,39 +655,11 @@ def run_codebase_connection(
                     print(
                         f"Processed {len(tasks)} files. Analyzable bytes: {analyzable_bytes}."
                     )
-        # with ThreadPoolExecutor(max_workers=28) as thread_executor:
-        #     import time
-        #
-        #     start_time = time.time()
-        #     folder_futures = {
-        #         thread_executor.submit(
-        #             calculate_directory_stats,
-        #             directory,
-        #             codebase_stats,
-        #             extracted_path,
-        #             temp_dir,
-        #         )
-        #         for directory in all_directories
-        #     }
-        #     for idx, folder_future in enumerate(as_completed(folder_futures)):
-        #         directory_stats, relative_path = folder_future.result()
-        #         folder_results.append((directory_stats, relative_path))
-        #         if idx % 100 == 0:
-        #             print(f"Processed {idx}/{len(folder_futures)} directories...")
-        #         if idx == len(folder_futures) - 1:
-        #             print(f"Processed {len(folder_futures)} directories")
-        #     print(
-        #         f"Duration for directory stats: {time.time() - start_time:.2f} seconds"
-        #     )
-        import time
-
-        from onboarding.onboard_utils import calculate_directory_stats_v2
-
         start_time = time.time()
 
         # O(n) instead of O(n^2) per-dir
-        folder_results = calculate_directory_stats_v2(
-            all_directories, codebase_stats, extracted_path, Path(temp_dir)
+        folder_results = calculate_directory_stats(
+            all_directories, codebase_stats, Path(temp_dir)
         )
 
         print(

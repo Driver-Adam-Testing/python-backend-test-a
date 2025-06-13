@@ -4,7 +4,7 @@ import re
 import shutil
 import time
 import zipfile
-from collections.abc import Callable, Iterable
+from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from enum import Enum
 from functools import cache
@@ -16,7 +16,6 @@ import requests
 from boto3 import resource
 from botocore.client import ClientError
 from database.models_v2 import Version
-from gitignore_parser import parse_gitignore
 from sqlmodel import Session
 
 
@@ -107,27 +106,6 @@ def download_file_from_s3(
         s3_bucket.download_file(str(s3_path_to_file), download_destination)
     except Exception as e:
         raise e
-
-
-def is_driverignored(file_path: Path, driverignore: Callable | None) -> bool:
-    if driverignore is None:
-        return False
-
-    # this will be True if the file is directly ignored OR parent directory WITH trailing slash
-    # is contained within the .driverignore
-    if driverignore(file_path):
-        return True
-
-    # Due to bug in gitignore_parser with directories without trailing slashes,
-    # check all parent directories as well
-    for parent_dir in file_path.parents:
-        try:
-            if driverignore(parent_dir):
-                return True
-        except ValueError:
-            # Due to usage of temporary directory, the relative pathing has an error here.
-            pass
-    return False
 
 
 def download_file_from_presigned_url(
@@ -403,14 +381,6 @@ def is_on_blacklist(filepath: Path) -> bool:
     return is_blacklisted
 
 
-def load_driverignore(codebase_root: Path) -> Callable | None:
-    file_list = os.listdir(codebase_root)
-    if ".driverignore" in file_list:
-        driverignore = parse_gitignore(Path(codebase_root) / ".driverignore")
-        return driverignore
-    return None
-
-
 def reencode_file(filepath: Path) -> None:
     is_utf8 = False
     decoded_str = None
@@ -536,8 +506,6 @@ def run_file_stats_and_reencode(
     file_size_processable = evaluate_file_size_processable(local_path)
     is_binary = evaluate_file_binary(local_path)
     is_blacklisted = is_on_blacklist(local_path)
-    driverignore = load_driverignore(codebase_root)
-    is_ignored = is_driverignored(local_path, driverignore)
 
     file_stats = {}
 
@@ -554,7 +522,7 @@ def run_file_stats_and_reencode(
         file_stats = analyze_binary_file(local_path)
         file_stats["is_analyzable"] = False
     file_stats["is_blacklisted"] = is_blacklisted
-    file_stats["is_ignored"] = is_ignored
+    file_stats["is_ignored"] = False  # if we make it here now, it is not ignored
 
     if file_stats["is_analyzable"]:
         file_type = get_file_type_from_extension(file_stats["extension"])
@@ -705,10 +673,9 @@ def upload_to_s3_with_metadata(
         ) from e
 
 
-def calculate_directory_stats_v2(
+def calculate_directory_stats(
     all_directories: list[Path],
     codebase_stats: dict[Path, dict],
-    root_dir: Path,
     temp_dir: Path,
 ) -> list[tuple[dict | None, str | None]]:
     from collections import defaultdict
@@ -716,12 +683,10 @@ def calculate_directory_stats_v2(
     from shared.usage.utils import bytes_to_sloc
 
     # Pre-filter valid directories using list comprehension
-    driverignore = load_driverignore(root_dir)
     valid_dirs = {
-        directory
+        str(directory)
         for directory in all_directories
         if not is_on_blacklist(Path(directory))
-        and not is_driverignored(Path(directory), driverignore)
     }
 
     def create_empty_stats() -> dict[str, int | defaultdict]:
@@ -771,6 +736,7 @@ def calculate_directory_stats_v2(
     # Convert to expected output format
     results = []
     for directory in all_directories:
+        directory = str(directory)
         if directory in dir_stats:
             stats = dir_stats[directory]
             final_stats = {
@@ -809,89 +775,3 @@ def calculate_directory_stats_v2(
             results.append((None, None))
 
     return results
-
-
-def calculate_directory_stats(
-    directory: str,
-    codebase_stats: dict[Path, dict],
-    root_dir: Path,
-    temp_dir: Path,
-) -> tuple[dict | None, str | None]:
-    from shared.usage.utils import bytes_to_sloc
-
-    directory_stats = {
-        "analyzable_bytes": 0,
-        "analyzable_files": 0,
-        "analyzable_sloc": 0,
-        "total_bytes": 0,
-        "total_files": 0,
-        "total_sloc": 0,
-        "analyzable_files_by_type": {},
-        "analyzable_bytes_by_type": {},
-        "analyzable_sloc_by_type": {},
-        "analyzable_files_by_extension": {},
-        "analyzable_bytes_by_extension": {},
-        "analyzable_sloc_by_extension": {},
-    }
-    directory_path = Path(directory).relative_to(temp_dir)
-    driverignore = load_driverignore(root_dir)
-    is_ignored = is_driverignored(Path(directory), driverignore)
-    if not is_on_blacklist(Path(directory)) and not is_ignored:
-        for file_path in codebase_stats:
-            if str(file_path).startswith(directory):
-                file_stats = codebase_stats[file_path]
-                directory_stats["total_bytes"] += file_stats["size"]
-                directory_stats["total_files"] += 1
-                if (
-                    file_stats["is_analyzable"]
-                    and not file_stats["is_blacklisted"]
-                    and not file_stats.get("is_ignored", False)
-                ):
-                    file_type = file_stats.get("language")
-
-                    if file_type is None:
-                        file_type = "Other"
-                    if file_type not in directory_stats["analyzable_files_by_type"]:
-                        directory_stats["analyzable_files_by_type"][file_type] = 0
-                        directory_stats["analyzable_bytes_by_type"][file_type] = 0
-                    directory_stats["analyzable_files_by_type"][file_type] += 1
-                    directory_stats["analyzable_bytes_by_type"][file_type] += (
-                        file_stats["size"]
-                    )
-
-                    file_extension = file_path.suffix
-                    if (
-                        file_extension
-                        not in directory_stats["analyzable_files_by_extension"]
-                    ):
-                        directory_stats["analyzable_files_by_extension"][
-                            file_extension
-                        ] = 0
-                        directory_stats["analyzable_bytes_by_extension"][
-                            file_extension
-                        ] = 0
-                    directory_stats["analyzable_files_by_extension"][
-                        file_extension
-                    ] += 1
-                    directory_stats["analyzable_bytes_by_extension"][
-                        file_extension
-                    ] += file_stats["size"]
-                    directory_stats["analyzable_bytes"] += file_stats["size"]
-                    directory_stats["analyzable_files"] += 1
-        directory_stats["analyzable_sloc"] = bytes_to_sloc(
-            directory_stats["analyzable_bytes"]
-        )
-        directory_stats["total_sloc"] = bytes_to_sloc(directory_stats["total_bytes"])
-        for type, bytes in directory_stats["analyzable_bytes_by_type"].items():
-            directory_stats["analyzable_sloc_by_type"][type] = bytes_to_sloc(bytes)
-        for ext, bytes in directory_stats["analyzable_bytes_by_extension"].items():
-            directory_stats["analyzable_sloc_by_extension"][ext] = bytes_to_sloc(bytes)
-        relative_path = (
-            str(directory_path)
-            if str(directory_path).endswith("/")
-            else f"{directory_path}/"
-        )
-        return directory_stats, relative_path
-    else:
-        print(f"Skipping directory {directory} due to blacklist or ignore rules.")
-        return None, None

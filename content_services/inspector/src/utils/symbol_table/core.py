@@ -1,6 +1,7 @@
-from collections import defaultdict
+from collections import defaultdict, deque
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, replace
+from enum import StrEnum
 from pathlib import Path
 from typing import Self
 
@@ -11,6 +12,7 @@ from utils.lang_specialization.symbol_common import (
 )
 
 from .base import ImportResolver, SymbolParser
+from .comparison import TimingInfo, timer
 from .utils import (
     disambiguate_call,
     get_fully_qualified_name,
@@ -20,6 +22,15 @@ from .utils import (
 )
 
 MAX_LLM_CALLS_PER_FILE = 25
+
+
+class VisibilityAlgorithm(StrEnum):
+    """Algorithm choices for computing file visibility."""
+
+    DFS = "dfs"  # Original DFS approach
+    BFS = "bfs"  # BFS with reverse graph
+    FIXPOINT = "fixpoint"  # Incremental fixpoint
+    SCC = "scc"  # Strongly connected components
 
 
 @dataclass(frozen=True)
@@ -46,9 +57,8 @@ class ParsedProject:
                 symbols, includes, containment_map = parser.parse_file(
                     abs_fpath, project_root
                 )
-                print(f"Parsing {rel_fpath}... done.")
             except Exception as e:
-                print(f"Parsing {rel_fpath}... failed: {e}")
+                print(f"  Warning: Failed to parse {rel_fpath}: {e}")
                 symbols, includes, containment_map = [], [], {}
             return rel_fpath, symbols, includes, containment_map
 
@@ -60,7 +70,8 @@ class ParsedProject:
             # Serial processing
             total = len(file_paths)
             for i, abs_fpath in enumerate(file_paths, 1):
-                print(f"[{i}/{total}]", end=" ")
+                if i % 25 == 0 or i == total:
+                    print(f"  Parsing files... [{i}/{total}]", flush=True)
                 rel_fpath, symbols, includes, containment_map = parse_and_handle(
                     abs_fpath
                 )
@@ -73,9 +84,11 @@ class ParsedProject:
                 future_to_path = {
                     executor.submit(parse_and_handle, fp): fp for fp in file_paths
                 }
+                total = len(file_paths)
                 for i, future in enumerate(as_completed(future_to_path), 1):
                     rel_fpath, symbols, includes, containment_map = future.result()
-                    print(f"[{i}/{len(file_paths)}] Parsed {rel_fpath}")
+                    if i % 25 == 0 or i == total:
+                        print(f"  Parsing files... [{i}/{total}]", flush=True)
                     file_to_syms[rel_fpath] = symbols
                     raw_includes[rel_fpath] = includes
                     file_to_containment_map[rel_fpath] = containment_map
@@ -104,15 +117,72 @@ class ParsedProjectWithVisibility:
         parsed: ParsedProject,
         num_workers: int | None,
         resolver: ImportResolver,
-    ) -> Self:
+        algorithm: VisibilityAlgorithm = VisibilityAlgorithm.SCC,
+        return_timing: bool = False,
+    ) -> Self | tuple[Self, TimingInfo]:
         """
         Build a map from each file -> all files it can 'see' transitively.
         Only links includes that are in parsed.file_to_symbols (our project).
+
+        return_timing: Whether to return timing information
         """
         file_to_symbols = parsed.file_to_symbols
         includes_map = parsed.includes_map
         project_files = set(file_to_symbols.keys())
 
+        timing = TimingInfo()
+
+        with timer() as visibility_timer:
+            match algorithm:
+                case VisibilityAlgorithm.DFS:
+                    visibility_map = cls._compute_visibility_dfs(
+                        file_to_symbols,
+                        includes_map,
+                        project_files,
+                        resolver,
+                        num_workers,
+                    )
+                case VisibilityAlgorithm.BFS:
+                    visibility_map = cls._compute_visibility_reverse_bfs(
+                        file_to_symbols,
+                        includes_map,
+                        project_files,
+                        resolver,
+                        num_workers,
+                    )
+                case VisibilityAlgorithm.FIXPOINT:
+                    visibility_map = cls._compute_visibility_incremental_fixed_point(
+                        file_to_symbols, includes_map, project_files, resolver
+                    )
+                case VisibilityAlgorithm.SCC:
+                    visibility_map = cls._compute_visibility_scc(
+                        file_to_symbols, includes_map, project_files, resolver
+                    )
+                case _:
+                    raise ValueError(f"Unknown visibility algorithm: {algorithm}")
+
+        timing.visibility_time = visibility_timer["elapsed"]
+
+        result = cls(
+            file_to_symbols=file_to_symbols,
+            includes_map=includes_map,
+            visibility_map=visibility_map,
+        )
+
+        if return_timing:
+            return result, timing
+        return result
+
+    @classmethod
+    def _compute_visibility_dfs(
+        cls,
+        file_to_symbols: dict[Path, list],
+        includes_map: dict[Path, list[str]],
+        project_files: set[Path],
+        resolver: ImportResolver,
+        num_workers: int | None,
+    ) -> dict[Path, set[Path]]:
+        """Original DFS-based visibility computation."""
         visibility_map: dict[Path, set[Path]] = {}
 
         def dfs(current: Path, visited: set[Path]) -> None:
@@ -135,10 +205,12 @@ class ParsedProjectWithVisibility:
             return visited
 
         # For each file, do a DFS of includes:
+        total = len(file_to_symbols)
         if num_workers is None or num_workers == 1:
             # Serial processing
-            for fpath in file_to_symbols:
-                print(f"Resolving visibility for {fpath}...", flush=True)
+            for i, fpath in enumerate(file_to_symbols, 1):
+                if i % 25 == 0 or i == total:
+                    print(f"  Resolving visibility... [{i}/{total}]", flush=True)
                 visited = compute_visited(fpath)
                 visibility_map[fpath] = visited
         else:
@@ -149,14 +221,228 @@ class ParsedProjectWithVisibility:
                 }
                 for i, future in enumerate(as_completed(future_to_path), 1):
                     visited = future.result()
-                    print(f"[{i}/{len(file_to_symbols)}]")
+                    if i % 25 == 0 or i == total:
+                        print(f"  Resolving visibility... [{i}/{total}]", flush=True)
                     visibility_map[future_to_path[future]] = visited
 
-        return cls(
-            file_to_symbols=file_to_symbols,
-            includes_map=includes_map,
-            visibility_map=visibility_map,
-        )
+        return visibility_map
+
+    @classmethod
+    def _compute_visibility_incremental_fixed_point(
+        cls,
+        file_to_symbols: dict[Path, list],
+        includes_map: dict[Path, list[str]],
+        project_files: set[Path],
+        resolver: ImportResolver,
+    ) -> dict[Path, set[Path]]:
+        """Incremental fixpoint approach (works with cycles)."""
+        # Initialize with direct includes
+        visibility_map: dict[Path, set[Path]] = {}
+        for fpath in file_to_symbols:
+            visibility_map[fpath] = {fpath}
+
+        # Build initial direct dependencies
+        for fpath in file_to_symbols:
+            for inc_str in includes_map.get(fpath, []):
+                inc_path = resolver.resolve_import(fpath, inc_str, project_files)
+                if isinstance(inc_path, list):
+                    visibility_map[fpath].update(inc_path)
+                elif inc_path:
+                    visibility_map[fpath].add(inc_path)
+
+        # Iteratively expand until fixpoint
+        changed = True
+        iteration = 0
+        while changed:
+            changed = False
+            iteration += 1
+
+            for fpath in file_to_symbols:
+                old_size = len(visibility_map[fpath])
+
+                # For each visible file, add its visibility
+                to_add = set()
+                for visible in list(visibility_map[fpath]):
+                    if visible in visibility_map:
+                        to_add.update(visibility_map[visible])
+
+                visibility_map[fpath].update(to_add)
+
+                if len(visibility_map[fpath]) > old_size:
+                    changed = True
+
+        print(f"  Fixpoint converged after {iteration} iterations")
+        return visibility_map
+
+    @classmethod
+    def _compute_visibility_reverse_bfs(
+        cls,
+        file_to_symbols: dict[Path, list],
+        includes_map: dict[Path, list[str]],
+        project_files: set[Path],
+        resolver: ImportResolver,
+        num_workers: int | None,
+    ) -> dict[Path, set[Path]]:
+        """Reverse graph + BFS approach for visibility computation."""
+        # Build reverse dependency graph (who includes me?)
+        reverse_deps: dict[Path, set[Path]] = defaultdict(set)
+
+        for fpath in file_to_symbols:
+            for inc_str in includes_map.get(fpath, []):
+                inc_path = resolver.resolve_import(fpath, inc_str, project_files)
+                if isinstance(inc_path, list):
+                    for p in inc_path:
+                        reverse_deps[p].add(fpath)
+                elif inc_path:
+                    reverse_deps[inc_path].add(fpath)
+
+        # For each file, BFS to find all files that can see it
+        visibility_map: dict[Path, set[Path]] = {}
+
+        def compute_visibility(fpath: Path) -> set[Path]:
+            visible = {fpath}
+            queue = deque([fpath])
+
+            while queue:
+                current = queue.popleft()
+                # Add files that current file includes
+                for inc_str in includes_map.get(current, []):
+                    inc_path = resolver.resolve_import(current, inc_str, project_files)
+                    if isinstance(inc_path, list):
+                        for p in inc_path:
+                            if p not in visible:
+                                visible.add(p)
+                                # For Java, don't traverse further
+                    else:
+                        if inc_path and inc_path not in visible:
+                            visible.add(inc_path)
+                            queue.append(inc_path)
+
+            return visible
+
+        # Process files in parallel or serial
+        total = len(file_to_symbols)
+        if num_workers is None or num_workers == 1:
+            for i, fpath in enumerate(file_to_symbols, 1):
+                if i % 25 == 0 or i == total:
+                    print(f"  Computing visibility (BFS)... [{i}/{total}]", flush=True)
+                visibility_map[fpath] = compute_visibility(fpath)
+        else:
+            with ThreadPoolExecutor(max_workers=num_workers) as executor:
+                future_to_path = {
+                    executor.submit(compute_visibility, fp): fp
+                    for fp in file_to_symbols
+                }
+                for i, future in enumerate(as_completed(future_to_path), 1):
+                    visible = future.result()
+                    fpath = future_to_path[future]
+                    if i % 25 == 0 or i == total:
+                        print(
+                            f"  Computing visibility (BFS)... [{i}/{total}]", flush=True
+                        )
+                    visibility_map[fpath] = visible
+
+        return visibility_map
+
+    @classmethod
+    def _compute_visibility_scc(
+        cls,
+        file_to_symbols: dict[Path, list],
+        includes_map: dict[Path, list[str]],
+        project_files: set[Path],
+        resolver: ImportResolver,
+    ) -> dict[Path, set[Path]]:
+        """Use Tarjan's algorithm to find SCCs and process as DAG."""
+        # Build adjacency list
+        graph: dict[Path, set[Path]] = defaultdict(set)
+        for fpath in file_to_symbols:
+            for inc_str in includes_map.get(fpath, []):
+                inc_path = resolver.resolve_import(fpath, inc_str, project_files)
+                if isinstance(inc_path, list):
+                    for p in inc_path:
+                        graph[fpath].add(p)
+                elif inc_path:
+                    graph[fpath].add(inc_path)
+
+        # Tarjan's algorithm for SCCs
+        index_counter = [0]
+        stack = []
+        lowlinks = {}
+        index = {}
+        on_stack = defaultdict(bool)
+        sccs = []
+
+        def strongconnect(v: Path) -> None:
+            index[v] = index_counter[0]
+            lowlinks[v] = index_counter[0]
+            index_counter[0] += 1
+            stack.append(v)
+            on_stack[v] = True
+
+            for w in graph[v]:
+                if w not in index:
+                    strongconnect(w)
+                    lowlinks[v] = min(lowlinks[v], lowlinks[w])
+                elif on_stack[w]:
+                    lowlinks[v] = min(lowlinks[v], index[w])
+
+            if lowlinks[v] == index[v]:
+                scc = []
+                while True:
+                    w = stack.pop()
+                    on_stack[w] = False
+                    scc.append(w)
+                    if w == v:
+                        break
+                sccs.append(scc)
+
+        # Find all SCCs
+        for v in file_to_symbols:
+            if v not in index:
+                strongconnect(v)
+
+        # Build SCC graph (DAG)
+        scc_map = {}
+        for i, scc in enumerate(sccs):
+            for node in scc:
+                scc_map[node] = i
+
+        scc_graph = defaultdict(set)
+        for v in graph:
+            for w in graph[v]:
+                if scc_map[v] != scc_map[w]:
+                    scc_graph[scc_map[v]].add(scc_map[w])
+
+        # Compute reachability in SCC DAG
+        scc_visibility = defaultdict(set)
+
+        def dfs_scc(scc_id: int, visited: set[int]) -> None:
+            for neighbor in scc_graph[scc_id]:
+                if neighbor not in visited:
+                    visited.add(neighbor)
+                    dfs_scc(neighbor, visited)
+
+        for i in range(len(sccs)):
+            reachable = {i}
+            dfs_scc(i, reachable)
+            scc_visibility[i] = reachable
+
+        # Convert back to file visibility
+        visibility_map = {}
+        for fpath in file_to_symbols:
+            visible = {fpath}
+            my_scc = scc_map[fpath]
+
+            # Add all files in same SCC
+            visible.update(sccs[my_scc])
+
+            # Add all files in reachable SCCs
+            for reachable_scc in scc_visibility[my_scc]:
+                visible.update(sccs[reachable_scc])
+
+            visibility_map[fpath] = visible
+
+        return visibility_map
 
 
 @dataclass(frozen=True)

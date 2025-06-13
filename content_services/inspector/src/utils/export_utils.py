@@ -69,7 +69,12 @@ def replace_driver_compatible_links_with_markdown_links(
             if node_kind_of_link.value == "CODEBASE_FILE":
                 converted_file_path = file_path.with_suffix(file_path.suffix + ".md")
             else:
-                converted_file_path = file_path
+                if file_path.name == ".github":
+                    # NOTE: we special case .github here, because Github priotizes displaying
+                    # the README.md file from the .github folder over the README.md file in the root of the repo
+                    converted_file_path = file_path / "README_.md"
+                else:
+                    converted_file_path = file_path / "README.md"
             new_url = relpath(converted_file_path, source_path)
             new_url = new_url.removeprefix("../")
             if new_url == ".":

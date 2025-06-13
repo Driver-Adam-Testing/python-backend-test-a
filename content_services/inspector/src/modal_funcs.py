@@ -245,8 +245,15 @@ def export_tech_docs_to_zip(
                 link_destination_path = node_path.with_suffix(node_path.suffix + ".md")
                 file_path = Path(temp_dir) / link_destination_path
             elif node.kind == NodeKind.CODEBASE_DIRECTORY:
-                link_destination_path = node_path
-                file_path = Path(temp_dir) / link_destination_path / "README.md"
+                if node_path.name == ".github":
+                    # NOTE: we special case .github here, because Github priotizes displaying
+                    # the README.md file from the .github folder over the README.md file in the root of the repo
+                    # See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-readmes
+                    link_destination_path = node_path / "README_.md"
+                    file_path = Path(temp_dir) / link_destination_path
+                else:
+                    link_destination_path = node_path / "README.md"
+                    file_path = Path(temp_dir) / link_destination_path
                 # doc_file_path = node_path.with_suffix(".driver.md")
             content = replace_driver_compatible_links_with_markdown_links(
                 derived_content.content,
@@ -261,7 +268,8 @@ def export_tech_docs_to_zip(
                 "<!-- Manual edits may be overwritten on future commits. --------------------------->\n"
                 "<!--------------------------------------------------------------------------------->\n\n"
             )
-            content = comment + content
+            end_comment = "\n---\nMade with ❤️ by [Driver](https://www.driver.ai/)"
+            content = comment + content + end_comment
             file_path.write_text(content)
         make_archive("tech_docs", "zip", Path(temp_dir))
 

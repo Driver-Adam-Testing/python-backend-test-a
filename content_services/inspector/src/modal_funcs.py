@@ -22,7 +22,6 @@ image = (
         [
             "boto3==1.37.22",
             "cryptography==44.0.2",
-            "gitignore-parser==0.1.11",
             "httpx==0.28.1",
             "pyjwt==2.10.1",
             "requests==2.32.3",

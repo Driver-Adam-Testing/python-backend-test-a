@@ -4,19 +4,27 @@ from pathlib import Path
 from utils.lang_specialization.symbol_common import Lang, ReifiedSymbol, SymbolKind
 
 from .base import LanguageProvider
+from .comparison import TimingInfo, timer
 from .core import (
     LinkedProject,
     ParsedProject,
     ParsedProjectWithVisibility,
     ReifiedProjectIndex,
+    VisibilityAlgorithm,
 )
 from .language_utils import get_language_providers
 from .utils import get_fully_qualified_name
 
 
 def build_symbol_table(
-    file_paths: list[Path], project_root: Path, num_workers: int | None = 8
-) -> dict[Path, list[ReifiedSymbol]]:
+    file_paths: list[Path],
+    project_root: Path,
+    num_workers: int | None = 8,
+    algorithm: VisibilityAlgorithm = VisibilityAlgorithm.SCC,
+    return_timing: bool = False,
+) -> (
+    dict[Path, list[ReifiedSymbol]] | tuple[dict[Path, list[ReifiedSymbol]], TimingInfo]
+):
     """
     Generic symbol table builder that:
     1. Groups files by detected language
@@ -47,6 +55,7 @@ def build_symbol_table(
         )
 
     unified_result: dict[Path, list[ReifiedSymbol]] = {}
+    total_timing = TimingInfo()
 
     for lang, lang_files in language_groups.items():
         if not lang_files:
@@ -55,15 +64,30 @@ def build_symbol_table(
         provider = providers[lang]
         print(f"==> Building {lang} symbol table for {len(lang_files)} files")
 
-        index = _build_language_symbol_table(
-            file_paths=lang_files,
-            project_root=project_root,
-            provider=provider,
-            num_workers=num_workers,
-        )
+        if return_timing:
+            index, timing = _build_language_symbol_table(
+                file_paths=lang_files,
+                project_root=project_root,
+                provider=provider,
+                num_workers=num_workers,
+                algorithm=algorithm,
+                return_timing=True,
+            )
+            total_timing = total_timing + timing
+        else:
+            index = _build_language_symbol_table(
+                file_paths=lang_files,
+                project_root=project_root,
+                provider=provider,
+                num_workers=num_workers,
+                algorithm=algorithm,
+                return_timing=False,
+            )
 
         unified_result.update(index.file_to_symbols)
 
+    if return_timing:
+        return unified_result, total_timing
     return unified_result
 
 
@@ -72,33 +96,59 @@ def _build_language_symbol_table(
     project_root: Path,
     provider: LanguageProvider,
     num_workers: int | None = 8,
-) -> ReifiedProjectIndex:
+    algorithm: VisibilityAlgorithm = VisibilityAlgorithm.SCC,
+    return_timing: bool = False,
+) -> ReifiedProjectIndex | tuple[ReifiedProjectIndex, TimingInfo]:
     parser = provider.get_parser()
     resolver = provider.get_resolver()
 
-    print("==> Parsing files...")
+    timing = TimingInfo()
 
-    parsed = ParsedProject.from_files(
-        file_paths,
-        project_root,
-        parser=parser,
-        num_workers=num_workers,
-    )
+    print("==> Parsing files...")
+    with timer() as parse_timer:
+        parsed = ParsedProject.from_files(
+            file_paths,
+            project_root,
+            parser=parser,
+            num_workers=num_workers,
+        )
+    timing.parsing_time = parse_timer["elapsed"]
 
     print("==> Resolving includes and visibility...")
-    project_vis = ParsedProjectWithVisibility.from_parsed_project(
-        parsed, resolver=resolver, num_workers=num_workers
+    # Always get timing for visibility since it's the key operation
+    project_vis, vis_timing = ParsedProjectWithVisibility.from_parsed_project(
+        parsed,
+        resolver=resolver,
+        num_workers=num_workers,
+        algorithm=algorithm,
+        return_timing=True,
     )
+    timing.visibility_time = vis_timing.visibility_time
+    print(f"    Visibility computation took {vis_timing.visibility_time:.3f}s")
 
     print("==> Linking symbols...")
-    linked = LinkedProject.from_parsed_project_with_visibility(
-        project_vis, sep=provider.get_fqn_delimiter()
-    )
+    with timer() as link_timer:
+        linked = LinkedProject.from_parsed_project_with_visibility(
+            project_vis, sep=provider.get_fqn_delimiter()
+        )
+    timing.linking_time = link_timer["elapsed"]
 
     print("==> Reifying symbol graph...")
-    return ReifiedProjectIndex.from_linked_project(
-        linked, parsed.file_to_containment_map
+    with timer() as reify_timer:
+        result = ReifiedProjectIndex.from_linked_project(
+            linked, parsed.file_to_containment_map
+        )
+    timing.reification_time = reify_timer["elapsed"]
+    timing.total_time = (
+        timing.parsing_time
+        + timing.visibility_time
+        + timing.linking_time
+        + timing.reification_time
     )
+
+    if return_timing:
+        return result, timing
+    return result
 
 
 def print_summary(

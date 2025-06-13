@@ -85,11 +85,11 @@ def get_function_name_and_params_and_scope_parts(
         if child_node.type == "function_declarator":
             # If it's a reference to a function, recurse into the function declarator
             return get_function_name_and_params_and_scope_parts(child_node)
-        print(f"Unhandled reference_declarator child type: {child_node.type}")
+        # print(f"Unhandled reference_declarator child type: {child_node.type}")
 
-    print(
-        f"Unhandled declarator type: {declarator_node.type} in {declarator_node.text.decode('utf-8')}"
-    )
+    # print(
+    #     f"Unhandled declarator type: {declarator_node.type} in {declarator_node.text.decode('utf-8')}"
+    # )
     # Unsupported or unhandled declarator type
     return None, None, []
 

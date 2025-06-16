@@ -119,7 +119,7 @@ class UploadService:
         org_id = user.organization_id
         org_id_hash = hashlib.sha256(org_id.encode()).hexdigest()[:63]
 
-        upload_key = f"{request.page_node_id}/custom_config.toml"
+        upload_key = f"assets/{org_id_hash}/{request.page_node_id}/custom_config.toml"
         asset_metadata = {
             "unhashed_organization_id": org_id,
         }
@@ -127,7 +127,6 @@ class UploadService:
             key=upload_key,
             content_type=content_type,
             metadata=asset_metadata,
-            bucket=org_id_hash,
         )
         return UploadAutoDocConfigResponse(
             upload_url=upload_url,

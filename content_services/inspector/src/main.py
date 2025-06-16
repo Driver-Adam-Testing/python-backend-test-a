@@ -30,7 +30,6 @@ inspection_image = (
             "tree-sitter-cpp==0.23.2",
             "tree-sitter-java==0.23.5",
             "tree-sitter-python==0.23.6",
-            "gitignore-parser",
             "chardet",
         ]
     )
@@ -617,6 +616,36 @@ def main(
         raise
     else:
         set_codebase_status_in_container.remote(version_id, "GENERATION_COMPLETE")
+
+
+@app.local_entrypoint()
+def test_connection() -> None:
+    from onboarding.onboard import run_codebase_connection
+
+    presigned_url = "https://production-codebase-dropzone.s3.us-east-1.amazonaws.com/assets/7803d76b1b1ad91910acc568ecb0bdf8a17d320a8ef12161767147b0a492fb9/8b89be39-8889-4816-ab9e-8de28f3a26c4/cf79eed5-3d1d-4303-9860-18b276486e11/goat.zip?response-content-disposition=inline&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Security-Token=IQoJb3JpZ2luX2VjECIaCXVzLWVhc3QtMSJGMEQCIDSqOs1DOJ%2Ffb1rrTFFBlVBUY1yCuokz6NX2tQYuH95dAiBNBGbqDxAOf5ERXCVCjz3XKjxoy7yeONsmA%2FsAlRD6kSq%2BBAj7%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F8BEAAaDDg5NjcyNDkwNzExNCIMaHA%2Ffn%2BoIjI0Hbh7KpIE0qbwQr73LuGUxiTopwUniQ3ZjzroZBoPZoWjMbMPneQrKec4eVkK3HrEqBOC6pGZx9J%2BE28UuOVJIlrPMWR5sz9ZFDJgP62%2Fo32zDy0%2FvYs%2F3oH22qUSqPJm6EAWsgvzlUG5fpymFmG2dsb%2BSy4jEoWNj32Ln9vs7VQiBfazk1KvKjdBwefTOTYXtHO0kMOiZnLkpCPI%2Fb2r406tPmC4OkyKWRQ58TjkZWl9HZz41r%2BhkdrjeFh6Zi3eoxHtK7h2kMf0DxGT7NedpmRnIGJaJGvppfTMCV%2B6iHVXmHdYDFWwwrSZB7cBas8liL7Y3XtHMGgVC54%2BpMD2qbnL6K%2F8LSAzSvdyRiFnavd5jlskB3%2FtxlkTELwns9X2ldTKSJvZ5niS%2B6nO7oYR%2BTNr6tnLIRtHgSnnuzjMWTfhFgrPDIcTenM47WkBor%2FU%2FT1UMs7Gnbz0cMA7gHcTb4ndqgI29vZOkoDSonNd5L%2Fk0AJCcEFP%2BmAi8xpSux1AiD3GNkZttyKdQ3kNbEUZ754wzzgOSsP2SNxqpu3rwBKhrCp65Rnsh6phgCtHYLoqExxiG9p3sNPFBdf3AOV3yaRcOolDilSO0yWUdpEtvAH80YniTSizeVTmhsHFTgoeE1Vpp4f%2F4Gc4Q2UzYBTJmU6IzddD0T6sPq1To%2B%2Bq74sTjSC7OHtzsil28vxWrCmLgIGqDN1%2FzzEw9%2FqtwgY6xgLXsz%2F3KY2IJxs3OOXS3DWdapj7ZFg9gAtyAVswuqxJDwTHYdYpNFElIA0AGJkN7n1ynb8%2BzYqUsvQ9Qur9TLV9APh5K%2FAXPIPm9PNC4tUSQSfj3El%2BTVVp4SHRtpKyI0E22KGmxQ2K7XcgS8OmvoCFPNTIZZotlYVZO1DZqsOwDrmrZ%2FGx%2FVUEiGg%2Fu08gJ0i9E6vAQk%2FWACksuXnxyuShMy1YaeCLH4PZ3RarEBKmIcBQ%2FbkQJHx3qFH%2BPsAl2apUY4ZKQcdC27L%2FwL7VuRwVBZenMfI0duU8UEf%2B8%2BqFvjwM5iTAE%2B1eUV6ZWcUShCqAzptYFKT4EbWeds1l5sJFYWGdil%2FoDh%2BqxQRf1R%2B3g8jKBovflY8t5GZjfNJ0arA%2FeIqk%2Fk9VNDwnvT874sfhYPMQZpjtgvSKMMTLVU7hDWPAfn%2BfcA%3D%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIA5BSHYGRVOUWEEAZ7%2F20250613%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20250613T012353Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=87f9ec3051be00be6263a93e998f0e099bda48cb2101785dc52b477c5c220cd8"
+    provisional_codebase_name = "goat"
+    org_id = "org_1CupxiUE3hxtOMwB"
+    provider = "manual"
+    version_id = "cf79eed5-3d1d-4303-9860-18b276486e11"
+
+    run_codebase_connection.remote(
+        presigned_url=presigned_url,
+        provisional_codebase_name=provisional_codebase_name,
+        org_id=org_id,
+        provider=provider,
+        version_id=version_id,
+    )
+
+
+@app.local_entrypoint()
+def test_export(
+    version_id: str,
+    install_id: str | None = None,
+) -> None:
+    """Export tech docs to zip"""
+    from modal_funcs import export_tech_docs_to_zip
+
+    export_tech_docs_to_zip.remote(version_id, install_id)
 
 
 @app.local_entrypoint()

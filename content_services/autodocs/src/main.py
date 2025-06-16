@@ -141,13 +141,14 @@ async def run_autodoc(
                 )
             case AutoDocConfigKind.CUSTOM:
                 if org_id:
+                    bucket = os.environ.get("DROPZONE_BUCKET_NAME")
                     hashed_org_id = hashlib.sha256(org_id.encode()).hexdigest()[:63]
-                    key = f"{page_node_id}/custom_config.toml"
+                    key = f"assets/{hashed_org_id}/{page_node_id}/custom_config.toml"
 
                     s3 = boto3.client("s3")
                     # download the file from S3
                     s3.download_file(
-                        hashed_org_id,
+                        bucket,
                         key,
                         "/autodocs_configs/custom_config.toml",
                     )

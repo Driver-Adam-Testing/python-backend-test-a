@@ -62,3 +62,13 @@ int hello = 5;
 void someFunction() {
     int localVar; // Should NOT be matched
 }
+
+// Function declarations - should NOT be picked up as globals
+int functionDecl(int x);
+Tuple * fn(int x);
+static void staticFunc(void);
+extern int externFunc(char *ptr, int len);
+struct MyStruct *getStruct(void);
+int (*funcPtr)(int, char*);
+const char* getString(void);
+volatile int* getVolatilePtr(void);

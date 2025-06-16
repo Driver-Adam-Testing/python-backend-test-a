@@ -916,17 +916,6 @@ test-full = ["adlfs", "aiohttp (!=4.0.0a0,!=4.0.0a1)", "cloudpickle", "dask", "d
 tqdm = ["tqdm"]
 
 [[package]]
-name = "gitignore-parser"
-version = "0.1.12"
-description = "A spec-compliant gitignore parser for Python 3.5+"
-optional = false
-python-versions = "*"
-groups = ["main"]
-files = [
-    {file = "gitignore_parser-0.1.12.tar.gz", hash = "sha256:78b22243adc0f02102c56c5e8c9a1d9121394142ca6143a90daa7f8d7a07a17e"},
-]
-
-[[package]]
 name = "graphql-core"
 version = "3.2.6"
 description = "GraphQL implementation for Python, a port of GraphQL.js, the JavaScript reference implementation for GraphQL."
@@ -3777,4 +3766,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "0c00cae98decffd11d30cd84640fdc8b5a3a402f90c5842951602d27f207487a"
+content-hash = "109f25740f9a58a51d90c68dc2328398c7aeb482417e3cdce4e6c49518d8f448"

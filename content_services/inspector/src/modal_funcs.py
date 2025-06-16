@@ -22,7 +22,6 @@ image = (
         [
             "boto3==1.37.22",
             "cryptography==44.0.2",
-            "gitignore-parser==0.1.11",
             "httpx==0.28.1",
             "pyjwt==2.10.1",
             "requests==2.32.3",
@@ -55,7 +54,7 @@ function_cfg = {"secrets": [modal.Secret.from_name("open-ai")], "image": image}
 
 @app.function(
     max_containers=72,
-    timeout=120 * 60,
+    timeout=180 * 60,
     **function_cfg,
 )
 def make_tech_doc(
@@ -90,7 +89,7 @@ def make_tech_doc(
     return file_docs_successful, file_doc, node
 
 
-@app.function(max_containers=72, timeout=60 * 60, **function_cfg)
+@app.function(max_containers=72, timeout=120 * 60, **function_cfg)
 def make_symbol_docs(
     node: LiteNode,
     source_code: str,

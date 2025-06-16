@@ -5,6 +5,7 @@ from openai import (
     APIConnectionError,
     APITimeoutError,
     AsyncOpenAI,
+    BadRequestError,
     InternalServerError,
     OpenAI,
     RateLimitError,
@@ -60,7 +61,16 @@ async def async_batch_embed_text(
     openai_client = AsyncOpenAI()
     prepared_chunks = _prepare_text_chunks(text_chunks)
     embeddings = []
-    for batch in batched(prepared_chunks, BATCH_SIZE):
-        response = await openai_client.embeddings.create(input=batch, model=model)
-        embeddings.extend([t.embedding for t in response.data])
+    try:
+        for batch in batched(prepared_chunks, BATCH_SIZE):
+            response = await openai_client.embeddings.create(input=batch, model=model)
+            embeddings.extend([t.embedding for t in response.data])
+    except BadRequestError:
+        # There appears to be a mismatch in the number of tokens in the batch
+        # when splitting up text with tiktoken and what the openAI api sees.
+        # This is a bandaid fix to prevent the error, but should better root cause.
+        for batch in batched(prepared_chunks, int(BATCH_SIZE / 4)):
+            response = await openai_client.embeddings.create(input=batch, model=model)
+            embeddings.extend([t.embedding for t in response.data])
+
     return embeddings

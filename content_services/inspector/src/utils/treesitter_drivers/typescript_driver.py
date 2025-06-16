@@ -291,6 +291,11 @@ class TypeScriptDriverTree(DriverTree):
             (abstract_class_declaration
               name: (type_identifier) @name
             ) @abstract_class
+
+            (variable_declarator
+              name: (identifier) @var_name
+              value: (class) @class_expr
+            ) @class_var
         """)
 
         processed_nodes = set()
@@ -303,42 +308,78 @@ class TypeScriptDriverTree(DriverTree):
                 if node in processed_nodes:
                     continue
 
-                name_node = self._find_child_by_field(node, "name")
-                if name_node:
-                    processed_nodes.add(node)
+                # Handle class expressions differently
+                if capture_type == "class_var":
+                    # For variable declarator with class expression
+                    name_node = self._find_child_by_field(node, "name")
+                    value_node = self._find_child_by_field(node, "value")
+                    if value_node:
+                        processed_nodes.add(node)
+                        # Check if the class expression has its own name
+                        class_name = None
+                        if value_node.type == "class":
+                            # Check if the class has a name
+                            class_name_node = value_node.child_by_field_name("name")
+                            if class_name_node:
+                                class_name = self._get_node_text(class_name_node)
 
-                    # Determine kind based on capture type
-                    if capture_type in ["class", "abstract_class"]:
-                        kind = SymbolKind.CLASS
-                    elif capture_type == "interface":
-                        kind = SymbolKind.INTERFACE
-                    elif capture_type == "enum":
-                        kind = SymbolKind.DATA_STRUCTURE  # Use DATA_STRUCTURE for enum
-                    elif capture_type == "type_alias":
-                        kind = (
-                            SymbolKind.DATA_STRUCTURE
-                        )  # Use DATA_STRUCTURE for type alias
-                    else:
-                        kind = SymbolKind.DATA_STRUCTURE
-
-                    parent_path = self._get_fully_qualified_path_to_parent(node)
-                    structures.append(
-                        self._create_symbol_data(
-                            node=node,
-                            name=self._get_node_text(name_node),
-                            kind=kind,
-                            parent_path=parent_path,
+                        # Use the class expression node for location
+                        structures.append(
+                            self._create_symbol_data(
+                                node=value_node,
+                                name=class_name,  # None for anonymous classes
+                                kind=SymbolKind.CLASS,
+                                parent_path=self._get_fully_qualified_path_to_parent(
+                                    node
+                                ),
+                            )
                         )
-                    )
+                elif capture_type == "var_name":
+                    # Skip var_name captures, they're handled with class_var
+                    continue
+                elif capture_type == "class_expr":
+                    # Skip class_expr captures, they're handled with class_var
+                    continue
+                else:
+                    # Handle regular class/interface/enum declarations
+                    name_node = self._find_child_by_field(node, "name")
+                    if name_node:
+                        processed_nodes.add(node)
+
+                        # Determine kind based on capture type
+                        if capture_type in ["class", "abstract_class"]:
+                            kind = SymbolKind.CLASS
+                        elif capture_type == "interface":
+                            kind = SymbolKind.INTERFACE
+                        elif capture_type == "enum":
+                            kind = (
+                                SymbolKind.DATA_STRUCTURE
+                            )  # Use DATA_STRUCTURE for enum
+                        elif capture_type == "type_alias":
+                            kind = (
+                                SymbolKind.DATA_STRUCTURE
+                            )  # Use DATA_STRUCTURE for type alias
+                        else:
+                            kind = SymbolKind.DATA_STRUCTURE
+
+                        parent_path = self._get_fully_qualified_path_to_parent(node)
+                        structures.append(
+                            self._create_symbol_data(
+                                node=node,
+                                name=self._get_node_text(name_node),
+                                kind=kind,
+                                parent_path=parent_path,
+                            )
+                        )
 
         # Also handle namespace/module declarations
         namespace_query = self.tree_sitter_lang.query("""
-            (namespace_declaration
+            (internal_module
               name: (identifier) @name
             ) @namespace
 
-            (module_declaration
-              name: (identifier) @name
+            (module
+              name: (string) @name
             ) @module
         """)
 
@@ -605,7 +646,7 @@ class TypeScriptDriverTree(DriverTree):
                 current.type == "class_declaration"
                 or current.type == "abstract_class_declaration"
                 or current.type == "interface_declaration"
-                or current.type in ["namespace_declaration", "module_declaration"]
+                or current.type in ["internal_module", "module"]
                 or current.type == "enum_declaration"
             ):
                 name_node = self._find_child_by_field(current, "name")

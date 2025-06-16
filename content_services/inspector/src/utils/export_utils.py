@@ -36,6 +36,7 @@ def replace_driver_compatible_links_with_markdown_links(
     text: str,
     source_path: str,
     file_extension: str,
+    node_path_to_kind: dict,
 ) -> str:
     """
     Replaces the URL part of markdown-style hyperlinks like
@@ -59,12 +60,21 @@ def replace_driver_compatible_links_with_markdown_links(
 
     for link in extracted_link:
         link_part = link.split("#")[0]
+        node_kind_of_link = node_path_to_kind[Path(link_part)]
         anchor_tag = link.split("#")[1] if "#" in link else None
         file_path = Path(
             *Path(link_part).parts[1:]
         )  # Strips the first part of the path
         try:
-            converted_file_path = file_path.with_suffix(file_path.suffix + ".driver.md")
+            if node_kind_of_link.value == "CODEBASE_FILE":
+                converted_file_path = file_path.with_suffix(file_path.suffix + ".md")
+            else:
+                if file_path.name == ".github":
+                    # NOTE: we special case .github here, because Github priotizes displaying
+                    # the README.md file from the .github folder over the README.md file in the root of the repo
+                    converted_file_path = file_path / "README_.md"
+                else:
+                    converted_file_path = file_path / "README.md"
             new_url = relpath(converted_file_path, source_path)
             new_url = new_url.removeprefix("../")
             if new_url == ".":

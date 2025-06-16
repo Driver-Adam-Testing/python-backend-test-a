@@ -8,6 +8,7 @@ import tree_sitter_c
 import tree_sitter_cpp
 import tree_sitter_java
 import tree_sitter_python
+import tree_sitter_typescript
 
 from utils.lang_specialization.symbol_common import RawTreeSitterSymbolData
 
@@ -16,6 +17,7 @@ LANGUAGES = {
     "cpp": tree_sitter.Language(tree_sitter_cpp.language()),
     "python": tree_sitter.Language(tree_sitter_python.language()),
     "java": tree_sitter.Language(tree_sitter_java.language()),
+    "typescript": tree_sitter.Language(tree_sitter_typescript.language_typescript()),
 }
 
 

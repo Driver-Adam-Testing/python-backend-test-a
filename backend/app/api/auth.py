@@ -42,8 +42,8 @@ M2MToken = Annotated[M2M, Depends(require_api_key)]
 def require_permission(permission: str) -> Callable[[dict[str, Any]], bool]:
     """Factory that returns a dependency enforcing *permission* in JWT."""
 
-    def dep(payload: dict[str, Any] = Depends(require_jwt)) -> bool:
-        if permission not in payload.get("permissions", []):
+    def dep(payload: User = Depends(require_jwt)) -> bool:
+        if permission not in payload.permissions:
             raise HTTPException(403, "Insufficient permissions")
         return True
 

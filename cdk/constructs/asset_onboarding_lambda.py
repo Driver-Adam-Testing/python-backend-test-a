@@ -19,6 +19,7 @@ class AssetOnboardingLambdaParams:
     environment: str
     api_url: str
     auth0_url: str
+    auth0_audience: str
     dropzone_bucket: aws_s3.Bucket
     use_legacy_dropzone: bool
 
@@ -43,6 +44,7 @@ class AssetOnboardingLambda(Construct):
                 "CLIENT_ID_SECRET": client_id_secret.secret_name,
                 "CLIENT_SECRET_SECRET": client_secret_secret.secret_name,
                 "API_URL": params.api_url,
+                "AUTH0_AUDIENCE": params.auth0_audience,
                 "AUTH0_URL": params.auth0_url,
                 "AWS_S3_CODE_BUCKET_SUFFIX": "codebase-dropzone",
                 "USE_LEGACY_DROPZONE": str(params.use_legacy_dropzone),

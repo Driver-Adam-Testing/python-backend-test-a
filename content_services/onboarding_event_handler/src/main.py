@@ -52,7 +52,7 @@ def handler(
             {
                 "client_id": client_id,
                 "client_secret": client_secret,
-                "audience": settings.API_URL,
+                "audience": settings.AUTH0_AUDIENCE,
                 "grant_type": "client_credentials",
             }
         )

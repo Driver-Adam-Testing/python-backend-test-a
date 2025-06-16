@@ -121,6 +121,10 @@ app.include_router(
     prefix=settings.STUDIO_V1_STR,  # no auth
 )
 app.include_router(
+    unprotected_router,
+    prefix=settings.API_V1_STR,  # no auth
+)
+app.include_router(
     studio_router, prefix=settings.STUDIO_V1_STR, dependencies=[Depends(require_jwt)]
 )
 app.include_router(

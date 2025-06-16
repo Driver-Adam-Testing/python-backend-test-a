@@ -11,6 +11,8 @@ from utils.lang_specialization.symbol_common import RawTreeSitterSymbolData, Sym
 
 from .base import DriverTree
 
+# TODO: what to do with objects with methods, that aren't classes? How will we handle prototypical inheritance?
+
 
 @dataclass
 class TypeScriptDriverTree(DriverTree):
@@ -136,27 +138,17 @@ class TypeScriptDriverTree(DriverTree):
               name: (identifier) @name
             ) @function
 
-            (function_expression
-              name: (identifier)? @name
-            ) @function
-
-            (arrow_function) @arrow
-
             (generator_function_declaration
               name: (identifier) @name
             ) @generator
 
-            (method_definition
-              name: (property_identifier) @name
-            ) @method
-
-            (method_signature
-              name: (property_identifier) @name
-            ) @method_sig
+            (generator_function
+              name: (identifier)? @name
+            ) @generator
 
             (variable_declarator
               name: (identifier) @var_name
-              value: [(arrow_function) (function_expression)] @func_value
+              value: [(arrow_function) (function_expression) (generator_function)] @func_value
             ) @var_func
         """)
 
@@ -167,8 +159,8 @@ class TypeScriptDriverTree(DriverTree):
         # Process function declarations
         if "function" in function_captures:
             for node in function_captures["function"]:
-                if node in processed_nodes:
-                    continue
+                # if node in processed_nodes:
+                #     continue
                 name_node = self._find_child_by_type(node, "identifier")
                 if name_node:
                     processed_nodes.add(node)
@@ -181,30 +173,11 @@ class TypeScriptDriverTree(DriverTree):
                         )
                     )
 
-        # Process methods
-        if "method" in function_captures:
-            for node in function_captures["method"]:
-                if node in processed_nodes:
-                    continue
-                name_node = self._find_child_by_field(node, "name")
-                if name_node:
-                    processed_nodes.add(node)
-                    parent_path = self._get_fully_qualified_path_to_parent(node)
-                    callables.append(
-                        self._create_symbol_data(
-                            node=node,
-                            name=self._get_node_text(name_node),
-                            kind=SymbolKind.CALLABLE,
-                            parent_path=parent_path,
-                        )
-                    )
+        # TODO: Process methods once we decide to include class methods
 
-        # Process variable functions
-        if "var_func" in function_captures:
-            for node in function_captures["var_func"]:
-                if node in processed_nodes:
-                    continue
-                # Variable assigned to function
+        # Process generator functions
+        if "generator" in function_captures:
+            for node in function_captures["generator"]:
                 name_node = self._find_child_by_field(node, "name")
                 if name_node:
                     processed_nodes.add(node)
@@ -217,52 +190,43 @@ class TypeScriptDriverTree(DriverTree):
                         )
                     )
 
-        # Extract getters and setters
-        accessor_query = self.tree_sitter_lang.query("""
-            (getter
-              name: (property_identifier) @name
-            ) @getter
+        # Process arrow functions (including anonymous ones)
+        if "arrow" in function_captures:
+            for node in function_captures["arrow"]:
+                processed_nodes.add(node)
+                # Arrow functions might be anonymous
+                callables.append(
+                    self._create_symbol_data(
+                        node=node,
+                        name=None,  # Anonymous function
+                        kind=SymbolKind.CALLABLE,
+                        parent_path=self._get_fully_qualified_path_to_parent(node),
+                    )
+                )
 
-            (setter
-              name: (property_identifier) @name
-            ) @setter
-        """)
-
-        accessor_captures = accessor_query.captures(self.tree.root_node)
-
-        # Process getters
-        if "getter" in accessor_captures:
-            for node in accessor_captures["getter"]:
-                if node not in processed_nodes:
+        # Process variable functions
+        if "var_func" in function_captures:
+            for node in function_captures["var_func"]:
+                # Variable assigned to function
+                value_node = self._find_child_by_field(node, "value")
+                if value_node.type == "function_expression":
+                    name_node = self._find_child_by_field(value_node, "name")
+                    if name_node is None:
+                        name_node = self._find_child_by_field(node, "name")
+                else:
                     name_node = self._find_child_by_field(node, "name")
-                    if name_node:
-                        processed_nodes.add(node)
-                        parent_path = self._get_fully_qualified_path_to_parent(node)
-                        callables.append(
-                            self._create_symbol_data(
-                                node=node,
-                                name=self._get_node_text(name_node),
-                                kind=SymbolKind.CALLABLE,
-                                parent_path=parent_path,
-                            )
+                if name_node:
+                    processed_nodes.add(node)
+                    callables.append(
+                        self._create_symbol_data(
+                            node=node,
+                            name=self._get_node_text(name_node),
+                            kind=SymbolKind.CALLABLE,
+                            parent_path=self._get_fully_qualified_path_to_parent(node),
                         )
+                    )
 
-        # Process setters
-        if "setter" in accessor_captures:
-            for node in accessor_captures["setter"]:
-                if node not in processed_nodes:
-                    name_node = self._find_child_by_field(node, "name")
-                    if name_node:
-                        processed_nodes.add(node)
-                        parent_path = self._get_fully_qualified_path_to_parent(node)
-                        callables.append(
-                            self._create_symbol_data(
-                                node=node,
-                                name=self._get_node_text(name_node),
-                                kind=SymbolKind.CALLABLE,
-                                parent_path=parent_path,
-                            )
-                        )
+        # TODO: Extract getters and setters once we have the correct node types
 
         return callables
 

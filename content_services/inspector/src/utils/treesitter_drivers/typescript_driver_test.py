@@ -131,40 +131,88 @@ class TestTypeScriptDriver:
         tree = TypeScriptDriverTree.from_code(functions_code, "test_functions.ts")
         functions = tree.extract_callable_definitions()
         # Should find function declarations, arrow functions, generators, etc.
-        assert len(functions) >= 80
+        assert len(functions) == 28
 
     @pytest.mark.parametrize(
-        "function_name,expected_line,is_async,is_generator",
+        "function_name,expected_start_line,expected_end_line",
         [
-            ("simpleFunction", 4, False, False),
-            ("optionalParams", 18, False, False),
-            ("restParams", 31, False, False),
-            ("arrowFunction", 40, False, False),
-            ("genericFunction", 55, False, False),
-            ("overloaded", 73, False, False),
-            ("asyncFunction", 96, True, False),
-            ("generatorFunction", 118, False, True),
-            ("asyncGenerator", 138, True, True),
-            ("taggedTemplate", 233, False, False),
+            # Basic function declarations
+            ("functionWithTypeParams", 4, 6),
+            ("mixedRest", 9, 11),
+            # Arrow functions
+            ("arrowFunction", 14, 14),
+            ("arrowWithParams", 16, 16),
+            ("arrowWithBlock", 18, 21),
+            ("arrowWithTypes", 23, 25),
+            ("singleParam", 28, 28),
+            ("singleParamWithType", 29, 29),
+            # Generic functions
+            ("genericFunction", 32, 34),
+            ("multipleGenerics", 36, 38),
+            ("constrainedGeneric", 40, 42),
+            ("genericWithDefault", 44, 46),
+            ("genericArrow", 48, 48),
+            ("genericArrowConstrained", 50, 50),
+            # Function overloading (implementation only)
+            ("overloaded", 56, 58),
+            # Async functions
+            ("asyncWithParams", 61, 64),
+            ("asyncArrowWithReturn", 66, 68),
+            # Generator functions
+            ("generatorWithReturn", 71, 75),
+            ("generatorArrow", 77, 79),
+            # Async generator functions
+            ("asyncGenerator", 82, 85),
+            ("asyncGeneratorWithType", 87, 90),
+            # Function expressions
+            ("functionExpression", 93, 95),
+            ("namedFunc", 97, 99),
+            # IIFEs (anonymous functions)
+            # TODO: Currently not supporting IIFEs
+            # (None, 102, 104),  # Anonymous IIFE
+            # ("namedIIFE", 106, 108),
+            # (None, 110, 112),  # Arrow IIFE
+            # Type assertions and special cases
+            ("assertionParams", 115, 117),
+            ("taggedTemplate", 124, 126),
+            # Curried functions
+            ("curry", 129, 129),
+            # Complex functions
+            ("complexArrow", 162, 165),
+            ("createMultiplier", 168, 170),
         ],
     )
     def test_extract_specific_functions(
         self,
         functions_code: str,
-        function_name: str,
-        expected_line: int,
-        is_async: bool,
-        is_generator: bool,
+        function_name: str | None,
+        expected_start_line: int,
+        expected_end_line: int,
     ) -> None:
-        tree = TypeScriptDriverTree(functions_code, "test_functions.ts")
+        tree = TypeScriptDriverTree.from_code(functions_code, "test_functions.ts")
         functions = tree.extract_callable_definitions()
 
-        matching = [f for f in functions if f.name == function_name]
-        assert len(matching) > 0, f"Function '{function_name}' not found"
+        if function_name is None:
+            # For anonymous functions, match by line number
+            matching = [
+                f
+                for f in functions
+                if f.name is None and f.start_line == expected_start_line
+            ]
+            assert (
+                len(matching) > 0
+            ), f"Anonymous function at line {expected_start_line} not found"
+        else:
+            matching = [f for f in functions if f.name == function_name]
+            assert len(matching) > 0, f"Function '{function_name}' not found"
 
         func = matching[0]
-        assert func.line_number_start == expected_line
-        # Note: async/generator detection would be implemented in the driver
+        assert (
+            func.start_line == expected_start_line
+        ), f"Function '{function_name or 'Anonymous'}' start line mismatch: expected {expected_start_line}, got {func.start_line}"
+        assert (
+            func.end_line == expected_end_line
+        ), f"Function '{function_name or 'Anonymous'}' end line mismatch: expected {expected_end_line}, got {func.end_line}"
 
     # Test classes
     def test_extract_classes_count(self, classes_code: str) -> None:
@@ -282,7 +330,7 @@ class TestTypeScriptDriver:
 
         matching = [i for i in interfaces if i.name == interface_name]
         assert len(matching) > 0, f"Interface '{interface_name}' not found"
-        assert any(i.line_number_start == expected_line for i in matching)
+        assert any(i.start_line == expected_line for i in matching)
 
     # Test variables
     def test_extract_variables_count(self, variables_code: str) -> None:
@@ -292,19 +340,19 @@ class TestTypeScriptDriver:
         assert len(variables) >= 150
 
     @pytest.mark.parametrize(
-        "variable_name,expected_line,declaration_type",
+        "variable_name,expected_line",
         [
-            ("simpleConst", 4, "const"),
-            ("simpleLet", 11, "let"),
-            ("simpleVar", 18, "var"),
-            ("simpleArray", 29, "const"),
-            ("simpleObject", 38, "const"),
-            ("annotatedString", 53, "const"),
-            ("stringOrNumber", 61, "let"),
-            ("genericArray", 81, "const"),
-            ("sym", 122, "const"),
-            ("bigIntLiteral", 128, "const"),
-            ("template", 153, "const"),
+            ("simpleConst", 4),
+            ("simpleLet", 11),
+            ("simpleVar", 18),
+            ("simpleArray", 29),
+            ("simpleObject", 38),
+            ("annotatedString", 53),
+            ("stringOrNumber", 61),
+            ("genericArray", 81),
+            ("sym", 122),
+            ("bigIntLiteral", 128),
+            ("template", 153),
         ],
     )
     def test_extract_specific_variables(
@@ -312,14 +360,13 @@ class TestTypeScriptDriver:
         variables_code: str,
         variable_name: str,
         expected_line: int,
-        declaration_type: str,
     ) -> None:
         tree = TypeScriptDriverTree(variables_code, "test_variables.ts")
         variables = tree.extract_variables()
 
         matching = [v for v in variables if v.name == variable_name]
         assert len(matching) > 0, f"Variable '{variable_name}' not found"
-        assert matching[0].line_number_start == expected_line
+        assert matching[0].start_line == expected_line
 
     # Test enums
     def test_extract_enums_count(self, enums_code: str) -> None:
@@ -330,26 +377,26 @@ class TestTypeScriptDriver:
         assert len(enum_list) >= 35
 
     @pytest.mark.parametrize(
-        "enum_name,expected_line,is_const",
+        "enum_name,expected_line",
         [
-            ("Direction", 4, False),
-            ("StatusCode", 12, False),
-            ("Color", 24, False),  # String enum
-            ("Mixed", 33, False),  # Mixed enum
-            ("ConstDirection", 50, True),  # Const enum
-            ("FileAccess", 63, False),  # With computed values
-            ("AmbientEnum", 73, False),  # Ambient enum
+            ("Direction", 4),
+            ("StatusCode", 12),
+            ("Color", 24),  # String enum
+            ("Mixed", 33),  # Mixed enum
+            ("ConstDirection", 50),  # Const enum
+            ("FileAccess", 63),  # With computed values
+            ("AmbientEnum", 73),  # Ambient enum
         ],
     )
     def test_extract_specific_enums(
-        self, enums_code: str, enum_name: str, expected_line: int, is_const: bool
+        self, enums_code: str, enum_name: str, expected_line: int
     ) -> None:
         tree = TypeScriptDriverTree(enums_code, "test_enums.ts")
         enums = tree.extract_data_structure_definitions()
 
         matching = [e for e in enums if e.name == enum_name]
         assert len(matching) > 0, f"Enum '{enum_name}' not found"
-        assert any(e.line_number_start == expected_line for e in matching)
+        assert any(e.start_line == expected_line for e in matching)
 
     # Test methods
     def test_extract_methods_count(self, methods_code: str) -> None:
@@ -386,7 +433,7 @@ class TestTypeScriptDriver:
         assert (
             len(matching) > 0
         ), f"Method '{method_name}' in class '{class_name}' not found"
-        assert any(m.line_number_start == expected_line for m in matching)
+        assert any(m.start_line == expected_line for m in matching)
 
     # Test modules/namespaces
     def test_extract_modules_count(self, modules_code: str) -> None:
@@ -445,7 +492,7 @@ class TestTypeScriptDriver:
 
         # Find generic interfaces
         container = [
-            i for i in interfaces if i.name == "Container" and i.line_number_start == 74
+            i for i in interfaces if i.name == "Container" and i.start_line == 74
         ]
         assert len(container) > 0
 
@@ -477,10 +524,10 @@ class TestTypeScriptDriver:
         # Check for duplicate function names at same line
         seen = set()
         for func in functions:
-            key = (func.name, func.line_number_start)
+            key = (func.name, func.start_line)
             assert (
                 key not in seen
-            ), f"Duplicate function {func.name} at line {func.line_number_start}"
+            ), f"Duplicate function {func.name} at line {func.start_line}"
             seen.add(key)
 
     def test_nested_structures(self, classes_code: str) -> None:

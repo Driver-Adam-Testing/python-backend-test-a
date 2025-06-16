@@ -201,9 +201,6 @@ def export_tech_docs_to_zip(
         replace_driver_compatible_links_with_markdown_links,
     )
 
-    # TODO: special case .github folder
-    # TODO: go back to linking to the README.md for directories
-
     with Session(engine) as session:
         nodes_query = (
             select(
@@ -239,7 +236,6 @@ def export_tech_docs_to_zip(
         tempfile.TemporaryDirectory() as temp_dir,
     ):
         for node, derived_content in node_rows:
-            # if node.depth != 0:
             node_path = Path(node.relative_path)
             if node.kind == NodeKind.CODEBASE_FILE:
                 link_destination_path = node_path.with_suffix(node_path.suffix + ".md")

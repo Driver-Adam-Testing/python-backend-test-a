@@ -1,6 +1,7 @@
 from datetime import datetime
 
-from app.api.auth import UserToken
+from app.api.auth import ApiKeyToken
+from app.auth.models import User
 from fastapi import APIRouter
 
 router = APIRouter()
@@ -14,5 +15,5 @@ async def healthcheck() -> None:
 
 
 @router.get("/user_info")
-async def user_info(user: UserToken) -> UserToken:
+async def user_info(user: ApiKeyToken) -> User:
     return user

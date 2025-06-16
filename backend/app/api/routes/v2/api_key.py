@@ -42,7 +42,7 @@ def get_api_keys(
     query = select(ApiKey).where(ApiKey.user_id == user.user_id)
     filters = dict(request.query_params)
     query = apply_filters_to_query(query, filters, ApiKey)
-    query = apply_sorting_to_query(query, pagination.sort_by)
+    query = apply_sorting_to_query(query, pagination, ApiKey)
     api_keys = session.exec(query).all()
     return api_keys
 

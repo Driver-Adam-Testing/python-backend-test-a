@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 class User(BaseModel):
     organization_id: str = Field(..., alias="org_id")
     organization_display_name: str | None = Field("", alias="org_name")
+    organization_name: str | None = Field("", alias="org_name")
     user_id: str = Field(..., alias="sub")
     issuer: str = Field(..., alias="iss")
     subject: str = Field(..., alias="sub")

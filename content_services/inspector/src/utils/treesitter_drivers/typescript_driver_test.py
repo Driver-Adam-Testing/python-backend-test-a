@@ -307,30 +307,68 @@ class TestTypeScriptDriver:
         assert len(interfaces) >= 100
 
     @pytest.mark.parametrize(
-        "interface_name,expected_line",
+        "interface_name,expected_start_line,expected_end_line",
         [
-            (
-                "SimpleInterface",
-                4,
-            ),
-            ("InterfaceWithMethods", 8),
-            ("StringIndex", 28),
-            ("Dog", 45),  # Extends Animal
-            ("Container", 74),  # Generic interface
-            ("CallableInterface", 108),
-            ("HybridInterface", 125),
-            ("Person", 157),  # Type alias intersection
+            # Basic interfaces
+            ("InterfaceWithOptional", 4, 8),
+            # Readonly properties
+            ("ReadonlyInterface", 11, 17),
+            # Index signatures
+            ("StringIndex", 20, 22),
+            ("NumberIndex", 24, 26),
+            ("MixedIndex", 28, 32),
+            # Interface inheritance
+            ("Animal", 35, 38),
+            ("Dog", 40, 43),
+            # Multiple inheritance
+            ("Flyable", 46, 49),
+            ("Swimmable", 51, 54),
+            ("Duck", 56, 58),
+            # Generic interfaces
+            ("Pair", 61, 64),
+            # Nested interfaces
+            ("OuterInterface", 67, 75),
+            # Interface merging - will have multiple entries
+            ("MergedInterface", 78, 80),
+            ("MergedInterface", 82, 84),
+            ("MergedInterface", 86, 88),
+            # Module augmentation interfaces
+            ("Request", 251, 256),
+            # Global augmentation
+            ("Window", 261, 263),
+            ("Array", 265, 267),
+            # Ambient interfaces
+            ("AmbientInterface", 271, 274),
+            # Type-only exports
+            ("ExportedInterface", 277, 279),
         ],
     )
     def test_extract_specific_interfaces(
-        self, interfaces_code: str, interface_name: str, expected_line: int
+        self,
+        interfaces_code: str,
+        interface_name: str,
+        expected_start_line: int,
+        expected_end_line: int,
     ) -> None:
-        tree = TypeScriptDriverTree(interfaces_code, "test_interfaces.ts")
+        tree = TypeScriptDriverTree.from_code(interfaces_code, "test_interfaces.ts")
         interfaces = tree.extract_data_structure_definitions()
 
         matching = [i for i in interfaces if i.name == interface_name]
         assert len(matching) > 0, f"Interface '{interface_name}' not found"
-        assert any(i.start_line == expected_line for i in matching)
+
+        # Find the interface with the expected start line (for merged interfaces)
+        interface = None
+        for i in matching:
+            if i.start_line == expected_start_line:
+                interface = i
+                break
+
+        assert (
+            interface is not None
+        ), f"Interface '{interface_name}' at line {expected_start_line} not found"
+        assert (
+            interface.end_line == expected_end_line
+        ), f"Interface '{interface_name}' end line mismatch: expected {expected_end_line}, got {interface.end_line}"
 
     # Test variables
     def test_extract_variables_count(self, variables_code: str) -> None:

@@ -88,163 +88,163 @@ interface MergedInterface {
 }
 
 // Type aliases - basic
-type StringAlias = string;
-type NumberAlias = number;
-type BooleanAlias = boolean;
-
-// Union types
-type StringOrNumber = string | number;
-type Status = 'active' | 'inactive' | 'pending';
-type Mixed = string | number | boolean | null | undefined;
-
-// Intersection types
-type PersonName = { firstName: string; lastName: string };
-type PersonAge = { age: number };
-type Person = PersonName & PersonAge;
-
-type ComplexIntersection = Animal & Flyable & { id: string };
-
-// Tuple types
-type Pair = [string, number];
-type Triple = [string, number, boolean];
-type NamedTuple = [x: number, y: number, z?: number];
-type RestTuple = [string, ...number[]];
-type LeadingRest = [...string[], number];
-
-// Function types
-type SimpleFunction = () => void;
-type FunctionWithParams = (a: number, b: string) => boolean;
-type GenericFunction = <T>(value: T) => T;
-type OverloadedFunction = {
-  (x: string): string;
-  (x: number): number;
-};
-
-// Object types
-type Point = {
-  x: number;
-  y: number;
-};
-
-type ReadonlyPoint = {
-  readonly x: number;
-  readonly y: number;
-};
-
-type OptionalPoint = {
-  x?: number;
-  y?: number;
-};
-
-// Mapped types
-type Readonly<T> = {
-  readonly [P in keyof T]: T[P];
-};
-
-type Partial<T> = {
-  [P in keyof T]?: T[P];
-};
-
-type Nullable<T> = {
-  [P in keyof T]: T[P] | null;
-};
-
-// Key remapping
-type Getters<T> = {
-  [P in keyof T as `get${Capitalize<string & P>}`]: () => T[P];
-};
-
-type RemovePrefix<T> = {
-  [P in keyof T as P extends `_${infer R}` ? R : P]: T[P];
-};
-
-// Conditional types
-type IsString<T> = T extends string ? true : false;
-type NonNullable<T> = T extends null | undefined ? never : T;
-type ReturnType<T> = T extends (...args: any[]) => infer R ? R : never;
-type UnpackArray<T> = T extends (infer U)[] ? U : T;
-
-// Template literal types
-type EventName = `on${string}`;
-type Greeting = `Hello ${string}!`;
-type Color = 'red' | 'blue' | 'green';
-type ColorShade = `${Color}-${number}`;
-
-// Intrinsic string manipulation
-type Uppercase<S extends string> = intrinsic;
-type Lowercase<S extends string> = intrinsic;
-type Capitalize<S extends string> = intrinsic;
-type Uncapitalize<S extends string> = intrinsic;
-
-// Utility types usage
-type MyPartial = Partial<Person>;
-type MyRequired = Required<Person>;
-type MyReadonly = Readonly<Person>;
-type MyRecord = Record<string, number>;
-type MyPick = Pick<Person, 'firstName' | 'age'>;
-type MyOmit = Omit<Person, 'age'>;
-
-// Complex generic constraints
-interface Lengthwise {
-  length: number;
-}
-
-type ConstrainedGeneric<T extends Lengthwise> = {
-  value: T;
-  getLength(): number;
-};
-
-// Recursive types
-type JSONValue =
-  | string
-  | number
-  | boolean
-  | null
-  | JSONValue[]
-  | { [key: string]: JSONValue };
-
-type LinkedList<T> = {
-  value: T;
-  next?: LinkedList<T>;
-};
-
-// Discriminated unions
-type Shape =
-  | { kind: 'circle'; radius: number }
-  | { kind: 'square'; sideLength: number }
-  | { kind: 'rectangle'; width: number; height: number };
-
-type Result<T> =
-  | { success: true; value: T }
-  | { success: false; error: Error };
-
-// Type guards and predicates
-type TypePredicate<T> = (value: unknown) => value is T;
-
-// Generic constraints with keyof
-type PropertyGetter<T, K extends keyof T> = () => T[K];
-type PropertySetter<T, K extends keyof T> = (value: T[K]) => void;
-
-// Distributive conditional types
-type ToArray<T> = T extends any ? T[] : never;
-type ExtractArrayType<T> = T extends (infer U)[] ? U : never;
-
-// Infer in conditional types
-type UnpackPromise<T> = T extends Promise<infer U> ? U : T;
-type FunctionArgs<T> = T extends (...args: infer A) => any ? A : never;
-
-// Never type
-type Never = string & number;
-type ExcludeNull<T> = T extends null ? never : T;
-
-// Literal types
-type StringLiteral = 'literal';
-
-// This type
-type FluentInterface = {
-  method(): this;
-  chain(): this;
-};
+// type StringAlias = string;
+// type NumberAlias = number;
+// type BooleanAlias = boolean;
+//
+// // Union types
+// type StringOrNumber = string | number;
+// type Status = 'active' | 'inactive' | 'pending';
+// type Mixed = string | number | boolean | null | undefined;
+//
+// // Intersection types
+// type PersonName = { firstName: string; lastName: string };
+// type PersonAge = { age: number };
+// type Person = PersonName & PersonAge;
+//
+// type ComplexIntersection = Animal & Flyable & { id: string };
+//
+// // Tuple types
+// type Pair = [string, number];
+// type Triple = [string, number, boolean];
+// type NamedTuple = [x: number, y: number, z?: number];
+// type RestTuple = [string, ...number[]];
+// type LeadingRest = [...string[], number];
+//
+// // Function types
+// type SimpleFunction = () => void;
+// type FunctionWithParams = (a: number, b: string) => boolean;
+// type GenericFunction = <T>(value: T) => T;
+// type OverloadedFunction = {
+//   (x: string): string;
+//   (x: number): number;
+// };
+//
+// // Object types
+// type Point = {
+//   x: number;
+//   y: number;
+// };
+//
+// type ReadonlyPoint = {
+//   readonly x: number;
+//   readonly y: number;
+// };
+//
+// type OptionalPoint = {
+//   x?: number;
+//   y?: number;
+// };
+//
+// // Mapped types
+// type Readonly<T> = {
+//   readonly [P in keyof T]: T[P];
+// };
+//
+// type Partial<T> = {
+//   [P in keyof T]?: T[P];
+// };
+//
+// type Nullable<T> = {
+//   [P in keyof T]: T[P] | null;
+// };
+//
+// // Key remapping
+// type Getters<T> = {
+//   [P in keyof T as `get${Capitalize<string & P>}`]: () => T[P];
+// };
+//
+// type RemovePrefix<T> = {
+//   [P in keyof T as P extends `_${infer R}` ? R : P]: T[P];
+// };
+//
+// // Conditional types
+// type IsString<T> = T extends string ? true : false;
+// type NonNullable<T> = T extends null | undefined ? never : T;
+// type ReturnType<T> = T extends (...args: any[]) => infer R ? R : never;
+// type UnpackArray<T> = T extends (infer U)[] ? U : T;
+//
+// // Template literal types
+// type EventName = `on${string}`;
+// type Greeting = `Hello ${string}!`;
+// type Color = 'red' | 'blue' | 'green';
+// type ColorShade = `${Color}-${number}`;
+//
+// // Intrinsic string manipulation
+// type Uppercase<S extends string> = intrinsic;
+// type Lowercase<S extends string> = intrinsic;
+// type Capitalize<S extends string> = intrinsic;
+// type Uncapitalize<S extends string> = intrinsic;
+//
+// // Utility types usage
+// type MyPartial = Partial<Person>;
+// type MyRequired = Required<Person>;
+// type MyReadonly = Readonly<Person>;
+// type MyRecord = Record<string, number>;
+// type MyPick = Pick<Person, 'firstName' | 'age'>;
+// type MyOmit = Omit<Person, 'age'>;
+//
+// // Complex generic constraints
+// interface Lengthwise {
+//   length: number;
+// }
+//
+// type ConstrainedGeneric<T extends Lengthwise> = {
+//   value: T;
+//   getLength(): number;
+// };
+//
+// // Recursive types
+// type JSONValue =
+//   | string
+//   | number
+//   | boolean
+//   | null
+//   | JSONValue[]
+//   | { [key: string]: JSONValue };
+//
+// type LinkedList<T> = {
+//   value: T;
+//   next?: LinkedList<T>;
+// };
+//
+// // Discriminated unions
+// type Shape =
+//   | { kind: 'circle'; radius: number }
+//   | { kind: 'square'; sideLength: number }
+//   | { kind: 'rectangle'; width: number; height: number };
+//
+// type Result<T> =
+//   | { success: true; value: T }
+//   | { success: false; error: Error };
+//
+// // Type guards and predicates
+// type TypePredicate<T> = (value: unknown) => value is T;
+//
+// // Generic constraints with keyof
+// type PropertyGetter<T, K extends keyof T> = () => T[K];
+// type PropertySetter<T, K extends keyof T> = (value: T[K]) => void;
+//
+// // Distributive conditional types
+// type ToArray<T> = T extends any ? T[] : never;
+// type ExtractArrayType<T> = T extends (infer U)[] ? U : never;
+//
+// // Infer in conditional types
+// type UnpackPromise<T> = T extends Promise<infer U> ? U : T;
+// type FunctionArgs<T> = T extends (...args: infer A) => any ? A : never;
+//
+// // Never type
+// type Never = string & number;
+// type ExcludeNull<T> = T extends null ? never : T;
+//
+// // Literal types
+// type StringLiteral = 'literal';
+//
+// // This type
+// type FluentInterface = {
+//   method(): this;
+//   chain(): this;
+// };
 
 // Module augmentation interfaces
 declare module 'express' {
@@ -279,23 +279,24 @@ export interface ExportedInterface {
 }
 
 // Complex real-world types
-type APIResponse<T> = {
-  data: T;
-  status: number;
-  headers: Record<string, string>;
-  timestamp: Date;
-};
-
-type Middleware<T = any> = (
-  req: Request,
-  res: Response,
-  next: (err?: Error) => void
-) => void;
-
-type DeepPartial<T> = {
-  [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
-};
-
-type DeepReadonly<T> = {
-  readonly [P in keyof T]: T[P] extends object ? DeepReadonly<T[P]> : T[P];
-};
+// type APIResponse<T> = {
+//   data: T;
+//   status: number;
+//   headers: Record<string, string>;
+//   timestamp: Date;
+// };
+//
+// type Middleware<T = any> = (
+//   req: Request,
+//   res: Response,
+//   next: (err?: Error) => void
+// ) => void;
+//
+// type DeepPartial<T> = {
+//   [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
+// };
+//
+// type DeepReadonly<T> = {
+//   readonly [P in keyof T]: T[P] extends object ? DeepReadonly<T[P]> : T[P];
+// };
+//

@@ -1,6 +1,5 @@
 from app.api.auth import ApiKeyToken
 from app.api.routes.legacy.document_set import get_document_set
-from app.api.routes.legacy.queries import DocumentSet, FlatNode
 from app.api.routes.legacy.tree import get_codebase_tree
 from app.api.routes.v2.chat import ChatHttpRequest
 from app.api.routes.v2.contents import _list_contents
@@ -59,7 +58,7 @@ def get_contents_endpoint(
     return _list_contents(request, session, user, pagination)
 
 
-@router.get("/tree", response_model=list[FlatNode])
+@router.get("/tree", response_model=list[dict])
 def get_tree_endpoint(
     request: Request,
     session: CurrentSession,
@@ -67,18 +66,53 @@ def get_tree_endpoint(
     codebaseId: str | None = None,
     workspaceId: str | None = None,
     versionId: str | None = None,
-) -> list[FlatNode]:
-    return get_codebase_tree(
+) -> list[dict]:
+    tree = get_codebase_tree(
         session=session,
         organization_id=user.organization_id,
         version_id=versionId,
     )
 
+    return [
+        {
+            "id": node.id,
+            "name": node.name,
+            "path": node.path,
+            "kind": node.kind,
+            "children": node.children,
+        }
+        for node in tree
+    ]
 
-@router.get("/document_set", response_model=DocumentSet)
+
+@router.get("/document_set", response_model=dict)
 def get_document_set_endpoint(
     request: Request,
     session: CurrentSession,
     user: ApiKeyToken,
-) -> DocumentSet:
-    return get_document_set(request, session, user)
+    primaryAssetId: str,
+    path: str,
+    versionId: str,
+) -> dict:
+    document_set = get_document_set(
+        node_kind="THIS ISNT EVEN IMPLEMENTED",
+        path=path,
+        primary_asset_id=primaryAssetId,
+        organization_id=user.organization_id,
+        session=session,
+        fetch_code_content=True,
+        version_id=versionId,
+    )
+    return {
+        "source_content_id": document_set.source_content_id,
+        "architecture": document_set.architecture,
+        "architecture_document": document_set.architecture_document,
+        "long": document_set.long,
+        "long_document": document_set.long_document,
+        "short": document_set.short,
+        "quickstart": document_set.quickstart,
+        "chunk_descriptions": document_set.chunk_descriptions,
+        "code": document_set.code,
+        "toplevel": document_set.toplevel,
+        "application_notes": document_set.application_notes,
+    }

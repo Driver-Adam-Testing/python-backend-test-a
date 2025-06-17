@@ -30,7 +30,6 @@ def run(
 ) -> subprocess.CompletedProcess:
     import subprocess
 
-    print(f"> {cmd}")
     result = subprocess.run(cmd, shell=True, cwd=cwd, capture_output=True, text=True)
     if result.stdout:
         print(result.stdout)

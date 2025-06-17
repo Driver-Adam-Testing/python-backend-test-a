@@ -2,7 +2,7 @@ import json
 from urllib.request import urlopen
 
 import jwt
-from app.auth.models import User
+from app.auth.models import M2M, User
 from app.core.config import settings
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -62,3 +62,12 @@ def require_jwt(
     if not creds or not creds.credentials:
         raise HTTPException(401, "Missing Bearer token")
     return User(**verify_jwt(creds.credentials))
+
+
+def require_m2m_jwt(
+    creds: HTTPAuthorizationCredentials | None = Depends(_jwt_scheme),
+) -> dict:
+    """Dependency: assert request carries a valid Bearer token."""
+    if not creds or not creds.credentials:
+        raise HTTPException(401, "Missing Bearer token")
+    return M2M(**verify_jwt(creds.credentials))

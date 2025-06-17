@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Annotated, Any
 from fastapi import Depends, HTTPException
 
 from app.auth.api_key_middleware import require_api_key
-from app.auth.jwt_middleware import require_jwt
+from app.auth.jwt_middleware import require_jwt, require_m2m_jwt
 from app.auth.models import M2M, User
 from app.auth.permissions import (
     CONTENT_EDITOR,
@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 # Aliases that save typing in route signatures
 UserToken = Annotated[User, Depends(require_jwt)]
 ApiKeyToken = Annotated[User, Depends(require_api_key)]
-M2MToken = Annotated[M2M, Depends(require_jwt)]
+M2MToken = Annotated[M2M, Depends(require_m2m_jwt)]
 
 
 def require_permission(permission: str) -> Callable[[dict[str, Any]], bool]:

@@ -6,10 +6,8 @@ from app.api.routes.v1 import (
     codebase,
     content,
     git_provider,
-    onboarding,
     organization,
     search,
-    subscription,
     tags,
     upload,
     usage,
@@ -47,9 +45,6 @@ studio_router.include_router(v2_api_key.router, prefix="/api_key", tags=["api_ke
 studio_router.include_router(
     git_provider.router, prefix="/git-provider", tags=["git-provider"]
 )
-studio_router.include_router(
-    onboarding.router, prefix="/onboarding", tags=["onboarding"]
-)
 studio_router.include_router(search.router, prefix="/search", tags=["search"])
 studio_router.include_router(content.router, prefix="/content", tags=["content"])
 studio_router.include_router(codebase.router, prefix="/codebases", tags=["codebase"])
@@ -69,10 +64,6 @@ if settings.ENVIRONMENT != "production":
     studio_router.include_router(
         sandbox_router, prefix="/sandbox", tags=["legacy-sandbox"]
     )
-
-studio_router.include_router(
-    subscription.router, prefix="/subscription", tags=["subscription"]
-)
 
 studio_router.include_router(generate.router, prefix="/generate", tags=["generate"])
 studio_router.include_router(chat.router, prefix="/chat", tags=["chat"])

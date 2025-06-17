@@ -13,7 +13,12 @@ from fastapi import APIRouter
 from app.api.routes.legacy.schema import sandbox_router  # GraphQL-Apollo sandbox
 
 # Internal routers -----------------------------------------------------
-from app.api.routes.v1 import git_provider, healthcheck  # webhook / callback paths
+from app.api.routes.v1 import (
+    git_provider,
+    healthcheck,
+    onboarding,
+    subscription,
+)  # webhook / callback paths
 from app.core.config import settings
 
 unprotected_router = APIRouter()
@@ -27,6 +32,15 @@ unprotected_router.include_router(
 unprotected_router.include_router(
     git_provider.router, prefix="/git-provider", tags=["git-provider"]
 )
+
+unprotected_router.include_router(
+    onboarding.router, prefix="/onboarding", tags=["onboarding"]
+)
+
+unprotected_router.include_router(
+    subscription.router, prefix="/subscription", tags=["subscription"]
+)
+
 
 # Optional local GraphQL sandbox --------------------------------------
 if settings.ENVIRONMENT != "production":

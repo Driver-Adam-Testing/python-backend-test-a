@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 # Aliases that save typing in route signatures
 UserToken = Annotated[User, Depends(require_jwt)]
 ApiKeyToken = Annotated[User, Depends(require_api_key)]
-M2MToken = Annotated[M2M, Depends(require_api_key)]
+M2MToken = Annotated[M2M, Depends(require_jwt)]
 
 
 def require_permission(permission: str) -> Callable[[dict[str, Any]], bool]:

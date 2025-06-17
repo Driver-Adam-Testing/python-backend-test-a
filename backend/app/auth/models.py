@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field
 
 
 class User(BaseModel):
+    # TODO: remove some redundancy with these aliases
     organization_id: str = Field(..., alias="org_id")
     organization_display_name: str | None = Field("", alias="org_name")
     organization_name: str | None = Field("", alias="org_name")

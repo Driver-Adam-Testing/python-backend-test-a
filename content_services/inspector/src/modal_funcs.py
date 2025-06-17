@@ -292,6 +292,7 @@ def export_tech_docs_to_zip(
     # my-proxy defines the static IP that we share today with "on the beach". Not only does OTB whitelist this IP we also
     # whitelist this IP with ScaleGrid for our DB. Normally we would use pg-proxy but we cant use two proxies at once in
     # modal and that proxy is only good for the postgres port.
+    # NOTE: Any modal function that interacts with a Gitlab instance behind a proxy should use the `my-proxy`.
     proxy=(
         modal.Proxy.from_name("my-proxy", environment_name="prod")
         if os.environ["MODAL_ENVIRONMENT"] in ["dev", "prod"]

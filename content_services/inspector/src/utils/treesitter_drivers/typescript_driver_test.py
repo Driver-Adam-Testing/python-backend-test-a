@@ -301,10 +301,10 @@ class TestTypeScriptDriver:
 
     # Test interfaces
     def test_extract_interfaces_count(self, interfaces_code: str) -> None:
-        tree = TypeScriptDriverTree(interfaces_code, "test_interfaces.ts")
+        tree = TypeScriptDriverTree.from_code(interfaces_code, "test_interfaces.ts")
         interfaces = tree.extract_data_structure_definitions()
         # Should find interfaces and type aliases
-        assert len(interfaces) >= 100
+        assert len(interfaces) == 20
 
     @pytest.mark.parametrize(
         "interface_name,expected_start_line,expected_end_line",

@@ -377,14 +377,40 @@ class TestTypeScriptDriver:
     # Test object types
     def test_extract_object_type_count(self, object_types_code: str) -> None:
         tree = TypeScriptDriverTree.from_code(object_types_code, "test_object_types.ts")
-        classes = tree.extract_data_structure_definitions()
+        object_types = tree.extract_data_structure_definitions()
         # Should find all class definitions including anonymous ones
         # We have 40 classes listed in the test cases plus some anonymous/nested ones
-        assert len(classes) >= 40
+        assert len(object_types) == 17
 
     @pytest.mark.parametrize(
         "type_name,expected_start_line,expected_end_line",
-        [],
+        [
+            # Intersection types with object literals
+            ("PersonName", 12, 12),
+            ("PersonAge", 13, 13),
+            ("OverloadedFunction", 29, 32),
+            # Object types
+            ("Point", 35, 38),
+            ("ReadonlyPoint", 40, 43),
+            ("OptionalPoint", 45, 48),
+            # Mapped types
+            ("Readonly", 51, 53),
+            ("Partial", 55, 57),
+            ("Nullable", 59, 61),
+            # Key remapping
+            ("Getters", 64, 66),
+            ("RemovePrefix", 68, 70),
+            # Complex generic constraints
+            ("ConstrainedGeneric", 103, 106),
+            # Recursive types
+            ("LinkedList", 117, 120),
+            # This type
+            ("FluentInterface", 155, 158),
+            # Complex real-world types
+            ("APIResponse", 160, 165),
+            ("DeepPartial", 173, 175),
+            ("DeepReadonly", 177, 179),
+        ],
     )
     def test_extract_specific_object_types(
         self,

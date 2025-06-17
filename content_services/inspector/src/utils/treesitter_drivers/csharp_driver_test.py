@@ -17,10 +17,24 @@ def class_test_code() -> str:
         return f.read()
 
 
+def test_extract_classes_no_false_positives(class_test_code: str) -> None:
+    driver_tree = CSharpDriverTree.from_code(class_test_code, "does_not_matter.cs")
+    klasses = driver_tree.extract_class_definitions()
+    assert len(klasses) == 9
+
+
 @pytest.mark.parametrize(
     "expected_class_name, expected_line_range",
     [
         ("SimpleClass", (8, 38)),
+        ("InnerClass", (29, 37)),
+        ("AbstractClass", (41, 49)),
+        ("ConcreteClass", (52, 68)),
+        ("GenericClass", (71, 84)),
+        ("PartialClass", (87, 96)),
+        ("StaticUtilities", (99, 105)),
+        ("SealedClass", (108, 114)),
+        ("AttributedClass", (128, 151)),
     ],
 )
 def test_extract_classes(
@@ -33,4 +47,24 @@ def test_extract_classes(
     assert (expected_class_name, expected_line_range) in extracted, (
         f"Expected class ({expected_class_name}, {expected_line_range}) "
         f"not found in extracted classes: {extracted}"
+    )
+
+
+@pytest.mark.parametrize(
+    "expected_class_name, expected_bases",
+    [
+        ("ConcreteClass", ("AbstractClass", "IComparable<ConcreteClass>")),
+        ("SealedClass", ("AbstractClass",)),
+    ],
+)
+def test_extract_base_classes_and_interfaces(
+    class_test_code: str, expected_class_name: str, expected_bases: list[str]
+) -> None:
+    driver_tree = CSharpDriverTree.from_code(class_test_code, "does_not_matter.cs")
+    klasses = driver_tree.extract_class_definitions()
+    extracted = [(k.name, k.base_class_names) for k in klasses]
+
+    assert (expected_class_name, expected_bases) in extracted, (
+        f"Expected base classes and interfaces: ({expected_bases}) for class ({expected_class_name}) "
+        f"but not found in extracted classes: {extracted}"
     )

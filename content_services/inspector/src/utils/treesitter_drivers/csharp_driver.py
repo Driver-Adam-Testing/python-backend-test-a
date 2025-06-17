@@ -97,15 +97,18 @@ class CSharpDriverTree(DriverTree):
                 print(f"Could not parse class name for node: {klass_node}")
             else:
                 klass_name = klass_name.text.decode("utf-8")
-            base_list = klass_node.child_by_field_name("base_list")
-            if base_list:
-                base_class_names = []
-                for bc in base_list.children:
-                    if bc.type in {"identifier", "qualified_name"}:
-                        name = bc.text.decode("utf-8")
-                        base_class_names.append(name)
-            else:
-                base_class_names = None
+            base_class_names = None
+            for child in klass_node.children:
+                if child.type == "base_list":
+                    base_class_names = []
+                    for base in child.children:
+                        if base.type in {
+                            "identifier",
+                            "qualified_name",
+                            "generic_name",
+                            "invocation_expression",
+                        }:
+                            base_class_names.append(base.text.decode("utf-8"))
             start_line, end_line = self.get_node_line_range(klass_node)
             start_byte, end_byte = klass_node.start_byte, klass_node.end_byte
             symbol_code = cs_node_to_text(self.source_bytes, klass_node)

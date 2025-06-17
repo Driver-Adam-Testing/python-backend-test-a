@@ -17,6 +17,7 @@ from app.api.routes.v2.schemas import (
     ListWithCount,
 )
 from app.api.session import CurrentSession
+from app.auth.models import User
 
 
 @router.get("/contents", response_model=ListWithCount[ContentDetailRead])
@@ -24,6 +25,15 @@ def list_contents(
     request: Request,
     session: CurrentSession,
     user: UserToken,
+    pagination: Pagination,
+) -> ListWithCount[ContentDetailRead]:
+    return _list_contents(request, session, user, pagination)
+
+
+def _list_contents(
+    request: Request,
+    session: CurrentSession,
+    user: User,
     pagination: Pagination,
 ) -> ListWithCount[ContentDetailRead]:
     query = (

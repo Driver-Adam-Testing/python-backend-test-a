@@ -338,23 +338,58 @@ class TypeScriptDriverTree(DriverTree):
                                 ),
                             )
                         )
-                elif capture_type == "var_name":
-                    # Skip var_name captures, they're handled with class_var
-                    continue
-                elif capture_type == "class_expr":
-                    # Skip class_expr captures, they're handled with class_var
-                    continue
+                elif capture_type == "interface":
+                    name_node = self._find_child_by_field(node, "name")
+                    if name_node:
+                        kind = SymbolKind.INTERFACE
+                        parent_path = self._get_fully_qualified_path_to_parent(node)
+                        base_interfaces = []
+                        for child in node.children:
+                            if child.type == "extends_type_clause":
+                                # Check for base interfaces
+                                base_interfaces = []
+                                for base in child.children:
+                                    if base.type == "type_identifier":
+                                        base_interfaces.append(
+                                            self._get_node_text(base)
+                                        )
+                        structures.append(
+                            self._create_symbol_data(
+                                node=node,
+                                name=self._get_node_text(name_node),
+                                kind=kind,
+                                parent_path=parent_path,
+                                base_class_names=(
+                                    base_interfaces if base_interfaces else None
+                                ),
+                            )
+                        )
                 else:
                     # Handle regular class/interface/enum declarations
                     name_node = self._find_child_by_field(node, "name")
                     if name_node:
                         processed_nodes.add(node)
+                        base_classes_and_interfaces = []
+                        for child in node.children:
+                            if child.type == "class_heritage":
+                                for base in child.children:
+                                    if base.type == "extends_clause":
+                                        base_class_name_node = (
+                                            self._find_child_by_field(base, "value")
+                                        )
+                                        base_classes_and_interfaces.append(
+                                            self._get_node_text(base_class_name_node)
+                                        )
+                                    elif base.type == "implements_clause":
+                                        for iface in base.children:
+                                            if iface.type == "type_identifier":
+                                                base_classes_and_interfaces.append(
+                                                    self._get_node_text(iface)
+                                                )
 
                         # Determine kind based on capture type
                         if capture_type in ["class", "abstract_class"]:
                             kind = SymbolKind.CLASS
-                        elif capture_type == "interface":
-                            kind = SymbolKind.INTERFACE
                         elif capture_type == "enum":
                             kind = (
                                 SymbolKind.DATA_STRUCTURE
@@ -363,6 +398,7 @@ class TypeScriptDriverTree(DriverTree):
                             kind = (
                                 SymbolKind.DATA_STRUCTURE
                             )  # Use DATA_STRUCTURE for type alias
+                            # TODO: only do object_type values for type aliases?
                         else:
                             kind = SymbolKind.DATA_STRUCTURE
 
@@ -373,40 +409,45 @@ class TypeScriptDriverTree(DriverTree):
                                 name=self._get_node_text(name_node),
                                 kind=kind,
                                 parent_path=parent_path,
+                                base_class_names=(
+                                    base_classes_and_interfaces
+                                    if base_classes_and_interfaces
+                                    else None
+                                ),
                             )
                         )
 
-        # Also handle namespace/module declarations
-        namespace_query = self.tree_sitter_lang.query("""
-            (internal_module
-              name: (identifier) @name
-            ) @namespace
+        # # Also handle namespace/module declarations
+        # namespace_query = self.tree_sitter_lang.query("""
+        #     (internal_module
+        #       name: (identifier) @name
+        #     ) @namespace
 
-            (module
-              name: (string) @name
-            ) @module
-        """)
+        #     (module
+        #       name: (string) @name
+        #     ) @module
+        # """)
 
-        namespace_captures = namespace_query.captures(self.tree.root_node)
+        # namespace_captures = namespace_query.captures(self.tree.root_node)
 
-        # Process namespaces and modules
-        for capture_type, nodes in namespace_captures.items():
-            if capture_type in ["namespace", "module"]:
-                for node in nodes:
-                    if node not in processed_nodes:
-                        name_node = self._find_child_by_field(node, "name")
-                        if name_node:
-                            processed_nodes.add(node)
-                            structures.append(
-                                self._create_symbol_data(
-                                    node=node,
-                                    name=self._get_node_text(name_node),
-                                    kind=SymbolKind.MODULE,  # Use MODULE for namespaces
-                                    parent_path=self._get_fully_qualified_path_to_parent(
-                                        node
-                                    ),
-                                )
-                            )
+        # # Process namespaces and modules
+        # for capture_type, nodes in namespace_captures.items():
+        #     if capture_type in ["namespace", "module"]:
+        #         for node in nodes:
+        #             if node not in processed_nodes:
+        #                 name_node = self._find_child_by_field(node, "name")
+        #                 if name_node:
+        #                     processed_nodes.add(node)
+        #                     structures.append(
+        #                         self._create_symbol_data(
+        #                             node=node,
+        #                             name=self._get_node_text(name_node),
+        #                             kind=SymbolKind.MODULE,  # Use MODULE for namespaces
+        #                             parent_path=self._get_fully_qualified_path_to_parent(
+        #                                 node
+        #                             ),
+        #                         )
+        #                     )
 
         return structures
 
@@ -748,7 +789,12 @@ class TypeScriptDriverTree(DriverTree):
         return self.source_bytes[node.start_byte : node.end_byte].decode("utf-8")
 
     def _create_symbol_data(
-        self, node: Node, name: str, kind: SymbolKind, parent_path: str
+        self,
+        node: Node,
+        name: str,
+        kind: SymbolKind,
+        parent_path: str,
+        base_class_names: list[str] | None = None,
     ) -> RawTreeSitterSymbolData:
         """Create a RawTreeSitterSymbolData from a node"""
         start_line, end_line = self.get_node_line_range(node)
@@ -763,4 +809,5 @@ class TypeScriptDriverTree(DriverTree):
             file_path=self.file_path,
             symbol_code=self._get_node_text(node),
             delimiter=".",
+            base_class_names=base_class_names,
         )

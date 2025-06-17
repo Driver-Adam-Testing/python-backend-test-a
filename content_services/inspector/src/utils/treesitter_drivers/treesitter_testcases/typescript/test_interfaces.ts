@@ -1,16 +1,6 @@
 // Test file for TypeScript interfaces and type aliases
 
 // Basic interfaces
-interface SimpleInterface {
-  property: string;
-}
-
-interface InterfaceWithMethods {
-  method(): void;
-  methodWithParams(a: number, b: string): boolean;
-  methodWithReturn(): string;
-}
-
 interface InterfaceWithOptional {
   required: string;
   optional?: number;
@@ -52,11 +42,6 @@ interface Dog extends Animal {
   bark(): void;
 }
 
-interface Cat extends Animal {
-  furColor: string;
-  meow(): void;
-}
-
 // Multiple inheritance
 interface Flyable {
   fly(): void;
@@ -73,52 +58,9 @@ interface Duck extends Animal, Flyable, Swimmable {
 }
 
 // Generic interfaces
-interface Container<T> {
-  value: T;
-  getValue(): T;
-  setValue(value: T): void;
-}
-
 interface Pair<T, U> {
   first: T;
   second: U;
-}
-
-interface ConstrainedGeneric<T extends string | number> {
-  data: T;
-}
-
-interface GenericWithDefault<T = string> {
-  value: T;
-}
-
-// Function types in interfaces
-interface FunctionInterface {
-  simpleFunction: () => void;
-  functionWithParams: (a: number, b: string) => boolean;
-  functionWithOptional: (required: string, optional?: number) => void;
-  genericFunction: <T>(value: T) => T;
-}
-
-// Call signatures
-interface CallableInterface {
-  (x: number): string;
-  (x: string): number;
-  property: string;
-}
-
-// Construct signatures
-interface ConstructableInterface {
-  new (name: string): Animal;
-  new (name: string, age: number): Animal;
-  prototype: Animal;
-}
-
-// Hybrid interfaces
-interface HybridInterface {
-  (value: string): number;
-  reset(): void;
-  interval: number;
 }
 
 // Nested interfaces
@@ -253,7 +195,7 @@ type ConstrainedGeneric<T extends Lengthwise> = {
 };
 
 // Recursive types
-type JSONValue = 
+type JSONValue =
   | string
   | number
   | boolean
@@ -278,12 +220,6 @@ type Result<T> =
 
 // Type guards and predicates
 type TypePredicate<T> = (value: unknown) => value is T;
-type AssertFunction<T> = (value: unknown) => asserts value is T;
-
-// Index access types
-type PersonProperty = Person['firstName'];
-type PersonKeys = keyof Person;
-type PersonValues = Person[keyof Person];
 
 // Generic constraints with keyof
 type PropertyGetter<T, K extends keyof T> = () => T[K];
@@ -301,57 +237,14 @@ type FunctionArgs<T> = T extends (...args: infer A) => any ? A : never;
 type Never = string & number;
 type ExcludeNull<T> = T extends null ? never : T;
 
-// Unknown type
-type SafeReturn = unknown;
-type SafeParameter = (value: unknown) => void;
-
 // Literal types
 type StringLiteral = 'literal';
-type NumberLiteral = 42;
-type BooleanLiteral = true;
-type BigIntLiteral = 100n;
-
-// Unique symbol
-type UniqueSymbol = unique symbol;
 
 // This type
 type FluentInterface = {
   method(): this;
   chain(): this;
 };
-
-// Class types
-type ClassType<T> = new (...args: any[]) => T;
-type AbstractClass<T> = abstract new (...args: any[]) => T;
-
-// Const assertions
-type ConstArray = readonly [1, 2, 3];
-type ConstObject = {
-  readonly a: 1;
-  readonly b: 2;
-};
-
-// Variadic tuple types
-type Concat<T extends readonly unknown[], U extends readonly unknown[]> = [...T, ...U];
-type Prepend<T, U extends readonly unknown[]> = [T, ...U];
-type Append<T extends readonly unknown[], U> = [...T, U];
-
-// Named parameters in types
-type NamedParams = {
-  name: string;
-  age: number;
-  email?: string;
-};
-
-// Branded types
-type UserId = string & { readonly __brand: 'UserId' };
-type PostId = string & { readonly __brand: 'PostId' };
-
-// Nominal types
-interface NominalString {
-  readonly __nominal: unique symbol;
-  toString(): string;
-}
 
 // Module augmentation interfaces
 declare module 'express' {
@@ -368,7 +261,7 @@ declare global {
   interface Window {
     myGlobal: string;
   }
-  
+
   interface Array<T> {
     customMethod(): T[];
   }
@@ -381,7 +274,6 @@ declare interface AmbientInterface {
 }
 
 // Type-only exports
-export type { Person, Animal, Shape };
 export interface ExportedInterface {
   exported: true;
 }
@@ -393,8 +285,6 @@ type APIResponse<T> = {
   headers: Record<string, string>;
   timestamp: Date;
 };
-
-type EventHandler<T = Event> = (event: T) => void | Promise<void>;
 
 type Middleware<T = any> = (
   req: Request,

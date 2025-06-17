@@ -1,4 +1,7 @@
 from app.api.auth import ApiKeyToken
+from app.api.routes.legacy.document_set import get_document_set
+from app.api.routes.legacy.queries import DocumentSet, FlatNode
+from app.api.routes.legacy.tree import get_codebase_tree
 from app.api.routes.v2.chat import ChatHttpRequest
 from app.api.routes.v2.contents import _list_contents
 from app.api.routes.v2.primary_assets import _list_primary_assets
@@ -17,7 +20,7 @@ router = APIRouter()
 
 
 @router.post("/chat", response_class=StreamingResponse)
-async def create_streaming_post(
+async def create_streaming_post_endpoint(
     session: CurrentSession,
     user: ApiKeyToken,
     payload: ChatHttpRequest,
@@ -36,7 +39,7 @@ async def create_streaming_post(
 
 
 @router.get("/primary_assets", response_model=ListWithCount[PrimaryAssetDetailRead])
-def get_primary_assets(
+def get_primary_assets_endpoint(
     request: Request,
     session: CurrentSession,
     user: ApiKeyToken,
@@ -47,10 +50,35 @@ def get_primary_assets(
 
 
 @router.get("/contents", response_model=ListWithCount[ContentDetailRead])
-def get_contents(
+def get_contents_endpoint(
     request: Request,
     session: CurrentSession,
     user: ApiKeyToken,
     pagination: Pagination,
 ) -> ListWithCount[ContentDetailRead]:
     return _list_contents(request, session, user, pagination)
+
+
+@router.get("/tree", response_model=list[FlatNode])
+def get_tree_endpoint(
+    request: Request,
+    session: CurrentSession,
+    user: ApiKeyToken,
+    codebaseId: str | None = None,
+    workspaceId: str | None = None,
+    versionId: str | None = None,
+) -> list[FlatNode]:
+    return get_codebase_tree(
+        session=session,
+        organization_id=user.organization_id,
+        version_id=versionId,
+    )
+
+
+@router.get("/document_set", response_model=DocumentSet)
+def get_document_set_endpoint(
+    request: Request,
+    session: CurrentSession,
+    user: ApiKeyToken,
+) -> DocumentSet:
+    return get_document_set(request, session, user)

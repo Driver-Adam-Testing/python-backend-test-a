@@ -126,7 +126,7 @@ class TypeScriptDriverTree(DriverTree):
                     )
                 )
 
-        return imports
+        return sorted(imports, key=lambda x: x.start_byte)
 
     def extract_callable_definitions(self) -> list[RawTreeSitterSymbolData]:
         """Extract function and method definitions"""
@@ -268,10 +268,15 @@ class TypeScriptDriverTree(DriverTree):
                         )
                     )
 
-        return callables
+        return sorted(callables, key=lambda x: x.start_byte)
 
     def extract_data_structure_definitions(self) -> list[RawTreeSitterSymbolData]:
         """Extract classes, interfaces, enums, and type aliases"""
+        # TODO: Handle objects with methods that aren't classes
+        # e.g.
+        # const obj = {
+        #   method() {}
+        # }
         structures = []
 
         # Query for different structure types
@@ -399,7 +404,6 @@ class TypeScriptDriverTree(DriverTree):
                             kind = (
                                 SymbolKind.DATA_STRUCTURE
                             )  # Use DATA_STRUCTURE for type alias
-                            # TODO: only do object_type values for type aliases?
                         else:
                             kind = SymbolKind.DATA_STRUCTURE
 
@@ -418,39 +422,8 @@ class TypeScriptDriverTree(DriverTree):
                             )
                         )
 
-        # # Also handle namespace/module declarations
-        # namespace_query = self.tree_sitter_lang.query("""
-        #     (internal_module
-        #       name: (identifier) @name
-        #     ) @namespace
-
-        #     (module
-        #       name: (string) @name
-        #     ) @module
-        # """)
-
-        # namespace_captures = namespace_query.captures(self.tree.root_node)
-
-        # # Process namespaces and modules
-        # for capture_type, nodes in namespace_captures.items():
-        #     if capture_type in ["namespace", "module"]:
-        #         for node in nodes:
-        #             if node not in processed_nodes:
-        #                 name_node = self._find_child_by_field(node, "name")
-        #                 if name_node:
-        #                     processed_nodes.add(node)
-        #                     structures.append(
-        #                         self._create_symbol_data(
-        #                             node=node,
-        #                             name=self._get_node_text(name_node),
-        #                             kind=SymbolKind.MODULE,  # Use MODULE for namespaces
-        #                             parent_path=self._get_fully_qualified_path_to_parent(
-        #                                 node
-        #                             ),
-        #                         )
-        #                     )
-
-        return structures
+        sorted_structures = sorted(structures, key=lambda x: x.start_byte)
+        return sorted_structures
 
     def extract_function_calls(self) -> list[RawTreeSitterSymbolData]:
         """Extract function and method calls"""
@@ -459,14 +432,8 @@ class TypeScriptDriverTree(DriverTree):
         call_query = self.tree_sitter_lang.query("""
             (call_expression
               function: [(identifier) @func_name
-                        (member_expression) @member_expr
-                        (subscript_expression) @subscript]
+                        (non_null_expression) @nonnull]
             ) @call
-
-            (new_expression
-              constructor: [(identifier) @constructor_name
-                           (member_expression) @constructor_member]
-            ) @new
         """)
 
         processed_nodes = set()
@@ -524,22 +491,27 @@ class TypeScriptDriverTree(DriverTree):
                         )
                     )
 
-        return calls
+        return sorted(calls, key=lambda x: x.start_byte)
 
     def extract_variables(self) -> list[RawTreeSitterSymbolData]:
         """Extract variable declarations"""
         variables = []
 
         variable_query = self.tree_sitter_lang.query("""
-            (variable_declarator
-              name: [(identifier) @var_name
-                    (object_pattern) @destructure_obj
-                    (array_pattern) @destructure_arr]
-            ) @declarator
+            (program
+                (_
+                (variable_declarator
+                name: (identifier) @var_name
+                value: (_) @var_value
+                ) @declarator))
 
-            (const_declaration) @const_decl
-            (let_declaration) @let_decl
-            (var_declaration) @var_decl
+            (program
+                (export_statement
+                (_
+                (variable_declarator
+                name: (identifier) @var_name
+                value: (_) @var_value
+                ) @declarator)))
         """)
 
         processed_nodes = set()
@@ -551,6 +523,16 @@ class TypeScriptDriverTree(DriverTree):
             for node in variable_captures["declarator"]:
                 if node not in processed_nodes:
                     name_node = self._find_child_by_field(node, "name")
+                    value_node = self._find_child_by_field(node, "value")
+                    if value_node.type in [
+                        "class",
+                        "arrow_function",
+                        "function_expression",
+                        "generator_function",
+                        "call_expression",
+                    ]:
+                        # Skip other handled variable_declarator cases
+                        continue
                     if name_node:
                         processed_nodes.add(node)
 
@@ -566,120 +548,11 @@ class TypeScriptDriverTree(DriverTree):
                                     ),
                                 )
                             )
-                        elif name_node.type in ["object_pattern", "array_pattern"]:
-                            # Destructuring - extract individual identifiers
-                            self._extract_destructured_variables(
-                                name_node, node, variables
-                            )
-
-        # Also handle parameter properties in constructors
-        param_prop_query = self.tree_sitter_lang.query("""
-            (parameter
-              decorator: [(public) (private) (protected) (readonly)] @modifier
-              name: (identifier) @param_name
-            ) @param
-        """)
-
-        param_captures = param_prop_query.captures(self.tree.root_node)
-
-        # Process parameter properties
-        if "param" in param_captures:
-            for node in param_captures["param"]:
-                if node not in processed_nodes:
-                    # Check if this is in a constructor
-                    parent = node.parent
-                    while parent and parent.type != "constructor":
-                        parent = parent.parent
-
-                    if parent and parent.type == "constructor":
-                        name_node = self._find_child_by_field(node, "name")
-                        if name_node:
-                            processed_nodes.add(node)
-                            class_node = self._find_parent_class(parent)
-                            parent_path = (
-                                self._get_fully_qualified_path_to_parent(class_node)
-                                if class_node
-                                else ""
-                            )
-
-                            variables.append(
-                                self._create_symbol_data(
-                                    node=node,
-                                    name=self._get_node_text(name_node),
-                                    kind=SymbolKind.VARIABLE,
-                                    parent_path=parent_path,
-                                )
-                            )
-
-        return variables
+        sorted_vars = sorted(variables, key=lambda x: x.start_byte)
+        return sorted_vars
 
     def extract_function_declarations(self) -> list[RawTreeSitterSymbolData]:
-        """Extract function declarations (signatures without implementation)"""
-        declarations = []
-
-        # In TypeScript, function declarations are typically in:
-        # 1. Interface method signatures
-        # 2. Abstract method declarations
-        # 3. Overload signatures
-        # 4. Declare function statements
-
-        declaration_query = self.tree_sitter_lang.query("""
-            (method_signature
-              name: (property_identifier) @name
-            ) @method_sig
-
-            (abstract_method_signature
-              name: (property_identifier) @name
-            ) @abstract_sig
-
-            (function_signature
-              name: (identifier) @name
-            ) @func_sig
-
-            (ambient_declaration
-              (function_declaration
-                name: (identifier) @name
-              )
-            ) @ambient_func
-        """)
-
-        processed_nodes = set()
-
-        declaration_captures = declaration_query.captures(self.tree.root_node)
-
-        # Process each type of declaration
-        for capture_type, nodes in declaration_captures.items():
-            for node in nodes:
-                if node not in processed_nodes:
-                    name_node = None
-
-                    if capture_type in ["method_sig", "abstract_sig"]:
-                        name_node = self._find_child_by_field(node, "name")
-                    elif capture_type == "func_sig":
-                        name_node = self._find_child_by_type(node, "identifier")
-                    elif capture_type == "ambient_func":
-                        # Find the function declaration inside
-                        func_decl = self._find_child_by_type(
-                            node, "function_declaration"
-                        )
-                        if func_decl:
-                            name_node = self._find_child_by_field(func_decl, "name")
-                            node = func_decl
-
-                    if name_node:
-                        processed_nodes.add(node)
-                        declarations.append(
-                            self._create_symbol_data(
-                                node=node,
-                                name=self._get_node_text(name_node),
-                                kind=SymbolKind.CALLABLE_DECLARATION,
-                                parent_path=self._get_fully_qualified_path_to_parent(
-                                    node
-                                ),
-                            )
-                        )
-
-        return declarations
+        return []
 
     def _get_fully_qualified_path_to_parent(self, node: Node) -> str:
         """Build fully qualified path to parent symbol"""
@@ -718,61 +591,6 @@ class TypeScriptDriverTree(DriverTree):
 
         path_parts.reverse()
         return ".".join(path_parts)
-
-    # def _extract_destructured_variables(
-    #     self,
-    #     pattern_node: Node,
-    #     declarator_node: Node,
-    #     variables: list[RawTreeSitterSymbolData],
-    # ) -> None:
-    #     """Extract individual variables from destructuring patterns"""
-    #     if pattern_node.type == "identifier":
-    #         variables.append(
-    #             self._create_symbol_data(
-    #                 node=declarator_node,
-    #                 name=self._get_node_text(pattern_node),
-    #                 kind=SymbolKind.VARIABLE,
-    #                 parent_path=self._get_fully_qualified_path_to_parent(
-    #                     declarator_node
-    #                 ),
-    #             )
-    #         )
-    #     elif pattern_node.type == "object_pattern":
-    #         # Extract each property
-    #         for child in pattern_node.children:
-    #             if child.type == "shorthand_property_identifier":
-    #                 variables.append(
-    #                     self._create_symbol_data(
-    #                         node=declarator_node,
-    #                         name=self._get_node_text(child),
-    #                         kind=SymbolKind.VARIABLE,
-    #                         parent_path=self._get_fully_qualified_path_to_parent(
-    #                             declarator_node
-    #                         ),
-    #                     )
-    #                 )
-    #             elif child.type == "pair_pattern":
-    #                 value_node = self._find_child_by_field(child, "value")
-    #                 if value_node:
-    #                     self._extract_destructured_variables(
-    #                         value_node, declarator_node, variables
-    #                     )
-    #     elif pattern_node.type == "array_pattern":
-    #         # Extract each element
-    #         for child in pattern_node.children:
-    #             if child.type != "," and child.type != "[" and child.type != "]":
-    #                 self._extract_destructured_variables(
-    #                     child, declarator_node, variables
-    #                 )
-
-    def _find_parent_class(self, node: Node) -> Node | None:
-        """Find the parent class declaration"""
-        current = node
-        while current:
-            if current.type in ["class_declaration", "abstract_class_declaration"]:
-                return current
-            current = current.parent
-        return None
 
     def _find_child_by_type(self, node: Node, child_type: str) -> Node | None:
         """Find first child node of given type"""

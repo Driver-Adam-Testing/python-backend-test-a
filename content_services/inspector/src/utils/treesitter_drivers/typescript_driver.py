@@ -173,7 +173,49 @@ class TypeScriptDriverTree(DriverTree):
                         )
                     )
 
-        # TODO: Process methods once we decide to include class methods
+        # Process methods
+        method_query = self.tree_sitter_lang.query("""
+            (method_definition
+              name: [(property_identifier) @method_name
+                     (private_property_identifier) @private_method_name
+                     (computed_property_name) @computed_name]
+            ) @method
+
+            (method_definition
+              (computed_property_name
+                [(template_string) @template_computed
+                 (member_expression) @member_computed
+                 (binary_expression) @binary_computed]
+              )
+            ) @computed_method
+        """)
+
+        method_captures = method_query.captures(self.tree.root_node)
+
+        if "method" in method_captures:
+            for node in method_captures["method"]:
+                if node in processed_nodes:
+                    continue
+
+                name_node = self._find_child_by_field(node, "name")
+                if name_node:
+                    processed_nodes.add(node)
+
+                    # Handle different name types
+                    if name_node.type == "computed_property_name":
+                        # Extract the content of computed property
+                        name_text = self._get_node_text(name_node)
+                    else:
+                        name_text = self._get_node_text(name_node)
+
+                    callables.append(
+                        self._create_symbol_data(
+                            node=node,
+                            name=name_text,
+                            kind=SymbolKind.CALLABLE,
+                            parent_path=self._get_fully_qualified_path_to_parent(node),
+                        )
+                    )
 
         # Process generator functions
         if "generator" in function_captures:
@@ -225,8 +267,6 @@ class TypeScriptDriverTree(DriverTree):
                             parent_path=self._get_fully_qualified_path_to_parent(node),
                         )
                     )
-
-        # TODO: Extract getters and setters once we have the correct node types
 
         return callables
 
@@ -629,6 +669,8 @@ class TypeScriptDriverTree(DriverTree):
                     name_node = self._find_child_by_field(parent, "name")
                     if name_node:
                         path_parts.append(self._get_node_text(name_node))
+            elif current.type == "program":
+                path_parts.append(str(self.file_path.with_suffix("")))
 
             current = current.parent
 

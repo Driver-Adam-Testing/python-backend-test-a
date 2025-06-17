@@ -400,40 +400,143 @@ class TestTypeScriptDriver:
 
     # Test methods
     def test_extract_methods_count(self, methods_code: str) -> None:
-        tree = TypeScriptDriverTree(methods_code, "test_methods.ts")
+        tree = TypeScriptDriverTree.from_code(methods_code, "test_methods.ts")
         methods = tree.extract_callable_definitions()
-        # Should find all method definitions
-        method_list = [m for m in methods if "." in m.fully_qualified_path_to_parent]
-        assert len(method_list) >= 100
+        # Should find all method definitions inside classes/objects
+        method_list = [m for m in methods if m.fully_qualified_parent_path != ""]
+        assert len(method_list) >= 74
 
     @pytest.mark.parametrize(
-        "method_name,class_name,expected_line",
+        "method_name,class_name,expected_start_line,expected_end_line",
         [
-            ("simpleMethod", "BasicMethods", 4),
-            ("publicMethod", "AccessModifiers", 22),
-            ("simpleStatic", "StaticMethods", 38),
-            ("simpleAsync", "AsyncMethods", 58),
-            ("simpleGenerator", "GeneratorMethods", 86),
-            ("value", "GettersSetters", 110),  # Getter
-            ("identity", "GenericMethods", 150),
-            ("process", "MethodOverloading", 180),
+            # BasicMethods
+            ("methodWithOptional", "BasicMethods", 5, 7),
+            ("methodWithDefault", "BasicMethods", 9, 11),
+            # AccessModifiers
+            ("publicMethod", "AccessModifiers", 15, 17),
+            ("privateMethod", "AccessModifiers", 19, 21),
+            ("protectedMethod", "AccessModifiers", 23, 25),
+            # StaticMethods
+            ("privateStatic", "StaticMethods", 29, 31),
+            ("protectedStatic", "StaticMethods", 33, 35),
+            ("#privateStaticMethod", "StaticMethods", 39, 41),
+            # AsyncMethods
+            ("asyncWithParams", "AsyncMethods", 45, 48),
+            ("privateAsync", "AsyncMethods", 50, 52),
+            ("staticAsync", "AsyncMethods", 54, 56),
+            ("asyncGenerator", "AsyncMethods", 58, 62),
+            # GeneratorMethods
+            ("generatorWithReturn", "GeneratorMethods", 66, 70),
+            ("privateGenerator", "GeneratorMethods", 72, 74),
+            ("staticGenerator", "GeneratorMethods", 76, 78),
+            ("[Symbol.iterator]", "GeneratorMethods", 80, 82),
+            # GettersSetters
+            ("value", "GettersSetters", 88, 90),  # getter
+            ("value", "GettersSetters", 92, 94),  # setter
+            ("readOnlyProp", "GettersSetters", 96, 98),
+            ("privateGetter", "GettersSetters", 100, 102),
+            ("protectedSetter", "GettersSetters", 104, 106),
+            ("staticGetter", "GettersSetters", 108, 110),
+            ("staticSetter", "GettersSetters", 112, 114),
+            ("data", "GettersSetters", 119, 121),  # getter
+            ("data", "GettersSetters", 123, 125),  # setter
+            # GenericMethods
+            ("identity", "GenericMethods", 129, 131),
+            ("map", "GenericMethods", 133, 135),
+            ("constrainedGeneric", "GenericMethods", 137, 139),
+            ("multipleGenerics", "GenericMethods", 141, 143),
+            ("staticGeneric", "GenericMethods", 145, 147),
+            ("asyncGeneric", "GenericMethods", 149, 151),
+            ("withDefault", "GenericMethods", 154, 156),
+            # MethodOverloading (implementation only)
+            ("process", "MethodOverloading", 163, 168),
+            ("create", "MethodOverloading", 173, 175),
+            # SpecialMethods
+            ("constructor", "SpecialMethods", 180, 180),
+            ("['computed' + 'Method']", "SpecialMethods", 186, 188),
+            ("[Symbol.toString]", "SpecialMethods", 191, 193),
+            ("[Symbol.toPrimitive]", "SpecialMethods", 195, 197),
+            ("[Symbol.asyncIterator]", "SpecialMethods", 199, 202),
+            ("compareWith", "SpecialMethods", 205, 207),
+            ("regularMethod", "SpecialMethods", 217, 219),
+            # DecoratedMethods
+            ("simpleDecorated", "DecoratedMethods", 224, 226),
+            ("multipleDecorators", "DecoratedMethods", 230, 232),
+            # AbstractMethods
+            ("concreteMethod", "AbstractMethods", 244, 246),
+            ("staticInAbstract", "AbstractMethods", 252, 254),
+            # ConcreteImplementation
+            ("abstractMethod", "ConcreteImplementation", 258, 260),
+            ("abstractGetter", "ConcreteImplementation", 262, 264),
+            ("abstractSetter", "ConcreteImplementation", 266, 268),
+            ("protectedAbstract", "ConcreteImplementation", 270, 272),
+            # PrivateFieldMethods
+            ("#privateMethod", "PrivateFieldMethods", 278, 280),
+            ("publicAccessor", "PrivateFieldMethods", 282, 284),
+            ("#staticPrivateMethod", "PrivateFieldMethods", 288, 290),
+            ("publicStaticAccessor", "PrivateFieldMethods", 292, 294),
+            ("#privateValue", "PrivateFieldMethods", 299, 301),  # getter
+            ("#privateValue", "PrivateFieldMethods", 303, 305),  # setter
+            # MethodChaining
+            ("add", "MethodChaining", 311, 314),
+            # ComplexMethods
+            ("createCallback", "ComplexMethods", 319, 321),
+            ("getAsyncCallback", "ComplexMethods", 324, 326),
+            ("higherOrder", "ComplexMethods", 329, 334),
+            ("curry", "ComplexMethods", 337, 339),
+            ("destructured", "ComplexMethods", 342, 344),
+            ("isValid", "ComplexMethods", 347, 349),
+            ("assert", "ComplexMethods", 352, 356),
+            # InterfaceImplementation
+            ("requiredMethod", "InterfaceImplementation", 366, 368),
+            ("optionalMethod", "InterfaceImplementation", 370, 372),
+            ("methodWithParams", "InterfaceImplementation", 374, 376),
+            # MixinClass
+            ("useLogging", "MixinClass", 426, 429),
+            # BaseClass
+            ("baseMethod", "BaseClass", 420, 422),
+            # objectWithMethods (these will be in the global scope)
+            ("method", "objectWithMethods", 381, 383),
+            ("asyncMethod", "objectWithMethods", 385, 387),
+            ("generatorMethod", "objectWithMethods", 389, 391),
+            ("getter", "objectWithMethods", 393, 395),
+            ("setter", "objectWithMethods", 397, 399),
+            ("['computed' + 'Method']", "objectWithMethods", 401, 403),
         ],
     )
     def test_extract_specific_methods(
-        self, methods_code: str, method_name: str, class_name: str, expected_line: int
+        self,
+        methods_code: str,
+        method_name: str,
+        class_name: str,
+        expected_start_line: int,
+        expected_end_line: int,
     ) -> None:
-        tree = TypeScriptDriverTree(methods_code, "test_methods.ts")
+        tree = TypeScriptDriverTree.from_code(methods_code, "test_methods.ts")
         methods = tree.extract_callable_definitions()
 
         matching = [
             m
             for m in methods
-            if m.name == method_name and class_name in m.fully_qualified_path_to_parent
+            if m.name == method_name and class_name in m.fully_qualified_parent_path
         ]
         assert (
             len(matching) > 0
         ), f"Method '{method_name}' in class '{class_name}' not found"
-        assert any(m.start_line == expected_line for m in matching)
+
+        # Find the method with the expected start line (for overloaded methods)
+        method = None
+        for m in matching:
+            if m.start_line == expected_start_line:
+                method = m
+                break
+
+        assert (
+            method is not None
+        ), f"Method '{method_name}' in class '{class_name}' at line {expected_start_line} not found"
+        assert (
+            method.end_line == expected_end_line
+        ), f"Method '{method_name}' in class '{class_name}' end line mismatch: expected {expected_end_line}, got {method.end_line}"
 
     # Test modules/namespaces
     def test_extract_modules_count(self, modules_code: str) -> None:

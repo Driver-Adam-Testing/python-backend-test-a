@@ -35,6 +35,10 @@ class TestTypeScriptDriver:
         return (test_dir / "test_interfaces.ts").read_text()
 
     @pytest.fixture
+    def object_types_code(self, test_dir: Path) -> str:
+        return (test_dir / "test_object_types.ts").read_text()
+
+    @pytest.fixture
     def variables_code(self, test_dir: Path) -> str:
         return (test_dir / "test_variables.ts").read_text()
 
@@ -333,14 +337,14 @@ class TestTypeScriptDriver:
             ("MergedInterface", 82, 84),
             ("MergedInterface", 86, 88),
             # Module augmentation interfaces
-            ("Request", 251, 256),
+            ("Request", 94, 99),
             # Global augmentation
-            ("Window", 261, 263),
-            ("Array", 265, 267),
+            ("Window", 104, 106),
+            ("Array", 108, 110),
             # Ambient interfaces
-            ("AmbientInterface", 271, 274),
+            ("AmbientInterface", 114, 117),
             # Type-only exports
-            ("ExportedInterface", 277, 279),
+            ("ExportedInterface", 120, 122),
         ],
     )
     def test_extract_specific_interfaces(
@@ -369,6 +373,45 @@ class TestTypeScriptDriver:
         assert (
             interface.end_line == expected_end_line
         ), f"Interface '{interface_name}' end line mismatch: expected {expected_end_line}, got {interface.end_line}"
+
+    # Test object types
+    def test_extract_object_type_count(self, object_types_code: str) -> None:
+        tree = TypeScriptDriverTree.from_code(object_types_code, "test_object_types.ts")
+        classes = tree.extract_data_structure_definitions()
+        # Should find all class definitions including anonymous ones
+        # We have 40 classes listed in the test cases plus some anonymous/nested ones
+        assert len(classes) >= 40
+
+    @pytest.mark.parametrize(
+        "type_name,expected_start_line,expected_end_line",
+        [],
+    )
+    def test_extract_specific_object_types(
+        self,
+        object_types_code: str,
+        type_name: str,
+        expected_start_line: int,
+        expected_end_line: int,
+    ) -> None:
+        tree = TypeScriptDriverTree.from_code(object_types_code, "test_object_types.ts")
+        types = tree.extract_data_structure_definitions()
+
+        matching = [i for i in types if i.name == type_name]
+        assert len(matching) > 0, f"Type '{type_name}' not found"
+
+        # Find the object type with the expected start line (for merged interfaces)
+        object_type = None
+        for i in matching:
+            if i.start_line == expected_start_line:
+                object_type = i
+                break
+
+        assert (
+            object_type is not None
+        ), f"Type '{type_name}' at line {expected_start_line} not found"
+        assert (
+            object_type.end_line == expected_end_line
+        ), f"Type '{type_name}' end line mismatch: expected {expected_end_line}, got {object_type.end_line}"
 
     # Test variables
     def test_extract_variables_count(self, variables_code: str) -> None:

@@ -290,6 +290,7 @@ class TypeScriptDriverTree(DriverTree):
 
             (type_alias_declaration
               name: (type_identifier) @name
+              value: (object_type) @value
             ) @type_alias
 
             (abstract_class_declaration
@@ -718,51 +719,51 @@ class TypeScriptDriverTree(DriverTree):
         path_parts.reverse()
         return ".".join(path_parts)
 
-    def _extract_destructured_variables(
-        self,
-        pattern_node: Node,
-        declarator_node: Node,
-        variables: list[RawTreeSitterSymbolData],
-    ) -> None:
-        """Extract individual variables from destructuring patterns"""
-        if pattern_node.type == "identifier":
-            variables.append(
-                self._create_symbol_data(
-                    node=declarator_node,
-                    name=self._get_node_text(pattern_node),
-                    kind=SymbolKind.VARIABLE,
-                    parent_path=self._get_fully_qualified_path_to_parent(
-                        declarator_node
-                    ),
-                )
-            )
-        elif pattern_node.type == "object_pattern":
-            # Extract each property
-            for child in pattern_node.children:
-                if child.type == "shorthand_property_identifier":
-                    variables.append(
-                        self._create_symbol_data(
-                            node=declarator_node,
-                            name=self._get_node_text(child),
-                            kind=SymbolKind.VARIABLE,
-                            parent_path=self._get_fully_qualified_path_to_parent(
-                                declarator_node
-                            ),
-                        )
-                    )
-                elif child.type == "pair_pattern":
-                    value_node = self._find_child_by_field(child, "value")
-                    if value_node:
-                        self._extract_destructured_variables(
-                            value_node, declarator_node, variables
-                        )
-        elif pattern_node.type == "array_pattern":
-            # Extract each element
-            for child in pattern_node.children:
-                if child.type != "," and child.type != "[" and child.type != "]":
-                    self._extract_destructured_variables(
-                        child, declarator_node, variables
-                    )
+    # def _extract_destructured_variables(
+    #     self,
+    #     pattern_node: Node,
+    #     declarator_node: Node,
+    #     variables: list[RawTreeSitterSymbolData],
+    # ) -> None:
+    #     """Extract individual variables from destructuring patterns"""
+    #     if pattern_node.type == "identifier":
+    #         variables.append(
+    #             self._create_symbol_data(
+    #                 node=declarator_node,
+    #                 name=self._get_node_text(pattern_node),
+    #                 kind=SymbolKind.VARIABLE,
+    #                 parent_path=self._get_fully_qualified_path_to_parent(
+    #                     declarator_node
+    #                 ),
+    #             )
+    #         )
+    #     elif pattern_node.type == "object_pattern":
+    #         # Extract each property
+    #         for child in pattern_node.children:
+    #             if child.type == "shorthand_property_identifier":
+    #                 variables.append(
+    #                     self._create_symbol_data(
+    #                         node=declarator_node,
+    #                         name=self._get_node_text(child),
+    #                         kind=SymbolKind.VARIABLE,
+    #                         parent_path=self._get_fully_qualified_path_to_parent(
+    #                             declarator_node
+    #                         ),
+    #                     )
+    #                 )
+    #             elif child.type == "pair_pattern":
+    #                 value_node = self._find_child_by_field(child, "value")
+    #                 if value_node:
+    #                     self._extract_destructured_variables(
+    #                         value_node, declarator_node, variables
+    #                     )
+    #     elif pattern_node.type == "array_pattern":
+    #         # Extract each element
+    #         for child in pattern_node.children:
+    #             if child.type != "," and child.type != "[" and child.type != "]":
+    #                 self._extract_destructured_variables(
+    #                     child, declarator_node, variables
+    #                 )
 
     def _find_parent_class(self, node: Node) -> Node | None:
         """Find the parent class declaration"""

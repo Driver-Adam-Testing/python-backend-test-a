@@ -353,7 +353,7 @@ async def inspect_db(
                     changes_detected = True
                 print(node.root_rel_path, node.status, node.kind)
 
-            if not changes_detected:
+            if previous_version is not None and not changes_detected:
                 # Delete the version and return
                 await delete_version_by_id(version_id)
                 print(
@@ -393,7 +393,7 @@ async def inspect_db(
         raise
     else:
         set_codebase_status_in_container.remote(version_id, "GENERATION_COMPLETE")
-        if changes_detected:
+        if previous_version is None or changes_detected:
             print("Changes detected exporting tech docs to zip...")
             export_tech_docs_to_zip.remote(version_id, install_id)
         else:

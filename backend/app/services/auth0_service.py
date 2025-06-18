@@ -1,4 +1,5 @@
 import logging
+import time
 
 from auth0.authentication import Database, GetToken, Users
 from auth0.management import Auth0
@@ -16,14 +17,33 @@ logger = logging.getLogger(__name__)
 
 
 class Auth0Service:
-    def __init__(
-        self: "Auth0Service",
-    ) -> None:
-        self.auth0_mgmt_domain = settings.AUTH0_MGMT_API_DOMAIN
-        self.auth0_mgmt_client_id = settings.AUTH0_MGMT_API_CLIENT_ID
-        self.auth0_mgmt_client_secret = settings.AUTH0_MGMT_API_CLIENT_SECRET
-        self.auth0_domain = settings.AUTH0_DOMAIN
-        self.auth0_client_id = settings.AUTH0_CLIENT_ID
+    _mgmt_token: str | None = None
+    _mgmt_token_exp: float = 0.0  # epoch seconds
+
+    def __init__(self) -> None:
+        self.auth0_mgmt_domain: str = settings.AUTH0_MGMT_API_DOMAIN
+        self.auth0_mgmt_client_id: str = settings.AUTH0_MGMT_API_CLIENT_ID
+        self.auth0_mgmt_client_secret: str = settings.AUTH0_MGMT_API_CLIENT_SECRET
+        self.auth0_domain: str = settings.AUTH0_DOMAIN
+        self.auth0_client_id: str = settings.AUTH0_CLIENT_ID
+
+    def _refresh_management_token(self) -> None:
+        get_token = GetToken(
+            self.auth0_mgmt_domain,
+            client_id=self.auth0_mgmt_client_id,
+            client_secret=self.auth0_mgmt_client_secret,
+        )
+        token = get_token.client_credentials(
+            f"https://{self.auth0_mgmt_domain}/api/v2/"
+        )
+        self._mgmt_token = token["access_token"]
+        self._mgmt_token_exp = time.time() + token.get("expires_in", 86_400)
+
+    def _management_client(self) -> Auth0:
+        if self._mgmt_token is None or self._mgmt_token_exp - time.time() < 60:
+            self._refresh_management_token()
+
+        return Auth0(self.auth0_mgmt_domain, self._mgmt_token)
 
     def get_mgmt_api_token(self: "Auth0Service") -> str:
         get_token = GetToken(
@@ -56,7 +76,7 @@ class Auth0Service:
                 organization=user.organization_id,
             )
             logger.info(
-                f"User requested password reset for {user.subject} sent to {user_profile.get("email")}"
+                f"User requested password reset for {user.subject} sent to {user_profile.get('email')}"
             )
             return response
         except Exception as e:
@@ -242,3 +262,10 @@ class Auth0Service:
                 f"Something went wrong revoking invitation id = {invitation_id} from the organization {user.organization_id}"
             )
             raise e
+
+    def get_user_profile(self, user_id: str) -> dict[str, any]:
+        """
+        Return a single user profile from Auth0 Management API.
+        """
+        client = self._management_client()
+        return client.users.get(user_id)

@@ -28,14 +28,11 @@ class JsTsDriverTree(DriverTree):
         """Extract import statements from TypeScript code"""
         imports = []
 
-        # Query for different import types
+        # Query for different import types with source extraction
         import_query = self.tree_sitter_lang.query("""
-            (import_statement) @import
-            (import_clause) @clause
-            (namespace_import) @namespace
-            (named_imports) @named
-            (import_specifier) @specifier
-            (import_require_clause) @require
+            (import_statement
+              source: (string) @source
+            ) @import
         """)
 
         captures_dict = import_query.captures(self.tree.root_node)
@@ -43,16 +40,47 @@ class JsTsDriverTree(DriverTree):
         # Process import statements
         if "import" in captures_dict:
             for node in captures_dict["import"]:
-                # Handle full import statement
-                import_text = self._get_node_text(node)
-                imports.append(
-                    self._create_symbol_data(
-                        node=node,
-                        name=import_text,
-                        kind=SymbolKind.IMPORT,
-                        parent_path="",
+                # Find the source string child node
+                source_node = node.child_by_field_name("source")
+                if source_node:
+                    # Remove quotes from the source string
+                    source_text = self._get_node_text(source_node).strip("\"'")
+                    imports.append(
+                        self._create_symbol_data(
+                            node=node,
+                            name=source_text,
+                            kind=SymbolKind.IMPORT,
+                            parent_path="",
+                        )
                     )
-                )
+
+        # Handle TypeScript import assignment (import x = require('...'))
+        import_assign_query = self.tree_sitter_lang.query("""
+            (import_statement
+              (import_require_clause
+                (string) @module
+              )
+            ) @import_require
+        """)
+
+        import_assign_captures = import_assign_query.captures(self.tree.root_node)
+        if "module" in import_assign_captures:
+            for node in import_assign_captures["module"]:
+                # Remove quotes from the module string
+                module_text = self._get_node_text(node).strip("\"'")
+                # Find the parent import_statement
+                parent = node
+                while parent and parent.type != "import_statement":
+                    parent = parent.parent
+                if parent:
+                    imports.append(
+                        self._create_symbol_data(
+                            node=parent,
+                            name=module_text,
+                            kind=SymbolKind.IMPORT,
+                            parent_path="",
+                        )
+                    )
 
         # Also handle require() style imports
         require_query = self.tree_sitter_lang.query("""
@@ -66,14 +94,19 @@ class JsTsDriverTree(DriverTree):
         """)
 
         require_captures = require_query.captures(self.tree.root_node)
-        if "declarator" in require_captures:
-            for node in require_captures["declarator"]:
-                name_node = node.child_by_field_name("name")
-                if name_node:
+        if "module" in require_captures:
+            for node in require_captures["module"]:
+                # Remove quotes from the module string
+                module_text = self._get_node_text(node).strip("\"'")
+                # Find the parent declarator node
+                parent = node
+                while parent and parent.type != "variable_declarator":
+                    parent = parent.parent
+                if parent:
                     imports.append(
                         self._create_symbol_data(
-                            node=node,
-                            name=self._get_node_text(name_node),
+                            node=parent,
+                            name=module_text,
                             kind=SymbolKind.IMPORT,
                             parent_path="",
                         )
@@ -83,30 +116,28 @@ class JsTsDriverTree(DriverTree):
         dynamic_import_query = self.tree_sitter_lang.query("""
             (call_expression
               function: (import) @import_keyword
+              arguments: (arguments (string) @source)
             ) @dynamic_import
         """)
 
         dynamic_captures = dynamic_import_query.captures(self.tree.root_node)
-        if "dynamic_import" in dynamic_captures:
-            for node in dynamic_captures["dynamic_import"]:
-                # Check if this is part of a variable declaration or await expression
-                parent = node.parent
-                while parent and parent.type in [
-                    "await_expression",
-                    "parenthesized_expression",
-                ]:
+        if "source" in dynamic_captures:
+            for node in dynamic_captures["source"]:
+                # Remove quotes from the source string
+                source_text = self._get_node_text(node).strip("\"'")
+                # Find the parent call_expression
+                parent = node
+                while parent and parent.type != "call_expression":
                     parent = parent.parent
-
-                # Get the full import expression
-                import_text = self._get_node_text(node)
-                imports.append(
-                    self._create_symbol_data(
-                        node=node,
-                        name=import_text,
-                        kind=SymbolKind.IMPORT,
-                        parent_path="",
+                if parent:
+                    imports.append(
+                        self._create_symbol_data(
+                            node=parent,
+                            name=source_text,
+                            kind=SymbolKind.IMPORT,
+                            parent_path="",
+                        )
                     )
-                )
 
         # Handle import.meta access
         import_meta_query = self.tree_sitter_lang.query("""

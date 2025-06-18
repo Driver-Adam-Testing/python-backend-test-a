@@ -128,7 +128,7 @@ class TestTypeScriptDriver:
         tree = JsTsDriverTree.from_code(imports_code, "test_imports.ts")
         imports = tree.extract_imports()
 
-        matching = [imp for imp in imports if import_source in imp.name]
+        matching = [imp for imp in imports if import_source == imp.name]
         assert len(matching) > 0, f"Import '{import_source}' not found"
         assert any(imp.start_line == expected_line for imp in matching)
 

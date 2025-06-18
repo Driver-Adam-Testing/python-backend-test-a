@@ -17,7 +17,7 @@ LANGUAGES = {
     "cpp": tree_sitter.Language(tree_sitter_cpp.language()),
     "python": tree_sitter.Language(tree_sitter_python.language()),
     "java": tree_sitter.Language(tree_sitter_java.language()),
-    "typescript": tree_sitter.Language(tree_sitter_typescript.language_typescript()),
+    "js_ts": tree_sitter.Language(tree_sitter_typescript.language_typescript()),
 }
 
 

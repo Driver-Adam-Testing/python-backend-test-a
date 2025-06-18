@@ -163,6 +163,7 @@ async def inspect_db(
     )
     from utils.db import (
         create_inspector_run,
+        delete_version_by_id,
         get_analyzable_nodes_by_version_id,
         get_version_by_id,
         try_get_prev_version,
@@ -351,6 +352,14 @@ async def inspect_db(
                 if not changes_detected and node.status != NodeStatus.UNMODIFIED:
                     changes_detected = True
                 print(node.root_rel_path, node.status, node.kind)
+
+            if not changes_detected:
+                # Delete the version and return
+                await delete_version_by_id(version_id)
+                print(
+                    f"No modified nodes found for version {version_id}. Deleting version."
+                )
+                return
 
             nodes_with_id: list[tuple[Node, uuid.UUID | None]] = [
                 (node, path_to_db_node_id[node.root_rel_path])

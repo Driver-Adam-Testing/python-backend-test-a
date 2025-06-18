@@ -460,7 +460,7 @@ class IrData(BaseModel, abc.ABC):
                 )
                 inherit_label = (
                     "Inherits From"
-                    if sym.raw.file_path.suffix != ".java"
+                    if sym.raw.file_path.suffix not in [".java", ".ts", ".js"]
                     else "Extends/Implements"
                 )
                 if (

@@ -345,9 +345,11 @@ async def inspect_db(
                 Path(db_node.relative_path): db_node.id
                 for db_node in db_all_codebase_nodes
             }
-
+            changes_detected = False  # export tech docs only if changes detected
             print("======= Nodes being processed  =======")
             for node in sorted_nodes:
+                if not changes_detected and node.status != NodeStatus.UNMODIFIED:
+                    changes_detected = True
                 print(node.root_rel_path, node.status, node.kind)
 
             nodes_with_id: list[tuple[Node, uuid.UUID | None]] = [
@@ -382,7 +384,11 @@ async def inspect_db(
         raise
     else:
         set_codebase_status_in_container.remote(version_id, "GENERATION_COMPLETE")
-        export_tech_docs_to_zip.remote(version_id, install_id)
+        if changes_detected:
+            print("Changes detected exporting tech docs to zip...")
+            export_tech_docs_to_zip.remote(version_id, install_id)
+        else:
+            print("No changes detected skipping tech doc export.")
 
 
 def hash_file(file_path: Path) -> str:

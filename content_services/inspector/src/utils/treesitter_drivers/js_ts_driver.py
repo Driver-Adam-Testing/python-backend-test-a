@@ -11,15 +11,18 @@ from utils.lang_specialization.symbol_common import RawTreeSitterSymbolData, Sym
 
 from .base import DriverTree
 
-# TODO: what to do with objects with methods, that aren't classes? How will we handle prototypical inheritance?
+# TODO: Currently does not support .tsx and .jsx files
 
 
 @dataclass
-class TypeScriptDriverTree(DriverTree):
+class JsTsDriverTree(DriverTree):
     """Tree-sitter driver for TypeScript language"""
 
-    language: ClassVar[str] = "typescript"
-    extensions: ClassVar[set[str]] = {".ts", ".tsx", ".mts", ".cts"}
+    language: ClassVar[str] = "js_ts"
+    extensions: ClassVar[set[str]] = {
+        ".ts",
+        ".js",
+    }  # TODO: extensions is likely not needed anymore
 
     def extract_imports(self) -> list[RawTreeSitterSymbolData]:
         """Extract import statements from TypeScript code"""

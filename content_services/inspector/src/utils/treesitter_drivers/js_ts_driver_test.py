@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from .typescript_driver import TypeScriptDriverTree
+from .js_ts_driver import JsTsDriverTree
 
 
 class TestTypeScriptDriver:
@@ -58,7 +58,7 @@ class TestTypeScriptDriver:
 
     # Test imports
     def test_extract_imports_count(self, imports_code: str) -> None:
-        tree = TypeScriptDriverTree.from_code(imports_code, "test_imports.ts")
+        tree = JsTsDriverTree.from_code(imports_code, "test_imports.ts")
         imports = tree.extract_imports()
         # Count all import statements (including side-effect imports, dynamic imports, and import.meta)
         assert len(imports) == 36
@@ -125,7 +125,7 @@ class TestTypeScriptDriver:
     def test_extract_specific_imports(
         self, imports_code: str, import_source: str, expected_line: int
     ) -> None:
-        tree = TypeScriptDriverTree.from_code(imports_code, "test_imports.ts")
+        tree = JsTsDriverTree.from_code(imports_code, "test_imports.ts")
         imports = tree.extract_imports()
 
         matching = [imp for imp in imports if import_source in imp.name]
@@ -134,7 +134,7 @@ class TestTypeScriptDriver:
 
     # Test functions
     def test_extract_functions_count(self, functions_code: str) -> None:
-        tree = TypeScriptDriverTree.from_code(functions_code, "test_functions.ts")
+        tree = JsTsDriverTree.from_code(functions_code, "test_functions.ts")
         functions = tree.extract_callable_definitions()
         # Should find function declarations, arrow functions, generators, etc.
         assert len(functions) == 28
@@ -195,7 +195,7 @@ class TestTypeScriptDriver:
         expected_start_line: int,
         expected_end_line: int,
     ) -> None:
-        tree = TypeScriptDriverTree.from_code(functions_code, "test_functions.ts")
+        tree = JsTsDriverTree.from_code(functions_code, "test_functions.ts")
         functions = tree.extract_callable_definitions()
 
         if function_name is None:
@@ -222,7 +222,7 @@ class TestTypeScriptDriver:
 
     # Test classes
     def test_extract_classes_count(self, classes_code: str) -> None:
-        tree = TypeScriptDriverTree.from_code(classes_code, "test_classes.ts")
+        tree = JsTsDriverTree.from_code(classes_code, "test_classes.ts")
         classes = tree.extract_data_structure_definitions()
         # Should find all class definitions including anonymous ones
         # We have 40 classes listed in the test cases plus some anonymous/nested ones
@@ -280,7 +280,7 @@ class TestTypeScriptDriver:
         expected_start_line: int,
         expected_end_line: int,
     ) -> None:
-        tree = TypeScriptDriverTree.from_code(classes_code, "test_classes.ts")
+        tree = JsTsDriverTree.from_code(classes_code, "test_classes.ts")
         classes = tree.extract_data_structure_definitions()
 
         if class_name is None:
@@ -307,7 +307,7 @@ class TestTypeScriptDriver:
 
     # Test interfaces
     def test_extract_interfaces_count(self, interfaces_code: str) -> None:
-        tree = TypeScriptDriverTree.from_code(interfaces_code, "test_interfaces.ts")
+        tree = JsTsDriverTree.from_code(interfaces_code, "test_interfaces.ts")
         interfaces = tree.extract_data_structure_definitions()
         # Should find interfaces and type aliases
         assert len(interfaces) == 20
@@ -356,7 +356,7 @@ class TestTypeScriptDriver:
         expected_start_line: int,
         expected_end_line: int,
     ) -> None:
-        tree = TypeScriptDriverTree.from_code(interfaces_code, "test_interfaces.ts")
+        tree = JsTsDriverTree.from_code(interfaces_code, "test_interfaces.ts")
         interfaces = tree.extract_data_structure_definitions()
 
         matching = [i for i in interfaces if i.name == interface_name]
@@ -378,7 +378,7 @@ class TestTypeScriptDriver:
 
     # Test object types
     def test_extract_object_type_count(self, object_types_code: str) -> None:
-        tree = TypeScriptDriverTree.from_code(object_types_code, "test_object_types.ts")
+        tree = JsTsDriverTree.from_code(object_types_code, "test_object_types.ts")
         object_types = tree.extract_data_structure_definitions()
         # Should find all class definitions including anonymous ones
         # We have 40 classes listed in the test cases plus some anonymous/nested ones
@@ -421,7 +421,7 @@ class TestTypeScriptDriver:
         expected_start_line: int,
         expected_end_line: int,
     ) -> None:
-        tree = TypeScriptDriverTree.from_code(object_types_code, "test_object_types.ts")
+        tree = JsTsDriverTree.from_code(object_types_code, "test_object_types.ts")
         types = tree.extract_data_structure_definitions()
 
         matching = [i for i in types if i.name == type_name]
@@ -443,7 +443,7 @@ class TestTypeScriptDriver:
 
     # Test variables
     def test_extract_variables_count(self, variables_code: str) -> None:
-        tree = TypeScriptDriverTree.from_code(variables_code, "test_variables.ts")
+        tree = JsTsDriverTree.from_code(variables_code, "test_variables.ts")
         variables = tree.extract_variables()
         # Should find const, let, var declarations
         assert len(variables) == 29
@@ -506,7 +506,7 @@ class TestTypeScriptDriver:
         variable_name: str,
         expected_line: int,
     ) -> None:
-        tree = TypeScriptDriverTree.from_code(variables_code, "test_variables.ts")
+        tree = JsTsDriverTree.from_code(variables_code, "test_variables.ts")
         variables = tree.extract_variables()
 
         matching = [v for v in variables if v.name == variable_name]
@@ -515,7 +515,7 @@ class TestTypeScriptDriver:
 
     # Test enums
     def test_extract_enums_count(self, enums_code: str) -> None:
-        tree = TypeScriptDriverTree.from_code(enums_code, "test_enums.ts")
+        tree = JsTsDriverTree.from_code(enums_code, "test_enums.ts")
         enums = tree.extract_data_structure_definitions()
         # Should find all enum declarations
         assert len(enums) == 8
@@ -536,7 +536,7 @@ class TestTypeScriptDriver:
     def test_extract_specific_enums(
         self, enums_code: str, enum_name: str, expected_line: int
     ) -> None:
-        tree = TypeScriptDriverTree.from_code(enums_code, "test_enums.ts")
+        tree = JsTsDriverTree.from_code(enums_code, "test_enums.ts")
         enums = tree.extract_data_structure_definitions()
 
         matching = [e for e in enums if e.name == enum_name]
@@ -545,7 +545,7 @@ class TestTypeScriptDriver:
 
     # Test methods
     def test_extract_methods_count(self, methods_code: str) -> None:
-        tree = TypeScriptDriverTree.from_code(methods_code, "test_methods.ts")
+        tree = JsTsDriverTree.from_code(methods_code, "test_methods.ts")
         methods = tree.extract_callable_definitions()
         # Should find all method definitions inside classes/objects
         method_list = [m for m in methods if m.fully_qualified_parent_path != ""]
@@ -657,7 +657,7 @@ class TestTypeScriptDriver:
         expected_start_line: int,
         expected_end_line: int,
     ) -> None:
-        tree = TypeScriptDriverTree.from_code(methods_code, "test_methods.ts")
+        tree = JsTsDriverTree.from_code(methods_code, "test_methods.ts")
         methods = tree.extract_callable_definitions()
 
         matching = [
@@ -684,7 +684,7 @@ class TestTypeScriptDriver:
         ), f"Method '{method_name}' in class '{class_name}' end line mismatch: expected {expected_end_line}, got {method.end_line}"
 
     def test_extract_calls_count(self, calls_code: str) -> None:
-        tree = TypeScriptDriverTree.from_code(calls_code, "test_calls.ts")
+        tree = JsTsDriverTree.from_code(calls_code, "test_calls.ts")
         calls = tree.extract_function_calls()
         for call in calls:
             print(f"Found call: {call.name} at line {call.start_line}")
@@ -764,7 +764,7 @@ class TestTypeScriptDriver:
     def test_extract_specific_calls(
         self, calls_code: str, call_name: str, expected_line: int
     ) -> None:
-        tree = TypeScriptDriverTree.from_code(calls_code, "test_calls.ts")
+        tree = JsTsDriverTree.from_code(calls_code, "test_calls.ts")
         calls = tree.extract_function_calls()
 
         if call_name == "":

@@ -1,6 +1,7 @@
 from .base import LanguageProvider
 from .providers.c_cpp_provider import CCppLanguageProvider
 from .providers.java_provider import JavaLanguageProvider
+from .providers.js_ts_provider import JsTsLanguageProvider
 from .providers.python_provider import PythonLanguageProvider
 
 
@@ -9,6 +10,7 @@ def get_language_providers() -> dict[str, LanguageProvider]:
         "python": PythonLanguageProvider(),
         "c_cpp": CCppLanguageProvider(),
         "java": JavaLanguageProvider(),
+        "js_ts": JsTsLanguageProvider(),
     }
 
 

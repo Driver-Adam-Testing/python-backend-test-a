@@ -29,6 +29,8 @@ class Lang(IntEnum):
     RUBY = 8
     C_SHARP = 9
     DEFAULT = 10
+    TYPESCRIPT = 11
+    JAVASCRIPT = 12
 
     @classmethod
     def from_ext(cls, ext: str) -> Self:
@@ -53,6 +55,10 @@ class Lang(IntEnum):
                 return cls.RUBY
             case ".cs":
                 return cls.C_SHARP
+            case ".ts":  # TODO: handle .tsx as well
+                return cls.TYPESCRIPT
+            case ".js":  # TODO: handle .jsx as well
+                return cls.JAVASCRIPT
             case _:
                 return cls.DEFAULT
 

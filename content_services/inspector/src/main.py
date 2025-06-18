@@ -163,6 +163,7 @@ async def inspect_db(
     )
     from utils.db import (
         create_inspector_run,
+        delete_version_by_id,
         get_analyzable_nodes_by_version_id,
         get_version_by_id,
         try_get_prev_version,
@@ -345,10 +346,20 @@ async def inspect_db(
                 Path(db_node.relative_path): db_node.id
                 for db_node in db_all_codebase_nodes
             }
-
+            changes_detected = False  # export tech docs only if changes detected
             print("======= Nodes being processed  =======")
             for node in sorted_nodes:
+                if not changes_detected and node.status != NodeStatus.UNMODIFIED:
+                    changes_detected = True
                 print(node.root_rel_path, node.status, node.kind)
+
+            if previous_version is not None and not changes_detected:
+                # Delete the version and return
+                await delete_version_by_id(version_id)
+                print(
+                    f"No modified nodes found for version {version_id}. Deleting version."
+                )
+                return
 
             nodes_with_id: list[tuple[Node, uuid.UUID | None]] = [
                 (node, path_to_db_node_id[node.root_rel_path])
@@ -382,7 +393,11 @@ async def inspect_db(
         raise
     else:
         set_codebase_status_in_container.remote(version_id, "GENERATION_COMPLETE")
-        export_tech_docs_to_zip.remote(version_id, install_id)
+        if previous_version is None or changes_detected:
+            print("Changes detected exporting tech docs to zip...")
+            export_tech_docs_to_zip.remote(version_id, install_id)
+        else:
+            print("No changes detected skipping tech doc export.")
 
 
 def hash_file(file_path: Path) -> str:

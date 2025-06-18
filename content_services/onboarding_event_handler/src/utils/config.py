@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     )
     API_URL: str
     AUTH0_URL: str
+    AUTH0_AUDIENCE: str
     CLIENT_ID_SECRET: str
     CLIENT_SECRET_SECRET: str
     ENVIRONMENT: Literal[

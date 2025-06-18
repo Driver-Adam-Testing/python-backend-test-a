@@ -24,6 +24,7 @@ from app.api.routes.v2.schemas import (
     PrimaryAssetUpdate,
 )
 from app.api.session import CurrentSession
+from app.auth.models import User
 from app.core.config import settings  # Assuming settings contains AWS credentials
 
 logger = getLogger(__name__)
@@ -34,6 +35,16 @@ def list_primary_assets(
     request: Request,
     session: CurrentSession,
     user: UserToken,
+    pagination: Pagination,
+    tag_ids: str | None = None,
+) -> ListWithCount[PrimaryAssetDetailRead]:
+    return _list_primary_assets(request, session, user, pagination, tag_ids)
+
+
+def _list_primary_assets(
+    request: Request,
+    session: CurrentSession,
+    user: User,
     pagination: Pagination,
     tag_ids: str | None = None,
 ) -> ListWithCount[PrimaryAssetDetailRead]:

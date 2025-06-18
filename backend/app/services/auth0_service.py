@@ -269,3 +269,12 @@ class Auth0Service:
         """
         client = self._management_client()
         return client.users.get(user_id)
+
+    def get_organization(self, org_id: str) -> dict[str, any]:
+        """
+        Return the Auth0 Organization object for *org_id*.
+
+        Requires the Management API scope:  read:organizations
+        """
+        client = self._management_client()
+        return client.organizations.get_organization(org_id)

@@ -12,6 +12,10 @@ EXTENSION_TO_DELIMITER = {
     ".hxx": "::",
     ".py": ".",
     ".java": ".",
+    ".ts": ".",
+    ".js": ".",
+    ".tsx": ".",
+    ".jsx": ".",
 }
 
 UNSUPPORTED_CHARACTERS_IN_GFM_ANCHORS = ["~", "=", "!", "(", ")", "&", "|", "+"]

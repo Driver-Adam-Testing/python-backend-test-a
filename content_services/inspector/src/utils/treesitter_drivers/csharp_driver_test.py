@@ -6,6 +6,56 @@ from .csharp_driver import CSharpDriverTree
 
 
 @pytest.fixture(scope="module")
+def import_test_code() -> str:
+    file_path = (
+        pathlib.Path(__file__).parent
+        / "treesitter_testcases"
+        / "csharp"
+        / "test_usings.cs"
+    )
+    with open(file_path, encoding="utf-8") as f:
+        return f.read()
+
+
+def test_extract_imports_no_false_positives(import_test_code: str) -> None:
+    driver_tree = CSharpDriverTree.from_code(import_test_code, "does_not_matter.cs")
+    klasses = driver_tree.extract_imports()
+    assert len(klasses) == 12
+
+
+@pytest.mark.parametrize(
+    "expected_import_name, expected_line_range",
+    [
+        ("System", (2, 2)),
+        ("System.Collections.Generic", (3, 3)),
+        ("System.Linq", (4, 4)),
+        ("System.Collections.Generic.Dictionary<string, object>", (7, 7)),
+        ("System.Text.StringBuilder", (8, 8)),
+        ("System", (9, 9)),
+        ("System.Math", (12, 12)),
+        ("System.Console", (13, 13)),
+        ("System.Threading.Tasks", (16, 16)),
+        ("System.Collections.Concurrent.ConcurrentDictionary<string, int>", (19, 19)),
+        ("global::System.Text.Json", (22, 22)),
+        ("global::System.Text.Json.JsonSerializer", (23, 23)),
+    ],
+)
+def test_extract_imports(
+    import_test_code: str,
+    expected_import_name: str,
+    expected_line_range: tuple[int, int],
+) -> None:
+    driver_tree = CSharpDriverTree.from_code(import_test_code, "does_not_matter.cs")
+    imports = driver_tree.extract_imports()
+    extracted = [(im.name, (im.start_line, im.end_line)) for im in imports]
+
+    assert (expected_import_name, expected_line_range) in extracted, (
+        f"Expected import ({expected_import_name}. {expected_line_range}) "
+        f"not found in extracted imports: {extracted}"
+    )
+
+
+@pytest.fixture(scope="module")
 def class_test_code() -> str:
     file_path = (
         pathlib.Path(__file__).parent

@@ -64,7 +64,69 @@ class CSharpDriverTree(DriverTree):
         return sep.join(path_parts)
 
     def extract_imports(self) -> list[RawTreeSitterSymbolData]:
-        return []
+        import_query_str = "(using_directive) @using_stmt"
+        query = self.tree_sitter_lang.query(import_query_str)
+        matches = query.matches(self.tree.root_node)
+        imports = []
+
+        for _pat_idx, captures_by_name in matches:
+            im_node = captures_by_name["using_stmt"][0]
+            start_line, end_line = self.get_node_line_range(im_node)
+            start_byte, end_byte = im_node.start_byte, im_node.end_byte
+            fully_qualified_parent_path = self._get_fully_qualified_path_to_parent(
+                node=im_node
+            )
+
+            resolved_name = False
+            # Handle easy signal -- presence of a qualified name
+            if not resolved_name:
+                for child in im_node.children:
+                    if child.type == "qualified_name":
+                        name = child.text.decode("utf-8")
+                        resolved_name = True
+                        break
+
+            # Handle cases where a qualified name isn't present and presense of an alias
+            # E.g., for `using System;` or `using Sys = System;`
+            if not resolved_name:
+                identifiers = []
+                alias_used = False
+                for child in im_node.children:
+                    if child.type == "identifier":
+                        identifiers.append(child.text.decode("utf-8"))
+                        continue
+                    if child.type == "=":
+                        alias_used = True
+                        identifiers.append("=")
+
+                if alias_used:
+                    split_idx = identifiers.index("=")
+                    name = identifiers[split_idx + 1]
+                    resolved_name = True
+                else:
+                    if len(identifiers) > 0:
+                        name = identifiers[0]
+                        resolved_name = True
+
+            if not resolved_name:
+                print(f"Unable to resolve import for {im_node.text.decode('utf-8')}")
+                name = None
+
+            im = RawTreeSitterSymbolData(
+                name=name,
+                start_line=start_line,
+                end_line=end_line,
+                symbol_kind=SymbolKind.IMPORT,
+                start_byte=start_byte,
+                end_byte=end_byte,
+                file_path=self.file_path,
+                fully_qualified_parent_path=fully_qualified_parent_path,
+                symbol_code=cs_node_to_text(self.source_bytes, im_node),
+                delimiter=".",
+            )
+            imports.append(im)
+
+        return imports
 
     def extract_callable_definitions(self) -> list[RawTreeSitterSymbolData]:
         return []

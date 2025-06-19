@@ -609,6 +609,7 @@ class IrCollection(BaseModel, abc.ABC):
     def render_markdown(self) -> str:
         output = ""
         for k, v in self.data.items():
+            k = escape_markdown_characters(k)
             for item in v:
                 if item._reified_symbol is not None:
                     kind_part = item._reified_symbol.raw.symbol_kind.name.lower()
@@ -617,7 +618,6 @@ class IrCollection(BaseModel, abc.ABC):
                 else:
                     id_comment = ""
 
-                k = escape_markdown_characters(k)
                 output += f"\n---\n### {k}{id_comment}\n"
                 output += item.render_markdown()
         return output

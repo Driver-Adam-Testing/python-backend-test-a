@@ -78,29 +78,37 @@ class CSharpDriverTree(DriverTree):
             )
 
             resolved_name = False
-            # Handle easy signal -- presence of a qualified name
-            if not resolved_name:
+            alias_name = None
+
+            # Detect if an alias is used up front
+            alias_used = False
+            for child in im_node.children:
+                if child.type == "=":
+                    alias_used = True
+
+            # Handle easy signal -- presence of a qualified name without an alias
+            if not resolved_name and not alias_used:
                 for child in im_node.children:
                     if child.type == "qualified_name":
                         name = child.text.decode("utf-8")
                         resolved_name = True
                         break
 
-            # Handle cases where a qualified name isn't present and presense of an alias
+            # Handle cases where a qualified name isn't present or presence of an alias
             # E.g., for `using System;` or `using Sys = System;`
             if not resolved_name:
                 identifiers = []
-                alias_used = False
                 for child in im_node.children:
-                    if child.type == "identifier":
+                    if child.type == "identifier" or child.type == "qualified_name":
                         identifiers.append(child.text.decode("utf-8"))
-                        continue
-                    if child.type == "=":
-                        alias_used = True
+                        if not alias_used:
+                            break
+                    elif child.type == "=":
                         identifiers.append("=")
 
                 if alias_used:
                     split_idx = identifiers.index("=")
+                    alias_name = identifiers[split_idx - 1]
                     name = identifiers[split_idx + 1]
                     resolved_name = True
                 else:
@@ -123,12 +131,16 @@ class CSharpDriverTree(DriverTree):
                 fully_qualified_parent_path=fully_qualified_parent_path,
                 symbol_code=cs_node_to_text(self.source_bytes, im_node),
                 delimiter=".",
+                lang_specific_data={"alias": alias_name},
             )
             imports.append(im)
 
         return imports
 
     def extract_callable_definitions(self) -> list[RawTreeSitterSymbolData]:
+        return self.extract_method_definitions()
+
+    def extract_method_definitions(self) -> list[RawTreeSitterSymbolData]:
         return []
 
     def extract_data_structure_definitions(self) -> list[RawTreeSitterSymbolData]:

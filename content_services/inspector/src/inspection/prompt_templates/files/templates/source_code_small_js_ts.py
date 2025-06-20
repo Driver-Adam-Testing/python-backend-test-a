@@ -53,7 +53,7 @@ SOURCE_CODE_SMALL_TEMPLATE_JS_TS = [
     ),
     (
         S.FN_COND_JSON,
-        "# Type Aliases",
+        "# Types",
         JsTsTypeRawSymbolCollection.from_static_analysis,
         JsTsTypeCollection.from_llm,
         None,

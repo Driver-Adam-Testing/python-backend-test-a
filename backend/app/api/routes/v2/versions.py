@@ -91,7 +91,10 @@ def update_version(
     if not version:
         raise HTTPException(status_code=404, detail="Version not found")
 
-    version.display_name = payload.display_name
+    if payload.display_name:
+        version.display_name = payload.display_name
+    if payload.status:
+        version.status = payload.status
 
     session.add(version)
     session.commit()

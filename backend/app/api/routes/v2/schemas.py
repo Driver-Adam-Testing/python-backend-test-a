@@ -7,6 +7,7 @@ from database.models_v2_enums import (
     ContentKind,
     NodeKind,
     PrimaryAssetKind,
+    VersionStatus,
 )
 from pydantic import BaseModel, computed_field
 
@@ -213,6 +214,7 @@ class VersionCreate(BaseModel):
 
 class VersionUpdate(BaseModel):
     display_name: str | None = None
+    status: VersionStatus | None = None
 
 
 class NodeCreate(BaseModel):

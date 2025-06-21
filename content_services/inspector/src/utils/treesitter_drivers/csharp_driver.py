@@ -1,10 +1,49 @@
 from dataclasses import dataclass
+from enum import StrEnum
+from functools import cache
+from typing import Self
 
 import tree_sitter
 
 from utils.lang_specialization.symbol_common import RawTreeSitterSymbolData, SymbolKind
 
 from .base import DriverTree
+
+
+class CSharpCallKind(StrEnum):
+    METHOD = "method"
+    CONSTRUCTOR = "constructor"
+    DESTRUCTOR = "destructor"
+    OP_OVERLOAD = "operator_overload"
+    CONVERSION = "conversion_operator_declaration"
+    LOCAL_FN = "local_function"
+    PROPERTY = "property"
+
+
+class CSharpMethodModifier(StrEnum):
+    PUBLIC = "public"
+    PRIVATE = "private"
+    PROTECTED = "protected"
+    INTERNAL = "internal"
+    VIRTUAL = "virtual"
+    OVERRIDE = "override"
+    ABSTRACT = "abstract"
+    SEALED = "sealed"
+    STATIC = "static"
+    ASYNC = "async"
+    EXTERN = "extern"
+    UNSAFE = "unsafe"
+    IMPLICIT = "implicit"
+    EXPLICIT = "explicit"
+
+    @classmethod
+    def from_str(cls, candidate: str) -> Self | None:
+        return _method_modifier_lookup().get(candidate)
+
+
+@cache
+def _method_modifier_lookup() -> dict[str, CSharpMethodModifier]:
+    return {m.value: m for m in CSharpMethodModifier}
 
 
 def cs_node_to_text(source_bytes: bytes, node: tree_sitter.Node) -> str:
@@ -138,10 +177,149 @@ class CSharpDriverTree(DriverTree):
         return imports
 
     def extract_callable_definitions(self) -> list[RawTreeSitterSymbolData]:
-        return self.extract_method_definitions()
+        return self.extract_method_like_definitions()
 
-    def extract_method_definitions(self) -> list[RawTreeSitterSymbolData]:
-        return []
+    def extract_method_like_definitions(self) -> list[RawTreeSitterSymbolData]:
+        method_query_str = """
+        (method_declaration
+          name: (identifier) @method_name) @method
+
+        (constructor_declaration
+          name: (identifier) @constructor_name) @constructor
+
+        (destructor_declaration
+          name: (identifier) @destructor_name) @destructor
+
+        (operator_declaration) @operator_overload
+
+        (conversion_operator_declaration) @conversion_operator
+
+        (local_function_statement
+          name: (identifier) @local_function_name) @local_function
+
+        (property_declaration
+          name: (identifier) @property_name) @property
+        """.strip()
+        query = self.tree_sitter_lang.query(method_query_str)
+        matches = query.matches(self.tree.root_node)
+        method_likes = []
+
+        for pattern_idx, captures_by_name in matches:
+            callable_name = None
+            callable_node = None
+            modifier_list = []
+            lang_specific_data = dict()
+            match pattern_idx:
+                case 0:  # standard method
+                    callable_name = captures_by_name.get("method_name")[0].text.decode(
+                        "utf-8"
+                    )
+                    callable_node = captures_by_name.get("method")[0]
+                    callable_kind = CSharpCallKind.METHOD
+                case 1:  # constructor
+                    callable_name = captures_by_name.get("constructor_name")[
+                        0
+                    ].text.decode("utf-8")
+                    callable_node = captures_by_name.get("constructor")[0]
+                    callable_kind = CSharpCallKind.CONSTRUCTOR
+                case 2:  # destructor
+                    # TODO: Should I do this? Keeping the tilde for visual convenience.
+                    callable_name = "~" + captures_by_name.get("destructor_name")[
+                        0
+                    ].text.decode("utf-8")
+                    callable_node = captures_by_name.get("destructor")[0]
+                    callable_kind = CSharpCallKind.DESTRUCTOR
+                case 3:  # operator_overload
+                    callable_node = captures_by_name.get("operator_overload")[0]
+                    children = list(callable_node.children)
+                    op_idx = None
+                    for idx, child in enumerate(children):
+                        if child.type == "operator":
+                            op_idx = idx
+                            break
+                    callable_name = (
+                        children[op_idx + 1].text.decode("utf-8") if op_idx else None
+                    )
+                    callable_kind = CSharpCallKind.OP_OVERLOAD
+                    if op_idx:
+                        lang_specific_data["op_overload_return_ty"] = children[
+                            op_idx - 1
+                        ].text.decode("utf-8")
+                case 4:  # conversion (implicit and explicit)
+                    callable_node = captures_by_name.get("conversion_operator")[0]
+                    children = list(callable_node.children)
+                    op_idx = None
+                    for idx, child in enumerate(children):
+                        if child.type == "operator":
+                            op_idx = idx
+                            break
+                    callable_name = (
+                        children[op_idx + 1].text.decode("utf-8") if op_idx else None
+                    )
+                    callable_kind = CSharpCallKind.CONVERSION
+                case 5:  # local functions
+                    callable_name = captures_by_name.get("local_function_name")[
+                        0
+                    ].text.decode("utf-8")
+                    callable_node = captures_by_name.get("local_function")[0]
+                    callable_kind = CSharpCallKind.LOCAL_FN
+                case 6:  # property
+                    callable_name = captures_by_name.get("property_name")[
+                        0
+                    ].text.decode("utf-8")
+                    callable_node = captures_by_name.get("property")[0]
+                    callable_kind = CSharpCallKind.PROPERTY
+                case _:
+                    print(f"Unhandled method-like pattern idx: {pattern_idx}")
+            if callable_name and callable_node:
+                for child in callable_node.children:
+                    try:
+                        child_name = child.text.decode("utf-8")
+                        modifier = CSharpMethodModifier.from_str(child_name)
+                        if modifier:
+                            modifier_list.append(modifier)
+                    except Exception:
+                        pass
+                start_line, end_line = self.get_node_line_range(callable_node)
+                start_byte, end_byte = callable_node.start_byte, callable_node.end_byte
+                file_path = self.file_path
+                fully_qualified_parent_path = self._get_fully_qualified_path_to_parent(
+                    callable_node
+                )
+                symbol_code = cs_node_to_text(
+                    source_bytes=self.source_bytes, node=callable_node
+                )
+                symbol_kind = SymbolKind.CALLABLE
+                file_path = self.file_path
+                delimiter = "."
+                lang_specific_data = {
+                    **lang_specific_data,
+                    "modifiers": modifier_list,
+                    "callable_kind": callable_kind,
+                }
+                print(
+                    f"Callable name: {callable_name}\n    Lang-specific data: {lang_specific_data}"
+                )
+                method_like = RawTreeSitterSymbolData(
+                    name=callable_name,
+                    start_line=start_line,
+                    end_line=end_line,
+                    symbol_kind=symbol_kind,
+                    start_byte=start_byte,
+                    end_byte=end_byte,
+                    file_path=file_path,
+                    fully_qualified_parent_path=fully_qualified_parent_path,
+                    symbol_code=symbol_code,
+                    delimiter=delimiter,
+                    lang_specific_data=lang_specific_data,
+                )
+                method_likes.append(method_like)
+            else:
+                print(
+                    f"Missing callable name ({callable_name}) or node ({callable_node})"
+                )
+
+        return method_likes
 
     def extract_data_structure_definitions(self) -> list[RawTreeSitterSymbolData]:
         return []

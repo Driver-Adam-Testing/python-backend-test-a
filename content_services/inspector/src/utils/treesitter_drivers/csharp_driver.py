@@ -41,9 +41,30 @@ class CSharpMethodModifier(StrEnum):
         return _method_modifier_lookup().get(candidate)
 
 
+class CSharpClassModifier(StrEnum):
+    PUBLIC = "public"
+    PRIVATE = "private"
+    INTERNAL = "internal"
+    PROTECTED = "protected"
+    ABSTRACT = "abstract"
+    SEALED = "sealed"
+    STATIC = "static"
+    PARTIAL = "partial"
+    UNSAFE = "unsafe"
+
+    @classmethod
+    def from_str(cls, candidate: str) -> Self | None:
+        return _class_modifier_lookup().get(candidate)
+
+
 @cache
 def _method_modifier_lookup() -> dict[str, CSharpMethodModifier]:
     return {m.value: m for m in CSharpMethodModifier}
+
+
+@cache
+def _class_modifier_lookup() -> dict[str, CSharpClassModifier]:
+    return {m.value: m for m in CSharpClassModifier}
 
 
 def cs_node_to_text(source_bytes: bytes, node: tree_sitter.Node) -> str:
@@ -297,9 +318,6 @@ class CSharpDriverTree(DriverTree):
                     "modifiers": modifier_list,
                     "callable_kind": callable_kind,
                 }
-                print(
-                    f"Callable name: {callable_name}\n    Lang-specific data: {lang_specific_data}"
-                )
                 method_like = RawTreeSitterSymbolData(
                     name=callable_name,
                     start_line=start_line,
@@ -350,6 +368,7 @@ class CSharpDriverTree(DriverTree):
             else:
                 klass_name = klass_name.text.decode("utf-8")
             base_class_names = None
+            modifier_list = []
             for child in klass_node.children:
                 if child.type == "base_list":
                     base_class_names = []
@@ -361,26 +380,41 @@ class CSharpDriverTree(DriverTree):
                             "invocation_expression",
                         }:
                             base_class_names.append(base.text.decode("utf-8"))
-            start_line, end_line = self.get_node_line_range(klass_node)
-            start_byte, end_byte = klass_node.start_byte, klass_node.end_byte
-            symbol_code = cs_node_to_text(self.source_bytes, klass_node)
-            fully_qualified_parent_path = self._get_fully_qualified_path_to_parent(
-                node=klass_node
-            )
-            klass = RawTreeSitterSymbolData(
-                name=klass_name,
-                start_line=start_line,
-                end_line=end_line,
-                symbol_kind=SymbolKind.CLASS,
-                start_byte=start_byte,
-                end_byte=end_byte,
-                file_path=self.file_path,
-                fully_qualified_path_to_parent=fully_qualified_parent_path,
-                base_class_names=base_class_names,
-                symbol_code=symbol_code,
-                delimiter=".",
-            )
-            klasses.append(klass)
+                else:
+                    try:
+                        child_name = child.text.decode("utf-8")
+                        modifier = CSharpClassModifier.from_str(child_name)
+                        if modifier:
+                            modifier_list.append(modifier)
+                    except Exception:
+                        pass
+
+            if klass_node and klass_name:
+                start_line, end_line = self.get_node_line_range(klass_node)
+                start_byte, end_byte = klass_node.start_byte, klass_node.end_byte
+                symbol_code = cs_node_to_text(self.source_bytes, klass_node)
+                fully_qualified_parent_path = self._get_fully_qualified_path_to_parent(
+                    node=klass_node
+                )
+                delimiter = "."
+                lang_specific_data = {"modifiers": modifier_list}
+                klass = RawTreeSitterSymbolData(
+                    name=klass_name,
+                    start_line=start_line,
+                    end_line=end_line,
+                    symbol_kind=SymbolKind.CLASS,
+                    start_byte=start_byte,
+                    end_byte=end_byte,
+                    file_path=self.file_path,
+                    fully_qualified_path_to_parent=fully_qualified_parent_path,
+                    base_class_names=base_class_names,
+                    symbol_code=symbol_code,
+                    delimiter=delimiter,
+                    lang_specific_data=lang_specific_data,
+                )
+                klasses.append(klass)
+            else:
+                print(f"Missing class name ({klass_name}) or node ({klass_node})")
 
         sorted_klasses = sorted(klasses, key=lambda x: x.start_byte)
         return sorted_klasses

@@ -74,28 +74,44 @@ def test_extract_classes_no_false_positives(class_test_code: str) -> None:
 
 
 @pytest.mark.parametrize(
-    "expected_class_name, expected_line_range",
+    "expected_class_name, expected_line_range, expected_modifiers",
     [
-        ("SimpleClass", (8, 38)),
-        ("InnerClass", (29, 37)),
-        ("AbstractClass", (41, 49)),
-        ("ConcreteClass", (52, 68)),
-        ("GenericClass", (71, 84)),
-        ("PartialClass", (87, 96)),
-        ("StaticUtilities", (99, 105)),
-        ("SealedClass", (108, 114)),
-        ("AttributedClass", (128, 151)),
+        ("SimpleClass", (8, 38), {"public"}),
+        ("InnerClass", (29, 37), {"public", "static"}),
+        ("AbstractClass", (41, 49), {"public", "abstract"}),
+        ("ConcreteClass", (52, 68), {"public"}),
+        ("GenericClass", (71, 84), {"public"}),
+        ("PartialClass", (87, 96), {"public", "partial"}),
+        ("StaticUtilities", (99, 105), {"public", "static"}),
+        ("SealedClass", (108, 114), {"public", "sealed"}),
+        ("AttributedClass", (128, 151), {"public"}),
     ],
 )
 def test_extract_classes(
-    class_test_code: str, expected_class_name: str, expected_line_range: tuple[int, int]
+    class_test_code: str,
+    expected_class_name: str,
+    expected_line_range: tuple[int, int],
+    expected_modifiers: set[str],
 ) -> None:
     driver_tree = CSharpDriverTree.from_code(class_test_code, "does_not_matter.cs")
     klasses = driver_tree.extract_class_definitions()
-    extracted = [(k.name, (k.start_line, k.end_line)) for k in klasses]
+    extracted = [
+        (k.name, (k.start_line, k.end_line), k.lang_specific_data["modifiers"])
+        for k in klasses
+    ]
+    extracted = []
+    for k in klasses:
+        name = k.name
+        line_range = (k.start_line, k.end_line)
+        modifiers = {v.value for v in k.lang_specific_data.get("modifiers")}
+        extracted.append((name, line_range, modifiers))
 
-    assert (expected_class_name, expected_line_range) in extracted, (
-        f"Expected class ({expected_class_name}, {expected_line_range}) "
+    assert (
+        expected_class_name,
+        expected_line_range,
+        expected_modifiers,
+    ) in extracted, (
+        f"Expected class ({expected_class_name}, {expected_line_range}, {expected_modifiers}) "
         f"not found in extracted classes: {extracted}"
     )
 

@@ -70,21 +70,23 @@ def class_test_code() -> str:
 def test_extract_classes_no_false_positives(class_test_code: str) -> None:
     driver_tree = CSharpDriverTree.from_code(class_test_code, "does_not_matter.cs")
     klasses = driver_tree.extract_class_definitions()
-    assert len(klasses) == 9
+    assert len(klasses) == 11
 
 
 @pytest.mark.parametrize(
-    "expected_class_name, expected_line_range, expected_modifiers",
+    "expected_class_name, expected_line_range, expected_modifiers, expected_kind",
     [
-        ("SimpleClass", (8, 38), {"public"}),
-        ("InnerClass", (29, 37), {"public", "static"}),
-        ("AbstractClass", (41, 49), {"public", "abstract"}),
-        ("ConcreteClass", (52, 68), {"public"}),
-        ("GenericClass", (71, 84), {"public"}),
-        ("PartialClass", (87, 96), {"public", "partial"}),
-        ("StaticUtilities", (99, 105), {"public", "static"}),
-        ("SealedClass", (108, 114), {"public", "sealed"}),
-        ("AttributedClass", (128, 151), {"public"}),
+        ("SimpleClass", (8, 38), {"public"}, "standard"),
+        ("InnerClass", (29, 37), {"public", "static"}, "standard"),
+        ("AbstractClass", (41, 49), {"public", "abstract"}, "standard"),
+        ("ConcreteClass", (52, 68), {"public"}, "standard"),
+        ("GenericClass", (71, 84), {"public"}, "standard"),
+        ("PartialClass", (87, 96), {"public", "partial"}, "standard"),
+        ("StaticUtilities", (99, 105), {"public", "static"}, "standard"),
+        ("SealedClass", (108, 114), {"public", "sealed"}, "standard"),
+        ("PersonRecord", (117, 117), {"public"}, "record"),
+        ("PersonRecordWithProps", (120, 125), {"public"}, "record"),
+        ("AttributedClass", (128, 151), {"public"}, "standard"),
     ],
 )
 def test_extract_classes(
@@ -92,6 +94,7 @@ def test_extract_classes(
     expected_class_name: str,
     expected_line_range: tuple[int, int],
     expected_modifiers: set[str],
+    expected_kind: str,
 ) -> None:
     driver_tree = CSharpDriverTree.from_code(class_test_code, "does_not_matter.cs")
     klasses = driver_tree.extract_class_definitions()
@@ -100,14 +103,16 @@ def test_extract_classes(
         name = k.name
         line_range = (k.start_line, k.end_line)
         modifiers = {v.value for v in k.lang_specific_data.get("modifiers")}
-        extracted.append((name, line_range, modifiers))
+        class_kind = k.lang_specific_data["class_kind"]
+        extracted.append((name, line_range, modifiers, class_kind))
 
     assert (
         expected_class_name,
         expected_line_range,
         expected_modifiers,
+        expected_kind,
     ) in extracted, (
-        f"Expected class ({expected_class_name}, {expected_line_range}, {expected_modifiers}) "
+        f"Expected class ({expected_class_name}, {expected_line_range}, {expected_modifiers}, {expected_kind}) "
         f"not found in extracted classes: {extracted}"
     )
 

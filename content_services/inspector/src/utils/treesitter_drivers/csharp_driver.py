@@ -41,6 +41,11 @@ class CSharpMethodModifier(StrEnum):
         return _method_modifier_lookup().get(candidate)
 
 
+class CSharpClassKind(StrEnum):
+    STANDARD = "standard"
+    RECORD = "record"
+
+
 class CSharpClassModifier(StrEnum):
     PUBLIC = "public"
     PRIVATE = "private"
@@ -444,8 +449,12 @@ class CSharpDriverTree(DriverTree):
 
     def extract_class_definitions(self) -> list[RawTreeSitterSymbolData]:
         klass_query_str = """
-        (class_declaration
-          name: (identifier) @class_name) @class_def
+        [
+          (class_declaration
+            name: (identifier) @class_name)
+          (record_declaration
+            name: (identifier) @record_name)
+        ] @class_def
         """.strip()
         query = self.tree_sitter_lang.query(klass_query_str)
         matches = query.matches(self.tree.root_node)
@@ -453,7 +462,19 @@ class CSharpDriverTree(DriverTree):
 
         for _pat_idx, captures_by_name in matches:
             klass_node = captures_by_name["class_def"][0]
-            klass_name = captures_by_name["class_name"][0]
+            # Note: C# distinguishes the `struct`/`class` dichotomy in terms of reference types
+            # Note: (reference semantics, behind a pointer on the heap) and value types (value
+            # Note: semantics, entire value copy, value equality, on the stack by default).
+            # Note: Classes are reference types and structs are value types. We organize our
+            # Note: documentation accordingly, letting `record`s live with classes and
+            # Note: `recort struct`s live with data structures.
+            is_record = "record_name" in captures_by_name
+            # is_record = bool(captures_by_name["record_name"])
+            klass_name = (
+                captures_by_name["record_name"][0]
+                if is_record
+                else captures_by_name["class_name"][0]
+            )
             if klass_name is None:
                 print(f"Could not parse class name for node: {klass_node}")
             else:
@@ -488,7 +509,13 @@ class CSharpDriverTree(DriverTree):
                     node=klass_node
                 )
                 delimiter = "."
-                lang_specific_data = {"modifiers": modifier_list}
+                class_kind = (
+                    CSharpClassKind.RECORD if is_record else CSharpClassKind.STANDARD
+                )
+                lang_specific_data = {
+                    "modifiers": modifier_list,
+                    "class_kind": class_kind,
+                }
                 klass = RawTreeSitterSymbolData(
                     name=klass_name,
                     start_line=start_line,

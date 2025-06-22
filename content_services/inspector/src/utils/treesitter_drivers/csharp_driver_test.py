@@ -95,10 +95,6 @@ def test_extract_classes(
 ) -> None:
     driver_tree = CSharpDriverTree.from_code(class_test_code, "does_not_matter.cs")
     klasses = driver_tree.extract_class_definitions()
-    extracted = [
-        (k.name, (k.start_line, k.end_line), k.lang_specific_data["modifiers"])
-        for k in klasses
-    ]
     extracted = []
     for k in klasses:
         name = k.name
@@ -253,4 +249,61 @@ def test_extract_operator_overload_op_and_target(
     ) in op_overloads, (
         f"expected operator overload ({expected_op_overload_name}, {expected_line_range}, {expected_op_return_ty}) "
         f"not found in extracted operator overloads: {op_overloads}"
+    )
+
+
+@pytest.fixture(scope="module")
+def enum_test_code() -> str:
+    file_path = (
+        pathlib.Path(__file__).parent
+        / "treesitter_testcases"
+        / "csharp"
+        / "test_enums.cs"
+    )
+    with open(file_path, encoding="utf-8") as f:
+        return f.read()
+
+
+def test_extract_enums_no_false_positives(enum_test_code: str) -> None:
+    driver_tree = CSharpDriverTree.from_code(enum_test_code, "does_not_matter.cs")
+    enums = driver_tree.extract_enum_definitions()
+    assert len(enums) == 9
+
+
+@pytest.mark.parametrize(
+    "expected_enum_name, expected_line_range, expected_modifiers",
+    [
+        ("Color", (7, 12), {"public"}),
+        ("Status", (15, 22), {"public"}),
+        ("Priority", (25, 31), {"public"}),
+        ("FileAccess", (34, 43), {"public"}),
+        ("LogLevel", (46, 54), {"public"}),
+        ("DayOfWeek", (57, 66), {"public"}),
+        ("HttpStatusCode", (69, 91), {"public"}),
+        ("Permission", (94, 105), {"public"}),
+        ("SecurityLevel", (111, 118), {"protected", "internal"}),
+    ],
+)
+def test_extract_enums(
+    enum_test_code: str,
+    expected_enum_name: str,
+    expected_line_range: tuple[int, int],
+    expected_modifiers: set[str],
+) -> None:
+    driver_tree = CSharpDriverTree.from_code(enum_test_code, "does_not_matter.cs")
+    enums = driver_tree.extract_enum_definitions()
+    extracted = []
+    for e in enums:
+        name = e.name
+        line_range = (e.start_line, e.end_line)
+        modifiers = {v.value for v in e.lang_specific_data.get("modifiers")}
+        extracted.append((name, line_range, modifiers))
+
+    assert (
+        expected_enum_name,
+        expected_line_range,
+        expected_modifiers,
+    ) in extracted, (
+        f"Expected enum ({expected_enum_name}, {expected_line_range}, {expected_modifiers}) "
+        f"not found in extracted enums: {extracted}"
     )

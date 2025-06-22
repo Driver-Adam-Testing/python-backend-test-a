@@ -57,6 +57,29 @@ class CSharpClassModifier(StrEnum):
         return _class_modifier_lookup().get(candidate)
 
 
+class CSharpDataStructureKind(StrEnum):
+    ENUM = "enum"
+    STRUCT = "struct"
+    RECORD = "record"
+
+
+class CSharpDataStructureModifier(StrEnum):
+    PUBLIC = "public"
+    PRIVATE = "private"
+    PROTECTED = "protected"
+    INTERNAL = "internal"
+    READONLY = "readonly"
+    STATIC = "static"
+    PARTIAL = "partial"
+    UNSAFE = "unsafe"
+    REF = "ref"
+    RECORD = "record"
+
+    @classmethod
+    def from_str(cls, candidate: str) -> Self | None:
+        return _data_structure_modifier_lookup().get(candidate)
+
+
 @cache
 def _method_modifier_lookup() -> dict[str, CSharpMethodModifier]:
     return {m.value: m for m in CSharpMethodModifier}
@@ -65,6 +88,11 @@ def _method_modifier_lookup() -> dict[str, CSharpMethodModifier]:
 @cache
 def _class_modifier_lookup() -> dict[str, CSharpClassModifier]:
     return {m.value: m for m in CSharpClassModifier}
+
+
+@cache
+def _data_structure_modifier_lookup() -> dict[str, CSharpDataStructureModifier]:
+    return {m.value: m for m in CSharpDataStructureModifier}
 
 
 def cs_node_to_text(source_bytes: bytes, node: tree_sitter.Node) -> str:
@@ -340,6 +368,69 @@ class CSharpDriverTree(DriverTree):
         return method_likes
 
     def extract_data_structure_definitions(self) -> list[RawTreeSitterSymbolData]:
+        enums = self.extract_enum_definitions()
+        structs = self.extract_struct_definitions()
+        records = self.extract_record_definitions()
+        return enums + structs + records
+
+    def extract_enum_definitions(self) -> list[RawTreeSitterSymbolData]:
+        enum_query_str = """
+        (enum_declaration
+          (modifier)* @enum_modifier
+          name: (identifier) @enum_name) @enum
+        """.strip()
+        query = self.tree_sitter_lang.query(enum_query_str)
+        matches = query.matches(self.tree.root_node)
+        enums = []
+
+        for _pat_idx, captures_by_name in matches:
+            enum_node = captures_by_name["enum"][0]
+            enum_name = captures_by_name["enum_name"][0].text.decode("utf-8")
+            enum_modifiers = captures_by_name["enum_modifier"]
+            modifier_list = []
+            print(f"Enum: {enum_name}. Modifiers:")
+            for m in enum_modifiers:
+                print(f"    {m.text.decode('utf-8')}")
+                modifier = CSharpDataStructureModifier.from_str(m.text.decode("utf-8"))
+                if modifier:
+                    modifier_list.append(modifier)
+            start_line, end_line = self.get_node_line_range(enum_node)
+            start_byte, end_byte = enum_node.start_byte, enum_node.end_byte
+            file_path = self.file_path
+            fully_qualified_parent_path = self._get_fully_qualified_path_to_parent(
+                enum_node
+            )
+            symbol_code = cs_node_to_text(
+                source_bytes=self.source_bytes, node=enum_node
+            )
+            symbol_kind = SymbolKind.DATA_STRUCTURE
+            file_path = self.file_path
+            delimiter = "."
+            lang_specific_data = {
+                "modifiers": modifier_list,
+                "data_structure_kind": CSharpDataStructureKind.ENUM,
+            }
+            method_like = RawTreeSitterSymbolData(
+                name=enum_name,
+                start_line=start_line,
+                end_line=end_line,
+                symbol_kind=symbol_kind,
+                start_byte=start_byte,
+                end_byte=end_byte,
+                file_path=file_path,
+                fully_qualified_parent_path=fully_qualified_parent_path,
+                symbol_code=symbol_code,
+                delimiter=delimiter,
+                lang_specific_data=lang_specific_data,
+            )
+            enums.append(method_like)
+
+        return enums
+
+    def extract_struct_definitions(self) -> list[RawTreeSitterSymbolData]:
+        return []
+
+    def extract_record_definitions(self) -> list[RawTreeSitterSymbolData]:
         return []
 
     def extract_function_calls(self) -> list[RawTreeSitterSymbolData]:

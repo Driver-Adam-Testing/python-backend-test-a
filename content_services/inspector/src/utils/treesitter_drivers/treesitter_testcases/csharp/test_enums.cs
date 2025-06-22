@@ -173,4 +173,13 @@ namespace Com.Example.Enums
             return !day.IsWeekend();
         }
     }
+
+    // Enum implementing interface
+    public enum Operation : IComparable<Operation>
+    {
+        Add = 1,
+        Subtract = 2,
+        Multiply = 3,
+        Divide = 4
+    }
 }

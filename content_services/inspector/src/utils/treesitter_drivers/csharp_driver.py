@@ -65,7 +65,7 @@ class CSharpClassModifier(StrEnum):
 class CSharpDataStructureKind(StrEnum):
     ENUM = "enum"
     STRUCT = "struct"
-    RECORD = "record"
+    RECORD_STRUCT = "record_struct"
 
 
 class CSharpDataStructureModifier(StrEnum):
@@ -77,6 +77,7 @@ class CSharpDataStructureModifier(StrEnum):
     STATIC = "static"
     PARTIAL = "partial"
     UNSAFE = "unsafe"
+    # NOTE: `ref` is a keyword not modifier in C#. Using "our own definition of modifier" here
     REF = "ref"
     RECORD = "record"
 
@@ -375,8 +376,7 @@ class CSharpDriverTree(DriverTree):
     def extract_data_structure_definitions(self) -> list[RawTreeSitterSymbolData]:
         enums = self.extract_enum_definitions()
         structs = self.extract_struct_definitions()
-        records = self.extract_record_definitions()
-        return enums + structs + records
+        return enums + structs
 
     def extract_enum_definitions(self) -> list[RawTreeSitterSymbolData]:
         enum_query_str = """
@@ -393,12 +393,34 @@ class CSharpDriverTree(DriverTree):
             enum_name = captures_by_name["enum_name"][0].text.decode("utf-8")
             enum_modifiers = captures_by_name["enum_modifier"]
             modifier_list = []
-            print(f"Enum: {enum_name}. Modifiers:")
             for m in enum_modifiers:
-                print(f"    {m.text.decode('utf-8')}")
                 modifier = CSharpDataStructureModifier.from_str(m.text.decode("utf-8"))
                 if modifier:
                     modifier_list.append(modifier)
+
+            # TODO: Consider moving this to be lang-specific.
+            # TODO: `base_class_names` is a misnomer as this includes interfaces.
+            base_class_names = None
+            underlying_ty = "default"
+            for child in enum_node.children:
+                if child.type == "base_list":
+                    # You can specify a different underlying type for an `enum`, but it
+                    # must be the first item in the base list after `:` (index 0).
+                    try:
+                        if child.children[1].type == "predefined_type":
+                            underlying_ty = child.children[1].text.decode("utf-8")
+                    except Exception:
+                        pass
+                    base_class_names = []
+                    for base in child.children:
+                        if base.type in {
+                            "identifier",
+                            "qualified_name",
+                            "generic_name",
+                            "invocation_expression",
+                        }:
+                            base_class_names.append(base.text.decode("utf-8"))
+
             start_line, end_line = self.get_node_line_range(enum_node)
             start_byte, end_byte = enum_node.start_byte, enum_node.end_byte
             file_path = self.file_path
@@ -414,8 +436,9 @@ class CSharpDriverTree(DriverTree):
             lang_specific_data = {
                 "modifiers": modifier_list,
                 "data_structure_kind": CSharpDataStructureKind.ENUM,
+                "underlying_ty": underlying_ty,
             }
-            method_like = RawTreeSitterSymbolData(
+            enum = RawTreeSitterSymbolData(
                 name=enum_name,
                 start_line=start_line,
                 end_line=end_line,
@@ -424,19 +447,107 @@ class CSharpDriverTree(DriverTree):
                 end_byte=end_byte,
                 file_path=file_path,
                 fully_qualified_parent_path=fully_qualified_parent_path,
+                base_class_names=base_class_names,
                 symbol_code=symbol_code,
                 delimiter=delimiter,
                 lang_specific_data=lang_specific_data,
             )
-            enums.append(method_like)
+            enums.append(enum)
 
         return enums
 
     def extract_struct_definitions(self) -> list[RawTreeSitterSymbolData]:
-        return []
+        struct_query_str = """
+        [
+          (struct_declaration
+            (modifier)* @struct_modifier
+            name: (identifier) @struct_name)
 
-    def extract_record_definitions(self) -> list[RawTreeSitterSymbolData]:
-        return []
+          (record_declaration
+            (modifier)* @struct_modifier
+            name: (identifier) @record_name)
+        ] @struct_def
+        """.strip()
+        query = self.tree_sitter_lang.query(struct_query_str)
+        matches = query.matches(self.tree.root_node)
+        structs = []
+
+        for _pat_idx, captures_by_name in matches:
+            struct_node = captures_by_name["struct_def"][0]
+            is_record_struct = False
+            if "record_name" in captures_by_name:
+                if any(child.type == "struct" for child in struct_node.children):
+                    is_record_struct = True
+                else:
+                    # Skip `record`s (reference types -- parsed with classes)
+                    continue
+            is_ref = any(child.type == "ref" for child in struct_node.children)
+            struct_name = (
+                captures_by_name["record_name"][0]
+                if is_record_struct
+                else captures_by_name["struct_name"][0]
+            )
+            if struct_name is None:
+                print(f"Could not parse class name for node: {struct_node}")
+            else:
+                struct_name = struct_name.text.decode("utf-8")
+            modifier_list = [CSharpDataStructureModifier.REF] if is_ref else []
+            struct_modifiers = captures_by_name["struct_modifier"]
+            for m in struct_modifiers:
+                modifier = CSharpDataStructureModifier.from_str(m.text.decode("utf-8"))
+                if modifier:
+                    modifier_list.append(modifier)
+
+            # TODO: Consider moving this to be lang-specific.
+            # TODO: `base_class_names` is a misnomer as this includes interfaces.
+            base_class_names = None
+            for child in struct_node.children:
+                if child.type == "base_list":
+                    base_class_names = []
+                    for base in child.children:
+                        if base.type in {
+                            "identifier",
+                            "qualified_name",
+                            "generic_name",
+                            "invocation_expression",
+                        }:
+                            base_class_names.append(base.text.decode("utf-8"))
+
+            start_line, end_line = self.get_node_line_range(struct_node)
+            start_byte, end_byte = struct_node.start_byte, struct_node.end_byte
+            file_path = self.file_path
+            fully_qualified_parent_path = self._get_fully_qualified_path_to_parent(
+                struct_node
+            )
+            symbol_code = cs_node_to_text(
+                source_bytes=self.source_bytes, node=struct_node
+            )
+            symbol_kind = SymbolKind.DATA_STRUCTURE
+            file_path = self.file_path
+            delimiter = "."
+            lang_specific_data = {
+                "modifiers": modifier_list,
+                "data_structure_kind": CSharpDataStructureKind.RECORD_STRUCT
+                if is_record_struct
+                else CSharpDataStructureKind.STRUCT,
+            }
+            struct = RawTreeSitterSymbolData(
+                name=struct_name,
+                start_line=start_line,
+                end_line=end_line,
+                symbol_kind=symbol_kind,
+                start_byte=start_byte,
+                end_byte=end_byte,
+                file_path=file_path,
+                fully_qualified_parent_path=fully_qualified_parent_path,
+                base_class_names=base_class_names,
+                symbol_code=symbol_code,
+                delimiter=delimiter,
+                lang_specific_data=lang_specific_data,
+            )
+            structs.append(struct)
+
+        return structs
 
     def extract_function_calls(self) -> list[RawTreeSitterSymbolData]:
         return []
@@ -469,7 +580,6 @@ class CSharpDriverTree(DriverTree):
             # Note: documentation accordingly, letting `record`s live with classes and
             # Note: `recort struct`s live with data structures.
             is_record = "record_name" in captures_by_name
-            # is_record = bool(captures_by_name["record_name"])
             klass_name = (
                 captures_by_name["record_name"][0]
                 if is_record

@@ -272,21 +272,22 @@ def enum_test_code() -> str:
 def test_extract_enums_no_false_positives(enum_test_code: str) -> None:
     driver_tree = CSharpDriverTree.from_code(enum_test_code, "does_not_matter.cs")
     enums = driver_tree.extract_enum_definitions()
-    assert len(enums) == 9
+    assert len(enums) == 10
 
 
 @pytest.mark.parametrize(
-    "expected_enum_name, expected_line_range, expected_modifiers",
+    "expected_enum_name, expected_line_range, expected_modifiers, expected_underlying_ty",
     [
-        ("Color", (7, 12), {"public"}),
-        ("Status", (15, 22), {"public"}),
-        ("Priority", (25, 31), {"public"}),
-        ("FileAccess", (34, 43), {"public"}),
-        ("LogLevel", (46, 54), {"public"}),
-        ("DayOfWeek", (57, 66), {"public"}),
-        ("HttpStatusCode", (69, 91), {"public"}),
-        ("Permission", (94, 105), {"public"}),
-        ("SecurityLevel", (111, 118), {"protected", "internal"}),
+        ("Color", (7, 12), {"public"}, "default"),
+        ("Status", (15, 22), {"public"}, "default"),
+        ("Priority", (25, 31), {"public"}, "byte"),
+        ("FileAccess", (34, 43), {"public"}, "default"),
+        ("LogLevel", (46, 54), {"public"}, "default"),
+        ("DayOfWeek", (57, 66), {"public"}, "default"),
+        ("HttpStatusCode", (69, 91), {"public"}, "default"),
+        ("Permission", (94, 105), {"public"}, "long"),
+        ("SecurityLevel", (111, 118), {"protected", "internal"}, "default"),
+        ("Operation", (178, 184), {"public"}, "default"),
     ],
 )
 def test_extract_enums(
@@ -294,6 +295,7 @@ def test_extract_enums(
     expected_enum_name: str,
     expected_line_range: tuple[int, int],
     expected_modifiers: set[str],
+    expected_underlying_ty: str,
 ) -> None:
     driver_tree = CSharpDriverTree.from_code(enum_test_code, "does_not_matter.cs")
     enums = driver_tree.extract_enum_definitions()
@@ -302,13 +304,139 @@ def test_extract_enums(
         name = e.name
         line_range = (e.start_line, e.end_line)
         modifiers = {v.value for v in e.lang_specific_data.get("modifiers")}
-        extracted.append((name, line_range, modifiers))
+        ty = e.lang_specific_data["underlying_ty"]
+        extracted.append((name, line_range, modifiers, ty))
 
     assert (
         expected_enum_name,
         expected_line_range,
         expected_modifiers,
+        expected_underlying_ty,
     ) in extracted, (
-        f"Expected enum ({expected_enum_name}, {expected_line_range}, {expected_modifiers}) "
+        f"Expected enum ({expected_enum_name}, {expected_line_range}, {expected_modifiers}, {expected_underlying_ty}) "
         f"not found in extracted enums: {extracted}"
+    )
+
+
+@pytest.mark.parametrize(
+    "expected_enum_name, expected_line_range, expected_interfaces",
+    [
+        ("Operation", (178, 184), ("IComparable<Operation>",)),
+    ],
+)
+def test_extract_enum_interfaces(
+    enum_test_code: str,
+    expected_line_range: tuple[int, int],
+    expected_enum_name: str,
+    expected_interfaces: list[str],
+) -> None:
+    driver_tree = CSharpDriverTree.from_code(enum_test_code, "does_not_matter.cs")
+    enums = driver_tree.extract_enum_definitions()
+    extracted = [
+        (e.name, (e.start_line, e.end_line), e.base_class_names) for e in enums
+    ]
+
+    assert (
+        expected_enum_name,
+        expected_line_range,
+        expected_interfaces,
+    ) in extracted, (
+        f"Expected interfaces: ({expected_interfaces}) for enum ({expected_enum_name}) "
+        f"but not found in extracted enums: {extracted}"
+    )
+
+
+@pytest.fixture(scope="module")
+def struct_test_code() -> str:
+    file_path = (
+        pathlib.Path(__file__).parent
+        / "treesitter_testcases"
+        / "csharp"
+        / "test_structs.cs"
+    )
+    with open(file_path, encoding="utf-8") as f:
+        return f.read()
+
+
+def test_extract_structs_no_false_positives(struct_test_code: str) -> None:
+    driver_tree = CSharpDriverTree.from_code(struct_test_code, "does_not_matter.cs")
+    structs = driver_tree.extract_struct_definitions()
+    assert len(structs) == 12
+
+
+@pytest.mark.parametrize(
+    "expected_struct_name, expected_line_range, expected_modifiers, expected_kind",
+    [
+        ("Point", (8, 23), {"public"}, "struct"),
+        ("Rectangle", (26, 42), {"public"}, "struct"),
+        ("ImmutablePoint", (45, 66), {"public", "readonly"}, "struct"),
+        ("StackOnlyStruct", (69, 85), {"public", "ref"}, "struct"),
+        ("GenericPair", (88, 104), {"public"}, "struct"),
+        ("Complex", (107, 178), {"public"}, "struct"),
+        ("Container", (181, 215), {"public"}, "struct"),
+        ("Metadata", (199, 204), {"public"}, "struct"),
+        ("MathConstants", (218, 244), {"public"}, "struct"),
+        ("PersonInfo", (247, 256), {"public"}, "record_struct"),
+        ("ImmutablePersonInfo", (259, 263), {"public", "readonly"}, "record_struct"),
+        (
+            "MultiModifierStruct",
+            (272, 284),
+            {"private", "protected", "readonly", "ref"},
+            "struct",
+        ),
+    ],
+)
+def test_extract_structs(
+    struct_test_code: str,
+    expected_struct_name: str,
+    expected_line_range: tuple[int, int],
+    expected_modifiers: set[str],
+    expected_kind: str,
+) -> None:
+    driver_tree = CSharpDriverTree.from_code(struct_test_code, "does_not_matter.cs")
+    structs = driver_tree.extract_struct_definitions()
+    extracted = []
+    for s in structs:
+        name = s.name
+        line_range = (s.start_line, s.end_line)
+        modifiers = {v.value for v in s.lang_specific_data.get("modifiers")}
+        kind = s.lang_specific_data["data_structure_kind"]
+        extracted.append((name, line_range, modifiers, kind))
+
+    assert (
+        expected_struct_name,
+        expected_line_range,
+        expected_modifiers,
+        expected_kind,
+    ) in extracted, (
+        f"Expected struct ({expected_struct_name}, {expected_line_range}, {expected_modifiers}, {expected_kind}) "
+        f"not found in extracted structs: {extracted}"
+    )
+
+
+@pytest.mark.parametrize(
+    "expected_struct_name, expected_line_range, expected_interfaces",
+    [
+        ("Complex", (107, 178), ("IEquatable<Complex>", "IComparable<Complex>")),
+    ],
+)
+def test_extract_struct_interfaces(
+    struct_test_code: str,
+    expected_line_range: tuple[int, int],
+    expected_struct_name: str,
+    expected_interfaces: list[str],
+) -> None:
+    driver_tree = CSharpDriverTree.from_code(struct_test_code, "does_not_matter.cs")
+    structs = driver_tree.extract_struct_definitions()
+    extracted = [
+        (s.name, (s.start_line, s.end_line), s.base_class_names) for s in structs
+    ]
+
+    assert (
+        expected_struct_name,
+        expected_line_range,
+        expected_interfaces,
+    ) in extracted, (
+        f"Expected interfaces: ({expected_interfaces}) for struct ({expected_struct_name}) "
+        f"but not found in extracted structs: {extracted}"
     )

@@ -168,7 +168,7 @@ def setup_developer_resources(
         for domain in developer.reserved_domains
         if domain.domain_type == DomainType.API
     )
-    identifier = f"{api_domain.domain_url}/api/v1"
+    identifier = f"{api_domain.domain_url}/studio/v1"
     api_app = create_api_app(
         name=f"{developer.full_name} Cloud Local API", identifier=identifier
     )

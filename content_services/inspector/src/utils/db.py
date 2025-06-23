@@ -22,6 +22,17 @@ async def get_version_by_id(version_id: uuid.UUID) -> Version:
         return (await session.exec(statement)).one()
 
 
+async def delete_version_by_id(version_id: uuid.UUID) -> None:
+    from database.db import async_engine
+    from sqlmodel import select
+
+    async with AsyncSession(async_engine) as session:
+        statement = select(Version).where(Version.id == version_id)
+        version = (await session.exec(statement)).one()
+        await session.delete(version)
+        await session.commit()
+
+
 async def try_get_prev_version(version_id: uuid.UUID) -> None | Version:
     from database.db import async_engine
     from sqlalchemy.orm import selectinload

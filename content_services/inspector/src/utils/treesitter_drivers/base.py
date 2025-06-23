@@ -45,6 +45,8 @@ class DriverTree(ABC):
                 f"No language specified for {cls.__name__}. Override the 'language' attribute."
             )
         ts_lang = LANGUAGES[cls.language]
+        if cls.language == "js_ts" and file_path.suffix in {".jsx", ".tsx"}:
+            ts_lang = tree_sitter.Language(tree_sitter_typescript.language_tsx())
         parser = tree_sitter.Parser(ts_lang)
         source_bytes = bytes(code_str, "utf8")
         tree = parser.parse(source_bytes)

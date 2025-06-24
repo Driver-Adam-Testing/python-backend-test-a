@@ -55,9 +55,15 @@ class Lang(IntEnum):
                 return cls.RUBY
             case ".cs":
                 return cls.C_SHARP
-            case ".ts" | ".tsx":  # TODO: handle .tsx as well
+            case (
+                ".ts"
+                | ".tsx"
+            ):  # TODO: consider different handling of .tsx in the future, since it will have unique components
                 return cls.TYPESCRIPT
-            case ".js" | ".jsx":  # TODO: handle .jsx as well
+            case (
+                ".js"
+                | ".jsx"
+            ):  # TODO: consider different handling of .jsx in the future, since it will have unique components
                 return cls.JAVASCRIPT
             case _:
                 return cls.DEFAULT

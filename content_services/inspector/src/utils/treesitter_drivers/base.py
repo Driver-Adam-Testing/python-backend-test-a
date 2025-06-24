@@ -46,7 +46,7 @@ class DriverTree(ABC):
             )
         ts_lang = LANGUAGES[cls.language]
 
-        # NOTE: this is a workaround for TSX/JSX files to use a different parser.
+        # TODO: this is a workaround for TSX/JSX files to use a different parser.
         # We want js/ts/jsx/tsx files to be parsed to the same symbol table.
         if cls.language == "js_ts" and file_path.suffix in {".jsx", ".tsx"}:
             ts_lang = tree_sitter.Language(tree_sitter_typescript.language_tsx())

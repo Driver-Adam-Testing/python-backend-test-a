@@ -20,7 +20,8 @@ GENERICS_PARSER = re.compile(r"<[^>]+>$")
 class CSharpImportScopeKind(StrEnum):
     LOCAL_USING = "local_using"
     GLOBAL_USING = "global_using"
-    NAMESPACE_DECLARATION = "namespace_declaration"
+    NAMESPACE_BLOCK_SCOPE_DECL = "namespace_block_scope_declaration"
+    NAMESPACE_FILE_SCOPE_DECL = "namespace_file_scope_declaration"
 
 
 class CSharpCallKind(StrEnum):
@@ -114,7 +115,7 @@ def _data_structure_modifier_lookup() -> dict[str, CSharpDataStructureModifier]:
     return {m.value: m for m in CSharpDataStructureModifier}
 
 
-class CSharpImportsData(BespokeMarker):
+class CSharpImportData(BespokeMarker):
     scoping_kind: CSharpImportScopeKind
     alias_name: str | None
 
@@ -258,7 +259,7 @@ class CSharpDriverTree(DriverTree):
                 if is_global_using
                 else CSharpImportScopeKind.LOCAL_USING
             )
-            bespoke_data = CSharpImportsData(
+            bespoke_data = CSharpImportData(
                 scoping_kind=scoping_kind, alias_name=alias_name
             )
 
@@ -285,7 +286,74 @@ class CSharpDriverTree(DriverTree):
         return imports
 
     def extract_namespace_declarations(self) -> list[RawTreeSitterSymbolData]:
-        return []
+        namespace_query_str = """
+        (namespace_declaration
+          name: (qualified_name) @namespace_name) @block_namespace
+
+        (file_scoped_namespace_declaration
+          name: (qualified_name) @namespace_name) @file_namespace
+        """.strip()
+
+        query = self.tree_sitter_lang.query(namespace_query_str)
+        matches = query.matches(self.tree.root_node)
+        namespaces = []
+
+        for pattern_idx, captures_by_name in matches:
+            match pattern_idx:
+                case 0:  # block-scoped namespace declaration
+                    namespace_name = captures_by_name.get("namespace_name")[
+                        0
+                    ].text.decode("utf-8")
+                    namespace_node = captures_by_name.get("block_namespace")[0]
+                    namespace_kind = CSharpImportScopeKind.NAMESPACE_BLOCK_SCOPE_DECL
+                case 1:  # file-scoped namespace declaration
+                    namespace_name = captures_by_name.get("namespace_name")[
+                        0
+                    ].text.decode("utf-8")
+                    namespace_node = captures_by_name.get("file_namespace")[0]
+                    namespace_kind = CSharpImportScopeKind.NAMESPACE_FILE_SCOPE_DECL
+                case _:
+                    raise ValueError("Unreachable")
+
+            if namespace_name and namespace_node:
+                start_line, end_line = self.get_node_line_range(namespace_node)
+                start_byte, end_byte = (
+                    namespace_node.start_byte,
+                    namespace_node.end_byte,
+                )
+                file_path = self.file_path
+                fully_qualified_parent_path = self._get_fully_qualified_path_to_parent(
+                    namespace_node
+                )
+                symbol_code = cs_node_to_text(
+                    source_bytes=self.source_bytes, node=namespace_node
+                )
+                symbol_kind = SymbolKind.IMPORT
+                file_path = self.file_path
+                delimiter = "."
+                bespoke_data = CSharpImportData(
+                    scoping_kind=namespace_kind, alias_name=None
+                )
+                namespace = RawTreeSitterSymbolData(
+                    name=namespace_name,
+                    start_line=start_line,
+                    end_line=end_line,
+                    symbol_kind=symbol_kind,
+                    start_byte=start_byte,
+                    end_byte=end_byte,
+                    file_path=file_path,
+                    fully_qualified_parent_path=fully_qualified_parent_path,
+                    symbol_code=symbol_code,
+                    delimiter=delimiter,
+                    bespoke_data=bespoke_data,
+                )
+                namespaces.append(namespace)
+            else:
+                print(
+                    f"Missing callable name ({namespace_name}) or node ({namespace_node})"
+                )
+
+        return namespaces
 
     def extract_callable_definitions(self) -> list[RawTreeSitterSymbolData]:
         return self.extract_method_like_definitions()

@@ -6,6 +6,58 @@ from .csharp_driver import CSharpDriverTree
 
 
 @pytest.fixture(scope="module")
+def namespace_test_code() -> str:
+    file_path = (
+        pathlib.Path(__file__).parent
+        / "treesitter_testcases"
+        / "csharp"
+        / "test_namespaces.cs"
+    )
+    with open(file_path, encoding="utf-8") as f:
+        return f.read()
+
+
+def test_extract_namespace_decls_no_false_positives(namespace_test_code: str) -> None:
+    driver_tree = CSharpDriverTree.from_code(namespace_test_code, "does_not_matter.cs")
+    namespaces = driver_tree.extract_namespace_declarations()
+    assert len(namespaces) == 2
+
+
+@pytest.mark.parametrize(
+    "expected_namespace_name, expected_line_range, expected_kind",
+    [
+        ("Com.Example.Traditional", (15, 47), "namespace_block_scope_declaration"),
+        ("Com.Example.FileScoped", (50, 50), "namespace_file_scope_declaration"),
+    ],
+)
+def test_extract_namespaces(
+    namespace_test_code: str,
+    expected_namespace_name: str,
+    expected_line_range: tuple[int, int],
+    expected_kind: str,
+) -> None:
+    driver_tree = CSharpDriverTree.from_code(namespace_test_code, "does_not_matter.cs")
+    namespaces = driver_tree.extract_namespace_declarations()
+    extracted = [
+        (
+            im.name,
+            (im.start_line, im.end_line),
+            im.bespoke_data.scoping_kind.value,
+        )
+        for im in namespaces
+    ]
+
+    assert (
+        expected_namespace_name,
+        expected_line_range,
+        expected_kind,
+    ) in extracted, (
+        f"Expected namespace ({expected_namespace_name}. {expected_line_range}, {expected_kind}) "
+        f"not found in extracted `namespace` declarations: {extracted}"
+    )
+
+
+@pytest.fixture(scope="module")
 def using_test_code() -> str:
     file_path = (
         pathlib.Path(__file__).parent
@@ -19,8 +71,8 @@ def using_test_code() -> str:
 
 def test_extract_using_imports_no_false_positives(using_test_code: str) -> None:
     driver_tree = CSharpDriverTree.from_code(using_test_code, "does_not_matter.cs")
-    klasses = driver_tree.extract_imports()
-    assert len(klasses) == 12
+    imports = driver_tree.extract_using_imports()
+    assert len(imports) == 12
 
 
 @pytest.mark.parametrize(

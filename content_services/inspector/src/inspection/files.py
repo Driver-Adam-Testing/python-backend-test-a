@@ -69,6 +69,12 @@ from inspection.prompt_templates.files.templates.source_code_large_java import (
 from inspection.prompt_templates.files.templates.source_code_large_java_multi_prompt import (
     SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_JAVA,
 )
+from inspection.prompt_templates.files.templates.source_code_large_js_ts import (
+    SOURCE_CODE_LARGE_TEMPLATE_JS_TS,
+)
+from inspection.prompt_templates.files.templates.source_code_large_js_ts_multi_prompt import (
+    SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_JS_TS,
+)
 from inspection.prompt_templates.files.templates.source_code_large_py import (
     SOURCE_CODE_LARGE_TEMPLATE_PY,
 )
@@ -116,6 +122,9 @@ from inspection.prompt_templates.files.templates.source_code_small_header import
 )
 from inspection.prompt_templates.files.templates.source_code_small_java import (
     SOURCE_CODE_SMALL_TEMPLATE_JAVA,
+)
+from inspection.prompt_templates.files.templates.source_code_small_js_ts import (
+    SOURCE_CODE_SMALL_TEMPLATE_JS_TS,
 )
 from inspection.prompt_templates.files.templates.source_code_small_py import (
     SOURCE_CODE_SMALL_TEMPLATE_PY,
@@ -219,6 +228,8 @@ SOURCE_CODE_LARGE_BY_LANG = {
     Lang.JAVA: SOURCE_CODE_LARGE_TEMPLATE_JAVA,
     Lang.RUBY: SOURCE_CODE_LARGE_TEMPLATE_RUBY,
     Lang.C_SHARP: SOURCE_CODE_LARGE_TEMPLATE_CS,
+    Lang.TYPESCRIPT: SOURCE_CODE_LARGE_TEMPLATE_JS_TS,
+    Lang.JAVASCRIPT: SOURCE_CODE_LARGE_TEMPLATE_JS_TS,
 }
 SOURCE_CODE_SMALL_BY_LANG = {
     Lang.DEFAULT: SOURCE_CODE_SMALL_TEMPLATE_DEFAULT,
@@ -232,6 +243,8 @@ SOURCE_CODE_SMALL_BY_LANG = {
     Lang.JAVA: SOURCE_CODE_SMALL_TEMPLATE_JAVA,
     Lang.RUBY: SOURCE_CODE_SMALL_TEMPLATE_RUBY,
     Lang.C_SHARP: SOURCE_CODE_SMALL_TEMPLATE_CS,
+    Lang.TYPESCRIPT: SOURCE_CODE_SMALL_TEMPLATE_JS_TS,
+    Lang.JAVASCRIPT: SOURCE_CODE_SMALL_TEMPLATE_JS_TS,
 }
 METADATA_SMALL_BY_LANG = {
     Lang.DEFAULT: METADATA_SMALL_TEMPLATE,
@@ -245,6 +258,8 @@ METADATA_SMALL_BY_LANG = {
     Lang.JAVA: METADATA_SMALL_TEMPLATE,
     Lang.RUBY: METADATA_SMALL_TEMPLATE,
     Lang.C_SHARP: METADATA_SMALL_TEMPLATE,
+    Lang.TYPESCRIPT: METADATA_SMALL_TEMPLATE,
+    Lang.JAVASCRIPT: METADATA_SMALL_TEMPLATE,
 }
 METADATA_MEDIUM_BY_LANG = {
     Lang.DEFAULT: METADATA_MEDIUM_TEMPLATE,
@@ -258,6 +273,8 @@ METADATA_MEDIUM_BY_LANG = {
     Lang.JAVA: METADATA_MEDIUM_TEMPLATE,
     Lang.RUBY: METADATA_MEDIUM_TEMPLATE,
     Lang.C_SHARP: METADATA_MEDIUM_TEMPLATE,
+    Lang.TYPESCRIPT: METADATA_MEDIUM_TEMPLATE,
+    Lang.JAVASCRIPT: METADATA_MEDIUM_TEMPLATE,
 }
 METADATA_LARGE_BY_LANG = {
     Lang.DEFAULT: METADATA_LARGE_TEMPLATE,
@@ -271,6 +288,8 @@ METADATA_LARGE_BY_LANG = {
     Lang.JAVA: METADATA_LARGE_TEMPLATE,
     Lang.RUBY: METADATA_LARGE_TEMPLATE,
     Lang.C_SHARP: METADATA_LARGE_TEMPLATE,
+    Lang.TYPESCRIPT: METADATA_LARGE_TEMPLATE,
+    Lang.JAVASCRIPT: METADATA_LARGE_TEMPLATE,
 }
 TEMPLATE_DATA = {
     FileEnum.SOURCE_CODE_LARGE: SOURCE_CODE_LARGE_BY_LANG,
@@ -488,6 +507,8 @@ def comprehend_file_top_down(
                             template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_VERILOG
                         case Lang.C_SHARP:
                             template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_CS
+                        case Lang.TYPESCRIPT | Lang.JAVASCRIPT:
+                            template = SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_JS_TS
                         case _:
                             template = SOURCE_CODE_MULTI_CONTEXT_TEMPLATE_DEFAULT
                     long_template = Template(template=template)

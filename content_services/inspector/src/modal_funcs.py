@@ -46,6 +46,7 @@ image = (
         "tasks",
         "utils",
         copy=True,
+        ignore=lambda p: False,
     )
 )
 

@@ -43,6 +43,7 @@ inspection_image = (
         "common",
         "database",
         copy=True,
+        ignore=lambda p: False,  # recent modal version only copy .py by default, but we have text files, for example, that we want
     )
 )
 
@@ -592,6 +593,7 @@ def get_file_content(path: Path) -> str:
         "tasks",
         "utils",
         copy=True,
+        ignore=lambda p: False,
     ),
     secrets=[
         modal.Secret.from_name("db"),
@@ -687,6 +689,7 @@ def run_connect_unconnected_repos() -> None:
         "tasks",
         "utils",
         copy=True,
+        ignore=lambda p: False,
     ),
     secrets=[modal.Secret.from_name("sendgrid"), modal.Secret.from_name("env-name")],
 )

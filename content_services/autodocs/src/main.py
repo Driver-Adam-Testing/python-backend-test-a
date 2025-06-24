@@ -48,7 +48,12 @@ image = inspection_image = (
         copy=True,
     )
     .add_local_python_source(
-        "autodocs_prototype", "database", "shared", "utils", copy=True
+        "autodocs_prototype",
+        "database",
+        "shared",
+        "utils",
+        copy=True,
+        ignore=lambda p: False,
     )
 )
 

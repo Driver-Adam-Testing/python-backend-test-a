@@ -33,7 +33,9 @@ image = (
     .pip_install(
         "requests"
     )  # TODO shouldn't be needed... in pyproject.toml RESOLVE THIS
-    .add_local_python_source("common", "database", "main", copy=True)
+    .add_local_python_source(
+        "common", "database", "main", copy=True, ignore=lambda p: False
+    )
     .add_local_file(
         "src/onboarding/languages.yml", "/linguist/languages.yml", copy=True
     )

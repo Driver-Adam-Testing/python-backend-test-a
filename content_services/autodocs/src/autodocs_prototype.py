@@ -13,9 +13,11 @@ from pathlib import Path
 from typing import Any, Self
 
 import boto3
+import modal
 import openai
 import pymupdf4llm
 from aiolimiter import AsyncLimiter
+from common import app
 from database.models_v2_enums import AutoDocStatusMessageKind, ContentKind
 from google import genai
 from pydantic import BaseModel
@@ -35,16 +37,45 @@ OPENAI_SEM = asyncio.Semaphore(300)
 PDF_DOWNLOAD_DIR = "pdfs/"
 OPENAI_LIMITER = AsyncLimiter(100, 1)  # 100 requests per second
 
+generate_image = (
+    modal.Image.debian_slim(python_version="3.12")
+    # NOTE: order matters here - anything needed for the build must be added with
+    # copy=True before other actions, all other files must be added after all other
+    # actions
+    .add_local_dir(local_path="../../driver_db", remote_path="/driver_db", copy=True)
+    .add_local_dir(
+        local_path="../../packages/shared", remote_path="/shared_pkg", copy=True
+    )
+    .pip_install(
+        [
+            "openai>=1.40.2",
+            "pydantic>=2.8.2",
+            "/shared_pkg",
+        ]
+    )
+    .add_local_python_source("database", "shared", "utils", copy=True)
+)
 
+
+@app.function(
+    image=generate_image,
+    secrets=[
+        modal.Secret.from_name("open-ai"),
+    ],
+    memory="2048",
+    timeout=60 * 15,
+    region="us-east",
+    max_containers=300,
+)
 async def llm_generate(llm: ChatOpenAI, system_prompt: str, user_prompt: str) -> str:
-    async with OPENAI_SEM, OPENAI_LIMITER:
-        try:
-            return await llm.generate_response(
-                system_prompt=system_prompt, user_prompt=user_prompt
-            )
-        except openai.BadRequestError:
-            print(f"Bad request error for {user_prompt[:1000]}")
-            return ""
+    # async with OPENAI_SEM, OPENAI_LIMITER:
+    try:
+        return await llm.generate_response(
+            system_prompt=system_prompt, user_prompt=user_prompt
+        )
+    except openai.BadRequestError:
+        print(f"Bad request error for {user_prompt[:1000]}")
+        return ""
 
 
 GREEN = "\033[92m"  # Green

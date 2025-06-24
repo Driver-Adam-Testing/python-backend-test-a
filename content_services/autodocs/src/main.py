@@ -14,6 +14,7 @@ from autodocs_prototype import (
     get_autodoc_elapsed_time,
     update_autodocs_status,
 )
+from common import app
 
 image = inspection_image = (
     modal.Image.debian_slim(python_version="3.12")
@@ -52,7 +53,7 @@ image = inspection_image = (
     )
 )
 
-app = modal.App("autodocs")
+# app = modal.App("autodocs")
 
 
 @app.function(

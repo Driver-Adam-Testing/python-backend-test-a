@@ -1,3 +1,4 @@
+import re
 from dataclasses import dataclass
 from enum import StrEnum
 from functools import cache
@@ -5,9 +6,21 @@ from typing import Self
 
 import tree_sitter
 
-from utils.lang_specialization.symbol_common import RawTreeSitterSymbolData, SymbolKind
+from utils.lang_specialization.symbol_common import (
+    BespokeMarker,
+    RawTreeSitterSymbolData,
+    SymbolKind,
+)
 
 from .base import DriverTree
+
+GENERICS_PARSER = re.compile(r"<[^>]+>$")
+
+
+class CSharpImportScopeKind(StrEnum):
+    LOCAL_USING = "local_using"
+    GLOBAL_USING = "global_using"
+    NAMESPACE_DECLARATION = "namespace_declaration"
 
 
 class CSharpCallKind(StrEnum):
@@ -101,25 +114,33 @@ def _data_structure_modifier_lookup() -> dict[str, CSharpDataStructureModifier]:
     return {m.value: m for m in CSharpDataStructureModifier}
 
 
+class CSharpImportsData(BespokeMarker):
+    scoping_kind: CSharpImportScopeKind
+    alias_name: str | None
+
+
+class CSharpMethodLikeData(BespokeMarker):
+    kind: CSharpCallKind
+    modifiers: list[CSharpMethodModifier]
+    op_overload_return_ty: str | None
+
+
+class CSharpDataStructureData(BespokeMarker):
+    kind: CSharpDataStructureKind
+    modifiers: list[CSharpDataStructureModifier]
+    underlying_ty: str | None
+
+
+class CSharpClassData(BespokeMarker):
+    kind: CSharpClassKind
+    modifiers: list[CSharpClassModifier]
+
+
 def cs_node_to_text(source_bytes: bytes, node: tree_sitter.Node) -> str:
     start = node.start_byte
     end = node.end_byte
 
     return source_bytes[start:end].decode("utf-8")
-
-
-def _extract_namespace_name(name_node: tree_sitter.Node, sep: str = ".") -> str:
-    """Recursively extract full namespace name from a qualified_name node."""
-    if name_node.type == "qualified_name":
-        # Example: System.Collections.Generic
-        parts = []
-        for child in name_node.children:
-            if child.type == "identifier":
-                parts.append(child.text.decode("utf-8"))
-        return sep.join(parts)
-    elif name_node.type == "identifier":
-        return name_node.text.decode("utf-8")
-    return ""
 
 
 @dataclass
@@ -133,31 +154,41 @@ class CSharpDriverTree(DriverTree):
         path_parts = []
         current = node.parent
 
+        # TODO: Consider detecting implicit global namespacing (no namespace declared)
+        # and adding `global::` to the FQN, in line with C# syntax. The problem is,
+        # though, `using` imports that are implicitly using the global namespace (cf.,
+        # explicitly doing so with `global::` need to be detected to properly match.
+        # I don't think we need to do this for rigorous linking/matching, but it could
+        # help us document `global` usage explicitly downstream.
         while current:
             if current.type == "compilation_unit":
-                path_parts.append(str(self.file_path.with_suffix("")))
+                break
             elif current.type in {
                 "class_declaration",
                 "struct_declaration",
+                "enum_declaration",
                 "interface_declaration",
+                "delegate_declaration",
                 "method_declaration",
             }:
                 name_node = current.child_by_field_name("name")
                 if name_node:
                     path_parts.append(name_node.text.decode("utf-8"))
             elif current.type == "namespace_declaration":
-                # Namespace may be nested or qualified
-                name_node = current.child_by_field_name("name")
-                if name_node:
-                    path_parts.append(
-                        _extract_namespace_name(name_node=name_node, sep=sep)
-                    )
+                path_parts.append(
+                    current.child_by_field_name("name").text.decode("utf-8")
+                )
             current = current.parent
 
         path_parts.reverse()
         return sep.join(path_parts)
 
     def extract_imports(self) -> list[RawTreeSitterSymbolData]:
+        using_imports = self.extract_using_imports()
+        namespace_imports = self.extract_namespace_declarations()
+        return using_imports + namespace_imports
+
+    def extract_using_imports(self) -> list[RawTreeSitterSymbolData]:
         import_query_str = "(using_directive) @using_stmt"
         query = self.tree_sitter_lang.query(import_query_str)
         matches = query.matches(self.tree.root_node)
@@ -165,25 +196,28 @@ class CSharpDriverTree(DriverTree):
 
         for _pat_idx, captures_by_name in matches:
             im_node = captures_by_name["using_stmt"][0]
-            start_line, end_line = self.get_node_line_range(im_node)
-            start_byte, end_byte = im_node.start_byte, im_node.end_byte
-            fully_qualified_parent_path = self._get_fully_qualified_path_to_parent(
-                node=im_node
-            )
-
             resolved_name = False
             alias_name = None
+
+            # Detect if `global using` is used.
+            is_global_using = False
+            for child in im_node.children:
+                if child.type == "global":
+                    is_global_using = True
+                    break
 
             # Detect if an alias is used up front
             alias_used = False
             for child in im_node.children:
                 if child.type == "=":
                     alias_used = True
+                    break
 
             # Handle easy signal -- presence of a qualified name without an alias
             if not resolved_name and not alias_used:
                 for child in im_node.children:
                     if child.type == "qualified_name":
+                        # name = child.child_by_field_name("name").text.decode("utf-8")
                         name = child.text.decode("utf-8")
                         resolved_name = True
                         break
@@ -214,6 +248,25 @@ class CSharpDriverTree(DriverTree):
                 print(f"Unable to resolve import for {im_node.text.decode('utf-8')}")
                 name = None
 
+            start_line, end_line = self.get_node_line_range(im_node)
+            start_byte, end_byte = im_node.start_byte, im_node.end_byte
+            fully_qualified_parent_path = self._get_fully_qualified_path_to_parent(
+                node=im_node
+            )
+            scoping_kind = (
+                CSharpImportScopeKind.GLOBAL_USING
+                if is_global_using
+                else CSharpImportScopeKind.LOCAL_USING
+            )
+            bespoke_data = CSharpImportsData(
+                scoping_kind=scoping_kind, alias_name=alias_name
+            )
+
+            # TODO: Detect generic parameters and pass as metadata?
+            # TODO: E.g., `Dictionary<string, object>` being imported.
+            # TODO: Here we just report `Dictionary`
+            name = GENERICS_PARSER.sub("", name)
+
             im = RawTreeSitterSymbolData(
                 name=name,
                 start_line=start_line,
@@ -225,11 +278,14 @@ class CSharpDriverTree(DriverTree):
                 fully_qualified_parent_path=fully_qualified_parent_path,
                 symbol_code=cs_node_to_text(self.source_bytes, im_node),
                 delimiter=".",
-                lang_specific_data={"alias": alias_name},
+                bespoke_data=bespoke_data,
             )
             imports.append(im)
 
         return imports
+
+    def extract_namespace_declarations(self) -> list[RawTreeSitterSymbolData]:
+        return []
 
     def extract_callable_definitions(self) -> list[RawTreeSitterSymbolData]:
         return self.extract_method_like_definitions()
@@ -263,7 +319,7 @@ class CSharpDriverTree(DriverTree):
             callable_name = None
             callable_node = None
             modifier_list = []
-            lang_specific_data = dict()
+            op_overload_return_ty = None
             match pattern_idx:
                 case 0:  # standard method
                     callable_name = captures_by_name.get("method_name")[0].text.decode(
@@ -297,9 +353,9 @@ class CSharpDriverTree(DriverTree):
                     )
                     callable_kind = CSharpCallKind.OP_OVERLOAD
                     if op_idx:
-                        lang_specific_data["op_overload_return_ty"] = children[
-                            op_idx - 1
-                        ].text.decode("utf-8")
+                        op_overload_return_ty = children[op_idx - 1].text.decode(
+                            "utf-8"
+                        )
                 case 4:  # conversion (implicit and explicit)
                     callable_node = captures_by_name.get("conversion_operator")[0]
                     children = list(callable_node.children)
@@ -347,11 +403,11 @@ class CSharpDriverTree(DriverTree):
                 symbol_kind = SymbolKind.CALLABLE
                 file_path = self.file_path
                 delimiter = "."
-                lang_specific_data = {
-                    **lang_specific_data,
-                    "modifiers": modifier_list,
-                    "callable_kind": callable_kind,
-                }
+                bespoke_data = CSharpMethodLikeData(
+                    kind=callable_kind,
+                    modifiers=modifier_list,
+                    op_overload_return_ty=op_overload_return_ty,
+                )
                 method_like = RawTreeSitterSymbolData(
                     name=callable_name,
                     start_line=start_line,
@@ -363,7 +419,7 @@ class CSharpDriverTree(DriverTree):
                     fully_qualified_parent_path=fully_qualified_parent_path,
                     symbol_code=symbol_code,
                     delimiter=delimiter,
-                    lang_specific_data=lang_specific_data,
+                    bespoke_data=bespoke_data,
                 )
                 method_likes.append(method_like)
             else:
@@ -413,6 +469,9 @@ class CSharpDriverTree(DriverTree):
                         pass
                     base_class_names = []
                     for base in child.children:
+                        # TODO: Think about this -- needs to match what is extracted for
+                        # TODO: `interface`s to make links (e.g., Interface or Interface<T>)
+                        # TODO: Unify with solution in extracting interfaces.
                         if base.type in {
                             "identifier",
                             "qualified_name",
@@ -433,11 +492,11 @@ class CSharpDriverTree(DriverTree):
             symbol_kind = SymbolKind.DATA_STRUCTURE
             file_path = self.file_path
             delimiter = "."
-            lang_specific_data = {
-                "modifiers": modifier_list,
-                "data_structure_kind": CSharpDataStructureKind.ENUM,
-                "underlying_ty": underlying_ty,
-            }
+            bespoke_data = CSharpDataStructureData(
+                kind=CSharpDataStructureKind.ENUM,
+                modifiers=modifier_list,
+                underlying_ty=underlying_ty,
+            )
             enum = RawTreeSitterSymbolData(
                 name=enum_name,
                 start_line=start_line,
@@ -450,7 +509,7 @@ class CSharpDriverTree(DriverTree):
                 base_class_names=base_class_names,
                 symbol_code=symbol_code,
                 delimiter=delimiter,
-                lang_specific_data=lang_specific_data,
+                bespoke_data=bespoke_data,
             )
             enums.append(enum)
 
@@ -525,12 +584,13 @@ class CSharpDriverTree(DriverTree):
             symbol_kind = SymbolKind.DATA_STRUCTURE
             file_path = self.file_path
             delimiter = "."
-            lang_specific_data = {
-                "modifiers": modifier_list,
-                "data_structure_kind": CSharpDataStructureKind.RECORD_STRUCT
+            bespoke_data = CSharpDataStructureData(
+                kind=CSharpDataStructureKind.RECORD_STRUCT
                 if is_record_struct
                 else CSharpDataStructureKind.STRUCT,
-            }
+                modifiers=modifier_list,
+                underlying_ty=None,
+            )
             struct = RawTreeSitterSymbolData(
                 name=struct_name,
                 start_line=start_line,
@@ -543,7 +603,7 @@ class CSharpDriverTree(DriverTree):
                 base_class_names=base_class_names,
                 symbol_code=symbol_code,
                 delimiter=delimiter,
-                lang_specific_data=lang_specific_data,
+                bespoke_data=bespoke_data,
             )
             structs.append(struct)
 
@@ -622,10 +682,7 @@ class CSharpDriverTree(DriverTree):
                 class_kind = (
                     CSharpClassKind.RECORD if is_record else CSharpClassKind.STANDARD
                 )
-                lang_specific_data = {
-                    "modifiers": modifier_list,
-                    "class_kind": class_kind,
-                }
+                bespoke_data = CSharpClassData(kind=class_kind, modifiers=modifier_list)
                 klass = RawTreeSitterSymbolData(
                     name=klass_name,
                     start_line=start_line,
@@ -638,7 +695,7 @@ class CSharpDriverTree(DriverTree):
                     base_class_names=base_class_names,
                     symbol_code=symbol_code,
                     delimiter=delimiter,
-                    lang_specific_data=lang_specific_data,
+                    bespoke_data=bespoke_data,
                 )
                 klasses.append(klass)
             else:
@@ -646,3 +703,6 @@ class CSharpDriverTree(DriverTree):
 
         sorted_klasses = sorted(klasses, key=lambda x: x.start_byte)
         return sorted_klasses
+
+    def extract_interfaces(self) -> list[RawTreeSitterSymbolData]:
+        return []

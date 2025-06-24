@@ -6,7 +6,7 @@ from .csharp_driver import CSharpDriverTree
 
 
 @pytest.fixture(scope="module")
-def import_test_code() -> str:
+def using_test_code() -> str:
     file_path = (
         pathlib.Path(__file__).parent
         / "treesitter_testcases"
@@ -17,41 +17,66 @@ def import_test_code() -> str:
         return f.read()
 
 
-def test_extract_imports_no_false_positives(import_test_code: str) -> None:
-    driver_tree = CSharpDriverTree.from_code(import_test_code, "does_not_matter.cs")
+def test_extract_using_imports_no_false_positives(using_test_code: str) -> None:
+    driver_tree = CSharpDriverTree.from_code(using_test_code, "does_not_matter.cs")
     klasses = driver_tree.extract_imports()
     assert len(klasses) == 12
 
 
 @pytest.mark.parametrize(
-    "expected_import_name, expected_line_range",
+    "expected_using_name, expected_line_range, expected_kind, expected_alias_name",
     [
-        ("System", (2, 2)),
-        ("System.Collections.Generic", (3, 3)),
-        ("System.Linq", (4, 4)),
-        ("System.Collections.Generic.Dictionary<string, object>", (7, 7)),
-        ("System.Text.StringBuilder", (8, 8)),
-        ("System", (9, 9)),
-        ("System.Math", (12, 12)),
-        ("System.Console", (13, 13)),
-        ("System.Threading.Tasks", (16, 16)),
-        ("System.Collections.Concurrent.ConcurrentDictionary<string, int>", (19, 19)),
-        ("global::System.Text.Json", (22, 22)),
-        ("global::System.Text.Json.JsonSerializer", (23, 23)),
+        ("System", (2, 2), "local_using", None),
+        ("System.Collections.Generic", (3, 3), "local_using", None),
+        ("System.Linq", (4, 4), "local_using", None),
+        ("System.Collections.Generic.Dictionary", (7, 7), "local_using", "Dict"),
+        ("System.Text.StringBuilder", (8, 8), "local_using", "StringBuilder"),
+        ("System", (9, 9), "local_using", "Sys"),
+        ("System.Math", (12, 12), "local_using", None),
+        ("System.Console", (13, 13), "local_using", None),
+        ("System.Threading.Tasks", (16, 16), "global_using", None),
+        (
+            "System.Collections.Concurrent.ConcurrentDictionary",
+            (19, 19),
+            "local_using",
+            "MyAlias",
+        ),
+        ("global::System.Text.Json", (22, 22), "local_using", None),
+        (
+            "global::System.Text.Json.JsonSerializer",
+            (23, 23),
+            "local_using",
+            "JsonSerializer",
+        ),
     ],
 )
-def test_extract_imports(
-    import_test_code: str,
-    expected_import_name: str,
+def test_extract_using_imports(
+    using_test_code: str,
+    expected_using_name: str,
     expected_line_range: tuple[int, int],
+    expected_kind: str,
+    expected_alias_name: str | None,
 ) -> None:
-    driver_tree = CSharpDriverTree.from_code(import_test_code, "does_not_matter.cs")
-    imports = driver_tree.extract_imports()
-    extracted = [(im.name, (im.start_line, im.end_line)) for im in imports]
+    driver_tree = CSharpDriverTree.from_code(using_test_code, "does_not_matter.cs")
+    using_imports = driver_tree.extract_using_imports()
+    extracted = [
+        (
+            im.name,
+            (im.start_line, im.end_line),
+            im.bespoke_data.scoping_kind.value,
+            im.bespoke_data.alias_name,
+        )
+        for im in using_imports
+    ]
 
-    assert (expected_import_name, expected_line_range) in extracted, (
-        f"Expected import ({expected_import_name}. {expected_line_range}) "
-        f"not found in extracted imports: {extracted}"
+    assert (
+        expected_using_name,
+        expected_line_range,
+        expected_kind,
+        expected_alias_name,
+    ) in extracted, (
+        f"Expected import ({expected_using_name}. {expected_line_range}, {expected_kind}, {expected_alias_name}) "
+        f"not found in extracted `using` imports: {extracted}"
     )
 
 
@@ -102,8 +127,8 @@ def test_extract_classes(
     for k in klasses:
         name = k.name
         line_range = (k.start_line, k.end_line)
-        modifiers = {v.value for v in k.lang_specific_data.get("modifiers")}
-        class_kind = k.lang_specific_data["class_kind"]
+        modifiers = {v.value for v in k.bespoke_data.modifiers}
+        class_kind = k.bespoke_data.kind
         extracted.append((name, line_range, modifiers, class_kind))
 
     assert (
@@ -156,45 +181,53 @@ def test_extract_method_likes_no_false_positives(method_test_code: str) -> None:
 
 
 @pytest.mark.parametrize(
-    "expected_method_name, expected_line_range, expected_kind, expected_modifiers",
+    "expected_method_name, expected_line_range, expected_kind, expected_modifiers, expected_op_return_ty",
     [
-        ("MethodExamples", (11, 13), "constructor", {"public"}),
-        ("MethodExamples", (16, 20), "constructor", {"public"}),
-        ("Name", (23, 23), "property", {"public"}),
-        ("Value", (24, 24), "property", {"public"}),
-        ("CreatedAt", (27, 27), "property", {"public"}),
-        ("Description", (31, 35), "property", {"public"}),
-        ("StaticMethod", (38, 41), "method", {"static", "public"}),
-        ("ProcessData", (44, 52), "method", {"public"}),
-        ("PrivateHelper", (55, 58), "method", {"private"}),
-        ("CreateList", (61, 64), "method", {"public"}),
-        ("ToString", (67, 70), "method", {"public", "override"}),
-        ("VirtualMethod", (73, 76), "method", {"public", "virtual"}),
-        ("AbstractMethod", (79, 79), "method", {"public", "abstract"}),
-        ("AsyncMethod", (82, 86), "method", {"public", "async"}),
-        ("TryGetValue", (89, 93), "method", {"public"}),
-        ("ModifyValue", (96, 99), "method", {"public"}),
-        ("ProcessReadOnly", (102, 105), "method", {"public"}),
-        ("Reverse", (108, 108), "method", {"public", "static"}),
-        ("+", (111, 114), "operator_overload", {"public", "static"}),
+        ("MethodExamples", (11, 13), "constructor", {"public"}, None),
+        ("MethodExamples", (16, 20), "constructor", {"public"}, None),
+        ("Name", (23, 23), "property", {"public"}, None),
+        ("Value", (24, 24), "property", {"public"}, None),
+        ("CreatedAt", (27, 27), "property", {"public"}, None),
+        ("Description", (31, 35), "property", {"public"}, None),
+        ("StaticMethod", (38, 41), "method", {"static", "public"}, None),
+        ("ProcessData", (44, 52), "method", {"public"}, None),
+        ("PrivateHelper", (55, 58), "method", {"private"}, None),
+        ("CreateList", (61, 64), "method", {"public"}, None),
+        ("ToString", (67, 70), "method", {"public", "override"}, None),
+        ("VirtualMethod", (73, 76), "method", {"public", "virtual"}, None),
+        ("AbstractMethod", (79, 79), "method", {"public", "abstract"}, None),
+        ("AsyncMethod", (82, 86), "method", {"public", "async"}, None),
+        ("TryGetValue", (89, 93), "method", {"public"}, None),
+        ("ModifyValue", (96, 99), "method", {"public"}, None),
+        ("ProcessReadOnly", (102, 105), "method", {"public"}, None),
+        ("Reverse", (108, 108), "method", {"public", "static"}, None),
+        ("+", (111, 114), "operator_overload", {"public", "static"}, "MethodExamples"),
         (
             "string",
             (117, 120),
             "conversion_operator_declaration",
             {"public", "static", "implicit"},
+            None,
         ),
         (
             "int",
             (123, 126),
             "conversion_operator_declaration",
             {"public", "static", "explicit"},
+            None,
         ),
-        ("~MethodExamples", (129, 132), "destructor", set()),
-        ("GetDisplayName", (138, 138), "method", {"public"}),
-        ("CalculateComplex", (141, 149), "method", {"public"}),
-        ("LocalHelper", (143, 146), "local_function", set()),
-        ("Reverse", (155, 163), "method", {"public", "static"}),
-        ("IsNullOrWhiteSpace", (165, 168), "method", {"public", "static"}),
+        (
+            "~MethodExamples",
+            (129, 132),
+            "destructor",
+            set(),
+            None,
+        ),
+        ("GetDisplayName", (138, 138), "method", {"public"}, None),
+        ("CalculateComplex", (141, 149), "method", {"public"}, None),
+        ("LocalHelper", (143, 146), "local_function", set(), None),
+        ("Reverse", (155, 163), "method", {"public", "static"}, None),
+        ("IsNullOrWhiteSpace", (165, 168), "method", {"public", "static"}, None),
     ],
 )
 def test_extract_method_likes(
@@ -203,6 +236,7 @@ def test_extract_method_likes(
     expected_line_range: tuple[int, int],
     expected_kind: str,
     expected_modifiers: set[str],
+    expected_op_return_ty: str,
 ) -> None:
     driver_tree = CSharpDriverTree.from_code(method_test_code, "does_not_matter.cs")
     method_likes = driver_tree.extract_method_like_definitions()
@@ -210,50 +244,20 @@ def test_extract_method_likes(
     for m in method_likes:
         name = m.name
         line_range = (m.start_line, m.end_line)
-        callable_kind = m.lang_specific_data["callable_kind"].value
-        modifiers = {v.value for v in m.lang_specific_data.get("modifiers")}
-        extracted.append((name, line_range, callable_kind, modifiers))
+        callable_kind = m.bespoke_data.kind.value
+        modifiers = {v.value for v in m.bespoke_data.modifiers}
+        op_return_ty = m.bespoke_data.op_overload_return_ty
+        extracted.append((name, line_range, callable_kind, modifiers, op_return_ty))
 
     assert (
         expected_method_name,
         expected_line_range,
         expected_kind,
         expected_modifiers,
-    ) in extracted, (
-        f"Expected method-like ({expected_method_name}, {expected_line_range}, {expected_kind, expected_modifiers}) "
-        f"not found in extracted method-likes: {extracted}"
-    )
-
-
-@pytest.mark.parametrize(
-    "expected_op_overload_name, expected_line_range, expected_op_return_ty",
-    [
-        (("+"), (111, 114), "MethodExamples"),
-    ],
-)
-def test_extract_operator_overload_op_and_target(
-    method_test_code: str,
-    expected_op_overload_name: str,
-    expected_line_range: tuple[int, int],
-    expected_op_return_ty: str,
-) -> None:
-    driver_tree = CSharpDriverTree.from_code(method_test_code, "does_not_matter.cs")
-    method_likes = driver_tree.extract_method_like_definitions()
-    op_overloads = []
-    for m in method_likes:
-        if m.lang_specific_data["callable_kind"].value == "operator_overload":
-            name = m.name
-            line_range = (m.start_line, m.end_line)
-            return_ty = m.lang_specific_data["op_overload_return_ty"]
-            op_overloads.append((name, line_range, return_ty))
-
-    assert (
-        expected_op_overload_name,
-        expected_line_range,
         expected_op_return_ty,
-    ) in op_overloads, (
-        f"expected operator overload ({expected_op_overload_name}, {expected_line_range}, {expected_op_return_ty}) "
-        f"not found in extracted operator overloads: {op_overloads}"
+    ) in extracted, (
+        f"Expected method-like ({expected_method_name}, {expected_line_range}, {expected_kind}, {expected_modifiers}, {expected_op_return_ty}) "
+        f"not found in extracted method-likes: {extracted}"
     )
 
 
@@ -303,8 +307,8 @@ def test_extract_enums(
     for e in enums:
         name = e.name
         line_range = (e.start_line, e.end_line)
-        modifiers = {v.value for v in e.lang_specific_data.get("modifiers")}
-        ty = e.lang_specific_data["underlying_ty"]
+        modifiers = {v.value for v in e.bespoke_data.modifiers}
+        ty = e.bespoke_data.underlying_ty
         extracted.append((name, line_range, modifiers, ty))
 
     assert (
@@ -399,8 +403,8 @@ def test_extract_structs(
     for s in structs:
         name = s.name
         line_range = (s.start_line, s.end_line)
-        modifiers = {v.value for v in s.lang_specific_data.get("modifiers")}
-        kind = s.lang_specific_data["data_structure_kind"]
+        modifiers = {v.value for v in s.bespoke_data.modifiers}
+        kind = s.bespoke_data.kind
         extracted.append((name, line_range, modifiers, kind))
 
     assert (

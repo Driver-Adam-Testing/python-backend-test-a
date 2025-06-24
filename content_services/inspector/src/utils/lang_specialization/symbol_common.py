@@ -3,7 +3,7 @@ import textwrap
 from dataclasses import dataclass, field
 from enum import Enum, IntEnum, StrEnum, auto
 from pathlib import Path
-from typing import Any, Self
+from typing import Self
 
 from openai import OpenAIError
 from pydantic import BaseModel, Field
@@ -94,6 +94,10 @@ class ScopeRelation(StrEnum):
     ENUMERATOR = "Enumerators"
 
 
+class BespokeMarker(abc.ABC, BaseModel):
+    pass
+
+
 class RawTreeSitterSymbolData(BaseModel):
     name: str | None
     start_line: int
@@ -110,7 +114,7 @@ class RawTreeSitterSymbolData(BaseModel):
     )  # TODO: this is somewhat a hack since we need the code, but makes symbols bulky
     delimiter: str | None = None
     base_class_names: tuple[str, ...] | None = None
-    lang_specific_data: dict[str, Any] | None = None
+    bespoke_data: BespokeMarker | None = None
 
     class Config:
         """

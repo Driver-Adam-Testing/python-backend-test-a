@@ -22,10 +22,10 @@ cdk-monitoring-constructs = "*"
 aws-cdk-aws-lambda-python-alpha = "^2.150.0a0"
 boto3 = "^1.37.32"
 python-dotenv = "^1.1.0"
-modal = "^0.73.165"
 dotenv = "^0.9.9"
 uvicorn = "^0.34.2"
 ngrok = "1.4.0"
+modal = "^1.0.4"
 
 [build-system]
 requires = ["poetry-core"]

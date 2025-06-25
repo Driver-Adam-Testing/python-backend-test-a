@@ -211,6 +211,17 @@ class CSharpDriverTree(DriverTree):
         path_parts.reverse()
         return sep.join(path_parts)
 
+    def extract_all_symbols(self) -> list[RawTreeSitterSymbolData]:
+        """Extract all symbols from the source code."""
+        symbols = []
+        symbols.extend(self.extract_imports())
+        symbols.extend(self.extract_callable_definitions())
+        symbols.extend(self.extract_data_structure_definitions())
+        symbols.extend(self.extract_class_definitions())
+        symbols.extend(self.extract_interfaces())
+        symbols.extend(self.extract_function_calls())
+        return symbols
+
     def extract_imports(self) -> list[RawTreeSitterSymbolData]:
         using_imports = self.extract_using_imports()
         namespace_imports = self.extract_namespace_declarations()

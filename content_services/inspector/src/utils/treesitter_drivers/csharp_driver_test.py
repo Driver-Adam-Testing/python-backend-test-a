@@ -133,6 +133,91 @@ def test_extract_using_imports(
 
 
 @pytest.fixture(scope="module")
+def interface_test_code() -> str:
+    file_path = (
+        pathlib.Path(__file__).parent
+        / "treesitter_testcases"
+        / "csharp"
+        / "test_interfaces.cs"
+    )
+    with open(file_path, encoding="utf-8") as f:
+        return f.read()
+
+
+def test_extract_interfaces_no_false_positives(interface_test_code: str) -> None:
+    driver_tree = CSharpDriverTree.from_code(interface_test_code, "does_not_matter.cs")
+    interfaces = driver_tree.extract_interfaces()
+    assert len(interfaces) == 25
+
+
+@pytest.mark.parametrize(
+    "expected_interface_name, expected_line_range, expected_modifiers, expected_type_params, expected_base_names",
+    [
+        ("IDrawable", (9, 22), {"public"}, set(), set()),
+        ("IRepository", (25, 32), {"public"}, {"T"}, set()),
+        ("IResizable", (35, 47), {"public"}, set(), {"IDrawable"}),
+        ("IResizeListener", (43, 46), set(), set(), set()),
+        ("ICalculator", (50, 67), {"public"}, set(), set()),
+        ("IAdvancedDrawable", (70, 74), {"public"}, set(), {"IDrawable", "IResizable"}),
+        ("IComparable", (77, 80), {"public"}, {"in T"}, set()),
+        ("IProducer", (83, 87), {"public"}, {"out T"}, set()),
+        ("IConsumer", (90, 94), {"public"}, {"in T"}, set()),
+        ("IIndexable", (97, 101), {"public"}, {"T"}, set()),
+        ("IProcessor", (104, 107), {"public"}, {"TInput", "TOutput"}, set()),
+        ("IInternalService", (110, 114), {"internal"}, set(), set()),
+        ("IPartialInterface", (117, 121), {"public", "partial"}, set(), set()),
+        ("IPartialInterface", (123, 127), {"public", "partial"}, set(), set()),
+        ("IUnsafeOperations", (130, 134), {"public", "unsafe"}, set(), set()),
+        ("IOuterInterface", (137, 152), {"public"}, set(), set()),
+        ("IPrivateNested", (142, 145), {"private"}, set(), set()),
+        ("IProtectedNested", (148, 151), {"protected"}, set(), set()),
+        ("IPublicNested", (158, 161), {"public"}, set(), set()),
+        ("IInternalNested", (164, 167), {"internal"}, set(), set()),
+        (
+            "IProtectedInternalNested",
+            (170, 173),
+            {"protected", "internal"},
+            set(),
+            set(),
+        ),
+        ("IPrivateProtectedNested", (176, 179), {"private", "protected"}, set(), set()),
+        ("IComplexInterface", (183, 198), {"internal", "partial"}, set(), set()),
+        ("INestedInPartial", (188, 197), {"public"}, set(), set()),
+        ("IDeeplyNested", (193, 196), {"private"}, set(), set()),
+    ],
+)
+def test_extract_interfaces(
+    interface_test_code: str,
+    expected_interface_name: str,
+    expected_line_range: tuple[int, int],
+    expected_modifiers: set[str],
+    expected_type_params: set[str],
+    expected_base_names: set[str],
+) -> None:
+    driver_tree = CSharpDriverTree.from_code(interface_test_code, "does_not_matter.cs")
+    interfaces = driver_tree.extract_interfaces()
+    extracted = []
+    for ifc in interfaces:
+        name = ifc.name
+        line_range = (ifc.start_line, ifc.end_line)
+        modifiers = {v.value for v in ifc.bespoke_data.modifiers}
+        type_params = set(ifc.bespoke_data.type_params)
+        base_names = set(ifc.bespoke_data.base_names)
+        extracted.append((name, line_range, modifiers, type_params, base_names))
+
+    assert (
+        expected_interface_name,
+        expected_line_range,
+        expected_modifiers,
+        expected_type_params,
+        expected_base_names,
+    ) in extracted, (
+        f"Expected interface ({expected_interface_name}, {expected_line_range}, {expected_modifiers}, {expected_type_params}, {expected_base_names}) "
+        f"not found in extracted interfaces: {extracted}"
+    )
+
+
+@pytest.fixture(scope="module")
 def class_test_code() -> str:
     file_path = (
         pathlib.Path(__file__).parent

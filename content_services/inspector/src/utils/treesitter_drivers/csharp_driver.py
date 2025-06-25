@@ -100,6 +100,19 @@ class CSharpDataStructureModifier(StrEnum):
         return _data_structure_modifier_lookup().get(candidate)
 
 
+class CSharpInterfaceModifier(StrEnum):
+    PUBLIC = "public"
+    INTERNAL = "internal"
+    PRIVATE = "private"
+    UNSAFE = "unsafe"
+    PARTIAL = "partial"
+    PROTECTED = "protected"
+
+    @classmethod
+    def from_str(cls, candidate: str) -> Self | None:
+        return _interface_modifier_lookup().get(candidate)
+
+
 @cache
 def _method_modifier_lookup() -> dict[str, CSharpMethodModifier]:
     return {m.value: m for m in CSharpMethodModifier}
@@ -113,6 +126,11 @@ def _class_modifier_lookup() -> dict[str, CSharpClassModifier]:
 @cache
 def _data_structure_modifier_lookup() -> dict[str, CSharpDataStructureModifier]:
     return {m.value: m for m in CSharpDataStructureModifier}
+
+
+@cache
+def _interface_modifier_lookup() -> dict[str, CSharpInterfaceModifier]:
+    return {m.value: m for m in CSharpInterfaceModifier}
 
 
 class CSharpImportData(BespokeMarker):
@@ -135,6 +153,12 @@ class CSharpDataStructureData(BespokeMarker):
 class CSharpClassData(BespokeMarker):
     kind: CSharpClassKind
     modifiers: list[CSharpClassModifier]
+
+
+class CSharpInterfaceData(BespokeMarker):
+    base_names: list[str]
+    modifiers: list[CSharpInterfaceModifier]
+    type_params: list[str]
 
 
 def cs_node_to_text(source_bytes: bytes, node: tree_sitter.Node) -> str:
@@ -283,7 +307,8 @@ class CSharpDriverTree(DriverTree):
             )
             imports.append(im)
 
-        return imports
+        sorted_imports = sorted(imports, key=lambda x: x.start_byte)
+        return sorted_imports
 
     def extract_namespace_declarations(self) -> list[RawTreeSitterSymbolData]:
         namespace_query_str = """
@@ -353,7 +378,8 @@ class CSharpDriverTree(DriverTree):
                     f"Missing callable name ({namespace_name}) or node ({namespace_node})"
                 )
 
-        return namespaces
+        sorted_namespaces = sorted(namespaces, key=lambda x: x.start_byte)
+        return sorted_namespaces
 
     def extract_callable_definitions(self) -> list[RawTreeSitterSymbolData]:
         return self.extract_method_like_definitions()
@@ -495,7 +521,8 @@ class CSharpDriverTree(DriverTree):
                     f"Missing callable name ({callable_name}) or node ({callable_node})"
                 )
 
-        return method_likes
+        sorted_method_likes = sorted(method_likes, key=lambda x: x.start_byte)
+        return sorted_method_likes
 
     def extract_data_structure_definitions(self) -> list[RawTreeSitterSymbolData]:
         enums = self.extract_enum_definitions()
@@ -581,7 +608,8 @@ class CSharpDriverTree(DriverTree):
             )
             enums.append(enum)
 
-        return enums
+        sorted_enums = sorted(enums, key=lambda x: x.start_byte)
+        return sorted_enums
 
     def extract_struct_definitions(self) -> list[RawTreeSitterSymbolData]:
         struct_query_str = """
@@ -675,7 +703,8 @@ class CSharpDriverTree(DriverTree):
             )
             structs.append(struct)
 
-        return structs
+        sorted_structs = sorted(structs, key=lambda x: x.start_byte)
+        return sorted_structs
 
     def extract_function_calls(self) -> list[RawTreeSitterSymbolData]:
         return []
@@ -773,4 +802,88 @@ class CSharpDriverTree(DriverTree):
         return sorted_klasses
 
     def extract_interfaces(self) -> list[RawTreeSitterSymbolData]:
-        return []
+        interfaces_query_str = """
+        (interface_declaration
+          (modifier)* @interface_modifier
+          name: (identifier) @interface_name
+          (type_parameter_list)? @type_params
+          (base_list)? @constraining_interfaces
+          (type_parameter_constraints_clause)? @constraints) @interface_def
+        """.strip()
+        query = self.tree_sitter_lang.query(interfaces_query_str)
+        matches = query.matches(self.tree.root_node)
+        interfaces = []
+
+        for _pat_idx, captures_by_name in matches:
+            interface_node = captures_by_name["interface_def"][0]
+            interface_name = captures_by_name["interface_name"][0].text.decode("utf-8")
+
+            modifier_list = []
+            if captures_by_name.get("interface_modifier"):
+                for m in captures_by_name["interface_modifier"]:
+                    modifier = CSharpInterfaceModifier.from_str(m.text.decode("utf-8"))
+                    if modifier:
+                        modifier_list.append(modifier)
+
+            # TODO: Implement matching of generic type constraints to generic types
+            type_params = []
+            if captures_by_name.get("type_params"):
+                for child in captures_by_name["type_params"][0].children:
+                    if child.type in {
+                        "type_parameter",
+                    }:
+                        type_params.append(child.text.decode("utf-8"))
+
+            constraining_implementations = []
+            if captures_by_name.get("constraining_interfaces"):
+                for child in captures_by_name["constraining_interfaces"][0].children:
+                    # TODO: Think about this -- needs to match what is extracted for
+                    # TODO: `interface`s to make links (e.g., Interface or Interface<T>)
+                    # TODO: Unify with solution in extracting interfaces.
+                    if child.type in {
+                        "identifier",
+                        "qualified_name",
+                        "generic_name",
+                        "invocation_expression",
+                    }:
+                        constraining_implementations.append(child.text.decode("utf-8"))
+
+            if interface_node and interface_name:
+                start_line, end_line = self.get_node_line_range(interface_node)
+                start_byte, end_byte = (
+                    interface_node.start_byte,
+                    interface_node.end_byte,
+                )
+                symbol_code = cs_node_to_text(self.source_bytes, interface_node)
+                fully_qualified_parent_path = self._get_fully_qualified_path_to_parent(
+                    node=interface_node
+                )
+                delimiter = "."
+                bespoke_data = CSharpInterfaceData(
+                    base_names=constraining_implementations,
+                    modifiers=modifier_list,
+                    type_params=type_params,
+                )
+                interface = RawTreeSitterSymbolData(
+                    name=interface_name,
+                    start_line=start_line,
+                    end_line=end_line,
+                    symbol_kind=SymbolKind.INTERFACE,
+                    start_byte=start_byte,
+                    end_byte=end_byte,
+                    file_path=self.file_path,
+                    fully_qualified_path_to_parent=fully_qualified_parent_path,
+                    # TODO: unify interface base names with class/struct/enum
+                    base_class_names=None,
+                    symbol_code=symbol_code,
+                    delimiter=delimiter,
+                    bespoke_data=bespoke_data,
+                )
+                interfaces.append(interface)
+            else:
+                print(
+                    f"Missing class name ({interface_name}) or node ({interface_node})"
+                )
+
+        sorted_interfaces = sorted(interfaces, key=lambda x: x.start_byte)
+        return sorted_interfaces

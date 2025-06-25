@@ -26,8 +26,8 @@ pdf_preprocessing_modal_config = {
         modal.Secret.from_name("aws-inspector-s3"),
         modal.Secret.from_name("anthropic"),
     ],
-    "proxy": modal.Proxy.from_name("pg-proxy")
-    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "prod"]
+    "proxy": modal.Proxy.from_name("my-proxy")
+    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging", "prod"]
     else None,
     "max_containers": 20,
 }

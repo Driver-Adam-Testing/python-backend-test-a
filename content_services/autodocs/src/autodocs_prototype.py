@@ -451,12 +451,12 @@ class LlmCfg(BaseModel):
     @classmethod
     def default(cls) -> Self:
         return cls(
-            tag_model="gpt-4o",
+            tag_model="gpt-4.1",
             section_init_model="o3-mini",
-            section_update_model="gpt-4o",
+            section_update_model="gpt-4.1",
             section_format_model="o3-mini",
             assembly_model="o3-mini",
-            copy_editor_model="gpt-4o",
+            copy_editor_model="gpt-4.1",
         )
 
 
@@ -466,6 +466,16 @@ class DocumentCfg(BaseModel):
     use_tagging: bool
     config_name: str
     config_version: str
+
+    @classmethod
+    def default(cls) -> Self:
+        return cls(
+            goal="",
+            fmt=DocKind.DEFINED_SECTIONS,
+            use_tagging=True,
+            config_name="",
+            config_version="",
+        )
 
 
 class FullyQualifiedDriverPathPdf(BaseModel):
@@ -487,19 +497,31 @@ class Scope(BaseModel):
     def default(cls) -> Self:
         return cls(
             preamble="",
-            code=[],
             pdfs=[],
+            code=[],
         )
 
 
 class SectionCfg(BaseModel):
     title: str
     level: int
-    required: bool = True  # this setting is ignored when committed_with is not None
+    required: bool  # this setting is ignored when committed_with is not None
     instruction: str
     content_structure: str
     section_creation_method: SectionCreationMethod
-    committed_with: str = None
+    committed_with: str | None
+
+    @classmethod
+    def default(cls) -> Self:
+        return cls(
+            title="",
+            level=1,
+            required=True,
+            instruction="",
+            content_structure="",
+            section_creation_method=SectionCreationMethod.SCATTER_GATHER,
+            committed_with=None,
+        )
 
 
 class SectionCommitted(BaseModel):
@@ -1380,19 +1402,45 @@ class AutoDocCfg(BaseModel):
     def from_file(cls, toml_file: str) -> Self:
         with open(toml_file, "rb") as f:
             raw_data = tomllib.load(f)
+
         llm_raw_default = LlmCfg.default().model_dump()
         if "llm" in raw_data:
             raw_data["llm"] = {**llm_raw_default, **raw_data["llm"]}
         else:
             raw_data.setdefault("llm", llm_raw_default)
 
+        document_raw_default = DocumentCfg.default().model_dump()
+        if "document" in raw_data:
+            raw_data["document"] = {**document_raw_default, **raw_data["document"]}
+        else:
+            raw_data.setdefault("document", document_raw_default)
+
         scope_raw_default = Scope.default().model_dump()
         if "scope" in raw_data:
             raw_data["scope"] = {**scope_raw_default, **raw_data["scope"]}
         else:
             raw_data.setdefault("scope", scope_raw_default)
-        raw_data.setdefault("sections", [])
-        cfg = cls(**raw_data)
+
+        sections_raw_default = SectionCfg.default().model_dump()
+        if "sections" in raw_data:
+            raw_data["sections"] = [
+                {**sections_raw_default, **section} for section in raw_data["sections"]
+            ]
+        else:
+            raw_data.setdefault("sections", [sections_raw_default])
+
+        cfg = AutoDocCfg.model_validate(raw_data)
+
+        if cfg.document.goal == "":
+            raise ValueError("A document goal is required.")
+        for section in cfg.sections:
+            if section.title == "":
+                raise ValueError("A section title is required.")
+            if section.instruction == "":
+                raise ValueError("A section instruction is required.")
+            if section.content_structure == "":
+                raise ValueError("A section content structure is required.")
+
         if "substitutions" in raw_data:
             mapping = {item["key"]: item["value"] for item in raw_data["substitutions"]}
             for section in cfg.sections:
@@ -1765,7 +1813,6 @@ Your output is the full content of the document with editing updates based on yo
         )
         cfg = state["cfg"]
         cfg_cls = AutoDocInitState(**cfg)
-
         return cfg_cls, annotations
 
     async def _annotate_file(

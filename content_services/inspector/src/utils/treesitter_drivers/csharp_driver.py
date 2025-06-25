@@ -32,6 +32,9 @@ class CSharpCallKind(StrEnum):
     CONVERSION = "conversion_operator_declaration"
     LOCAL_FN = "local_function"
     PROPERTY = "property"
+    INDEXER = "indexer"
+    EVENT_FIELD_LIKE = "event_field_like"
+    EVENT_PROPERTY_LIKE = "event_property_like"
 
 
 class CSharpMethodModifier(StrEnum):
@@ -141,7 +144,7 @@ class CSharpImportData(BespokeMarker):
 class CSharpMethodLikeData(BespokeMarker):
     kind: CSharpCallKind
     modifiers: list[CSharpMethodModifier]
-    op_overload_return_ty: str | None
+    return_ty: str | None
 
 
 class CSharpDataStructureData(BespokeMarker):
@@ -404,6 +407,13 @@ class CSharpDriverTree(DriverTree):
 
         (property_declaration
           name: (identifier) @property_name) @property
+
+        (indexer_declaration) @indexer
+
+        (event_declaration
+          name: (identifier) @event_property_like_name) @event_property_like
+
+        (event_field_declaration) @event_field_like
         """.strip()
         query = self.tree_sitter_lang.query(method_query_str)
         matches = query.matches(self.tree.root_node)
@@ -413,7 +423,7 @@ class CSharpDriverTree(DriverTree):
             callable_name = None
             callable_node = None
             modifier_list = []
-            op_overload_return_ty = None
+            return_ty = None
             match pattern_idx:
                 case 0:  # standard method
                     callable_name = captures_by_name.get("method_name")[0].text.decode(
@@ -421,12 +431,14 @@ class CSharpDriverTree(DriverTree):
                     )
                     callable_node = captures_by_name.get("method")[0]
                     callable_kind = CSharpCallKind.METHOD
+                    return_ty = None
                 case 1:  # constructor
                     callable_name = captures_by_name.get("constructor_name")[
                         0
                     ].text.decode("utf-8")
                     callable_node = captures_by_name.get("constructor")[0]
                     callable_kind = CSharpCallKind.CONSTRUCTOR
+                    return_ty = None
                 case 2:  # destructor
                     # TODO: Should I do this? Keeping the tilde for visual convenience.
                     callable_name = "~" + captures_by_name.get("destructor_name")[
@@ -434,6 +446,7 @@ class CSharpDriverTree(DriverTree):
                     ].text.decode("utf-8")
                     callable_node = captures_by_name.get("destructor")[0]
                     callable_kind = CSharpCallKind.DESTRUCTOR
+                    return_ty = None
                 case 3:  # operator_overload
                     callable_node = captures_by_name.get("operator_overload")[0]
                     children = list(callable_node.children)
@@ -447,9 +460,9 @@ class CSharpDriverTree(DriverTree):
                     )
                     callable_kind = CSharpCallKind.OP_OVERLOAD
                     if op_idx:
-                        op_overload_return_ty = children[op_idx - 1].text.decode(
-                            "utf-8"
-                        )
+                        return_ty = children[op_idx - 1].text.decode("utf-8")
+                    else:
+                        return_ty = None
                 case 4:  # conversion (implicit and explicit)
                     callable_node = captures_by_name.get("conversion_operator")[0]
                     children = list(callable_node.children)
@@ -462,19 +475,68 @@ class CSharpDriverTree(DriverTree):
                         children[op_idx + 1].text.decode("utf-8") if op_idx else None
                     )
                     callable_kind = CSharpCallKind.CONVERSION
+                    return_ty = None
                 case 5:  # local functions
                     callable_name = captures_by_name.get("local_function_name")[
                         0
                     ].text.decode("utf-8")
                     callable_node = captures_by_name.get("local_function")[0]
                     callable_kind = CSharpCallKind.LOCAL_FN
+                    return_ty = None
                 case 6:  # property
                     callable_name = captures_by_name.get("property_name")[
                         0
                     ].text.decode("utf-8")
                     callable_node = captures_by_name.get("property")[0]
                     callable_kind = CSharpCallKind.PROPERTY
+                    return_ty = None
+                case 7:  # indexer
+                    callable_node = captures_by_name.get("indexer")[0]
+                    callable_name = None
+                    callable_kind = CSharpCallKind.INDEXER
+                    children = list(callable_node.children)
+                    this_idx = None
+                    return_ty = None
+                    for idx, child in enumerate(children):
+                        if child.type == "bracketed_parameter_list":
+                            callable_name = child.text.decode("utf-8")
+                        if child.type == "this":
+                            this_idx = idx
+                    if this_idx:
+                        return_ty = children[this_idx - 1].text.decode("utf-8")
+                case 8:  # property-like event
+                    # TODO: Consider parsing the `accessor_list` that may be present
+                    callable_node = captures_by_name.get("event_property_like")[0]
+                    callable_name = captures_by_name.get("event_property_like_name")[
+                        0
+                    ].text.decode("utf-8")
+                    callable_kind = CSharpCallKind.EVENT_PROPERTY_LIKE
+                    children = list(callable_node.children)
+                    return_ty_idx = None
+                    for idx, child in enumerate(children):
+                        if child.type == "event":
+                            return_ty_idx = idx + 1
+                            break
+                    return_ty = children[return_ty_idx].text.decode("utf-8")
+                case 9:  # field-like event
+                    callable_node = captures_by_name.get("event_field_like")[0]
+                    callable_name = None
+                    callable_kind = CSharpCallKind.EVENT_FIELD_LIKE
+                    return_ty = None
+                    children = list(callable_node.children)
+                    # TODO this seems very fragile; not sure if this works in all cases
+                    event_idx = None
+                    for idx, child in enumerate(children):
+                        if child.type == "event":
+                            event_idx = idx
+                    event_info = children[event_idx + 1]
+                    if event_idx and event_info.type == "variable_declaration":
+                        return_ty = event_info.children[0].text.decode("utf-8")
+                        callable_name = event_info.children[1].text.decode("utf-8")
                 case _:
+                    callable_node = None
+                    callable_name = None
+                    callable_kind = None
                     print(f"Unhandled method-like pattern idx: {pattern_idx}")
             if callable_name and callable_node:
                 for child in callable_node.children:
@@ -500,7 +562,7 @@ class CSharpDriverTree(DriverTree):
                 bespoke_data = CSharpMethodLikeData(
                     kind=callable_kind,
                     modifiers=modifier_list,
-                    op_overload_return_ty=op_overload_return_ty,
+                    return_ty=return_ty,
                 )
                 method_like = RawTreeSitterSymbolData(
                     name=callable_name,

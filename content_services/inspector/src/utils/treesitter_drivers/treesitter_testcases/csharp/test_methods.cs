@@ -167,4 +167,28 @@ namespace Com.Example.Methods
             return string.IsNullOrWhiteSpace(str);
         }
     }
+
+    // Class with indexer and events
+    public class IndexerAndEventExamples
+    {
+        private Dictionary<string, object> _data = new Dictionary<string, object>();
+
+        // Indexer method
+        public object this[string key]
+        {
+            get => _data.TryGetValue(key, out var value) ? value : null;
+            set => _data[key] = value;
+        }
+
+        // Field-like event
+        public event EventHandler DataChanged;
+
+        // Property-like event
+        private EventHandler _statusChanged;
+        public event EventHandler StatusChanged
+        {
+            add => _statusChanged += value;
+            remove => _statusChanged -= value;
+        }
+    }
 }

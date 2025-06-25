@@ -314,11 +314,11 @@ def method_test_code() -> str:
 def test_extract_method_likes_no_false_positives(method_test_code: str) -> None:
     driver_tree = CSharpDriverTree.from_code(method_test_code, "does_not_matter.cs")
     method_likes = driver_tree.extract_method_like_definitions()
-    assert len(method_likes) == 27
+    assert len(method_likes) == 31
 
 
 @pytest.mark.parametrize(
-    "expected_method_name, expected_line_range, expected_kind, expected_modifiers, expected_op_return_ty",
+    "expected_method_name, expected_line_range, expected_kind, expected_modifiers, expected_return_ty",
     [
         ("MethodExamples", (11, 13), "constructor", {"public"}, None),
         ("MethodExamples", (16, 20), "constructor", {"public"}, None),
@@ -360,11 +360,21 @@ def test_extract_method_likes_no_false_positives(method_test_code: str) -> None:
             set(),
             None,
         ),
+        ("ValueChanged", (135, 135), "event_field_like", {"public"}, "Action<string>"),
         ("GetDisplayName", (138, 138), "method", {"public"}, None),
         ("CalculateComplex", (141, 149), "method", {"public"}, None),
         ("LocalHelper", (143, 146), "local_function", set(), None),
         ("Reverse", (155, 163), "method", {"public", "static"}, None),
         ("IsNullOrWhiteSpace", (165, 168), "method", {"public", "static"}, None),
+        ("[string key]", (177, 181), "indexer", {"public"}, "object"),
+        ("DataChanged", (184, 184), "event_field_like", {"public"}, "EventHandler"),
+        (
+            "StatusChanged",
+            (188, 192),
+            "event_property_like",
+            {"public"},
+            "EventHandler",
+        ),
     ],
 )
 def test_extract_method_likes(
@@ -373,7 +383,7 @@ def test_extract_method_likes(
     expected_line_range: tuple[int, int],
     expected_kind: str,
     expected_modifiers: set[str],
-    expected_op_return_ty: str,
+    expected_return_ty: str,
 ) -> None:
     driver_tree = CSharpDriverTree.from_code(method_test_code, "does_not_matter.cs")
     method_likes = driver_tree.extract_method_like_definitions()
@@ -383,17 +393,17 @@ def test_extract_method_likes(
         line_range = (m.start_line, m.end_line)
         callable_kind = m.bespoke_data.kind.value
         modifiers = {v.value for v in m.bespoke_data.modifiers}
-        op_return_ty = m.bespoke_data.op_overload_return_ty
-        extracted.append((name, line_range, callable_kind, modifiers, op_return_ty))
+        return_ty = m.bespoke_data.return_ty
+        extracted.append((name, line_range, callable_kind, modifiers, return_ty))
 
     assert (
         expected_method_name,
         expected_line_range,
         expected_kind,
         expected_modifiers,
-        expected_op_return_ty,
+        expected_return_ty,
     ) in extracted, (
-        f"Expected method-like ({expected_method_name}, {expected_line_range}, {expected_kind}, {expected_modifiers}, {expected_op_return_ty}) "
+        f"Expected method-like ({expected_method_name}, {expected_line_range}, {expected_kind}, {expected_modifiers}, {expected_return_ty}) "
         f"not found in extracted method-likes: {extracted}"
     )
 

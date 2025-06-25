@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from utils.lang_specialization.symbol_common import RawTreeSitterSymbolData
+
 from ..base import ImportResolver
 
 
@@ -7,8 +9,11 @@ class CCppResolver(ImportResolver):
     language = "c_cpp"
 
     def resolve_import(
-        self, current_file: Path, import_str: str, project_files: set[Path]
-    ) -> Path | None:
+        self,
+        current_file: Path,
+        import_str: str,
+        project_files_to_symbols_map: dict[Path, list[RawTreeSitterSymbolData]],
+    ) -> Path | list[Path] | None:
         """
         Resolve C/C++ #include directives to project files.
 
@@ -16,6 +21,7 @@ class CCppResolver(ImportResolver):
         Otherwise, look for a file in project_files that ends with include_str as a fallback.
         If collisions happen, pick the first or None.
         """
+        project_files = set(project_files_to_symbols_map.keys())
         # 1) Direct local path approach
         candidate = (current_file.parent / import_str).resolve()
         if candidate in project_files:

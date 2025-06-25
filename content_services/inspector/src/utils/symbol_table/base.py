@@ -45,8 +45,11 @@ class ImportResolver(ABC):
 
     @abstractmethod
     def resolve_import(
-        self, current_file: Path, import_str: str, project_files: set[Path]
-    ) -> Path | None:
+        self,
+        current_file: Path,
+        import_str: str,
+        project_files_to_symbols_map: dict[Path, list[RawTreeSitterSymbolData]],
+    ) -> Path | list[Path] | None:
         """Resolve an import string to a project file path."""
 
     def __init_subclass__(cls, **kwargs) -> None:  # noqa: ANN003

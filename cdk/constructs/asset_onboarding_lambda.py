@@ -10,6 +10,7 @@ from aws_cdk import (
     aws_s3_notifications,
     aws_secretsmanager,
     aws_sns,
+    aws_ssm,
 )
 from constructs import Construct
 
@@ -19,6 +20,7 @@ class AssetOnboardingLambdaParams:
     environment: str
     api_url: str
     auth0_url: str
+    auth0_audience: str
     dropzone_bucket: aws_s3.Bucket
     use_legacy_dropzone: bool
 
@@ -31,6 +33,14 @@ class AssetOnboardingLambda(Construct):
 
         client_id_secret = aws_secretsmanager.Secret(scope, "ClientIdSecret")
         client_secret_secret = aws_secretsmanager.Secret(scope, "ClientSecretSecret")
+
+        sentry_secret_name = aws_ssm.StringParameter.value_from_lookup(
+            scope,
+            parameter_name="/baseline/infra/v2/pythonBackend/sentryCredentialName",
+        )
+        sentry_secret = aws_secretsmanager.Secret.from_secret_name_v2(
+            scope, "SentrySecret", secret_name=sentry_secret_name
+        )
         lambda_function = aws_lambda_python_alpha.PythonFunction(
             scope,
             "AssetOnboardingLambdaPy",
@@ -43,9 +53,11 @@ class AssetOnboardingLambda(Construct):
                 "CLIENT_ID_SECRET": client_id_secret.secret_name,
                 "CLIENT_SECRET_SECRET": client_secret_secret.secret_name,
                 "API_URL": params.api_url,
+                "AUTH0_AUDIENCE": params.auth0_audience,
                 "AUTH0_URL": params.auth0_url,
                 "AWS_S3_CODE_BUCKET_SUFFIX": "codebase-dropzone",
                 "USE_LEGACY_DROPZONE": str(params.use_legacy_dropzone),
+                "SENTRY_DSN": sentry_secret.secret_value_from_json("SENTRY_DSN").unsafe_unwrap(),
             },
             bundling=aws_lambda_python_alpha.BundlingOptions(
                 asset_excludes=[".venv", ".env", "tests/", ".pytest*"]

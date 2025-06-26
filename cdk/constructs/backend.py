@@ -271,7 +271,7 @@ class Backend(Construct):
             memory_limit_mib=4096,
         )
         self.service.target_group.configure_health_check(
-            path="/api/v1/healthcheck/", port="8000"
+            path="/studio/v1/healthcheck/", port="8000"
         )
         self.service.task_definition.task_role.attach_inline_policy(
             aws_iam.Policy(

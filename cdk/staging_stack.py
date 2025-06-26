@@ -41,8 +41,9 @@ class StagingStack(Stack):
             "AssetOnboardingLambda",
             AssetOnboardingLambdaParams(
                 environment="staging",
-                api_url="https://api.staging.driverai.com/api/v1",
+                api_url="https://api.staging.driverai.com/studio/v1",
                 auth0_url="https://auth.staging.driverai.com",
+                auth0_audience="https://api.staging.driverai.com/api/v1",
                 dropzone_bucket=self.backend.dropzone_bucket,
                 use_legacy_dropzone=True,
             ),

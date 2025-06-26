@@ -29,8 +29,8 @@ agent_model_config = {
     "max_containers": 36,
 }
 
-if os.environ["MODAL_ENVIRONMENT"] in ["dev", "prod"]:
-    agent_model_config["proxy"] = modal.Proxy.from_name("pg-proxy")
+if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging", "prod"]:
+    agent_model_config["proxy"] = modal.Proxy.from_name("my-proxy")
 
 
 @app.function(timeout=3600, **agent_model_config, min_containers=10)

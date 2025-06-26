@@ -6,13 +6,22 @@ from urllib.parse import unquote_plus
 
 import botocore
 import httpx
+import sentry_sdk
 from aws_secretsmanager_caching import SecretCache, SecretCacheConfig
+from sentry_sdk.integrations.aws_lambda import AwsLambdaIntegration
 from src.utils.aws_s3 import (
     generate_get_presigned_url,
     has_allowed_guard_duty_tag,
     head_object,
 )
 from src.utils.config import settings
+
+sentry_sdk.init(
+    dsn=os.environ["SENTRY_DSN"],
+    integrations=[AwsLambdaIntegration(timeout_warning=True)],
+    traces_sample_rate=0.1,
+    environment=settings.ENVIRONMENT,
+)
 
 log_level = os.environ.get("LOG_LEVEL").upper() or logging.INFO
 if len(logging.getLogger().handlers) > 0:
@@ -27,6 +36,17 @@ logger.info(f"Log level set to {log_level}")
 
 
 def handler(
+    event: dict,
+    context: Any,  # noqa: ANN401
+) -> str:
+    try:
+        return _process_handler(event, context)
+    except Exception as e:
+        logger.exception("Unhandled error in Lambda handler")
+        sentry_sdk.capture_exception(e)
+
+
+def _process_handler(
     event: dict,
     context: Any,  # noqa: ANN401
 ) -> str:
@@ -52,7 +72,7 @@ def handler(
             {
                 "client_id": client_id,
                 "client_secret": client_secret,
-                "audience": settings.API_URL,
+                "audience": settings.AUTH0_AUDIENCE,
                 "grant_type": "client_credentials",
             }
         )
@@ -85,35 +105,40 @@ def handler(
                 has_allowed_guard_duty_tag(bucket=bucket_name, key=real_object_key)
                 or settings.ENVIRONMENT == "cloud-local"
             )
-            if should_process:
-                metadata = head_object(bucket=bucket_name, key=real_object_key)
-                logger.info("No threats found, continuing asset onboarding")
-                presigned_url = generate_get_presigned_url(
-                    bucket=bucket_name, key=real_object_key
-                )
-                request_params = {
-                    "download_url": presigned_url,
-                    "asset_name": metadata["Metadata"]["asset_name"],
-                    "org_id": metadata["Metadata"]["unhashed_organization_id"],
-                    "provider": metadata["Metadata"]["provider"],
-                    "asset_kind": metadata["Metadata"]["asset_kind"],
-                }
-            else:
-                logger.error(
-                    f"GuardDuty found something. Bucket: {bucket_name}, Key: {real_object_key}"
-                )
-                request_params = None
+            try:
+                if should_process:
+                    metadata = head_object(bucket=bucket_name, key=real_object_key)
+                    logger.info("No threats found, continuing asset onboarding")
+                    presigned_url = generate_get_presigned_url(
+                        bucket=bucket_name, key=real_object_key
+                    )
+                    request_params = {
+                        "download_url": presigned_url,
+                        "asset_name": metadata["Metadata"]["asset_name"],
+                        "org_id": metadata["Metadata"]["unhashed_organization_id"],
+                        "provider": metadata["Metadata"]["provider"],
+                        "asset_kind": metadata["Metadata"]["asset_kind"],
+                    }
+                else:
+                    logger.error(
+                        f"GuardDuty found something. Bucket: {bucket_name}, Key: {real_object_key}"
+                    )
+                    request_params = None
 
-            request_body = {
-                "version_id": version_id,
-                "should_process": should_process,
-                "params": request_params,
-            }
-            onboarding_result = exec_onboarding_service(
-                request_body,
-                token_json["access_token"],
-            )
-            onboarded.append(onboarding_result)
+                request_body = {
+                    "version_id": version_id,
+                    "should_process": should_process,
+                    "params": request_params,
+                }
+                onboarding_result = exec_onboarding_service(
+                    request_body,
+                    token_json["access_token"],
+                )
+                onboarded.append(onboarding_result)
+            except Exception as e:
+                logger.error(f"Failed to process S3 record {real_object_key}: {e}")
+                sentry_sdk.capture_exception(e)
+                # Continue processing other records instead of failing the entire batch
     return onboarded
 
 

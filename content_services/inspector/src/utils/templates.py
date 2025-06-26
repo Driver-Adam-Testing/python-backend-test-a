@@ -107,6 +107,8 @@ class Template(BaseModel):
                                     language == Lang.CPP
                                     or language == Lang.PYTHON
                                     or language == Lang.JAVA
+                                    or language == Lang.TYPESCRIPT
+                                    or language == Lang.JAVASCRIPT
                                 ):
                                     linkable_symbol_kinds = {
                                         SymbolKind.CALLABLE,

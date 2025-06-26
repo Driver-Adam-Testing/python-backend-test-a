@@ -1622,25 +1622,24 @@ files = [
 
 [[package]]
 name = "modal"
-version = "0.73.74"
+version = "1.0.4"
 description = "Python client library for Modal"
 optional = false
 python-versions = ">=3.9"
 groups = ["dev"]
 files = [
-    {file = "modal-0.73.74-py3-none-any.whl", hash = "sha256:4596e2cb9efb1afe52f7d97b3be54f4130b4c7c145b4b146ada61c8b3255c45e"},
-    {file = "modal-0.73.74.tar.gz", hash = "sha256:42ba67b83779d2b52badaa8020a217217924ba3614a5ef8fea4fc6b06b0f199c"},
+    {file = "modal-1.0.4-py3-none-any.whl", hash = "sha256:6c0d96bb49b09fa47e407a13e49545e32fe0803803b4330fbeb38de5e71209cc"},
+    {file = "modal-1.0.4.tar.gz", hash = "sha256:09a575ff5fcae1e690b10187bea6da7ff01430c38ec1785090bf7a7ccee7f408"},
 ]
 
 [package.dependencies]
 aiohttp = "*"
 certifi = "*"
-click = ">=8.1.0"
-fastapi = "*"
+click = ">=8.1.0,<8.2.0"
 grpclib = "0.4.7"
-protobuf = ">=3.19,<4.24.0 || >4.24.0,<6.0"
+protobuf = ">=3.19,<4.24.0 || >4.24.0,<7.0"
 rich = ">=12.0.0"
-synchronicity = ">=0.9.10,<0.10.0"
+synchronicity = ">=0.9.15,<0.10.0"
 toml = "*"
 typer = ">=0.9"
 types-certifi = "*"
@@ -2318,7 +2317,6 @@ files = [
     {file = "psycopg2_binary-2.9.10-cp313-cp313-musllinux_1_2_i686.whl", hash = "sha256:bb89f0a835bcfc1d42ccd5f41f04870c1b936d8507c6df12b7737febc40f0909"},
     {file = "psycopg2_binary-2.9.10-cp313-cp313-musllinux_1_2_ppc64le.whl", hash = "sha256:f0c2d907a1e102526dd2986df638343388b94c33860ff3bbe1384130828714b1"},
     {file = "psycopg2_binary-2.9.10-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:f8157bed2f51db683f31306aa497311b560f2265998122abe1dce6428bd86567"},
-    {file = "psycopg2_binary-2.9.10-cp313-cp313-win_amd64.whl", hash = "sha256:27422aa5f11fbcd9b18da48373eb67081243662f9b46e6fd07c3eb46e4535142"},
     {file = "psycopg2_binary-2.9.10-cp38-cp38-macosx_12_0_x86_64.whl", hash = "sha256:eb09aa7f9cecb45027683bb55aebaaf45a0df8bf6de68801a6afdc7947bb09d4"},
     {file = "psycopg2_binary-2.9.10-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:b73d6d7f0ccdad7bc43e6d34273f70d587ef62f824d7261c4ae9b8b1b6af90e8"},
     {file = "psycopg2_binary-2.9.10-cp38-cp38-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:ce5ab4bf46a211a8e924d307c1b1fcda82368586a19d0a24f8ae166f5c784864"},
@@ -3109,7 +3107,7 @@ anthropic = "^0.31.2"
 boto3 = "^1.34.149"
 database = {path = "../../driver_db", develop = true}
 markdown = "^3.6"
-modal = "^0.73.74"
+modal = "^1.0.4"
 openai = "^1.42.0"
 pymupdf = "^1.24.9"
 rank-bm25 = "^0.2.2"
@@ -3389,14 +3387,14 @@ mpmath = ">=1.1.0,<1.4.0"
 
 [[package]]
 name = "synchronicity"
-version = "0.9.11"
+version = "0.9.16"
 description = "Export blocking and async library versions from a single async implementation"
 optional = false
 python-versions = ">=3.8"
 groups = ["dev"]
 files = [
-    {file = "synchronicity-0.9.11-py3-none-any.whl", hash = "sha256:231129654d2f56b1aa148e85ebd8545231be135771f6d2196d414175b1594ef6"},
-    {file = "synchronicity-0.9.11.tar.gz", hash = "sha256:cb5dbbcb43d637e516ae50db05a776da51a705d1e1a9c0e301f6049afc3c2cae"},
+    {file = "synchronicity-0.9.16-py3-none-any.whl", hash = "sha256:79dd3451c063a06489d466b0585808e1d5d257fc3c2304f5f733a142ef269e97"},
+    {file = "synchronicity-0.9.16.tar.gz", hash = "sha256:bc174b756d12330b1e6027f8293c3b944cf3684dec241af009cb7bb169a0072f"},
 ]
 
 [package.dependencies]

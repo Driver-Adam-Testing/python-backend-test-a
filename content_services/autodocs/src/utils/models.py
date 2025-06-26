@@ -67,6 +67,7 @@ class ChatOpenAI:
             "gpt-4o-2024-08-06",
             "gpt-4o-mini",
             "gpt-4o",
+            "gpt-4.1",
         ]:
             raise ValueError(f"Model ({self.model}) does not support JSON strict mode")
         if output_cfg.kind == OutputConfigKind.JSON_STRICT:

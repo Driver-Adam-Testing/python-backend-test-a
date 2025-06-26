@@ -12,6 +12,10 @@ EXTENSION_TO_DELIMITER = {
     ".hxx": "::",
     ".py": ".",
     ".java": ".",
+    ".ts": ".",
+    ".js": ".",
+    ".tsx": ".",
+    ".jsx": ".",
 }
 
 UNSUPPORTED_CHARACTERS_IN_GFM_ANCHORS = ["~", "=", "!", "(", ")", "&", "|", "+"]
@@ -36,6 +40,7 @@ def replace_driver_compatible_links_with_markdown_links(
     text: str,
     source_path: str,
     file_extension: str,
+    node_path_to_kind: dict,
 ) -> str:
     """
     Replaces the URL part of markdown-style hyperlinks like
@@ -58,13 +63,22 @@ def replace_driver_compatible_links_with_markdown_links(
         return text
 
     for link in extracted_link:
-        link_part = link.split("#")[0]
-        anchor_tag = link.split("#")[1] if "#" in link else None
-        file_path = Path(
-            *Path(link_part).parts[1:]
-        )  # Strips the first part of the path
         try:
-            converted_file_path = file_path.with_suffix(file_path.suffix + ".driver.md")
+            link_part = link.split("#")[0]
+            node_kind_of_link = node_path_to_kind[Path(link_part)]
+            anchor_tag = link.split("#")[1] if "#" in link else None
+            file_path = Path(
+                *Path(link_part).parts[1:]
+            )  # Strips the first part of the path
+            if node_kind_of_link.value == "CODEBASE_FILE":
+                converted_file_path = file_path.with_suffix(file_path.suffix + ".md")
+            else:
+                if file_path.name == ".github":
+                    # NOTE: we special case .github here, because Github priotizes displaying
+                    # the README.md file from the .github folder over the README.md file in the root of the repo
+                    converted_file_path = file_path / "README_.md"
+                else:
+                    converted_file_path = file_path / "README.md"
             new_url = relpath(converted_file_path, source_path)
             new_url = new_url.removeprefix("../")
             if new_url == ".":
@@ -82,7 +96,6 @@ def replace_driver_compatible_links_with_markdown_links(
                 if delimiter is None:
                     raise ValueError(f"Unsupported file extension: {file_extension}")
                 # Join with "" because Github Flavored Markdown strips out special characters from the auto-anchortags
-                print(tag_type)
                 if tag_type == "callable":
                     link_name = "".join(  # NOTE: we do an empty join here because the GFM anchor tags strip out special characters (including : and .)
                         fqn.split(delimiter)[-2:]
@@ -101,6 +114,11 @@ def replace_driver_compatible_links_with_markdown_links(
             # This specifically errors in the case of this file, since the tech doc contains an invalid link
             # But could occur elsewhere where these patterns naturally occur in our tech docs. We should
             # just ignore and continue.
+            print(f"Error converting file path: {e}")
+            continue
+        except KeyError as e:
+            # This error occurs if there are links in the tech docs that don't adhere to the expected format.
+            # Perhaps the link was produced as part of the tech doc itself, as is occurring with python-backend
             print(f"Error converting file path: {e}")
             continue
 

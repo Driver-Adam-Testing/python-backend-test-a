@@ -35,7 +35,8 @@ class OpsStack(Stack):
             "AssetOnboardingLambda",
             AssetOnboardingLambdaParams(
                 environment="ops",
-                api_url="https://api.ops.driverai.com/api/v1",
+                api_url="https://api.ops.driverai.com/studio/v1",
+                auth0_audience="https://api.ops.driverai.com/api/v1",
                 auth0_url="https://auth.dev.driverai.com",
                 dropzone_bucket=self.backend.dropzone_bucket,
                 use_legacy_dropzone=False,

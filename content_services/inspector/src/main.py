@@ -30,6 +30,7 @@ inspection_image = (
             "tree-sitter-cpp==0.23.2",
             "tree-sitter-java==0.23.5",
             "tree-sitter-python==0.23.6",
+            "tree-sitter-typescript==0.23.2",
             "chardet",
         ]
     )
@@ -43,6 +44,7 @@ inspection_image = (
         "common",
         "database",
         copy=True,
+        ignore=lambda p: False,  # recent modal version only copy .py by default, but we have text files, for example, that we want
     )
 )
 
@@ -137,8 +139,8 @@ async def get_result_loading_config(
         modal.Secret.from_name("aws-inspector-s3"),
         modal.Secret.from_name("open-ai"),
     ],
-    proxy=modal.Proxy.from_name("pg-proxy")
-    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "prod"]
+    proxy=modal.Proxy.from_name("my-proxy")
+    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging", "prod"]
     else None,
     memory=4096,
     timeout=3600 * 8,
@@ -592,12 +594,13 @@ def get_file_content(path: Path) -> str:
         "tasks",
         "utils",
         copy=True,
+        ignore=lambda p: False,
     ),
     secrets=[
         modal.Secret.from_name("db"),
     ],
-    proxy=modal.Proxy.from_name("pg-proxy")
-    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "prod"]
+    proxy=modal.Proxy.from_name("my-proxy")
+    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging", "prod"]
     else None,
 )
 def set_codebase_status_in_container(version_id: str, status: str) -> None:
@@ -687,6 +690,7 @@ def run_connect_unconnected_repos() -> None:
         "tasks",
         "utils",
         copy=True,
+        ignore=lambda p: False,
     ),
     secrets=[modal.Secret.from_name("sendgrid"), modal.Secret.from_name("env-name")],
 )

@@ -719,6 +719,7 @@ class ReifiedProjectIndex:
             # Track class/object definitions
             if lsym.is_definition and is_data_structure(lsym.raw):
                 fqn = get_fully_qualified_name(sym=lsym.raw)
+                # TODO: This isn't actually unique due to partial classes in C#, their FQN will be the same
                 obj_symbols[fqn] = final_map[lsym]
 
         # (4) For function definitions, gather calls from the containment map
@@ -763,6 +764,28 @@ class ReifiedProjectIndex:
                                 old_reif,
                                 inherits_from=inherits_from,
                             )
+                    # Handle partial classes/structs/interfaces in C#
+                    if fpath.suffix == ".cs":
+                        bespoke_data = lsym.raw.bespoke_data
+                        if "partial" in bespoke_data.modifiers:
+                            # Find other partial definitions in other files
+                            fqn = get_fully_qualified_name(sym=lsym.raw)
+
+                            for (
+                                fpath_partial,
+                                lsym_partial_list,
+                            ) in linked_proj.linked_symbols.items():
+                                if fpath_partial == fpath:
+                                    continue
+                                for lsym_partial in lsym_partial_list:
+                                    if is_data_structure(lsym_partial.raw):
+                                        fqn2 = get_fully_qualified_name(
+                                            sym=lsym_partial.raw
+                                        )
+                                        if fqn == fqn2:
+                                            final_map[lsym].children.append(
+                                                final_map[lsym_partial]
+                                            )
 
         # (5) Build object membership dicts
         for lsym, reified in final_map.items():
@@ -770,18 +793,29 @@ class ReifiedProjectIndex:
                 parent_fqn = lsym.raw.fully_qualified_parent_path
 
                 # Check if this symbol belongs to a known class
-                if parent_fqn in obj_symbols:
+                if lsym.raw.file_path.suffix != ".cs":
+                    if parent_fqn in obj_symbols:
+                        if lsym.raw.symbol_kind == SymbolKind.CALLABLE:
+                            obj_members[parent_fqn]["functions"].append(reified)
+                            parent_sym = obj_symbols[parent_fqn]
+                            reified.parent = parent_sym
+                            parent_sym.children.append(reified)
+                        # Since we only pull globals, empty right now... TODO
+                        elif lsym.raw.symbol_kind == SymbolKind.VARIABLE:
+                            obj_members[parent_fqn]["variables"].append(reified)
+                            parent_sym = obj_symbols[parent_fqn]
+                            reified.parent = parent_sym
+                            parent_sym.children.append(reified)
+                else:
+                    # In C# we need to deal with partial classes,
+                    # the obj_symbols and obj_members only have one part of the partial class
                     if lsym.raw.symbol_kind == SymbolKind.CALLABLE:
-                        obj_members[parent_fqn]["functions"].append(reified)
-                        parent_sym = obj_symbols[parent_fqn]
-                        reified.parent = parent_sym
-                        parent_sym.children.append(reified)
-                    # Since we only pull globals, empty right now... TODO
-                    elif lsym.raw.symbol_kind == SymbolKind.VARIABLE:
-                        obj_members[parent_fqn]["variables"].append(reified)
-                        parent_sym = obj_symbols[parent_fqn]
-                        reified.parent = parent_sym
-                        parent_sym.children.append(reified)
+                        for lsym_partial, reified_partial in final_map.items():
+                            if lsym.raw.file_path != lsym_partial.raw.file_path:
+                                continue
+                            if parent_fqn == get_fully_qualified_name(lsym_partial.raw):
+                                reified.parent = reified_partial
+                                reified_partial.children.append(reified)
 
         # (6) Group them by file
         file_map: dict[Path, list[ReifiedSymbol]] = {}

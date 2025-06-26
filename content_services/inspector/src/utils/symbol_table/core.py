@@ -623,6 +623,7 @@ class LinkedProject:
                                 (dfpath, dfsym)
                                 for (dfpath, dfsym) in candidates
                                 if dfpath in visible_with_self
+                                and is_data_structure(dfsym)
                             ]
                             if len(vis_defs) >= 1:
                                 # pick first or unify

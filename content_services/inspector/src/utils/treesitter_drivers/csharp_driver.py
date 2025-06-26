@@ -145,28 +145,28 @@ class CSharpImportData(BespokeMarker):
 
 class CSharpMethodLikeData(BespokeMarker):
     kind: CSharpCallKind
-    modifiers: list[CSharpMethodModifier]
+    modifiers: tuple[CSharpMethodModifier, ...]
     return_ty: str | None
     model_config = ConfigDict(frozen=True)
 
 
 class CSharpDataStructureData(BespokeMarker):
     kind: CSharpDataStructureKind
-    modifiers: list[CSharpDataStructureModifier]
+    modifiers: tuple[CSharpDataStructureModifier, ...]
     underlying_ty: str | None
     model_config = ConfigDict(frozen=True)
 
 
 class CSharpClassData(BespokeMarker):
     kind: CSharpClassKind
-    modifiers: list[CSharpClassModifier]
+    modifiers: tuple[CSharpClassModifier, ...]
     model_config = ConfigDict(frozen=True)
 
 
 class CSharpInterfaceData(BespokeMarker):
-    base_names: list[str]
-    modifiers: list[CSharpInterfaceModifier]
-    type_params: list[str]
+    base_names: tuple[str, ...]
+    modifiers: tuple[CSharpInterfaceModifier, ...]
+    type_params: tuple[str, ...]
     model_config = ConfigDict(frozen=True)
 
 
@@ -882,7 +882,7 @@ class CSharpDriverTree(DriverTree):
                     start_byte=start_byte,
                     end_byte=end_byte,
                     file_path=self.file_path,
-                    fully_qualified_path_to_parent=fully_qualified_parent_path,
+                    fully_qualified_parent_path=fully_qualified_parent_path,
                     base_class_names=base_class_names,
                     symbol_code=symbol_code,
                     delimiter=delimiter,
@@ -966,7 +966,7 @@ class CSharpDriverTree(DriverTree):
                     start_byte=start_byte,
                     end_byte=end_byte,
                     file_path=self.file_path,
-                    fully_qualified_path_to_parent=fully_qualified_parent_path,
+                    fully_qualified_parent_path=fully_qualified_parent_path,
                     # TODO: unify interface base names with class/struct/enum
                     base_class_names=None,
                     symbol_code=symbol_code,

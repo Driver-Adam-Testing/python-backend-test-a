@@ -104,7 +104,8 @@ class CSharpResolver(ImportResolver):
                     # TODO: Just add the single symbol!
                     visible_paths.extend(namespaces_map[stripped_name])
         else:
-            if import_sym.name not in namespaces_set:
+            paths = None
+            if import_sym.name in namespaces_set:
                 paths = namespaces_map.get(import_sym.name)
             if paths:
                 visible_paths.extend(namespaces_map[import_sym.name])

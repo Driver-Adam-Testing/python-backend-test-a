@@ -75,10 +75,10 @@ def trigger_asset_connection(
             )
         case PrimaryAssetKind.FILE:
             create_and_embed_pdf_summaries = modal.Function.lookup(
-                app_name="pdf-summary-embedding",
+                "pdf-summary-embedding",
+                "create_and_embed_pdf_summaries",
                 # TODO: this line is not need once we deploy to production.
                 environment_name=settings.MODAL_ENVIRONMENT,
-                tag="create_and_embed_pdf_summaries",
             )
             call = create_and_embed_pdf_summaries.spawn(
                 trigger_body.params.download_url,

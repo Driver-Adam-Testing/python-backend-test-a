@@ -543,7 +543,9 @@ class CSharpDriverTree(DriverTree):
                         if child.type == "event":
                             return_ty_idx = idx + 1
                             break
-                    return_ty = children[return_ty_idx].text.decode("utf-8")
+                    return_ty = GENERICS_PARSER.sub(
+                        "", children[return_ty_idx].text.decode("utf-8")
+                    )
                 case 9:  # field-like event
                     callable_node = captures_by_name.get("event_field_like")[0]
                     callable_name = None
@@ -557,7 +559,9 @@ class CSharpDriverTree(DriverTree):
                             event_idx = idx
                     event_info = children[event_idx + 1]
                     if event_idx and event_info.type == "variable_declaration":
-                        return_ty = event_info.children[0].text.decode("utf-8")
+                        return_ty = GENERICS_PARSER.sub(
+                            "", event_info.children[0].text.decode("utf-8")
+                        )
                         callable_name = event_info.children[1].text.decode("utf-8")
                 case _:
                     callable_node = None
@@ -664,7 +668,9 @@ class CSharpDriverTree(DriverTree):
                             "generic_name",
                             "invocation_expression",
                         }:
-                            base_class_names.append(base.text.decode("utf-8"))
+                            base_class_names.append(
+                                GENERICS_PARSER.sub("", base.text.decode("utf-8"))
+                            )
 
             start_line, end_line = self.get_node_line_range(enum_node)
             start_byte, end_byte = enum_node.start_byte, enum_node.end_byte
@@ -760,7 +766,9 @@ class CSharpDriverTree(DriverTree):
                             "generic_name",
                             "invocation_expression",
                         }:
-                            base_class_names.append(base.text.decode("utf-8"))
+                            base_class_names.append(
+                                GENERICS_PARSER.sub("", base.text.decode("utf-8"))
+                            )
 
             start_line, end_line = self.get_node_line_range(struct_node)
             start_byte, end_byte = struct_node.start_byte, struct_node.end_byte
@@ -852,7 +860,9 @@ class CSharpDriverTree(DriverTree):
                             "generic_name",
                             "invocation_expression",
                         }:
-                            base_class_names.append(base.text.decode("utf-8"))
+                            base_class_names.append(
+                                GENERICS_PARSER.sub("", base.text.decode("utf-8"))
+                            )
                 else:
                     try:
                         child_name = child.text.decode("utf-8")
@@ -940,7 +950,9 @@ class CSharpDriverTree(DriverTree):
                         "generic_name",
                         "invocation_expression",
                     }:
-                        constraining_implementations.append(child.text.decode("utf-8"))
+                        constraining_implementations.append(
+                            GENERICS_PARSER.sub("", child.text.decode("utf-8"))
+                        )
 
             if interface_node and interface_name:
                 start_line, end_line = self.get_node_line_range(interface_node)

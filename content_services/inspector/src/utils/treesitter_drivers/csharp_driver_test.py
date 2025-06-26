@@ -285,7 +285,7 @@ def test_extract_classes(
 @pytest.mark.parametrize(
     "expected_class_name, expected_bases",
     [
-        ("ConcreteClass", ("AbstractClass", "IComparable<ConcreteClass>")),
+        ("ConcreteClass", ("AbstractClass", "IComparable")),
         ("SealedClass", ("AbstractClass",)),
     ],
 )
@@ -363,7 +363,7 @@ def test_extract_method_likes_no_false_positives(method_test_code: str) -> None:
             set(),
             None,
         ),
-        ("ValueChanged", (135, 135), "event_field_like", {"public"}, "Action<string>"),
+        ("ValueChanged", (135, 135), "event_field_like", {"public"}, "Action"),
         ("GetDisplayName", (138, 138), "method", {"public"}, None),
         ("CalculateComplex", (141, 149), "method", {"public"}, None),
         ("LocalHelper", (143, 146), "local_function", set(), None),
@@ -475,7 +475,7 @@ def test_extract_enums(
 @pytest.mark.parametrize(
     "expected_enum_name, expected_line_range, expected_interfaces",
     [
-        ("Operation", (178, 184), ("IComparable<Operation>",)),
+        ("Operation", (178, 184), ("IComparable",)),
     ],
 )
 def test_extract_enum_interfaces(
@@ -571,7 +571,7 @@ def test_extract_structs(
 @pytest.mark.parametrize(
     "expected_struct_name, expected_line_range, expected_interfaces",
     [
-        ("Complex", (107, 178), ("IEquatable<Complex>", "IComparable<Complex>")),
+        ("Complex", (107, 178), ("IEquatable", "IComparable")),
     ],
 )
 def test_extract_struct_interfaces(

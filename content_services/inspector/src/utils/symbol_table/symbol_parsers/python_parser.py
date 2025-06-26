@@ -16,7 +16,7 @@ class PythonParser(SymbolParser):
         self, fpath: Path, project_root: Path
     ) -> tuple[
         list[RawTreeSitterSymbolData],  # symbols
-        list[str],  # imports
+        list[RawTreeSitterSymbolData],  # imports
         dict[RawTreeSitterSymbolData, list[RawTreeSitterSymbolData]],  # containment_map
     ]:
         code_str = fpath.read_text(encoding="utf8")
@@ -28,12 +28,9 @@ class PythonParser(SymbolParser):
         containment_map = build_containment_map(symbols=all_syms)
 
         imports: list[str] = []
-        non_import_symbols: list[RawTreeSitterSymbolData] = []
 
         for sym in all_syms:
             if sym.symbol_kind == SymbolKind.IMPORT and sym.name is not None:
-                imports.append(sym.name)
-            else:
-                non_import_symbols.append(sym)
+                imports.append(sym)
 
-        return non_import_symbols, imports, containment_map
+        return all_syms, imports, containment_map

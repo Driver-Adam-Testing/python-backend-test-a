@@ -1,21 +1,19 @@
 from pathlib import Path
 
 from utils.lang_specialization.symbol_common import RawTreeSitterSymbolData, SymbolKind
-from utils.treesitter_drivers.c_cpp_driver import CppCDriverTree
+from utils.treesitter_drivers.csharp_driver import CSharpDriverTree
 
 from ..base import SymbolParser
 from ..utils import build_containment_map, to_root_relative
 
 
-class CCppParser(SymbolParser):
-    language = "c_cpp"  # Shared parser for both C and C++
-    fqn_delimiter = "::"
-    tree = CppCDriverTree  # Use the C/C++ driver tree
+class CSharpParser(SymbolParser):
+    language = "csharp"
+    fqn_delimiter = "."
+    tree = CSharpDriverTree
 
     def parse_file(
-        self,
-        fpath: Path,
-        project_root: Path,
+        self, fpath: Path, project_root: Path
     ) -> tuple[
         list[RawTreeSitterSymbolData],  # symbols
         list[RawTreeSitterSymbolData],  # imports
@@ -24,15 +22,15 @@ class CCppParser(SymbolParser):
         code_str = fpath.read_text(encoding="utf8")
         root_rel_path = to_root_relative(fpath, project_root)
 
-        driver = self.tree.from_code(code_str, file_path=root_rel_path)
+        driver = self.tree.from_code(code_str=code_str, file_path=root_rel_path)
 
         all_syms = driver.extract_all_symbols()
-        containment_map = build_containment_map(all_syms)
+        containment_map = build_containment_map(symbols=all_syms)
 
-        includes: list[str] = []
+        imports: list[str] = []
 
         for sym in all_syms:
             if sym.symbol_kind == SymbolKind.IMPORT and sym.name is not None:
-                includes.append(sym)
+                imports.append(sym)
 
-        return all_syms, includes, containment_map
+        return all_syms, imports, containment_map

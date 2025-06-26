@@ -11,7 +11,7 @@ class CCppResolver(ImportResolver):
     def resolve_import(
         self,
         current_file: Path,
-        import_str: str,
+        import_sym: RawTreeSitterSymbolData,
         project_files_to_symbols_map: dict[Path, list[RawTreeSitterSymbolData]],
     ) -> Path | list[Path] | None:
         """
@@ -23,13 +23,15 @@ class CCppResolver(ImportResolver):
         """
         project_files = set(project_files_to_symbols_map.keys())
         # 1) Direct local path approach
-        candidate = (current_file.parent / import_str).resolve()
+        candidate = (current_file.parent / import_sym.name).resolve()
         if candidate in project_files:
             return candidate
 
         # 2) Fallback: see which project files end with include_str
         #    e.g. "foo/bar.h" might match ".../some/path/foo/bar.h"
-        possible_matches = [pf for pf in project_files if str(pf).endswith(import_str)]
+        possible_matches = [
+            pf for pf in project_files if str(pf).endswith(import_sym.name)
+        ]
         if not possible_matches:
             return None
         if len(possible_matches) == 1:

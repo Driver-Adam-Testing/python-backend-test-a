@@ -20,14 +20,17 @@ def namespace_test_code() -> str:
 def test_extract_namespace_decls_no_false_positives(namespace_test_code: str) -> None:
     driver_tree = CSharpDriverTree.from_code(namespace_test_code, "does_not_matter.cs")
     namespaces = driver_tree.extract_namespace_declarations()
-    assert len(namespaces) == 2
+    assert len(namespaces) == 5
 
 
 @pytest.mark.parametrize(
     "expected_namespace_name, expected_line_range, expected_kind",
     [
         ("Com.Example.Traditional", (15, 47), "namespace_block_scope_declaration"),
+        ("Nested", (26, 46), "namespace_block_scope_declaration"),
+        ("DeeplyNested", (36, 45), "namespace_block_scope_declaration"),
         ("Com.Example.FileScoped", (50, 50), "namespace_file_scope_declaration"),
+        ("FileScopedNoSeparator", (123, 123), "namespace_file_scope_declaration"),
     ],
 )
 def test_extract_namespaces(

@@ -128,7 +128,6 @@ class ParsedProjectWithVisibility:
         """
         file_to_symbols = parsed.file_to_symbols
         includes_map = parsed.includes_map
-        project_files = set(file_to_symbols.keys())
 
         timing = TimingInfo()
 
@@ -138,7 +137,6 @@ class ParsedProjectWithVisibility:
                     visibility_map = cls._compute_visibility_dfs(
                         file_to_symbols,
                         includes_map,
-                        project_files,
                         resolver,
                         num_workers,
                     )
@@ -146,17 +144,16 @@ class ParsedProjectWithVisibility:
                     visibility_map = cls._compute_visibility_reverse_bfs(
                         file_to_symbols,
                         includes_map,
-                        project_files,
                         resolver,
                         num_workers,
                     )
                 case VisibilityAlgorithm.FIXPOINT:
                     visibility_map = cls._compute_visibility_incremental_fixed_point(
-                        file_to_symbols, includes_map, project_files, resolver
+                        file_to_symbols, includes_map, resolver
                     )
                 case VisibilityAlgorithm.SCC:
                     visibility_map = cls._compute_visibility_scc(
-                        file_to_symbols, includes_map, project_files, resolver
+                        file_to_symbols, includes_map, resolver
                     )
                 case _:
                     raise ValueError(f"Unknown visibility algorithm: {algorithm}")
@@ -178,7 +175,6 @@ class ParsedProjectWithVisibility:
         cls,
         file_to_symbols: dict[Path, list],
         includes_map: dict[Path, list[str]],
-        project_files: set[Path],
         resolver: ImportResolver,
         num_workers: int | None,
     ) -> dict[Path, set[Path]]:
@@ -187,7 +183,7 @@ class ParsedProjectWithVisibility:
 
         def dfs(current: Path, visited: set[Path]) -> None:
             for inc_str in includes_map.get(current, []):
-                inc_path = resolver.resolve_import(current, inc_str, project_files)
+                inc_path = resolver.resolve_import(current, inc_str, file_to_symbols)
                 if isinstance(inc_path, list):
                     for p in inc_path:
                         if p not in visited:
@@ -232,7 +228,6 @@ class ParsedProjectWithVisibility:
         cls,
         file_to_symbols: dict[Path, list],
         includes_map: dict[Path, list[str]],
-        project_files: set[Path],
         resolver: ImportResolver,
     ) -> dict[Path, set[Path]]:
         """Incremental fixpoint approach (works with cycles)."""
@@ -244,7 +239,7 @@ class ParsedProjectWithVisibility:
         # Build initial direct dependencies
         for fpath in file_to_symbols:
             for inc_str in includes_map.get(fpath, []):
-                inc_path = resolver.resolve_import(fpath, inc_str, project_files)
+                inc_path = resolver.resolve_import(fpath, inc_str, file_to_symbols)
                 if isinstance(inc_path, list):
                     visibility_map[fpath].update(inc_path)
                 elif inc_path:
@@ -279,7 +274,6 @@ class ParsedProjectWithVisibility:
         cls,
         file_to_symbols: dict[Path, list],
         includes_map: dict[Path, list[str]],
-        project_files: set[Path],
         resolver: ImportResolver,
         num_workers: int | None,
     ) -> dict[Path, set[Path]]:
@@ -289,7 +283,7 @@ class ParsedProjectWithVisibility:
 
         for fpath in file_to_symbols:
             for inc_str in includes_map.get(fpath, []):
-                inc_path = resolver.resolve_import(fpath, inc_str, project_files)
+                inc_path = resolver.resolve_import(fpath, inc_str, file_to_symbols)
                 if isinstance(inc_path, list):
                     for p in inc_path:
                         reverse_deps[p].add(fpath)
@@ -307,7 +301,9 @@ class ParsedProjectWithVisibility:
                 current = queue.popleft()
                 # Add files that current file includes
                 for inc_str in includes_map.get(current, []):
-                    inc_path = resolver.resolve_import(current, inc_str, project_files)
+                    inc_path = resolver.resolve_import(
+                        current, inc_str, file_to_symbols
+                    )
                     if isinstance(inc_path, list):
                         for p in inc_path:
                             if p not in visible:
@@ -349,7 +345,6 @@ class ParsedProjectWithVisibility:
         cls,
         file_to_symbols: dict[Path, list],
         includes_map: dict[Path, list[str]],
-        project_files: set[Path],
         resolver: ImportResolver,
     ) -> dict[Path, set[Path]]:
         """Use Tarjan's algorithm to find SCCs and process as DAG."""
@@ -357,7 +352,7 @@ class ParsedProjectWithVisibility:
         graph: dict[Path, set[Path]] = defaultdict(set)
         for fpath in file_to_symbols:
             for inc_str in includes_map.get(fpath, []):
-                inc_path = resolver.resolve_import(fpath, inc_str, project_files)
+                inc_path = resolver.resolve_import(fpath, inc_str, file_to_symbols)
                 if isinstance(inc_path, list):
                     for p in inc_path:
                         graph[fpath].add(p)
@@ -485,7 +480,15 @@ class LinkedProject:
         definitions_by_name: dict[str, list[tuple[Path, RawTreeSitterSymbolData]]] = {}
         declarations_by_fqn: dict[str, list[tuple[str, RawTreeSitterSymbolData]]] = {}
 
-        for fpath, raw_syms in project_vis.file_to_symbols.items():
+        file_to_symbols = dict()
+        for k, v in project_vis.file_to_symbols.items():
+            new_v = []
+            for sym in v:
+                if sym.symbol_kind != SymbolKind.IMPORT:
+                    new_v.append(sym)
+            file_to_symbols[k] = new_v
+
+        for fpath, raw_syms in file_to_symbols.items():
             for rsym in raw_syms:
                 if rsym.name is None:
                     continue
@@ -508,7 +511,7 @@ class LinkedProject:
 
         # 3) For each symbol, link usage->definition if visible
         linked_map: dict[Path, list[LinkedSymbol]] = {}
-        for fpath, raw_syms in project_vis.file_to_symbols.items():
+        for fpath, raw_syms in file_to_symbols.items():
             visible_files = project_vis.visibility_map.get(fpath, set())
             visible_with_self = {fpath, *visible_files}
 

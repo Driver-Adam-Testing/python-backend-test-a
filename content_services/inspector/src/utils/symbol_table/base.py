@@ -21,7 +21,7 @@ class SymbolParser(ABC):
         project_root: Path,
     ) -> tuple[
         list[RawTreeSitterSymbolData],  # symbols
-        list[str],  # imports
+        list[RawTreeSitterSymbolData],  # imports
         dict[RawTreeSitterSymbolData, list[RawTreeSitterSymbolData]],  # containment_map
     ]:
         """Parse a single file and return symbols, imports, and containment."""

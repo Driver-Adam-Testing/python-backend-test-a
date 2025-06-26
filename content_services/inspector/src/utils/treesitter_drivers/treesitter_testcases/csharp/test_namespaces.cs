@@ -119,3 +119,5 @@ public class FileScopedConcreteClass : FileScopedAbstractClass, IFileScopedInter
         Console.WriteLine("Implemented interface method");
     }
 }
+
+namespace FileScopedNoSeparator;

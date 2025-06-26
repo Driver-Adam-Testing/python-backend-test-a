@@ -12,7 +12,7 @@ class PythonResolver(ImportResolver):
     def resolve_import(
         self,
         current_file: Path,
-        import_str: str,
+        import_sym: RawTreeSitterSymbolData,
         project_files_to_symbols_map: dict[Path, list[RawTreeSitterSymbolData]],
     ) -> Path | list[Path] | None:
         """
@@ -21,7 +21,9 @@ class PythonResolver(ImportResolver):
         project_files = set(project_files_to_symbols_map.keys())
         project_files_lst = list(project_files)
 
-        import_str_pathified = Path(import_str.replace(".", sep)).with_suffix(".py")
+        import_str_pathified = Path(import_sym.name.replace(".", sep)).with_suffix(
+            ".py"
+        )
 
         # 1) For cases like `import my_module` implemented in `/some_path/my_module.py`
         candidate = import_str_pathified

@@ -5,6 +5,7 @@ from functools import cache
 from typing import Self
 
 import tree_sitter
+from pydantic import ConfigDict
 
 from utils.lang_specialization.symbol_common import (
     BespokeMarker,
@@ -139,29 +140,34 @@ def _interface_modifier_lookup() -> dict[str, CSharpInterfaceModifier]:
 class CSharpImportData(BespokeMarker):
     scoping_kind: CSharpImportScopeKind
     alias_name: str | None
+    model_config = ConfigDict(frozen=True)
 
 
 class CSharpMethodLikeData(BespokeMarker):
     kind: CSharpCallKind
     modifiers: list[CSharpMethodModifier]
     return_ty: str | None
+    model_config = ConfigDict(frozen=True)
 
 
 class CSharpDataStructureData(BespokeMarker):
     kind: CSharpDataStructureKind
     modifiers: list[CSharpDataStructureModifier]
     underlying_ty: str | None
+    model_config = ConfigDict(frozen=True)
 
 
 class CSharpClassData(BespokeMarker):
     kind: CSharpClassKind
     modifiers: list[CSharpClassModifier]
+    model_config = ConfigDict(frozen=True)
 
 
 class CSharpInterfaceData(BespokeMarker):
     base_names: list[str]
     modifiers: list[CSharpInterfaceModifier]
     type_params: list[str]
+    model_config = ConfigDict(frozen=True)
 
 
 def cs_node_to_text(source_bytes: bytes, node: tree_sitter.Node) -> str:
@@ -190,6 +196,11 @@ class CSharpDriverTree(DriverTree):
         # help us document `global` usage explicitly downstream.
         while current:
             if current.type == "compilation_unit":
+                for child in current.children:
+                    if child.type == "file_scoped_namespace_declaration":
+                        path_parts.append(
+                            child.child_by_field_name("name").text.decode("utf-8")
+                        )
                 break
             elif current.type in {
                 "class_declaration",
@@ -220,6 +231,10 @@ class CSharpDriverTree(DriverTree):
         symbols.extend(self.extract_class_definitions())
         symbols.extend(self.extract_interfaces())
         symbols.extend(self.extract_function_calls())
+
+        # for sym in symbols:
+        #     print(f"{sym.name}, {sym.symbol_kind}, ({sym.start_line}, {sym.end_line})")
+
         return symbols
 
     def extract_imports(self) -> list[RawTreeSitterSymbolData]:
@@ -327,10 +342,10 @@ class CSharpDriverTree(DriverTree):
     def extract_namespace_declarations(self) -> list[RawTreeSitterSymbolData]:
         namespace_query_str = """
         (namespace_declaration
-          name: (qualified_name) @namespace_name) @block_namespace
+          name: (_) @namespace_name) @block_namespace
 
         (file_scoped_namespace_declaration
-          name: (qualified_name) @namespace_name) @file_namespace
+          name: (_) @namespace_name) @file_namespace
         """.strip()
 
         query = self.tree_sitter_lang.query(namespace_query_str)
@@ -615,12 +630,15 @@ class CSharpDriverTree(DriverTree):
         for _pat_idx, captures_by_name in matches:
             enum_node = captures_by_name["enum"][0]
             enum_name = captures_by_name["enum_name"][0].text.decode("utf-8")
-            enum_modifiers = captures_by_name["enum_modifier"]
+            enum_modifiers = captures_by_name.get("enum_modifier")
             modifier_list = []
-            for m in enum_modifiers:
-                modifier = CSharpDataStructureModifier.from_str(m.text.decode("utf-8"))
-                if modifier:
-                    modifier_list.append(modifier)
+            if enum_modifiers:
+                for m in enum_modifiers:
+                    modifier = CSharpDataStructureModifier.from_str(
+                        m.text.decode("utf-8")
+                    )
+                    if modifier:
+                        modifier_list.append(modifier)
 
             # TODO: Consider moving this to be lang-specific.
             # TODO: `base_class_names` is a misnomer as this includes interfaces.
@@ -720,11 +738,14 @@ class CSharpDriverTree(DriverTree):
             else:
                 struct_name = struct_name.text.decode("utf-8")
             modifier_list = [CSharpDataStructureModifier.REF] if is_ref else []
-            struct_modifiers = captures_by_name["struct_modifier"]
-            for m in struct_modifiers:
-                modifier = CSharpDataStructureModifier.from_str(m.text.decode("utf-8"))
-                if modifier:
-                    modifier_list.append(modifier)
+            struct_modifiers = captures_by_name.get("struct_modifier")
+            if struct_modifiers:
+                for m in struct_modifiers:
+                    modifier = CSharpDataStructureModifier.from_str(
+                        m.text.decode("utf-8")
+                    )
+                    if modifier:
+                        modifier_list.append(modifier)
 
             # TODO: Consider moving this to be lang-specific.
             # TODO: `base_class_names` is a misnomer as this includes interfaces.

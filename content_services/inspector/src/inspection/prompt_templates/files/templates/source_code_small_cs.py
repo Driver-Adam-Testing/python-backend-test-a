@@ -3,8 +3,6 @@ from utils.lang_specialization.c_sharp import (
     SOURCE_CODE_SMALL_SYSTEM_PROMPT_GENERAL_CS,
     CsClassCollection,
     CsClassRawSymbolCollection,
-    CsEnumCollection,
-    CsEnumRawSymbolCollection,
     CsInterfaceCollection,
     CsInterfaceRawSymbolCollection,
     CsStructCollection,
@@ -48,13 +46,6 @@ SOURCE_CODE_SMALL_TEMPLATE_CS = [
         "# Interfaces",
         CsInterfaceRawSymbolCollection.from_static_analysis,
         CsInterfaceCollection.from_llm,
-        None,
-    ),
-    (
-        S.FN_COND_JSON,
-        "# Enums",
-        CsEnumRawSymbolCollection.from_static_analysis,
-        CsEnumCollection.from_llm,
         None,
     ),
 ]

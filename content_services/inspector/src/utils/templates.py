@@ -107,6 +107,7 @@ class Template(BaseModel):
                                     language == Lang.CPP
                                     or language == Lang.PYTHON
                                     or language == Lang.JAVA
+                                    or language == Lang.C_SHARP
                                 ):
                                     linkable_symbol_kinds = {
                                         SymbolKind.CALLABLE,
@@ -125,7 +126,7 @@ class Template(BaseModel):
                                     kind_part = symbol.raw.symbol_kind.name.lower()
                                     path_part = symbol.raw.file_path
 
-                                    repl_text = f"[`{name_part}`]({path_part}#{kind_part}:{fqn})"
+                                    repl_text = f"[`{name_part}`](<{path_part}#{kind_part}:{fqn}>)"
                                     break
                             return repl_text
 

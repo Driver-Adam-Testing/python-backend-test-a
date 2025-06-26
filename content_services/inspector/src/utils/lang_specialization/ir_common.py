@@ -26,7 +26,7 @@ MAX_WORKERS_FOR_SYMBOLS = 10
 
 def snake_case_to_spaced_string(snake_case: str) -> str:
     split_str = snake_case.split("_")
-    return " ".join(item.capitalize() for item in split_str)
+    return " ".join(item.capitalize() for item in split_str).strip()
 
 
 def ensure_enclosed_with_backticks(raw_str: str) -> str:
@@ -311,6 +311,12 @@ class IrData(BaseModel, abc.ABC):
     def default_instance(cls, reified_symbol: ReifiedSymbol | None = None) -> Self:
         pass
 
+    def _apply_bespoke_data(self) -> None:
+        """
+        This method can be overridden in subclasses to apply any bespoke data processing
+        that is specific to the subclass.
+        """
+
     @classmethod
     def from_llm(
         cls,
@@ -385,15 +391,19 @@ class IrData(BaseModel, abc.ABC):
         return cls_instance
 
     def render_markdown(self) -> str:
+        self._apply_bespoke_data()
         output = ""
 
         # doesn't handle children, since children is a private attribute
-        for label_name, label_content in self:
+        # for label_name, label_content in self:
+        for label_name in self.__annotations__:
+            label_content = getattr(self, label_name, None)
             if not isinstance(label_content, MdRenderable):
-                raise ValueError(
-                    f"Unsupported field content type for {label_name}: {type(label_content)}. "
-                    f"Add a MdRenderable class to render this content."
-                )
+                continue
+                # raise ValueError(
+                #     f"Unsupported field content type for {label_name}: {type(label_content)}. "
+                #     f"Add a MdRenderable class to render this content."
+                # )
 
             rendered = label_content.render_markdown(label_name)
 
@@ -412,7 +422,7 @@ class IrData(BaseModel, abc.ABC):
                     if fqn in seen:
                         continue
                     seen.add(fqn)
-                    link = f"[`{name_part}`]({path_part}#{kind_part}:{fqn})"
+                    link = f"[`{name_part}`](<{path_part}#{kind_part}:{fqn}>)"
 
                     rendered = re.sub(rf"`{name_part}`", link, rendered)
 
@@ -429,7 +439,7 @@ class IrData(BaseModel, abc.ABC):
                     kind_part = calls[0].raw.symbol_kind.name.lower()
                     path_part = calls[0].raw.file_path
 
-                    output += f"    - [`{fqn}`]({path_part}#{kind_part}:{fqn})\n"
+                    output += f"    - [`{fqn}`](<{path_part}#{kind_part}:{fqn}>)\n"
             if (
                 sym.raw.symbol_kind == SymbolKind.CALLABLE_DECLARATION
                 and sym.definition is not None
@@ -438,7 +448,7 @@ class IrData(BaseModel, abc.ABC):
                 fqn = get_fully_qualified_name(sym.definition.raw)
                 path_part = sym.definition.raw.file_path
 
-                output += f"- **See also**: [`{fqn}`]({path_part}#{kind_part}:{fqn})  (Implementation)\n"
+                output += f"- **See also**: [`{fqn}`](<{path_part}#{kind_part}:{fqn}>)  (Implementation)\n"
 
             if sym.raw.symbol_kind == SymbolKind.CALLABLE and sym.parent is not None:
                 # Link member functions to their object definiton
@@ -451,7 +461,7 @@ class IrData(BaseModel, abc.ABC):
                     else "Data Structure"
                 )
 
-                output += f"- **See also**: [`{fqn}`]({path_part}#{kind_part}:{fqn})  ({parent_label})\n"
+                output += f"- **See also**: [`{fqn}`](<{path_part}#{kind_part}:{fqn}>)  ({parent_label})\n"
             if is_data_structure(sym.raw):
                 member_label = (
                     "Methods"
@@ -474,7 +484,7 @@ class IrData(BaseModel, abc.ABC):
                             kind_part = child_symbol.raw.symbol_kind.name.lower()
                             path_part = child_symbol.raw.file_path
                             output += (
-                                f"    - [`{fqn}`]({path_part}#{kind_part}:{fqn})\n"
+                                f"    - [`{fqn}`](<{path_part}#{kind_part}:{fqn}>)\n"
                             )
                 if sym.inherits_from is not None and len(sym.inherits_from) > 0:
                     output += f"- **{inherit_label}**:\n"
@@ -482,7 +492,7 @@ class IrData(BaseModel, abc.ABC):
                         kind_part = inherited_class.raw.symbol_kind.name.lower()
                         fqn = get_fully_qualified_name(inherited_class.raw)
                         path_part = inherited_class.raw.file_path
-                        output += f"    - [`{fqn}`]({path_part}#{kind_part}:{fqn})\n"
+                        output += f"    - [`{fqn}`](<{path_part}#{kind_part}:{fqn}>)\n"
                 elif (
                     sym.raw.base_class_names is not None
                     and len(sym.raw.base_class_names) > 0

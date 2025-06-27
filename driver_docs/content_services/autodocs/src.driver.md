@@ -1,8 +1,0 @@
-## Folders
-- **[configs](src/configs.driver.md)**: The `configs` folder in the `python-backend` codebase contains configuration files for generating structured documentation, including a README for a driver in the `no-OS` codebase and a detailed architecture document.
-- **[utils](src/utils.driver.md)**: The `utils` folder in the `python-backend` codebase contains a `models.py` file that defines classes for configuring output formats and interacting with OpenAI's chat models, including handling response formats and implementing retry logic with exponential backoff.
-
-## Files
-- **[adi_project_readme.toml](src/adi_project_readme.toml.driver.md)**: The `adi_project_readme.toml` file in the `python-backend` codebase defines the configuration and structure for generating a structured README for projects in the `no-OS` codebase by ADI, including sections for supported evaluation boards, power supply requirements, and platform-specific build commands.
-- **[autodocs_prototype.py](src/autodocs_prototype.py.driver.md)**: The `autodocs_prototype.py` file in the `python-backend` codebase provides a comprehensive system for generating technical documentation from codebases and PDFs, utilizing various AI models for tasks such as section initialization, updating, and final document assembly, with support for both local and modal execution modes.
-- **[main.py](src/main.py.driver.md)**: The `main.py` file in the `python-backend` codebase sets up a Modal application to asynchronously generate and update documentation based on document sources and configuration types, utilizing various dependencies and configurations.

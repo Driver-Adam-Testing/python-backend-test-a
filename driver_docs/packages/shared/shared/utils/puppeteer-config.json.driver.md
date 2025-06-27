@@ -1,2 +1,0 @@
-# Purpose
-The provided JSON file specifies command-line arguments for a software application, likely a browser or a browser-based tool. The "args" array contains flags to disable the sandbox and setuid sandbox features, which are typically used to enhance security by isolating processes. This configuration is used to modify the application's runtime behavior, potentially for compatibility or testing purposes.

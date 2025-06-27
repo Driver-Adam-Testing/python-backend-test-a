@@ -1,7 +1,0 @@
-
-## Files
-- **[constants.py](globals/constants.py.driver.md)**: The `constants.py` file defines various string constants and template strings used for formatting JSON objects and tool call requests in a parseable manner, including default values and instructions for ensuring compatibility with `pydantic.BaseModel` instances.
-- **[datasource_messages.py](globals/datasource_messages.py.driver.md)**: The `datasource_messages.py` file defines classes for creating and managing messages related to the `DataSource` structure, including descriptions and tuning information, for internal tool usage within the `python-backend` codebase.
-- **[global_messages.py](globals/global_messages.py.driver.md)**: The `global_messages.py` file defines the `GlobalSystemMessage` class, which outlines universal behaviors for LLM calls within the LLM Framework, specifying response formats and guidelines for tool usage and final responses.
-- **[glossary.py](globals/glossary.py.driver.md)**: The `glossary.py` file defines a `GlossaryDefinition` class and various instances of it to represent different glossary terms and their XML representations within the `python-backend` codebase.
-- **[iteration_messages.py](globals/iteration_messages.py.driver.md)**: The `iteration_messages.py` file defines classes for handling multi-iteration context messages and iteration messages, guiding the process of executing tools and returning responses based on the iteration stage.

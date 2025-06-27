@@ -198,6 +198,7 @@ class CSharpInterfaceData(BespokeMarker):
 class CSharpInvocationData(BespokeMarker):
     args: tuple[str, ...]
     concrete_type_params: tuple[str, ...]
+    model_config = ConfigDict(frozen=True)
 
 
 def cs_node_to_text(source_bytes: bytes, node: tree_sitter.Node) -> str:

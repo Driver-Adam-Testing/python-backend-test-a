@@ -193,7 +193,7 @@ class VerilogModuleData(IrData):
     logic_and_control_flow: ListedRawContentWithNone
 
     @classmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         return MODULES_FOUND_SYSTEM_PROMPT_JSON
 
     @classmethod
@@ -231,7 +231,7 @@ class VerilogModuleCollection(IrCollection):
 
 class VerilogFnTaskData(FnData):
     @classmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         return FUNCTIONS_AND_TASKS_FOUND_SYSTEM_PROMPT_JSON
 
     @classmethod
@@ -260,7 +260,7 @@ class VerilogFnTaskCollection(IrCollection):
 
 class VerilogDataTypeData(VariableData):
     @classmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         return DATA_TYPES_FOUND_SYSTEM_PROMPT_JSON
 
     @classmethod

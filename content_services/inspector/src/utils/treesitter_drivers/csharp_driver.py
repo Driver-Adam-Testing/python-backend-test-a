@@ -15,7 +15,32 @@ from utils.lang_specialization.symbol_common import (
 
 from .base import DriverTree
 
-GENERICS_PARSER = re.compile(r"<[^>]+>$")
+
+def _parse_type_param(s: str) -> (str, str):
+    left_brackets = []
+    right_brackets = []
+    for idx, c in enumerate(s):
+        if c == "<":
+            left_brackets.append(idx)
+        elif c == ">":
+            right_brackets.append(idx)
+    if len(left_brackets) != len(right_brackets) or len(left_brackets) == 0:
+        return [], s
+    lidx, ridx = left_brackets[0], right_brackets[-1]
+    type_param = [s[lidx + 1 : ridx]]
+    s_trimmed = s[:lidx] + s[ridx + 1 :]
+    return type_param, s_trimmed
+
+
+TERMINAL_GENERICS_PARSER = re.compile(r"<[^>]+>$")
+ANYWHERE_GENERICS_PARSER = re.compile(r"<[^>]+>")
+
+TERMINAL_PAREN_PARSER = re.compile(r"\([^)]*\)$")
+ANYWHERE_PAREN_PARSER = re.compile(r"\([^)]*\)")
+
+
+def _parse_last_identifier(s: str, sep: str = ".") -> str:
+    return s.split(sep)[-1]
 
 
 class CSharpImportScopeKind(StrEnum):
@@ -170,6 +195,11 @@ class CSharpInterfaceData(BespokeMarker):
     model_config = ConfigDict(frozen=True)
 
 
+class CSharpInvocationData(BespokeMarker):
+    args: tuple[str, ...]
+    concrete_type_params: tuple[str, ...]
+
+
 def cs_node_to_text(source_bytes: bytes, node: tree_sitter.Node) -> str:
     start = node.start_byte
     end = node.end_byte
@@ -231,9 +261,6 @@ class CSharpDriverTree(DriverTree):
         symbols.extend(self.extract_class_definitions())
         symbols.extend(self.extract_interfaces())
         symbols.extend(self.extract_function_calls())
-
-        # for sym in symbols:
-        #     print(f"{sym.name}, {sym.symbol_kind}, ({sym.start_line}, {sym.end_line})")
 
         return symbols
 
@@ -319,7 +346,7 @@ class CSharpDriverTree(DriverTree):
             # TODO: Detect generic parameters and pass as metadata?
             # TODO: E.g., `Dictionary<string, object>` being imported.
             # TODO: Here we just report `Dictionary`
-            name = GENERICS_PARSER.sub("", name)
+            _, name = _parse_type_param(name)
 
             im = RawTreeSitterSymbolData(
                 name=name,
@@ -404,7 +431,7 @@ class CSharpDriverTree(DriverTree):
                 namespaces.append(namespace)
             else:
                 print(
-                    f"Missing callable name ({namespace_name}) or node ({namespace_node})"
+                    f"Missing namespace name ({namespace_name}) or node ({namespace_node})"
                 )
 
         sorted_namespaces = sorted(namespaces, key=lambda x: x.start_byte)
@@ -543,8 +570,9 @@ class CSharpDriverTree(DriverTree):
                         if child.type == "event":
                             return_ty_idx = idx + 1
                             break
-                    return_ty = GENERICS_PARSER.sub(
-                        "", children[return_ty_idx].text.decode("utf-8")
+
+                    _, return_ty = _parse_type_param(
+                        children[return_ty_idx].text.decode("utf-8")
                     )
                 case 9:  # field-like event
                     callable_node = captures_by_name.get("event_field_like")[0]
@@ -559,8 +587,8 @@ class CSharpDriverTree(DriverTree):
                             event_idx = idx
                     event_info = children[event_idx + 1]
                     if event_idx and event_info.type == "variable_declaration":
-                        return_ty = GENERICS_PARSER.sub(
-                            "", event_info.children[0].text.decode("utf-8")
+                        _, return_ty = _parse_type_param(
+                            event_info.children[0].text.decode("utf-8")
                         )
                         callable_name = event_info.children[1].text.decode("utf-8")
                 case _:
@@ -668,9 +696,10 @@ class CSharpDriverTree(DriverTree):
                             "generic_name",
                             "invocation_expression",
                         }:
-                            base_class_names.append(
-                                GENERICS_PARSER.sub("", base.text.decode("utf-8"))
+                            _, base_class_name = _parse_type_param(
+                                s=base.text.decode("utf-8")
                             )
+                            base_class_names.append(base_class_name)
 
             start_line, end_line = self.get_node_line_range(enum_node)
             start_byte, end_byte = enum_node.start_byte, enum_node.end_byte
@@ -766,9 +795,10 @@ class CSharpDriverTree(DriverTree):
                             "generic_name",
                             "invocation_expression",
                         }:
-                            base_class_names.append(
-                                GENERICS_PARSER.sub("", base.text.decode("utf-8"))
+                            _, base_class_name = _parse_type_param(
+                                s=base.text.decode("utf-8")
                             )
+                            base_class_names.append(base_class_name)
 
             start_line, end_line = self.get_node_line_range(struct_node)
             start_byte, end_byte = struct_node.start_byte, struct_node.end_byte
@@ -809,7 +839,98 @@ class CSharpDriverTree(DriverTree):
         return sorted_structs
 
     def extract_function_calls(self) -> list[RawTreeSitterSymbolData]:
-        return []
+        invocation_query_str = """
+        (invocation_expression
+          (_) @invoked_method
+          (argument_list) @args) @invocation
+
+        (object_creation_expression
+          (_) @invoked_constructor
+          (argument_list) @args) @invocation
+        """
+        query = self.tree_sitter_lang.query(invocation_query_str)
+        matches = query.matches(self.tree.root_node)
+        delimiter = "."
+        invocations = []
+
+        # TODO: Detect and report type conversions.
+        # TODO: Detect indexer invocations.
+        for _pat_idx, captures_by_name in matches:
+            invocation_node = captures_by_name["invocation"][0]
+            if "invoked_method" in captures_by_name:
+                full_name = captures_by_name.get("invoked_method")
+            else:
+                full_name = captures_by_name.get("invoked_constructor")
+
+            if full_name is None:
+                print(
+                    f"Could not parse name of invoked symbol for node: {invocation_node}"
+                )
+                continue
+            else:
+                full_name = full_name[0].text.decode("utf-8")
+            invoked_name = _parse_last_identifier(full_name, sep=delimiter)
+            args = captures_by_name.get("args")
+            if args:
+                args = args[0].text.decode("utf-8")[1:-1]
+                args = [a.strip() for a in args.split(",")] if args != "" else []
+            # TODO: Hacky heuristic -- replace with something much more robust
+            if "," in invoked_name:
+                first_left_bracket_idx = None
+                ends_with_bracket = False
+                for idx, c in enumerate(invoked_name):
+                    if c == "<":
+                        first_left_bracket_idx = idx
+                        break
+                if invoked_name[-1] == ">":
+                    ends_with_bracket = True
+                if first_left_bracket_idx is not None and ends_with_bracket:
+                    type_params = [
+                        s.strip()
+                        for s in invoked_name[first_left_bracket_idx + 1 : -1].split(
+                            ","
+                        )
+                    ]
+                    invoked_name = invoked_name[:first_left_bracket_idx]
+                else:
+                    type_params = []
+            else:
+                type_params, invoked_name = _parse_type_param(s=invoked_name)
+            if invocation_node and invoked_name:
+                start_line, end_line = self.get_node_line_range(invocation_node)
+                start_byte, end_byte = (
+                    invocation_node.start_byte,
+                    invocation_node.end_byte,
+                )
+                symbol_code = cs_node_to_text(self.source_bytes, invocation_node)
+                fully_qualified_parent_path = self._get_fully_qualified_path_to_parent(
+                    node=invocation_node
+                )
+                bespoke_data = CSharpInvocationData(
+                    args=tuple(args), concrete_type_params=tuple(type_params)
+                )
+                invocation = RawTreeSitterSymbolData(
+                    name=invoked_name,
+                    start_line=start_line,
+                    end_line=end_line,
+                    symbol_kind=SymbolKind.CALL,
+                    start_byte=start_byte,
+                    end_byte=end_byte,
+                    file_path=self.file_path,
+                    fully_qualified_parent_path=fully_qualified_parent_path,
+                    base_class_names=None,
+                    symbol_code=symbol_code,
+                    delimiter=delimiter,
+                    bespoke_data=bespoke_data,
+                )
+                invocations.append(invocation)
+            else:
+                print(
+                    f"Missing invocation name ({invoked_name}) or node ({invocation_node})"
+                )
+
+        sorted_invocations = sorted(invocations, key=lambda x: x.start_byte)
+        return sorted_invocations
 
     def extract_variables(self) -> list[RawTreeSitterSymbolData]:
         return []
@@ -861,7 +982,9 @@ class CSharpDriverTree(DriverTree):
                             "invocation_expression",
                         }:
                             base_class_names.append(
-                                GENERICS_PARSER.sub("", base.text.decode("utf-8"))
+                                TERMINAL_GENERICS_PARSER.sub(
+                                    "", base.text.decode("utf-8")
+                                )
                             )
                 else:
                     try:
@@ -951,7 +1074,7 @@ class CSharpDriverTree(DriverTree):
                         "invocation_expression",
                     }:
                         constraining_implementations.append(
-                            GENERICS_PARSER.sub("", child.text.decode("utf-8"))
+                            TERMINAL_GENERICS_PARSER.sub("", child.text.decode("utf-8"))
                         )
 
             if interface_node and interface_name:
@@ -988,7 +1111,7 @@ class CSharpDriverTree(DriverTree):
                 interfaces.append(interface)
             else:
                 print(
-                    f"Missing class name ({interface_name}) or node ({interface_node})"
+                    f"Missing interface name ({interface_name}) or node ({interface_node})"
                 )
 
         sorted_interfaces = sorted(interfaces, key=lambda x: x.start_byte)

@@ -285,7 +285,7 @@ class IrData(BaseModel, abc.ABC):
 
     @classmethod
     @abc.abstractmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         pass
 
     @classmethod
@@ -328,7 +328,7 @@ class IrData(BaseModel, abc.ABC):
             cls_instance = cls.default_instance(reified_symbol=symbol.reified_symbol)
         else:
             try:
-                system_prompt = cls.system_prompt()
+                system_prompt = cls.system_prompt(symbol)
                 if llm.model == "gpt-4o-mini":
                     system_prompt += "\n\nWhen referencing any code entities (e.g. functions, classes, structures, variables, etc.), enclose the entity name in backticks (`)."
                 content_raw = llm.generate_response(

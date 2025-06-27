@@ -4,6 +4,7 @@ from typing import Self
 from pydantic import PrivateAttr
 from utils.models import ChatOpenAI
 from utils.symbol_table.utils import get_fully_qualified_name
+from utils.treesitter_drivers.csharp_driver import CSharpCallKind
 
 from .ir_common import (
     FieldNameWithRawContent,
@@ -149,11 +150,11 @@ You focus on writing technical documentation for methods. You are skilled at exp
 You will be given the name of a method to document and the source code where the method is defined.
 
 Your job is to describe the method. **Always respond using exactly the following JSON schema**:
-{
-    "single_sentence": <terse single sentence description of the method>,
+{{
+    "single_sentence": <terse single sentence description of the method{kind_indicator}>,
     "inputs": [
-        {"name": <input_arg1>, "content": <description of input argument 1>},
-        {"name": <input_arg2>, "content": <description of input argument 2>},
+        {{"name": <input_arg1>, "content": <description of input argument 1>}},
+        {{"name": <input_arg2>, "content": <description of input argument 2>}},
         ...
     ],
     "control_flow": [
@@ -162,7 +163,7 @@ Your job is to describe the method. **Always respond using exactly the following
         ...
     ],
     "output": <description of output>,
-}
+}}
 
 Return JSON according to the schema above. Do not use the format ```json ... ```, just return the JSON data.
 """
@@ -223,7 +224,7 @@ class CsVariableData(IrData):
     description: FieldNameWithRawContent
 
     @classmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         return VARIABLES_FOUND_SYSTEM_PROMPT_JSON
 
     @classmethod
@@ -248,9 +249,6 @@ class CsVariableData(IrData):
 
 class CsMethodData(IrData):
     single_sentence: RawContent
-    _type: ListedCommaCombinedBackTickRawContentNoNone = PrivateAttr(
-        default=ListedCommaCombinedBackTickRawContentNoNone(content=[])
-    )
     _modifiers: ListedCommaCombinedBackTickRawContentNoNone = PrivateAttr(
         default=ListedCommaCombinedBackTickRawContentNoNone(content=[])
     )
@@ -264,17 +262,21 @@ class CsMethodData(IrData):
         for modifier in self._reified_symbol.raw.bespoke_data.modifiers:
             modifiers.append(modifier)
         self._modifiers.content = modifiers
-        self._type.content = [
-            self._reified_symbol.raw.bespoke_data.kind.replace("_", " ")
-        ]
 
     @classmethod
-    def system_prompt(cls) -> str:
-        return METHODS_FOUND_SYSTEM_PROMPT_JSON
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
+        return METHODS_FOUND_SYSTEM_PROMPT_JSON.format(
+            kind_indicator=f", mention that this a {symbol.reified_symbol.raw.bespoke_data.kind}"
+            if symbol.reified_symbol.raw.bespoke_data.kind != CSharpCallKind.METHOD
+            else ""
+        )
 
     @classmethod
     def user_prompt(cls, symbol: RawSymbolData) -> str:
-        user_prompt = f"{METHODS_FOUND_USER_PROMPT}{symbol.name}\n\nMethod Code:\n\n{symbol.symbol_code}"
+        user_prompt = f"{METHODS_FOUND_USER_PROMPT}{symbol.name}\n\nMethod Kind:\n\n{symbol.reified_symbol.raw.bespoke_data.kind}"
+        if symbol.reified_symbol.raw.bespoke_data.kind != CSharpCallKind.METHOD:
+            user_prompt += f" be sure to mention that this a {symbol.reified_symbol.raw.bespoke_data.kind} in the single sentence description."
+        user_prompt += f"\n\nMethod Code:\n\n{symbol.symbol_code}"
         if symbol.file_code:
             user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
         return user_prompt
@@ -338,7 +340,7 @@ class CsStructData(IrData):
         ]
 
     @classmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         return STRUCTS_FOUND_SYSTEM_PROMPT_JSON
 
     @classmethod
@@ -429,7 +431,7 @@ class CsClassData(IrData):
         self._type.content = [kind]
 
     @classmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         return CLASSES_FOUND_SYSTEM_PROMPT_JSON
 
     @classmethod
@@ -511,7 +513,7 @@ class CsInterfaceData(IrData):
         self._modifiers.content = modifiers
 
     @classmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         return INTERFACES_FOUND_SYSTEM_PROMPT_JSON
 
     @classmethod

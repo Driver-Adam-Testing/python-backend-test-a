@@ -351,7 +351,7 @@ class AssemblyVariableRawSymbolCollection(RawSymbolCollection):
 # IR Classes
 class AssemblyDataStructureData(DataStructureData):
     @classmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         return DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON
 
     @classmethod
@@ -377,7 +377,7 @@ class AssemblyDataStructureCollection(IrCollection):
 
 class AssemblySubroutineData(FnData):
     @classmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         return FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON
 
     @classmethod
@@ -405,7 +405,7 @@ class AssemblySubroutineCollection(IrCollection):
 
 class AssemblyMacroData(FnData):
     @classmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         return MACRO_FOUND_SYSTEM_PROMPT_JSON
 
     @classmethod
@@ -431,7 +431,7 @@ class AssemblyMacroCollection(IrCollection):
 
 class AssemblyVariableData(VariableData):
     @classmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         return VARIABLES_FOUND_SYSTEM_PROMPT_JSON
 
     @classmethod

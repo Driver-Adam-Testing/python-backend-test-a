@@ -412,7 +412,7 @@ class DefaultDataStructureRawSymbolCollection(RawSymbolCollection):
 # IR Classes
 class DefaultFnData(FnData):
     @classmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         return FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON
 
     @classmethod
@@ -440,7 +440,7 @@ class DefaultFnCollection(IrCollection):
 
 class DefaultVariableData(VariableData):
     @classmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         return VARIABLES_FOUND_SYSTEM_PROMPT_JSON
 
     @classmethod
@@ -468,7 +468,7 @@ class DefaultVariableCollection(IrCollection):
 
 class DefaultDataStructureData(DataStructureData):
     @classmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         return DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON
 
     @classmethod

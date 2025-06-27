@@ -150,7 +150,7 @@ You will be given the name of a method to document and the source code where the
 
 Your job is to describe the method. **Always respond using exactly the following JSON schema**:
 {
-    "single_sentence": <terse single sentence description of the method>,
+    "single_sentence": <terse single sentence description of the method, include the kind of method if it is a special kind (e.g., constructor, destructor, operator overload, etc.) in the single sentence>,
     "inputs": [
         {"name": <input_arg1>, "content": <description of input argument 1>},
         {"name": <input_arg2>, "content": <description of input argument 2>},
@@ -248,9 +248,6 @@ class CsVariableData(IrData):
 
 class CsMethodData(IrData):
     single_sentence: RawContent
-    _type: ListedCommaCombinedBackTickRawContentNoNone = PrivateAttr(
-        default=ListedCommaCombinedBackTickRawContentNoNone(content=[])
-    )
     _modifiers: ListedCommaCombinedBackTickRawContentNoNone = PrivateAttr(
         default=ListedCommaCombinedBackTickRawContentNoNone(content=[])
     )
@@ -264,9 +261,6 @@ class CsMethodData(IrData):
         for modifier in self._reified_symbol.raw.bespoke_data.modifiers:
             modifiers.append(modifier)
         self._modifiers.content = modifiers
-        self._type.content = [
-            self._reified_symbol.raw.bespoke_data.kind.replace("_", " ")
-        ]
 
     @classmethod
     def system_prompt(cls) -> str:
@@ -274,7 +268,7 @@ class CsMethodData(IrData):
 
     @classmethod
     def user_prompt(cls, symbol: RawSymbolData) -> str:
-        user_prompt = f"{METHODS_FOUND_USER_PROMPT}{symbol.name}\n\nMethod Code:\n\n{symbol.symbol_code}"
+        user_prompt = f"{METHODS_FOUND_USER_PROMPT}{symbol.name}\n\nMethod Kind:\n\n{symbol.reified_symbol.raw.bespoke_data.kind}\n\nMethod Code:\n\n{symbol.symbol_code}"
         if symbol.file_code:
             user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
         return user_prompt

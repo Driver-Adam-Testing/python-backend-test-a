@@ -430,7 +430,12 @@ class IrData(BaseModel, abc.ABC):
         if self._reified_symbol is not None:
             sym = self._reified_symbol
             if sym.raw.symbol_kind == SymbolKind.CALLABLE and sym.calls:
-                output += "- **Functions called**:\n"
+                callables_label = (
+                    "Functions Called"
+                    if sym.raw.file_path.suffix != ".cs"
+                    else "Methods Called"
+                )
+                output += f"- **{callables_label}**:\n"
                 seen_name_parts = defaultdict(list)
                 for called_func in self._reified_symbol.calls:
                     fqn = get_fully_qualified_name(called_func.raw)

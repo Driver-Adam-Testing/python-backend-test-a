@@ -71,7 +71,7 @@ image = inspection_image = (
     proxy=modal.Proxy.from_name("my-proxy")
     if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging", "prod"]
     else None,
-    memory="2048",
+    memory=2048,
     timeout=3600 * 8,
     region="us-east",
     max_containers=5,

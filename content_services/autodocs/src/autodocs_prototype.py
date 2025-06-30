@@ -7,6 +7,7 @@ import os
 import tempfile
 import tomllib
 from collections.abc import Generator
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from enum import IntEnum, StrEnum
 from graphlib import TopologicalSorter
 from pathlib import Path
@@ -51,6 +52,10 @@ generate_image = (
             "openai>=1.40.2",
             "pydantic>=2.8.2",
             "/shared_pkg",
+            "pymupdf4llm==0.0.17",
+            "google-genai",
+            "aiolimiter",
+            "tiktoken",
         ]
     )
     .add_local_python_source("database", "shared", "utils", copy=True)
@@ -67,15 +72,23 @@ generate_image = (
     region="us-east",
     max_containers=300,
 )
-async def llm_generate(llm: ChatOpenAI, system_prompt: str, user_prompt: str) -> str:
+async def llm_generate_modal(model: str, system_prompt: str, user_prompt: str) -> str:
     # async with OPENAI_SEM, OPENAI_LIMITER:
     try:
+        llm = ChatOpenAI(model=model, temperature=0, request_timeout=900)
         return await llm.generate_response(
             system_prompt=system_prompt, user_prompt=user_prompt
         )
     except openai.BadRequestError:
         print(f"Bad request error for {user_prompt[:1000]}")
         return ""
+
+
+async def llm_generate(llm: ChatOpenAI, system_prompt: str, user_prompt: str) -> str:
+    async with OPENAI_SEM, OPENAI_LIMITER:
+        return await llm_generate_modal.remote.aio(
+            model=llm.model, system_prompt=system_prompt, user_prompt=user_prompt
+        )
 
 
 GREEN = "\033[92m"  # Green
@@ -299,18 +312,44 @@ class DriverDocsContent(BaseModel):
         # TODO: this will download everything right now, vs. just the subgraph of interest
         with tempfile.TemporaryDirectory() as download_dir:
             try:
-                content = {
-                    k: TechDocsContent(
-                        name=k,
-                        source=_get_source_from_s3(
-                            version_id, primary_asset_id, k, bucket, download_dir
-                        ),
-                        short_sentence_description=ss[k],
-                        long_description=ld[k],
-                        short_paragraph_description=sp[k],
-                    )
-                    for k in ss
-                }
+                # Parallelize S3 downloads using ThreadPoolExecutor
+                content = {}
+                with ThreadPoolExecutor(max_workers=10) as executor:
+                    # Submit all download tasks
+                    future_to_key = {
+                        executor.submit(
+                            _get_source_from_s3,
+                            version_id,
+                            primary_asset_id,
+                            k,
+                            bucket,
+                            download_dir,
+                        ): k
+                        for k in ss
+                    }
+
+                    # Collect results as they complete
+                    for future in as_completed(future_to_key):
+                        k = future_to_key[future]
+                        try:
+                            source = future.result()
+                            content[k] = TechDocsContent(
+                                name=k,
+                                source=source,
+                                short_sentence_description=ss[k],
+                                long_description=ld[k],
+                                short_paragraph_description=sp[k],
+                            )
+                        except Exception as exc:
+                            print(f"Error downloading {k}: {exc}")
+                            # Create entry with None source on error
+                            content[k] = TechDocsContent(
+                                name=k,
+                                source=None,
+                                short_sentence_description=ss[k],
+                                long_description=ld[k],
+                                short_paragraph_description=sp[k],
+                            )
             except Exception as e:
                 print(codebase_name)
                 raise e
@@ -1420,6 +1459,8 @@ Your output should be markdown formatted text.
         user_prompts = [""]
         for idx, doc in enumerate(aggregate_docs):
             user_prompts[0] += f"{section_name} doc for set {idx}:\n\n{doc}\n\n"
+            if get_num_tokens(user_prompts[0]) > 100_000:
+                return user_prompts
         return user_prompts
 
 

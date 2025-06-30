@@ -5,7 +5,7 @@ from typing import Self
 import openai
 from openai import AsyncOpenAI
 from pydantic import BaseModel, ValidationError
-from shared.utils.decorators import retry_with_exponential_backoff
+from shared.utils.decorators import async_retry_with_exponential_backoff
 
 
 class OutputConfigKind(Enum):
@@ -44,7 +44,7 @@ class ChatOpenAI:
     def __post_init__(self) -> None:
         self.client = AsyncOpenAI(timeout=self.request_timeout)
 
-    @retry_with_exponential_backoff(
+    @async_retry_with_exponential_backoff(
         initial_delay=10.0,
         exponential_base=1.0005,
         errors=(

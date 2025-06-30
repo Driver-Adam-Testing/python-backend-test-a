@@ -1,5 +1,0 @@
-
-## Files
-- **[base_repository.py](repositories/base_repository.py.driver.md)**: The `base_repository.py` file defines a generic `BaseRepository` class that provides common database operations such as create, read, update, delete, and query functionalities for SQLModel-based models using SQLAlchemy sessions.
-- **[git_provider_repository.py](repositories/git_provider_repository.py.driver.md)**: The `git_provider_repository.py` file contains functions for performing database operations related to Git provider applications and their installations, such as retrieving and deleting records based on organization, app, and user identifiers.
-- **[github_app_installations_repository.py](repositories/github_app_installations_repository.py.driver.md)**: The `github_app_installations_repository.py` file defines a repository class for managing GitHub app installations, including methods to list installations by organization or installation ID and to check for the existence of a specific installation.

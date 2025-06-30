@@ -1,7 +1,0 @@
-
-## Files
-- **[__init__.py](tools/__init__.py.driver.md)**: The `__init__.py` file in the `python-backend` codebase registers various tools, such as `SearchTool`, `OpenFileTool`, and `CodebaseFolderSummaryTool`, in a dictionary called `TOOL_REGISTRY`.
-- **[codebase_folder_summary_tool.py](tools/codebase_folder_summary_tool.py.driver.md)**: The `codebase_folder_summary_tool.py` file defines the `CodebaseFolderSummaryTool` class, which is designed to summarize the content of a codebase folder at a specified directory path by querying a database for long descriptions and returning formatted results.
-- **[open_file_tool.py](tools/open_file_tool.py.driver.md)**: The `open_file_tool.py` file defines the `OpenFileTool` class, which is a strict tool designed to open a file at a specified path, retrieve its content from a database, and display it, while handling exceptions and ensuring the file is not too long.
-- **[search_tool.py](tools/search_tool.py.driver.md)**: The `search_tool.py` file defines the `SearchTool` class, which facilitates searching within a content repository of code and technical documentation using various algorithms and content type filters.
-- **[tool_strict.py](tools/tool_strict.py.driver.md)**: The `tool_strict.py` file defines an abstract base class `ToolStrict` that extends `BaseModel` and requires subclasses to implement an `execute` method, while also providing a method to generate a schema based on the subclass's fields.

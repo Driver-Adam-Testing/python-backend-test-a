@@ -97,7 +97,7 @@ def process_file(local_path_and_extracted_path: tuple[Path, Path]) -> tuple[Path
         modal.Secret.from_name("github-app"),
     ],
     proxy=modal.Proxy.from_name("my-proxy")
-    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "prod"]
+    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging", "prod"]
     else None,
     timeout=60 * 60,
     region="us-east",
@@ -215,7 +215,7 @@ def handle_github_events(
     # whitelist this IP with ScaleGrid for our DB.
     proxy=(
         modal.Proxy.from_name("my-proxy")
-        if os.environ["MODAL_ENVIRONMENT"] in ["dev", "prod"]
+        if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging", "prod"]
         else None
     ),
     timeout=60 * 60,
@@ -321,7 +321,7 @@ def handle_gitlab_events(
         modal.Secret.from_name("github-app"),
     ],
     proxy=modal.Proxy.from_name("my-proxy")
-    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "prod"]
+    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging", "prod"]
     else None,
     timeout=60 * 60,
     region="us-east",

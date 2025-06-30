@@ -1,7 +1,0 @@
-
-## Files
-- **[asset_onboarding_lambda.py](constructs/asset_onboarding_lambda.py.driver.md)**: The `asset_onboarding_lambda.py` file defines a CDK construct for an AWS Lambda function that handles asset onboarding, including configuration for environment variables, event sources, and necessary permissions.
-- **[aws_waf.py](constructs/aws_waf.py.driver.md)**: The `aws_waf.py` file in the `python-backend` codebase defines a construct for setting up an AWS Web Application Firewall (WAF) with specific rule configurations and associations to an Application Load Balanced Fargate Service.
-- **[backend.py](constructs/backend.py.driver.md)**: The `backend.py` file in the `python-backend` codebase defines a CDK construct for deploying a backend service on AWS, utilizing various AWS services such as ECS, S3, Secrets Manager, and Route 53, with configurations for environment variables, secrets, and network settings.
-- **[inspector.py](constructs/inspector.py.driver.md)**: The `inspector.py` file defines the `Inspector` class, which is a construct for managing inspector-related infrastructure, and includes a plan to migrate existing inspector buckets into the current repository.
-- **[metrics_lambda.py](constructs/metrics_lambda.py.driver.md)**: The `metrics_lambda.py` file defines a CDK construct for deploying a Lambda function that processes metrics events, along with associated resources such as an event bus, dead-letter queue, and CloudWatch alarms for monitoring in different environments.

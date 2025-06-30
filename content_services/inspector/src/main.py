@@ -31,6 +31,7 @@ inspection_image = (
             "tree-sitter-java==0.23.5",
             "tree-sitter-python==0.23.6",
             "tree-sitter-c-sharp==0.23.1",
+            "tree-sitter-typescript==0.23.2",
             "chardet",
         ]
     )

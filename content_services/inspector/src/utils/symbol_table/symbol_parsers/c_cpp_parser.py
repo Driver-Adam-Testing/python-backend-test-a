@@ -1,38 +1,8 @@
-from pathlib import Path
-
-from utils.lang_specialization.symbol_common import RawTreeSitterSymbolData, SymbolKind
+from utils.symbol_table.base import SymbolParser
 from utils.treesitter_drivers.c_cpp_driver import CppCDriverTree
-
-from ..base import SymbolParser
-from ..utils import build_containment_map, to_root_relative
 
 
 class CCppParser(SymbolParser):
     language = "c_cpp"  # Shared parser for both C and C++
     fqn_delimiter = "::"
     tree = CppCDriverTree  # Use the C/C++ driver tree
-
-    def parse_file(
-        self,
-        fpath: Path,
-        project_root: Path,
-    ) -> tuple[
-        list[RawTreeSitterSymbolData],  # symbols
-        list[RawTreeSitterSymbolData],  # imports
-        dict[RawTreeSitterSymbolData, list[RawTreeSitterSymbolData]],  # containment_map
-    ]:
-        code_str = fpath.read_text(encoding="utf8")
-        root_rel_path = to_root_relative(fpath, project_root)
-
-        driver = self.tree.from_code(code_str, file_path=root_rel_path)
-
-        all_syms = driver.extract_all_symbols()
-        containment_map = build_containment_map(all_syms)
-
-        includes: list[str] = []
-
-        for sym in all_syms:
-            if sym.symbol_kind == SymbolKind.IMPORT and sym.name is not None:
-                includes.append(sym)
-
-        return all_syms, includes, containment_map

@@ -43,6 +43,7 @@ def run(
 async def push_docs(version_id: uuid.UUID) -> None:
     # import boto3
     import hashlib
+    import shutil
     import tempfile
 
     from database.db import engine
@@ -58,6 +59,7 @@ async def push_docs(version_id: uuid.UUID) -> None:
     version = await get_version_by_id(version_id)
     primary_asset_id = version.primary_asset.id
     repo_id = version.primary_asset.repository_id
+    repo_name = version.primary_asset.display_name
     org_id = version.primary_asset.organization_id
     org_id_hash = hashlib.sha256(org_id.encode()).hexdigest()[:63]
 
@@ -106,7 +108,16 @@ async def push_docs(version_id: uuid.UUID) -> None:
 
         run(f"git checkout -B {branch}", cwd=repo_dir)
         src_path = os.path.abspath(extracted_path)
-        dst_path = repo_dir / "driver_docs"
+
+        driver_docs_path = repo_dir / "driver_docs"
+        if os.path.exists(driver_docs_path):
+            # NOTE: only need to do this because previous iteration of export landed
+            # directly in `driver_docs`. Once we start exporting other content,
+            # we'll need a different approach.
+            print(f"Removing existing driver_docs directory: {driver_docs_path}")
+            shutil.rmtree(driver_docs_path)
+
+        dst_path = repo_dir / "driver_docs" / repo_name
         COMMIT_MESSAGE = "Bot: update driver docs for commit: " + commit_slug
         sync_directory(src_path, dst_path)
 

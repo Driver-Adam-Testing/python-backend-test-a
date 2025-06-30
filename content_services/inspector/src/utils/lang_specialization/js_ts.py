@@ -225,7 +225,7 @@ Variable to document:
 # IR data classes
 class JsTsVariableData(VariableData):
     @classmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         return VARIABLES_FOUND_SYSTEM_PROMPT_JSON
 
     @classmethod
@@ -270,7 +270,7 @@ class JsTsFnData(IrData):
         )
 
     @classmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         return FUNCTIONS_OR_METHODS_FOUND_SYSTEM_PROMPT_JSON
 
     @classmethod
@@ -323,7 +323,7 @@ class JsTsClassData(IrData):
         )
 
     @classmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         return CLASSES_FOUND_SYSTEM_PROMPT_JSON
 
     @classmethod
@@ -376,7 +376,7 @@ class JsTsInterfaceData(IrData):
         )
 
     @classmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         return INTERFACES_FOUND_SYSTEM_PROMPT_JSON
 
     @classmethod
@@ -427,7 +427,7 @@ class JsTsTypeData(IrData):
         )
 
     @classmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         return TYPES_FOUND_SYSTEM_PROMPT_JSON
 
     @classmethod

@@ -46,6 +46,8 @@ def build_symbol_table(
                 language_groups["python"].append(file_path)
             case Lang.JAVA:
                 language_groups["java"].append(file_path)
+            case Lang.TYPESCRIPT | Lang.JAVASCRIPT:
+                language_groups["js_ts"].append(file_path)
             case _:
                 unsupported_files.append(file_path)
 

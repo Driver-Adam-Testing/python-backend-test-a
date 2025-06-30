@@ -34,6 +34,7 @@ image = (
             "tree-sitter-cpp==0.23.2",
             "tree-sitter-java==0.23.5",
             "tree-sitter-python==0.23.6",
+            "tree-sitter-typescript==0.23.2",
         ]
     )  # TODO lock versions down
     .add_local_python_source(
@@ -46,6 +47,7 @@ image = (
         "tasks",
         "utils",
         copy=True,
+        ignore=lambda p: False,
     )
 )
 
@@ -171,8 +173,8 @@ def make_toplevel_tech_docs(
         modal.Secret.from_name("db"),
         modal.Secret.from_name("aws-inspector-s3"),
     ],
-    proxy=modal.Proxy.from_name("pg-proxy")
-    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "prod"]
+    proxy=modal.Proxy.from_name("my-proxy")
+    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging", "prod"]
     else None,
     memory=2048,
     timeout=3600 * 8,
@@ -201,7 +203,7 @@ def export_tech_docs_to_zip(
     )
 
     with Session(engine) as session:
-        nodes_query = (
+        long_desc_query = (
             select(
                 Node,
                 DerivedContent,
@@ -213,6 +215,19 @@ def export_tech_docs_to_zip(
                 DerivedContent.content_kind == ContentKind.LONG_DESCRIPTION,
             )
         )
+
+        short_desc_query = (
+            select(
+                Node,
+                DerivedContent,
+            )
+            .join(DerivedContent)
+            .where(
+                Node.version_id == version_id,
+                DerivedContent.content_kind == ContentKind.SHORT_SENTENCE_DESCRIPTION,
+            )
+        )
+
         version_query = (
             select(Version)
             .where(Version.id == version_id)
@@ -226,15 +241,24 @@ def export_tech_docs_to_zip(
         auto_commit_docs = version_row.primary_asset.codebase_settings_auto_commit_docs
         org_id = version_row.primary_asset.organization_id
         org_id_hash = hashlib.sha256(org_id.encode()).hexdigest()[:63]
-        result = session.exec(nodes_query)
-        node_rows = result.all()
+
+        long_desc_result = session.exec(long_desc_query)
+        long_desc_rows = long_desc_result.all()
+
+        short_desc_result = session.exec(short_desc_query)
+        short_desc_rows = short_desc_result.all()
+
+        node_to_short_desc = {
+            node.id: derived_content for node, derived_content in short_desc_rows
+        }
+
         node_path_to_kind = {
-            Path(node.relative_path): node.kind for node, _ in node_rows
+            Path(node.relative_path): node.kind for node, _ in long_desc_rows
         }
     with (
         tempfile.TemporaryDirectory() as temp_dir,
     ):
-        for node, derived_content in node_rows:
+        for node, long_desc_dc in long_desc_rows:
             node_path = Path(node.relative_path)
             if node.kind == NodeKind.CODEBASE_FILE:
                 link_destination_path = node_path.with_suffix(node_path.suffix + ".md")
@@ -250,8 +274,17 @@ def export_tech_docs_to_zip(
                     link_destination_path = node_path / "README.md"
                     file_path = Path(temp_dir) / link_destination_path
                 # doc_file_path = node_path.with_suffix(".driver.md")
+
+            short_desc_dc = node_to_short_desc.get(node.id)
+
+            # Combine short and long descriptions as we do in the frontend display
+            content = ""
+            if short_desc_dc and short_desc_dc.content:
+                content += short_desc_dc.content + "\n\n"
+            content += long_desc_dc.content
+
             content = replace_driver_compatible_links_with_markdown_links(
-                derived_content.content,
+                content,
                 Path(*link_destination_path.parts[1:]),
                 node_path.suffix,
                 node_path_to_kind,
@@ -302,18 +335,12 @@ def export_tech_docs_to_zip(
         modal.Secret.from_name("aws-inspector-s3"),
         modal.Secret.from_name("db"),
         modal.Secret.from_name("github-app"),
-        # This secret below is usually going to be empty, except in prod, prod where we'll put the full db url
-        # values needed to work with the gitlab proxy (not localhost as for the pg proxy). This will go away
-        # once we deprecate pg-proxy and can use `my-proxy` with the full db url everywhere in our app...
-        modal.Secret.from_name("db-override-hack"),
     ],
     # my-proxy defines the static IP that we share today with "on the beach". Not only does OTB whitelist this IP we also
-    # whitelist this IP with ScaleGrid for our DB. Normally we would use pg-proxy but we cant use two proxies at once in
-    # modal and that proxy is only good for the postgres port.
-    # NOTE: Any modal function that interacts with a Gitlab instance behind a proxy should use the `my-proxy`.
+    # whitelist this IP with ScaleGrid for our DB.
     proxy=(
-        modal.Proxy.from_name("my-proxy", environment_name="prod")
-        if os.environ["MODAL_ENVIRONMENT"] in ["dev", "prod"]
+        modal.Proxy.from_name("my-proxy")
+        if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging", "prod"]
         else None
     ),
     timeout=60 * 60,

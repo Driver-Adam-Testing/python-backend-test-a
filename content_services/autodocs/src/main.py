@@ -228,3 +228,81 @@ def main(
     run_autodoc.remote(
         page_node_id=page_node_id, config_kind=AutoDocConfigKind.ARCHITECTURE
     )
+
+
+@app.function(
+    image=image,
+    secrets=[
+        modal.Secret.from_name("db"),
+        modal.Secret.from_name("open-ai"),
+        modal.Secret.from_name("aws-inspector-s3"),
+    ],
+    proxy=modal.Proxy.from_name("my-proxy")
+    if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging", "prod"]
+    else None,
+    memory="2048",
+    timeout=3600 * 8,
+    region="us-east",
+    max_containers=5,
+)
+async def run_autodoc_cli(toml_content: str, page_node_id: str) -> None:
+    from database.db import get_session
+    from database.models_v1 import DocumentSource
+    from database.models_v2 import Node, Version
+    from database.models_v2_enums import (
+        PrimaryAssetKind,
+    )
+    from sqlalchemy.orm import selectinload
+    from sqlmodel import select
+
+    with get_session() as session, session.begin():
+        document_sources = session.exec(
+            select(DocumentSource)
+            .where(DocumentSource.page_node_id == page_node_id)
+            .options(
+                selectinload(DocumentSource.source_node)
+                .selectinload(Node.version)
+                .selectinload(Version.primary_asset)
+            )
+        ).all()
+
+        scope = Scope(
+            preamble="",
+            code=[],
+            pdfs=[],
+        )
+
+        org_id = None
+        for source in document_sources:
+            if not org_id:
+                org_id = source.source_node.version.primary_asset.organization_id
+            if (
+                source.source_node.version.primary_asset.kind
+                == PrimaryAssetKind.CODEBASE
+            ):
+                code_cfg = FullyQualifiedDriverPathCode(
+                    version_id=str(source.source_node.version_id),
+                    node_path=source.source_node.relative_path.rstrip("/"),
+                )
+                scope.code.append(code_cfg)
+            elif source.source_node.version.primary_asset.kind == PrimaryAssetKind.FILE:
+                pdf_cfg = FullyQualifiedDriverPathPdf(
+                    version_id=str(source.source_node.version_id),
+                    pdf_name=source.source_node.version.primary_asset.display_name,
+                )
+                scope.pdfs.append(pdf_cfg)
+
+        config_file = "config_file.toml"
+        with open(config_file, "w") as f:
+            f.write(toml_content)
+
+        config = AutoDocCfg.from_file(toml_file=config_file)
+        config.scope = scope
+
+        init_state = await AutoDocInitState.from_cfg(
+            cfg=config, execution_mode=ExecutionMode.MODAL, page_id=page_node_id
+        )
+        doc = await init_state.generate(
+            execution_mode=ExecutionMode.MODAL, page_id=str(page_node_id)
+        )
+        return doc

@@ -17,7 +17,9 @@ import boto3
 import modal
 import openai
 import pymupdf4llm
+import tqdm
 from aiolimiter import AsyncLimiter
+from botocore.config import Config
 from common import app
 from database.models_v2_enums import AutoDocStatusMessageKind, ContentKind
 from google import genai
@@ -314,11 +316,13 @@ class DriverDocsContent(BaseModel):
             try:
                 # Parallelize S3 downloads using ThreadPoolExecutor
                 content = {}
+                s3_client = boto3.client("s3", config=Config(max_pool_connections=50))
                 with ThreadPoolExecutor(max_workers=10) as executor:
                     # Submit all download tasks
                     future_to_key = {
                         executor.submit(
                             _get_source_from_s3,
+                            s3_client,
                             version_id,
                             primary_asset_id,
                             k,
@@ -329,27 +333,31 @@ class DriverDocsContent(BaseModel):
                     }
 
                     # Collect results as they complete
-                    for future in as_completed(future_to_key):
-                        k = future_to_key[future]
-                        try:
-                            source = future.result()
-                            content[k] = TechDocsContent(
-                                name=k,
-                                source=source,
-                                short_sentence_description=ss[k],
-                                long_description=ld[k],
-                                short_paragraph_description=sp[k],
-                            )
-                        except Exception as exc:
-                            print(f"Error downloading {k}: {exc}")
-                            # Create entry with None source on error
-                            content[k] = TechDocsContent(
-                                name=k,
-                                source=None,
-                                short_sentence_description=ss[k],
-                                long_description=ld[k],
-                                short_paragraph_description=sp[k],
-                            )
+                    with tqdm.tqdm(
+                        total=len(future_to_key), desc="Downloading files"
+                    ) as pbar:
+                        for future in as_completed(future_to_key):
+                            k = future_to_key[future]
+                            try:
+                                source = future.result()
+                                content[k] = TechDocsContent(
+                                    name=k,
+                                    source=source,
+                                    short_sentence_description=ss[k],
+                                    long_description=ld[k],
+                                    short_paragraph_description=sp[k],
+                                )
+                            except Exception as exc:
+                                print(f"Error downloading {k}: {exc}")
+                                # Create entry with None source on error
+                                content[k] = TechDocsContent(
+                                    name=k,
+                                    source=None,
+                                    short_sentence_description=ss[k],
+                                    long_description=ld[k],
+                                    short_paragraph_description=sp[k],
+                                )
+                            pbar.update(1)
             except Exception as e:
                 print(codebase_name)
                 raise e
@@ -396,6 +404,7 @@ def _get_derived_contents(
 
 
 def _get_source_from_s3(
+    s3_client: boto3.client,
     version_id: str,
     primary_asset_id: str,
     relative_path: str,
@@ -403,11 +412,11 @@ def _get_source_from_s3(
     download_dir: str,
 ) -> str:
     try:
-        s3_client = boto3.client("s3")
+        # s3_client = boto3.client("s3")
         download_key = f"{primary_asset_id}/{version_id}/{relative_path}"
         local_download_path = Path(download_dir) / relative_path
         local_download_path.parent.mkdir(parents=True, exist_ok=True)
-        print(bucket, download_key)
+        # print(bucket, download_key)
         s3_client.download_file(bucket, download_key, str(local_download_path))
 
         with open(local_download_path) as f:

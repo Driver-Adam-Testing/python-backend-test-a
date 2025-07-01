@@ -47,39 +47,59 @@ app = modal.App("auto_toml")
 class AutoTomlModal:
     @modal.method()
     async def generate_from_page_id(
-        self, page_id: str, enable_auto_scaling: bool, document_goal: str
+        self,
+        page_id: str,
+        enable_auto_scaling: bool,
+        document_goal: str,
+        user_context: str = "",
     ) -> str:
         auto_toml = AutoToml.from_page_id(
             page_id=UUID(page_id), enable_auto_scaling=enable_auto_scaling
         )
-        return await auto_toml.generate(document_goal=document_goal)
+        return await auto_toml.generate(
+            document_goal=document_goal, user_context=user_context
+        )
 
     @modal.method()
     async def generate_from_node_ids(
-        self, node_ids: list[str], enable_auto_scaling: bool, document_goal: str
+        self,
+        node_ids: list[str],
+        enable_auto_scaling: bool,
+        document_goal: str,
+        user_context: str = "",
     ) -> str:
         auto_toml = AutoToml.from_node_ids(
             node_ids=node_ids, enable_auto_scaling=enable_auto_scaling
         )
-        return await auto_toml.generate(document_goal=document_goal)
+        return await auto_toml.generate(
+            document_goal=document_goal, user_context=user_context
+        )
 
     @modal.method()
     async def append_from_page_id(
-        self, page_id: str, enable_auto_scaling: bool, user_toml: str
+        self,
+        page_id: str,
+        enable_auto_scaling: bool,
+        user_toml: str,
+        user_context: str = "",
     ) -> str:
         auto_toml = AutoToml.from_page_id(
             page_id=UUID(page_id), enable_auto_scaling=enable_auto_scaling
         )
-        return await auto_toml.append(user_toml=user_toml)
+        return await auto_toml.append(user_toml=user_toml, user_context=user_context)
 
     @modal.method()
     async def append_from_node_ids(
-        self, node_ids: list[str], enable_auto_scaling: bool, user_toml: str
+        self,
+        node_ids: list[str],
+        enable_auto_scaling: bool,
+        user_toml: str,
+        user_context: str = "",
     ) -> str:
         auto_toml = AutoToml.from_node_ids(
             node_ids=node_ids, enable_auto_scaling=enable_auto_scaling
         )
-        return await auto_toml.append(user_toml=user_toml)
+        return await auto_toml.append(user_toml=user_toml, user_context=user_context)
 
 
 @app.local_entrypoint()

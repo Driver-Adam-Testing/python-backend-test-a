@@ -203,7 +203,7 @@ class JavaMethodData(IrData):
     output: FieldNameWithBulletedContent
 
     @classmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         return METHODS_FOUND_SYSTEM_PROMPT_JSON
 
     @classmethod
@@ -239,7 +239,7 @@ class JavaFieldData(IrData):
     modifiers: ListedCommaCombinedBackTickRawContentNoNone
 
     @classmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         return FIELDS_FOUND_SYSTEM_PROMPT_JSON
 
     @classmethod
@@ -281,7 +281,7 @@ class JavaClassData(IrData):
     )
 
     @classmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         return CLASSES_FOUND_SYSTEM_PROMPT_JSON
 
     @classmethod
@@ -341,7 +341,7 @@ class JavaInterfaceData(IrData):
     )
 
     @classmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         return INTERFACES_FOUND_SYSTEM_PROMPT_JSON
 
     @classmethod

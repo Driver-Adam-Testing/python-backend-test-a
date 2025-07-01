@@ -46,6 +46,8 @@ def build_symbol_table(
                 language_groups["python"].append(file_path)
             case Lang.JAVA:
                 language_groups["java"].append(file_path)
+            case Lang.C_SHARP:
+                language_groups["csharp"].append(file_path)
             case Lang.TYPESCRIPT | Lang.JAVASCRIPT:
                 language_groups["js_ts"].append(file_path)
             case _:
@@ -198,7 +200,10 @@ def print_summary(
                 decl_count = len(sym.declarations)
 
                 # Special handling for classes/structs
-                if sym.raw.symbol_kind == SymbolKind.DATA_STRUCTURE:
+                if (
+                    sym.raw.symbol_kind == SymbolKind.DATA_STRUCTURE
+                    or sym.raw.symbol_kind == SymbolKind.CLASS
+                ):
                     members = sym.children
                     member_functions = [
                         m for m in members if m.raw.symbol_kind == SymbolKind.CALLABLE
@@ -328,20 +333,21 @@ def print_summary(
                         f"[no definition found]{RESET}"
                     )
             else:
+                pass
                 # Usage
-                if sym.definition:
-                    def_name = get_fully_qualified_name(sym=sym.definition.raw, sep=sep)
-                    def_lines = (
-                        f"[lines {sym.definition.raw.start_line}-"
-                        f"{sym.definition.raw.end_line}]"
-                    )
-                    def_file_path = sym.definition.raw.file_path
-                    print(
-                        f"{YELLOW}  🔗 USE: {BOLD}{name_display}{RESET}{YELLOW} {lines} "
-                        f"-> DEF: {def_name} {def_lines} in {def_file_path}{RESET}"
-                    )
-                else:
-                    print(
-                        f"{YELLOW}  🔗 USE: {BOLD}{name_display}{RESET}{YELLOW} {lines} "
-                        f"[no definition found]{RESET}"
-                    )
+                # if sym.definition:
+                #     def_name = get_fully_qualified_name(sym=sym.definition.raw, sep=sep)
+                #     def_lines = (
+                #         f"[lines {sym.definition.raw.start_line}-"
+                #         f"{sym.definition.raw.end_line}]"
+                #     )
+                #     def_file_path = sym.definition.raw.file_path
+                #     print(
+                #         f"{YELLOW}  🔗 USE: {BOLD}{name_display}{RESET}{YELLOW} {lines} "
+                #         f"-> DEF: {def_name} {def_lines} in {def_file_path}{RESET}"
+                #     )
+                # else:
+                #     print(
+                #         f"{YELLOW}  🔗 USE: {BOLD}{name_display}{RESET}{YELLOW} {lines} "
+                #         f"[no definition found]{RESET}"
+                #     )

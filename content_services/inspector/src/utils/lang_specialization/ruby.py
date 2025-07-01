@@ -177,7 +177,7 @@ Module to document:
 # IR Classes
 class RubyMethodData(FnData):
     @classmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         return METHODS_FOUND_SYSTEM_PROMPT_JSON
 
     @classmethod
@@ -199,7 +199,7 @@ class RubyMethodData(FnData):
 
 class RubyAttributeData(VariableData):
     @classmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         return ATTRIBUTES_FOUND_SYSTEM_PROMPT_JSON
 
     @classmethod
@@ -233,7 +233,7 @@ class RubyClassData(IrData):
     )
 
     @classmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         return CLASSES_FOUND_SYSTEM_PROMPT_JSON
 
     @classmethod
@@ -293,7 +293,7 @@ class RubyModuleData(IrData):
     )
 
     @classmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         return MODULES_FOUND_SYSTEM_PROMPT_JSON
 
     @classmethod

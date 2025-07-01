@@ -1,6 +1,8 @@
 from os import sep
 from pathlib import Path
 
+from utils.lang_specialization.symbol_common import RawTreeSitterSymbolData
+
 from ..base import ImportResolver
 
 
@@ -8,14 +10,20 @@ class PythonResolver(ImportResolver):
     language = "python"
 
     def resolve_import(
-        self, current_file: Path, import_str: str, project_files: set[Path]
-    ) -> Path | None:
+        self,
+        current_file: Path,
+        import_sym: RawTreeSitterSymbolData,
+        project_files_to_symbols_map: dict[Path, list[RawTreeSitterSymbolData]],
+    ) -> Path | list[Path] | None:
         """
         Resolve Python import statements to project files.
         """
+        project_files = set(project_files_to_symbols_map.keys())
         project_files_lst = list(project_files)
 
-        import_str_pathified = Path(import_str.replace(".", sep)).with_suffix(".py")
+        import_str_pathified = Path(import_sym.name.replace(".", sep)).with_suffix(
+            ".py"
+        )
 
         # 1) For cases like `import my_module` implemented in `/some_path/my_module.py`
         candidate = import_str_pathified

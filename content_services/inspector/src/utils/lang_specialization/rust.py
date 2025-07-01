@@ -270,7 +270,7 @@ class RustMacroData(IrData):
     use: FieldNameWithRawContent
 
     @classmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         return MACROS_FOUND_SYSTEM_PROMPT_JSON
 
     @classmethod
@@ -315,7 +315,7 @@ class RustTraitData(IrData):
     description: FieldNameWithRawContent
 
     @classmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         return TRAITS_FOUND_SYSTEM_PROMPT_JSON
 
     @classmethod
@@ -363,7 +363,7 @@ class RustDataStructureData(IrData):
     )
 
     @classmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         return DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON
 
     @classmethod
@@ -411,7 +411,7 @@ class RustDataStructureCollection(IrCollection):
 
 class RustMethodData(FnData):
     @classmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         return METHODS_FOUND_SYSTEM_PROMPT_JSON
 
     @classmethod
@@ -435,7 +435,7 @@ class RustMethodData(FnData):
 
 class RustFnData(FnData):
     @classmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         return FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON
 
     @classmethod
@@ -466,7 +466,7 @@ class RustFnCollection(IrCollection):
 
 class RustVariableData(VariableData):
     @classmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         return VARIABLES_FOUND_SYSTEM_PROMPT_JSON
 
     @classmethod

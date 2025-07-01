@@ -5,6 +5,7 @@ from typing import ClassVar, Self
 
 import tree_sitter
 import tree_sitter_c
+import tree_sitter_c_sharp
 import tree_sitter_cpp
 import tree_sitter_java
 import tree_sitter_python
@@ -17,6 +18,7 @@ LANGUAGES = {
     "cpp": tree_sitter.Language(tree_sitter_cpp.language()),
     "python": tree_sitter.Language(tree_sitter_python.language()),
     "java": tree_sitter.Language(tree_sitter_java.language()),
+    "csharp": tree_sitter.Language(tree_sitter_c_sharp.language()),
     "js_ts": tree_sitter.Language(tree_sitter_typescript.language_typescript()),
 }
 

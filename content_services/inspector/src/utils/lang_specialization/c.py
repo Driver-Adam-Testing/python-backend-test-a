@@ -269,7 +269,7 @@ class CDeclarationRawSymbolCollection(RawSymbolCollection):
 
 class CFnDeclData(FnDeclData):
     @classmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         return FUNCTION_DECLS_FOUND_SYSTEM_PROMPT_JSON
 
     @classmethod
@@ -342,7 +342,7 @@ class CIncludeRawSymbolCollection(RawSymbolCollection):
 
 class CDataStructureData(DataStructureData):
     @classmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         return DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON
 
     @classmethod
@@ -371,7 +371,7 @@ class CDataStructureCollection(IrCollection):
 
 class CFnData(FnData):
     @classmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         return FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON
 
     @classmethod
@@ -400,7 +400,7 @@ class CFunctionCollection(IrCollection):
 
 class CVariableData(VariableData):
     @classmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         return VARIABLES_FOUND_SYSTEM_PROMPT_JSON
 
     @classmethod

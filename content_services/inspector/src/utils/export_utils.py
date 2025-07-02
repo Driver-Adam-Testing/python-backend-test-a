@@ -72,6 +72,16 @@ def replace_driver_compatible_links_with_markdown_links(
             file_path = Path(
                 *Path(link_part).parts[1:]
             )  # Strips the first part of the path
+            if anchor_tag is not None and (
+                anchor_tag[0] == "L" or anchor_tag[1] == "L"
+            ):
+                num_parts = len(file_path.parts)
+                navigation_parts = "../../" + "../" * (num_parts - 1)
+                # strip anything after the '-' in the anchor tag
+                anchor_tag = anchor_tag.split("-")[0]  # e.g. L1234
+                new_url = f"{navigation_parts}{file_path}#{anchor_tag}"
+                text = text.replace(link, new_url)
+                continue  # Skip further processing for line links
             if node_kind_of_link.value == "CODEBASE_FILE":
                 converted_file_path = file_path.with_suffix(file_path.suffix + ".md")
             else:

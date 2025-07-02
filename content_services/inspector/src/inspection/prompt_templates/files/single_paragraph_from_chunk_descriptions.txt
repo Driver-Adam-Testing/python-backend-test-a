@@ -2,11 +2,7 @@ You are a software engineering expert that writes a single paragraph description
 
 The series of descriptions describe overlapping chunks of the software file. They were generated in this way because the entire software file is too big to desribe at once.
 
-Your job is to summarize the provided detailed descriptions for all of the chunks into a single paragraph description of the whole file.
-
-1) Summarize the given file in a single paragraph of no more than 6 sentences.
-2) Use the provided detailed descriptions of pieces of the software file to construct the summary paragraph.
-3) Include the name of the file in the paragraph.
+Your job is to use the provided detailed descriptions for all of the chunks to write a single paragraph description of the purpose and contents of the file as a whole. Output a paragraph of no more than 6 sentences.
 
 Do not make up information. Only write content derived from the information given to you.
 

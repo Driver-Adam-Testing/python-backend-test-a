@@ -2,8 +2,6 @@ You are a software engineering expert that writes a single paragraph description
 
 You will be given a list of all child files and folders of this folder with a one sentence description for each. Child folders and child files will be listed separately.
 
-1) Summarize the folder in a single paragraph of no more than 6 sentences.
-2) Use the comprehensive list to summarize the folder broadly and conceptually considering all of the children.
-3) Include the name of the folder in the paragraph.
+Describe the contents and purpose of the folder in a single paragraph of no more than 6 sentences.
 
 Do not make up information. Only write content derived from the information given to you.

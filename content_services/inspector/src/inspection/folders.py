@@ -7,6 +7,13 @@ from typing import Any
 from utils.dag import LiteNode, NodeKind
 from utils.io import get_prompt_template
 from utils.models import ChatOpenAI
+from utils.prompts import (
+    GENERAL_STE_STYLE_INSTRUCTION,
+    NO_RESTATEMENT_STYLE_INSTRUCTION,
+    TERSE_TWITTER_SINGLE_SENTENCE_STYLE_INSTRUCTION,
+    Prompt,
+    RawPromptComponent,
+)
 from utils.threadpool import FastShutdownThreadPoolExecutor
 
 PARENT_PATH = Path(__file__).parent
@@ -59,13 +66,42 @@ def folder_single_sentence_from_child_list(
     folder_name: str,
     codebase_name: str,
     data: str,
+    is_root: bool,
 ) -> str:
-    system_prompt = get_prompt_template(
-        PARENT_PATH / "prompt_templates/folders/single_sentence_from_child_list.txt"
+    system_prompt = (
+        Prompt.empty()
+        .append(
+            RawPromptComponent.from_raw_str(
+                get_prompt_template(
+                    PARENT_PATH
+                    / "prompt_templates/folders/single_sentence_from_child_list.txt"
+                )
+            ).resolve()
+        )
+        .append(GENERAL_STE_STYLE_INSTRUCTION)
+        .into_str(sep="\n\n")
     )
-    human_prompt = ""
-    human_prompt += f"Folder `{folder_name}` in codebase `{codebase_name}` child content:\n\n{data}\n\n"
-    return llm.generate_response(system_prompt, human_prompt)
+
+    user_prompt_structured = Prompt.empty()
+    if is_root:
+        root_specialization = """
+This folder is the root of an entire codebase. As such, write your single sentence description to concisely summarize the purpose and contents of the codebaes as a whole.
+"""
+        user_prompt_structured.append(
+            RawPromptComponent.from_raw_str(root_specialization).resolve()
+        )
+
+    user_prompt_structured.append(NO_RESTATEMENT_STYLE_INSTRUCTION).append(
+        TERSE_TWITTER_SINGLE_SENTENCE_STYLE_INSTRUCTION
+    ).append(
+        RawPromptComponent.from_raw_str(
+            f"Folder `{folder_name}` in codebase `{codebase_name}` child content:\n\n{data}"
+        ).resolve()
+    )
+
+    user_prompt = user_prompt_structured.into_str(sep="\n\n")
+
+    return llm.generate_response(system_prompt, user_prompt)
 
 
 def folder_single_paragraph_from_child_list(
@@ -74,12 +110,31 @@ def folder_single_paragraph_from_child_list(
     codebase_name: str,
     data: str,
 ) -> str:
-    system_prompt = get_prompt_template(
-        PARENT_PATH / "prompt_templates/folders/single_paragraph_from_child_list.txt"
+    system_prompt = (
+        Prompt.empty()
+        .append(
+            RawPromptComponent.from_raw_str(
+                get_prompt_template(
+                    PARENT_PATH
+                    / "prompt_templates/folders/single_paragraph_from_child_list.txt"
+                )
+            ).resolve()
+        )
+        .append(GENERAL_STE_STYLE_INSTRUCTION)
+        .into_str(sep="\n\n")
     )
-    human_prompt = ""
-    human_prompt += f"Folder `{folder_name}` in codebase `{codebase_name}` child content:\n\n{data}\n\n"
-    return llm.generate_response(system_prompt, human_prompt)
+    user_prompt = (
+        Prompt.empty()
+        .append(NO_RESTATEMENT_STYLE_INSTRUCTION)
+        .append(
+            RawPromptComponent.from_raw_str(
+                f"Folder `{folder_name}` in codebase `{codebase_name}` child content:\n\n{data}"
+            ).resolve()
+        )
+        .into_str("\n\n")
+    )
+
+    return llm.generate_response(system_prompt, user_prompt)
 
 
 def folder_single_sentence_from_chunk_descriptions(
@@ -87,13 +142,29 @@ def folder_single_sentence_from_chunk_descriptions(
     folder_name: str,
     codebase_name: str,
     data: str,
+    is_root: bool,
 ) -> str:
-    system_prompt = get_prompt_template(
-        PARENT_PATH
-        / "prompt_templates/folders/single_sentence_from_chunk_descriptions.txt"
+    system_prompt = (
+        Prompt.empty()
+        .append(
+            RawPromptComponent.from_raw_str(
+                get_prompt_template(
+                    PARENT_PATH
+                    / "prompt_templates/folders/single_sentence_from_chunk_descriptions.txt"
+                )
+            ).resolve()
+        )
+        .append(GENERAL_STE_STYLE_INSTRUCTION)
+        .into_str(sep="\n\n")
     )
-    human_prompt = data
-    return llm.generate_response(system_prompt, human_prompt)
+    user_prompt = (
+        Prompt.empty()
+        .append(NO_RESTATEMENT_STYLE_INSTRUCTION)
+        .append(TERSE_TWITTER_SINGLE_SENTENCE_STYLE_INSTRUCTION)
+        .append(RawPromptComponent.from_raw_str(data).resolve())
+        .into_str(sep="\n\n")
+    )
+    return llm.generate_response(system_prompt, user_prompt)
 
 
 def folder_single_paragraph_from_chunk_descriptions(
@@ -102,12 +173,26 @@ def folder_single_paragraph_from_chunk_descriptions(
     codebase_name: str,
     data: str,
 ) -> str:
-    system_prompt = get_prompt_template(
-        PARENT_PATH
-        / "prompt_templates/folders/single_paragraph_from_chunk_descriptions.txt"
+    system_prompt = (
+        Prompt.empty()
+        .append(
+            RawPromptComponent.from_raw_str(
+                get_prompt_template(
+                    PARENT_PATH
+                    / "prompt_templates/folders/single_paragraph_from_chunk_descriptions.txt"
+                )
+            ).resolve()
+        )
+        .append(GENERAL_STE_STYLE_INSTRUCTION)
+        .into_str(sep="\n\n")
     )
-    human_prompt = data
-    return llm.generate_response(system_prompt, human_prompt)
+    user_prompt = (
+        Prompt.empty()
+        .append(NO_RESTATEMENT_STYLE_INSTRUCTION)
+        .append(RawPromptComponent.from_raw_str(data).resolve())
+        .into_str(sep="\n\n")
+    )
+    return llm.generate_response(system_prompt, user_prompt)
 
 
 def _return_with_simple_message(message: str, folder_node: LiteNode) -> dict[str, any]:
@@ -220,7 +305,7 @@ def comprehend_folder_top_down(
                     res = future.result()
                     if res is not None:
                         print(
-                            f"Processed {idx}/{len(list_chunks)-1} initial chunks for folder `{folder_name}`"
+                            f"Processed {idx}/{len(list_chunks) - 1} initial chunks for folder `{folder_name}`"
                         )
                         results.append((futures[future], res))
                 chunk_detailed_descriptions: list[str] = [
@@ -267,7 +352,7 @@ def comprehend_folder_top_down(
                             res = future.result()
                             if res is not None:
                                 print(
-                                    f"Processed {idx}/{num_chunks-1} chunks for folder `{folder_name}` "
+                                    f"Processed {idx}/{num_chunks - 1} chunks for folder `{folder_name}` "
                                     f"in compression iteration {compression_idx}"
                                 )
                                 results.append((futures[future], res))
@@ -388,6 +473,7 @@ def comprehend_folder_top_down(
             raise ValueError(
                 f"Unexpected value `{aggregation_state}` for `aggregation_state` for folder processing"
             )
+    is_root = node.kind == NodeKind.ROOT_FOLDER
     if use_async:
         with FastShutdownThreadPoolExecutor(max_workers=max_workers) as executor:
             single_sentence_future = executor.submit(
@@ -396,6 +482,7 @@ def comprehend_folder_top_down(
                 folder_name,
                 codebase_name,
                 data,
+                is_root=is_root,
             )
             single_paragraph_future = executor.submit(
                 single_paragraph_fn,
@@ -416,6 +503,7 @@ def comprehend_folder_top_down(
             folder_name=folder_name,
             codebase_name=codebase_name,
             data=data,
+            is_root=is_root,
         )
         single_paragraph = single_paragraph_fn(
             llm=llm,

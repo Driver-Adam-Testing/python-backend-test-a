@@ -263,14 +263,30 @@ def toplevel_single_sentence_from_long_descriptions(
 def toplevel_single_paragraph_from_long_descriptions(
     llm: ChatOpenAI, codebase_name: str, data: str
 ) -> str:
-    system_prompt = get_prompt_template(
-        PARENT_PATH
-        / "prompt_templates/toplevel/single_paragraph_from_long_descriptions.txt"
+    system_prompt = (
+        Prompt.empty()
+        .append(
+            RawPromptComponent.from_raw_str(
+                get_prompt_template(
+                    PARENT_PATH
+                    / "prompt_templates/toplevel/single_paragraph_from_long_descriptions.txt"
+                )
+            ).resolve()
+        )
+        .append(GENERAL_STE_STYLE_INSTRUCTION)
+        .into_str(sep="\n\n")
     )
-    human_prompt = ""
-    human_prompt += f"Codebase name: {codebase_name}\n\n"
-    human_prompt += data
-    return llm.generate_response(system_prompt, human_prompt)
+    user_prompt = (
+        Prompt.empty()
+        .append(NO_RESTATEMENT_STYLE_INSTRUCTION)
+        .append(
+            RawPromptComponent.from_raw_str(
+                f"Codebase name: {codebase_name}\n\n{data}"
+            ).resolve()
+        )
+        .into_str(sep="\n\n")
+    )
+    return llm.generate_response(system_prompt, user_prompt)
 
 
 def comprehend_codebase_top_down(

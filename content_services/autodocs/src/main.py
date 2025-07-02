@@ -162,6 +162,8 @@ async def run_autodoc(
                     )
             case _:
                 raise ValueError(f"Unsupported config kind: {config_kind}")
+
+        scope.preamble = config.scope.preamble
         config.scope = scope
         print(config.scope)
 
@@ -297,6 +299,7 @@ async def run_autodoc_cli(toml_content: str, page_node_id: str) -> None:
             f.write(toml_content)
 
         config = AutoDocCfg.from_file(toml_file=config_file)
+        scope.preamble = config.scope.preamble
         config.scope = scope
 
         init_state = await AutoDocInitState.from_cfg(

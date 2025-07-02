@@ -11,6 +11,7 @@ from enum import IntEnum, StrEnum
 from graphlib import TopologicalSorter
 from pathlib import Path
 from typing import Any, Self
+from uuid import UUID
 
 import boto3
 import openai
@@ -2644,6 +2645,19 @@ async def main(args: argparse.Namespace) -> None:
         if not args.quiet:
             console = Console()
             console.print(Markdown(doc))
+    elif args.remote:
+        import modal
+
+        run_autodoc_cli = modal.Function.from_name(
+            app_name="autodocs", name="run_autodoc_cli", environment_name=args.env
+        )
+        with open(args.config) as f:
+            toml_content = f.read()
+        doc = run_autodoc_cli.remote(
+            toml_content=toml_content, page_node_id=UUID(args.page_id)
+        )
+        with open(args.output, "w") as f:
+            f.write(doc)
     else:
         pass
 
@@ -2672,6 +2686,12 @@ if __name__ == "__main__":
         metavar="TOML FILE",
         type=str,
     )
+    mutex_group.add_argument(
+        "--remote",
+        help="execute remotely with Modal",
+        action="store_true",
+    )
+
     parser.add_argument(
         "-q",
         "--quiet",
@@ -2679,5 +2699,28 @@ if __name__ == "__main__":
         action="store_true",
     )
 
+    parser.add_argument(
+        "--env",
+        help="execution environment (required for --remote)",
+        choices=["dev", "prod"],
+        type=str,
+    )
+    parser.add_argument(
+        "--config",
+        help="path to configuration file (required for --remote)",
+        type=str,
+    )
+    parser.add_argument(
+        "--page-id",
+        help="page ID (required for --remote)",
+        type=str,
+    )
+    parser.add_argument(
+        "--output",
+        help="output document path (required for --remote)",
+        type=str,
+    )
+
     args = parser.parse_args()
+
     asyncio.run(main(args))

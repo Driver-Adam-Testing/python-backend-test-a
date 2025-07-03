@@ -9,10 +9,10 @@ from utils.io import get_prompt_template
 from utils.models import ChatOpenAI
 from utils.prompts import (
     GENERAL_STE_STYLE_INSTRUCTION,
-    NO_RESTATEMENT_STYLE_INSTRUCTION,
+    NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES,
     TERSE_TWITTER_SINGLE_SENTENCE_STYLE_INSTRUCTION,
+    Component,
     Prompt,
-    RawPromptComponent,
 )
 from utils.threadpool import FastShutdownThreadPoolExecutor
 
@@ -71,15 +71,15 @@ def folder_single_sentence_from_child_list(
     system_prompt = (
         Prompt.empty()
         .append(
-            RawPromptComponent.from_raw_str(
-                get_prompt_template(
+            Component(
+                string=get_prompt_template(
                     PARENT_PATH
                     / "prompt_templates/folders/single_sentence_from_child_list.txt"
                 )
-            ).resolve()
+            )
         )
         .append(GENERAL_STE_STYLE_INSTRUCTION)
-        .into_str(sep="\n\n")
+        .into_str()
     )
 
     user_prompt_structured = Prompt.empty()
@@ -87,19 +87,17 @@ def folder_single_sentence_from_child_list(
         root_specialization = """
 This folder is the root of an entire codebase. As such, write your single sentence description to concisely summarize the purpose and contents of the codebaes as a whole.
 """
-        user_prompt_structured.append(
-            RawPromptComponent.from_raw_str(root_specialization).resolve()
-        )
+        user_prompt_structured.append(Component(string=root_specialization))
 
-    user_prompt_structured.append(NO_RESTATEMENT_STYLE_INSTRUCTION).append(
+    user_prompt_structured.append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES).append(
         TERSE_TWITTER_SINGLE_SENTENCE_STYLE_INSTRUCTION
     ).append(
-        RawPromptComponent.from_raw_str(
-            f"Folder `{folder_name}` in codebase `{codebase_name}` child content:\n\n{data}"
-        ).resolve()
+        Component(
+            string=f"Folder `{folder_name}` in codebase `{codebase_name}` child content:\n\n{data}"
+        )
     )
 
-    user_prompt = user_prompt_structured.into_str(sep="\n\n")
+    user_prompt = user_prompt_structured.into_str()
 
     return llm.generate_response(system_prompt, user_prompt)
 
@@ -113,25 +111,25 @@ def folder_single_paragraph_from_child_list(
     system_prompt = (
         Prompt.empty()
         .append(
-            RawPromptComponent.from_raw_str(
-                get_prompt_template(
+            Component(
+                string=get_prompt_template(
                     PARENT_PATH
                     / "prompt_templates/folders/single_paragraph_from_child_list.txt"
                 )
-            ).resolve()
+            )
         )
         .append(GENERAL_STE_STYLE_INSTRUCTION)
-        .into_str(sep="\n\n")
+        .into_str()
     )
     user_prompt = (
         Prompt.empty()
-        .append(NO_RESTATEMENT_STYLE_INSTRUCTION)
+        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
         .append(
-            RawPromptComponent.from_raw_str(
-                f"Folder `{folder_name}` in codebase `{codebase_name}` child content:\n\n{data}"
-            ).resolve()
+            Component(
+                string=f"Folder `{folder_name}` in codebase `{codebase_name}` child content:\n\n{data}"
+            )
         )
-        .into_str("\n\n")
+        .into_str()
     )
 
     return llm.generate_response(system_prompt, user_prompt)
@@ -147,22 +145,22 @@ def folder_single_sentence_from_chunk_descriptions(
     system_prompt = (
         Prompt.empty()
         .append(
-            RawPromptComponent.from_raw_str(
-                get_prompt_template(
+            Component(
+                string=get_prompt_template(
                     PARENT_PATH
                     / "prompt_templates/folders/single_sentence_from_chunk_descriptions.txt"
                 )
-            ).resolve()
+            )
         )
         .append(GENERAL_STE_STYLE_INSTRUCTION)
-        .into_str(sep="\n\n")
+        .into_str()
     )
     user_prompt = (
         Prompt.empty()
-        .append(NO_RESTATEMENT_STYLE_INSTRUCTION)
+        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
         .append(TERSE_TWITTER_SINGLE_SENTENCE_STYLE_INSTRUCTION)
-        .append(RawPromptComponent.from_raw_str(data).resolve())
-        .into_str(sep="\n\n")
+        .append(Component(string=data))
+        .into_str()
     )
     return llm.generate_response(system_prompt, user_prompt)
 
@@ -176,21 +174,21 @@ def folder_single_paragraph_from_chunk_descriptions(
     system_prompt = (
         Prompt.empty()
         .append(
-            RawPromptComponent.from_raw_str(
-                get_prompt_template(
+            Component(
+                string=get_prompt_template(
                     PARENT_PATH
                     / "prompt_templates/folders/single_paragraph_from_chunk_descriptions.txt"
                 )
-            ).resolve()
+            )
         )
         .append(GENERAL_STE_STYLE_INSTRUCTION)
-        .into_str(sep="\n\n")
+        .into_str()
     )
     user_prompt = (
         Prompt.empty()
-        .append(NO_RESTATEMENT_STYLE_INSTRUCTION)
-        .append(RawPromptComponent.from_raw_str(data).resolve())
-        .into_str(sep="\n\n")
+        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
+        .append(Component(string=data))
+        .into_str()
     )
     return llm.generate_response(system_prompt, user_prompt)
 

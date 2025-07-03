@@ -11,10 +11,10 @@ from utils.llm import chunk_str
 from utils.models import ChatOpenAI
 from utils.prompts import (
     GENERAL_STE_STYLE_INSTRUCTION,
-    NO_RESTATEMENT_STYLE_INSTRUCTION,
+    NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES,
     TERSE_TWITTER_SINGLE_SENTENCE_STYLE_INSTRUCTION,
+    Component,
     Prompt,
-    RawPromptComponent,
 )
 from utils.threadpool import FastShutdownThreadPoolExecutor
 
@@ -29,14 +29,14 @@ def toplevel_chunk_description(
     system_prompt = (
         Prompt.empty()
         .append(
-            RawPromptComponent.from_raw_str(
-                get_prompt_template(
+            Component(
+                string=get_prompt_template(
                     PARENT_PATH / "prompt_templates/toplevel/chunk_description.txt"
                 )
-            ).resolve()
+            )
         )
         .append(GENERAL_STE_STYLE_INSTRUCTION)
-        .into_str(sep="\n\n")
+        .into_str()
     )
     user_prompt = f"Chunk of content descriptions for codebase `{codebase_name}`:\n\n{description_chunk}"
     return llm.generate_response(system_prompt, user_prompt)
@@ -50,14 +50,14 @@ def toplevel_compress_chunks(
     system_prompt = (
         Prompt.empty()
         .append(
-            RawPromptComponent.from_raw_str(
-                get_prompt_template(
+            Component(
+                string=get_prompt_template(
                     PARENT_PATH / "prompt_templates/toplevel/compress_chunks.txt"
                 )
-            ).resolve()
+            )
         )
         .append(GENERAL_STE_STYLE_INSTRUCTION)
-        .into_str(sep="\n\n")
+        .into_str()
     )
     user_prompt = f"Chunk of module subset descriptions for codebase `{codebase_name}`:\n\n{description_chunk}"
     return llm.generate_response(system_prompt, user_prompt)
@@ -71,15 +71,15 @@ def toplevel_long_from_chunk_descriptions(
     system_prompt = (
         Prompt.empty()
         .append(
-            RawPromptComponent.from_raw_str(
-                get_prompt_template(
+            Component(
+                string=get_prompt_template(
                     PARENT_PATH
                     / "prompt_templates/toplevel/long_from_chunk_descriptions.txt"
                 )
-            ).resolve()
+            )
         )
         .append(GENERAL_STE_STYLE_INSTRUCTION)
-        .into_str(sep="\n\n")
+        .into_str()
     )
     user_prompt = (
         f"Chunk of module subset descriptions for codebase {codebase_name}:\n\n{data}"
@@ -95,26 +95,26 @@ def toplevel_terse_sentence_from_chunk_descriptions(
     system_prompt = (
         Prompt.empty()
         .append(
-            RawPromptComponent.from_raw_str(
-                get_prompt_template(
+            Component(
+                string=get_prompt_template(
                     PARENT_PATH
                     / "prompt_templates/toplevel/terse_sentence_from_chunk_descriptions.txt"
                 )
-            ).resolve()
+            )
         )
         .append(GENERAL_STE_STYLE_INSTRUCTION)
-        .into_str(sep="\n\n")
+        .into_str()
     )
     user_prompt = (
         Prompt.empty()
         .append(
-            RawPromptComponent.from_raw_str(
-                f"Chunk of module subset descriptions for codebase {codebase_name}\n\n{data}"
-            ).resolve()
+            Component(
+                string=f"Chunk of module subset descriptions for codebase {codebase_name}\n\n{data}"
+            )
         )
-        .append(NO_RESTATEMENT_STYLE_INSTRUCTION)
+        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
         .append(TERSE_TWITTER_SINGLE_SENTENCE_STYLE_INSTRUCTION)
-        .into_str("\n\n")
+        .into_str()
     )
     return llm.generate_response(system_prompt, user_prompt)
 
@@ -127,25 +127,25 @@ def toplevel_single_sentence_from_chunk_descriptions(
     system_prompt = (
         Prompt.empty()
         .append(
-            RawPromptComponent.from_raw_str(
-                get_prompt_template(
+            Component(
+                string=get_prompt_template(
                     PARENT_PATH
                     / "prompt_templates/toplevel/single_sentence_from_chunk_descriptions.txt"
                 )
-            ).resolve()
+            )
         )
         .append(GENERAL_STE_STYLE_INSTRUCTION)
-        .into_str(sep="\n\n")
+        .into_str()
     )
     user_prompt = (
         Prompt.empty()
         .append(
-            RawPromptComponent.from_raw_str(
-                f"Chunk of module subset descriptions for codebase {codebase_name}\n\n{data}"
-            ).resolve()
+            Component(
+                string=f"Chunk of module subset descriptions for codebase {codebase_name}\n\n{data}"
+            )
         )
-        .append(NO_RESTATEMENT_STYLE_INSTRUCTION)
-        .into_str(sep="\n\n")
+        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
+        .into_str()
     )
     return llm.generate_response(system_prompt, user_prompt)
 
@@ -158,25 +158,25 @@ def toplevel_single_paragraph_from_chunk_descriptions(
     system_prompt = (
         Prompt.empty()
         .append(
-            RawPromptComponent.from_raw_str(
-                get_prompt_template(
+            Component(
+                string=get_prompt_template(
                     PARENT_PATH
                     / "prompt_templates/toplevel/single_paragraph_from_chunk_descriptions.txt"
                 )
-            ).resolve()
+            )
         )
         .append(GENERAL_STE_STYLE_INSTRUCTION)
-        .into_str(sep="\n\n")
+        .into_str()
     )
     user_prompt = (
         Prompt.empty()
         .append(
-            RawPromptComponent.from_raw_str(
-                f"Chunk of module subset descriptions for codebase {codebase_name}\n\n{data}"
-            ).resolve()
+            Component(
+                string=f"Chunk of module subset descriptions for codebase {codebase_name}\n\n{data}"
+            )
         )
-        .append(NO_RESTATEMENT_STYLE_INSTRUCTION)
-        .into_str(sep="\n\n")
+        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
+        .into_str()
     )
     return llm.generate_response(system_prompt, user_prompt)
 
@@ -189,15 +189,15 @@ def toplevel_long_from_long_descriptions(
     system_prompt = (
         Prompt.empty()
         .append(
-            RawPromptComponent.from_raw_str(
-                get_prompt_template(
+            Component(
+                string=get_prompt_template(
                     PARENT_PATH
                     / "prompt_templates/toplevel/long_from_long_descriptions.txt"
                 )
-            ).resolve()
+            )
         )
         .append(GENERAL_STE_STYLE_INSTRUCTION)
-        .into_str(sep="\n\n")
+        .into_str()
     )
     user_prompt = f"Codebase name: {codebase_name}\n\n{data}"
     return llm.generate_response(system_prompt, user_prompt)
@@ -209,24 +209,22 @@ def toplevel_terse_sentence_from_long_descriptions(
     system_prompt = (
         Prompt.empty()
         .append(
-            RawPromptComponent.from_raw_str(
-                get_prompt_template(
+            Component(
+                string=get_prompt_template(
                     PARENT_PATH
                     / "prompt_templates/toplevel/terse_sentence_from_long_descriptions.txt"
                 )
-            ).resolve()
+            )
         )
         .append(GENERAL_STE_STYLE_INSTRUCTION)
-        .into_str(sep="\n\n")
+        .into_str()
     )
     user_prompt = (
         Prompt.empty()
-        .append(NO_RESTATEMENT_STYLE_INSTRUCTION)
+        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
         .append(TERSE_TWITTER_SINGLE_SENTENCE_STYLE_INSTRUCTION)
-        .append(
-            RawPromptComponent.from_raw_str(f"Codebase name: {codebase_name}\n\n{data}")
-        )
-        .into_str(sep="\n\n")
+        .append(Component(string=f"Codebase name: {codebase_name}\n\n{data}"))
+        .into_str()
     )
     return llm.generate_response(system_prompt, user_prompt)
 
@@ -237,25 +235,21 @@ def toplevel_single_sentence_from_long_descriptions(
     system_prompt = (
         Prompt.empty()
         .append(
-            RawPromptComponent.from_raw_str(
-                get_prompt_template(
+            Component(
+                string=get_prompt_template(
                     PARENT_PATH
                     / "prompt_templates/toplevel/single_sentence_from_long_descriptions.txt"
                 )
-            ).resolve()
+            )
         )
         .append(GENERAL_STE_STYLE_INSTRUCTION)
-        .into_str(sep="\n\n")
+        .into_str()
     )
     user_prompt = (
         Prompt.empty()
-        .append(NO_RESTATEMENT_STYLE_INSTRUCTION)
-        .append(
-            RawPromptComponent.from_raw_str(
-                f"Codebase name: {codebase_name}\n\n{data}"
-            ).resolve()
-        )
-        .into_str(sep="\n\n")
+        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
+        .append(Component(string=f"Codebase name: {codebase_name}\n\n{data}"))
+        .into_str()
     )
     return llm.generate_response(system_prompt, user_prompt)
 
@@ -266,25 +260,21 @@ def toplevel_single_paragraph_from_long_descriptions(
     system_prompt = (
         Prompt.empty()
         .append(
-            RawPromptComponent.from_raw_str(
-                get_prompt_template(
+            Component(
+                string=get_prompt_template(
                     PARENT_PATH
                     / "prompt_templates/toplevel/single_paragraph_from_long_descriptions.txt"
                 )
-            ).resolve()
+            )
         )
         .append(GENERAL_STE_STYLE_INSTRUCTION)
-        .into_str(sep="\n\n")
+        .into_str()
     )
     user_prompt = (
         Prompt.empty()
-        .append(NO_RESTATEMENT_STYLE_INSTRUCTION)
-        .append(
-            RawPromptComponent.from_raw_str(
-                f"Codebase name: {codebase_name}\n\n{data}"
-            ).resolve()
-        )
-        .into_str(sep="\n\n")
+        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
+        .append(Component(string=f"Codebase name: {codebase_name}\n\n{data}"))
+        .into_str()
     )
     return llm.generate_response(system_prompt, user_prompt)
 

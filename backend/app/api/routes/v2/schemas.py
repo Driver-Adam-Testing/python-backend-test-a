@@ -82,6 +82,7 @@ class NodeMetaRead(NodeRead):
     misc_metadata: dict | None
     total_files: int | None
     depth: int
+    contents: list["ContentRead"] | None
 
     class Config:
         from_attributes = True

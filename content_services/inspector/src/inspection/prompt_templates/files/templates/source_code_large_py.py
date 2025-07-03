@@ -10,13 +10,17 @@ from utils.lang_specialization.python import (
     PyVariableCollection,
     PyVariableRawSymbolCollection,
 )
+from utils.prompts import GENERAL_STE_STYLE_INSTRUCTION, Component, Prompt
 from utils.templates import S
 
 SOURCE_CODE_LARGE_TEMPLATE_PY = [
     (
         S.SINGLE_PROMPT_TEXT,
         "# Purpose",
-        SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_PY,
+        Prompt.empty()
+        .append(Component(string=SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_PY))
+        .append(GENERAL_STE_STYLE_INSTRUCTION)
+        .into_str(),
         SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT,
     ),
     (

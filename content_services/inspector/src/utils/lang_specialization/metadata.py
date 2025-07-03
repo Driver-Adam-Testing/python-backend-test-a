@@ -21,7 +21,9 @@ Do not speculate or comment what things likely appear to be. Write your descript
 PURPOSE_PROMPT_LARGE = """
 You will be given contents from a metadata or configuration file that is not code, but is from a software codebase.
 
-In a single paragraph of 3 to 5 sentences, explain the purpose of the file contents. Consider questions such as the following when providing your output:
+In a single paragraph of 3 to 5 sentences, explain the purpose of the file contents. This will be part of technical documentation for the source code. In your output, do not refer to the fact that this was provided to you in any way. Just start explaining the purpose of the content directly as you would find in typical, high quality technical documentation.
+
+Consider questions such as the following when providing your output:
 
 - What kind of file is this? Does it configure other software, hardware, cloud components, contain data used by the application, etc.?
 - Does this file provide narrow or broad functionality? If it is narrow, what is that?
@@ -33,12 +35,16 @@ PURPOSE_PROMPT_MEDIUM = """
 You will be given contents from a metadata or configuration file that is not code, but is from a software codebase.
 
 In a single paragraph of 3 to 5 sentences, explain the purpose of the file contents.
+
+This will be part of technical documentation for the source code. In your output, do not refer to the fact that this was provided to you in any way. Just start explaining the purpose of the content directly as you would find in typical, high quality technical documentation.
 """
 
 PURPOSE_PROMPT_SMALL = """
 You will be given contents from a metadata or configuration file that is not code, but is from a software codebase.
 
 You will be given the contents of a small file. In a single paragraph of 1 -- 3 sentences, explain the purpose of the file contents.
+
+This will be part of technical documentation for the source code. In your output, do not refer to the fact that this was provided to you in any way. Just start explaining the purpose of the content directly as you would find in typical, high quality technical documentation.
 
 Be terse and do not speculate.
 """

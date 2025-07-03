@@ -60,15 +60,15 @@ NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES = Component(
     string="""
 In your output do not restate the identify of the component you are documenting technically.
 
-For example, do not do the following:
+Here are some examples to understand what is meant. These are just examples, you do not need to use the particular words here unless it is relevant to how you would describe the content.
 - "The <name> codebase provides ..."
-- "The <file> in the <codebase_name> codebase provies ..."
-- "The <folder> in the <codebase_name> contains ..."
+- "The <file> in the <codebase_name> codebase implements X, Y, Z data structures ..."
+- "The <folder> in the <codebase_name> contains tools for ..."
 
-Instead, you would do the following:
+Instead, you should be more direct such as providing just:
 - "Provides ..."
-- "Provides ..."
-- "Contains ..."
+- "Implements X, Y, Z data structures ..."
+- "Tools for ..."
 """
 )
 
@@ -77,14 +77,14 @@ NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS = Component(
     string="""
 In your output do not restate the identify of the component you are documenting technically.
 
-For example, do not do the following:
-- "The `<method_name>` method provides ..."
-- "The `<function_name>` function waits... "
+Here are some examples to understand what is meant. These are just examples, you do not need to use the particular words here unless it is relevant to how you would describe the content.
+- "The `<method_name>` method transforms/provides/implements ..."
+- "The `<function_name>` function processes... "
 - "The `<class_name>` class represents ..."
 
-Instead, you would do the following:
-- "Provides ..."
-- "Waits ..."
+Instead, you should be more direct such as providing just:
+- "Transforms/provides/implements ..."
+- "Processes ..."
 - "Represents ..."
 """
 )
@@ -93,5 +93,17 @@ Instead, you would do the following:
 TERSE_TWITTER_SINGLE_SENTENCE_STYLE_INSTRUCTION = Component(
     string="""
 Your output is just one extremely terse single sentence. It is intended to fit on a single line in various media, therefore it must be no longer than 100 characters.
+"""
+)
+
+
+NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_CODE_PURPOSE = Component(
+    string="""This will be part of technical documentation for the source code. In your output, do not refer to the fact that this code was provided to you in any way. For example, **do not** start off with something like "The provided module..." Just start explaining the purpose of the code directly as you would find in typical, high quality technical documentation for the relevant language. So you might start out with "This module ..." or even better, no reference to "this module" is needed so you immediately start describing the purpose/functionality. As another example, prefer language like "This code is a test suite for ..." instead of "The code is a test suite for ..." which is more natural for documentation explicitly associated with a particular file, which is what you are building.
+"""
+)
+
+
+NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_METADATA_PURPOSE = Component(
+    string="""This will be part of technical documentation for the source metadata content. In your output, do not refer to the fact that this content was provided to you in any way. For example, **do not** start off with something like "The provided configuration file..." Just start explaining the purpose of the content directly as you would find in typical, high quality technical documentation. So you might start out with "This configuration file ..." or even better, no reference to "this configuration file" is needed so you immediately start describing the purpose/functionality. As another example, prefer language like "This configuration file sets ..." instead of "The configuration file sets ..." which is more natural for documentation explicitly associated with a particular file, which is what you are building.
 """
 )

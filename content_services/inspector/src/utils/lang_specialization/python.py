@@ -56,7 +56,7 @@ You specialize in effectively describing small and short source code files. Your
 """
 
 SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT = """
-You will be given the content of a source code file. In 1 or 2 paragraphs, explain the purpose of the file. This will be part of technical documentation for the source code. In your output, do not refer to the fact that this code was provided to you in any way. Just start explaining the purpose of the code directly as you would find in typical, high quality technical documentation.
+You will be given the content of a source code file. In 1 or 2 paragraphs, explain the purpose of the file.
 
 When writing your paragraphs, do not use speculative language.
 
@@ -70,7 +70,9 @@ When writing your paragraphs, consider questions like the following. You do not 
 """
 
 SOURCE_CODE_SMALL_PURPOSE_USER_PROMPT = """
-You will be given the content of a source code file. In a single paragraph of 3 to 5 sentences, explain the purpose of the file. Consider questions such as the following when providing your output:
+You will be given the content of a source code file. In a single paragraph of 3 to 5 sentences, explain the purpose of the file.
+
+Consider questions such as the following when providing your output:
 
 - Does this code provide narrow or broad functionality?
 - What kind of code is this? For example, is this code a short script, a collection of global variables or configuration variables, etc.?

@@ -3,19 +3,34 @@ from utils.lang_specialization.metadata import (
     METADATA_MEDIUM_AND_LARGE_SYSTEM_PROMPT,
     PURPOSE_PROMPT_LARGE,
 )
+from utils.prompts import (
+    GENERAL_STE_STYLE_INSTRUCTION,
+    NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_METADATA_PURPOSE,
+    Component,
+    Prompt,
+)
 from utils.templates import S
 
 METADATA_LARGE_TEMPLATE = [
     (
         S.SINGLE_PROMPT_TEXT,
         "# Purpose",
-        METADATA_MEDIUM_AND_LARGE_SYSTEM_PROMPT,
-        PURPOSE_PROMPT_LARGE,
+        Prompt.empty()
+        .append(Component(string=METADATA_MEDIUM_AND_LARGE_SYSTEM_PROMPT))
+        .append(GENERAL_STE_STYLE_INSTRUCTION)
+        .into_str(),
+        Prompt.empty()
+        .append(Component(string=PURPOSE_PROMPT_LARGE))
+        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_METADATA_PURPOSE)
+        .into_str(),
     ),
     (
         S.SINGLE_PROMPT_TEXT,
         "# Content Summary",
-        METADATA_MEDIUM_AND_LARGE_SYSTEM_PROMPT,
+        Prompt.empty()
+        .append(Component(string=METADATA_MEDIUM_AND_LARGE_SYSTEM_PROMPT))
+        .append(GENERAL_STE_STYLE_INSTRUCTION)
+        .into_str(),
         CONTENT_SUMMARY_PROMPT,
     ),
 ]

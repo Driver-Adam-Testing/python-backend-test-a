@@ -176,7 +176,7 @@ VARIABLES_NONE_CONTENT = "\n---\nNo global variables defined in this file."
 # Ir Data Classes
 class CppVariableData(VariableData):
     @classmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         return VARIABLES_FOUND_SYSTEM_PROMPT_JSON
 
     @classmethod
@@ -205,7 +205,7 @@ class CppVariableCollection(IrCollection):
 
 class CppFnData(FnData):
     @classmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         return FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON
 
     @classmethod
@@ -265,7 +265,7 @@ class CppDataStructureData(IrData):
         )
 
     @classmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         return DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON
 
     @classmethod

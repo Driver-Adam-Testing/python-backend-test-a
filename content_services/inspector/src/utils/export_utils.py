@@ -12,6 +12,7 @@ EXTENSION_TO_DELIMITER = {
     ".hxx": "::",
     ".py": ".",
     ".java": ".",
+    ".cs": ".",
     ".ts": ".",
     ".js": ".",
     ".tsx": ".",
@@ -57,7 +58,8 @@ def replace_driver_compatible_links_with_markdown_links(
     # BUT the links are constructed as f"({file_path}#{symbol_kind}:{fqn})" where fqn can include things like the
     # namespace, etc.
     # This means that the auto-generated anchor tags in Github flavored markdown do not match the FQN and we must account for this.
-    extract_link_pattern = r"\[[^\]]+\]\(([^)]+)\)"
+    # extract_link_pattern = r"\[[^\]]+\]\(<([^)]+)>\)"
+    extract_link_pattern = r"\[[^\]]+\]\(\<?([^>)]+)\>?\)"
     extracted_link = re.findall(extract_link_pattern, text)
     if not extracted_link:
         return text

@@ -252,7 +252,7 @@ Variable to document:
 # IR data classes
 class PyVariableData(VariableData):
     @classmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         return (
             Prompt.empty()
             .append(Component(string=VARIABLES_FOUND_SYSTEM_PROMPT_JSON))
@@ -308,7 +308,7 @@ class PyFnData(IrData):
         )
 
     @classmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         return (
             Prompt.empty()
             .append(Component(string=FUNCTIONS_OR_METHODS_FOUND_SYSTEM_PROMPT_JSON))
@@ -383,7 +383,7 @@ class PyClassData(IrData):
         )
 
     @classmethod
-    def system_prompt(cls) -> str:
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
         return (
             Prompt.empty()
             .append(Component(string=CLASSES_FOUND_SYSTEM_PROMPT_JSON))

@@ -60,7 +60,7 @@ generate_image = (
             "tiktoken",
         ]
     )
-    .add_local_python_source("database", "shared", "utils", copy=True)
+    .add_local_python_source("database", "shared", "utils", "common", copy=True)
 )
 
 

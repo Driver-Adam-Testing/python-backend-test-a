@@ -400,7 +400,7 @@ class IrData(BaseModel, abc.ABC):
             # add link to source code
             path_part = self._reified_symbol.raw.file_path
             line_num_part = f"L{self._reified_symbol.raw.start_line}-L{self._reified_symbol.raw.end_line}"
-            link = f"[source 🔗](<{path_part}#{line_num_part}>)\n\n"
+            link = f"[🔗 View Source](<{path_part}#{line_num_part}>)\n\n"
             output += link
         for label_name in self.__annotations__:
             label_content = getattr(self, label_name, None)

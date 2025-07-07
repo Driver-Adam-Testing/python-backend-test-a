@@ -89,14 +89,17 @@ class AutoToml:
             node_ids=node_ids, enable_auto_scaling=enable_auto_scaling
         )
 
-    async def generate(self, document_goal: str) -> str:
+    async def generate(self, document_goal: str, user_context: str = "") -> str:
         logger.info(f"Generating TOML from document goal:\n\n{document_goal}\n")
+
+        logger.info(f"Additional user context:\n\n{user_context}\n")
 
         logger.info(
             f"Gathering summaries from {len(self.code_contents)} source files/directories and {len(self.pdf_contents)} PDF pages...\n"
         )
         source_summary = await self._gather_summaries(
             document_goal=document_goal,
+            user_context=user_context,
             source_contents=itertools.chain(self.code_contents, self.pdf_contents),
         )
 
@@ -104,7 +107,9 @@ class AutoToml:
 
         system_prompt = generate_system_prompt()
         user_prompt = generate_user_prompt(
-            document_goal=document_goal, source_summary=source_summary
+            document_goal=document_goal,
+            user_context=user_context,
+            source_summary=source_summary,
         )
 
         logger.info("Generating new TOML sections...\n")
@@ -117,8 +122,10 @@ class AutoToml:
 
         return output
 
-    async def append(self, user_toml: str) -> str:
+    async def append(self, user_toml: str, user_context: str = "") -> str:
         logger.debug(f"Appending user supplied TOML:\n\n{user_toml}\n")
+
+        logger.info(f"Additional user context:\n\n{user_context}\n")
 
         user_toml_parsed = toml.loads(user_toml)
         toml_sections = self._isolate_sections(user_toml_parsed)
@@ -129,16 +136,16 @@ class AutoToml:
         )
         source_summary = await self._gather_summaries(
             document_goal=document_goal,
+            user_context=user_context,
             source_contents=itertools.chain(self.code_contents, self.pdf_contents),
         )
 
         logger.debug(f"{source_summary}\n")
 
-        system_prompt = append_system_prompt(
-            user_toml=toml_sections,
-        )
+        system_prompt = append_system_prompt()
         user_prompt = append_user_prompt(
             document_goal=document_goal,
+            user_context=user_context,
             source_summary=source_summary,
             user_toml=toml_sections,
         )
@@ -155,7 +162,10 @@ class AutoToml:
         return output
 
     async def _gather_summaries(
-        self, document_goal: str, source_contents: Iterable[dict[str, str]]
+        self,
+        document_goal: str,
+        user_context: str,
+        source_contents: Iterable[dict[str, str]],
     ) -> str:
         results = []
 
@@ -170,7 +180,9 @@ class AutoToml:
                         path=path,
                         system_prompt=summary_system_prompt(),
                         user_prompt=summary_user_prompt(
-                            document_goal=document_goal, source_content=content
+                            document_goal=document_goal,
+                            user_context=user_context,
+                            source_content=content,
                         ),
                     )
                 )
@@ -207,15 +219,36 @@ class AutoToml:
                 logger.exception(f"{e!r} while generating summary for:\n{path}")
                 raise
 
-    def _isolate_sections(self, toml_content: dict[str:Any]) -> str:
+    def _isolate_sections(self, toml_content: dict[str, Any]) -> str:
         KEYS_TO_KEEP = ["title", "level", "instruction", "content_structure"]
 
-        # TODO: apply substitutions
+        if "substitutions" in toml_content:
+            mapping = {
+                item["key"]: item["value"] for item in toml_content["substitutions"]
+            }
+        else:
+            mapping = None
 
         sections = toml_content.get("sections", [])
         for section in sections:
-            keys = list(section.keys())
-            for key in keys:
+            if mapping:
+                if isinstance(section.get("instruction"), str):
+                    try:
+                        section["instruction"] = section["instruction"].format_map(
+                            mapping
+                        )
+                    except KeyError as e:
+                        logger.warning(f"Warning: Missing substitution key {e}")
+
+                if isinstance(section.get("content_structure"), str):
+                    try:
+                        section["content_structure"] = section[
+                            "content_structure"
+                        ].format_map(mapping)
+                    except KeyError as e:
+                        logger.warning(f"Warning: Missing substitution key {e}")
+
+            for key in list(section.keys()):
                 if key not in KEYS_TO_KEEP:
                     section.pop(key, None)
 
@@ -581,7 +614,9 @@ class AutoToml:
         encoder = tiktoken.encoding_for_model(
             "gpt-4o" if cls.LLM_MODEL == "gpt-4.1" else cls.LLM_MODEL
         )
-        max_tokens = int((ChatOpenAI.get_token_limit(cls.LLM_MODEL) * 0.7) // scale_factor)
+        max_tokens = int(
+            (ChatOpenAI.get_token_limit(cls.LLM_MODEL) * 0.7) // scale_factor
+        )
 
         tokens = encoder.encode(text, disallowed_special=())
         if len(tokens) > max_tokens:

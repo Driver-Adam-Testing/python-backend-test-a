@@ -20,12 +20,14 @@ async def generate_command(args: argparse.Namespace) -> None:
                 node_ids=node_ids,
                 enable_auto_scaling=args.auto_scale,
                 document_goal=args.goal,
+                user_context=args.user_context,
             )
         else:
             result = auto_toml_modal.generate_from_page_id.remote(
                 page_id=args.page_id,
                 enable_auto_scaling=args.auto_scale,
                 document_goal=args.goal,
+                user_context=args.user_context,
             )
 
     else:
@@ -39,7 +41,7 @@ async def generate_command(args: argparse.Namespace) -> None:
                 page_id=UUID(args.page_id), enable_auto_scaling=args.auto_scale
             )
 
-        result = await auto_toml.generate(document_goal=args.goal)
+        result = await auto_toml.generate(document_goal=args.goal, user_context=args.user_context)
 
     with open(args.output, "w") as f:
         f.write(result)
@@ -62,12 +64,14 @@ async def append_command(args: argparse.Namespace) -> None:
                 node_ids=node_ids,
                 enable_auto_scaling=args.auto_scale,
                 user_toml=user_toml,
+                user_context=args.user_context,
             )
         else:
             result = auto_toml_modal.append_from_page_id.remote(
                 page_id=args.page_id,
                 enable_auto_scaling=args.auto_scale,
                 user_toml=user_toml,
+                user_context=args.user_context,
             )
     else:
         # Use local execution
@@ -81,7 +85,7 @@ async def append_command(args: argparse.Namespace) -> None:
                 page_id=UUID(args.page_id), enable_auto_scaling=args.auto_scale
             )
 
-        result = await auto_toml.append(user_toml=user_toml)
+        result = await auto_toml.append(user_toml=user_toml, user_context=args.user_context)
 
     with open(args.output, "w") as f:
         f.write(result)
@@ -113,6 +117,10 @@ def main() -> None:
         default="local",
         help="Execution environment: local (default), dev, or prod",
     )
+    generate_parser.add_argument(
+        "--user-context",
+        help="Additional context string to include when generating TOML",
+    )
 
     generate_source_group = generate_parser.add_mutually_exclusive_group(required=True)
     generate_source_group.add_argument(
@@ -139,6 +147,10 @@ def main() -> None:
         choices=["local", "dev", "prod"],
         default="local",
         help="Execution environment: local (default), dev, or prod",
+    )
+    append_parser.add_argument(
+        "--user-context",
+        help="Additional context string to include when appending to TOML",
     )
 
     append_source_group = append_parser.add_mutually_exclusive_group(required=True)

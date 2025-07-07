@@ -4,10 +4,11 @@ from uuid import UUID
 
 import boto3
 from botocore.exceptions import ClientError
-from database.models_v1 import InspectorRun
-from database.models_v2 import PrimaryAsset, PrimaryAssetTag, Version
+from database.models_v1 import DerivedContent, InspectorRun
+from database.models_v2 import Node, PrimaryAsset, PrimaryAssetTag, Version
+from database.models_v2_enums import ContentKind
 from fastapi import Body, HTTPException, Path, Request
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, with_loader_criteria
 from sqlmodel import func, select
 
 from app.api.auth import UserToken
@@ -57,6 +58,13 @@ def _list_primary_assets(
             ),
             selectinload(PrimaryAsset.most_recent_version).selectinload(
                 Version.creator
+            ),
+            selectinload(PrimaryAsset.most_recent_version)
+            .selectinload(Version.root_node)
+            .selectinload(Node.contents),
+            with_loader_criteria(
+                DerivedContent,
+                DerivedContent.content_kind == ContentKind.TOP_LEVEL_TERSE_SENTENCE,
             ),
         )
         .where(PrimaryAsset.organization_id == user.organization_id)

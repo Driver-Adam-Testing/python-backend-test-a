@@ -71,7 +71,7 @@ class LlmTool(LlmParseable, ABC):
 
         thread = threading.Thread(target=target)
         thread.start()
-        thread.join(timeout=25)
+        thread.join(timeout=120)
 
         if thread.is_alive():
             print(

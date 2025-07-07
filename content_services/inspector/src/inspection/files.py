@@ -6,6 +6,13 @@ from typing import Any, Self
 import modal
 import openai
 from pydantic import BaseModel, ValidationError
+from shared.prompts.structured_prompting import (
+    GENERAL_STE_STYLE_INSTRUCTION,
+    NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES,
+    TERSE_TWITTER_SINGLE_SENTENCE_STYLE_INSTRUCTION,
+    Component,
+    Prompt,
+)
 from utils.dag import LiteNode
 from utils.io import (
     get_prompt_template,
@@ -16,13 +23,6 @@ from utils.lang_specialization.symbol_common import (
     disambiguate_header,
 )
 from utils.models import ChatOpenAI
-from utils.prompts import (
-    GENERAL_STE_STYLE_INSTRUCTION,
-    NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES,
-    TERSE_TWITTER_SINGLE_SENTENCE_STYLE_INSTRUCTION,
-    Component,
-    Prompt,
-)
 from utils.templates import Template
 
 from inspection.prompt_templates.files.templates.metadata_large_default import (

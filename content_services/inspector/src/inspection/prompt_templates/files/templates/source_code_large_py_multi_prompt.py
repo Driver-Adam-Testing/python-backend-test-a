@@ -1,3 +1,10 @@
+from shared.prompts.structured_prompting import (
+    GENERAL_STE_STYLE_INSTRUCTION,
+    NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_CODE_PURPOSE,
+    USE_BACKTICKS_STYLE_INSTRUCTION,
+    Component,
+    Prompt,
+)
 from utils.lang_specialization.default_multi_context import (
     SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT_MULTI_CONTEXT,
     SOURCE_CODE_PURPOSE_FROM_CHUNKS,
@@ -12,13 +19,6 @@ from utils.lang_specialization.python import (
     PyImportRawSymbolCollection,
     PyVariableCollection,
     PyVariableRawSymbolCollection,
-)
-from utils.prompts import (
-    GENERAL_STE_STYLE_INSTRUCTION,
-    NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_CODE_PURPOSE,
-    USE_BACKTICKS_STYLE_INSTRUCTION,
-    Component,
-    Prompt,
 )
 from utils.templates import S
 

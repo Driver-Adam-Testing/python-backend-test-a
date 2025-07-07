@@ -2,6 +2,13 @@ import concurrent.futures
 from pathlib import Path
 from typing import Any
 
+from shared.prompts.structured_prompting import (
+    GENERAL_STE_STYLE_INSTRUCTION,
+    NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES,
+    TERSE_TWITTER_SINGLE_SENTENCE_STYLE_INSTRUCTION,
+    Component,
+    Prompt,
+)
 from tqdm import tqdm
 from utils.dag import LiteNode, NodeKind
 from utils.io import (
@@ -9,13 +16,6 @@ from utils.io import (
 )
 from utils.llm import chunk_str
 from utils.models import ChatOpenAI
-from utils.prompts import (
-    GENERAL_STE_STYLE_INSTRUCTION,
-    NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES,
-    TERSE_TWITTER_SINGLE_SENTENCE_STYLE_INSTRUCTION,
-    Component,
-    Prompt,
-)
 from utils.threadpool import FastShutdownThreadPoolExecutor
 
 PARENT_PATH = Path(__file__).parent

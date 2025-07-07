@@ -2,14 +2,14 @@ from pathlib import Path
 from typing import Self
 
 from pydantic import PrivateAttr
-from utils.models import ChatOpenAI
-from utils.prompts import (
+from shared.prompts.structured_prompting import (
     GENERAL_STE_STYLE_INSTRUCTION,
     NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS,
     USE_BACKTICKS_STYLE_INSTRUCTION,
     Component,
     Prompt,
 )
+from utils.models import ChatOpenAI
 from utils.treesitter_drivers.python_driver import PyDriverTree
 
 from .ir_common import (

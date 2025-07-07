@@ -4,16 +4,16 @@ from enum import Enum, auto
 from pathlib import Path
 from typing import Any
 
-from utils.dag import LiteNode, NodeKind
-from utils.io import get_prompt_template
-from utils.models import ChatOpenAI
-from utils.prompts import (
+from shared.prompts.structured_prompting import (
     GENERAL_STE_STYLE_INSTRUCTION,
     NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES,
     TERSE_TWITTER_SINGLE_SENTENCE_STYLE_INSTRUCTION,
     Component,
     Prompt,
 )
+from utils.dag import LiteNode, NodeKind
+from utils.io import get_prompt_template
+from utils.models import ChatOpenAI
 from utils.threadpool import FastShutdownThreadPoolExecutor
 
 PARENT_PATH = Path(__file__).parent

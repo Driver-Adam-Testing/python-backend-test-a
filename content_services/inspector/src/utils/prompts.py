@@ -107,3 +107,8 @@ NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_METADATA_PURPOSE = Component(
     string="""This will be part of technical documentation for the source metadata content. In your output, do not refer to the fact that this content was provided to you in any way. For example, **do not** start off with something like "The provided configuration file..." Just start explaining the purpose of the content directly as you would find in typical, high quality technical documentation. So you might start out with "This configuration file ..." or even better, no reference to "this configuration file" is needed so you immediately start describing the purpose/functionality. As another example, prefer language like "This configuration file sets ..." instead of "The configuration file sets ..." which is more natural for documentation explicitly associated with a particular file, which is what you are building.
 """
 )
+
+USE_BACKTICKS_STYLE_INSTRUCTION = Component(
+    string="""In your output, **make sure** to enclose any references to source code contents or symbols in single backticks. E.g.: "In the `MyClass` class ..." (not "In the MyClass class ..." or "In the 'MyClass' class ..." etc.)
+    """
+)

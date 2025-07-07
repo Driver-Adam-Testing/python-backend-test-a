@@ -6,6 +6,7 @@ from utils.models import ChatOpenAI
 from utils.prompts import (
     GENERAL_STE_STYLE_INSTRUCTION,
     NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS,
+    USE_BACKTICKS_STYLE_INSTRUCTION,
     Component,
     Prompt,
 )
@@ -134,7 +135,7 @@ Your job is to describe the function. **Always respond using exactly the followi
         {"name": <input_arg2>, "content": <description of input argument 2>},
         ...
     ],
-    "control_flow": [
+    "logic_and_control_flow": [
         <bullet point 1 for description of control flow>,
         <bullet point 2 for description of control flow>,
         ...
@@ -202,7 +203,7 @@ Your job is to describe the function or method. **Always respond using exactly t
         {"name": <input_arg2>, "content": <description of input argument 2>},
         ...
     ],
-    "control_flow": [
+    "logic_and_control_flow": [
         <bullet point 1 for description of control flow>,
         <bullet point 2 for description of control flow>,
         ...
@@ -257,6 +258,7 @@ class PyVariableData(VariableData):
             Prompt.empty()
             .append(Component(string=VARIABLES_FOUND_SYSTEM_PROMPT_JSON))
             .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
             .into_str()
         )
 
@@ -295,7 +297,7 @@ class PyFnData(IrData):
     single_sentence: RawContent
     decorators: ListedCommaCombinedBackTickRawContentNoNone
     inputs: ListedBacktickNameRawContentWithNone
-    control_flow: ListedRawContentWithNone
+    logic_and_control_flow: ListedRawContentWithNone
     output: FieldNameWithRawContent
 
     @classmethod
@@ -303,7 +305,7 @@ class PyFnData(IrData):
         return cls(
             single_sentence=RawContent(content=""),
             inputs=ListedBacktickNameRawContentWithNone(content=[]),
-            control_flow=ListedBacktickNameRawContentWithNone(content=[]),
+            logic_and_control_flow=ListedBacktickNameRawContentWithNone(content=[]),
             output=FieldNameWithBulletedContent(content=""),
         )
 
@@ -313,6 +315,7 @@ class PyFnData(IrData):
             Prompt.empty()
             .append(Component(string=FUNCTIONS_OR_METHODS_FOUND_SYSTEM_PROMPT_JSON))
             .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
             .into_str()
         )
 
@@ -388,6 +391,7 @@ class PyClassData(IrData):
             Prompt.empty()
             .append(Component(string=CLASSES_FOUND_SYSTEM_PROMPT_JSON))
             .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
             .into_str()
         )
 

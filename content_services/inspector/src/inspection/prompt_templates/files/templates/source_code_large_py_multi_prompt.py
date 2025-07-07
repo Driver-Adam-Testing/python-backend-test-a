@@ -16,6 +16,7 @@ from utils.lang_specialization.python import (
 from utils.prompts import (
     GENERAL_STE_STYLE_INSTRUCTION,
     NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_CODE_PURPOSE,
+    USE_BACKTICKS_STYLE_INSTRUCTION,
     Component,
     Prompt,
 )
@@ -28,6 +29,7 @@ SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_PY = [
         Prompt.empty()
         .append(Component(string=SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_PY))
         .append(GENERAL_STE_STYLE_INSTRUCTION)
+        .append(USE_BACKTICKS_STYLE_INSTRUCTION)
         .into_str(),
         Prompt.empty()
         .append(Component(string=SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT_MULTI_CONTEXT))

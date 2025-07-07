@@ -72,7 +72,11 @@ class UserRead(BaseModel):
         from_attributes = True
 
 
-class NodeMetaRead(NodeRead):
+class NodeMetaReadWithTerseSentence(NodeRead):
+    # NOTE: this is only used on the list_primary_assets endpoint
+    # With that endpoint, we want the terse sentence description
+    # DO NOT use this schema elsewhere without appropriate filters, otherwise it will
+    # load all contents for every node pulled.
     id: UUID
     version_id: UUID
     relative_path: str
@@ -158,8 +162,13 @@ class VersionDetailRead(VersionRead):
 
 
 class PrimaryAssetDetailRead(PrimaryAssetRead):
+    # NOTE: this is only used for the list_primary_assets endpoint right now.
+    # It includes the most recent version and its root node with terse sentence by
+    # including the contents on NodeMetaReadWithTerseSentence.
+    # Do NOT use the schema elsewhere without appropriate filters, or it will fetch all contents
+    # for every node pulled.
     class PrimaryAssetVersionRead(VersionRead):
-        root_node: NodeMetaRead | None
+        root_node: NodeMetaReadWithTerseSentence | None
         creator: UserRead | None
 
     most_recent_version: PrimaryAssetVersionRead | None

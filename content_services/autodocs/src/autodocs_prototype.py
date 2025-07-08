@@ -7,6 +7,7 @@ import os
 import tempfile
 import tomllib
 from collections.abc import Generator
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from enum import IntEnum, StrEnum
 from graphlib import TopologicalSorter
 from pathlib import Path
@@ -14,9 +15,13 @@ from typing import Any, Self
 from uuid import UUID
 
 import boto3
+import modal
 import openai
 import pymupdf4llm
+import tqdm
 from aiolimiter import AsyncLimiter
+from botocore.config import Config
+from common import app
 from database.models_v2_enums import AutoDocStatusMessageKind, ContentKind
 from google import genai
 from pydantic import BaseModel
@@ -36,16 +41,57 @@ OPENAI_SEM = asyncio.Semaphore(300)
 PDF_DOWNLOAD_DIR = "pdfs/"
 OPENAI_LIMITER = AsyncLimiter(100, 1)  # 100 requests per second
 
+generate_image = (
+    modal.Image.debian_slim(python_version="3.12")
+    # NOTE: order matters here - anything needed for the build must be added with
+    # copy=True before other actions, all other files must be added after all other
+    # actions
+    .add_local_dir(local_path="../../driver_db", remote_path="/driver_db", copy=True)
+    .add_local_dir(
+        local_path="../../packages/shared", remote_path="/shared_pkg", copy=True
+    )
+    .pip_install(
+        [
+            "openai>=1.40.2",
+            "pydantic>=2.8.2",
+            "/shared_pkg",
+            "pymupdf4llm==0.0.17",
+            "google-genai",
+            "aiolimiter",
+            "tiktoken",
+        ]
+    )
+    .add_local_python_source("database", "shared", "utils", "common", copy=True)
+)
+
+
+@app.function(
+    image=generate_image,
+    secrets=[
+        modal.Secret.from_name("open-ai"),
+    ],
+    memory="2048",
+    timeout=60 * 15,
+    region="us-east",
+    max_containers=300,
+)
+async def llm_generate_modal(model: str, system_prompt: str, user_prompt: str) -> str:
+    # async with OPENAI_SEM, OPENAI_LIMITER:
+    try:
+        llm = ChatOpenAI(model=model, temperature=0, request_timeout=900)
+        return await llm.generate_response(
+            system_prompt=system_prompt, user_prompt=user_prompt
+        )
+    except openai.BadRequestError:
+        print(f"Bad request error for {user_prompt[:1000]}")
+        return ""
+
 
 async def llm_generate(llm: ChatOpenAI, system_prompt: str, user_prompt: str) -> str:
     async with OPENAI_SEM, OPENAI_LIMITER:
-        try:
-            return await llm.generate_response(
-                system_prompt=system_prompt, user_prompt=user_prompt
-            )
-        except openai.BadRequestError:
-            print(f"Bad request error for {user_prompt[:1000]}")
-            return ""
+        return await llm_generate_modal.remote.aio(
+            model=llm.model, system_prompt=system_prompt, user_prompt=user_prompt
+        )
 
 
 GREEN = "\033[92m"  # Green
@@ -269,18 +315,50 @@ class DriverDocsContent(BaseModel):
         # TODO: this will download everything right now, vs. just the subgraph of interest
         with tempfile.TemporaryDirectory() as download_dir:
             try:
-                content = {
-                    k: TechDocsContent(
-                        name=k,
-                        source=_get_source_from_s3(
-                            version_id, primary_asset_id, k, bucket, download_dir
-                        ),
-                        short_sentence_description=ss[k],
-                        long_description=ld[k],
-                        short_paragraph_description=sp[k],
-                    )
-                    for k in ss
-                }
+                # Parallelize S3 downloads using ThreadPoolExecutor
+                content = {}
+                s3_client = boto3.client("s3", config=Config(max_pool_connections=50))
+                with ThreadPoolExecutor(max_workers=10) as executor:
+                    # Submit all download tasks
+                    future_to_key = {
+                        executor.submit(
+                            _get_source_from_s3,
+                            s3_client,
+                            version_id,
+                            primary_asset_id,
+                            k,
+                            bucket,
+                            download_dir,
+                        ): k
+                        for k in ss
+                    }
+
+                    # Collect results as they complete
+                    with tqdm.tqdm(
+                        total=len(future_to_key), desc="Downloading files"
+                    ) as pbar:
+                        for future in as_completed(future_to_key):
+                            k = future_to_key[future]
+                            try:
+                                source = future.result()
+                                content[k] = TechDocsContent(
+                                    name=k,
+                                    source=source,
+                                    short_sentence_description=ss[k],
+                                    long_description=ld[k],
+                                    short_paragraph_description=sp[k],
+                                )
+                            except Exception as exc:
+                                print(f"Error downloading {k}: {exc}")
+                                # Create entry with None source on error
+                                content[k] = TechDocsContent(
+                                    name=k,
+                                    source=None,
+                                    short_sentence_description=ss[k],
+                                    long_description=ld[k],
+                                    short_paragraph_description=sp[k],
+                                )
+                            pbar.update(1)
             except Exception as e:
                 print(codebase_name)
                 raise e
@@ -327,6 +405,7 @@ def _get_derived_contents(
 
 
 def _get_source_from_s3(
+    s3_client: boto3.client,
     version_id: str,
     primary_asset_id: str,
     relative_path: str,
@@ -334,11 +413,11 @@ def _get_source_from_s3(
     download_dir: str,
 ) -> str:
     try:
-        s3_client = boto3.client("s3")
+        # s3_client = boto3.client("s3")
         download_key = f"{primary_asset_id}/{version_id}/{relative_path}"
         local_download_path = Path(download_dir) / relative_path
         local_download_path.parent.mkdir(parents=True, exist_ok=True)
-        print(bucket, download_key)
+        # print(bucket, download_key)
         s3_client.download_file(bucket, download_key, str(local_download_path))
 
         with open(local_download_path) as f:
@@ -1390,6 +1469,8 @@ Your output should be markdown formatted text.
         user_prompts = [""]
         for idx, doc in enumerate(aggregate_docs):
             user_prompts[0] += f"{section_name} doc for set {idx}:\n\n{doc}\n\n"
+            if get_num_tokens(user_prompts[0]) > 100_000:
+                return user_prompts
         return user_prompts
 
 

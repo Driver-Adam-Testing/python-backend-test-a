@@ -112,3 +112,8 @@ USE_BACKTICKS_STYLE_INSTRUCTION = Component(
     string="""In your output, **make sure** to enclose any references to source code contents or symbols in single backticks. E.g.: "In the `MyClass` class ..." (not "In the MyClass class ..." or "In the 'MyClass' class ..." etc.)
     """
 )
+
+RETURN_UNEDITED_CONTENT_IF_NO_SUBSTANTIAL_CHANGES_FOLDERS = Component(
+    string="""Below is the content generated for this folder for the previous version. If the content still applies as is, return it unchanged. Otherwise, return an updated version of the content that reflects any changes in the folder structure or contents. If there are no changes, you can return the content as is without any modifications.
+    """
+)

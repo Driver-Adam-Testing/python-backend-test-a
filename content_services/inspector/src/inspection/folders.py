@@ -4,9 +4,11 @@ from enum import Enum, auto
 from pathlib import Path
 from typing import Any
 
+from database.models_v2_enums import ContentKind
 from shared.prompts.structured_prompting import (
     GENERAL_STE_STYLE_INSTRUCTION,
     NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES,
+    RETURN_UNEDITED_CONTENT_IF_NO_SUBSTANTIAL_CHANGES_FOLDERS,
     TERSE_TWITTER_SINGLE_SENTENCE_STYLE_INSTRUCTION,
     Component,
     Prompt,
@@ -67,8 +69,9 @@ def folder_single_sentence_from_child_list(
     codebase_name: str,
     data: str,
     is_root: bool,
+    previous_content: str | None,
 ) -> str:
-    system_prompt = (
+    system_prompt_structured = (
         Prompt.empty()
         .append(
             Component(
@@ -79,13 +82,21 @@ def folder_single_sentence_from_child_list(
             )
         )
         .append(GENERAL_STE_STYLE_INSTRUCTION)
-        .into_str()
     )
+    if previous_content is not None:
+        system_prompt_structured.append(
+            RETURN_UNEDITED_CONTENT_IF_NO_SUBSTANTIAL_CHANGES_FOLDERS
+        ).append(
+            Component(
+                string=f"Previous single sentence description:\n\n{previous_content}"
+            )
+        )
+    system_prompt = system_prompt_structured.into_str()
 
     user_prompt_structured = Prompt.empty()
     if is_root:
         root_specialization = """
-This folder is the root of an entire codebase. As such, write your single sentence description to concisely summarize the purpose and contents of the codebaes as a whole.
+This folder is the root of an entire codebase. As such, write your single sentence description to concisely summarize the purpose and contents of the codebase as a whole.
 """
         user_prompt_structured.append(Component(string=root_specialization))
 
@@ -107,8 +118,9 @@ def folder_single_paragraph_from_child_list(
     folder_name: str,
     codebase_name: str,
     data: str,
+    previous_content: str | None,
 ) -> str:
-    system_prompt = (
+    system_prompt_structured = (
         Prompt.empty()
         .append(
             Component(
@@ -119,8 +131,16 @@ def folder_single_paragraph_from_child_list(
             )
         )
         .append(GENERAL_STE_STYLE_INSTRUCTION)
-        .into_str()
     )
+    if previous_content is not None:
+        system_prompt_structured.append(
+            RETURN_UNEDITED_CONTENT_IF_NO_SUBSTANTIAL_CHANGES_FOLDERS
+        ).append(
+            Component(
+                string=f"Previous single paragraph description:\n\n{previous_content}"
+            )
+        )
+    system_prompt = system_prompt_structured.into_str()
     user_prompt = (
         Prompt.empty()
         .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
@@ -141,8 +161,9 @@ def folder_single_sentence_from_chunk_descriptions(
     codebase_name: str,
     data: str,
     is_root: bool,
+    previous_content: str | None,
 ) -> str:
-    system_prompt = (
+    system_prompt_structured = (
         Prompt.empty()
         .append(
             Component(
@@ -153,8 +174,16 @@ def folder_single_sentence_from_chunk_descriptions(
             )
         )
         .append(GENERAL_STE_STYLE_INSTRUCTION)
-        .into_str()
     )
+    if previous_content is not None:
+        system_prompt_structured.append(
+            RETURN_UNEDITED_CONTENT_IF_NO_SUBSTANTIAL_CHANGES_FOLDERS
+        ).append(
+            Component(
+                string=f"Previous single sentence description:\n\n{previous_content}"
+            )
+        )
+    system_prompt = system_prompt_structured
     user_prompt = (
         Prompt.empty()
         .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
@@ -170,8 +199,9 @@ def folder_single_paragraph_from_chunk_descriptions(
     folder_name: str,
     codebase_name: str,
     data: str,
+    previous_content: str | None,
 ) -> str:
-    system_prompt = (
+    system_prompt_structured = (
         Prompt.empty()
         .append(
             Component(
@@ -182,8 +212,16 @@ def folder_single_paragraph_from_chunk_descriptions(
             )
         )
         .append(GENERAL_STE_STYLE_INSTRUCTION)
-        .into_str()
     )
+    if previous_content is not None:
+        system_prompt_structured.append(
+            RETURN_UNEDITED_CONTENT_IF_NO_SUBSTANTIAL_CHANGES_FOLDERS
+        ).append(
+            Component(
+                string=f"Previous single paragraph description:\n\n{previous_content}"
+            )
+        )
+    system_prompt = system_prompt_structured.into_str()
     user_prompt = (
         Prompt.empty()
         .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
@@ -217,6 +255,7 @@ def comprehend_folder_top_down(
     raise_hard_errors: bool = True,
     redundant_folder_flag: bool = False,
     use_async: bool = False,
+    previous_content: dict[str, str] | None = None,
 ) -> dict[str, any]:
     from shared.chunking.text_splitter import split_text
 
@@ -502,12 +541,22 @@ def comprehend_folder_top_down(
             codebase_name=codebase_name,
             data=data,
             is_root=is_root,
+            previous_content=previous_content.get(
+                ContentKind.SHORT_SENTENCE_DESCRIPTION, None
+            )
+            if previous_content
+            else None,
         )
         single_paragraph = single_paragraph_fn(
             llm=llm,
             folder_name=folder_name,
             codebase_name=codebase_name,
             data=data,
+            previous_content=previous_content.get(
+                ContentKind.SHORT_PARAGRAPH_DESCRIPTION, None
+            )
+            if previous_content
+            else None,
         )
         single_sentence = single_sentence.replace("\x00", "")
         single_paragraph = single_paragraph.replace("\x00", "")

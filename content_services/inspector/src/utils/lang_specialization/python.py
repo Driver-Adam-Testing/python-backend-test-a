@@ -397,12 +397,13 @@ class PyClassData(IrData):
 
     @classmethod
     def user_prompt(cls, symbol: RawSymbolData) -> str:
-        user_prompt = Prompt.empty().append(
-            NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS
-        )
-        user_prompt.append(
-            Component(
-                string=f"{CLASSES_FOUND_USER_PROMPT}{symbol.name}\n\nClass Code:\n\n{symbol.symbol_code}"
+        user_prompt = (
+            Prompt.empty()
+            .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS)
+            .append(
+                Component(
+                    string=f"{CLASSES_FOUND_USER_PROMPT}{symbol.name}\n\nClass Code:\n\n{symbol.symbol_code}"
+                )
             )
         )
         if symbol.file_code:

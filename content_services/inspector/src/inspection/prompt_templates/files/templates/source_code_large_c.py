@@ -1,3 +1,10 @@
+from shared.prompts.structured_prompting import (
+    GENERAL_STE_STYLE_INSTRUCTION,
+    NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_CODE_PURPOSE,
+    USE_BACKTICKS_STYLE_INSTRUCTION,
+    Component,
+    Prompt,
+)
 from utils.lang_specialization.c import (
     SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT,
     SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_C,
@@ -18,8 +25,15 @@ SOURCE_CODE_LARGE_TEMPLATE_C = [
     (
         S.SINGLE_PROMPT_TEXT,
         "# Purpose",
-        SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_C,
-        SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT,
+        Prompt.empty()
+        .append(Component(string=SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_C))
+        .append(GENERAL_STE_STYLE_INSTRUCTION)
+        .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+        .into_str(),
+        Prompt.empty()
+        .append(Component(string=SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT))
+        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_CODE_PURPOSE)
+        .into_str(),
     ),
     (
         S.FN_COND_JSON,

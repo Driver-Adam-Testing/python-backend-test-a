@@ -45,10 +45,12 @@ class FolderTechDocTask(Task):
         child_docs_tasks: tuple[TechDocsTask],
         codebase_name: str,
         db_node_id: uuid.UUID,  # TODO: this needs to be node_id
+        previous_content: dict[str, str] | None = None,
     ) -> None:
         self.child_docs_tasks = child_docs_tasks
         self.codebase_name = codebase_name
         self.db_node_id = db_node_id
+        self.previous_content = previous_content
         super().__init__(
             task_name=task_name,
             node=node,
@@ -68,6 +70,7 @@ class FolderTechDocTask(Task):
                 codebase_name=self.codebase_name,
                 node=self.node,
                 child_nodes_to_docs=child_nodes_to_docs,
+                previous_content=self.previous_content,
             )
         return TaskResult(data={"docs": docs}, serialization=SerializationMethod.JSON)
 

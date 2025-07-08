@@ -14,6 +14,7 @@ from autodocs_prototype import (
     get_autodoc_elapsed_time,
     update_autodocs_status,
 )
+from common import app
 
 image = inspection_image = (
     modal.Image.debian_slim(python_version="3.12")
@@ -49,6 +50,7 @@ image = inspection_image = (
     )
     .add_local_python_source(
         "autodocs_prototype",
+        "common",
         "database",
         "shared",
         "utils",
@@ -57,7 +59,7 @@ image = inspection_image = (
     )
 )
 
-app = modal.App("autodocs")
+# app = modal.App("autodocs")
 
 
 @app.function(
@@ -70,7 +72,7 @@ app = modal.App("autodocs")
     proxy=modal.Proxy.from_name("my-proxy")
     if os.environ["MODAL_ENVIRONMENT"] in ["dev", "staging", "prod"]
     else None,
-    memory="2048",
+    memory=2048,
     timeout=3600 * 8,
     region="us-east",
     max_containers=5,

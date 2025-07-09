@@ -2,6 +2,13 @@ from pathlib import Path
 from typing import Self
 
 from pydantic import PrivateAttr
+from shared.prompts.structured_prompting import (
+    GENERAL_STE_STYLE_INSTRUCTION,
+    NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS,
+    USE_BACKTICKS_STYLE_INSTRUCTION,
+    Component,
+    Prompt,
+)
 from utils.codemap_ctags import extract_symbols_w_ctags
 from utils.models import ChatOpenAI
 
@@ -271,16 +278,26 @@ class RustMacroData(IrData):
 
     @classmethod
     def system_prompt(cls, symbol: RawSymbolData) -> str:
-        return MACROS_FOUND_SYSTEM_PROMPT_JSON
+        return (
+            Prompt.empty()
+            .append(Component(string=MACROS_FOUND_SYSTEM_PROMPT_JSON))
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .into_str()
+        )
 
     @classmethod
     def user_prompt(cls, symbol: RawSymbolData) -> str:
-        user_prompt = f"{MACROS_FOUND_USER_PROMPT}{symbol.name}"
+        user_prompt = (
+            Prompt.empty()
+            .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS)
+            .append(Component(string=f"{MACROS_FOUND_USER_PROMPT}\n{symbol.name}"))
+        )
         if symbol.file_code:
-            user_prompt += f"\n\nCode:\n\n{symbol.file_code}"
+            user_prompt.append(Component(string=f"Code:\n\n{symbol.file_code}"))
         else:
-            user_prompt += f"\n\nCode:\n\n{symbol.symbol_code}"
-        return user_prompt
+            user_prompt.append(Component(string=f"Code:\n\n{symbol.symbol_code}"))
+        return user_prompt.into_str()
 
     @classmethod
     def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
@@ -316,16 +333,26 @@ class RustTraitData(IrData):
 
     @classmethod
     def system_prompt(cls, symbol: RawSymbolData) -> str:
-        return TRAITS_FOUND_SYSTEM_PROMPT_JSON
+        return (
+            Prompt.empty()
+            .append(Component(string=TRAITS_FOUND_SYSTEM_PROMPT_JSON))
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .into_str()
+        )
 
     @classmethod
     def user_prompt(cls, symbol: RawSymbolData) -> str:
-        user_prompt = f"{TRAITS_FOUND_USER_PROMPT}{symbol.name}"
+        user_prompt = (
+            Prompt.empty()
+            .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS)
+            .append(Component(string=f"{TRAITS_FOUND_USER_PROMPT}\n{symbol.name}"))
+        )
         if symbol.file_code:
-            user_prompt += f"\n\nCode:\n\n{symbol.file_code}"
+            user_prompt.append(Component(string=f"Code:\n\n{symbol.file_code}"))
         else:
-            user_prompt += f"\n\nCode:\n\n{symbol.symbol_code}"
-        return user_prompt
+            user_prompt.append(Component(string=f"Code:\n\n{symbol.symbol_code}"))
+        return user_prompt.into_str()
 
     @classmethod
     def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
@@ -364,16 +391,28 @@ class RustDataStructureData(IrData):
 
     @classmethod
     def system_prompt(cls, symbol: RawSymbolData) -> str:
-        return DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON
+        return (
+            Prompt.empty()
+            .append(Component(string=DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON))
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .into_str()
+        )
 
     @classmethod
     def user_prompt(cls, symbol: RawSymbolData) -> str:
-        user_prompt = f"{DATA_STRUCTURES_FOUND_USER_PROMPT}{symbol.name}"
+        user_prompt = (
+            Prompt.empty()
+            .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS)
+            .append(
+                Component(string=f"{DATA_STRUCTURES_FOUND_USER_PROMPT}\n{symbol.name}")
+            )
+        )
         if symbol.file_code:
-            user_prompt += f"\n\nCode:\n\n{symbol.file_code}"
+            user_prompt.append(Component(string=f"Code:\n\n{symbol.file_code}"))
         else:
-            user_prompt += f"\n\nCode:\n\n{symbol.symbol_code}"
-        return user_prompt
+            user_prompt.append(Component(string=f"Code:\n\n{symbol.symbol_code}"))
+        return user_prompt.into_str()
 
     @classmethod
     def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
@@ -412,17 +451,27 @@ class RustDataStructureCollection(IrCollection):
 class RustMethodData(FnData):
     @classmethod
     def system_prompt(cls, symbol: RawSymbolData) -> str:
-        return METHODS_FOUND_SYSTEM_PROMPT_JSON
+        return (
+            Prompt.empty()
+            .append(Component(string=METHODS_FOUND_SYSTEM_PROMPT_JSON))
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .into_str()
+        )
 
     @classmethod
     def user_prompt(cls, symbol: RawSymbolData) -> str:
         # TODO: for overloaded case
-        user_prompt = f"{METHODS_FOUND_USER_PROMPT}{symbol.name}"
+        user_prompt = (
+            Prompt.empty()
+            .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS)
+            .append(Component(string=f"{METHODS_FOUND_USER_PROMPT}{symbol.name}"))
+        )
         if symbol.file_code:
-            user_prompt += f"\n\nCode:\n\n{symbol.file_code}"
+            user_prompt.append(Component(string=f"Code:\n\n{symbol.file_code}"))
         else:
-            user_prompt += f"\n\nCode:\n\n{symbol.symbol_code}"
-        return user_prompt
+            user_prompt.append(Component(string=f"Code:\n\n{symbol.symbol_code}"))
+        return user_prompt.into_str()
 
     @classmethod
     def child_to_ir(cls, symbol: RawSymbolData) -> IrData | None:
@@ -436,16 +485,26 @@ class RustMethodData(FnData):
 class RustFnData(FnData):
     @classmethod
     def system_prompt(cls, symbol: RawSymbolData) -> str:
-        return FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON
+        return (
+            Prompt.empty()
+            .append(Component(string=FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON))
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .into_str()
+        )
 
     @classmethod
     def user_prompt(cls, symbol: RawSymbolData) -> str:
-        user_prompt = f"{FUNCTIONS_FOUND_USER_PROMPT}{symbol.name}"
+        user_prompt = (
+            Prompt.empty()
+            .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS)
+            .append(Component(string=f"{FUNCTIONS_FOUND_USER_PROMPT}\n{symbol.name}"))
+        )
         if symbol.file_code:
-            user_prompt += f"\n\nCode:\n\n{symbol.file_code}"
+            user_prompt.append(Component(string=f"Code:\n\n{symbol.file_code}"))
         else:
-            user_prompt += f"\n\nCode:\n\n{symbol.symbol_code}"
-        return user_prompt
+            user_prompt.append(Component(string=f"Code:\n\n{symbol.symbol_code}"))
+        return user_prompt.into_str()
 
     @classmethod
     def child_to_ir(cls, symbol: RawSymbolData) -> IrData | None:
@@ -467,16 +526,26 @@ class RustFnCollection(IrCollection):
 class RustVariableData(VariableData):
     @classmethod
     def system_prompt(cls, symbol: RawSymbolData) -> str:
-        return VARIABLES_FOUND_SYSTEM_PROMPT_JSON
+        return (
+            Prompt.empty()
+            .append(Component(string=VARIABLES_FOUND_SYSTEM_PROMPT_JSON))
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .into_str()
+        )
 
     @classmethod
     def user_prompt(cls, symbol: RawSymbolData) -> str:
-        user_prompt = f"{VARIABLES_FOUND_USER_PROMPT}{symbol.name}"
+        user_prompt = (
+            Prompt.empty()
+            .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS)
+            .append(Component(string=f"{VARIABLES_FOUND_USER_PROMPT}\n{symbol.name}"))
+        )
         if symbol.file_code:
-            user_prompt += f"\n\nCode:\n\n{symbol.file_code}"
+            user_prompt.append(Component(string=f"Code:\n\n{symbol.file_code}"))
         else:
-            user_prompt += f"\n\nCode:\n\n{symbol.symbol_code}"
-        return user_prompt
+            user_prompt.append(Component(string=f"Code:\n\n{symbol.symbol_code}"))
+        return user_prompt.into_str()
 
     @classmethod
     def child_to_ir(cls, symbol: RawSymbolData) -> IrData | None:

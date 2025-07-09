@@ -129,6 +129,19 @@ async def get_source_code_derived_content(node_id: uuid.UUID) -> DerivedContent:
         return (await session.exec(statement)).one()
 
 
+async def get_all_derived_content_by_node_id(
+    node_id: uuid.UUID,
+) -> list[DerivedContent]:
+    from database.db import async_engine
+    from sqlmodel import select
+
+    async with AsyncSession(async_engine) as session:
+        statement = select(DerivedContent).where(
+            DerivedContent.node_id == node_id,
+        )
+        return (await session.exec(statement)).all()
+
+
 def get_usage_balance_in_bytes(
     org_id: str,
 ) -> int:

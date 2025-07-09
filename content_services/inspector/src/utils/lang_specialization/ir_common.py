@@ -24,9 +24,20 @@ MAX_SYMBOLS_PER_WORKER = 50
 MAX_WORKERS_FOR_SYMBOLS = 10
 
 
+NON_CAPITALIZED_SET = {"and", "with", "for"}
+
+
 def snake_case_to_spaced_string(snake_case: str) -> str:
+    items = []
     split_str = snake_case.split("_")
-    return " ".join(item.capitalize() for item in split_str).strip()
+    if split_str:
+        items.append(split_str[0].capitalize())
+        for item in split_str[1:]:
+            if item.strip().lower() in NON_CAPITALIZED_SET:
+                items.append(item)
+            else:
+                items.append(item.capitalize())
+    return " ".join(items).strip()
 
 
 def ensure_enclosed_with_backticks(raw_str: str) -> str:
@@ -459,7 +470,7 @@ class IrData(BaseModel, abc.ABC):
                 fqn = get_fully_qualified_name(sym.definition.raw)
                 path_part = sym.definition.raw.file_path
 
-                output += f"- **See also**: [`{fqn}`](<{path_part}#{kind_part}:{fqn}>)  (Implementation)\n"
+                output += f"- **See Also**: [`{fqn}`](<{path_part}#{kind_part}:{fqn}>)  (Implementation)\n"
 
             if sym.raw.symbol_kind == SymbolKind.CALLABLE and sym.parent is not None:
                 # Link member functions to their object definiton
@@ -696,7 +707,7 @@ class FnDeclData(IrData, abc.ABC):
 class FnData(IrData, abc.ABC):
     single_sentence: RawContent
     inputs: ListedBacktickNameRawContentWithNone
-    control_flow: ListedRawContentWithNone
+    logic_and_control_flow: ListedRawContentWithNone
     output: FieldNameWithRawContent
 
     @classmethod
@@ -704,7 +715,7 @@ class FnData(IrData, abc.ABC):
         return cls(
             single_sentence=RawContent(content=""),
             inputs=ListedBacktickNameRawContentWithNone(content=[]),
-            control_flow=ListedBacktickNameRawContentWithNone(content=[]),
+            logic_and_control_flow=ListedBacktickNameRawContentWithNone(content=[]),
             output=FieldNameWithRawContent(content=""),
         )
 

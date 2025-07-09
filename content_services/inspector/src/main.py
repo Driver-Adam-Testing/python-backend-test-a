@@ -296,6 +296,12 @@ async def inspect_db(
                     download_root=previous_download_root,
                     max_workers=8,
                 )
+                db_all_codebase_prev_version_nodes = (
+                    await get_analyzable_nodes_by_version_id(
+                        previous_version.id,
+                        {DbNodeKind.CODEBASE_FILE, DbNodeKind.CODEBASE_DIRECTORY},
+                    )
+                )
                 print("Download complete for new version of code")
 
                 previous_codebase_dag: FileTreeDag = build_dag(
@@ -345,6 +351,7 @@ async def inspect_db(
                 sorted_nodes = diff_dag.topological_sort()
             else:
                 sorted_nodes = codebase_dag.topological_sort()
+                db_all_codebase_prev_version_nodes = None
             path_to_db_node_id = {
                 Path(db_node.relative_path): db_node.id
                 for db_node in db_all_codebase_nodes
@@ -369,6 +376,14 @@ async def inspect_db(
                 for node in sorted_nodes
                 if node.root_rel_path != Path(".") and node.status != NodeStatus.REMOVED
             ]
+            prev_version_path_to_db_node_id = (
+                {
+                    Path(db_node.relative_path): db_node.id
+                    for db_node in db_all_codebase_prev_version_nodes
+                }
+                if db_all_codebase_prev_version_nodes
+                else {}
+            )
 
             print("======= Nodes with source content id =======")
             for node, sc_id in nodes_with_id:
@@ -381,6 +396,7 @@ async def inspect_db(
                 codebase_name=codebase_name,
                 run_id=run_id,
                 result_loading_config=result_loading_config,
+                rel_path_to_previous_version_db_node_ids=prev_version_path_to_db_node_id,
             )
     except Exception as e:
         exception_type = type(e).__name__
@@ -427,7 +443,10 @@ async def inspect_files(
     codebase_name: str,
     run_id: UUID,
     result_loading_config: list[tuple[UUID, set[NodeStatus]]] | None,
+    rel_path_to_previous_version_db_node_ids: dict[Path, uuid.UUID],
 ) -> None:
+    from utils.db import get_all_derived_content_by_node_id
+
     print("---------- All nodes ----------")
 
     for node, _ in nodes_with_id:
@@ -478,12 +497,25 @@ async def inspect_files(
                     and t.node.root_rel_path.as_posix() in node.children
                 }
             )
+            if node.root_rel_path in rel_path_to_previous_version_db_node_ids:
+                prev_db_node_id = rel_path_to_previous_version_db_node_ids[
+                    node.root_rel_path
+                ]
+                prev_folder_derived_contents = await get_all_derived_content_by_node_id(
+                    prev_db_node_id
+                )
+                previous_contents = {
+                    dc.content_kind: dc.content for dc in prev_folder_derived_contents
+                }
+            else:
+                previous_contents = None
             folder_tech_docs_task = FolderTechDocTask(
                 node=lite_node,
                 task_name=f"FolderTechDoc {node.root_rel_path}",
                 child_docs_tasks=child_doc_tasks,
                 codebase_name=codebase_name,
                 db_node_id=db_node_id,
+                previous_content=previous_contents,
             )
             folder_embedding_task = EmbeddingTask(
                 node=node,

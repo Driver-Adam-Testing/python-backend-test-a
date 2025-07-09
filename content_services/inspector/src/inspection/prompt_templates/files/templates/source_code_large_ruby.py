@@ -1,3 +1,10 @@
+from shared.prompts.structured_prompting import (
+    GENERAL_STE_STYLE_INSTRUCTION,
+    NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_CODE_PURPOSE,
+    USE_BACKTICKS_STYLE_INSTRUCTION,
+    Component,
+    Prompt,
+)
 from utils.lang_specialization.default import (
     default_imports_checker,
 )
@@ -15,8 +22,15 @@ SOURCE_CODE_LARGE_TEMPLATE_RUBY = [
     (
         S.SINGLE_PROMPT_TEXT,
         "# Purpose",
-        SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_RUBY,
-        SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT,
+        Prompt.empty()
+        .append(Component(string=SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_RUBY))
+        .append(GENERAL_STE_STYLE_INSTRUCTION)
+        .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+        .into_str(),
+        Prompt.empty()
+        .append(Component(string=SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT))
+        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_CODE_PURPOSE)
+        .into_str(),
     ),
     (
         S.LLM_COND_JSON,

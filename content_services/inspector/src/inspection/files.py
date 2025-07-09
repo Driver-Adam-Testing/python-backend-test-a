@@ -6,6 +6,13 @@ from typing import Any, Self
 import modal
 import openai
 from pydantic import BaseModel, ValidationError
+from shared.prompts.structured_prompting import (
+    GENERAL_STE_STYLE_INSTRUCTION,
+    NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES,
+    TERSE_TWITTER_SINGLE_SENTENCE_STYLE_INSTRUCTION,
+    Component,
+    Prompt,
+)
 from utils.dag import LiteNode
 from utils.io import (
     get_prompt_template,
@@ -303,39 +310,82 @@ TEMPLATE_DATA = {
 def file_long_from_code(
     llm: ChatOpenAI, file_name: str, codebase_name: str, path: str | Path, code: str
 ) -> str:
-    system_prompt = get_prompt_template(
-        PARENT_PATH / "prompt_templates/files/long_from_code.txt"
+    system_prompt = (
+        Prompt.empty()
+        .append(
+            Component(
+                string=get_prompt_template(
+                    PARENT_PATH / "prompt_templates/files/long_from_code.txt"
+                )
+            )
+        )
+        .append(GENERAL_STE_STYLE_INSTRUCTION)
+        .into_str()
     )
-    human_prompt = (
+    user_prompt = (
         f"`{file_name}` in codebase `{codebase_name}` with path `{path!s}`:\n\n{code}"
     )
-    return llm.generate_response(system_prompt, human_prompt)
+    return llm.generate_response(system_prompt, user_prompt)
 
 
 def file_single_sentence_from_chunk_descriptions(
     llm: ChatOpenAI, chunks: list[str], file_name: str, codebase_name: str
 ) -> str:
-    system_prompt = get_prompt_template(
-        PARENT_PATH
-        / "prompt_templates/files/single_sentence_from_chunk_descriptions.txt"
+    system_prompt = (
+        Prompt.empty()
+        .append(
+            Component(
+                string=get_prompt_template(
+                    PARENT_PATH
+                    / "prompt_templates/files/single_sentence_from_chunk_descriptions.txt"
+                )
+            )
+        )
+        .append(GENERAL_STE_STYLE_INSTRUCTION)
+        .into_str()
     )
-    human_prompt = ""
+
+    user_prompt_structured = Prompt.empty()
+    user_prompt_structured.append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
+    user_prompt_structured.append(TERSE_TWITTER_SINGLE_SENTENCE_STYLE_INSTRUCTION)
     for idx, chunk in enumerate(chunks, start=1):
-        human_prompt += f"\n\nDescription of piece {idx} in `{file_name} of codebase {codebase_name}:\n\n{chunk}"
-    return llm.generate_response(system_prompt, human_prompt)
+        user_prompt_structured.append(
+            Component(
+                string=f"Description of piece {idx} in {file_name} of codebase {codebase_name}:\n\n{chunk}"
+            )
+        )
+    user_prompt = user_prompt_structured.into_str()
+
+    return llm.generate_response(system_prompt, user_prompt)
 
 
 def file_single_paragraph_from_chunk_descriptions(
     llm: ChatOpenAI, chunks: list[str], file_name: str, codebase_name: str
 ) -> str:
-    system_prompt = get_prompt_template(
-        PARENT_PATH
-        / "prompt_templates/files/single_paragraph_from_chunk_descriptions.txt"
+    system_prompt = (
+        Prompt.empty()
+        .append(
+            Component(
+                string=get_prompt_template(
+                    PARENT_PATH
+                    / "prompt_templates/files/single_paragraph_from_chunk_descriptions.txt"
+                )
+            )
+        )
+        .append(GENERAL_STE_STYLE_INSTRUCTION)
+        .into_str()
     )
-    human_prompt = ""
+    user_prompt_structured = Prompt.empty()
+    user_prompt_structured.append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
     for idx, chunk in enumerate(chunks, start=1):
-        human_prompt += f"\n\nDescription of piece {idx} in `{file_name} of codebase {codebase_name}:\n\n{chunk}"
-    return llm.generate_response(system_prompt, human_prompt)
+        user_prompt_structured.append(
+            Component(
+                string=f"Description of piece {idx} in `{file_name} of codebase {codebase_name}:\n\n{chunk}"
+            )
+        )
+    user_prompt = user_prompt_structured.into_str()
+
+    return llm.generate_response(system_prompt, user_prompt)
 
 
 def file_long_from_chunk_descriptions(
@@ -344,13 +394,28 @@ def file_long_from_chunk_descriptions(
     file_name: str,
     codebase_name: str,
 ) -> str:
-    system_prompt = get_prompt_template(
-        PARENT_PATH / "prompt_templates/files/long_from_chunk_descriptions.txt"
+    system_prompt = (
+        Prompt.empty()
+        .append(
+            Component(
+                string=get_prompt_template(
+                    PARENT_PATH
+                    / "prompt_templates/files/long_from_chunk_descriptions.txt"
+                )
+            )
+        )
+        .append(GENERAL_STE_STYLE_INSTRUCTION)
+        .into_str()
     )
-    human_prompt = ""
+    user_prompt_structured = Prompt.empty()
     for idx, chunk in enumerate(chunks, start=1):
-        human_prompt += f"\n\nDescription of piece {idx} in `{file_name} of codebase {codebase_name}:\n\n{chunk}\n\n"
-    return llm.generate_response(system_prompt, human_prompt)
+        user_prompt_structured.append(
+            Component(
+                string=f"Description of piece {idx} in `{file_name} of codebase {codebase_name}:\n\n{chunk}"
+            )
+        )
+    user_prompt = user_prompt_structured.into_str()
+    return llm.generate_response(system_prompt, user_prompt)
 
 
 def file_compress_chunks(
@@ -358,11 +423,20 @@ def file_compress_chunks(
     file_name: str,
     description_chunk: str,
 ) -> str:
-    system_prompt = get_prompt_template(
-        PARENT_PATH / "prompt_templates/files/compress_chunks.txt"
+    system_prompt = (
+        Prompt.empty()
+        .append(
+            Component(
+                string=get_prompt_template(
+                    PARENT_PATH / "prompt_templates/files/compress_chunks.txt"
+                )
+            )
+        )
+        .append(GENERAL_STE_STYLE_INSTRUCTION)
+        .into_str()
     )
-    human_prompt = f"Chunk of file chunk descriptions for file `{file_name}`:\n\n{description_chunk}"
-    return llm.generate_response(system_prompt, human_prompt)
+    user_prompt = f"Chunk of file chunk descriptions for file `{file_name}`:\n\n{description_chunk}"
+    return llm.generate_response(system_prompt, user_prompt)
 
 
 def file_chunk_description(
@@ -372,11 +446,20 @@ def file_chunk_description(
     path: str | Path,
     code_chunk: str,
 ) -> str:
-    system_prompt = get_prompt_template(
-        PARENT_PATH / "prompt_templates/files/chunk_description.txt"
+    system_prompt = (
+        Prompt.empty()
+        .append(
+            Component(
+                string=get_prompt_template(
+                    PARENT_PATH / "prompt_templates/files/chunk_description.txt"
+                )
+            )
+        )
+        .append(GENERAL_STE_STYLE_INSTRUCTION)
+        .into_str()
     )
-    human_prompt = f"Piece of code from `{file_name}` in codebase `{codebase_name}` with path `{path}`:\n\n{code_chunk}"
-    return llm.generate_response(system_prompt, human_prompt)
+    user_prompt = f"Piece of code from `{file_name}` in codebase `{codebase_name}` with path `{path}`:\n\n{code_chunk}"
+    return llm.generate_response(system_prompt, user_prompt)
 
 
 def file_single_sentence_from_code(
@@ -386,25 +469,60 @@ def file_single_sentence_from_code(
     path: str | Path,
     code: str,
 ) -> str:
-    system_prompt = get_prompt_template(
-        PARENT_PATH / "prompt_templates/files/single_sentence_from_code.txt"
+    system_prompt = (
+        Prompt.empty()
+        .append(
+            Component(
+                string=get_prompt_template(
+                    PARENT_PATH / "prompt_templates/files/single_sentence_from_code.txt"
+                )
+            )
+        )
+        .append(GENERAL_STE_STYLE_INSTRUCTION)
+        .into_str()
     )
-    human_prompt = (
-        f"`{file_name}` in codebase `{codebase_name}` with path `{path}`:\n\n{code}"
+
+    user_prompt = (
+        Prompt.empty()
+        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
+        .append(TERSE_TWITTER_SINGLE_SENTENCE_STYLE_INSTRUCTION)
+        .append(
+            Component(
+                string=f"`{file_name}` in codebase `{codebase_name}` with path `{path}`:\n\n{code}"
+            )
+        )
+        .into_str()
     )
-    return llm.generate_response(system_prompt, human_prompt)
+    return llm.generate_response(system_prompt, user_prompt)
 
 
 def file_single_paragraph_from_code(
     llm: ChatOpenAI, file_name: str, codebase_name: str, path: str | Path, code: str
 ) -> str:
-    system_prompt = get_prompt_template(
-        PARENT_PATH / "prompt_templates/files/single_paragraph_from_code.txt"
+    system_prompt = (
+        Prompt.empty()
+        .append(
+            Component(
+                string=get_prompt_template(
+                    PARENT_PATH
+                    / "prompt_templates/files/single_paragraph_from_code.txt"
+                )
+            )
+        )
+        .append(GENERAL_STE_STYLE_INSTRUCTION)
+        .into_str()
     )
-    human_prompt = (
-        f"`{file_name}` in codebase `{codebase_name}` with path `{path}`:\n\n{code}"
+    user_prompt = (
+        Prompt.empty()
+        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
+        .append(
+            Component(
+                string=f"`{file_name}` in codebase `{codebase_name}` with path `{path}`:\n\n{code}"
+            )
+        )
+        .into_str()
     )
-    return llm.generate_response(system_prompt, human_prompt)
+    return llm.generate_response(system_prompt, user_prompt)
 
 
 def _return_with_simple_message(message: str) -> dict[str, Any]:

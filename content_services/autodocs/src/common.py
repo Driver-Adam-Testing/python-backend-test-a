@@ -23,9 +23,7 @@ def has_guard_duty_tag(bucket: str, key: str) -> bool:
     the 'UNSUPPORTED' tag is a misnomer because GuardDuty tags file as UNSUPPORTED
     if they have too many files ( > 1000) or file is too large but we can still process it.
     """
-    # TODO: add support for UNSUPPORTED tag in GuardDuty
     supported_tags = ["NO_THREATS_FOUND", "UNSUPPORTED"]
-    # supported_tags = ["NO_THREATS_FOUND"]
     return (
         len(
             [

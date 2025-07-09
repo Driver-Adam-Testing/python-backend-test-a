@@ -113,7 +113,17 @@ USE_BACKTICKS_STYLE_INSTRUCTION = Component(
     """
 )
 
+USE_TRIPLE_BACKTICS_FOR_CODE_BLOCKS_STYLE_INSTRUCTION = Component(
+    string="""In your output, **make sure** to enclose any code blocks in triple backticks. Also, annotate the code block with the language identifier for the language of the code, according to the Markdown fenced code blocks syntax. E.g.: ```<language>\n<large code block here```"""
+)
+
 RETURN_UNEDITED_CONTENT_IF_NO_SUBSTANTIAL_CHANGES_FOLDERS = Component(
     string="""Below is the content generated for this folder for the previous version. If the content still applies as is, return it unchanged. Otherwise, return an updated version of the content that reflects any changes in the folder structure or contents. If there are no changes, you can return the content as is without any modifications.
+    """
+)
+
+GENERIC_MARKDOWN_OUTPUT_INSTRUCTION = Component(
+    string="""
+Make sure you format your output in Markdown format using, as relevant, Markdown syntax for headings, list, etc. and enclosing single code references with single backticks and large complete code blocks in triple backticks.
     """
 )

@@ -407,6 +407,12 @@ class IrData(BaseModel, abc.ABC):
 
         # doesn't handle children, since children is a private attribute
         # for label_name, label_content in self:
+        if self._reified_symbol is not None:
+            # add link to source code
+            path_part = self._reified_symbol.raw.file_path
+            line_num_part = f"L{self._reified_symbol.raw.start_line}-L{self._reified_symbol.raw.end_line}"
+            link = f"[View Source →](<{path_part}#{line_num_part}>)\n\n"
+            output += link
         for label_name in self.__annotations__:
             label_content = getattr(self, label_name, None)
             if not isinstance(label_content, MdRenderable):

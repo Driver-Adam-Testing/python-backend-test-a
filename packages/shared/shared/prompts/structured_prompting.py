@@ -114,7 +114,8 @@ USE_BACKTICKS_STYLE_INSTRUCTION = Component(
 )
 
 USE_TRIPLE_BACKTICS_FOR_CODE_BLOCKS_STYLE_INSTRUCTION = Component(
-    string="""In your output, **make sure** to enclose any code blocks in triple backticks. Also, annotate the code block with the language identifier for the language of the code, according to the Markdown fenced code blocks syntax. E.g.: ```<language>\n<large code block here```"""
+    string="""In your output, **make sure** to enclose any code blocks in triple backticks. Also, annotate the code block with the language identifier for the language of the code, according to the Markdown fenced code blocks syntax. E.g.: ```<language>\n<large code block here```. **Do not** however enclose the general Markdown prose of your output (Markdown is the standard syntax for non-code block language prose) inside of code fences.
+"""
 )
 
 RETURN_UNEDITED_CONTENT_IF_NO_SUBSTANTIAL_CHANGES_FOLDERS = Component(

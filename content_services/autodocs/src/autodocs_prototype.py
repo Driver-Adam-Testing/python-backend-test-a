@@ -1806,10 +1806,10 @@ The following section structure should appear in the document. Other subsections
 This draft was built up iteratively over time.
 
 Your goal is to provide final polish and edits to produce a complete, coherent, and high quality final document. Your job is not to comment or change the content of the document. Focus only on typical copy editing duties:
-- Make sure all content is formatted with proper Markdown syntax.
+- Make sure all content is formatted with proper Markdown syntax, but **do not** enclose the whole document in a Markdown codefenced block. You are merely ensuring the overall content follows Markdown syntax.
   - Ensure the syntax for header and list hierarchies are correct.
   - Ensure the syntax for bulleted and numbered lists is correct.
-  - Ensure the syntax for fenced code blocks, if present, is correct.
+  - Ensure the syntax for fenced source code blocks, if present, is correct.
 - Remove any references to this being a draft document, early draft, or iterative draft.
 - Keep all technical or conceptual details.
 - Make sure transitions between sections and subsections flow smoothly.

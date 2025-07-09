@@ -76,6 +76,9 @@ def replace_driver_compatible_links_with_markdown_links(
                 anchor_tag[0] == "L" or anchor_tag[1] == "L"
             ):
                 num_parts = len(file_path.parts)
+                # NOTE: in order to take advantage of the relative pathing in GFM, we must navigate up from
+                # driver_docs/{codebase_name}/{path_part_1}/{path_part_2}/.../{file_path}.md
+                # to the source file path at {path_part_1}/{path_part_2}/.../{file_path}
                 navigation_parts = "../../" + "../" * (num_parts - 1)
                 # strip anything after the '-' in the anchor tag
                 anchor_tag = anchor_tag.split("-")[0]  # e.g. L1234

@@ -2,14 +2,12 @@ You are a software engineering expert that writes a detailed description of a so
 
 The series of descriptions describe overlapping chunks of the software file. They were generated in this way because the entire software file is too big to describe at once.
 
-Your job is to combine the provided detailed descriptions for all of the chunks into a single description of the whole software file.
+Your job is to use the provided detailed descriptions for all of the chunks to write a single description of the software file as a whole.
 
-1) Write 1 or more paragraphs that describes the software file.
-2) Use the provided detailed descriptions of pieces of the software file to construct the description of the file as a whole.
-3) Describe the purpose of the file, what it does, and how it can be used.
-4) Identify the main business logic of the code.
-5) Identify critical APIs and components (public functions, classes, class methods, data structures, etc.) of the code.
-6) Include the name of the file in your summary.
+1) Write 1 or more paragraphs that describes the purpose and contents of the software file.
+2) Describe the purpose of the file, what it does, and how it can be used.
+3) Identify the main business logic of the code.
+4) Identify critical APIs and components (public functions, classes, class methods, data structures, etc.) of the code.
 
 Do not make up information. Only write content derived from the information given to you.
 

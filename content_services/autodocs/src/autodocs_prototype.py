@@ -28,6 +28,13 @@ from pydantic import BaseModel
 from rich.console import Console
 from rich.markdown import Markdown
 from shared.chunking.text_splitter import get_num_tokens, split_text
+from shared.prompts.structured_prompting import (
+    GENERAL_STE_STYLE_INSTRUCTION,
+    USE_BACKTICKS_STYLE_INSTRUCTION,
+    USE_TRIPLE_BACKTICS_FOR_CODE_BLOCKS_STYLE_INSTRUCTION,
+    Component,
+    Prompt,
+)
 from tqdm.asyncio import tqdm_asyncio
 from utils.models import ChatOpenAI, OutputConfig, OutputConfigKind
 
@@ -731,12 +738,22 @@ Your output should be markdown formatted text including the section title as a t
             else ""
         )
         heading = "#" * self.level
-        return system_prompt_template.format(
-            goal=goal,
-            preamble_content=preamble_content,
-            heading=heading,
-            title=self.title,
-            instruction=self.instruction,
+        return (
+            Prompt.empty()
+            .append(
+                Component(
+                    string=system_prompt_template.format(
+                        goal=goal,
+                        preamble_content=preamble_content,
+                        heading=heading,
+                        title=self.title,
+                        instruction=self.instruction,
+                    )
+                )
+            )
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .into_str()
         )
 
     def init_draft_system_prompt_pdf(self, goal: str, preamble: str) -> str:
@@ -765,13 +782,23 @@ Your output should be markdown formatted text.
             else ""
         )
         heading = "#" * self.level
-        return system_prompt_template.format(
-            goal=goal,
-            preamble_content=preamble_content,
-            heading=heading,
-            title=self.title,
-            instruction=self.instruction,
-            content_structure=self.content_structure,
+        return (
+            Prompt.empty()
+            .append(
+                Component(
+                    string=system_prompt_template.format(
+                        goal=goal,
+                        preamble_content=preamble_content,
+                        heading=heading,
+                        title=self.title,
+                        instruction=self.instruction,
+                        content_structure=self.content_structure,
+                    )
+                )
+            )
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .into_str()
         )
 
     def update_from_file_system_prompt(self, goal: str, preamble: str) -> str:
@@ -804,12 +831,22 @@ Your expected audience is a technical engineer.
             else ""
         )
         heading = "#" * self.level
-        return system_prompt_template.format(
-            goal=goal,
-            preamble_content=preamble_content,
-            heading=heading,
-            title=self.title,
-            instruction=self.instruction,
+        return (
+            Prompt.empty()
+            .append(
+                Component(
+                    string=system_prompt_template.format(
+                        goal=goal,
+                        preamble_content=preamble_content,
+                        heading=heading,
+                        title=self.title,
+                        instruction=self.instruction,
+                    )
+                )
+            )
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .into_str()
         )
 
     def update_from_pdf_system_prompt(self, goal: str, preamble: str) -> str:
@@ -842,12 +879,22 @@ Your expected audience is a technical engineer.
             else ""
         )
         heading = "#" * self.level
-        return system_prompt_template.format(
-            goal=goal,
-            preamble_content=preamble_content,
-            heading=heading,
-            title=self.title,
-            instruction=self.instruction,
+        return (
+            Prompt.empty()
+            .append(
+                Component(
+                    string=system_prompt_template.format(
+                        goal=goal,
+                        preamble_content=preamble_content,
+                        heading=heading,
+                        title=self.title,
+                        instruction=self.instruction,
+                    )
+                )
+            )
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .into_str()
         )
 
     def update_from_folder_system_prompt(self, goal: str, preamble: str) -> str:
@@ -880,12 +927,22 @@ Your expected audience is a technical engineer.
             else ""
         )
         heading = "#" * self.level
-        return system_prompt_template.format(
-            goal=goal,
-            preamble_content=preamble_content,
-            heading=heading,
-            title=self.title,
-            instruction=self.instruction,
+        return (
+            Prompt.empty()
+            .append(
+                Component(
+                    string=system_prompt_template.format(
+                        goal=goal,
+                        preamble_content=preamble_content,
+                        heading=heading,
+                        title=self.title,
+                        instruction=self.instruction,
+                    )
+                )
+            )
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .into_str()
         )
 
     def final_output_format(self, goal: str, preamble: str) -> str:
@@ -908,12 +965,22 @@ Your output is the content of the section reformatted to fit the described conte
             else ""
         )
         heading = "#" * self.level
-        return system_prompt_template.format(
-            goal=goal,
-            preamble_content=preamble_content,
-            heading=heading,
-            title=self.title,
-            content_structure=self.content_structure,
+        return (
+            Prompt.empty()
+            .append(
+                Component(
+                    string=system_prompt_template.format(
+                        goal=goal,
+                        preamble_content=preamble_content,
+                        heading=heading,
+                        title=self.title,
+                        content_structure=self.content_structure,
+                    )
+                )
+            )
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .into_str()
         )
 
     def scatter_system_prompt(self, goal: str, preamble: str) -> str:
@@ -948,12 +1015,22 @@ It is okay to just return "no relevant content" if the source code or pdf page d
             else ""
         )
         heading = "#" * self.level
-        return system_prompt_template.format(
-            goal=goal,
-            preamble_content=preamble_content,
-            heading=heading,
-            title=self.title,
-            instruction=self.instruction,
+        return (
+            Prompt.empty()
+            .append(
+                Component(
+                    string=system_prompt_template.format(
+                        goal=goal,
+                        preamble_content=preamble_content,
+                        heading=heading,
+                        title=self.title,
+                        instruction=self.instruction,
+                    )
+                )
+            )
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .into_str()
         )
 
     def gather_system_prompt(self, goal: str, preamble: str) -> str:
@@ -986,12 +1063,22 @@ Use only content directly from the sections you've been given in your aggregatio
             else ""
         )
         heading = "#" * self.level
-        return aggregate_system_prompt_template.format(
-            goal=goal,
-            preamble_content=preamble_content,
-            heading=heading,
-            title=self.title,
-            instruction=self.instruction,
+        return (
+            Prompt.empty()
+            .append(
+                Component(
+                    string=aggregate_system_prompt_template.format(
+                        goal=goal,
+                        preamble_content=preamble_content,
+                        heading=heading,
+                        title=self.title,
+                        instruction=self.instruction,
+                    )
+                )
+            )
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .into_str()
         )
 
     def gather_multiple_system_prompt(self, goal: str, preamble: str) -> str:
@@ -1024,12 +1111,22 @@ Use only content directly from the sections you've been given in your aggregatio
             else ""
         )
         heading = "#" * self.level
-        return aggregate_system_prompt_template.format(
-            goal=goal,
-            preamble_content=preamble_content,
-            heading=heading,
-            title=self.title,
-            instruction=self.instruction,
+        return (
+            Prompt.empty()
+            .append(
+                Component(
+                    string=aggregate_system_prompt_template.format(
+                        goal=goal,
+                        preamble_content=preamble_content,
+                        heading=heading,
+                        title=self.title,
+                        instruction=self.instruction,
+                    )
+                )
+            )
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .into_str()
         )
 
     def code_example_single_pass_system_prompt(self, goal: str, preamble: str) -> str:
@@ -1060,13 +1157,24 @@ Your output should be markdown formatted text.
             else ""
         )
         heading = "#" * self.level
-        return system_prompt_template.format(
-            goal=goal,
-            preamble_content=preamble_content,
-            heading=heading,
-            title=self.title,
-            instruction=self.instruction,
-            content_structure=self.content_structure,
+        return (
+            Prompt.empty()
+            .append(
+                Component(
+                    string=system_prompt_template.format(
+                        goal=goal,
+                        preamble_content=preamble_content,
+                        heading=heading,
+                        title=self.title,
+                        instruction=self.instruction,
+                        content_structure=self.content_structure,
+                    )
+                )
+            )
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .append(USE_TRIPLE_BACKTICS_FOR_CODE_BLOCKS_STYLE_INSTRUCTION)
+            .into_str()
         )
 
     def code_example_single_pass_aggregate_pass(self, goal: str, preamble: str) -> str:
@@ -1080,6 +1188,8 @@ Your job is to write a draft a code example that will be used in a larger docume
 You will be provided code examples generated using different files deemed to be relevant to the code example you are constructing.
 
 Your goal is to combine these code examples into one coherent example that exemplifies the section you're writing a code example for: {title}.
+
+Take care not to make up intermediate code that does not clearly exist from what is given to you. In combining the many examples initially given to you, look for opportunities to combine examples into larger and more complete examples, but only if that is the correct choice for the purpose of the section. Alternatively, you can and should also discard some incoming example content because it is not relevant or less relevant to the goal of the section.
 
 Here is a description of the kind of content you should include in the section:
 
@@ -1098,13 +1208,24 @@ Your output should be markdown formatted text.
             else ""
         )
         heading = "#" * self.level
-        return system_prompt_template.format(
-            goal=goal,
-            preamble_content=preamble_content,
-            heading=heading,
-            title=self.title,
-            instruction=self.instruction,
-            content_structure=self.content_structure,
+        return (
+            Prompt.empty()
+            .append(
+                Component(
+                    string=system_prompt_template.format(
+                        goal=goal,
+                        preamble_content=preamble_content,
+                        heading=heading,
+                        title=self.title,
+                        instruction=self.instruction,
+                        content_structure=self.content_structure,
+                    )
+                )
+            )
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .append(USE_TRIPLE_BACKTICS_FOR_CODE_BLOCKS_STYLE_INSTRUCTION)
+            .into_str()
         )
 
     async def code_example_few_shot_generator(
@@ -1652,10 +1773,21 @@ I've provided the top-level sections you should use with a description of the ki
             else ""
         )
 
-        return system_prompt_template.format(
-            goal=self.document.goal,
-            preamble_content=preamble_content,
-            sections=sections,
+        return (
+            Prompt.empty()
+            .append(
+                Component(
+                    string=system_prompt_template.format(
+                        goal=self.document.goal,
+                        preamble_content=preamble_content,
+                        sections=sections,
+                    )
+                )
+            )
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .append(USE_TRIPLE_BACKTICS_FOR_CODE_BLOCKS_STYLE_INSTRUCTION)
+            .into_str()
         )
 
     def final_copy_editor_system_prompt(self) -> str:
@@ -1674,12 +1806,12 @@ The following section structure should appear in the document. Other subsections
 This draft was built up iteratively over time.
 
 Your goal is to provide final polish and edits to produce a complete, coherent, and high quality final document. Your job is not to comment or change the content of the document. Focus only on typical copy editing duties:
-- Make sure all content is formatted with proper Markdown syntax, but do not enclose any content with triple backticks.
-- Remove speculative or hypothetical language.
+- Make sure all content is formatted with proper Markdown syntax, but **do not** enclose the whole document in a Markdown codefenced block. You are merely ensuring the overall content follows Markdown syntax.
+  - Ensure the syntax for header and list hierarchies are correct.
+  - Ensure the syntax for bulleted and numbered lists is correct.
+  - Ensure the syntax for fenced source code blocks, if present, is correct.
 - Remove any references to this being a draft document, early draft, or iterative draft.
 - Keep all technical or conceptual details.
-- Ensure the syntax for header and list hierarchies are correct.
-- Ensure the syntax for bulleted and numbered lists is correct.
 - Make sure transitions between sections and subsections flow smoothly.
 - For any MermaidJS diagrams, make sure to not have any parentheses in the MermaidJS content (for example, in the labels for components of the diagram). Parentheses will lead to syntax errors in parsing and rendering the diagram and cannot be allowed. Additionally, make sure labels and names in the diagram are relatively short.
 
@@ -1695,10 +1827,21 @@ Your output is the full content of the document with editing updates based on yo
             else ""
         )
 
-        return system_prompt_template.format(
-            goal=self.document.goal,
-            preamble_content=preamble_content,
-            sections=sections,
+        return (
+            Prompt.empty()
+            .append(
+                Component(
+                    string=system_prompt_template.format(
+                        goal=self.document.goal,
+                        preamble_content=preamble_content,
+                        sections=sections,
+                    )
+                )
+            )
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .append(USE_TRIPLE_BACKTICS_FOR_CODE_BLOCKS_STYLE_INSTRUCTION)
+            .into_str()
         )
 
     def to_disk(self, json_p: Path) -> None:

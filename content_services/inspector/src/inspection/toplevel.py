@@ -2,6 +2,13 @@ import concurrent.futures
 from pathlib import Path
 from typing import Any
 
+from shared.prompts.structured_prompting import (
+    GENERAL_STE_STYLE_INSTRUCTION,
+    NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES,
+    TERSE_TWITTER_SINGLE_SENTENCE_STYLE_INSTRUCTION,
+    Component,
+    Prompt,
+)
 from tqdm import tqdm
 from utils.dag import LiteNode, NodeKind
 from utils.io import (
@@ -19,11 +26,20 @@ def toplevel_chunk_description(
     codebase_name: str,
     description_chunk: str,
 ) -> str:
-    system_prompt = get_prompt_template(
-        PARENT_PATH / "prompt_templates/toplevel/chunk_description.txt"
+    system_prompt = (
+        Prompt.empty()
+        .append(
+            Component(
+                string=get_prompt_template(
+                    PARENT_PATH / "prompt_templates/toplevel/chunk_description.txt"
+                )
+            )
+        )
+        .append(GENERAL_STE_STYLE_INSTRUCTION)
+        .into_str()
     )
-    human_prompt = f"Chunk of content descriptions for codebase `{codebase_name}`:\n\n{description_chunk}"
-    return llm.generate_response(system_prompt, human_prompt)
+    user_prompt = f"Chunk of content descriptions for codebase `{codebase_name}`:\n\n{description_chunk}"
+    return llm.generate_response(system_prompt, user_prompt)
 
 
 def toplevel_compress_chunks(
@@ -31,11 +47,20 @@ def toplevel_compress_chunks(
     codebase_name: str,
     description_chunk: str,
 ) -> str:
-    system_prompt = get_prompt_template(
-        PARENT_PATH / "prompt_templates/toplevel/compress_chunks.txt"
+    system_prompt = (
+        Prompt.empty()
+        .append(
+            Component(
+                string=get_prompt_template(
+                    PARENT_PATH / "prompt_templates/toplevel/compress_chunks.txt"
+                )
+            )
+        )
+        .append(GENERAL_STE_STYLE_INSTRUCTION)
+        .into_str()
     )
-    human_prompt = f"Chunk of module subset descriptions for codebase `{codebase_name}`:\n\n{description_chunk}"
-    return llm.generate_response(system_prompt, human_prompt)
+    user_prompt = f"Chunk of module subset descriptions for codebase `{codebase_name}`:\n\n{description_chunk}"
+    return llm.generate_response(system_prompt, user_prompt)
 
 
 def toplevel_long_from_chunk_descriptions(
@@ -43,16 +68,23 @@ def toplevel_long_from_chunk_descriptions(
     codebase_name: str,
     data: str,
 ) -> str:
-    system_prompt = get_prompt_template(
-        PARENT_PATH / "prompt_templates/toplevel/long_from_chunk_descriptions.txt"
+    system_prompt = (
+        Prompt.empty()
+        .append(
+            Component(
+                string=get_prompt_template(
+                    PARENT_PATH
+                    / "prompt_templates/toplevel/long_from_chunk_descriptions.txt"
+                )
+            )
+        )
+        .append(GENERAL_STE_STYLE_INSTRUCTION)
+        .into_str()
     )
-    human_prompt = data
-    human_prompt = ""
-    human_prompt += (
-        f"Chunk of module subset descriptions for codebase {codebase_name}\n\n"
+    user_prompt = (
+        f"Chunk of module subset descriptions for codebase {codebase_name}:\n\n{data}"
     )
-    human_prompt += data
-    return llm.generate_response(system_prompt, human_prompt)
+    return llm.generate_response(system_prompt, user_prompt)
 
 
 def toplevel_terse_sentence_from_chunk_descriptions(
@@ -60,16 +92,31 @@ def toplevel_terse_sentence_from_chunk_descriptions(
     data: str,
     codebase_name: str,
 ) -> str:
-    system_prompt = get_prompt_template(
-        PARENT_PATH
-        / "prompt_templates/toplevel/terse_sentence_from_chunk_descriptions.txt"
+    system_prompt = (
+        Prompt.empty()
+        .append(
+            Component(
+                string=get_prompt_template(
+                    PARENT_PATH
+                    / "prompt_templates/toplevel/terse_sentence_from_chunk_descriptions.txt"
+                )
+            )
+        )
+        .append(GENERAL_STE_STYLE_INSTRUCTION)
+        .into_str()
     )
-    human_prompt = ""
-    human_prompt += (
-        f"Chunk of module subset descriptions for codebase {codebase_name}\n\n"
+    user_prompt = (
+        Prompt.empty()
+        .append(
+            Component(
+                string=f"Chunk of module subset descriptions for codebase {codebase_name}\n\n{data}"
+            )
+        )
+        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
+        .append(TERSE_TWITTER_SINGLE_SENTENCE_STYLE_INSTRUCTION)
+        .into_str()
     )
-    human_prompt += data
-    return llm.generate_response(system_prompt, human_prompt)
+    return llm.generate_response(system_prompt, user_prompt)
 
 
 def toplevel_single_sentence_from_chunk_descriptions(
@@ -77,16 +124,30 @@ def toplevel_single_sentence_from_chunk_descriptions(
     data: str,
     codebase_name: str,
 ) -> str:
-    system_prompt = get_prompt_template(
-        PARENT_PATH
-        / "prompt_templates/toplevel/single_sentence_from_chunk_descriptions.txt"
+    system_prompt = (
+        Prompt.empty()
+        .append(
+            Component(
+                string=get_prompt_template(
+                    PARENT_PATH
+                    / "prompt_templates/toplevel/single_sentence_from_chunk_descriptions.txt"
+                )
+            )
+        )
+        .append(GENERAL_STE_STYLE_INSTRUCTION)
+        .into_str()
     )
-    human_prompt = ""
-    human_prompt += (
-        f"Chunk of module subset descriptions for codebase {codebase_name}\n\n"
+    user_prompt = (
+        Prompt.empty()
+        .append(
+            Component(
+                string=f"Chunk of module subset descriptions for codebase {codebase_name}\n\n{data}"
+            )
+        )
+        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
+        .into_str()
     )
-    human_prompt += data
-    return llm.generate_response(system_prompt, human_prompt)
+    return llm.generate_response(system_prompt, user_prompt)
 
 
 def toplevel_single_paragraph_from_chunk_descriptions(
@@ -94,16 +155,30 @@ def toplevel_single_paragraph_from_chunk_descriptions(
     data: str,
     codebase_name: str,
 ) -> str:
-    system_prompt = get_prompt_template(
-        PARENT_PATH
-        / "prompt_templates/toplevel/single_paragraph_from_chunk_descriptions.txt"
+    system_prompt = (
+        Prompt.empty()
+        .append(
+            Component(
+                string=get_prompt_template(
+                    PARENT_PATH
+                    / "prompt_templates/toplevel/single_paragraph_from_chunk_descriptions.txt"
+                )
+            )
+        )
+        .append(GENERAL_STE_STYLE_INSTRUCTION)
+        .into_str()
     )
-    human_prompt = ""
-    human_prompt += (
-        f"Chunk of module subset descriptions for codebase {codebase_name}\n\n"
+    user_prompt = (
+        Prompt.empty()
+        .append(
+            Component(
+                string=f"Chunk of module subset descriptions for codebase {codebase_name}\n\n{data}"
+            )
+        )
+        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
+        .into_str()
     )
-    human_prompt += data
-    return llm.generate_response(system_prompt, human_prompt)
+    return llm.generate_response(system_prompt, user_prompt)
 
 
 def toplevel_long_from_long_descriptions(
@@ -111,52 +186,97 @@ def toplevel_long_from_long_descriptions(
     codebase_name: str,
     data: str,
 ) -> str:
-    system_prompt = get_prompt_template(
-        PARENT_PATH / "prompt_templates/toplevel/long_from_long_descriptions.txt"
+    system_prompt = (
+        Prompt.empty()
+        .append(
+            Component(
+                string=get_prompt_template(
+                    PARENT_PATH
+                    / "prompt_templates/toplevel/long_from_long_descriptions.txt"
+                )
+            )
+        )
+        .append(GENERAL_STE_STYLE_INSTRUCTION)
+        .into_str()
     )
-    human_prompt = ""
-    human_prompt += f"Codebase name: {codebase_name}\n\n"
-    human_prompt += data
-    return llm.generate_response(system_prompt, human_prompt)
+    user_prompt = f"Codebase name: {codebase_name}\n\n{data}"
+    return llm.generate_response(system_prompt, user_prompt)
 
 
 def toplevel_terse_sentence_from_long_descriptions(
     llm: ChatOpenAI, codebase_name: str, data: str
 ) -> str:
-    system_prompt = get_prompt_template(
-        PARENT_PATH
-        / "prompt_templates/toplevel/terse_sentence_from_long_descriptions.txt"
+    system_prompt = (
+        Prompt.empty()
+        .append(
+            Component(
+                string=get_prompt_template(
+                    PARENT_PATH
+                    / "prompt_templates/toplevel/terse_sentence_from_long_descriptions.txt"
+                )
+            )
+        )
+        .append(GENERAL_STE_STYLE_INSTRUCTION)
+        .into_str()
     )
-    human_prompt = ""
-    human_prompt += f"Codebase name: {codebase_name}\n\n"
-    human_prompt += data
-    return llm.generate_response(system_prompt, human_prompt)
+    user_prompt = (
+        Prompt.empty()
+        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
+        .append(TERSE_TWITTER_SINGLE_SENTENCE_STYLE_INSTRUCTION)
+        .append(Component(string=f"Codebase name: {codebase_name}\n\n{data}"))
+        .into_str()
+    )
+    return llm.generate_response(system_prompt, user_prompt)
 
 
 def toplevel_single_sentence_from_long_descriptions(
     llm: ChatOpenAI, codebase_name: str, data: str
 ) -> str:
-    system_prompt = get_prompt_template(
-        PARENT_PATH
-        / "prompt_templates/toplevel/single_sentence_from_long_descriptions.txt"
+    system_prompt = (
+        Prompt.empty()
+        .append(
+            Component(
+                string=get_prompt_template(
+                    PARENT_PATH
+                    / "prompt_templates/toplevel/single_sentence_from_long_descriptions.txt"
+                )
+            )
+        )
+        .append(GENERAL_STE_STYLE_INSTRUCTION)
+        .into_str()
     )
-    human_prompt = ""
-    human_prompt += f"Codebase name: {codebase_name}\n\n"
-    human_prompt += data
-    return llm.generate_response(system_prompt, human_prompt)
+    user_prompt = (
+        Prompt.empty()
+        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
+        .append(Component(string=f"Codebase name: {codebase_name}\n\n{data}"))
+        .into_str()
+    )
+    return llm.generate_response(system_prompt, user_prompt)
 
 
 def toplevel_single_paragraph_from_long_descriptions(
     llm: ChatOpenAI, codebase_name: str, data: str
 ) -> str:
-    system_prompt = get_prompt_template(
-        PARENT_PATH
-        / "prompt_templates/toplevel/single_paragraph_from_long_descriptions.txt"
+    system_prompt = (
+        Prompt.empty()
+        .append(
+            Component(
+                string=get_prompt_template(
+                    PARENT_PATH
+                    / "prompt_templates/toplevel/single_paragraph_from_long_descriptions.txt"
+                )
+            )
+        )
+        .append(GENERAL_STE_STYLE_INSTRUCTION)
+        .into_str()
     )
-    human_prompt = ""
-    human_prompt += f"Codebase name: {codebase_name}\n\n"
-    human_prompt += data
-    return llm.generate_response(system_prompt, human_prompt)
+    user_prompt = (
+        Prompt.empty()
+        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
+        .append(Component(string=f"Codebase name: {codebase_name}\n\n{data}"))
+        .into_str()
+    )
+    return llm.generate_response(system_prompt, user_prompt)
 
 
 def comprehend_codebase_top_down(
@@ -207,7 +327,7 @@ def comprehend_codebase_top_down(
                     res = future.result()
                     if res is not None:
                         print(
-                            f"Processed {idx}/{num_chunks-1} initial top-level chunks"
+                            f"Processed {idx}/{num_chunks - 1} initial top-level chunks"
                         )
                         results.append((futures[future], res))
                     pbar.update(1)
@@ -249,7 +369,7 @@ def comprehend_codebase_top_down(
                         res = future.result()
                         if res is not None:
                             print(
-                                f"Processed {idx}/{num_chunks-1} chunks for top-level content in compression iteration {compression_idx}"
+                                f"Processed {idx}/{num_chunks - 1} chunks for top-level content in compression iteration {compression_idx}"
                             )
                             results.append((futures[future], res))
                         pbar.update(1)

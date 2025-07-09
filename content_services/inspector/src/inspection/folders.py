@@ -4,6 +4,15 @@ from enum import Enum, auto
 from pathlib import Path
 from typing import Any
 
+from database.models_v2_enums import ContentKind
+from shared.prompts.structured_prompting import (
+    GENERAL_STE_STYLE_INSTRUCTION,
+    NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES,
+    RETURN_UNEDITED_CONTENT_IF_NO_SUBSTANTIAL_CHANGES_FOLDERS,
+    TERSE_TWITTER_SINGLE_SENTENCE_STYLE_INSTRUCTION,
+    Component,
+    Prompt,
+)
 from utils.dag import LiteNode, NodeKind
 from utils.io import get_prompt_template
 from utils.models import ChatOpenAI
@@ -59,13 +68,49 @@ def folder_single_sentence_from_child_list(
     folder_name: str,
     codebase_name: str,
     data: str,
+    is_root: bool,
+    previous_content: str | None,
 ) -> str:
-    system_prompt = get_prompt_template(
-        PARENT_PATH / "prompt_templates/folders/single_sentence_from_child_list.txt"
+    system_prompt_structured = (
+        Prompt.empty()
+        .append(
+            Component(
+                string=get_prompt_template(
+                    PARENT_PATH
+                    / "prompt_templates/folders/single_sentence_from_child_list.txt"
+                )
+            )
+        )
+        .append(GENERAL_STE_STYLE_INSTRUCTION)
     )
-    human_prompt = ""
-    human_prompt += f"Folder `{folder_name}` in codebase `{codebase_name}` child content:\n\n{data}\n\n"
-    return llm.generate_response(system_prompt, human_prompt)
+    if previous_content is not None:
+        system_prompt_structured.append(
+            RETURN_UNEDITED_CONTENT_IF_NO_SUBSTANTIAL_CHANGES_FOLDERS
+        ).append(
+            Component(
+                string=f"Previous single sentence description:\n\n{previous_content}"
+            )
+        )
+    system_prompt = system_prompt_structured.into_str()
+
+    user_prompt_structured = Prompt.empty()
+    if is_root:
+        root_specialization = """
+This folder is the root of an entire codebase. As such, write your single sentence description to concisely summarize the purpose and contents of the codebase as a whole.
+"""
+        user_prompt_structured.append(Component(string=root_specialization))
+
+    user_prompt_structured.append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES).append(
+        TERSE_TWITTER_SINGLE_SENTENCE_STYLE_INSTRUCTION
+    ).append(
+        Component(
+            string=f"Folder `{folder_name}` in codebase `{codebase_name}` child content:\n\n{data}"
+        )
+    )
+
+    user_prompt = user_prompt_structured.into_str()
+
+    return llm.generate_response(system_prompt, user_prompt)
 
 
 def folder_single_paragraph_from_child_list(
@@ -73,13 +118,41 @@ def folder_single_paragraph_from_child_list(
     folder_name: str,
     codebase_name: str,
     data: str,
+    previous_content: str | None,
 ) -> str:
-    system_prompt = get_prompt_template(
-        PARENT_PATH / "prompt_templates/folders/single_paragraph_from_child_list.txt"
+    system_prompt_structured = (
+        Prompt.empty()
+        .append(
+            Component(
+                string=get_prompt_template(
+                    PARENT_PATH
+                    / "prompt_templates/folders/single_paragraph_from_child_list.txt"
+                )
+            )
+        )
+        .append(GENERAL_STE_STYLE_INSTRUCTION)
     )
-    human_prompt = ""
-    human_prompt += f"Folder `{folder_name}` in codebase `{codebase_name}` child content:\n\n{data}\n\n"
-    return llm.generate_response(system_prompt, human_prompt)
+    if previous_content is not None:
+        system_prompt_structured.append(
+            RETURN_UNEDITED_CONTENT_IF_NO_SUBSTANTIAL_CHANGES_FOLDERS
+        ).append(
+            Component(
+                string=f"Previous single paragraph description:\n\n{previous_content}"
+            )
+        )
+    system_prompt = system_prompt_structured.into_str()
+    user_prompt = (
+        Prompt.empty()
+        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
+        .append(
+            Component(
+                string=f"Folder `{folder_name}` in codebase `{codebase_name}` child content:\n\n{data}"
+            )
+        )
+        .into_str()
+    )
+
+    return llm.generate_response(system_prompt, user_prompt)
 
 
 def folder_single_sentence_from_chunk_descriptions(
@@ -87,13 +160,38 @@ def folder_single_sentence_from_chunk_descriptions(
     folder_name: str,
     codebase_name: str,
     data: str,
+    is_root: bool,
+    previous_content: str | None,
 ) -> str:
-    system_prompt = get_prompt_template(
-        PARENT_PATH
-        / "prompt_templates/folders/single_sentence_from_chunk_descriptions.txt"
+    system_prompt_structured = (
+        Prompt.empty()
+        .append(
+            Component(
+                string=get_prompt_template(
+                    PARENT_PATH
+                    / "prompt_templates/folders/single_sentence_from_chunk_descriptions.txt"
+                )
+            )
+        )
+        .append(GENERAL_STE_STYLE_INSTRUCTION)
     )
-    human_prompt = data
-    return llm.generate_response(system_prompt, human_prompt)
+    if previous_content is not None:
+        system_prompt_structured.append(
+            RETURN_UNEDITED_CONTENT_IF_NO_SUBSTANTIAL_CHANGES_FOLDERS
+        ).append(
+            Component(
+                string=f"Previous single sentence description:\n\n{previous_content}"
+            )
+        )
+    system_prompt = system_prompt_structured
+    user_prompt = (
+        Prompt.empty()
+        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
+        .append(TERSE_TWITTER_SINGLE_SENTENCE_STYLE_INSTRUCTION)
+        .append(Component(string=data))
+        .into_str()
+    )
+    return llm.generate_response(system_prompt, user_prompt)
 
 
 def folder_single_paragraph_from_chunk_descriptions(
@@ -101,13 +199,36 @@ def folder_single_paragraph_from_chunk_descriptions(
     folder_name: str,
     codebase_name: str,
     data: str,
+    previous_content: str | None,
 ) -> str:
-    system_prompt = get_prompt_template(
-        PARENT_PATH
-        / "prompt_templates/folders/single_paragraph_from_chunk_descriptions.txt"
+    system_prompt_structured = (
+        Prompt.empty()
+        .append(
+            Component(
+                string=get_prompt_template(
+                    PARENT_PATH
+                    / "prompt_templates/folders/single_paragraph_from_chunk_descriptions.txt"
+                )
+            )
+        )
+        .append(GENERAL_STE_STYLE_INSTRUCTION)
     )
-    human_prompt = data
-    return llm.generate_response(system_prompt, human_prompt)
+    if previous_content is not None:
+        system_prompt_structured.append(
+            RETURN_UNEDITED_CONTENT_IF_NO_SUBSTANTIAL_CHANGES_FOLDERS
+        ).append(
+            Component(
+                string=f"Previous single paragraph description:\n\n{previous_content}"
+            )
+        )
+    system_prompt = system_prompt_structured.into_str()
+    user_prompt = (
+        Prompt.empty()
+        .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES)
+        .append(Component(string=data))
+        .into_str()
+    )
+    return llm.generate_response(system_prompt, user_prompt)
 
 
 def _return_with_simple_message(message: str, folder_node: LiteNode) -> dict[str, any]:
@@ -134,6 +255,7 @@ def comprehend_folder_top_down(
     raise_hard_errors: bool = True,
     redundant_folder_flag: bool = False,
     use_async: bool = False,
+    previous_content: dict[str, str] | None = None,
 ) -> dict[str, any]:
     from shared.chunking.text_splitter import split_text
 
@@ -220,7 +342,7 @@ def comprehend_folder_top_down(
                     res = future.result()
                     if res is not None:
                         print(
-                            f"Processed {idx}/{len(list_chunks)-1} initial chunks for folder `{folder_name}`"
+                            f"Processed {idx}/{len(list_chunks) - 1} initial chunks for folder `{folder_name}`"
                         )
                         results.append((futures[future], res))
                 chunk_detailed_descriptions: list[str] = [
@@ -267,7 +389,7 @@ def comprehend_folder_top_down(
                             res = future.result()
                             if res is not None:
                                 print(
-                                    f"Processed {idx}/{num_chunks-1} chunks for folder `{folder_name}` "
+                                    f"Processed {idx}/{num_chunks - 1} chunks for folder `{folder_name}` "
                                     f"in compression iteration {compression_idx}"
                                 )
                                 results.append((futures[future], res))
@@ -388,6 +510,7 @@ def comprehend_folder_top_down(
             raise ValueError(
                 f"Unexpected value `{aggregation_state}` for `aggregation_state` for folder processing"
             )
+    is_root = node.kind == NodeKind.ROOT_FOLDER
     if use_async:
         with FastShutdownThreadPoolExecutor(max_workers=max_workers) as executor:
             single_sentence_future = executor.submit(
@@ -396,6 +519,7 @@ def comprehend_folder_top_down(
                 folder_name,
                 codebase_name,
                 data,
+                is_root=is_root,
             )
             single_paragraph_future = executor.submit(
                 single_paragraph_fn,
@@ -416,12 +540,23 @@ def comprehend_folder_top_down(
             folder_name=folder_name,
             codebase_name=codebase_name,
             data=data,
+            is_root=is_root,
+            previous_content=previous_content.get(
+                ContentKind.SHORT_SENTENCE_DESCRIPTION, None
+            )
+            if previous_content
+            else None,
         )
         single_paragraph = single_paragraph_fn(
             llm=llm,
             folder_name=folder_name,
             codebase_name=codebase_name,
             data=data,
+            previous_content=previous_content.get(
+                ContentKind.SHORT_PARAGRAPH_DESCRIPTION, None
+            )
+            if previous_content
+            else None,
         )
         single_sentence = single_sentence.replace("\x00", "")
         single_paragraph = single_paragraph.replace("\x00", "")

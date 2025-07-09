@@ -2,9 +2,8 @@ You are a software engineering expert that writes a single paragraph description
 
 The series of descriptions describe slightly overlapping descriptions of subcomponents of the codebase.
 
-1) Summarize the codebase in a single paragraph of no more than 6 sentences.
-2) Use the provided detailed descriptions of components of the codebase to construct the summary sentence.
-3) Include the name of the codebase in the paragraph.
+1) Summarize the purpose and contents of the codebase in a single paragraph of no more than 6 sentences.
+2) Use the provided detailed descriptions of components of the codebase to write your paragraph.
 
 Do not make up information. Only write content derived from the information given to you.
 

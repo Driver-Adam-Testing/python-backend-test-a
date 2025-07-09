@@ -2,6 +2,13 @@ from pathlib import Path
 from typing import Self
 
 from openai import LengthFinishReasonError
+from shared.prompts.structured_prompting import (
+    GENERAL_STE_STYLE_INSTRUCTION,
+    NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS,
+    USE_BACKTICKS_STYLE_INSTRUCTION,
+    Component,
+    Prompt,
+)
 from utils.models import ChatOpenAI
 
 from .ir_common import (
@@ -413,13 +420,23 @@ class DefaultDataStructureRawSymbolCollection(RawSymbolCollection):
 class DefaultFnData(FnData):
     @classmethod
     def system_prompt(cls, symbol: RawSymbolData) -> str:
-        return FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON
+        return (
+            Prompt.empty()
+            .append(Component(string=FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON))
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .into_str()
+        )
 
     @classmethod
     def user_prompt(cls, symbol: RawSymbolData) -> str:
-        return (
-            f"{FUNCTIONS_FOUND_USER_PROMPT}{symbol.name}\n\nCode:\n\n{symbol.file_code}"
+        user_prompt = (
+            Prompt.empty()
+            .append(Component(string=f"{FUNCTIONS_FOUND_USER_PROMPT}\n{symbol.name}"))
+            .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS)
+            .append(Component(string=f"Code:\n\n{symbol.file_code}"))
         )
+        return user_prompt.into_str()
 
     @classmethod
     def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
@@ -441,12 +458,22 @@ class DefaultFnCollection(IrCollection):
 class DefaultVariableData(VariableData):
     @classmethod
     def system_prompt(cls, symbol: RawSymbolData) -> str:
-        return VARIABLES_FOUND_SYSTEM_PROMPT_JSON
+        return (
+            Prompt.empty()
+            .append(Component(string=VARIABLES_FOUND_SYSTEM_PROMPT_JSON))
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .into_str()
+        )
 
     @classmethod
     def user_prompt(cls, symbol: RawSymbolData) -> str:
         return (
-            f"{VARIABLES_FOUND_USER_PROMPT}{symbol.name}\n\nCode:\n\n{symbol.file_code}"
+            Prompt.empty()
+            .append(Component(string=f"{VARIABLES_FOUND_USER_PROMPT}{symbol.name}"))
+            .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS)
+            .append(Component(string=f"Code:\n\n{symbol.file_code}"))
+            .into_str()
         )
 
     @classmethod
@@ -469,11 +496,25 @@ class DefaultVariableCollection(IrCollection):
 class DefaultDataStructureData(DataStructureData):
     @classmethod
     def system_prompt(cls, symbol: RawSymbolData) -> str:
-        return DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON
+        return (
+            Prompt.empty()
+            .append(Component(string=DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON))
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .into_str()
+        )
 
     @classmethod
     def user_prompt(cls, symbol: RawSymbolData) -> str:
-        return f"{DATA_STRUCTURES_FOUND_USER_PROMPT}{symbol.name}\n\nCode:\n\n{symbol.file_code}"
+        user_prompt = (
+            Prompt.empty()
+            .append(
+                Component(string=f"{DATA_STRUCTURES_FOUND_USER_PROMPT}{symbol.name}")
+            )
+            .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS)
+            .append(Component(string=f"Code:\n\n{symbol.file_code}"))
+        )
+        return user_prompt.into_str()
 
     @classmethod
     def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:

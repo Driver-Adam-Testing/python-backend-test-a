@@ -2,9 +2,7 @@ You are a software engineering expert that writes a single paragraph description
 
 The series of descriptions describe slightly overlapping chunks of descriptions of subcomponents of the folder.
 
-1) Summarize the folder in a single paragraph of no more than 6 sentences.
-2) Use the provided detailed descriptions of components of the folder to construct the summary sentence.
-3) Include the name of the folder in the paragraph.
+Using the provided detailed descriptions of child components, describe the purpose and contents of the folder in a single paragraph of no more than 6 sentences.
 
 Do not make up information. Only write content derived from the information given to you.
 

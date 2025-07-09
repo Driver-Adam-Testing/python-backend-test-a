@@ -752,6 +752,7 @@ Your output should be markdown formatted text including the section title as a t
                 )
             )
             .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
             .into_str()
         )
 
@@ -796,6 +797,7 @@ Your output should be markdown formatted text.
                 )
             )
             .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
             .into_str()
         )
 
@@ -891,6 +893,7 @@ Your expected audience is a technical engineer.
                 )
             )
             .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
             .into_str()
         )
 
@@ -938,6 +941,7 @@ Your expected audience is a technical engineer.
                 )
             )
             .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
             .into_str()
         )
 
@@ -1168,6 +1172,7 @@ Your output should be markdown formatted text.
                 )
             )
             .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
             .append(USE_TRIPLE_BACKTICS_FOR_CODE_BLOCKS_STYLE_INSTRUCTION)
             .into_str()
         )
@@ -1218,6 +1223,7 @@ Your output should be markdown formatted text.
                 )
             )
             .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
             .append(USE_TRIPLE_BACKTICS_FOR_CODE_BLOCKS_STYLE_INSTRUCTION)
             .into_str()
         )
@@ -1779,6 +1785,8 @@ I've provided the top-level sections you should use with a description of the ki
                 )
             )
             .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .append(USE_TRIPLE_BACKTICS_FOR_CODE_BLOCKS_STYLE_INSTRUCTION)
             .into_str()
         )
 
@@ -1831,6 +1839,8 @@ Your output is the full content of the document with editing updates based on yo
                 )
             )
             .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .append(USE_TRIPLE_BACKTICS_FOR_CODE_BLOCKS_STYLE_INSTRUCTION)
             .into_str()
         )
 

@@ -14,7 +14,7 @@ from autodocs_prototype import (
     get_autodoc_elapsed_time,
     update_autodocs_status,
 )
-from common import app
+from common import app, wait_for_guard_duty_tag
 
 image = inspection_image = (
     modal.Image.debian_slim(python_version="3.12")
@@ -154,11 +154,19 @@ async def run_autodoc(
 
                     s3 = boto3.client("s3")
                     # download the file from S3
-                    s3.download_file(
-                        bucket,
-                        key,
-                        "/autodocs_configs/custom_config.toml",
-                    )
+                    if wait_for_guard_duty_tag(bucket=bucket, key=key):
+                        print(
+                            f"Downloading custom config from bucket {bucket} with key {key}."
+                        )
+                        s3.download_file(
+                            bucket,
+                            key,
+                            "/autodocs_configs/custom_config.toml",
+                        )
+                    else:
+                        raise ValueError(
+                            f"GuardDuty tag not found for bucket {bucket} and key {key}. "
+                        )
                     config = AutoDocCfg.from_file(
                         "/autodocs_configs/custom_config.toml"
                     )

@@ -6,7 +6,7 @@ authors = ["Eric Miller <146128069+eric-driverai@users.noreply.github.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = ">=3.12,<3.13"
 auth0-python = "^4.9.0"
 asyncio = "^3.4.3"
 httpx = "^0.28.1"

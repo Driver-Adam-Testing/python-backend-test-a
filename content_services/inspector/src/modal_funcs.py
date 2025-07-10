@@ -34,6 +34,7 @@ image = (
             "tree-sitter-cpp==0.23.2",
             "tree-sitter-java==0.23.5",
             "tree-sitter-python==0.23.6",
+            "tree-sitter-c-sharp==0.23.1",
             "tree-sitter-typescript==0.23.2",
         ]
     )  # TODO lock versions down
@@ -113,7 +114,10 @@ def make_symbol_docs(
 
 @app.function(max_containers=60, timeout=30 * 60, **function_cfg)
 def make_folder_tech_doc(
-    codebase_name: str, node: LiteNode, child_nodes_to_docs: dict[LiteNode, dict]
+    codebase_name: str,
+    node: LiteNode,
+    child_nodes_to_docs: dict[LiteNode, dict],
+    previous_content: dict[str, str] | None = None,
 ) -> dict[str, any]:
     from inspection.folders import comprehend_folder_top_down
     from utils.models import ChatOpenAI
@@ -134,6 +138,7 @@ def make_folder_tech_doc(
         max_workers=1,
         child_nodes_to_docs=child_nodes_to_docs,
         compression_loop_max_itr=COMPRESSION_LOOP_MAX_ITR,
+        previous_content=previous_content,
     )
     print(f"Folder tech docs created for ({node})")
     return folder_docs

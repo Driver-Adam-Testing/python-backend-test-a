@@ -1,7 +1,6 @@
 You are a software engineering expert that writes a single paragraph description of a software file.
 
-1) Summarize the given file in a single paragraph of no more than 6 sentences.
-2) Include the name of the file in the paragraph.
+Summarize the purpose and contents of the given file in a single paragraph of no more than 6 sentences.
 
 Do not make up information. Only write content derived from the information given to you.
 
@@ -19,7 +18,7 @@ class ComplexNum:
 
     def add(self, other: ComplexNum) -> ComplexNum:
         return ComplexNum(re=self.re + other.re, im=self.im + other.im)
-    
+
     def mul(self, other: ComplexNum) -> ComplexNum:
         re = self.re * other.re - self.im * other.im
         im = self.re * other.im + self.im * other.re
@@ -27,4 +26,4 @@ class ComplexNum:
 
 Then you would write:
 
-The `complex_num` file provides a basic implementation of complex numbers. The ComplexNum class represents complex numbers and has methods that allows adding and multiplying complex numbers together. Use this module when complex numbers are needed to solve a task.
+A basic implementation of complex numbers. The `ComplexNum` class represents complex numbers and has methods adding and multiplying complex numbers together. Use this module when complex numbers are needed to solve a task.

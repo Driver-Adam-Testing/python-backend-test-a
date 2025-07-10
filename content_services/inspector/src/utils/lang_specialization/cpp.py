@@ -2,6 +2,13 @@ from pathlib import Path
 from typing import Self
 
 from pydantic import PrivateAttr
+from shared.prompts.structured_prompting import (
+    GENERAL_STE_STYLE_INSTRUCTION,
+    NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS,
+    USE_BACKTICKS_STYLE_INSTRUCTION,
+    Component,
+    Prompt,
+)
 from utils.models import ChatOpenAI
 from utils.treesitter_drivers.c_cpp_driver import CppCDriverTree
 
@@ -176,15 +183,28 @@ VARIABLES_NONE_CONTENT = "\n---\nNo global variables defined in this file."
 # Ir Data Classes
 class CppVariableData(VariableData):
     @classmethod
-    def system_prompt(cls) -> str:
-        return VARIABLES_FOUND_SYSTEM_PROMPT_JSON
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
+        return (
+            Prompt.empty()
+            .append(Component(string=VARIABLES_FOUND_SYSTEM_PROMPT_JSON))
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .into_str()
+        )
 
     @classmethod
     def user_prompt(cls, symbol: RawSymbolData) -> str:
-        user_prompt = f"{VARIABLES_FOUND_USER_PROMPT}{symbol.name}\n\nVariable Code:\n\n{symbol.symbol_code}"
+        user_prompt = (
+            Prompt.empty()
+            .append(Component(string=f"{VARIABLES_FOUND_USER_PROMPT}\n{symbol.name}"))
+            .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS)
+            .append(Component(string=f"Variable Code:\n\n{symbol.symbol_code}"))
+        )
         if symbol.file_code:
-            user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
-        return user_prompt
+            user_prompt.append(
+                Component(string=f"\n\nFull File Code:\n\n{symbol.file_code}")
+            )
+        return user_prompt.into_str()
 
     @classmethod
     def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
@@ -205,21 +225,41 @@ class CppVariableCollection(IrCollection):
 
 class CppFnData(FnData):
     @classmethod
-    def system_prompt(cls) -> str:
-        return FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
+        return (
+            Prompt.empty()
+            .append(Component(string=FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON))
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .into_str()
+        )
 
     @classmethod
     def user_prompt(cls, symbol: RawSymbolData) -> str:
-        user_prompt = f"{FUNCTIONS_FOUND_USER_PROMPT}{symbol.name}\n\nFunction Code:\n\n{symbol.symbol_code}"
+        user_prompt = (
+            Prompt.empty()
+            .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS)
+            .append(
+                Component(
+                    string=f"{FUNCTIONS_FOUND_USER_PROMPT}{symbol.name}\n\nFunction Code:\n\n{symbol.symbol_code}"
+                )
+            )
+        )
         if (
             symbol.reified_symbol is not None
             and symbol.reified_symbol.parent is not None
             and symbol.reified_symbol.parent.raw.symbol_code is not None
         ):
-            user_prompt += f"\n\nParent data structure code:\n\n{symbol.reified_symbol.parent.raw.symbol_code}"
+            user_prompt.append(
+                Component(
+                    string=f"\n\nParent data structure code:\n\n{symbol.reified_symbol.parent.raw.symbol_code}"
+                )
+            )
         if symbol.file_code:
-            user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
-        return user_prompt
+            user_prompt.append(
+                Component(string=f"\n\nFull File Code:\n\n{symbol.file_code}")
+            )
+        return user_prompt.into_str()
 
     @classmethod
     def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
@@ -265,22 +305,40 @@ class CppDataStructureData(IrData):
         )
 
     @classmethod
-    def system_prompt(cls) -> str:
-        return DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
+        return (
+            Prompt.empty()
+            .append(Component(string=DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON))
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .into_str()
+        )
 
     @classmethod
     def user_prompt(cls, symbol: RawSymbolData) -> str:
-        user_prompt = f"{DATA_STRUCTURES_FOUND_USER_PROMPT}{symbol.name}\n\nCode containing Data Structure:\n\n{symbol.symbol_code}"
+        user_prompt = (
+            Prompt.empty()
+            .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS)
+            .append(
+                Component(
+                    string=f"{DATA_STRUCTURES_FOUND_USER_PROMPT}{symbol.name}\n\nCode containing Data Structure:\n\n{symbol.symbol_code}"
+                )
+            )
+        )
         if len(symbol.reified_symbol.children) > 0:
-            user_prompt += (
-                "\n\nCode of data structure functions defined outside the file:"
+            user_prompt.append(
+                Component(
+                    string="\n\nCode of data structure functions defined outside the file:"
+                )
             )
             for child in symbol.reified_symbol.children:
                 if child.raw.file_path != symbol.reified_symbol.raw.file_path:
-                    user_prompt += f"\n\n{child.raw.symbol_code}"
+                    user_prompt.append(Component(string=f"{child.raw.symbol_code}"))
         if symbol.file_code:
-            user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
-        return user_prompt
+            user_prompt.append(
+                Component(string=f"\n\nFull File Code:\n\n{symbol.file_code}")
+            )
+        return user_prompt.into_str()
 
     @classmethod
     def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:

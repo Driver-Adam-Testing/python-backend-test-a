@@ -7,21 +7,34 @@ import os
 import tempfile
 import tomllib
 from collections.abc import Generator
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from enum import IntEnum, StrEnum
 from graphlib import TopologicalSorter
 from pathlib import Path
 from typing import Any, Self
+from uuid import UUID
 
 import boto3
+import modal
 import openai
 import pymupdf4llm
+import tqdm
 from aiolimiter import AsyncLimiter
+from botocore.config import Config
+from common import app
 from database.models_v2_enums import AutoDocStatusMessageKind, ContentKind
 from google import genai
 from pydantic import BaseModel
 from rich.console import Console
 from rich.markdown import Markdown
 from shared.chunking.text_splitter import get_num_tokens, split_text
+from shared.prompts.structured_prompting import (
+    GENERAL_STE_STYLE_INSTRUCTION,
+    USE_BACKTICKS_STYLE_INSTRUCTION,
+    USE_TRIPLE_BACKTICS_FOR_CODE_BLOCKS_STYLE_INSTRUCTION,
+    Component,
+    Prompt,
+)
 from tqdm.asyncio import tqdm_asyncio
 from utils.models import ChatOpenAI, OutputConfig, OutputConfigKind
 
@@ -35,16 +48,57 @@ OPENAI_SEM = asyncio.Semaphore(300)
 PDF_DOWNLOAD_DIR = "pdfs/"
 OPENAI_LIMITER = AsyncLimiter(100, 1)  # 100 requests per second
 
+generate_image = (
+    modal.Image.debian_slim(python_version="3.12")
+    # NOTE: order matters here - anything needed for the build must be added with
+    # copy=True before other actions, all other files must be added after all other
+    # actions
+    .add_local_dir(local_path="../../driver_db", remote_path="/driver_db", copy=True)
+    .add_local_dir(
+        local_path="../../packages/shared", remote_path="/shared_pkg", copy=True
+    )
+    .pip_install(
+        [
+            "openai>=1.40.2",
+            "pydantic>=2.8.2",
+            "/shared_pkg",
+            "pymupdf4llm==0.0.17",
+            "google-genai",
+            "aiolimiter",
+            "tiktoken",
+        ]
+    )
+    .add_local_python_source("database", "shared", "utils", "common", copy=True)
+)
+
+
+@app.function(
+    image=generate_image,
+    secrets=[
+        modal.Secret.from_name("open-ai"),
+    ],
+    memory="2048",
+    timeout=60 * 15,
+    region="us-east",
+    max_containers=300,
+)
+async def llm_generate_modal(model: str, system_prompt: str, user_prompt: str) -> str:
+    # async with OPENAI_SEM, OPENAI_LIMITER:
+    try:
+        llm = ChatOpenAI(model=model, temperature=0, request_timeout=900)
+        return await llm.generate_response(
+            system_prompt=system_prompt, user_prompt=user_prompt
+        )
+    except openai.BadRequestError:
+        print(f"Bad request error for {user_prompt[:1000]}")
+        return ""
+
 
 async def llm_generate(llm: ChatOpenAI, system_prompt: str, user_prompt: str) -> str:
     async with OPENAI_SEM, OPENAI_LIMITER:
-        try:
-            return await llm.generate_response(
-                system_prompt=system_prompt, user_prompt=user_prompt
-            )
-        except openai.BadRequestError:
-            print(f"Bad request error for {user_prompt[:1000]}")
-            return ""
+        return await llm_generate_modal.remote.aio(
+            model=llm.model, system_prompt=system_prompt, user_prompt=user_prompt
+        )
 
 
 GREEN = "\033[92m"  # Green
@@ -268,18 +322,50 @@ class DriverDocsContent(BaseModel):
         # TODO: this will download everything right now, vs. just the subgraph of interest
         with tempfile.TemporaryDirectory() as download_dir:
             try:
-                content = {
-                    k: TechDocsContent(
-                        name=k,
-                        source=_get_source_from_s3(
-                            version_id, primary_asset_id, k, bucket, download_dir
-                        ),
-                        short_sentence_description=ss[k],
-                        long_description=ld[k],
-                        short_paragraph_description=sp[k],
-                    )
-                    for k in ss
-                }
+                # Parallelize S3 downloads using ThreadPoolExecutor
+                content = {}
+                s3_client = boto3.client("s3", config=Config(max_pool_connections=50))
+                with ThreadPoolExecutor(max_workers=10) as executor:
+                    # Submit all download tasks
+                    future_to_key = {
+                        executor.submit(
+                            _get_source_from_s3,
+                            s3_client,
+                            version_id,
+                            primary_asset_id,
+                            k,
+                            bucket,
+                            download_dir,
+                        ): k
+                        for k in ss
+                    }
+
+                    # Collect results as they complete
+                    with tqdm.tqdm(
+                        total=len(future_to_key), desc="Downloading files"
+                    ) as pbar:
+                        for future in as_completed(future_to_key):
+                            k = future_to_key[future]
+                            try:
+                                source = future.result()
+                                content[k] = TechDocsContent(
+                                    name=k,
+                                    source=source,
+                                    short_sentence_description=ss[k],
+                                    long_description=ld[k],
+                                    short_paragraph_description=sp[k],
+                                )
+                            except Exception as exc:
+                                print(f"Error downloading {k}: {exc}")
+                                # Create entry with None source on error
+                                content[k] = TechDocsContent(
+                                    name=k,
+                                    source=None,
+                                    short_sentence_description=ss[k],
+                                    long_description=ld[k],
+                                    short_paragraph_description=sp[k],
+                                )
+                            pbar.update(1)
             except Exception as e:
                 print(codebase_name)
                 raise e
@@ -326,6 +412,7 @@ def _get_derived_contents(
 
 
 def _get_source_from_s3(
+    s3_client: boto3.client,
     version_id: str,
     primary_asset_id: str,
     relative_path: str,
@@ -333,11 +420,11 @@ def _get_source_from_s3(
     download_dir: str,
 ) -> str:
     try:
-        s3_client = boto3.client("s3")
+        # s3_client = boto3.client("s3")
         download_key = f"{primary_asset_id}/{version_id}/{relative_path}"
         local_download_path = Path(download_dir) / relative_path
         local_download_path.parent.mkdir(parents=True, exist_ok=True)
-        print(bucket, download_key)
+        # print(bucket, download_key)
         s3_client.download_file(bucket, download_key, str(local_download_path))
 
         with open(local_download_path) as f:
@@ -651,12 +738,22 @@ Your output should be markdown formatted text including the section title as a t
             else ""
         )
         heading = "#" * self.level
-        return system_prompt_template.format(
-            goal=goal,
-            preamble_content=preamble_content,
-            heading=heading,
-            title=self.title,
-            instruction=self.instruction,
+        return (
+            Prompt.empty()
+            .append(
+                Component(
+                    string=system_prompt_template.format(
+                        goal=goal,
+                        preamble_content=preamble_content,
+                        heading=heading,
+                        title=self.title,
+                        instruction=self.instruction,
+                    )
+                )
+            )
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .into_str()
         )
 
     def init_draft_system_prompt_pdf(self, goal: str, preamble: str) -> str:
@@ -685,13 +782,23 @@ Your output should be markdown formatted text.
             else ""
         )
         heading = "#" * self.level
-        return system_prompt_template.format(
-            goal=goal,
-            preamble_content=preamble_content,
-            heading=heading,
-            title=self.title,
-            instruction=self.instruction,
-            content_structure=self.content_structure,
+        return (
+            Prompt.empty()
+            .append(
+                Component(
+                    string=system_prompt_template.format(
+                        goal=goal,
+                        preamble_content=preamble_content,
+                        heading=heading,
+                        title=self.title,
+                        instruction=self.instruction,
+                        content_structure=self.content_structure,
+                    )
+                )
+            )
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .into_str()
         )
 
     def update_from_file_system_prompt(self, goal: str, preamble: str) -> str:
@@ -724,12 +831,22 @@ Your expected audience is a technical engineer.
             else ""
         )
         heading = "#" * self.level
-        return system_prompt_template.format(
-            goal=goal,
-            preamble_content=preamble_content,
-            heading=heading,
-            title=self.title,
-            instruction=self.instruction,
+        return (
+            Prompt.empty()
+            .append(
+                Component(
+                    string=system_prompt_template.format(
+                        goal=goal,
+                        preamble_content=preamble_content,
+                        heading=heading,
+                        title=self.title,
+                        instruction=self.instruction,
+                    )
+                )
+            )
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .into_str()
         )
 
     def update_from_pdf_system_prompt(self, goal: str, preamble: str) -> str:
@@ -762,12 +879,22 @@ Your expected audience is a technical engineer.
             else ""
         )
         heading = "#" * self.level
-        return system_prompt_template.format(
-            goal=goal,
-            preamble_content=preamble_content,
-            heading=heading,
-            title=self.title,
-            instruction=self.instruction,
+        return (
+            Prompt.empty()
+            .append(
+                Component(
+                    string=system_prompt_template.format(
+                        goal=goal,
+                        preamble_content=preamble_content,
+                        heading=heading,
+                        title=self.title,
+                        instruction=self.instruction,
+                    )
+                )
+            )
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .into_str()
         )
 
     def update_from_folder_system_prompt(self, goal: str, preamble: str) -> str:
@@ -800,12 +927,22 @@ Your expected audience is a technical engineer.
             else ""
         )
         heading = "#" * self.level
-        return system_prompt_template.format(
-            goal=goal,
-            preamble_content=preamble_content,
-            heading=heading,
-            title=self.title,
-            instruction=self.instruction,
+        return (
+            Prompt.empty()
+            .append(
+                Component(
+                    string=system_prompt_template.format(
+                        goal=goal,
+                        preamble_content=preamble_content,
+                        heading=heading,
+                        title=self.title,
+                        instruction=self.instruction,
+                    )
+                )
+            )
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .into_str()
         )
 
     def final_output_format(self, goal: str, preamble: str) -> str:
@@ -828,12 +965,22 @@ Your output is the content of the section reformatted to fit the described conte
             else ""
         )
         heading = "#" * self.level
-        return system_prompt_template.format(
-            goal=goal,
-            preamble_content=preamble_content,
-            heading=heading,
-            title=self.title,
-            content_structure=self.content_structure,
+        return (
+            Prompt.empty()
+            .append(
+                Component(
+                    string=system_prompt_template.format(
+                        goal=goal,
+                        preamble_content=preamble_content,
+                        heading=heading,
+                        title=self.title,
+                        content_structure=self.content_structure,
+                    )
+                )
+            )
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .into_str()
         )
 
     def scatter_system_prompt(self, goal: str, preamble: str) -> str:
@@ -868,12 +1015,22 @@ It is okay to just return "no relevant content" if the source code or pdf page d
             else ""
         )
         heading = "#" * self.level
-        return system_prompt_template.format(
-            goal=goal,
-            preamble_content=preamble_content,
-            heading=heading,
-            title=self.title,
-            instruction=self.instruction,
+        return (
+            Prompt.empty()
+            .append(
+                Component(
+                    string=system_prompt_template.format(
+                        goal=goal,
+                        preamble_content=preamble_content,
+                        heading=heading,
+                        title=self.title,
+                        instruction=self.instruction,
+                    )
+                )
+            )
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .into_str()
         )
 
     def gather_system_prompt(self, goal: str, preamble: str) -> str:
@@ -906,12 +1063,22 @@ Use only content directly from the sections you've been given in your aggregatio
             else ""
         )
         heading = "#" * self.level
-        return aggregate_system_prompt_template.format(
-            goal=goal,
-            preamble_content=preamble_content,
-            heading=heading,
-            title=self.title,
-            instruction=self.instruction,
+        return (
+            Prompt.empty()
+            .append(
+                Component(
+                    string=aggregate_system_prompt_template.format(
+                        goal=goal,
+                        preamble_content=preamble_content,
+                        heading=heading,
+                        title=self.title,
+                        instruction=self.instruction,
+                    )
+                )
+            )
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .into_str()
         )
 
     def gather_multiple_system_prompt(self, goal: str, preamble: str) -> str:
@@ -944,12 +1111,22 @@ Use only content directly from the sections you've been given in your aggregatio
             else ""
         )
         heading = "#" * self.level
-        return aggregate_system_prompt_template.format(
-            goal=goal,
-            preamble_content=preamble_content,
-            heading=heading,
-            title=self.title,
-            instruction=self.instruction,
+        return (
+            Prompt.empty()
+            .append(
+                Component(
+                    string=aggregate_system_prompt_template.format(
+                        goal=goal,
+                        preamble_content=preamble_content,
+                        heading=heading,
+                        title=self.title,
+                        instruction=self.instruction,
+                    )
+                )
+            )
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .into_str()
         )
 
     def code_example_single_pass_system_prompt(self, goal: str, preamble: str) -> str:
@@ -980,13 +1157,24 @@ Your output should be markdown formatted text.
             else ""
         )
         heading = "#" * self.level
-        return system_prompt_template.format(
-            goal=goal,
-            preamble_content=preamble_content,
-            heading=heading,
-            title=self.title,
-            instruction=self.instruction,
-            content_structure=self.content_structure,
+        return (
+            Prompt.empty()
+            .append(
+                Component(
+                    string=system_prompt_template.format(
+                        goal=goal,
+                        preamble_content=preamble_content,
+                        heading=heading,
+                        title=self.title,
+                        instruction=self.instruction,
+                        content_structure=self.content_structure,
+                    )
+                )
+            )
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .append(USE_TRIPLE_BACKTICS_FOR_CODE_BLOCKS_STYLE_INSTRUCTION)
+            .into_str()
         )
 
     def code_example_single_pass_aggregate_pass(self, goal: str, preamble: str) -> str:
@@ -1000,6 +1188,8 @@ Your job is to write a draft a code example that will be used in a larger docume
 You will be provided code examples generated using different files deemed to be relevant to the code example you are constructing.
 
 Your goal is to combine these code examples into one coherent example that exemplifies the section you're writing a code example for: {title}.
+
+Take care not to make up intermediate code that does not clearly exist from what is given to you. In combining the many examples initially given to you, look for opportunities to combine examples into larger and more complete examples, but only if that is the correct choice for the purpose of the section. Alternatively, you can and should also discard some incoming example content because it is not relevant or less relevant to the goal of the section.
 
 Here is a description of the kind of content you should include in the section:
 
@@ -1018,13 +1208,24 @@ Your output should be markdown formatted text.
             else ""
         )
         heading = "#" * self.level
-        return system_prompt_template.format(
-            goal=goal,
-            preamble_content=preamble_content,
-            heading=heading,
-            title=self.title,
-            instruction=self.instruction,
-            content_structure=self.content_structure,
+        return (
+            Prompt.empty()
+            .append(
+                Component(
+                    string=system_prompt_template.format(
+                        goal=goal,
+                        preamble_content=preamble_content,
+                        heading=heading,
+                        title=self.title,
+                        instruction=self.instruction,
+                        content_structure=self.content_structure,
+                    )
+                )
+            )
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .append(USE_TRIPLE_BACKTICS_FOR_CODE_BLOCKS_STYLE_INSTRUCTION)
+            .into_str()
         )
 
     async def code_example_few_shot_generator(
@@ -1389,6 +1590,8 @@ Your output should be markdown formatted text.
         user_prompts = [""]
         for idx, doc in enumerate(aggregate_docs):
             user_prompts[0] += f"{section_name} doc for set {idx}:\n\n{doc}\n\n"
+            if get_num_tokens(user_prompts[0]) > 100_000:
+                return user_prompts
         return user_prompts
 
 
@@ -1570,10 +1773,21 @@ I've provided the top-level sections you should use with a description of the ki
             else ""
         )
 
-        return system_prompt_template.format(
-            goal=self.document.goal,
-            preamble_content=preamble_content,
-            sections=sections,
+        return (
+            Prompt.empty()
+            .append(
+                Component(
+                    string=system_prompt_template.format(
+                        goal=self.document.goal,
+                        preamble_content=preamble_content,
+                        sections=sections,
+                    )
+                )
+            )
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .append(USE_TRIPLE_BACKTICS_FOR_CODE_BLOCKS_STYLE_INSTRUCTION)
+            .into_str()
         )
 
     def final_copy_editor_system_prompt(self) -> str:
@@ -1592,12 +1806,12 @@ The following section structure should appear in the document. Other subsections
 This draft was built up iteratively over time.
 
 Your goal is to provide final polish and edits to produce a complete, coherent, and high quality final document. Your job is not to comment or change the content of the document. Focus only on typical copy editing duties:
-- Make sure all content is formatted with proper Markdown syntax, but do not enclose any content with triple backticks.
-- Remove speculative or hypothetical language.
+- Make sure all content is formatted with proper Markdown syntax, but **do not** enclose the whole document in a Markdown codefenced block. You are merely ensuring the overall content follows Markdown syntax.
+  - Ensure the syntax for header and list hierarchies are correct.
+  - Ensure the syntax for bulleted and numbered lists is correct.
+  - Ensure the syntax for fenced source code blocks, if present, is correct.
 - Remove any references to this being a draft document, early draft, or iterative draft.
 - Keep all technical or conceptual details.
-- Ensure the syntax for header and list hierarchies are correct.
-- Ensure the syntax for bulleted and numbered lists is correct.
 - Make sure transitions between sections and subsections flow smoothly.
 - For any MermaidJS diagrams, make sure to not have any parentheses in the MermaidJS content (for example, in the labels for components of the diagram). Parentheses will lead to syntax errors in parsing and rendering the diagram and cannot be allowed. Additionally, make sure labels and names in the diagram are relatively short.
 
@@ -1613,10 +1827,21 @@ Your output is the full content of the document with editing updates based on yo
             else ""
         )
 
-        return system_prompt_template.format(
-            goal=self.document.goal,
-            preamble_content=preamble_content,
-            sections=sections,
+        return (
+            Prompt.empty()
+            .append(
+                Component(
+                    string=system_prompt_template.format(
+                        goal=self.document.goal,
+                        preamble_content=preamble_content,
+                        sections=sections,
+                    )
+                )
+            )
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .append(USE_TRIPLE_BACKTICS_FOR_CODE_BLOCKS_STYLE_INSTRUCTION)
+            .into_str()
         )
 
     def to_disk(self, json_p: Path) -> None:
@@ -2644,6 +2869,19 @@ async def main(args: argparse.Namespace) -> None:
         if not args.quiet:
             console = Console()
             console.print(Markdown(doc))
+    elif args.remote:
+        import modal
+
+        run_autodoc_cli = modal.Function.from_name(
+            app_name="autodocs", name="run_autodoc_cli", environment_name=args.env
+        )
+        with open(args.config) as f:
+            toml_content = f.read()
+        doc = run_autodoc_cli.remote(
+            toml_content=toml_content, page_node_id=UUID(args.page_id)
+        )
+        with open(args.output, "w") as f:
+            f.write(doc)
     else:
         pass
 
@@ -2672,6 +2910,12 @@ if __name__ == "__main__":
         metavar="TOML FILE",
         type=str,
     )
+    mutex_group.add_argument(
+        "--remote",
+        help="execute remotely with Modal",
+        action="store_true",
+    )
+
     parser.add_argument(
         "-q",
         "--quiet",
@@ -2679,5 +2923,28 @@ if __name__ == "__main__":
         action="store_true",
     )
 
+    parser.add_argument(
+        "--env",
+        help="execution environment (required for --remote)",
+        choices=["dev", "prod"],
+        type=str,
+    )
+    parser.add_argument(
+        "--config",
+        help="path to configuration file (required for --remote)",
+        type=str,
+    )
+    parser.add_argument(
+        "--page-id",
+        help="page ID (required for --remote)",
+        type=str,
+    )
+    parser.add_argument(
+        "--output",
+        help="output document path (required for --remote)",
+        type=str,
+    )
+
     args = parser.parse_args()
+
     asyncio.run(main(args))

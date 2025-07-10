@@ -2,6 +2,13 @@ from pathlib import Path
 from typing import Self
 
 from pydantic import PrivateAttr
+from shared.prompts.structured_prompting import (
+    GENERAL_STE_STYLE_INSTRUCTION,
+    NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS,
+    USE_BACKTICKS_STYLE_INSTRUCTION,
+    Component,
+    Prompt,
+)
 from utils.models import ChatOpenAI
 from utils.treesitter_drivers.python_driver import PyDriverTree
 
@@ -64,7 +71,9 @@ When writing your paragraphs, consider questions like the following. You do not 
 """
 
 SOURCE_CODE_SMALL_PURPOSE_USER_PROMPT = """
-You will be given the content of a source code file. In a single paragraph of 3 to 5 sentences, explain the purpose of the file. Consider questions such as the following when providing your output:
+You will be given the content of a source code file. In a single paragraph of 3 to 5 sentences, explain the purpose of the file.
+
+Consider questions such as the following when providing your output:
 
 - Does this code provide narrow or broad functionality?
 - What kind of code is this? For example, is this code a short script, a collection of global variables or configuration variables, etc.?
@@ -126,7 +135,7 @@ Your job is to describe the function. **Always respond using exactly the followi
         {"name": <input_arg2>, "content": <description of input argument 2>},
         ...
     ],
-    "control_flow": [
+    "logic_and_control_flow": [
         <bullet point 1 for description of control flow>,
         <bullet point 2 for description of control flow>,
         ...
@@ -194,7 +203,7 @@ Your job is to describe the function or method. **Always respond using exactly t
         {"name": <input_arg2>, "content": <description of input argument 2>},
         ...
     ],
-    "control_flow": [
+    "logic_and_control_flow": [
         <bullet point 1 for description of control flow>,
         <bullet point 2 for description of control flow>,
         ...
@@ -244,15 +253,28 @@ Variable to document:
 # IR data classes
 class PyVariableData(VariableData):
     @classmethod
-    def system_prompt(cls) -> str:
-        return VARIABLES_FOUND_SYSTEM_PROMPT_JSON
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
+        return (
+            Prompt.empty()
+            .append(Component(string=VARIABLES_FOUND_SYSTEM_PROMPT_JSON))
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .into_str()
+        )
 
     @classmethod
     def user_prompt(cls, symbol: RawSymbolData) -> str:
-        user_prompt = f"{VARIABLES_FOUND_USER_PROMPT}{symbol.name}\n\nVariable Code:\n\n{symbol.symbol_code}"
+        user_prompt = (
+            Prompt.empty()
+            .append(Component(string=f"{VARIABLES_FOUND_USER_PROMPT}\n{symbol.name}"))
+            .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS)
+            .append(Component(string=f"Variable Code:\n\n{symbol.symbol_code}"))
+        )
         if symbol.file_code:
-            user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
-        return user_prompt
+            user_prompt.append(
+                Component(string=f"\n\nFull File Code:\n\n{symbol.file_code}")
+            )
+        return user_prompt.into_str()
 
     @classmethod
     def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
@@ -275,7 +297,7 @@ class PyFnData(IrData):
     single_sentence: RawContent
     decorators: ListedCommaCombinedBackTickRawContentNoNone
     inputs: ListedBacktickNameRawContentWithNone
-    control_flow: ListedRawContentWithNone
+    logic_and_control_flow: ListedRawContentWithNone
     output: FieldNameWithRawContent
 
     @classmethod
@@ -283,29 +305,51 @@ class PyFnData(IrData):
         return cls(
             single_sentence=RawContent(content=""),
             inputs=ListedBacktickNameRawContentWithNone(content=[]),
-            control_flow=ListedBacktickNameRawContentWithNone(content=[]),
+            logic_and_control_flow=ListedBacktickNameRawContentWithNone(content=[]),
             output=FieldNameWithBulletedContent(content=""),
         )
 
     @classmethod
-    def system_prompt(cls) -> str:
-        return FUNCTIONS_OR_METHODS_FOUND_SYSTEM_PROMPT_JSON
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
+        return (
+            Prompt.empty()
+            .append(Component(string=FUNCTIONS_OR_METHODS_FOUND_SYSTEM_PROMPT_JSON))
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .into_str()
+        )
 
     @classmethod
     def user_prompt(cls, symbol: RawSymbolData) -> str:
+        user_prompt = Prompt.empty().append(
+            NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS
+        )
         if (
             symbol.reified_symbol is not None
             and symbol.reified_symbol.parent is not None
             and symbol.reified_symbol.parent.raw.symbol_code is not None
         ):
-            user_prompt = f"{FUNCTIONS_OR_METHODS_FOUND_USER_PROMPT}{symbol.name}\n\nMethod Code:\n\n{symbol.symbol_code}"
-            user_prompt += f"\n\nParent class code:\n\n{symbol.reified_symbol.parent.raw.symbol_code}"
+            user_prompt.append(
+                Component(
+                    string=f"{FUNCTIONS_OR_METHODS_FOUND_USER_PROMPT}{symbol.name}\n\nMethod Code:\n\n{symbol.symbol_code}"
+                )
+            ).append(
+                Component(
+                    string=f"\n\nParent class code:\n\n{symbol.reified_symbol.parent.raw.symbol_code}"
+                )
+            )
         else:
-            user_prompt = f"{FUNCTIONS_OR_METHODS_FOUND_USER_PROMPT}{symbol.name}\n\nFunction Code:\n\n{symbol.symbol_code}"
+            user_prompt.append(
+                Component(
+                    string=f"{FUNCTIONS_OR_METHODS_FOUND_USER_PROMPT}{symbol.name}\n\nFunction Code:\n\n{symbol.symbol_code}"
+                )
+            )
 
         if symbol.file_code:
-            user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
-        return user_prompt
+            user_prompt.append(
+                Component(string=f"\n\nFull File Code:\n\n{symbol.file_code}")
+            )
+        return user_prompt.into_str()
 
     @classmethod
     def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:
@@ -342,15 +386,31 @@ class PyClassData(IrData):
         )
 
     @classmethod
-    def system_prompt(cls) -> str:
-        return CLASSES_FOUND_SYSTEM_PROMPT_JSON
+    def system_prompt(cls, symbol: RawSymbolData) -> str:
+        return (
+            Prompt.empty()
+            .append(Component(string=CLASSES_FOUND_SYSTEM_PROMPT_JSON))
+            .append(GENERAL_STE_STYLE_INSTRUCTION)
+            .append(USE_BACKTICKS_STYLE_INSTRUCTION)
+            .into_str()
+        )
 
     @classmethod
     def user_prompt(cls, symbol: RawSymbolData) -> str:
-        user_prompt = f"{CLASSES_FOUND_USER_PROMPT}{symbol.name}\n\nClass Code:\n\n{symbol.symbol_code}"
+        user_prompt = (
+            Prompt.empty()
+            .append(NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS)
+            .append(
+                Component(
+                    string=f"{CLASSES_FOUND_USER_PROMPT}{symbol.name}\n\nClass Code:\n\n{symbol.symbol_code}"
+                )
+            )
+        )
         if symbol.file_code:
-            user_prompt += f"\n\nFull File Code:\n\n{symbol.file_code}"
-        return user_prompt
+            user_prompt.append(
+                Component(string=f"\n\nFull File Code:\n\n{symbol.file_code}")
+            )
+        return user_prompt.into_str()
 
     @classmethod
     def child_to_ir(cls, symbol: RawSymbolData) -> type[IrData] | None:

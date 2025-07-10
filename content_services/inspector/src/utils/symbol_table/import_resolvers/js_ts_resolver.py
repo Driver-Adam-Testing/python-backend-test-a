@@ -1,6 +1,7 @@
 from os.path import normpath
 from pathlib import Path
 
+from utils.lang_specialization.symbol_common import RawTreeSitterSymbolData
 from utils.symbol_table.base import ImportResolver
 
 
@@ -8,12 +9,16 @@ class JsTsResolver(ImportResolver):
     language = "js_ts"
 
     def resolve_import(
-        self, current_file: Path, import_str: str, project_files: set[Path]
+        self,
+        current_file: Path,
+        import_sym: RawTreeSitterSymbolData,
+        project_files: set[Path],
     ) -> Path | None:
         """
         Resolve TypeScript import statements to project files.
         """
         project_files_lst = list(project_files)
+        import_str = import_sym.name
 
         # Check if it's a relative import
         if not import_str.startswith(("./", "../")):

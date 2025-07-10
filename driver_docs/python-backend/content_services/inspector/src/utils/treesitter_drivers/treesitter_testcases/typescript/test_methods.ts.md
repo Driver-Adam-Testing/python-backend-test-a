@@ -6,1005 +6,1145 @@
 The `test_methods.ts` file is a comprehensive test suite for various TypeScript class method features, including access modifiers, static methods, async methods, generators, getters and setters, generics, method overloading, special methods, decorators, abstract methods, private fields, method chaining, complex methods, interface implementation, object literal methods, and mixin methods.
 
 # Purpose
-This TypeScript file is a comprehensive test suite for various class method implementations, showcasing a wide range of method types and features available in TypeScript. The file includes multiple classes, each demonstrating different aspects of method usage, such as access modifiers, static methods, asynchronous methods, generators, getters and setters, generics, method overloading, and more. The classes are designed to illustrate how these features can be implemented and used in TypeScript, providing a broad overview of the language's capabilities in handling class methods.
+This TypeScript file serves as a comprehensive test suite for exploring and demonstrating various method types and features within TypeScript classes. It includes a wide array of method implementations, showcasing different access modifiers (public, private, protected), static methods, asynchronous methods, generators, getters and setters, generic methods, method overloading, and special methods such as those using symbols and computed properties. The file also illustrates advanced concepts like method chaining, complex method patterns (e.g., higher-order functions, currying, and destructured parameters), and the use of decorators. Additionally, it demonstrates the implementation of interfaces, abstract classes, and mixins, providing a rich set of examples for understanding how these features can be utilized in TypeScript.
 
-The file is organized into distinct classes, each focusing on a specific theme or feature set. For example, the `BasicMethods` class demonstrates simple methods with optional and default parameters, while the `AccessModifiers` class highlights the use of public, private, and protected access modifiers. Other classes, such as `AsyncMethods` and `GeneratorMethods`, focus on asynchronous operations and generator functions, respectively. The `GenericMethods` class showcases the use of generics in method definitions, allowing for type-safe operations across different data types. Additionally, the file includes examples of method overloading, special methods like constructors and index signatures, and the use of decorators to modify method behavior.
-
-Overall, this file serves as a comprehensive reference for developers looking to understand and implement various method types in TypeScript. It covers a wide array of functionalities, from basic method definitions to more complex patterns like method chaining, mixins, and abstract methods. By providing concrete examples of each feature, the file acts as both a learning tool and a practical guide for implementing robust and flexible class methods in TypeScript applications.
-# Imports and Dependencies
-
----
-- `fetch`
-
-
-# Data Structures
-
----
-### BasicMethods
-- **Type**: `class`
-- **Members**:
-    - `methodWithOptional`: A method that takes a required string and an optional number, returning a boolean.
-    - `methodWithDefault`: A method that takes a string with a default value and returns a string.
-- **Description**: The `BasicMethods` class is a simple TypeScript class that demonstrates basic method definitions, including methods with optional parameters and default parameter values. It contains two methods: `methodWithOptional`, which checks if an optional parameter is provided, and `methodWithDefault`, which returns a string with a default value if none is provided.
-
-
----
-### AccessModifiers
-- **Type**: `class`
-- **Members**:
-    - `publicMethod`: A public method that logs 'public' to the console.
-    - `privateMethod`: A private method that returns the string 'private'.
-    - `protectedMethod`: A protected method that returns the number 42.
-- **Description**: The `AccessModifiers` class demonstrates the use of different access modifiers in TypeScript: public, private, and protected. It contains three methods, each with a different access level, showcasing how these modifiers control the visibility and accessibility of class members. The `publicMethod` is accessible from outside the class, the `privateMethod` is only accessible within the class itself, and the `protectedMethod` is accessible within the class and its subclasses.
-
-
----
-### StaticMethods
-- **Type**: `class`
-- **Members**:
-    - `privateStatic`: A private static method that returns a string 'private static'.
-    - `protectedStatic`: A protected static method that returns a boolean true.
-    - `#privateStaticField`: A private static field with ES2022 private syntax, initialized to 'ES2022 private'.
-    - `#privateStaticMethod`: A private static method that returns the value of the private static field #privateStaticField.
-- **Description**: The `StaticMethods` class is a TypeScript class that demonstrates the use of static methods and fields, including private and protected access modifiers. It includes a private static method `privateStatic`, a protected static method `protectedStatic`, a private static field `#privateStaticField`, and a private static method `#privateStaticMethod` that accesses the private static field. This class showcases the encapsulation and access control features available in TypeScript for static members.
-
-
----
-### AsyncMethods
-- **Type**: `class`
-- **Members**:
-    - `asyncWithParams`: An asynchronous method that fetches data from a given URL and returns a promise resolving to the JSON response.
-    - `privateAsync`: A private asynchronous method that returns a promise resolving to the number 42.
-    - `staticAsync`: A static asynchronous method that returns a promise resolving to a boolean value true.
-    - `asyncGenerator`: An asynchronous generator method that yields a sequence of numbers (1, 2, 3).
-- **Description**: The `AsyncMethods` class is a TypeScript class that encapsulates various asynchronous operations, including methods that return promises and an asynchronous generator. It demonstrates the use of async/await syntax for handling asynchronous tasks, with methods that can be public, private, or static. The class provides a practical example of how to structure asynchronous logic within a class, offering both promise-based and generator-based approaches to asynchronous programming.
-
-
----
-### GeneratorMethods
-- **Type**: `class`
-- **Members**:
-    - `generatorWithReturn`: A generator method that yields numbers and returns a string.
-    - `privateGenerator`: A private generator method that yields a string.
-    - `staticGenerator`: A static generator method that yields a string.
-    - `[Symbol.iterator]`: A generator method that delegates to another generator method.
-- **Description**: The `GeneratorMethods` class defines a set of generator methods, including both instance and static generators. It includes a public generator method `generatorWithReturn` that yields numbers and returns a string, a private generator method `privateGenerator`, and a static generator method `staticGenerator`. Additionally, it implements the iterator protocol by defining a generator method for the `Symbol.iterator` symbol, which delegates to another generator method. This class demonstrates the use of generator functions to produce sequences of values on demand.
-
-
----
-### GettersSetters
-- **Type**: `class`
-- **Members**:
-    - `_value`: A private field storing a numeric value.
-    - `value`: A public getter and setter for the _value field.
-    - `readOnlyProp`: A public getter that returns a constant string 'read only'.
-    - `privateGetter`: A private getter that returns a boolean value.
-    - `protectedSetter`: A protected setter that logs a string value to the console.
-    - `staticGetter`: A static getter that returns the number 42.
-    - `staticSetter`: A static setter that logs a numeric value to the console.
-    - `_data`: A private field storing a string value.
-    - `data`: A public getter and setter for the _data field, allowing string or number input.
-- **Description**: The GettersSetters class in TypeScript demonstrates the use of various accessors, including public, private, protected, and static getters and setters. It includes fields for storing values and provides methods to access and modify these fields. The class showcases how to implement read-only properties, private accessors, and type conversion within setters, offering a comprehensive example of encapsulation and data management in object-oriented programming.
-
-
----
-### GenericMethods
-- **Type**: `class`
-- **Members**:
-    - `identity`: A generic method that returns the value of the same type it receives.
-    - `map`: A generic method that applies a function to each element of an array and returns a new array of results.
-    - `constrainedGeneric`: A generic method that only accepts string or number types and returns the same type.
-    - `multipleGenerics`: A method that takes three parameters of different generic types and returns a tuple containing them.
-    - `staticGeneric`: A static generic method that returns the value of the same type it receives.
-    - `asyncGeneric`: An asynchronous generic method that resolves a promise and returns its value.
-    - `withDefault`: A generic method with a default type of string that returns the value of the same type it receives.
-- **Description**: The `GenericMethods` class in TypeScript is designed to demonstrate the use of generic methods, which allow for type flexibility and reusability. It includes methods that operate on generic types, such as `identity` for returning the same type, `map` for transforming arrays, and `constrainedGeneric` for restricting types to strings or numbers. The class also showcases methods with multiple generic parameters, static generic methods, asynchronous generic methods, and methods with default generic types, illustrating the versatility and power of generics in TypeScript.
-
-
----
-### MethodOverloading
-- **Type**: `class`
-- **Members**:
-    - `process`: Overloaded method that processes a string, number, or boolean and returns a string or number.
-    - `create`: Static overloaded method that creates an instance of MethodOverloading, optionally with an ID.
-- **Description**: The MethodOverloading class demonstrates method overloading in TypeScript, allowing the same method name to handle different parameter types and return types. It includes an instance method 'process' that can take a string, number, or boolean and return a corresponding string or number. Additionally, it features a static method 'create' that can instantiate the class with or without an ID, showcasing static method overloading.
-
-
----
-### SpecialMethods
-- **Type**: `class`
-- **Members**:
-    - `constructor`: Initializes the class with a private 'id' field.
-    - `[key: string]`: Allows dynamic property access with any string key.
-    - `['computed' + 'Method']`: A computed property method that returns a string 'computed'.
-    - `[Symbol.toString]`: Overrides the default toString method to return 'SpecialMethods'.
-    - `[Symbol.toPrimitive]`: Customizes object-to-primitive conversion based on the hint.
-    - `[Symbol.asyncIterator]`: Defines an asynchronous iterator yielding numbers 1 and 2.
-    - `compareWith`: Compares the 'id' of this instance with another SpecialMethods instance.
-    - `arrowProperty`: An arrow function property returning the string 'arrow'.
-    - `boundMethod`: A bound method pattern using 'regularMethod'.
-    - `regularMethod`: Returns the 'id' of the instance.
-- **Description**: The SpecialMethods class in TypeScript demonstrates a variety of advanced method types and patterns, including a constructor for initializing a private 'id', index signatures for dynamic property access, computed property methods, and symbol-based methods for custom object behavior. It also includes an asynchronous iterator, a method with a 'this' parameter for instance comparison, and showcases the use of arrow functions and bound methods. This class exemplifies the use of modern JavaScript and TypeScript features to create flexible and dynamic class behaviors.
-
-
----
-### DecoratedMethods
-- **Type**: `class`
-- **Members**:
-    - `simpleDecorated`: A method decorated with a single decorator `@log`.
-    - `multipleDecorators`: A method decorated with multiple decorators `@validate` and `@authorize('admin')`.
-- **Description**: The `DecoratedMethods` class is a TypeScript class that demonstrates the use of method decorators. It contains methods that are enhanced with additional behavior through decorators, which are functions that can modify or augment the behavior of the methods they are applied to. This class includes examples of both single and multiple decorators applied to methods, showcasing how decorators can be used to add functionality such as logging, validation, or authorization checks to class methods.
-
-
----
-### AbstractMethods
-- **Type**: `abstract class`
-- **Members**:
-    - `abstractMethod`: An abstract method that must be implemented by subclasses.
-    - `abstractGetter`: An abstract getter that must be implemented by subclasses to return a number.
-    - `abstractSetter`: An abstract setter that must be implemented by subclasses to accept a number.
-    - `concreteMethod`: A concrete method that calls the abstract method.
-    - `protectedAbstract`: A protected abstract method that must be implemented by subclasses.
-    - `staticInAbstract`: A static method that logs a message, demonstrating that static methods are allowed in abstract classes.
-- **Description**: The `AbstractMethods` class is an abstract class that defines a blueprint for other classes by declaring abstract methods and properties that must be implemented by any subclass. It includes both abstract methods and properties, such as `abstractMethod`, `abstractGetter`, and `abstractSetter`, which enforce a contract for subclasses to provide specific implementations. Additionally, it contains a concrete method, `concreteMethod`, which can be used directly or overridden by subclasses. The class also demonstrates the use of protected abstract methods and static methods within an abstract class.
-
-
----
-### ConcreteImplementation
-- **Type**: `class`
-- **Members**:
-    - `abstractMethod`: Implements the abstract method from the AbstractMethods class.
-    - `abstractGetter`: Provides a concrete implementation for the abstract getter, returning a number.
-    - `abstractSetter`: Provides a concrete implementation for the abstract setter, accepting a number.
-    - `protectedAbstract`: Implements the protected abstract method from the AbstractMethods class.
-- **Description**: The ConcreteImplementation class is a concrete subclass of the AbstractMethods class, providing specific implementations for all abstract methods and properties defined in the abstract superclass. It includes implementations for an abstract method, an abstract getter, an abstract setter, and a protected abstract method, thus fulfilling the contract of the AbstractMethods class. This class demonstrates how abstract methods and properties can be concretely implemented in a subclass.
-
-
----
-### PrivateFieldMethods
-- **Type**: `class`
-- **Members**:
-    - `#privateField`: A private field holding a string value 'private'.
-    - `#privateMethod`: A private method that returns the value of #privateField.
-    - `publicAccessor`: A public method that accesses the private method #privateMethod and returns its result.
-    - `#staticPrivateField`: A static private field holding a string value 'static private'.
-    - `#staticPrivateMethod`: A static private method that returns the value of #staticPrivateField.
-    - `publicStaticAccessor`: A public static method that accesses the static private method #staticPrivateMethod and returns its result.
-    - `#value`: A private field holding a numeric value initialized to 0.
-    - `#privateValue`: A private getter and setter for the #value field.
-- **Description**: The PrivateFieldMethods class demonstrates the use of private fields and methods in TypeScript, including both instance and static members. It encapsulates private data and methods using the ES2022 private field syntax, providing controlled access through public methods. This class highlights the encapsulation capabilities of TypeScript, allowing for private data manipulation while exposing necessary functionality through public interfaces.
-
-
----
-### MethodChaining
-- **Type**: `class`
-- **Members**:
-    - `value`: A private string field used to store the accumulated text.
-    - `add`: A method that appends text to the value field and returns the current instance for chaining.
-- **Description**: The MethodChaining class is designed to facilitate method chaining by providing a fluent interface. It contains a private string field named 'value' and a method 'add' that appends a given text to this field. The 'add' method returns the instance of the class itself, allowing multiple calls to be chained together in a single statement, thus enabling a more readable and concise code style.
-
-
----
-### ComplexMethods
-- **Type**: `class`
-- **Members**:
-    - `createCallback`: A method that returns a function which doubles its input.
-    - `getAsyncCallback`: An asynchronous method that returns a promise resolving to a function that converts a string to uppercase.
-    - `higherOrder`: A higher-order method that takes an array and a transformation function, returning a new array with transformed elements.
-    - `curry`: A curried method that returns a series of functions to sum three numbers.
-    - `destructured`: A method with destructured parameters that returns the sum of two numbers.
-    - `isValid`: A type predicate method that checks if a value is a string.
-    - `assert`: An assertion method that throws an error if a condition is false.
-- **Description**: The `ComplexMethods` class encapsulates a variety of advanced method types, including methods that return functions, asynchronous methods, higher-order functions, curried functions, and methods with destructured parameters. It also includes type predicate and assertion methods, demonstrating a wide range of functional programming techniques and TypeScript-specific features.
-
-
----
-### InterfaceImplementation
-- **Type**: `class`
-- **Members**:
-    - `requiredMethod`: Implements the required method from the MethodInterface.
-    - `optionalMethod`: Implements the optional method from the MethodInterface.
-    - `methodWithParams`: Implements a method with parameters from the MethodInterface.
-- **Description**: The InterfaceImplementation class is a concrete implementation of the MethodInterface, providing definitions for all the methods declared in the interface. It includes a required method, an optional method, and a method with parameters, each fulfilling the contract specified by the MethodInterface. This class demonstrates how to implement an interface in TypeScript, ensuring that all required methods are defined and optional methods are implemented as needed.
-
+The file is structured into multiple classes, each focusing on a specific aspect of method functionality. For instance, `BasicMethods` covers simple method definitions, `AccessModifiers` explores different access levels, and `AsyncMethods` delves into asynchronous operations. The `SpecialMethods` class highlights unique method features like symbol-based methods and computed properties, while `GenericMethods` demonstrates the use of generics in method definitions. The file also includes examples of method overloading, abstract methods, and the implementation of interfaces, as seen in `MethodOverloading`, `AbstractMethods`, and `InterfaceImplementation`, respectively. Furthermore, it provides examples of methods within object literals and the use of mixins to extend class functionality. Overall, this file serves as a detailed reference for understanding the diverse capabilities of methods in TypeScript.
+# Global Variables
 
 ---
 ### objectWithMethods
 - **Type**: `object`
-- **Members**:
-    - `method`: A regular method that returns a string 'method'.
-    - `asyncMethod`: An asynchronous method that returns a promise resolving to 'async'.
-    - `generatorMethod`: A generator method that yields the string 'generator'.
-    - `getter`: A getter property that returns the string 'getter'.
-    - `setter`: A setter property that logs the provided string value.
-    - `computedMethod`: A computed property method that returns the string 'computed'.
-- **Description**: The `objectWithMethods` is an object literal in JavaScript that encapsulates a variety of method types, including a regular method, an asynchronous method, a generator method, a getter, a setter, and a computed property method. This object demonstrates the flexibility of JavaScript objects in defining different types of methods and properties, showcasing the ability to handle synchronous, asynchronous, and generator functions, as well as computed properties.
+- **Description**: `objectWithMethods` is a global object that contains a collection of methods, including a regular method, an asynchronous method, a generator method, a getter, a setter, and a computed property method. Each method demonstrates different JavaScript features such as async/await, generators, and computed property names.
+- **Use**: This variable is used to encapsulate various types of methods within a single object, showcasing different JavaScript method types and their usage.
+
+
+# Classes
+
+---
+### BasicMethods<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.BasicMethods}} -->
+- **Description**: The `BasicMethods` class provides simple method examples in TypeScript, demonstrating the use of optional parameters and default parameter values. It includes two methods: `methodWithOptional`, which checks if an optional parameter is provided, and `methodWithDefault`, which returns a string with a default value if no argument is passed.
+- **Methods**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.BasicMethods.methodWithOptional`](<#BasicMethodsmethodWithOptional>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.BasicMethods.methodWithDefault`](<#BasicMethodsmethodWithDefault>)
+
+**Methods**
+
+---
+#### BasicMethods\.methodWithOptional<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.BasicMethods.methodWithOptional}} -->
+The `methodWithOptional` method checks if an optional number parameter is provided and returns a boolean indicating its presence.
+- **Inputs**:
+    - `required`: A required string parameter that must be provided when calling the method.
+    - `optional`: An optional number parameter that may or may not be provided when calling the method.
+- **Control Flow**:
+    - The method checks if the `optional` parameter is not `undefined`.
+    - If `optional` is not `undefined`, the method returns `true`.
+    - If `optional` is `undefined`, the method returns `false`.
+- **Output**: A boolean value indicating whether the `optional` parameter is defined.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.BasicMethods`](<#BasicMethods>)  (Base Class)
 
 
 ---
-### MixinClass
-- **Type**: `class`
+#### BasicMethods\.methodWithDefault<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.BasicMethods.methodWithDefault}} -->
+The `methodWithDefault` method returns the provided string value or a default string if no value is provided.
+- **Inputs**:
+    - `value`: A string input that defaults to 'default' if not provided.
+- **Control Flow**:
+    - The method checks if a value is provided.
+    - If a value is provided, it returns that value.
+    - If no value is provided, it returns the default value 'default'.
+- **Output**: The method returns a string, which is either the provided input or the default value 'default'.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.BasicMethods`](<#BasicMethods>)  (Base Class)
+
+
+
+---
+### AccessModifiers<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AccessModifiers}} -->
+- **Description**: The `AccessModifiers` class demonstrates the use of different access modifiers in TypeScript. It includes a public method `publicMethod`, a private method `privateMethod`, and a protected method `protectedMethod`, showcasing how these access levels control the visibility and accessibility of class methods.
+- **Methods**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AccessModifiers.publicMethod`](<#AccessModifierspublicMethod>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AccessModifiers.privateMethod`](<#AccessModifiersprivateMethod>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AccessModifiers.protectedMethod`](<#AccessModifiersprotectedMethod>)
+
+**Methods**
+
+---
+#### AccessModifiers\.publicMethod<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AccessModifiers.publicMethod}} -->
+The `publicMethod` logs the string 'public' to the console.
+- **Inputs**: None
+- **Control Flow**:
+    - The method executes a single statement that logs the string 'public' to the console.
+- **Output**: The method does not return any value as its return type is `void`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AccessModifiers`](<#AccessModifiers>)  (Base Class)
+
+
+---
+#### AccessModifiers\.privateMethod<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AccessModifiers.privateMethod}} -->
+The `privateMethod` is a private method in the `AccessModifiers` class that returns a string 'private'.
+- **Inputs**: None
+- **Control Flow**:
+    - The method is defined as private, meaning it can only be accessed within the `AccessModifiers` class.
+    - The method returns the string 'private' immediately when called.
+- **Output**: A string 'private'.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AccessModifiers`](<#AccessModifiers>)  (Base Class)
+
+
+---
+#### AccessModifiers\.protectedMethod<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AccessModifiers.protectedMethod}} -->
+The `protectedMethod` is a protected method in the `AccessModifiers` class that returns the number 42.
+- **Inputs**: None
+- **Control Flow**:
+    - The method is defined as protected, meaning it can only be accessed within its class and by derived classes.
+    - The method directly returns the number 42 without any additional logic or computation.
+- **Output**: The method returns a number, specifically the integer 42.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AccessModifiers`](<#AccessModifiers>)  (Base Class)
+
+
+
+---
+### StaticMethods<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.StaticMethods}} -->
 - **Members**:
-    - `useLogging`: A method that demonstrates the use of logging methods from the mixin and calls a base method.
-- **Description**: The `MixinClass` is a TypeScript class that extends a base class using a mixin pattern. It inherits logging capabilities from the `Loggable` mixin, which provides methods for logging messages and errors. The `MixinClass` itself includes a `useLogging` method that utilizes the inherited logging functionality and calls a method from the `BaseClass`, demonstrating the integration of mixin methods with base class methods.
+    - `#privateStaticField`: A private static field holding a string value.
+- **Description**: The `StaticMethods` class demonstrates the use of static methods and private static fields in TypeScript. It includes a private static method, a protected static method, and a private static field using the ES2022 private field syntax. This class serves as an example of how to encapsulate static functionality and data within a class, ensuring that certain methods and fields are only accessible within the class itself or its subclasses.
+- **Methods**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.StaticMethods.privateStatic`](<#StaticMethodsprivateStatic>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.StaticMethods.protectedStatic`](<#StaticMethodsprotectedStatic>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.StaticMethods.#privateStaticMethod`](<#StaticMethods>)
+
+**Methods**
+
+---
+#### StaticMethods\.privateStatic<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.StaticMethods.privateStatic}} -->
+The `privateStatic` method is a private static method in the `StaticMethods` class that returns a fixed string.
+- **Inputs**: None
+- **Control Flow**:
+    - The method is defined as a private static method, meaning it can only be accessed within the `StaticMethods` class and is associated with the class itself rather than any instance.
+    - The method returns the string 'private static' immediately when called.
+- **Output**: A string 'private static'.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.StaticMethods`](<#StaticMethods>)  (Base Class)
+
+
+---
+#### StaticMethods\.protectedStatic<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.StaticMethods.protectedStatic}} -->
+The `protectedStatic` method is a protected static method in the `StaticMethods` class that returns a boolean value of `true`.
+- **Inputs**: None
+- **Control Flow**:
+    - The method is defined as a static method, meaning it belongs to the class itself rather than an instance of the class.
+    - The method is protected, indicating it can only be accessed within its class and by subclasses.
+    - The method simply returns the boolean value `true`.
+- **Output**: The method returns a boolean value `true`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.StaticMethods`](<#StaticMethods>)  (Base Class)
+
+
+---
+#### StaticMethods\.\#privateStaticMethod<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.StaticMethods.#privateStaticMethod}} -->
+The `#privateStaticMethod` is a private static method that returns the value of a private static field within the `StaticMethods` class.
+- **Inputs**: None
+- **Control Flow**:
+    - The method accesses the private static field `#privateStaticField` of the `StaticMethods` class.
+    - It returns the value of `#privateStaticField`.
+- **Output**: The method returns a string, which is the value of the private static field `#privateStaticField`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.StaticMethods`](<#StaticMethods>)  (Base Class)
+
+
+
+---
+### AsyncMethods<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AsyncMethods}} -->
+- **Description**: The `AsyncMethods` class provides a collection of asynchronous methods, including an asynchronous method with parameters that fetches data from a URL, a private asynchronous method returning a number, a static asynchronous method returning a boolean, and an asynchronous generator yielding a sequence of numbers. This class demonstrates various asynchronous programming patterns in TypeScript, showcasing the use of async/await, static async methods, and async generators.
+- **Methods**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AsyncMethods.asyncWithParams`](<#AsyncMethodsasyncWithParams>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AsyncMethods.privateAsync`](<#AsyncMethodsprivateAsync>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AsyncMethods.staticAsync`](<#AsyncMethodsstaticAsync>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AsyncMethods.asyncGenerator`](<#AsyncMethodsasyncGenerator>)
+
+**Methods**
+
+---
+#### AsyncMethods\.asyncWithParams<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AsyncMethods.asyncWithParams}} -->
+The `asyncWithParams` method fetches data from a given URL and returns the parsed JSON response.
+- **Inputs**:
+    - `url`: A string representing the URL from which to fetch data.
+- **Control Flow**:
+    - The method uses the `fetch` API to send a request to the specified URL.
+    - It awaits the response from the `fetch` call.
+    - Once the response is received, it calls the `json()` method on the response to parse the JSON data.
+    - The parsed JSON data is returned as the result of the method.
+- **Output**: A promise that resolves to the parsed JSON data from the response.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AsyncMethods`](<#AsyncMethods>)  (Base Class)
+
+
+---
+#### AsyncMethods\.privateAsync<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AsyncMethods.privateAsync}} -->
+The `privateAsync` method is an asynchronous private method that returns a promise resolving to the number 42.
+- **Inputs**: None
+- **Control Flow**:
+    - The method is defined as an asynchronous function, indicated by the `async` keyword.
+    - It immediately returns a promise that resolves to the number 42.
+- **Output**: A promise that resolves to the number 42.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AsyncMethods`](<#AsyncMethods>)  (Base Class)
+
+
+---
+#### AsyncMethods\.staticAsync<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AsyncMethods.staticAsync}} -->
+The `staticAsync` method is a static asynchronous method that returns a resolved promise with a boolean value of `true`.
+- **Inputs**: None
+- **Control Flow**:
+    - The method is defined as static and asynchronous, meaning it can be called on the class itself without an instance and it returns a promise.
+    - The method immediately returns a resolved promise with the boolean value `true`.
+- **Output**: A promise that resolves to the boolean value `true`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AsyncMethods`](<#AsyncMethods>)  (Base Class)
+
+
+---
+#### AsyncMethods\.asyncGenerator<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AsyncMethods.asyncGenerator}} -->
+The `asyncGenerator` method is an asynchronous generator that yields a sequence of numbers.
+- **Inputs**: None
+- **Control Flow**:
+    - The method is defined as an asynchronous generator using the `async *` syntax.
+    - It yields the number 1, then 2, and finally 3 in sequence.
+- **Output**: An `AsyncGenerator` that yields the numbers 1, 2, and 3 in sequence.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AsyncMethods`](<#AsyncMethods>)  (Base Class)
+
+
+
+---
+### GeneratorMethods<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GeneratorMethods}} -->
+- **Description**: The `GeneratorMethods` class is a collection of generator functions that demonstrate different types of generator usage in TypeScript. It includes a generator method with a return value, a private generator, a static generator, and an implementation of the iterator protocol using a generator. This class serves as an example of how to define and use generator functions in a TypeScript class.
+- **Methods**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GeneratorMethods.generatorWithReturn`](<#GeneratorMethodsgeneratorWithReturn>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GeneratorMethods.privateGenerator`](<#GeneratorMethodsprivateGenerator>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GeneratorMethods.staticGenerator`](<#GeneratorMethodsstaticGenerator>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GeneratorMethods.[Symbol.iterator]`](<python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GeneratorMethods.[Symbol.iterator]>)
+
+**Methods**
+
+---
+#### GeneratorMethods\.generatorWithReturn<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GeneratorMethods.generatorWithReturn}} -->
+The `generatorWithReturn` method is a generator function that yields two numbers and then returns a string.
+- **Inputs**: None
+- **Control Flow**:
+    - The generator function starts execution and yields the number 1.
+    - It then yields the number 2.
+    - After yielding the second number, the generator function returns the string 'done'.
+- **Output**: The output is a generator that yields the numbers 1 and 2 sequentially, and upon completion, returns the string 'done'.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GeneratorMethods`](<#GeneratorMethods>)  (Base Class)
+
+
+---
+#### GeneratorMethods\.privateGenerator<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GeneratorMethods.privateGenerator}} -->
+The `privateGenerator` method is a private generator function that yields a single string value 'private'.
+- **Inputs**: None
+- **Control Flow**:
+    - The generator function is defined as a private method within the `GeneratorMethods` class.
+    - When the generator is invoked, it yields the string 'private'.
+- **Output**: The output is a generator object that yields the string 'private' when iterated.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GeneratorMethods`](<#GeneratorMethods>)  (Base Class)
+
+
+---
+#### GeneratorMethods\.staticGenerator<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GeneratorMethods.staticGenerator}} -->
+The `staticGenerator` method is a static generator function that yields a single string value 'static'.
+- **Inputs**: None
+- **Control Flow**:
+    - The method is defined as a static generator function, meaning it can be called on the class itself rather than an instance of the class.
+    - The function uses the `yield` keyword to produce a single value, 'static', when the generator is iterated over.
+- **Output**: The output is a generator object that yields the string 'static' when iterated.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GeneratorMethods`](<#GeneratorMethods>)  (Base Class)
+
+
+---
+#### GeneratorMethods\.\[Symbol\.iterator\]<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GeneratorMethods.[Symbol.iterator]}} -->
+The [Symbol.iterator] method in the GeneratorMethods class returns an iterator that delegates to the simpleGenerator method.
+- **Inputs**: None
+- **Control Flow**:
+    - The method uses the yield* expression to delegate iteration to the simpleGenerator method.
+- **Output**: An iterator that yields values from the simpleGenerator method.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GeneratorMethods`](<#GeneratorMethods>)  (Base Class)
+
+
+
+---
+### GettersSetters<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters}} -->
+- **Members**:
+    - `_value`: A private number variable used to store the value for the getter and setter.
+    - `_data`: A private string variable used to store data for the getter and setter.
+- **Description**: The GettersSetters class demonstrates the use of getters and setters in TypeScript, providing both instance and static accessors. It includes private, protected, and public accessors, showcasing different levels of access control. The class also illustrates how getters and setters can handle different data types, with a private variable storing the actual data. This class is useful for understanding encapsulation and data manipulation through accessor methods in TypeScript.
+- **Methods**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters.value`](<#GettersSettersvalue>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters.value`](<#GettersSettersvalue>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters.readOnlyProp`](<#GettersSettersreadOnlyProp>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters.privateGetter`](<#GettersSettersprivateGetter>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters.protectedSetter`](<#GettersSettersprotectedSetter>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters.staticGetter`](<#GettersSettersstaticGetter>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters.staticSetter`](<#GettersSettersstaticSetter>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters.data`](<#GettersSettersdata>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters.data`](<#GettersSettersdata>)
+
+**Methods**
+
+---
+#### GettersSetters\.value<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters.value}} -->
+The `value` getter method retrieves the current value of the private `_value` property from the `GettersSetters` class.
+- **Inputs**: None
+- **Control Flow**:
+    - The method directly returns the value of the private `_value` property.
+- **Output**: The method returns a number, which is the current value of the `_value` property.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters`](<#GettersSetters>)  (Base Class)
+
+
+---
+#### GettersSetters\.value<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters.value}} -->
+The `value` setter method updates the private `_value` property of the `GettersSetters` class with a new numeric value.
+- **Inputs**:
+    - `newValue`: A number that represents the new value to be assigned to the private `_value` property.
+- **Control Flow**:
+    - The method takes a single argument `newValue`.
+    - It assigns `newValue` to the private property `_value` of the class instance.
+- **Output**: There is no output as this is a setter method; it modifies the internal state of the class instance.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters`](<#GettersSetters>)  (Base Class)
+
+
+---
+#### GettersSetters\.readOnlyProp<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters.readOnlyProp}} -->
+The `readOnlyProp` method is a getter that returns a constant string value 'read only'.
+- **Inputs**: None
+- **Control Flow**:
+    - The method is a getter, so it does not take any parameters.
+    - It directly returns the string 'read only' without any computation or condition.
+- **Output**: A string with the value 'read only'.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters`](<#GettersSetters>)  (Base Class)
+
+
+---
+#### GettersSetters\.privateGetter<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters.privateGetter}} -->
+The `privateGetter` method is a private getter that always returns the boolean value `true`.
+- **Inputs**: None
+- **Control Flow**:
+    - The method is defined as a private getter within the `GettersSetters` class.
+    - It does not take any input parameters.
+    - The method simply returns the boolean value `true`.
+- **Output**: The output is a boolean value `true`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters`](<#GettersSetters>)  (Base Class)
+
+
+---
+#### GettersSetters\.protectedSetter<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters.protectedSetter}} -->
+The `protectedSetter` method is a protected setter in the `GettersSetters` class that logs a string value to the console.
+- **Inputs**:
+    - `value`: A string value that is logged to the console.
+- **Control Flow**:
+    - The method takes a single string argument named `value`.
+    - It logs the `value` to the console using `console.log(value)`.
+- **Output**: The method does not return any value.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters`](<#GettersSetters>)  (Base Class)
+
+
+---
+#### GettersSetters\.staticGetter<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters.staticGetter}} -->
+The staticGetter method is a static getter that returns the number 42.
+- **Inputs**: None
+- **Control Flow**:
+    - The method directly returns the number 42 without any conditions or calculations.
+- **Output**: The output is a number, specifically the integer 42.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters`](<#GettersSetters>)  (Base Class)
+
+
+---
+#### GettersSetters\.staticSetter<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters.staticSetter}} -->
+The staticSetter method is a static setter that logs the provided numeric value to the console.
+- **Inputs**:
+    - `value`: A number that is passed to the setter.
+- **Control Flow**:
+    - The method takes a single numeric input parameter named 'value'.
+    - It logs the input value to the console using console.log().
+- **Output**: This method does not return any value.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters`](<#GettersSetters>)  (Base Class)
+
+
+---
+#### GettersSetters\.data<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters.data}} -->
+The `data` getter method retrieves the private `_data` property of the `GettersSetters` class as a string.
+- **Inputs**: None
+- **Control Flow**:
+    - The method directly returns the value of the private `_data` property.
+- **Output**: The method returns a string, which is the current value of the `_data` property.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters`](<#GettersSetters>)  (Base Class)
+
+
+---
+#### GettersSetters\.data<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters.data}} -->
+The `data` setter method converts the input value to a string and assigns it to the private `_data` property.
+- **Inputs**:
+    - `value`: A string or number that will be converted to a string and assigned to the `_data` property.
+- **Control Flow**:
+    - The method takes a single input parameter `value` which can be either a string or a number.
+    - The method converts the `value` to a string using the `String` constructor.
+    - The converted string is then assigned to the private `_data` property of the class.
+- **Output**: This method does not return any value.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GettersSetters`](<#GettersSetters>)  (Base Class)
+
+
+
+---
+### GenericMethods<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods}} -->
+- **Description**: The `GenericMethods` class provides a collection of methods that demonstrate the use of generics in TypeScript. It includes methods for identity transformation, mapping over arrays with a transformation function, handling constrained generics, and working with multiple generic types. Additionally, it offers a static method for generic operations, an asynchronous method that works with promises, and a method with a default generic type. This class serves as a versatile utility for operations that require type flexibility and showcases various generic programming techniques.
+- **Methods**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods.identity`](<#GenericMethodsidentity>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods.map`](<#GenericMethodsmap>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods.constrainedGeneric`](<#GenericMethodsconstrainedGeneric>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods.multipleGenerics`](<#GenericMethodsmultipleGenerics>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods.staticGeneric`](<#GenericMethodsstaticGeneric>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods.asyncGeneric`](<#GenericMethodsasyncGeneric>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods.withDefault`](<#GenericMethodswithDefault>)
+
+**Methods**
+
+---
+#### GenericMethods\.identity<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods.identity}} -->
+The `identity` method returns the input value unchanged, maintaining its type.
+- **Inputs**:
+    - `value`: A generic input value of type T.
+- **Control Flow**:
+    - The method takes a single input parameter `value` of a generic type `T`.
+    - It directly returns the input `value` without any modification.
+- **Output**: The output is the same as the input value, with the type preserved as T.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods`](<#GenericMethods>)  (Base Class)
+
+
+---
+#### GenericMethods\.map<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods.map}} -->
+The `map` method applies a provided function to each element of an array and returns a new array with the results.
+- **Inputs**:
+    - `array`: An array of elements of type T to be transformed.
+    - `fn`: A function that takes an element of type T and returns a transformed element of type U.
+- **Control Flow**:
+    - The method uses the built-in `Array.prototype.map` function to iterate over each element in the input array.
+    - For each element, the provided function `fn` is called, transforming the element.
+    - The results of the transformation are collected into a new array.
+- **Output**: A new array containing the results of applying the function `fn` to each element of the input array.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods`](<#GenericMethods>)  (Base Class)
+
+
+---
+#### GenericMethods\.constrainedGeneric<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods.constrainedGeneric}} -->
+The `constrainedGeneric` method returns the input value, constrained to be either a string or a number.
+- **Inputs**:
+    - `value`: A value of type T, which must extend either string or number.
+- **Control Flow**:
+    - The method takes a single input parameter `value` of a generic type T, constrained to be either a string or a number.
+    - The method simply returns the input `value` without any modification.
+- **Output**: The method returns the input value of type T, which is constrained to be either a string or a number.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods`](<#GenericMethods>)  (Base Class)
+
+
+---
+#### GenericMethods\.multipleGenerics<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods.multipleGenerics}} -->
+The `multipleGenerics` method returns a tuple containing three elements of potentially different types.
+- **Inputs**:
+    - `a`: The first element of the tuple, of generic type T.
+    - `b`: The second element of the tuple, of generic type U.
+    - `c`: The third element of the tuple, of generic type V.
+- **Control Flow**:
+    - The method takes three arguments, each of a different generic type: T, U, and V.
+    - It constructs and returns a tuple containing the three arguments in the order they were received.
+- **Output**: A tuple containing the three input arguments, with types [T, U, V].
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods`](<#GenericMethods>)  (Base Class)
+
+
+---
+#### GenericMethods\.staticGeneric<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods.staticGeneric}} -->
+The `staticGeneric` method is a static generic method that returns the input value of any type without modification.
+- **Inputs**:
+    - `value`: A value of any type `T` that is passed to the method.
+- **Control Flow**:
+    - The method takes a single input parameter `value` of generic type `T`.
+    - It immediately returns the input `value` without any modification or processing.
+- **Output**: The output is the same as the input value, of the same type `T`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods`](<#GenericMethods>)  (Base Class)
+
+
+---
+#### GenericMethods\.asyncGeneric<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods.asyncGeneric}} -->
+The `asyncGeneric` method is an asynchronous function that resolves a given promise and returns its result.
+- **Inputs**:
+    - `promise`: A promise of type `T` that is expected to be resolved.
+- **Control Flow**:
+    - The method awaits the resolution of the input promise.
+    - Once the promise is resolved, the method returns the resolved value.
+- **Output**: A promise that resolves to the same type `T` as the input promise.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods`](<#GenericMethods>)  (Base Class)
+
+
+---
+#### GenericMethods\.withDefault<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods.withDefault}} -->
+The `withDefault` method is a generic function that returns the input value, with a default type of string if no type is specified.
+- **Inputs**:
+    - `value`: A value of generic type T, which defaults to string if not specified.
+- **Control Flow**:
+    - The method takes a single parameter, `value`, of generic type T.
+    - It directly returns the input `value` without any modification or additional logic.
+- **Output**: The method returns the input value of type T.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.GenericMethods`](<#GenericMethods>)  (Base Class)
+
+
+
+---
+### MethodOverloading<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.MethodOverloading}} -->
+- **Description**: The `MethodOverloading` class demonstrates method overloading in TypeScript, allowing the `process` method to handle different types of input (string, number, or boolean) and return the appropriate type. It also includes static method overloading with the `create` method, which can be called with or without an `id` parameter to instantiate a new `MethodOverloading` object.
+- **Methods**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.MethodOverloading.process`](<#MethodOverloadingprocess>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.MethodOverloading.create`](<#MethodOverloadingcreate>)
+
+**Methods**
+
+---
+#### MethodOverloading\.process<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.MethodOverloading.process}} -->
+The `process` method in the `MethodOverloading` class handles different types of input values and returns them appropriately, converting booleans to strings.
+- **Inputs**:
+    - `value`: A parameter that can be a string, number, or boolean.
+- **Control Flow**:
+    - The method checks if the input `value` is of type boolean.
+    - If `value` is a boolean, it converts it to a string using `toString()` and returns it.
+    - If `value` is not a boolean, it returns the `value` as is.
+- **Output**: The method returns a string if the input is a boolean, otherwise it returns the input value as either a string or a number.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.MethodOverloading`](<#MethodOverloading>)  (Base Class)
+
+
+---
+#### MethodOverloading\.create<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.MethodOverloading.create}} -->
+The `create` method is a static factory method that returns a new instance of the `MethodOverloading` class.
+- **Inputs**:
+    - `id`: An optional number parameter that is not used in the method body.
+- **Control Flow**:
+    - The method checks if an `id` parameter is provided, but does not use it in any logic.
+    - A new instance of the `MethodOverloading` class is created and returned.
+- **Output**: A new instance of the `MethodOverloading` class.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.MethodOverloading`](<#MethodOverloading>)  (Base Class)
+
+
+
+---
+### SpecialMethods<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods}} -->
+- **Members**:
+    - `id`: A private string identifier for the instance.
+- **Description**: The `SpecialMethods` class demonstrates various advanced method types and patterns in TypeScript. It includes a constructor that initializes a private identifier, index signatures for dynamic property access, and several special methods utilizing computed properties and symbols. The class also features an async iterator, a method with a `this` parameter, an arrow function property, and a bound method pattern. These elements showcase the flexibility and power of TypeScript in handling complex method definitions and behaviors.
+- **Methods**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods.constructor`](<#SpecialMethodsconstructor>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods.['computed' + 'Method']`](<python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods.['computed' + 'Method']>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods.[Symbol.toString]`](<python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods.[Symbol.toString]>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods.[Symbol.toPrimitive]`](<python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods.[Symbol.toPrimitive]>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods.[Symbol.asyncIterator]`](<python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ts#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods.[Symbol.asyncIterator]>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods.compareWith`](<#SpecialMethodscompareWith>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods.regularMethod`](<#SpecialMethodsregularMethod>)
+
+**Methods**
+
+---
+#### SpecialMethods\.constructor<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods.constructor}} -->
+The constructor initializes a new instance of the SpecialMethods class with a private id property.
+- **Inputs**:
+    - `id`: A string that serves as a unique identifier for the instance, stored as a private property.
+- **Control Flow**:
+    - The constructor is called when a new instance of the SpecialMethods class is created.
+    - The provided id argument is assigned to a private property of the instance.
+- **Output**: An instance of the SpecialMethods class with the id property initialized.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods`](<#SpecialMethods>)  (Base Class)
+
+
+---
+#### SpecialMethods\.\['computed' \+ 'Method'\]<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods.['computed' + 'Method']}} -->
+The `computedMethod` is a computed property method in the `SpecialMethods` class that returns the string 'computed'.
+- **Inputs**: None
+- **Control Flow**:
+    - The method is defined as a computed property using a string concatenation for its name.
+    - It directly returns the string 'computed' without any conditions or iterations.
+- **Output**: The method returns a string 'computed'.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods`](<#SpecialMethods>)  (Base Class)
+
+
+---
+#### SpecialMethods\.\[Symbol\.toString\]<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods.[Symbol.toString]}} -->
+The [Symbol.toString] method returns a string representation of the SpecialMethods class.
+- **Inputs**: None
+- **Control Flow**:
+    - The method is defined as a computed property using the Symbol.toString symbol.
+    - It returns the string 'SpecialMethods' when invoked.
+- **Output**: A string 'SpecialMethods'.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods`](<#SpecialMethods>)  (Base Class)
+
+
+---
+#### SpecialMethods\.\[Symbol\.toPrimitive\]<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods.[Symbol.toPrimitive]}} -->
+The [Symbol.toPrimitive] method in the SpecialMethods class returns a number or string based on the provided hint.
+- **Inputs**:
+    - `hint`: A string that indicates the preferred type of conversion, either 'number' or another type.
+- **Control Flow**:
+    - The method checks if the hint is equal to 'number'.
+    - If the hint is 'number', it returns the number 42.
+    - If the hint is not 'number', it returns the string 'string'.
+- **Output**: The method returns either the number 42 or the string 'string', depending on the hint provided.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods`](<#SpecialMethods>)  (Base Class)
+
+
+---
+#### SpecialMethods\.\[Symbol\.asyncIterator\]<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods.[Symbol.asyncIterator]}} -->
+The [Symbol.asyncIterator] method in the SpecialMethods class is an asynchronous generator that yields the numbers 1 and 2.
+- **Inputs**: None
+- **Control Flow**:
+    - The method is defined as an asynchronous generator using the 'async *' syntax.
+    - It uses the 'yield' keyword to produce the number 1.
+    - It then uses 'yield' again to produce the number 2.
+- **Output**: The method outputs an asynchronous iterator that yields the numbers 1 and 2 sequentially.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods`](<#SpecialMethods>)  (Base Class)
+
+
+---
+#### SpecialMethods\.compareWith<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods.compareWith}} -->
+The `compareWith` method checks if the `id` property of the current `SpecialMethods` instance is equal to the `id` property of another `SpecialMethods` instance.
+- **Inputs**:
+    - `this`: The current instance of the `SpecialMethods` class.
+    - `other`: Another instance of the `SpecialMethods` class to compare against.
+- **Control Flow**:
+    - The method compares the `id` property of the current instance (`this.id`) with the `id` property of the `other` instance (`other.id`).
+- **Output**: A boolean value indicating whether the `id` properties of the two `SpecialMethods` instances are equal.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods`](<#SpecialMethods>)  (Base Class)
+
+
+---
+#### SpecialMethods\.regularMethod<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods.regularMethod}} -->
+The `regularMethod` returns the `id` property of the `SpecialMethods` class instance.
+- **Inputs**: None
+- **Control Flow**:
+    - The method accesses the `id` property of the current instance using `this.id`.
+    - It returns the value of `this.id`.
+- **Output**: The method returns a string, which is the `id` of the `SpecialMethods` instance.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.SpecialMethods`](<#SpecialMethods>)  (Base Class)
+
+
+
+---
+### DecoratedMethods<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.DecoratedMethods}} -->
+- **Description**: The `DecoratedMethods` class demonstrates the use of method decorators in TypeScript. It includes methods that are enhanced with decorators to add additional behavior or constraints. The `simpleDecorated` method is decorated with a `log` decorator, which likely adds logging functionality. The `multipleDecorators` method is decorated with both `validate` and `authorize('admin')` decorators, suggesting that it includes validation and authorization logic, possibly restricting access to users with admin privileges.
+- **Methods**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.DecoratedMethods.simpleDecorated`](<#DecoratedMethodssimpleDecorated>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.DecoratedMethods.multipleDecorators`](<#DecoratedMethodsmultipleDecorators>)
+
+**Methods**
+
+---
+#### DecoratedMethods\.simpleDecorated<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.DecoratedMethods.simpleDecorated}} -->
+The `simpleDecorated` method logs the string 'decorated' to the console.
+- **Decorators**: `@log`
+- **Inputs**: None
+- **Control Flow**:
+    - The method executes a single statement that logs the string 'decorated' to the console.
+- **Output**: The method does not return any value as its return type is `void`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.DecoratedMethods`](<#DecoratedMethods>)  (Base Class)
+
+
+---
+#### DecoratedMethods\.multipleDecorators<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.DecoratedMethods.multipleDecorators}} -->
+The `multipleDecorators` method logs the provided data to the console and is decorated with authorization and validation decorators.
+- **Decorators**: `@validate`, `@authorize`
+- **Inputs**:
+    - `data`: The data to be logged, of any type.
+- **Control Flow**:
+    - The method receives a single parameter `data`.
+    - It logs the `data` to the console using `console.log(data)`.
+- **Output**: The method does not return any value (void).
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.DecoratedMethods`](<#DecoratedMethods>)  (Base Class)
+
+
+
+---
+### AbstractMethods<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AbstractMethods}} -->
+- **Description**: The `AbstractMethods` class is an abstract class in TypeScript that defines a structure for classes that extend it. It includes abstract methods and properties that must be implemented by any subclass, such as `abstractMethod`, `abstractGetter`, and `abstractSetter`. Additionally, it provides a concrete method `concreteMethod` that calls the abstract method, and a protected abstract method `protectedAbstract`. The class also includes a static method `staticInAbstract`, demonstrating that static methods can be defined in abstract classes. This class serves as a blueprint for creating classes with a specific set of methods and properties that need to be implemented.
+- **Methods**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AbstractMethods.concreteMethod`](<#AbstractMethodsconcreteMethod>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AbstractMethods.staticInAbstract`](<#AbstractMethodsstaticInAbstract>)
+
+**Methods**
+
+---
+#### AbstractMethods\.concreteMethod<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AbstractMethods.concreteMethod}} -->
+The `concreteMethod` in the `AbstractMethods` class calls the `abstractMethod` which must be implemented by any subclass.
+- **Inputs**: None
+- **Control Flow**:
+    - The method calls `this.abstractMethod()`, which is an abstract method that must be implemented by any subclass of `AbstractMethods`.
+- **Output**: The method does not return any value as its return type is `void`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AbstractMethods`](<#AbstractMethods>)  (Base Class)
+
+
+---
+#### AbstractMethods\.staticInAbstract<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AbstractMethods.staticInAbstract}} -->
+The `staticInAbstract` method is a static method in an abstract class that logs a message to the console.
+- **Inputs**: None
+- **Control Flow**:
+    - The method is defined as static, meaning it can be called on the class itself rather than on instances of the class.
+    - The method logs the string 'static in abstract' to the console using `console.log`.
+- **Output**: The method does not return any value (void).
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AbstractMethods`](<#AbstractMethods>)  (Base Class)
+
+
+
+---
+### ConcreteImplementation<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ConcreteImplementation}} -->
+- **Description**: The `ConcreteImplementation` class is a concrete subclass of the `AbstractMethods` abstract class, providing specific implementations for the abstract methods and properties defined in its parent class. It implements the `abstractMethod`, `abstractGetter`, and `abstractSetter`, as well as the `protectedAbstract` method, fulfilling the contract of the abstract class. This class demonstrates how to extend an abstract class and provide concrete behavior for its abstract members.
+- **Methods**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ConcreteImplementation.abstractMethod`](<#ConcreteImplementationabstractMethod>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ConcreteImplementation.abstractGetter`](<#ConcreteImplementationabstractGetter>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ConcreteImplementation.abstractSetter`](<#ConcreteImplementationabstractSetter>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ConcreteImplementation.protectedAbstract`](<#ConcreteImplementationprotectedAbstract>)
+- **Extends/Implements**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.AbstractMethods`](<#AbstractMethods>)
+
+**Methods**
+
+---
+#### ConcreteImplementation\.abstractMethod<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ConcreteImplementation.abstractMethod}} -->
+The `abstractMethod` in `ConcreteImplementation` logs 'implemented' to the console.
+- **Inputs**: None
+- **Control Flow**:
+    - The method logs the string 'implemented' to the console.
+- **Output**: The method does not return any value (void).
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ConcreteImplementation`](<#ConcreteImplementation>)  (Base Class)
+
+
+---
+#### ConcreteImplementation\.abstractGetter<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ConcreteImplementation.abstractGetter}} -->
+The `abstractGetter` method is a getter that returns a fixed numeric value of 42.
+- **Inputs**: None
+- **Control Flow**:
+    - The method directly returns the number 42 without any conditions or calculations.
+- **Output**: A number, specifically the integer 42.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ConcreteImplementation`](<#ConcreteImplementation>)  (Base Class)
+
+
+---
+#### ConcreteImplementation\.abstractSetter<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ConcreteImplementation.abstractSetter}} -->
+The `abstractSetter` method is a setter that logs the provided numeric value to the console.
+- **Inputs**:
+    - `value`: A number that is set and logged to the console.
+- **Control Flow**:
+    - The method takes a single numeric input parameter named `value`.
+    - It logs the `value` to the console using `console.log(value)`.
+- **Output**: There is no return value as it is a setter method.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ConcreteImplementation`](<#ConcreteImplementation>)  (Base Class)
+
+
+---
+#### ConcreteImplementation\.protectedAbstract<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ConcreteImplementation.protectedAbstract}} -->
+The `protectedAbstract` method in the `ConcreteImplementation` class provides a concrete implementation for a protected abstract method defined in the `AbstractMethods` class.
+- **Inputs**: None
+- **Control Flow**:
+    - The method logs the string 'protected implementation' to the console.
+- **Output**: The method does not return any value as its return type is `void`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ConcreteImplementation`](<#ConcreteImplementation>)  (Base Class)
+
+
+
+---
+### PrivateFieldMethods<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods}} -->
+- **Members**:
+    - `#privateField`: A private instance field holding a string value 'private'.
+    - `#staticPrivateField`: A private static field holding a string value 'static private'.
+    - `#value`: A private instance field initialized to 0.
+- **Description**: The `PrivateFieldMethods` class demonstrates the use of private fields and methods in TypeScript. It includes both instance and static private fields and methods, showcasing encapsulation and access control. The class provides public methods to access the values of these private fields and methods, illustrating how private members can be utilized internally while still allowing controlled access through public interfaces.
+- **Methods**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods.#privateMethod`](<#PrivateFieldMethods>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods.publicAccessor`](<#PrivateFieldMethodspublicAccessor>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods.#staticPrivateMethod`](<#PrivateFieldMethods>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods.publicStaticAccessor`](<#PrivateFieldMethodspublicStaticAccessor>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods.#privateValue`](<#PrivateFieldMethods>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods.#privateValue`](<#PrivateFieldMethods>)
+
+**Methods**
+
+---
+#### PrivateFieldMethods\.\#privateMethod<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods.#privateMethod}} -->
+The #privateMethod returns the value of the private field #privateField from the PrivateFieldMethods class.
+- **Inputs**: None
+- **Control Flow**:
+    - The method directly returns the value of the private field #privateField.
+- **Output**: A string representing the value of the private field #privateField.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods`](<#PrivateFieldMethods>)  (Base Class)
+
+
+---
+#### PrivateFieldMethods\.publicAccessor<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods.publicAccessor}} -->
+The `publicAccessor` method provides public access to a private method within the `PrivateFieldMethods` class.
+- **Inputs**: None
+- **Control Flow**:
+    - The method calls the private method `#privateMethod` of the `PrivateFieldMethods` class.
+    - The private method `#privateMethod` returns the value of the private field `#privateField`.
+    - The `publicAccessor` method returns the result obtained from the private method.
+- **Output**: The method returns a string, which is the value of the private field `#privateField`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods`](<#PrivateFieldMethods>)  (Base Class)
+
+
+---
+#### PrivateFieldMethods\.\#staticPrivateMethod<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods.#staticPrivateMethod}} -->
+The static private method `#staticPrivateMethod` returns the value of the static private field `#staticPrivateField` from the `PrivateFieldMethods` class.
+- **Inputs**: None
+- **Control Flow**:
+    - Accesses the static private field `#staticPrivateField` of the `PrivateFieldMethods` class.
+    - Returns the value of `#staticPrivateField`.
+- **Output**: A string representing the value of the static private field `#staticPrivateField`, which is 'static private'.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods`](<#PrivateFieldMethods>)  (Base Class)
+
+
+---
+#### PrivateFieldMethods\.publicStaticAccessor<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods.publicStaticAccessor}} -->
+The `publicStaticAccessor` method provides public access to a static private method within the `PrivateFieldMethods` class.
+- **Inputs**: None
+- **Control Flow**:
+    - The method calls the static private method `#staticPrivateMethod` of the `PrivateFieldMethods` class.
+    - It returns the result of the `#staticPrivateMethod` call.
+- **Output**: A string value returned by the `#staticPrivateMethod`, which is the value of the static private field `#staticPrivateField`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods`](<#PrivateFieldMethods>)  (Base Class)
+
+
+---
+#### PrivateFieldMethods\.\#privateValue<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods.#privateValue}} -->
+The private getter method `#privateValue` retrieves the value of the private field `#value` in the `PrivateFieldMethods` class.
+- **Inputs**: None
+- **Control Flow**:
+    - The method accesses the private field `#value` of the class instance.
+    - It returns the current value stored in `#value`.
+- **Output**: The method returns the current value of the private field `#value`, which is a number.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods`](<#PrivateFieldMethods>)  (Base Class)
+
+
+---
+#### PrivateFieldMethods\.\#privateValue<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods.#privateValue}} -->
+The `#privateValue` setter method assigns a new numeric value to the private `#value` field of the `PrivateFieldMethods` class.
+- **Inputs**:
+    - `val`: A number that will be assigned to the private `#value` field.
+- **Control Flow**:
+    - The method takes a single argument `val` which is a number.
+    - It assigns the value of `val` to the private field `#value`.
+- **Output**: This method does not return any value.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.PrivateFieldMethods`](<#PrivateFieldMethods>)  (Base Class)
+
+
+
+---
+### MethodChaining<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.MethodChaining}} -->
+- **Members**:
+    - `value`: A private string variable used to store the accumulated text.
+- **Description**: The MethodChaining class provides a simple interface for method chaining by allowing text to be added to an internal string value. The add method appends the given text to the value and returns the instance itself, enabling the chaining of multiple add calls in a fluent style.
+- **Methods**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.MethodChaining.add`](<#MethodChainingadd>)
+
+**Methods**
+
+---
+#### MethodChaining\.add<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.MethodChaining.add}} -->
+The `add` method appends a given string to the `value` property of the `MethodChaining` class and returns the instance for method chaining.
+- **Inputs**:
+    - `text`: A string that will be appended to the `value` property of the instance.
+- **Control Flow**:
+    - The method takes a string input `text`.
+    - It appends the `text` to the `value` property of the instance using the `+=` operator.
+    - The method returns the current instance (`this`) to allow for method chaining.
+- **Output**: The method returns the current instance of the `MethodChaining` class, allowing for method chaining.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.MethodChaining`](<#MethodChaining>)  (Base Class)
+
+
+
+---
+### ComplexMethods<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods}} -->
+- **Description**: The `ComplexMethods` class provides a collection of advanced method implementations that demonstrate various programming techniques in TypeScript. It includes methods that return functions, handle asynchronous operations, and utilize higher-order functions. The class also showcases currying, destructured parameters, type predicates, and assertion methods, making it a comprehensive example of complex method usage in TypeScript.
+- **Methods**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods.createCallback`](<#ComplexMethodscreateCallback>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods.getAsyncCallback`](<#ComplexMethodsgetAsyncCallback>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods.higherOrder`](<#ComplexMethodshigherOrder>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods.curry`](<#ComplexMethodscurry>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods.destructured`](<#ComplexMethodsdestructured>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods.isValid`](<#ComplexMethodsisValid>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods.assert`](<#ComplexMethodsassert>)
+
+**Methods**
+
+---
+#### ComplexMethods\.createCallback<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods.createCallback}} -->
+The `createCallback` method returns a function that doubles its numeric input.
+- **Inputs**: None
+- **Control Flow**:
+    - The method defines and returns an anonymous function.
+    - The returned function takes a single numeric argument `x`.
+    - The function multiplies `x` by 2 and returns the result.
+- **Output**: A function that takes a number as input and returns the number multiplied by 2.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods`](<#ComplexMethods>)  (Base Class)
+
+
+---
+#### ComplexMethods\.getAsyncCallback<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods.getAsyncCallback}} -->
+The `getAsyncCallback` method asynchronously returns a function that converts a string to uppercase.
+- **Inputs**: None
+- **Control Flow**:
+    - The method is defined as asynchronous and returns a Promise.
+    - The method immediately returns a function that takes a string `x` as input.
+    - The returned function converts the input string `x` to uppercase using the `toUpperCase` method.
+- **Output**: A Promise that resolves to a function which takes a string and returns its uppercase version.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods`](<#ComplexMethods>)  (Base Class)
+
+
+---
+#### ComplexMethods\.higherOrder<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods.higherOrder}} -->
+The `higherOrder` method applies a transformation function to each element of an input array and returns a new array with the transformed elements.
+- **Inputs**:
+    - `array`: An array of elements of type T that will be transformed.
+    - `transform`: A function that takes an element of type T and returns a transformed element of type U.
+- **Control Flow**:
+    - The method uses the `map` function on the input array.
+    - Each element of the array is passed to the `transform` function.
+    - The result of the `transform` function is collected into a new array.
+- **Output**: An array of elements of type U, which are the results of applying the `transform` function to each element of the input array.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods`](<#ComplexMethods>)  (Base Class)
+
+
+---
+#### ComplexMethods\.curry<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods.curry}} -->
+The `curry` method is a curried function that takes a number and returns a function that takes another number, which in turn returns a function that takes a third number and returns their sum.
+- **Inputs**:
+    - `a`: The first number to be used in the sum.
+- **Control Flow**:
+    - The method takes a single argument `a` and returns a function that takes another argument `b`.
+    - The returned function takes a third argument `c` and returns the sum of `a`, `b`, and `c`.
+- **Output**: A function that takes a number `b` and returns another function that takes a number `c`, which finally returns the sum of `a`, `b`, and `c`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods`](<#ComplexMethods>)  (Base Class)
+
+
+---
+#### ComplexMethods\.destructured<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods.destructured}} -->
+The `destructured` method takes an object with properties `x` and `y`, both numbers, and returns their sum.
+- **Inputs**:
+    - `{ x, y }`: An object with two properties: `x` and `y`, both of which are numbers.
+- **Control Flow**:
+    - The method receives an object with properties `x` and `y`.
+    - It calculates the sum of `x` and `y`.
+- **Output**: The method returns a number, which is the sum of `x` and `y`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods`](<#ComplexMethods>)  (Base Class)
+
+
+---
+#### ComplexMethods\.isValid<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods.isValid}} -->
+The `isValid` method checks if a given value is of type string.
+- **Inputs**:
+    - `value`: The value to be checked, of type unknown.
+- **Control Flow**:
+    - The method uses the `typeof` operator to determine if the input value is a string.
+- **Output**: Returns a boolean indicating whether the input value is a string.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods`](<#ComplexMethods>)  (Base Class)
+
+
+---
+#### ComplexMethods\.assert<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods.assert}} -->
+The `assert` method checks a condition and throws an error if the condition is false.
+- **Inputs**:
+    - `condition`: An unknown type that represents the condition to be checked.
+- **Control Flow**:
+    - The method checks if the `condition` is falsy.
+    - If the `condition` is falsy, it throws an `Error` with the message 'Assertion failed'.
+- **Output**: The method does not return a value; it either completes successfully if the condition is true or throws an error if the condition is false.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.ComplexMethods`](<#ComplexMethods>)  (Base Class)
+
+
+
+---
+### InterfaceImplementation<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.InterfaceImplementation}} -->
+- **Description**: The `InterfaceImplementation` class is a concrete implementation of the `MethodInterface` interface, providing definitions for the required methods specified by the interface. It includes a `requiredMethod` that logs a message to the console, an `optionalMethod` that is implemented to log a different message, and a `methodWithParams` that takes a number and a string as parameters and returns a boolean based on specific conditions. This class demonstrates how to implement an interface in TypeScript, ensuring that all required methods are defined.
+- **Methods**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.InterfaceImplementation.requiredMethod`](<#InterfaceImplementationrequiredMethod>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.InterfaceImplementation.optionalMethod`](<#InterfaceImplementationoptionalMethod>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.InterfaceImplementation.methodWithParams`](<#InterfaceImplementationmethodWithParams>)
+- **Extends/Implements**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.MethodInterface`](<#MethodInterface>)
+
+**Methods**
+
+---
+#### InterfaceImplementation\.requiredMethod<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.InterfaceImplementation.requiredMethod}} -->
+The `requiredMethod` logs the string 'required' to the console.
+- **Inputs**: None
+- **Control Flow**:
+    - The method executes a single statement that logs the string 'required' to the console.
+- **Output**: The method does not return any value as its return type is `void`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.InterfaceImplementation`](<#InterfaceImplementation>)  (Base Class)
+
+
+---
+#### InterfaceImplementation\.optionalMethod<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.InterfaceImplementation.optionalMethod}} -->
+The `optionalMethod` logs a message indicating that the optional method has been implemented.
+- **Inputs**: None
+- **Control Flow**:
+    - The method logs the message 'optional implemented' to the console.
+- **Output**: The method does not return any value as its return type is `void`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.InterfaceImplementation`](<#InterfaceImplementation>)  (Base Class)
+
+
+---
+#### InterfaceImplementation\.methodWithParams<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.InterfaceImplementation.methodWithParams}} -->
+The `methodWithParams` method checks if a given number is positive and a string is non-empty, returning a boolean result.
+- **Inputs**:
+    - `x`: A number that is checked to be greater than zero.
+    - `y`: A string that is checked to have a length greater than zero.
+- **Control Flow**:
+    - The method evaluates whether the number `x` is greater than zero.
+    - It also checks if the string `y` has a length greater than zero.
+    - The method returns `true` if both conditions are met, otherwise it returns `false`.
+- **Output**: A boolean value indicating whether both the number is positive and the string is non-empty.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.InterfaceImplementation`](<#InterfaceImplementation>)  (Base Class)
+
+
+
+---
+### BaseClass<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.BaseClass}} -->
+- **Description**: The `BaseClass` is a simple class that provides a single method, `baseMethod`, which returns a string 'base'. It serves as a foundational class that can be extended or used as a base for other classes, such as in mixin patterns.
+- **Methods**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.BaseClass.baseMethod`](<#BaseClassbaseMethod>)
+
+**Methods**
+
+---
+#### BaseClass\.baseMethod<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.BaseClass.baseMethod}} -->
+The `baseMethod` in the `BaseClass` returns a static string 'base'.
+- **Inputs**: None
+- **Control Flow**:
+    - The method directly returns the string 'base'.
+- **Output**: A string 'base'.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.BaseClass`](<#BaseClass>)  (Base Class)
+
+
+
+---
+### MixinClass<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.MixinClass}} -->
+- **Description**: The `MixinClass` is a TypeScript class that extends a base class enhanced with logging capabilities through a mixin function. It inherits from `Loggable(BaseClass)`, which means it gains logging methods such as `log` and `logError` in addition to the `baseMethod` from `BaseClass`. The `useLogging` method demonstrates the use of these inherited capabilities by logging a message and calling the base method. This class serves as an example of how mixins can be used to augment class functionality in TypeScript.
+- **Methods**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.MixinClass.useLogging`](<#MixinClassuseLogging>)
+- **Extends/Implements**:
+    - `Loggable(BaseClass)`
+
+**Methods**
+
+---
+#### MixinClass\.useLogging<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.MixinClass.useLogging}} -->
+The `useLogging` method logs a message and calls a base method within a class that extends a mixin.
+- **Inputs**: None
+- **Control Flow**:
+    - The method logs a message 'Using mixin method' using the `log` method inherited from the `Loggable` mixin.
+    - It then calls the `baseMethod` from the `BaseClass`, which returns a string 'base'.
+- **Output**: The method does not return any value as its return type is `void`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.MixinClass`](<#MixinClass>)  (Base Class)
+
+
+
+# Interfaces
+
+---
+### MethodInterface<!-- {{#interface:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.MethodInterface}} -->
+- **Members**:
+    - `requiredMethod`: A method that must be implemented, returning void.
+    - `optionalMethod`: An optional method that may be implemented, returning void.
+    - `methodWithParams`: A method that takes a number and a string as parameters and returns a boolean.
+- **Description**: The `MethodInterface` defines a contract for objects that require a specific set of methods to be implemented. It includes a mandatory `requiredMethod` that must be implemented by any class adhering to this interface, an optional `optionalMethod` that can be implemented if needed, and a `methodWithParams` that requires two parameters, a number and a string, and returns a boolean. This interface is useful for ensuring that certain functionalities are consistently available across different implementations.
 
 
 # Functions
 
 ---
-### methodWithOptional
-Checks if the optional parameter is provided.
-- **Inputs**:
-    - `required`: A string that is required for the method to execute.
-    - `optional`: An optional number that, if provided, will determine the return value.
-- **Control Flow**:
-    - The method checks if the `optional` parameter is not `undefined`.
-    - If `optional` is provided, the method returns `true`; otherwise, it returns `false`.
-- **Output**: Returns a boolean indicating whether the optional parameter was provided.
-
-
----
-### methodWithDefault
-The `methodWithDefault` function returns the provided string value or a default string if no value is given.
-- **Inputs**:
-    - `value`: An optional string parameter that defaults to 'default' if not provided.
-- **Control Flow**:
-    - The function checks the input parameter `value`.
-    - If `value` is not provided, it uses the default value 'default'.
-    - The function then returns the value of `value`.
-- **Output**: The function outputs the string value passed as an argument or 'default' if no argument is provided.
-
-
----
-### publicMethod
-The `publicMethod` function logs the string 'public' to the console.
+### method<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.objectWithMethods.method}} -->
+The `method` function in the object literal returns the string 'method'.
 - **Inputs**: None
 - **Control Flow**:
-    - The function executes a single statement that outputs a string to the console.
-- **Output**: The function does not return any value; it simply performs a console log operation.
+    - The function immediately returns the string 'method'.
+- **Output**: The output is a string with the value 'method'.
 
 
 ---
-### privateMethod
-The `privateMethod` function returns a string indicating its private status.
-- **Inputs**:
-    - `none`: This method does not take any input arguments.
-- **Control Flow**:
-    - The method directly returns the string 'private'.
-- **Output**: The output is a string with the value 'private'.
-
-
----
-### protectedMethod
-The `protectedMethod` function returns a fixed number, 42.
+### asyncMethod<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.objectWithMethods.asyncMethod}} -->
+The `asyncMethod` is an asynchronous function that returns a resolved promise with the string 'async'.
 - **Inputs**: None
 - **Control Flow**:
-    - The method directly returns the integer 42 without any conditions or loops.
-- **Output**: The output is a number, specifically the integer 42.
+    - The function is defined as an asynchronous method, which means it returns a promise.
+    - The method immediately returns the string 'async', which is automatically wrapped in a resolved promise due to the async nature of the function.
+- **Output**: A promise that resolves to the string 'async'.
 
 
 ---
-### privateStatic
-The `privateStatic` function is a private static method that returns a string.
+### generatorMethod<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.objectWithMethods.generatorMethod}} -->
+The `generatorMethod` is a generator function that yields a single string value 'generator'.
 - **Inputs**: None
 - **Control Flow**:
-    - The method directly returns the string 'private static' without any conditions or loops.
-- **Output**: The output is a string containing the text 'private static'.
+    - The function is defined as a generator function using the asterisk (*) syntax.
+    - It yields the string 'generator' when iterated over.
+- **Output**: The output is a generator object that yields the string 'generator' when iterated.
 
 
 ---
-### protectedStatic
-The `protectedStatic` function is a static method that returns a boolean value.
+### getter<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.objectWithMethods.getter}} -->
+The `getter` method is a simple getter function that returns the string 'getter'.
 - **Inputs**: None
 - **Control Flow**:
-    - The method directly returns the boolean value `true`.
-- **Output**: The output is a boolean value, specifically `true`.
+    - The method is defined as a getter, which means it is accessed like a property rather than a function.
+    - When accessed, it immediately returns the string 'getter'.
+- **Output**: The output is the string 'getter'.
 
 
 ---
-### \#privateStaticMethod
-This function `#privateStaticMethod` returns the value of a private static field.
+### setter<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.objectWithMethods.setter}} -->
+The `setter` method is a setter function for an object property that logs the provided string value to the console.
+- **Inputs**:
+    - `value`: A string value that is passed to the setter method.
+- **Control Flow**:
+    - The method takes a single string argument named `value`.
+    - It logs the `value` to the console using `console.log(value)`.
+- **Output**: This setter method does not return any value.
+
+
+---
+### \['computed' \+ 'Method'\]<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.objectWithMethods.['computed' + 'Method']}} -->
+The 'computedMethod' is a computed property method that returns the string 'computed'.
 - **Inputs**: None
 - **Control Flow**:
-    - The method accesses the private static field `#privateStaticField` of the class.
-    - It returns the value of `#privateStaticField` as a string.
-- **Output**: The output is a string that contains the value of the private static field `#privateStaticField`.
+    - The method is defined as a computed property using bracket notation.
+    - It returns the string 'computed' immediately when called.
+- **Output**: The output is a string with the value 'computed'.
 
 
 ---
-### asyncWithParams
-The `asyncWithParams` function fetches data from a given URL and returns the parsed JSON response.
+### Loggable<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.Loggable}} -->
+The `Loggable` function is a mixin that extends a given class with logging capabilities, adding methods to log messages and errors.
 - **Inputs**:
-    - `url`: A string representing the URL from which to fetch data.
+    - `Base`: A class constructor that the mixin will extend, which must be a class with a constructor that can accept any arguments.
 - **Control Flow**:
-    - The function uses the `fetch` API to make an asynchronous request to the provided `url`.
-    - It waits for the response to be received using the `await` keyword.
-    - Once the response is received, it calls the `json()` method on the response object to parse the response body as JSON.
-- **Output**: The function returns a Promise that resolves to the parsed JSON data from the response.
+    - The function takes a class constructor `Base` as an argument.
+    - It returns a new class that extends the `Base` class.
+    - The new class includes a `log` method that logs a message with a timestamp to the console.
+    - The new class also includes a `logError` method that logs an error message to the console with an '[ERROR]' prefix.
+- **Output**: A new class that extends the provided `Base` class with additional logging methods.
 
 
 ---
-### privateAsync
-The `privateAsync` function is an asynchronous method that returns a promise resolving to the number 42.
+### log<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.log}} -->
+The `log` function logs a message to the console with a timestamp.
 - **Inputs**:
-    - `none`: The function does not take any input arguments.
+    - `message`: A string message to be logged to the console.
 - **Control Flow**:
-    - The function is declared as `private`, meaning it can only be accessed within the class it is defined in.
-    - It is an asynchronous function, indicated by the `async` keyword, allowing the use of `await` within its body.
-    - The function directly returns a promise that resolves to the number 42 without any additional logic or conditions.
-- **Output**: The output is a Promise that resolves to the number 42.
-
-
----
-### staticAsync
-The `staticAsync` function is a static method that returns a resolved Promise with a boolean value.
-- **Inputs**:
-    - `none`: This function does not take any input arguments.
-- **Control Flow**:
-    - The function directly returns a resolved Promise with the value `true`.
-    - There are no conditional statements or loops in the function.
-- **Output**: The output is a Promise that resolves to a boolean value, specifically `true`.
-
-
----
-### asyncGenerator
-`asyncGenerator` is an asynchronous generator function that yields a sequence of numbers.
-- **Inputs**:
-    - `none`: The function does not take any input arguments.
-- **Control Flow**:
-    - The function uses the `yield` keyword to produce values one at a time.
-    - It yields the numbers 1, 2, and 3 sequentially.
-- **Output**: The output is an `AsyncGenerator` that produces numbers 1, 2, and 3 when iterated over asynchronously.
-
-
----
-### generatorWithReturn
-The `generatorWithReturn` function is a generator that yields two numbers and then returns a string.
-- **Inputs**: None
-- **Control Flow**:
-    - The function starts by yielding the number 1.
-    - Next, it yields the number 2.
-    - Finally, it returns the string 'done' after the last yield.
-- **Output**: The output is a string 'done' that is returned after all yields have been exhausted.
-
-
----
-### privateGenerator
-The `privateGenerator` function is a private generator method that yields a single string value.
-- **Inputs**:
-    - `none`: The method does not take any input arguments.
-- **Control Flow**:
-    - The method uses the `yield` keyword to produce a value.
-    - It yields the string 'private' when called.
-- **Output**: The output of the method is an `AsyncGenerator` that produces a single string value, 'private'.
-
-
----
-### staticGenerator
-The `staticGenerator` function is a generator method that yields a single string value 'static'.
-- **Inputs**:
-    - `none`: The method does not take any input arguments.
-- **Control Flow**:
-    - The method uses the `yield` keyword to produce a value.
-    - It yields the string 'static' when called.
-- **Output**: The output of the method is a generator that produces the string 'static' when iterated over.
-
-
----
-### \[Symbol\.iterator\]
-The `Symbol.iterator` method allows an instance of the `GeneratorMethods` class to be iterable using the `for...of` loop.
-- **Inputs**: None
-- **Control Flow**:
-    - The method uses the `yield*` expression to delegate to another generator function, specifically `this.simpleGenerator()`.
-    - This allows the `Symbol.iterator` method to yield all values produced by the `simpleGenerator` method.
-- **Output**: The output is an iterable object that produces values yielded by the `simpleGenerator` method.
-
-
----
-### value
-The `value` getter and setter in the `GettersSetters` class manage a private numeric property.
-- **Inputs**:
-    - `newValue`: A number that will be assigned to the private property when the setter is called.
-- **Control Flow**:
-    - The getter retrieves the current value of the private property `_value`.
-    - The setter assigns a new value to the private property `_value`.
-- **Output**: The getter returns the current value of `_value`, while the setter does not return a value but updates `_value`.
-
-
----
-### readOnlyProp
-The `readOnlyProp` getter returns a fixed string indicating that the property is read-only.
-- **Inputs**:
-    - `none`: The function does not take any input arguments.
-- **Control Flow**:
-    - The function directly returns the string 'read only' without any conditions or loops.
-- **Output**: The output is a string with the value 'read only'.
-
-
----
-### privateGetter
-The `privateGetter` function is a private method that returns a boolean value.
-- **Inputs**:
-    - `none`: The function does not take any input arguments.
-- **Control Flow**:
-    - The function directly returns the boolean value `true`.
-- **Output**: The output of the function is a boolean value, specifically `true`.
-
-
----
-### protectedSetter
-The `protectedSetter` function is a setter method that allows setting a protected property while logging the value.
-- **Inputs**:
-    - `value`: A string value that will be logged when the setter is called.
-- **Control Flow**:
-    - The method receives a string input as an argument.
-    - It logs the input value to the console.
-- **Output**: This function does not return a value; it performs a side effect by logging the input value.
-
-
----
-### staticGetter
-The `staticGetter` function is a static method that returns a fixed number, 42.
-- **Inputs**: None
-- **Control Flow**:
-    - The method does not contain any control flow statements such as conditionals or loops.
-    - It directly returns the value 42 when called.
-- **Output**: The output of the function is the number 42.
-
-
----
-### staticSetter
-Sets a static value and logs it to the console.
-- **Inputs**:
-    - `value`: A number that will be set and logged.
-- **Control Flow**:
-    - The function takes a single input parameter named `value`.
-    - It logs the `value` to the console.
-- **Output**: This function does not return a value; it performs a side effect by logging to the console.
-
-
----
-### data
-The `data` getter and setter in the `GettersSetters` class allows for controlled access and modification of a private string property.
-- **Inputs**:
-    - `value`: A string or number that will be converted to a string and assigned to the private `_data` property.
-- **Control Flow**:
-    - The getter retrieves the value of the private `_data` property.
-    - The setter converts the input value to a string and assigns it to the `_data` property.
-- **Output**: The getter returns the current value of the `_data` property as a string, while the setter does not return a value but updates the property.
-
-
----
-### identity
-The `identity` function returns the input value unchanged.
-- **Inputs**:
-    - `value`: The input value of generic type `T` that will be returned.
-- **Control Flow**:
-    - The function takes a single argument `value` of type `T`.
-    - It directly returns the same value without any modification.
-- **Output**: The output is the same value that was passed as input, maintaining its original type.
-
-
----
-### map
-The `map` function applies a given transformation function to each element of an array and returns a new array containing the results.
-- **Inputs**:
-    - `array`: An array of elements of type T that will be transformed.
-    - `fn`: A function that takes an element of type T and returns a transformed element of type U.
-- **Control Flow**:
-    - The function uses the built-in `map` method of the array to iterate over each element.
-    - For each element, it applies the provided transformation function `fn` and collects the results.
-- **Output**: The function returns a new array containing the transformed elements of type U.
-
-
----
-### constrainedGeneric
-The `constrainedGeneric` function returns a value of a type that is constrained to either `string` or `number`.
-- **Inputs**:
-    - `value`: A value of type `T`, which is constrained to either `string` or `number`.
-- **Control Flow**:
-    - The function accepts a single argument `value` of a generic type `T` that extends `string | number`.
-    - It directly returns the input value without any modification or additional logic.
-- **Output**: The output is the same type as the input, which can be either a `string` or a `number`.
-
-
----
-### multipleGenerics
-The `multipleGenerics` function accepts three generic parameters and returns them as a tuple.
-- **Inputs**:
-    - `a`: The first generic parameter of any type.
-    - `b`: The second generic parameter of any type.
-    - `c`: The third generic parameter of any type.
-- **Control Flow**:
-    - The function takes three parameters, `a`, `b`, and `c`, which can be of any type.
-    - It constructs a tuple containing the three parameters.
-    - The function then returns this tuple.
-- **Output**: The output is a tuple containing the three input parameters in the order they were provided.
-
-
----
-### staticGeneric
-The `staticGeneric` function is a static method that returns the value of the generic type passed to it.
-- **Inputs**:
-    - `value`: A value of generic type T that will be returned by the function.
-- **Control Flow**:
-    - The function takes a single parameter `value` of type T.
-    - It directly returns the input value without any modification or additional logic.
-- **Output**: The output is the same value of type T that was passed as an argument.
-
-
----
-### asyncGeneric
-The `asyncGeneric` function takes a Promise as input and returns the resolved value of that Promise.
-- **Inputs**:
-    - `promise`: A Promise of type T that will be awaited and resolved.
-- **Control Flow**:
-    - The function uses the `await` keyword to pause execution until the Promise is resolved.
-    - Once the Promise is resolved, the resolved value is returned.
-- **Output**: The resolved value of the input Promise of type T.
-
-
----
-### withDefault
-The `withDefault` function returns the provided value, defaulting to a string type if no value is specified.
-- **Inputs**:
-    - `value`: An optional parameter of generic type T, which defaults to string if not provided.
-- **Control Flow**:
-    - The function accepts a single parameter `value` which can be of any type due to the generic type T.
-    - If a value is provided, it is returned as is; otherwise, the default type (string) is used.
-- **Output**: The function outputs the value of type T that was passed in, or a default string if no value was provided.
-
-
----
-### process
-The `process` method handles different types of input values and returns a corresponding output based on the type.
-- **Inputs**:
-    - `value`: A value that can be of type string, number, or boolean.
-- **Control Flow**:
-    - The method checks the type of the input `value` using `typeof`.
-    - If the type is boolean, it converts the boolean to a string and returns it.
-    - For string and number types, it simply returns the value as is.
-- **Output**: The output is either a string (if the input is a boolean) or the original value (if the input is a string or number).
-
-
----
-### create
-The `create` function is a static method that can instantiate a `MethodOverloading` object, optionally using an identifier.
-- **Inputs**:
-    - `id`: An optional number that can be used to identify the instance being created.
-- **Control Flow**:
-    - The function checks if an `id` is provided.
-    - It creates and returns a new instance of `MethodOverloading` regardless of whether an `id` is passed.
-- **Output**: Returns a new instance of the `MethodOverloading` class.
-
-
----
-### constructor
-The `constructor` initializes an instance of the `SpecialMethods` class with a private `id` property.
-- **Inputs**:
-    - `id`: A string that serves as the identifier for the instance of the `SpecialMethods` class.
-- **Control Flow**:
-    - The constructor takes a single parameter, `id`, which is assigned to the private property of the same name.
-    - No additional logic or control flow is present in the constructor.
-- **Output**: The constructor does not return a value; it initializes the instance of the class with the provided `id`.
-
-
----
-### \['computedMethod'\]
-The `computedMethod` function returns a string indicating that it is a computed property.
-- **Inputs**:
-    - `none`: This method does not take any input arguments.
-- **Control Flow**:
-    - The method constructs a string by concatenating 'computed' with 'Method'.
-    - It then returns the resulting string.
-- **Output**: The output is a string 'computed'.
-
-
----
-### \[Symbol\.toString\]
-The `[Symbol.toString]` method returns a string representation of the `SpecialMethods` class.
-- **Inputs**: None
-- **Control Flow**:
-    - The method is defined using the `Symbol.toString` symbol, which allows for custom string representation of the object.
-    - When called, it returns the string 'SpecialMethods'.
-- **Output**: The output is a string that represents the class, specifically 'SpecialMethods'.
-
-
----
-### \[Symbol\.toPrimitive\]
-The `Symbol.toPrimitive` method in the `SpecialMethods` class defines a custom behavior for converting an object to a primitive value based on the provided hint.
-- **Inputs**:
-    - `hint`: A string that indicates the preferred type of primitive value to return, which can be either 'string' or 'number'.
-- **Control Flow**:
-    - The method checks the value of the `hint` parameter to determine the type of primitive to return.
-    - If the `hint` is 'number', it returns the number 42.
-    - If the `hint` is anything else (including 'string'), it returns the string 'string'.
-- **Output**: The output is either the number 42 or the string 'string', depending on the value of the `hint` parameter.
-
-
----
-### \[Symbol\.asyncIterator\]
-The `Symbol.asyncIterator` method allows an instance of the `SpecialMethods` class to be used in a `for await...of` loop, yielding asynchronous values.
-- **Inputs**: None
-- **Control Flow**:
-    - The method is defined as an asynchronous generator function, which means it can yield values asynchronously.
-    - It uses the `yield` keyword to produce values, allowing the caller to iterate over them using `for await...of`.
-- **Output**: The output is an `AsyncGenerator` that yields numbers, specifically 1 and 2, when iterated over.
-
-
----
-### compareWith
-Compares the `id` of the current instance with the `id` of another instance of the same class.
-- **Inputs**:
-    - `this`: The current instance of the `SpecialMethods` class.
-    - `other`: Another instance of the `SpecialMethods` class to compare with.
-- **Control Flow**:
-    - The function accesses the `id` property of both the current instance (`this.id`) and the `other` instance.
-    - It evaluates whether the two `id` values are equal and returns the result as a boolean.
-- **Output**: Returns a boolean indicating whether the `id` of the current instance is equal to the `id` of the `other` instance.
-
-
----
-### regularMethod
-The `regularMethod` function returns the `id` property of the `SpecialMethods` class instance.
-- **Inputs**:
-    - `none`: This method does not take any input arguments.
-- **Control Flow**:
-    - The method directly accesses the `id` property of the class instance.
-    - It returns the value of the `id` property without any additional processing.
-- **Output**: The output is a string representing the `id` of the instance of the `SpecialMethods` class.
-
-
----
-### simpleDecorated
-The `simpleDecorated` method logs a message to the console and is decorated with a logging decorator.
-- **Inputs**:
-    - `none`: The method does not take any input arguments.
-- **Control Flow**:
-    - The method executes a single console log statement.
-    - No conditional logic or loops are present in the method.
-- **Output**: The method returns no value (void) and simply logs 'decorated' to the console.
-
-
----
-### multipleDecorators
-The `multipleDecorators` method applies multiple decorators to a method that logs data.
-- **Inputs**:
-    - `data`: The input data that will be logged by the method.
-- **Control Flow**:
-    - The method receives an argument `data`.
-    - The `@validate` decorator is applied first, which likely checks the validity of the `data` before proceeding.
-    - The `@authorize('admin')` decorator is applied next, which likely checks if the user has the 'admin' role.
-    - If both decorators pass their checks, the method logs the `data` to the console.
-- **Output**: The method does not return a value; it performs a console log of the input data if the decorators allow it.
-
-
----
-### concreteMethod
-The `concreteMethod` function in the `AbstractMethods` class calls an abstract method that must be implemented by derived classes.
-- **Inputs**:
-    - `none`: The function does not take any input arguments.
-- **Control Flow**:
-    - The function invokes the `abstractMethod`, which is defined in the abstract class and must be implemented by any concrete subclass.
-    - The actual behavior of `concreteMethod` depends on the implementation of `abstractMethod` in the subclass.
+    - The function constructs a log message by prepending the current date and time in ISO format to the input message.
+    - It then outputs this constructed message to the console using `console.log`.
 - **Output**: The function does not return any value (void).
 
 
 ---
-### staticInAbstract
-The `staticInAbstract` method is a static method defined in an abstract class that logs a message to the console.
-- **Inputs**: None
-- **Control Flow**:
-    - The method executes a single console log statement.
-    - No conditional logic or loops are present in the method.
-- **Output**: The method does not return a value; it simply performs a side effect by logging a message to the console.
-
-
----
-### abstractMethod
-`abstractMethod` is an abstract method that must be implemented by subclasses.
+### logError<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_methods.logError}} -->
+The `logError` method logs an error message to the console with a specific format.
 - **Inputs**:
-    - `none`: This method does not take any input arguments.
+    - `error`: An instance of the Error object containing the error message to be logged.
 - **Control Flow**:
-    - The method is declared as abstract, meaning it does not contain an implementation in the `AbstractMethods` class.
-    - Subclasses that extend `AbstractMethods` are required to provide their own implementation of this method.
-- **Output**: The method does not return any value as it is defined to return `void`.
-
-
----
-### abstractGetter
-The `abstractGetter` function is an abstract getter method defined in an abstract class that must be implemented by derived classes.
-- **Inputs**:
-    - `none`: This function does not take any input arguments.
-- **Control Flow**:
-    - The function is defined as an abstract method, meaning it does not contain any implementation and must be overridden in a subclass.
-    - It serves as a contract for subclasses to provide a specific implementation for retrieving a value.
-- **Output**: The output of this function is a number, which is expected to be provided by the implementing subclass.
-
-
----
-### abstractSetter
-The `abstractSetter` function is an abstract setter method defined in the `AbstractMethods` class.
-- **Inputs**:
-    - `value`: A number that will be set to the abstract property.
-- **Control Flow**:
-    - The method does not contain any logic itself as it is abstract and must be implemented in a derived class.
-    - It serves as a contract for subclasses to provide their own implementation for setting a value.
-- **Output**: The method does not return a value; it is intended to set a value to a property in a subclass.
-
-
----
-### protectedAbstract
-The `protectedAbstract` method is an abstract method defined in the `AbstractMethods` class that must be implemented by any derived class.
-- **Inputs**:
-    - `none`: The method does not take any input arguments.
-- **Control Flow**:
-    - The method is declared as `protected`, meaning it can only be accessed within the class itself and by derived classes.
-    - As an abstract method, it does not contain any implementation in the `AbstractMethods` class and must be implemented in any subclass.
-- **Output**: The method does not return any value as it is defined with a return type of `void`.
-
-
----
-### \#privateMethod
-The `privateMethod` function returns a string indicating its private status.
-- **Inputs**:
-    - `none`: This method does not take any input arguments.
-- **Control Flow**:
-    - The method directly returns a string literal 'private'.
-- **Output**: The output is a string with the value 'private'.
-
-
----
-### publicAccessor
-The `publicAccessor` method retrieves the value from a private method.
-- **Inputs**:
-    - `none`: The method does not take any input arguments.
-- **Control Flow**:
-    - The method calls the private method `#privateMethod`.
-    - The result of `#privateMethod` is returned as the output.
-- **Output**: The output is a string returned from the private method `#privateMethod`, which accesses a private field.
-
-
----
-### \#staticPrivateMethod
-The `#privateStaticMethod` function returns the value of a private static field.
-- **Inputs**:
-    - `none`: This method does not take any input arguments.
-- **Control Flow**:
-    - The method accesses the private static field `#privateStaticField` of the class.
-    - It returns the value of `#privateStaticField` as a string.
-- **Output**: The output is a string that contains the value of the private static field `#privateStaticField`.
-
-
----
-### publicStaticAccessor
-The `publicStaticAccessor` method retrieves the value of a private static field.
-- **Inputs**: None
-- **Control Flow**:
-    - The method calls the private static method `#staticPrivateMethod` to access the private static field.
-    - The value returned from `#staticPrivateMethod` is then returned as the output of `publicStaticAccessor`.
-- **Output**: The output is a string value that corresponds to the value of the private static field `#staticPrivateField`.
-
-
----
-### add
-The `add` function appends a given string to an internal value and returns the instance for method chaining.
-- **Inputs**:
-    - `text`: A string that will be appended to the internal value.
-- **Control Flow**:
-    - The function concatenates the input string `text` to the existing `value` property.
-    - It then returns the current instance (`this`) to allow for method chaining.
-- **Output**: Returns the current instance of the class to facilitate method chaining.
-
-
----
-### createCallback
-The `createCallback` method returns a function that doubles its input.
-- **Inputs**: None
-- **Control Flow**:
-    - The method defines and returns an inner function that takes a single parameter `x`.
-    - The inner function multiplies `x` by 2 and returns the result.
-- **Output**: The output is a function that, when called with a number, returns that number multiplied by 2.
-
-
----
-### getAsyncCallback
-The `getAsyncCallback` function returns a promise that resolves to a callback function which transforms a string to uppercase.
-- **Inputs**: None
-- **Control Flow**:
-    - The function is declared as `async`, allowing it to return a promise.
-    - It returns an arrow function that takes a string as input and applies the `toUpperCase` method to it.
-- **Output**: The output is a promise that resolves to a function, which when called with a string, returns the uppercase version of that string.
-
-
----
-### higherOrder
-The `higherOrder` function applies a transformation function to each element of an array and returns a new array with the transformed elements.
-- **Inputs**:
-    - `array`: An array of elements of type T that will be transformed.
-    - `transform`: A function that takes an element of type T and returns a transformed element of type U.
-- **Control Flow**:
-    - The function uses the `map` method on the input array to apply the `transform` function to each element.
-    - It returns a new array containing the results of the transformation.
-- **Output**: A new array of elements of type U, resulting from applying the `transform` function to each element of the input array.
-
-
----
-### curry
-The `curry` function returns a curried version of a function that takes three numbers and sums them.
-- **Inputs**:
-    - `a`: The first number to be added in the curried function.
-- **Control Flow**:
-    - The function returns another function that takes a second number `b`.
-    - The returned function takes a third number `c` and returns the sum of `a`, `b`, and `c`.
-- **Output**: The output is a function that, when called with two additional numbers, returns their sum along with the initial number.
-
-
----
-### destructured
-The `destructured` method takes an object with properties `x` and `y` and returns their sum.
-- **Inputs**:
-    - `params`: An object containing two properties: `x` (a number) and `y` (a number) to be summed.
-- **Control Flow**:
-    - The method destructures the input object to extract the values of `x` and `y`.
-    - It then computes the sum of `x` and `y` and returns the result.
-- **Output**: The output is a number representing the sum of the two input properties `x` and `y`.
-
-
----
-### isValid
-The `isValid` function checks if the provided value is of type string.
-- **Inputs**:
-    - `value`: An unknown type value that needs to be validated.
-- **Control Flow**:
-    - The function uses the `typeof` operator to check the type of the input value.
-    - If the type is 'string', it returns true; otherwise, it returns false.
-- **Output**: The output is a boolean indicating whether the input value is a string.
-
-
----
-### assert
-The `assert` function checks a condition and throws an error if the condition is false.
-- **Inputs**:
-    - `condition`: An expression that is expected to be true; if false, an error is thrown.
-- **Control Flow**:
-    - The function evaluates the `condition` input.
-    - If the `condition` is false, it throws an `Error` with the message 'Assertion failed'.
-- **Output**: The function does not return a value; it either completes successfully or throws an error.
-
-
----
-### requiredMethod
-Implements a required method from an interface.
-- **Inputs**: None
-- **Control Flow**:
-    - The method logs the string 'required' to the console when called.
+    - The method takes an Error object as an input parameter.
+    - It uses `console.error` to log a formatted error message to the console, which includes the prefix '[ERROR]' followed by the error's message.
 - **Output**: The method does not return any value (void).
-
-
----
-### optionalMethod
-The `optionalMethod` function is an optional method defined in an interface that can be implemented by classes.
-- **Inputs**:
-    - `none`: The function does not take any input arguments as it is defined as an optional method.
-- **Control Flow**:
-    - The function body is empty, indicating that it may not perform any operations when called.
-    - It is defined in an interface, which means it is intended to be optionally implemented by classes.
-- **Output**: The function does not return any value as it is defined with a void return type.
-
-
----
-### methodWithParams
-`methodWithParams` checks if the provided number is greater than zero and if the provided string has a length greater than zero.
-- **Inputs**:
-    - `x`: A number that is checked to see if it is greater than zero.
-    - `y`: A string that is checked to see if its length is greater than zero.
-- **Control Flow**:
-    - The function evaluates the condition `x > 0` to check if the number is positive.
-    - It also evaluates `y.length > 0` to check if the string is not empty.
-    - The function returns `true` if both conditions are satisfied, otherwise it returns `false`.
-- **Output**: A boolean value indicating whether both conditions (x > 0 and y.length > 0) are met.
-
-
----
-### method
-The `method` function in the object literal returns a string 'method'.
-- **Inputs**:
-    - `none`: The function does not take any input arguments.
-- **Control Flow**:
-    - The function directly returns a string literal 'method'.
-- **Output**: The output of the function is a string with the value 'method'.
-
-
----
-### asyncMethod
-This function `asyncMethod` returns a promise that resolves to the string 'async'.
-- **Inputs**:
-    - `none`: This method does not take any input arguments.
-- **Control Flow**:
-    - The method is defined as an asynchronous function, allowing it to use the `await` keyword.
-    - It directly returns the string 'async' wrapped in a resolved promise.
-- **Output**: The output is a promise that resolves to the string 'async'.
-
-
----
-### generatorMethod
-The `generatorMethod` function is a generator that yields a single string value.
-- **Inputs**:
-    - `none`: The function does not take any input arguments.
-- **Control Flow**:
-    - The function uses the `yield` keyword to produce a value, which allows it to be paused and resumed.
-    - It yields the string 'generator' when called.
-- **Output**: The output of the function is an `AsyncGenerator` that produces a single string value 'generator'.
-
-
----
-### getter
-The `getter` function retrieves the value of a private property.
-- **Inputs**:
-    - `none`: The function does not take any input arguments.
-- **Control Flow**:
-    - The function accesses the private property `_value` and returns its value.
-- **Output**: The output is the current value of the private property `_value`, which is of type number.
-
-
----
-### setter
-The `setter` function is a method that assigns a new value to a private property.
-- **Inputs**:
-    - `value`: The new value to be assigned, which can be of type string or number.
-- **Control Flow**:
-    - The method checks the type of the input value and converts it to a string if it is not already.
-    - The converted value is then assigned to the private property `_data`.
-- **Output**: The method does not return a value; it simply updates the internal state of the object.
-
-
----
-### log
-The `log` function is a decorator that adds logging functionality to methods.
-- **Inputs**:
-    - `target`: The target object that the method is being defined on.
-    - `propertyKey`: The name of the method being decorated.
-    - `descriptor`: The property descriptor for the method being decorated.
-- **Control Flow**:
-    - The function takes three parameters: `target`, `propertyKey`, and `descriptor`.
-    - It wraps the original method in a new function that logs a message before calling the original method.
-    - The new function is then assigned back to the `descriptor.value` property.
-    - Finally, the modified descriptor is returned.
-- **Output**: The output is the modified method descriptor that includes the logging functionality.
-
-
----
-### logError
-Logs an error message to the console with a specific format.
-- **Inputs**:
-    - `error`: An instance of `Error` that contains the error message to be logged.
-- **Control Flow**:
-    - The function takes an `Error` object as input.
-    - It formats the error message by prefixing it with '[ERROR] '.
-    - The formatted message is then printed to the console using `console.error`.
-- **Output**: The function does not return any value; it performs a side effect by logging to the console.
-
-
----
-### baseMethod
-`baseMethod` is a method in the `BaseClass` that returns a string 'base'.
-- **Inputs**: None
-- **Control Flow**:
-    - The method does not contain any conditional statements or loops.
-    - It directly returns a string value.
-- **Output**: The output of the method is a string with the value 'base'.
-
-
----
-### useLogging
-The `useLogging` method in the `MixinClass` utilizes a logging mixin to log a message and call a base method.
-- **Inputs**:
-    - `none`: The method does not take any input arguments.
-- **Control Flow**:
-    - The method first calls the `log` method inherited from the `Loggable` mixin, passing a message indicating that the mixin method is being used.
-    - Next, it calls the `baseMethod` from the `BaseClass`, which returns a string.
-- **Output**: The method does not return any value; it performs logging and calls another method.
 
 
 

@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `package.json` file in the `python-backend` codebase specifies a dependency on the `aws-cdk` library with version `^2.164.1`.
+The `package.json` file in the `python-backend` codebase specifies a dependency on the `aws-cdk` library version `^2.164.1`.
 
 # Purpose
-This JSON file specifies a dependency configuration for a software project, indicating that the project requires the "aws-cdk" package, with a version compatible with 2.164.1 or higher. This is typically used in a package management system to ensure the necessary libraries are available for the project to function correctly.
+This JSON file specifies a dependency configuration for a software project, indicating that the project requires the "aws-cdk" package, with a version compatible with 2.164.1 or higher. This is typically used in a Node.js project to manage and install necessary libraries via a package manager like npm.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

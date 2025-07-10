@@ -6,9 +6,9 @@
 The `test_classes.java` file contains Java classes demonstrating features such as encapsulation, inheritance, and interfaces, including a `TestClass` with an inner class, an abstract class, and a concrete class implementing `Comparable`.
 
 # Purpose
-The provided Java source code file defines a small collection of classes that demonstrate various object-oriented programming concepts in Java, such as encapsulation, inheritance, and interfaces. The primary class, [`TestClass`](#TestClassTestClass), encapsulates a simple integer value and provides getter and setter methods to access and modify this value. It also includes a static inner class, [`InnerClass`](#InnerClassInnerClass), which holds a string attribute. This demonstrates the use of inner classes in Java, which can be useful for logically grouping classes that are only used in one place, thus enhancing encapsulation.
+The provided Java source code file defines a small collection of classes that demonstrate basic object-oriented programming concepts, such as encapsulation, inheritance, and abstraction. The primary class, [`TestClass`](<#TestClassTestClass>), encapsulates a simple integer value and provides getter and setter methods to access and modify this value. It also includes a static inner class, [`InnerClass`](<#InnerClassInnerClass>), which encapsulates a string attribute. This structure highlights the use of inner classes in Java, allowing for logical grouping of classes that are only used in one place, thereby enhancing encapsulation.
 
-Additionally, the file includes an abstract class, `AbstractClass`, which declares an abstract method `doSomething()`. This method is implemented in the `ConcreteClass`, which extends `AbstractClass` and also implements the `Comparable` interface. The `ConcreteClass` provides a concrete implementation of the `doSomething()` method and defines the [`compareTo`](#ConcreteClasscompareTo) method, which is required by the `Comparable` interface. This setup illustrates the use of abstract classes and interfaces to define a contract for subclasses, promoting a design that supports polymorphism and code reuse. Overall, the file serves as a concise demonstration of key Java features, including class structure, inheritance, encapsulation, and interface implementation.
+Additionally, the file defines an abstract class, `AbstractClass`, with an abstract method [`doSomething`](<#AbstractClassdoSomething>), and a concrete subclass, `ConcreteClass`, which implements this method and also implements the `Comparable` interface. This demonstrates the use of abstract classes and interfaces in Java, showcasing how they can be used to define a contract for subclasses and to provide polymorphic behavior. The `ConcreteClass` provides a basic implementation of the [`compareTo`](<#ConcreteClasscompareTo>) method, which is a requirement of the `Comparable` interface, although it currently returns a constant value. Overall, the file serves as a concise example of Java's class structure, inheritance, and interface implementation.
 # Imports and Dependencies
 
 ---
@@ -22,14 +22,14 @@ Additionally, the file includes an abstract class, `AbstractClass`, which declar
 ---
 ### TestClass<!-- {{#class:com.example.TestClass}} -->
 - **Modifiers**: `public`
-- **Description**: The `TestClass` is a simple Java class that demonstrates basic class features such as encapsulation, static constants, and inner classes. It contains a private integer field `value` and a static final string `CONSTANT`. The class provides a constructor to initialize the `value` field, and getter and setter methods to access and modify it. Additionally, it includes a static inner class `InnerClass` with a private string field `name` and a constructor to initialize it.
+- **Description**: The `TestClass` is a simple Java class that encapsulates an integer value and provides methods to get and set this value. It also contains a static final string constant and an inner static class `InnerClass` that holds a string name. The class demonstrates basic object-oriented principles such as encapsulation and the use of inner classes.
 - **Fields**:
-    - `value`: `int` A private integer field that stores the value for the `TestClass` instance.
-    - `CONSTANT`: `String` A private static final string that holds a constant value "test".
+    - `value`: `int` An integer field that stores the value associated with an instance of `TestClass`.
+    - `CONSTANT`: `String` A static final string constant with the value "test".
 - **Methods**:
-    - [`com.example.TestClass.TestClass`](#TestClassTestClass)
-    - [`com.example.TestClass.getValue`](#TestClassgetValue)
-    - [`com.example.TestClass.setValue`](#TestClasssetValue)
+    - [`com.example.TestClass.TestClass`](<#TestClassTestClass>)
+    - [`com.example.TestClass.getValue`](<#TestClassgetValue>)
+    - [`com.example.TestClass.setValue`](<#TestClasssetValue>)
 
 **Methods**
 
@@ -40,10 +40,11 @@ The constructor `TestClass(int value)` initializes a new instance of the `TestCl
 - **Inputs**:
     - `value`: An integer that is used to initialize the `value` field of the `TestClass` instance.
 - **Control Flow**:
-    - Assigns the input parameter `value` to the instance variable `this.value`.
+    - The constructor takes an integer parameter `value`.
+    - It assigns the passed integer `value` to the instance variable `this.value`.
 - **Output**:
-    - This constructor does not return any value as it is used to initialize an object of the `TestClass`.
-- **See also**: [`com.example.TestClass`](#TestClass)  (Base Class)
+    - The constructor does not return any value as it is used to initialize an object of the `TestClass`.
+- **See also**: [`com.example.TestClass`](<#TestClass>)  (Base Class)
 
 
 ---
@@ -55,31 +56,31 @@ The `getValue` method returns the current value of the `value` field in the `Tes
     - The method directly returns the value of the private instance variable `value`.
 - **Output**:
     - The method returns an integer, which is the current value of the `value` field.
-- **See also**: [`com.example.TestClass`](#TestClass)  (Base Class)
+- **See also**: [`com.example.TestClass`](<#TestClass>)  (Base Class)
 
 
 ---
 #### TestClass\.setValue<!-- {{#callable:com.example.TestClass.setValue}} -->
-The setValue method assigns a new integer value to the instance variable 'value' of the TestClass object.
+The `setValue` method assigns a new integer value to the `value` field of the `TestClass` instance.
 - **Modifiers**: `public`
 - **Inputs**:
-    - `value`: An integer that will be assigned to the instance variable 'value' of the TestClass object.
+    - `value`: An integer that will be assigned to the `value` field of the `TestClass` instance.
 - **Control Flow**:
-    - Assigns the input parameter 'value' to the instance variable 'this.value'.
+    - Assigns the input parameter `value` to the instance variable `this.value`.
 - **Output**:
     - This method does not return any value.
-- **See also**: [`com.example.TestClass`](#TestClass)  (Base Class)
+- **See also**: [`com.example.TestClass`](<#TestClass>)  (Base Class)
 
 
 
 ---
 ### InnerClass<!-- {{#class:com.example.TestClass.InnerClass}} -->
 - **Modifiers**: `public`, `static`
-- **Description**: The InnerClass is a static nested class within the TestClass, designed to encapsulate a simple structure with a single private field 'name', which is initialized through its constructor.
+- **Description**: The `InnerClass` is a static nested class within `TestClass` that encapsulates a single private field `name` and provides a constructor to initialize this field.
 - **Fields**:
-    - `name`: `String` A private String field that stores the name associated with an instance of InnerClass.
+    - `name`: `String` A private string field that stores the name associated with an instance of `InnerClass`.
 - **Methods**:
-    - [`com.example.TestClass.InnerClass.InnerClass`](#InnerClassInnerClass)
+    - [`com.example.TestClass.InnerClass.InnerClass`](<#InnerClassInnerClass>)
 
 **Methods**
 
@@ -92,8 +93,8 @@ The constructor `InnerClass` initializes an instance of the `InnerClass` with a 
 - **Control Flow**:
     - Assigns the provided `name` parameter to the `name` field of the `InnerClass` instance.
 - **Output**:
-    - An instance of `InnerClass` with its `name` field initialized to the provided `name` value.
-- **See also**: [`com.example.TestClass.InnerClass`](#TestClass.InnerClass)  (Base Class)
+    - There is no return value as this is a constructor.
+- **See also**: [`com.example.TestClass.InnerClass`](<#TestClass.InnerClass>)  (Base Class)
 
 
 
@@ -102,7 +103,7 @@ The constructor `InnerClass` initializes an instance of the `InnerClass` with a 
 - **Modifiers**: `abstract`
 - **Description**: The `AbstractClass` is an abstract class that serves as a blueprint for other classes, requiring them to implement the `doSomething` method, which is defined as an abstract method with protected access.
 - **Methods**:
-    - [`com.example.AbstractClass.doSomething`](#AbstractClassdoSomething)
+    - [`com.example.AbstractClass.doSomething`](<#AbstractClassdoSomething>)
 
 **Methods**
 
@@ -114,39 +115,40 @@ The `doSomething` method is an abstract method in `AbstractClass` that is implem
 - **Control Flow**:
     - The method is declared as abstract in `AbstractClass`, meaning it has no implementation in that class.
     - In `ConcreteClass`, the method is overridden to provide a concrete implementation.
-    - The implementation in `ConcreteClass` simply prints 'Doing something' to the console.
+    - The implementation in `ConcreteClass` simply prints the message 'Doing something' to the console.
 - **Output**:
     - The method does not return any value.
-- **See also**: [`com.example.AbstractClass`](#AbstractClass)  (Base Class)
+- **See also**: [`com.example.AbstractClass`](<#AbstractClass>)  (Base Class)
 
 
 
 ---
 ### ConcreteClass<!-- {{#class:com.example.ConcreteClass}} -->
-- **Description**: The ConcreteClass is a concrete implementation of the AbstractClass and implements the Comparable interface for objects of its own type. It provides a specific implementation of the abstract method doSomething, which outputs a message to the console, and defines a compareTo method that currently returns zero, indicating all instances are considered equal.
+- **Description**: The ConcreteClass is a concrete implementation of the AbstractClass and implements the Comparable interface for comparing instances of itself. It provides a specific implementation of the abstract method doSomething, which outputs a message to the console, and defines a compareTo method that currently returns zero, indicating all instances are considered equal.
 - **Methods**:
-    - [`com.example.ConcreteClass.doSomething`](#ConcreteClassdoSomething)
-    - [`com.example.ConcreteClass.compareTo`](#ConcreteClasscompareTo)
+    - [`com.example.ConcreteClass.doSomething`](<#ConcreteClassdoSomething>)
+    - [`com.example.ConcreteClass.compareTo`](<#ConcreteClasscompareTo>)
 - **Extends/Implements**:
-    - [`com.example.AbstractClass`](#AbstractClass)
+    - [`com.example.AbstractClass`](<#AbstractClass>)
 
 **Methods**
 
 ---
 #### ConcreteClass\.doSomething<!-- {{#callable:com.example.ConcreteClass.doSomething}} -->
-The `doSomething` method prints a message to the console.
+The `doSomething` method in `ConcreteClass` prints a message to the console.
 - **Modifiers**: `protected`
 - **Inputs**: None
 - **Control Flow**:
-    - The method executes a single statement that prints 'Doing something' to the standard output.
+    - The method overrides an abstract method from `AbstractClass`.
+    - It executes a single statement that prints 'Doing something' to the console.
 - **Output**:
     - The method does not return any value.
-- **See also**: [`com.example.ConcreteClass`](#ConcreteClass)  (Base Class)
+- **See also**: [`com.example.ConcreteClass`](<#ConcreteClass>)  (Base Class)
 
 
 ---
 #### ConcreteClass\.compareTo<!-- {{#callable:com.example.ConcreteClass.compareTo}} -->
-The compareTo method in ConcreteClass always returns 0, indicating equality with any other ConcreteClass instance.
+The compareTo method in ConcreteClass always returns 0, indicating that all instances are considered equal.
 - **Modifiers**: `public`
 - **Inputs**:
     - `other`: An instance of ConcreteClass to compare with the current instance.
@@ -154,8 +156,8 @@ The compareTo method in ConcreteClass always returns 0, indicating equality with
     - The method takes an instance of ConcreteClass as an argument.
     - It directly returns the integer 0 without performing any comparison logic.
 - **Output**:
-    - The method returns an integer value of 0, indicating that the current instance is considered equal to the provided instance.
-- **See also**: [`com.example.ConcreteClass`](#ConcreteClass)  (Base Class)
+    - The method returns an integer value of 0, indicating equality between the compared instances.
+- **See also**: [`com.example.ConcreteClass`](<#ConcreteClass>)  (Base Class)
 
 
 

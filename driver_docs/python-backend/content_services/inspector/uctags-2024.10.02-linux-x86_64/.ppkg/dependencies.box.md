@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `dependencies.box` file in the `python-backend` codebase outlines the dependency graph for the `uctags` component, showing its reliance on libraries such as `libyaml`, `libjansson`, `libxml2`, `libz`, and `libiconv`.
+The `dependencies.box` file in the `python-backend` codebase outlines the dependency graph for the `uctags` component, detailing its reliance on libraries such as `libyaml`, `libjansson`, `libxml2`, `libz`, and `libiconv`.
 
 # Purpose
-The provided content is a dependency graph, which visually represents the relationships and dependencies between various software libraries within a codebase. Each box represents a library, such as `libyaml`, `libjansson`, `uctags`, `libz`, `libxml2`, and `libiconv`. The arrows indicate dependency directions, showing which libraries depend on others. For instance, `uctags` depends on `libyaml`, `libjansson`, and `libxml2`, while `libxml2` further depends on `libiconv`. This graph is crucial for developers to understand the interdependencies within the software, aiding in tasks such as debugging, updating libraries, or optimizing the build process.
+The provided content is a dependency graph, which visually represents the relationships and dependencies between various software libraries within a codebase. Each box represents a library, such as `libyaml`, `libjansson`, `uctags`, `libxml2`, `libz`, and `libiconv`. The arrows indicate dependency directions, showing which libraries rely on others to function correctly. For instance, `uctags` depends on `libyaml`, `libjansson`, and `libxml2`, while `libxml2` further depends on `libiconv`. This graph is crucial for developers to understand the interdependencies within the software, aiding in tasks such as debugging, updating libraries, or optimizing the build process.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

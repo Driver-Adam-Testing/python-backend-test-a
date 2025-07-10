@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `single_sentence_from_child_list.txt` file provides instructions for summarizing a software folder by using a list of its child files and folders to create a high-level single sentence description.
+The `single_sentence_from_child_list.txt` file outlines the task of summarizing the contents of a software folder by using concise descriptions of its child files and folders.
 
 # Purpose
-The provided content appears to be a set of instructions or guidelines for generating a concise description of a software folder based on its contents. The purpose of this file is to standardize the process of summarizing a folder by providing a structured approach: first, by listing all child files and folders with a brief description for each, and then by synthesizing this information into a single, high-level sentence that encapsulates the essence of the folder. This ensures consistency and clarity in documentation, making it easier for users to understand the role and contents of the folder within the software codebase. The instructions emphasize the importance of accuracy and deriving information solely from the given data, avoiding assumptions or additional interpretations.
+The provided content outlines the purpose and guidelines for generating a concise, single-sentence description of a software folder based on its child files and folders. It emphasizes the importance of using precise language derived directly from the given information about the folder's contents, without introducing assumptions or extraneous details. The instructions highlight the preference for straightforward descriptions that avoid unnecessary leading verbs, except in cases where they enhance clarity, such as when describing the provision of specific functionalities or API wrappers. This approach ensures that the folder's purpose is communicated clearly and efficiently.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

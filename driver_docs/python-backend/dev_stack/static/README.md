@@ -3,11 +3,11 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `static` folder in the `python-backend` codebase contains the `index.html` file, which provides a web interface for managing Ngrok tunnels with real-time updates.
+The `static` folder in the `python-backend` codebase contains the `index.html` file, which provides a web interface for managing Ngrok tunnels with features like starting, stopping, and checking tunnel status, as well as displaying live logs via WebSocket.
 
 
 ## Files
-- **[index.html](index.html.md)**: The `index.html` file in the `python-backend` codebase provides a web interface for managing Ngrok tunnels, including controls for starting, stopping, and checking the status of tunnels, with real-time updates via WebSocket.
+- **[index.html](index.html.md)**: The `index.html` file in the `python-backend` codebase provides a web interface for managing Ngrok tunnels, featuring controls to start, stop, and check the status of tunnels, along with a live log display using WebSocket communication.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `long_from_chunk_descriptions.txt` file in the `python-backend` codebase is a text file that provides instructions for generating a comprehensive description of a large software file by combining detailed descriptions of its overlapping chunks.
+The `long_from_chunk_descriptions.txt` file in the `python-backend` codebase is a text file that provides instructions for writing a comprehensive description of a software file based on a series of overlapping chunk descriptions.
 
 # Purpose
-The provided content outlines a structured approach for generating comprehensive documentation for a software file by synthesizing detailed descriptions of its individual components. This process is particularly useful when dealing with large files that cannot be described in a single pass. The instructions emphasize creating a cohesive narrative that explains the file's purpose, functionality, and usage. It involves identifying the main business logic, critical APIs, and components such as public functions, classes, class methods, and data structures. The goal is to produce a unified description that accurately reflects the file's role within the codebase, ensuring that the documentation is both informative and actionable for users or developers interacting with the software.
+The provided text outlines a task for a software engineering expert to synthesize detailed descriptions of overlapping chunks of a large software file into a comprehensive description. The purpose of this task is to create a unified understanding of the software file's purpose, functionality, and structure. The expert is expected to articulate the file's purpose, its operational role within the codebase, and its potential applications. Additionally, the expert must identify the main business logic, which refers to the core functionality and processes that the software file is designed to execute. Furthermore, the task involves pinpointing critical APIs and components, such as public functions, classes, class methods, and data structures, which are essential for understanding how the software file interacts with other parts of the codebase and how it can be utilized by developers. This process ensures that the software file is well-documented, facilitating easier maintenance, enhancement, and integration within the broader software system.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

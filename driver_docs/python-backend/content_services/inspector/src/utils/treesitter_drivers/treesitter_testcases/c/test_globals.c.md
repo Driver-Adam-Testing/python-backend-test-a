@@ -3,24 +3,24 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `test_globals.c` file defines various global variables with different types, storage classes, type qualifiers, attributes, and assembly specifics, while also including some conditional compilation and function declarations that are not considered global.
+The `test_globals.c` file in the `python-backend` codebase defines various global variables with different types, storage classes, type qualifiers, attributes, and assembly specifics, while also including some conditional compilation directives and function declarations.
 
 # Purpose
-This C source code file primarily serves as a collection of variable declarations, showcasing various types, storage classes, and attributes. It includes primitive-typed variables, pointers, and variables with type qualifiers such as `const`, `volatile`, and `_Atomic`. The file also demonstrates the use of storage class specifiers like `extern`, `static`, `register`, and `auto`, as well as attributes for alignment and visibility. Additionally, it contains a union declaration, a conditional compilation block for debugging, and a macro-defined array. The file is structured to illustrate different aspects of variable declaration and usage in C, rather than implementing specific functionality or logic.
+This C source code file primarily serves as a collection of variable declarations, showcasing various types, storage classes, and attributes. It includes primitive data types, pointers, and variables with type qualifiers such as `const`, `volatile`, and `restrict`, demonstrating different memory and optimization strategies. The file also illustrates the use of storage class specifiers like `extern`, `static`, `register`, and `auto`, as well as thread-local storage with `__thread`. Additionally, it features variables with specific attributes, such as alignment and visibility, and includes a union declaration and an array definition with a preprocessor directive. The file is wrapped with include guards, indicating it might be part of a larger header file, and contains conditional compilation directives for debugging purposes. Overall, this file is a comprehensive example of variable declaration and configuration in C, highlighting various language features and compiler-specific extensions.
 # Global Variables
 
 ---
 ### a
 - **Type**: `unsigned short int`
-- **Description**: The variable `a` is a global variable of type `unsigned short int`, which is a primitive data type in C used to store non-negative integer values. It typically occupies 2 bytes of memory, allowing it to store values ranging from 0 to 65,535.
-- **Use**: The variable `a` is used to store a small non-negative integer value that can be accessed globally throughout the program.
+- **Description**: The variable `a` is a global variable of type `unsigned short int`, which is a primitive data type in C representing an unsigned integer with a typically smaller range than a standard `int`. It is used to store non-negative integer values.
+- **Use**: The variable `a` is used to store an unsigned short integer value globally accessible throughout the program.
 
 
 ---
 ### b
 - **Type**: `float`
-- **Description**: The variable `b` is a global variable of type `float`, which is a primitive data type used to store single-precision floating-point numbers. It is declared at the top level of the file, making it accessible throughout the file and potentially in other files if properly linked.
-- **Use**: The variable `b` is used to store a floating-point number that can be accessed globally within the file.
+- **Description**: The variable `b` is a global variable of type `float`. It is a basic primitive-typed variable used to store floating-point numbers.
+- **Use**: The variable `b` is used to store a floating-point value accessible throughout the program.
 
 
 ---
@@ -33,15 +33,15 @@ This C source code file primarily serves as a collection of variable declaration
 ---
 ### d
 - **Type**: `short`
-- **Description**: The variable `d` is a global variable of type `short`, which is a basic primitive data type in C. It is used to store small integer values, typically occupying 2 bytes of memory.
-- **Use**: The variable `d` is used to store a small integer value that can be accessed globally throughout the program.
+- **Description**: The variable `d` is a global variable of type `short`, which is a basic primitive data type in C. It is used to store small integer values, typically occupying 2 bytes of memory, depending on the system architecture.
+- **Use**: The variable `d` is used to store a small integer value globally accessible throughout the program.
 
 
 ---
 ### e
 - **Type**: `long int`
-- **Description**: The variable `e` is a global variable of type `long int`. It is declared alongside other variables `f` and `g` in a multi-declaration statement. The variable `e` is not initialized, meaning it will hold a default value of zero if not explicitly set elsewhere in the code.
-- **Use**: The variable `e` is used to store a long integer value and can be accessed globally throughout the program.
+- **Description**: The variable `e` is a global variable of type `long int`. It is declared alongside other variables `f` and `g` in a single line, but unlike `f`, it is not initialized with a value.
+- **Use**: The variable `e` is used to store a long integer value and is accessible throughout the entire program.
 
 
 ---
@@ -54,134 +54,134 @@ This C source code file primarily serves as a collection of variable declaration
 ---
 ### g
 - **Type**: `long int`
-- **Description**: The variable `g` is a global variable of type `long int`. It is declared alongside other variables `e` and `f` in a multi-declaration statement.
+- **Description**: The variable `g` is a global variable of type `long int`. It is declared alongside other variables `e` and `f` in a multi-declaration statement, but unlike `f`, it is not initialized with a value.
 - **Use**: The variable `g` is used to store a long integer value and is accessible throughout the entire program.
 
 
 ---
 ### h
 - **Type**: `short`
-- **Description**: The variable `h` is a global variable of type `short`, which is a basic integer type in C that typically occupies 2 bytes of memory. It is declared alongside another variable `i` of the same type.
-- **Use**: The variable `h` is used to store a small integer value, and being a global variable, it can be accessed from any function within the same file or other files if properly declared.
+- **Description**: The variable `h` is a global variable of type `short`, which is a basic integer type in C. It is declared alongside another variable `i` in a single line, indicating that both are of the same type.
+- **Use**: The variable `h` is used to store a short integer value and is accessible throughout the file where it is declared.
 
 
 ---
 ### i
 - **Type**: `short`
-- **Description**: The variable `i` is a global variable of type `short`, which is a basic integer type in C. It is declared alongside another variable `h` in a single line.
-- **Use**: The variable `i` is used to store a small integer value, typically within the range of -32,768 to 32,767, and is accessible throughout the file where it is declared.
+- **Description**: The variable `i` is a global variable of type `short`, which is a basic integer type in C. It is declared alongside another variable `h` in a single line, indicating that both are of the same type.
+- **Use**: The variable `i` is used to store a small integer value, typically within the range of -32,768 to 32,767, and is accessible throughout the entire program.
 
 
 ---
 ### aa
 - **Type**: `int`
-- **Description**: The variable `aa` is an external integer variable, meaning it is declared with the `extern` keyword, which indicates that its definition is located in another translation unit or file. It is declared alongside another external integer variable `bb`. The `extern` keyword is used to declare a variable without defining it, allowing it to be shared across multiple files.
-- **Use**: The variable `aa` is used to reference an integer value that is defined in another file, enabling cross-file variable sharing.
+- **Description**: The variable `aa` is an external integer variable, which means it is declared in this file but defined elsewhere. It is intended to be used across multiple files in a program, allowing for shared access to its value.
+- **Use**: `aa` is used to store an integer value that can be accessed and modified by different parts of a program, potentially across multiple source files.
 
 
 ---
 ### bb
 - **Type**: `int`
-- **Description**: The variable `bb` is an external integer variable, declared with the `extern` keyword, indicating that it is defined in another translation unit. It is declared alongside another external integer variable `aa`. The `extern` keyword is used to declare a global variable that is accessible across different files.
-- **Use**: The variable `bb` is used to reference an integer value that is defined and possibly modified in a different source file.
+- **Description**: The variable `bb` is an external integer variable, meaning it is declared in this file but defined elsewhere. It is intended to be used across multiple files within the program.
+- **Use**: `bb` is used to store an integer value that can be accessed and modified by different parts of the program, potentially across different source files.
 
 
 ---
 ### int
 - **Type**: `int`
-- **Description**: The variable `cc` is a global variable declared with the `auto` storage class specifier, which is typically used for local variables and is redundant in global scope. It is of type `int`, indicating it can store integer values.
-- **Use**: The variable `cc` is declared globally but the `auto` specifier has no effect at this scope.
+- **Description**: The `int` type is a basic data type in C used to represent integer values. It is typically used for variables that store whole numbers without any fractional component.
+- **Use**: The `int` type is used to declare variables that will store integer values, such as counters, flags, or any numeric data that does not require decimal precision.
 
 
 ---
 ### dd
 - **Type**: `register int`
-- **Description**: The variable `dd` is a global variable declared with the `register` storage class specifier, indicating a hint to the compiler to store it in a CPU register for faster access. It is of type `int`, which is a basic integer type in C.
-- **Use**: This variable is used to store an integer value with potentially optimized access speed due to its `register` storage class.
+- **Description**: The variable `dd` is a register storage class integer variable. It is intended to be stored in a CPU register for faster access, which is a hint to the compiler to optimize its usage for speed.
+- **Use**: `dd` is used to store an integer value with potentially faster access due to its register storage class.
 
 
 ---
 ### ee
 - **Type**: `int`
-- **Description**: The variable `ee` is a static integer variable. It is defined at the top level scope, making it a global variable within the file it is declared in.
-- **Use**: This variable is used to store an integer value that is accessible only within the file due to its static storage class.
+- **Description**: The variable `ee` is a static integer variable. Being declared with the `static` keyword, it has internal linkage, meaning it is only accessible within the file it is declared in.
+- **Use**: The `ee` variable is used to store an integer value with a file scope, ensuring it is not accessible from other files.
 
 
 ---
 ### ptr
 - **Type**: `char*`
-- **Description**: The variable `ptr` is a global pointer to a character type. It is declared to hold the address of a character or the first character of a string.
-- **Use**: This variable is used to store and manipulate memory addresses pointing to character data.
+- **Description**: The variable `ptr` is a global pointer to a character type. It is capable of storing the address of a character or the first character of a string.
+- **Use**: This variable is used to point to a character or a string in memory, allowing for manipulation or access to character data.
 
 
 ---
 ### ptr2
 - **Type**: `const char **`
-- **Description**: The variable `ptr2` is a pointer to a constant character pointer. This means that `ptr2` itself can be modified to point to different memory locations, but the character data it points to cannot be modified through this pointer.
-- **Use**: `ptr2` is used to hold the address of a constant character pointer, allowing for the manipulation of pointer addresses while ensuring the character data remains unchanged.
+- **Description**: The variable `ptr2` is a pointer to a constant character pointer. This means that `ptr2` itself can be modified to point to different constant character pointers, but the character data being pointed to cannot be modified through `ptr2`. It is a global variable, making it accessible throughout the file and potentially across multiple files if declared with `extern` elsewhere.
+- **Use**: `ptr2` is used to store the address of a constant character pointer, allowing for indirect access to constant character data.
 
 
 ---
 ### ptr3
 - **Type**: `int const * const restrict`
-- **Description**: The variable `ptr3` is a pointer to a constant integer, with both the pointer and the integer being constant, and it is declared with the `restrict` qualifier. This means that `ptr3` is a pointer that cannot be used to modify the integer it points to, and the pointer itself cannot be changed to point to another integer. The `restrict` qualifier suggests that `ptr3` is the only pointer that will be used to access the object it points to, allowing for potential optimizations by the compiler.
-- **Use**: `ptr3` is used to point to a constant integer, ensuring that neither the pointer nor the integer it points to can be modified, and it is optimized for exclusive access.
+- **Description**: The variable `ptr3` is a pointer to a constant integer, which itself is a constant pointer, meaning neither the integer value pointed to nor the pointer address can be changed. The `restrict` qualifier indicates that `ptr3` is the only pointer that will be used to access the object it points to, allowing for potential optimizations by the compiler.
+- **Use**: `ptr3` is used to point to a constant integer value, ensuring both the pointer and the value it points to remain unchanged, with potential optimizations due to the `restrict` qualifier.
 
 
 ---
 ### q
 - **Type**: `const _Atomic unsigned long int`
-- **Description**: The variable `q` is a global constant atomic unsigned long integer initialized to the value 5. It is declared with the `_Atomic` qualifier, which ensures that operations on this variable are atomic, meaning they are performed without interference from other threads.
-- **Use**: `q` is used as a thread-safe constant value that can be accessed concurrently without data races.
+- **Description**: The variable `q` is a global constant atomic unsigned long integer initialized to the value 5. It is declared with the `_Atomic` qualifier, which ensures that operations on this variable are atomic, meaning they are performed as a single, indivisible operation.
+- **Use**: This variable is used to store a constant value that can be safely accessed and modified concurrently across multiple threads without causing data races.
 
 
 ---
 ### q2
 - **Type**: `int`
-- **Description**: The variable `q2` is a global integer variable with the `restrict` qualifier, initialized to the value 6. The `restrict` qualifier indicates that for the lifetime of the pointer, only it or a value directly derived from it will be used to access the object to which it points.
-- **Use**: `q2` is used as a global integer variable with restricted aliasing, initialized to 6.
+- **Description**: The variable `q2` is a global integer variable with the `restrict` type qualifier, initialized to the value 6. The `restrict` qualifier indicates that for the lifetime of the pointer, only it or a value directly derived from it will be used to access the object to which it points.
+- **Use**: `q2` is used to store an integer value with the `restrict` qualifier, suggesting it is intended for optimization purposes in contexts where aliasing might occur.
 
 
 ---
 ### q3
 - **Type**: `volatile int`
-- **Description**: The variable `q3` is a global integer variable declared with the `volatile` qualifier, which indicates that its value may be changed by external factors outside the program's control. This prevents the compiler from applying certain optimizations on this variable, ensuring that its value is always read from memory.
-- **Use**: `q3` is used to store an integer value that may be modified by external processes or hardware, requiring the program to always access its current value directly from memory.
+- **Description**: The variable `q3` is a global integer variable declared with the `volatile` qualifier, which indicates that its value may be changed by something outside the control of the program, such as hardware or a different thread. It is initialized with the value 7.
+- **Use**: `q3` is used in contexts where its value might be modified unexpectedly, ensuring the compiler does not optimize out necessary reads or writes to this variable.
 
 
 ---
 ### q4
 - **Type**: `constexpr int`
-- **Description**: The variable `q4` is a global constant integer with a value of 8. It is defined using the `constexpr` keyword, which indicates that its value is a compile-time constant and cannot be changed during the execution of the program.
-- **Use**: `q4` is used as a constant integer value throughout the program, ensuring that its value remains unchanged and is evaluated at compile time.
+- **Description**: The variable `q4` is a global constant integer with a value of 8. It is defined using the `constexpr` keyword, indicating that its value is known at compile time and cannot be changed during the program's execution.
+- **Use**: `q4` is used as a constant integer value throughout the program, ensuring its immutability and allowing for potential optimizations by the compiler.
 
 
 ---
 ### q5
 - **Type**: `int`
-- **Description**: The variable `q5` is a thread-local integer variable initialized to 9. It is declared with the `__thread` storage class specifier, which means each thread has its own instance of this variable.
+- **Description**: The variable `q5` is a thread-local integer initialized to 9. It is declared with the `__thread` storage class specifier, which means each thread has its own instance of this variable.
 - **Use**: `q5` is used to store a thread-specific integer value, allowing each thread to maintain its own independent copy of the variable.
 
 
 ---
 ### ii
 - **Type**: `int`
-- **Description**: The variable `ii` is a global integer variable with an alignment attribute specified to ensure it is aligned to a 16-byte boundary. This alignment can be important for performance optimizations on certain hardware architectures.
+- **Description**: The variable `ii` is a global integer variable with an alignment attribute specified to be 16 bytes. This alignment ensures that the variable is stored in memory at an address that is a multiple of 16, which can be beneficial for performance on certain hardware architectures.
 - **Use**: The variable `ii` is used as a globally accessible integer with specific memory alignment requirements.
 
 
 ---
 ### jj
 - **Type**: `int`
-- **Description**: The variable `jj` is a global integer variable that is aligned to the alignment requirements of an `int` type. This alignment is specified using the `_Alignas` specifier, which ensures that `jj` is stored in memory with the same alignment as an `int`, potentially optimizing access speed.
-- **Use**: The variable `jj` is used as a globally accessible integer with specific alignment requirements for optimized memory access.
+- **Description**: The variable `jj` is a global integer variable that is aligned to the alignment requirements of an `int` type. This alignment is specified using the `_Alignas` specifier, which ensures that `jj` is stored in memory with the same alignment as an `int`.
+- **Use**: The variable `jj` is used as a globally accessible integer with specific alignment requirements.
 
 
 ---
 ### kk
 - **Type**: `int`
 - **Description**: The variable `kk` is a global integer variable with the `[[maybe_unused]]` attribute, which suggests that it may not be used in the code and suppresses compiler warnings about unused variables.
-- **Use**: This variable is declared globally and can be accessed throughout the file, but it is marked as potentially unused to avoid compiler warnings.
+- **Use**: `kk` is declared globally and can be accessed throughout the file, but it is marked as potentially unused to avoid compiler warnings.
 
 
 ---
@@ -194,43 +194,43 @@ This C source code file primarily serves as a collection of variable declaration
 ---
 ### rd\_
 - **Type**: `register uint64_t`
-- **Description**: The variable `rd_` is a register variable of type `uint64_t`, which is an unsigned 64-bit integer. It is specifically associated with the assembly register `x10`, indicating that it is intended to be stored in a CPU register for fast access.
-- **Use**: This variable is used to store a 64-bit unsigned integer value in a CPU register for efficient access during program execution.
+- **Description**: The variable `rd_` is a register variable of type `uint64_t`, which is an unsigned 64-bit integer. It is associated with a specific hardware register, denoted by the assembly name `x10`. This association is typically used for performance optimization by allowing direct access to a CPU register.
+- **Use**: The `rd_` variable is used to store a 64-bit unsigned integer value directly in the CPU register `x10` for efficient access and manipulation.
 
 
 ---
 ### foo
 - **Type**: `int`
-- **Description**: The variable `foo` is an integer declared with external linkage and hidden visibility. This means it can be accessed from other translation units, but it is not visible to other shared libraries or executables that link against the library containing this variable.
-- **Use**: The `foo` variable is used to store an integer value that is accessible across different translation units within the same library, but not outside of it.
+- **Description**: The variable `foo` is an integer with external linkage and is marked with the `visibility("hidden")` attribute, which means it is not visible outside of the shared object or executable it is part of. This attribute is specific to GNU compilers and is used to control symbol visibility.
+- **Use**: The `foo` variable is used as a hidden global integer, likely intended for internal use within a shared library or executable.
 
 
 ---
 ### extra\_lbits
 - **Type**: `const int[]`
 - **Description**: The `extra_lbits` is a constant array of integers with a size defined by the macro `LEN`, which is set to 2. It is initialized with two zero values and is intended to store extra bits for each length code.
-- **Use**: This array is used to define additional bit lengths for length codes in a compression or encoding algorithm.
+- **Use**: This array is used to define additional bit lengths required for each length code in a compression or encoding algorithm.
 
 
 ---
 ### debugLogVar
 - **Type**: `int`
-- **Description**: The `debugLogVar` is a global integer variable that is conditionally compiled based on the `ENABLE_DEBUG` and `LOGGING` preprocessor directives. It is used to control or store logging information when debugging is enabled in the application.
-- **Use**: This variable is used to facilitate debugging by storing or controlling log data when the application is compiled with debugging and logging enabled.
+- **Description**: The `debugLogVar` is a global integer variable that is conditionally compiled based on the presence of the `ENABLE_DEBUG` and `LOGGING` preprocessor directives. It is used for debugging purposes when logging is enabled in the build configuration.
+- **Use**: This variable is used to store integer values related to debugging logs when the appropriate preprocessor conditions are met.
 
 
 ---
 ### hello
 - **Type**: `int`
-- **Description**: The variable `hello` is a global integer variable initialized with the value 5. It is defined within a conditional compilation block, which suggests it may be included or excluded based on certain preprocessor directives.
-- **Use**: This variable is used to store a constant integer value globally accessible throughout the program when the specific preprocessor condition is met.
+- **Description**: The variable `hello` is a global integer variable initialized to the value 5. It is defined within a conditional compilation block, which suggests it may be included or excluded based on certain preprocessor directives.
+- **Use**: This variable is used to store a constant integer value globally accessible throughout the program.
 
 
 # Functions
 
 ---
 ### someFunction<!-- {{#callable:someFunction}} -->
-The function 'someFunction' is a simple function that declares a local integer variable but performs no operations.
+The function 'someFunction' is a simple C function that declares a local integer variable but performs no operations.
 - **Inputs**: None
 - **Control Flow**:
     - The function 'someFunction' is defined with no parameters.

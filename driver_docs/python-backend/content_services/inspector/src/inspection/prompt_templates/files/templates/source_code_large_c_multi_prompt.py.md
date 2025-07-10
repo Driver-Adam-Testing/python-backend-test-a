@@ -3,15 +3,20 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_large_c_multi_prompt.py` file defines a template for generating prompts related to C source code, focusing on aspects such as purpose, imports, global variables, data structures, functions, and function declarations.
+The `source_code_large_c_multi_prompt.py` file defines a template for generating structured prompts related to C source code, including sections for purpose, imports, global variables, data structures, functions, and function declarations.
 
 # Purpose
-This Python code defines a template for generating structured documentation or analysis of C source code. It is designed to be part of a larger system that processes and analyzes C code, likely for the purpose of understanding or documenting its structure and components. The file imports several specialized classes and constants from other modules, which are used to collect and process different elements of C code, such as data structures, functions, variables, and declarations. The main component of this file is the `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_C`, which is a list of tuples. Each tuple represents a section of the documentation or analysis, specifying the type of content (e.g., text or JSON), a section header, and the methods or functions used to extract or generate the relevant information.
+This Python code file is designed to facilitate structured prompting and analysis of C source code, particularly in the context of large systems. It serves as a configuration or template file that defines a series of structured prompts and data extraction processes for analyzing C code. The file imports various components and utilities from other modules, indicating that it is part of a larger system or framework. The primary functionality revolves around creating prompts for different aspects of C code, such as imports, global variables, data structures, functions, and function declarations, which are likely used to guide a language model or similar tool in understanding and processing C code.
 
-The template is structured to cover various aspects of C code, including its purpose, imports and dependencies, global variables, data structures, functions, and public API declarations. This indicates that the code is intended to provide a comprehensive analysis of C source code, breaking it down into its fundamental components. The use of specialized collections and methods suggests that the code is part of a broader framework or library designed for code analysis, rather than a standalone script. The file does not define public APIs or external interfaces itself but rather utilizes existing ones from imported modules to achieve its functionality.
+The file defines a template, `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_C`, which is a collection of tuples. Each tuple represents a specific aspect of C code analysis, such as imports, global variables, data structures, functions, and public API declarations. These tuples specify how to generate prompts and extract relevant information using static analysis and language model (LLM) capabilities. The use of components like `Prompt`, `Component`, and various collections for C code elements suggests that this file is part of a system that automates the analysis and documentation of C codebases, providing structured insights into the code's structure and functionality. This makes it a specialized tool for developers or systems that need to process and understand large C codebases efficiently.
 # Imports and Dependencies
 
 ---
+- `shared.prompts.structured_prompting.GENERAL_STE_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_CODE_PURPOSE`
+- `shared.prompts.structured_prompting.USE_BACKTICKS_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.Component`
+- `shared.prompts.structured_prompting.Prompt`
 - `utils.lang_specialization.c.SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_C`
 - `utils.lang_specialization.c.CDataStructureCollection`
 - `utils.lang_specialization.c.CDataStructureRawSymbolCollection`
@@ -33,8 +38,8 @@ The template is structured to cover various aspects of C code, including its pur
 ---
 ### SOURCE\_CODE\_LARGE\_MULTI\_PROMPT\_TEMPLATE\_C
 - **Type**: `list`
-- **Description**: `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_C` is a list of tuples, each containing a prompt type, a description string, and a combination of static analysis and LLM-based methods for extracting and processing different components of C source code. The list is structured to handle various aspects of C code, such as purpose, imports, global variables, data structures, functions, and public API declarations.
-- **Use**: This variable is used to define a template for generating prompts and processing outputs related to different components of C source code.
+- **Description**: `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_C` is a list of tuples, each containing structured data for generating prompts related to different aspects of C source code analysis. Each tuple includes a type identifier, a description string, and various components or functions that are used to construct or process the prompt content.
+- **Use**: This variable is used to define a template for generating structured prompts for analyzing and documenting C source code, covering areas such as purpose, imports, global variables, data structures, functions, and public API declarations.
 
 
 

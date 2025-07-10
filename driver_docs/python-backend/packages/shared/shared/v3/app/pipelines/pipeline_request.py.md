@@ -6,9 +6,9 @@
 The `pipeline_request.py` file defines an abstract base class `PipelineRequest` for handling pipeline requests, including managing data sources and runtime sessions, and providing methods for synchronous and asynchronous execution.
 
 # Purpose
-This Python code defines an abstract base class `PipelineRequest` that serves as a foundational component for handling requests in a pipeline architecture, particularly in the context of managing sessions with a language model (LLM). The class is designed to be extended by other classes that implement specific pipeline functionalities. It leverages the Pydantic library for data validation and type enforcement, and it integrates with a database to manage `RuntimeLlmSession` objects, which represent sessions with the LLM. The class provides mechanisms to initialize a data source based on various identifiers, such as node IDs or relative paths, and it manages the lifecycle of LLM sessions, including creating new sessions and retrieving existing ones from the database.
+The provided Python code defines an abstract base class `PipelineRequest` that serves as a foundational component for handling pipeline requests in a system that likely involves machine learning or data processing workflows. This class is designed to manage sessions and data sources, specifically for long-lived machine learning (LLM) sessions, as indicated by the use of `RuntimeLlmSession` and `LlmClient`. The class utilizes the Pydantic library for data validation and management, and it integrates with a database to retrieve or create session information. The class is structured to be extended, as it contains abstract methods [`_run`](<#PipelineRequest_run>) and [`_stream`](<#PipelineRequest_stream>), which must be implemented by subclasses to define specific pipeline execution and streaming behavior.
 
-The `PipelineRequest` class includes methods for running and streaming data through the pipeline, with the [`run`](#PipelineRequestrun) and [`stream`](#PipelineRequeststream) methods serving as entry points for synchronous and asynchronous operations, respectively. These methods rely on abstract methods [`_run`](#PipelineRequest_run) and [`_stream`](#PipelineRequest_stream), which must be implemented by subclasses to define specific pipeline behaviors. The class also defines properties to access the data source and LLM session, ensuring that these components are initialized and available for use. The code is structured to be part of a larger system, likely a library or framework, that facilitates the integration and execution of complex data processing pipelines involving LLMs.
+The `PipelineRequest` class provides a structured way to initialize and manage data sources and sessions, using UUIDs and organization identifiers to link data and session information. It includes methods for converting from dictionary data ([`from_dict`](<#PipelineRequestfrom_dict>)) and for executing the pipeline in both synchronous ([`run`](<#PipelineRequestrun>)) and asynchronous ([`stream`](<#PipelineRequeststream>)) modes. The asynchronous streaming capability is particularly important for handling real-time data processing or machine learning inference tasks. The class also defines properties to access the data source and session, ensuring that these components are initialized and available for use in the pipeline's operations. Overall, this code is part of a broader system, likely a library or framework, that facilitates complex data processing workflows with a focus on session management and data source integration.
 # Imports and Dependencies
 
 ---
@@ -39,17 +39,17 @@ The `PipelineRequest` class includes methods for running and streaming data thro
 - **Decorators**: `@abstractmethod`
 - **Members**:
     - `_datasource`: Holds the data source information for the pipeline request.
-    - `_llm_session`: Stores the runtime session information for the LLM, which can be None if not initialized.
-- **Description**: The `PipelineRequest` class is an abstract base class that extends `BaseModel` and is designed to manage and execute pipeline requests within a system. It initializes with various identifiers and data, setting up a data source and a runtime LLM session based on the provided parameters. The class provides properties to access the data source and LLM session, and includes abstract methods `_run` and `_stream` that must be implemented by subclasses to define specific pipeline execution and streaming behavior. It also includes methods to run the pipeline and stream responses asynchronously, facilitating integration with LLM clients.
+    - `_llm_session`: Stores the runtime session information for the LLM, if available.
+- **Description**: The `PipelineRequest` class is an abstract base class that extends `BaseModel` and is designed to manage and execute pipeline requests involving data sources and runtime LLM sessions. It initializes with various identifiers and data, setting up a data source and LLM session based on the provided parameters. The class provides properties to access the data source and LLM session, and includes abstract methods `_run` and `_stream` that must be implemented by subclasses to define specific pipeline execution and streaming behavior.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest.__init__`](#PipelineRequest__init__)
-    - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest.datasource`](#PipelineRequestdatasource)
-    - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest.llm_session`](#PipelineRequestllm_session)
-    - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest.from_dict`](#PipelineRequestfrom_dict)
-    - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest.run`](#PipelineRequestrun)
-    - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest.stream`](#PipelineRequeststream)
-    - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest._run`](#PipelineRequest_run)
-    - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest._stream`](#PipelineRequest_stream)
+    - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest.__init__`](<#PipelineRequest__init__>)
+    - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest.datasource`](<#PipelineRequestdatasource>)
+    - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest.llm_session`](<#PipelineRequestllm_session>)
+    - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest.from_dict`](<#PipelineRequestfrom_dict>)
+    - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest.run`](<#PipelineRequestrun>)
+    - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest.stream`](<#PipelineRequeststream>)
+    - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest._run`](<#PipelineRequest_run>)
+    - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest._stream`](<#PipelineRequest_stream>)
 - **Inherits From**:
     - `BaseModel`
     - `ABC`
@@ -58,7 +58,7 @@ The `PipelineRequest` class includes methods for running and streaming data thro
 
 ---
 #### PipelineRequest\.\_\_init\_\_<!-- {{#callable:python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest.__init__}} -->
-The [`__init__`](../../llms/clients/llm_client_claude.py.md#ClaudeClient__init__) method initializes a `PipelineRequest` object by setting up a data source and a runtime LLM session based on provided identifiers and paths.
+The [`__init__`](<../../interfaces/llm_message_history.py.md#LlmMessageHistory__init__>) method initializes a `PipelineRequest` object, setting up its data source and LLM session based on provided identifiers and paths.
 - **Inputs**:
     - `llm_session_id`: An optional UUID representing the LLM session ID.
     - `page_node_id`: An optional UUID representing the page node ID.
@@ -68,40 +68,41 @@ The [`__init__`](../../llms/clients/llm_client_claude.py.md#ClaudeClient__init__
     - `relative_paths`: An optional list of strings representing relative paths.
     - `**data`: Additional keyword arguments passed to the superclass initializer.
 - **Control Flow**:
-    - The method calls the superclass initializer with any additional data provided.
-    - It checks if `node_ids` is provided and initializes `_datasource` using `DataSource.from_node_ids`.
-    - If `node_ids` is not provided, it checks for `relative_paths` and initializes `_datasource` using `DataSource.from_relative_paths`.
-    - If neither `node_ids` nor `relative_paths` are provided, it checks for `page_node_id` and initializes `_datasource` using `DataSource.from_page_id`.
-    - If none of the above are provided, `_datasource` is set to `None`.
-    - A database session is opened using `get_session()`.
-    - If `llm_session_id` is provided, it attempts to retrieve the corresponding [`RuntimeLlmSession`](../../../../../../driver_db/database/models_v2.py.md#RuntimeLlmSession) from the database.
-    - If `_datasource` is `None` after retrieving the session, it initializes `_datasource` using the session's `source_node_ids_str`.
-    - If `llm_session_id` is not provided or the session retrieval fails, a new [`RuntimeLlmSession`](../../../../../../driver_db/database/models_v2.py.md#RuntimeLlmSession) is created and added to the database.
-    - The session is committed and refreshed to ensure the new session is saved and updated.
-- **Output**: The method does not return any value; it initializes the instance attributes `_datasource` and `_llm_session`.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/v3/llms/clients/llm_client_claude.ClaudeClient.__init__`](../../llms/clients/llm_client_claude.py.md#ClaudeClient__init__)
-    - [`python-backend/packages/shared/shared/v3/utils/datasource.DataSource.from_node_ids`](../../utils/datasource.py.md#DataSourcefrom_node_ids)
-    - [`python-backend/packages/shared/shared/v3/utils/datasource.DataSource.from_relative_paths`](../../utils/datasource.py.md#DataSourcefrom_relative_paths)
-    - [`python-backend/packages/shared/shared/v3/utils/datasource.DataSource.from_page_id`](../../utils/datasource.py.md#DataSourcefrom_page_id)
-    - [`python-backend/driver_db/database/db.get_session`](../../../../../../driver_db/database/db.py.md#get_session)
-    - [`python-backend/driver_db/database/models_v2.RuntimeLlmSession`](../../../../../../driver_db/database/models_v2.py.md#RuntimeLlmSession)
-- **See also**: [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest`](#PipelineRequest)  (Base Class)
+    - Call the superclass initializer with any additional data.
+    - Determine the data source based on the presence of `node_ids`, `relative_paths`, or `page_node_id`.
+    - If `node_ids` is provided, initialize the data source using `DataSource.from_node_ids`.
+    - If `relative_paths` is provided, initialize the data source using `DataSource.from_relative_paths`.
+    - If `page_node_id` is provided, initialize the data source using `DataSource.from_page_id`.
+    - If none of the above are provided, set the data source to `None`.
+    - Open a database session using `get_session()`.
+    - If `llm_session_id` is provided, attempt to retrieve the LLM session from the database.
+    - If the data source is `None` and an LLM session is retrieved, initialize the data source using the session's source node IDs.
+    - If no LLM session is found or `llm_session_id` is not provided, create a new [`RuntimeLlmSession`](<../../../../../../driver_db/database/models_v2.py.md#RuntimeLlmSession>) with the provided organization ID, user ID, and data source node IDs.
+    - Add the new LLM session to the database, commit the transaction, and refresh the session.
+- **Output**: The method does not return any value; it initializes the object's state.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_message_history.LlmMessageHistory.__init__`](<../../interfaces/llm_message_history.py.md#LlmMessageHistory__init__>)
+    - [`python-backend/packages/shared/shared/v3/utils/datasource.DataSource.from_node_ids`](<../../utils/datasource.py.md#DataSourcefrom_node_ids>)
+    - [`python-backend/packages/shared/shared/v3/utils/datasource.DataSource.from_relative_paths`](<../../utils/datasource.py.md#DataSourcefrom_relative_paths>)
+    - [`python-backend/packages/shared/shared/v3/utils/datasource.DataSource.from_page_id`](<../../utils/datasource.py.md#DataSourcefrom_page_id>)
+    - [`python-backend/driver_db/database/db.get_session`](<../../../../../../driver_db/database/db.py.md#get_session>)
+    - [`python-backend/driver_db/database/models_v2.RuntimeLlmSession`](<../../../../../../driver_db/database/models_v2.py.md#RuntimeLlmSession>)
+- **See also**: [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest`](<#PipelineRequest>)  (Base Class)
 
 
 ---
 #### PipelineRequest\.datasource<!-- {{#callable:python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest.datasource}} -->
-The `datasource` method is a property that lazily initializes and returns a `DataSource` object based on node IDs and organization ID if it hasn't been set already.
+The `datasource` method retrieves or initializes a `DataSource` object based on node IDs and organization ID.
 - **Decorators**: `@property`
 - **Inputs**: None
 - **Control Flow**:
-    - Checks if the `_datasource` attribute is already set on the instance using `hasattr`.
-    - If `_datasource` is not set, it initializes `_datasource` using `DataSource.from_node_ids` with `self.node_ids` and `self.organization_id`.
-    - Returns the `_datasource` attribute.
+    - Check if the `_datasource` attribute is not already set on the instance using `hasattr`.
+    - If `_datasource` is not set, initialize it using `DataSource.from_node_ids` with `self.node_ids` and `self.organization_id`.
+    - Return the `_datasource` attribute.
 - **Output**: Returns a `DataSource` object associated with the instance.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/v3/utils/datasource.DataSource.from_node_ids`](../../utils/datasource.py.md#DataSourcefrom_node_ids)
-- **See also**: [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest`](#PipelineRequest)  (Base Class)
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/v3/utils/datasource.DataSource.from_node_ids`](<../../utils/datasource.py.md#DataSourcefrom_node_ids>)
+- **See also**: [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest`](<#PipelineRequest>)  (Base Class)
 
 
 ---
@@ -112,35 +113,34 @@ The `llm_session` method is a property that returns the current `RuntimeLlmSessi
 - **Control Flow**:
     - The method simply returns the `_llm_session` attribute of the `PipelineRequest` instance.
 - **Output**: The output is the `RuntimeLlmSession` instance stored in the `_llm_session` attribute of the `PipelineRequest` object.
-- **See also**: [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest`](#PipelineRequest)  (Base Class)
+- **See also**: [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest`](<#PipelineRequest>)  (Base Class)
 
 
 ---
 #### PipelineRequest\.from\_dict<!-- {{#callable:python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest.from_dict}} -->
-The `from_dict` class method creates an instance of `PipelineRequest` using a dictionary of data as keyword arguments.
+The `from_dict` class method creates an instance of the `PipelineRequest` class using a dictionary of data as keyword arguments.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `data`: A dictionary containing the data to be used as keyword arguments for creating a `PipelineRequest` instance.
 - **Control Flow**:
-    - The method receives a dictionary `data` as input.
-    - It unpacks the dictionary `data` into keyword arguments using `**data`.
+    - The method is a class method, indicated by the `@classmethod` decorator, which means it is called on the class itself rather than an instance of the class.
+    - The method takes a dictionary `data` as input and unpacks it as keyword arguments using `**data`.
     - It calls the class constructor `cls(**data)` to create and return a new instance of `PipelineRequest`.
-- **Output**: Returns a new instance of `PipelineRequest` initialized with the provided dictionary data as keyword arguments.
-- **See also**: [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest`](#PipelineRequest)  (Base Class)
+- **Output**: Returns a new instance of `PipelineRequest` initialized with the data provided in the dictionary.
+- **See also**: [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest`](<#PipelineRequest>)  (Base Class)
 
 
 ---
 #### PipelineRequest\.run<!-- {{#callable:python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest.run}} -->
-The `run` method executes the pipeline by calling the abstract [`_run`](#PipelineRequest_run) method, which must be implemented by subclasses.
+The `run` method executes the pipeline by calling the abstract [`_run`](<#PipelineRequest_run>) method, which must be implemented by subclasses.
 - **Inputs**:
-    - `client`: An optional `LlmClient` instance that can be used by the [`_run`](#PipelineRequest_run) method.
+    - `client`: An optional `LlmClient` instance that can be used by the [`_run`](<#PipelineRequest_run>) method.
 - **Control Flow**:
-    - The method directly calls the [`_run`](#PipelineRequest_run) method, passing the `client` argument.
-    - The [`_run`](#PipelineRequest_run) method is abstract and must be implemented by subclasses, which will define the specific behavior of the pipeline execution.
-- **Output**: The method returns a `PipelineResponse` object, which is the result of the [`_run`](#PipelineRequest_run) method.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest._run`](#PipelineRequest_run)
-- **See also**: [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest`](#PipelineRequest)  (Base Class)
+    - The method directly calls the [`_run`](<#PipelineRequest_run>) method, passing the `client` argument if provided.
+- **Output**: The output is a `PipelineResponse` object, which is the result of the [`_run`](<#PipelineRequest_run>) method.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest._run`](<#PipelineRequest_run>)
+- **See also**: [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest`](<#PipelineRequest>)  (Base Class)
 
 
 ---
@@ -148,17 +148,17 @@ The `run` method executes the pipeline by calling the abstract [`_run`](#Pipelin
 The `stream` method asynchronously generates a sequence of LlmStreamResponse objects, starting and ending with session-specific responses.
 - **Decorators**: `@abstractmethod`
 - **Inputs**:
-    - `client`: An optional LlmClient instance used for the streaming process.
+    - `client`: An optional LlmClient instance used for the streaming operation.
 - **Control Flow**:
     - Yields a StartSessionStreamResponse with the current LLM session ID and execution call ID.
-    - Iterates asynchronously over responses from the [`_stream`](#PipelineRequest_stream) method, yielding each response.
+    - Asynchronously iterates over responses from the [`_stream`](<#PipelineRequest_stream>) method, yielding each response.
     - Yields an EndSessionStreamResponse with the current LLM session ID.
 - **Output**: An asynchronous generator yielding LlmStreamResponse objects, including start and end session responses.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.StartSessionStreamResponse`](../../interfaces/llm_stream_response.py.md#StartSessionStreamResponse)
-    - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest._stream`](#PipelineRequest_stream)
-    - [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.EndSessionStreamResponse`](../../interfaces/llm_stream_response.py.md#EndSessionStreamResponse)
-- **See also**: [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest`](#PipelineRequest)  (Base Class)
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.StartSessionStreamResponse`](<../../interfaces/llm_stream_response.py.md#StartSessionStreamResponse>)
+    - [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest._stream`](<#PipelineRequest_stream>)
+    - [`python-backend/packages/shared/shared/v3/interfaces/llm_stream_response.EndSessionStreamResponse`](<../../interfaces/llm_stream_response.py.md#EndSessionStreamResponse>)
+- **See also**: [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest`](<#PipelineRequest>)  (Base Class)
 
 
 ---
@@ -168,24 +168,24 @@ The `_run` method is an abstract method intended to be implemented by subclasses
 - **Inputs**:
     - `client`: An optional `LlmClient` instance that may be used by the method implementation.
 - **Control Flow**:
-    - The method is defined as an abstract method, meaning it must be implemented by any non-abstract subclass of `PipelineRequest`.
-    - The method raises a `NotImplementedError` if it is not overridden, indicating that the pipeline does not support this method by default.
-- **Output**: The method is expected to return an instance of `PipelineResponse`, although the actual return type will depend on the subclass implementation.
-- **See also**: [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest`](#PipelineRequest)  (Base Class)
+    - The method is defined as an abstract method, indicating that it must be implemented by any non-abstract subclass.
+    - The method raises a `NotImplementedError` if it is not overridden, signaling that the pipeline does not support this method by default.
+- **Output**: The method is expected to return a `PipelineResponse` object, but since it is abstract, the actual return value depends on the subclass implementation.
+- **See also**: [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest`](<#PipelineRequest>)  (Base Class)
 
 
 ---
 #### PipelineRequest\.\_stream<!-- {{#callable:python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest._stream}} -->
-The `_stream` method is an abstract asynchronous generator intended to be implemented by subclasses to yield `LlmStreamResponse` objects, but currently raises a `NotImplementedError`.
+The `_stream` method is an abstract asynchronous generator that is intended to be implemented by subclasses to yield `LlmStreamResponse` objects, but currently raises a `NotImplementedError` indicating it is not supported by the pipeline.
 - **Decorators**: `@abstractmethod`
 - **Inputs**:
-    - `client`: An optional `LlmClient` instance, defaulting to `None`, which may be used by subclasses to interact with a language model client.
+    - `client`: An optional `LlmClient` instance that can be used by the method, defaulting to `None`.
 - **Control Flow**:
-    - The method is defined as an abstract method, indicating that it must be implemented by any non-abstract subclass.
+    - The method is defined as an abstract method, meaning it must be implemented by any non-abstract subclass.
     - The method is asynchronous and returns an `AsyncGenerator` that should yield `LlmStreamResponse` objects.
-    - Currently, the method raises a `NotImplementedError`, indicating that it is not yet implemented and subclasses must provide their own implementation.
-- **Output**: The method is expected to return an `AsyncGenerator` that yields `LlmStreamResponse` objects, but currently, it raises a `NotImplementedError`.
-- **See also**: [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest`](#PipelineRequest)  (Base Class)
+    - Currently, the method raises a `NotImplementedError`, indicating that it is not implemented and not supported by the pipeline.
+- **Output**: The method is expected to yield `LlmStreamResponse` objects, but currently, it raises a `NotImplementedError`.
+- **See also**: [`python-backend/packages/shared/shared/v3/app/pipelines/pipeline_request.PipelineRequest`](<#PipelineRequest>)  (Base Class)
 
 
 

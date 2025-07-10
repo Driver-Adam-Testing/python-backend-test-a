@@ -3,7 +3,7 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `secret_management` folder in the `python-backend` codebase contains the `aws_secret_management.py` file, which provides functionality for managing secrets using AWS Secrets Manager.
+The `secret_management` folder in the `python-backend` codebase contains the `aws_secret_management.py` file, which provides functionality for managing secrets in AWS Secrets Manager, including operations like creating, updating, reading, and deleting secrets.
 
 
 ## Files

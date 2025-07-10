@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `main.py` file in the `python-backend` codebase handles AWS Lambda events for onboarding by processing SNS messages, interacting with AWS Secrets Manager, and making HTTP requests to external services.
+The `main.py` file in the `python-backend` codebase handles AWS Lambda events for onboarding by processing SNS messages, interacting with AWS Secrets Manager, and making HTTP requests to external services using Auth0 for authentication.
 
 # Purpose
-This Python file is designed to function as an AWS Lambda handler, primarily focused on processing events triggered by Amazon SNS (Simple Notification Service) messages related to S3 bucket activities. The code integrates with several AWS services and third-party tools, such as AWS Secrets Manager for secure credential management, Auth0 for authentication, and Sentry for error tracking. The handler function, [`handler`](#handler), serves as the entry point for the Lambda function, capturing and logging any exceptions that occur during execution. The core processing logic is encapsulated in the [`_process_handler`](#_process_handler) function, which parses SNS messages, retrieves necessary credentials from AWS Secrets Manager, and interacts with Auth0 to obtain a machine-to-machine (M2M) token. It then processes each S3 event record, checking for specific tags and metadata, and generates presigned URLs for asset onboarding.
+This Python file is designed to function as an AWS Lambda handler, primarily focused on processing events triggered by Amazon SNS (Simple Notification Service) messages related to S3 bucket activities. The code integrates with several AWS services and third-party tools, such as AWS Secrets Manager for secure credential management, Auth0 for authentication, and Sentry for error tracking. The main functionality revolves around processing S3 events, verifying certain conditions using metadata and tags, and then executing an onboarding service if the conditions are met. The onboarding process involves generating a presigned URL for the S3 object and sending a request to an external API with the necessary metadata and authentication token.
 
-The file also includes a function, [`exec_onboarding_service`](#exec_onboarding_service), which sends processed data to an external onboarding service API, using HTTP requests facilitated by the `httpx` library. The code is structured to handle multiple records within a single invocation, ensuring that errors in processing individual records do not halt the entire batch. Logging is configured to adapt to the AWS Lambda environment, and the Sentry SDK is initialized to capture and report exceptions. This file is a cohesive unit designed to automate the processing and onboarding of assets stored in S3, leveraging cloud services and external APIs to manage authentication and error tracking efficiently.
+The file is structured to handle exceptions gracefully, logging errors and capturing them with Sentry, ensuring that the processing of other records can continue even if one fails. It uses the `httpx` library for making HTTP requests and `botocore` for AWS service interactions. The code is modular, with distinct functions for handling the main logic ([`handler`](<#handler>) and [`_process_handler`](<#_process_handler>)) and executing the onboarding service ([`exec_onboarding_service`](<#exec_onboarding_service>)). This setup allows for clear separation of concerns and easier maintenance. The integration with Sentry and the use of environment variables for configuration suggest that this code is intended for deployment in a cloud environment, where it can be dynamically configured and monitored.
 # Imports and Dependencies
 
 ---
@@ -35,33 +35,31 @@ The file also includes a function, [`exec_onboarding_service`](#exec_onboarding_
 ### log\_level
 - **Type**: `str`
 - **Description**: The `log_level` variable is a string that determines the logging level for the application. It is set by retrieving the `LOG_LEVEL` environment variable, converting it to uppercase, and defaulting to `logging.INFO` if the environment variable is not set.
-- **Use**: This variable is used to configure the logging level for the application's logger, affecting the verbosity of log messages.
+- **Use**: This variable is used to configure the logging level for the application's logger, ensuring that log messages are filtered according to the specified level.
 
 
 ---
 ### logger
 - **Type**: `logging.Logger`
-- **Description**: The `logger` variable is an instance of the `logging.Logger` class, obtained by calling `logging.getLogger()`. It is configured to log messages at a level specified by the `log_level` variable, which is determined by the `LOG_LEVEL` environment variable or defaults to `logging.INFO`. The logger is used throughout the code to log informational messages, errors, and exceptions, providing a mechanism for tracking the execution flow and diagnosing issues.
-- **Use**: The `logger` is used to log messages at various points in the code, including informational messages, errors, and exceptions.
+- **Description**: The `logger` variable is an instance of the `logging.Logger` class, obtained using the `logging.getLogger()` method. It is configured to log messages at a level specified by the `log_level` variable, which is determined by the `LOG_LEVEL` environment variable or defaults to `logging.INFO`. The logger is used throughout the code to log informational messages, errors, and exceptions, providing a mechanism for tracking the execution flow and diagnosing issues.
+- **Use**: The `logger` is used to log messages at various points in the code, including informational messages, errors, and exceptions, to aid in monitoring and debugging the application.
 
 
 # Functions
 
 ---
 ### handler<!-- {{#callable:python-backend/content_services/onboarding_event_handler/src/main.handler}} -->
-The `handler` function processes AWS Lambda events by delegating to [`_process_handler`](#_process_handler) and handles any exceptions by logging and reporting them to Sentry.
+The `handler` function processes AWS Lambda events by delegating to [`_process_handler`](<#_process_handler>) and handles any exceptions by logging and reporting them to Sentry.
 - **Inputs**:
     - `event`: A dictionary representing the AWS Lambda event, typically containing SNS message records.
     - `context`: An object providing runtime information to the handler, such as function name, memory limit, and request ID.
 - **Control Flow**:
-    - The function attempts to process the event by calling [`_process_handler`](#_process_handler) with the provided `event` and `context` arguments.
-    - If [`_process_handler`](#_process_handler) executes successfully, its return value is returned by `handler`.
-    - If an exception occurs during the execution of [`_process_handler`](#_process_handler), the exception is caught.
-    - The caught exception is logged with a message indicating an unhandled error in the Lambda handler.
-    - The exception is also reported to Sentry using `sentry_sdk.capture_exception`.
-- **Output**: The function returns a string, which is the result of the [`_process_handler`](#_process_handler) function if no exceptions occur.
-- **Functions called**:
-    - [`python-backend/content_services/onboarding_event_handler/src/main._process_handler`](#_process_handler)
+    - The function attempts to process the event by calling [`_process_handler`](<#_process_handler>) with the provided `event` and `context` arguments.
+    - If [`_process_handler`](<#_process_handler>) raises an exception, the function catches it and logs an error message using the logger.
+    - The caught exception is also reported to Sentry using `sentry_sdk.capture_exception`.
+- **Output**: The function returns a string, which is the result of the [`_process_handler`](<#_process_handler>) function if no exception occurs.
+- **Functions Called**:
+    - [`python-backend/content_services/onboarding_event_handler/src/main._process_handler`](<#_process_handler>)
 
 
 ---
@@ -77,29 +75,29 @@ The `_process_handler` function processes SNS events containing S3 records, retr
     - Logs the SNS message and iterates over each S3 record within the SNS message.
     - For each S3 record, extracts bucket name and object key, and checks if the object should be processed based on GuardDuty tags or environment settings.
     - If the object should be processed, retrieves metadata and generates a presigned URL for the S3 object.
-    - Constructs request parameters and body for the onboarding service, and calls the [`exec_onboarding_service`](#exec_onboarding_service) function with these parameters and the Auth0 token.
+    - Constructs request parameters and body for the onboarding service, then calls the [`exec_onboarding_service`](<#exec_onboarding_service>) function with these parameters and the Auth0 token.
     - Handles exceptions by logging errors and capturing them with Sentry, continuing to process remaining records.
-- **Output**: A list of results from the onboarding service for each processed S3 record.
-- **Functions called**:
-    - [`python-backend/content_services/onboarding_event_handler/src/utils/aws_s3.has_allowed_guard_duty_tag`](utils/aws_s3.py.md#has_allowed_guard_duty_tag)
-    - [`python-backend/content_services/onboarding_event_handler/src/utils/aws_s3.head_object`](utils/aws_s3.py.md#head_object)
-    - [`python-backend/content_services/onboarding_event_handler/src/utils/aws_s3.generate_get_presigned_url`](utils/aws_s3.py.md#generate_get_presigned_url)
-    - [`python-backend/content_services/onboarding_event_handler/src/main.exec_onboarding_service`](#exec_onboarding_service)
+- **Output**: Returns a list of results from the onboarding service for each processed S3 record.
+- **Functions Called**:
+    - [`python-backend/content_services/onboarding_event_handler/src/utils/aws_s3.has_allowed_guard_duty_tag`](<utils/aws_s3.py.md#has_allowed_guard_duty_tag>)
+    - [`python-backend/content_services/onboarding_event_handler/src/utils/aws_s3.head_object`](<utils/aws_s3.py.md#head_object>)
+    - [`python-backend/content_services/onboarding_event_handler/src/utils/aws_s3.generate_get_presigned_url`](<utils/aws_s3.py.md#generate_get_presigned_url>)
+    - [`python-backend/content_services/onboarding_event_handler/src/main.exec_onboarding_service`](<#exec_onboarding_service>)
 
 
 ---
 ### exec\_onboarding\_service<!-- {{#callable:python-backend/content_services/onboarding_event_handler/src/main.exec_onboarding_service}} -->
 The `exec_onboarding_service` function sends an HTTP POST request to an onboarding service with a given event payload and authorization token, and returns the JSON response.
 - **Inputs**:
-    - `event`: A dictionary containing the event data to be sent as the payload in the HTTP POST request.
+    - `event`: A dictionary containing the event data to be sent as the JSON payload in the POST request.
     - `token`: A string representing the authorization token to be included in the request headers.
 - **Control Flow**:
-    - A new HTTP client is created using `httpx.Client` with a base URL from settings and redirects enabled.
-    - The event dictionary is copied into a new payload dictionary.
+    - A new HTTP client is created using `httpx.Client` with the base URL from settings and redirects enabled.
+    - The event dictionary is unpacked into a new payload dictionary.
     - A debug log of the payload is recorded.
-    - Headers for the HTTP request are prepared, including content type and authorization using the provided token.
-    - An HTTP POST request is made to the "/onboarding/" endpoint with the prepared headers and payload.
-    - The response is checked for HTTP errors using `raise_for_status`, which will raise an exception for any 4XX or 5XX status codes.
+    - Headers for the HTTP request are prepared, including the authorization token.
+    - An HTTP POST request is made to the "/onboarding/" endpoint with the prepared headers and JSON payload.
+    - The response is checked for HTTP errors using `raise_for_status()`, which will raise an exception for any 4XX or 5XX status codes.
     - The JSON content of the response is extracted and logged as an info message.
     - The JSON response is returned as the output of the function.
 - **Output**: A dictionary containing the JSON response from the onboarding service.

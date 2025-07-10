@@ -3,11 +3,11 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `utils` folder in the `python-backend` codebase contains a `models.py` file that defines classes for configuring output formats and managing interactions with OpenAI chat models, including implementing retry logic for error handling.
+The `utils` folder in the `python-backend` codebase contains a `models.py` file that defines classes and methods for configuring output formats and generating responses using OpenAI's API, including handling different model types and retrying requests with exponential backoff.
 
 
 ## Files
-- **[models.py](models.py.md)**: The `models.py` file defines classes for configuring output formats and handling OpenAI chat model interactions, including response generation with retry logic for various errors.
+- **[models.py](models.py.md)**: The `models.py` file defines classes and methods for configuring output formats and generating responses using OpenAI's API, including handling different model types and retrying requests with exponential backoff.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -6,7 +6,7 @@
 The `block_response.py` file defines an abstract base class `BlockResponse` that extends `BaseModel` and requires the implementation of a `to_markdown` method.
 
 # Purpose
-This code defines an abstract base class `BlockResponse` that inherits from both `BaseModel` from the Pydantic library and Python's `ABC` (Abstract Base Class). The primary purpose of this class is to serve as a blueprint for other classes that will implement the [`to_markdown`](#BlockResponseto_markdown) method, which is an abstract method requiring subclasses to provide their own implementation. By extending `BaseModel`, the class also benefits from Pydantic's data validation and serialization capabilities, suggesting that instances of subclasses will likely represent structured data that can be converted to and from various formats. This code provides narrow functionality, focusing on defining a contract for converting data to a Markdown string format, and is likely part of a larger system where data representation and transformation are key components.
+This code defines an abstract base class `BlockResponse` that inherits from both `BaseModel` of the Pydantic library and Python's `ABC` (Abstract Base Class). The primary purpose of this class is to serve as a blueprint for other classes that will implement the [`to_markdown`](<#BlockResponseto_markdown>) method, which is an abstract method requiring subclasses to provide their own implementation. By combining Pydantic's `BaseModel`, it also allows for data validation and serialization, suggesting that instances of subclasses will likely represent structured data that can be converted to markdown format. This code provides narrow functionality, focusing on defining a contract for converting data to markdown, and is a foundational component for a larger system that deals with data representation and transformation.
 # Imports and Dependencies
 
 ---
@@ -19,9 +19,9 @@ This code defines an abstract base class `BlockResponse` that inherits from both
 
 ---
 ### BlockResponse<!-- {{#class:python-backend/packages/shared/shared/interfaces/agents/block_response.BlockResponse}} -->
-- **Description**: The `BlockResponse` class is an abstract base class that inherits from both `BaseModel` and `ABC`. It serves as a blueprint for creating response objects that can be converted to markdown format. The class enforces the implementation of the `to_markdown` method in any subclass, ensuring that all derived classes provide a specific way to represent their data as markdown.
+- **Description**: The `BlockResponse` class is an abstract base class that inherits from both `BaseModel` and `ABC`. It defines a contract for subclasses by requiring them to implement the `to_markdown` method, which is expected to return a string representation in markdown format. This class serves as a blueprint for creating specific types of block responses that adhere to a consistent interface.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/interfaces/agents/block_response.BlockResponse.to_markdown`](#BlockResponseto_markdown)
+    - [`python-backend/packages/shared/shared/interfaces/agents/block_response.BlockResponse.to_markdown`](<#BlockResponseto_markdown>)
 - **Inherits From**:
     - `BaseModel`
     - `ABC`
@@ -30,14 +30,14 @@ This code defines an abstract base class `BlockResponse` that inherits from both
 
 ---
 #### BlockResponse\.to\_markdown<!-- {{#callable:python-backend/packages/shared/shared/interfaces/agents/block_response.BlockResponse.to_markdown}} -->
-The `to_markdown` method is an abstract method that must be implemented by subclasses to convert an object to a Markdown string.
+The `to_markdown` method is an abstract method intended to be implemented by subclasses to convert an object to a Markdown string representation.
 - **Decorators**: `@abstractmethod`
 - **Inputs**: None
 - **Control Flow**:
-    - The method is defined as an abstract method, indicating that it does not contain any implementation in the `BlockResponse` class.
-    - Subclasses of `BlockResponse` are required to provide their own implementation of the `to_markdown` method.
-- **Output**: The method is expected to return a string representing the object in Markdown format.
-- **See also**: [`python-backend/packages/shared/shared/interfaces/agents/block_response.BlockResponse`](#BlockResponse)  (Base Class)
+    - The method is defined as an abstract method, meaning it must be implemented by any non-abstract subclass of `BlockResponse`.
+    - The method does not contain any implementation in the `BlockResponse` class, as indicated by the `pass` statement.
+- **Output**: The method is expected to return a string that represents the object in Markdown format.
+- **See also**: [`python-backend/packages/shared/shared/interfaces/agents/block_response.BlockResponse`](<#BlockResponse>)  (Base Class)
 
 
 

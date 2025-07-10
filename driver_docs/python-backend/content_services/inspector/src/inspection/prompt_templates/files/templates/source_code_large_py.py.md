@@ -3,15 +3,20 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_large_py.py` file defines a template for analyzing Python source code, focusing on extracting and organizing information about imports, global variables, classes, and functions.
+The `source_code_large_py.py` file defines a template for processing large Python source code files, including sections for purpose, imports, global variables, classes, and functions, utilizing various collections and prompts.
 
 # Purpose
-This Python code defines a template for analyzing and documenting Python source code files. It is structured to extract and organize information about the purpose, imports, global variables, classes, and functions within a given Python file. The code imports several specialized modules and classes from a `utils.lang_specialization` package, which are used to perform static analysis and language model-based processing of Python code. The main component of this file is the `SOURCE_CODE_LARGE_TEMPLATE_PY`, a list of tuples that define different sections of a documentation template. Each tuple specifies a section title, a method for extracting relevant data (such as imports or classes), and a method for processing this data, often using language models (LLMs) to enhance the analysis.
+This Python code file is designed to serve as a template for generating structured prompts and extracting specific components from Python source code. It is part of a larger system that likely involves analyzing and documenting Python codebases. The file imports various modules and classes that facilitate the creation of prompts and the collection of code elements such as imports, global variables, classes, and functions. The primary functionality is encapsulated in the `SOURCE_CODE_LARGE_TEMPLATE_PY` list, which defines a series of tuples. Each tuple specifies a section of the template, such as "Purpose," "Imports and Dependencies," "Global Variables," "Classes," and "Functions," and associates these sections with methods for extracting relevant data from the code.
 
-The file is designed to be part of a larger system, likely a documentation generation tool or a code analysis library, that automates the process of creating detailed documentation for Python codebases. It does not define a public API or external interfaces directly but rather provides a structured approach to gather and present information about Python code. The use of language models suggests an advanced capability to interpret and describe code elements beyond simple static analysis, making it a sophisticated tool for developers seeking to understand or document complex Python projects.
+The file is structured to be part of a library or framework that can be imported and used in other parts of the system. It does not define a standalone script but rather provides a set of tools for analyzing Python code. The use of components like `Prompt` and `Component` suggests that the file is intended to generate human-readable documentation or reports based on the analysis of Python code. The file defines a public API through the `SOURCE_CODE_LARGE_TEMPLATE_PY` list, which can be used by other parts of the system to apply the template to specific codebases and extract structured information for documentation or analysis purposes.
 # Imports and Dependencies
 
 ---
+- `shared.prompts.structured_prompting.GENERAL_STE_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_CODE_PURPOSE`
+- `shared.prompts.structured_prompting.USE_BACKTICKS_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.Component`
+- `shared.prompts.structured_prompting.Prompt`
 - `utils.lang_specialization.ir_common.ListData`
 - `utils.lang_specialization.python.SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT`
 - `utils.lang_specialization.python.SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_PY`
@@ -30,8 +35,8 @@ The file is designed to be part of a larger system, likely a documentation gener
 ---
 ### SOURCE\_CODE\_LARGE\_TEMPLATE\_PY
 - **Type**: `list`
-- **Description**: `SOURCE_CODE_LARGE_TEMPLATE_PY` is a list of tuples, each representing a section of a template for analyzing Python source code. Each tuple contains a section identifier, a section title, a method for extracting raw symbols from static analysis, a method for processing these symbols, and an optional placeholder for additional data.
-- **Use**: This variable is used to define a structured template for extracting and processing different components of Python source code, such as imports, global variables, classes, and functions.
+- **Description**: `SOURCE_CODE_LARGE_TEMPLATE_PY` is a list of tuples, each containing structured data for generating prompts and analyzing Python source code. Each tuple includes a type identifier, a description, and various components or functions for processing code elements such as imports, global variables, classes, and functions.
+- **Use**: This variable is used to define a template for generating structured prompts and performing static and dynamic analysis on Python source code.
 
 
 

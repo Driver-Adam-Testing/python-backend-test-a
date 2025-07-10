@@ -3,17 +3,20 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `c.py` file in the `python-backend` codebase provides classes and methods for analyzing and documenting C code, focusing on extracting and describing functions, variables, data structures, and declarations using static analysis and predefined JSON schemas.
+The `c.py` file in the `python-backend` codebase provides classes and methods for analyzing and documenting C code, focusing on extracting and describing functions, variables, data structures, and declarations using static analysis and structured prompts.
 
 # Purpose
-This Python source code file is designed to facilitate the extraction and documentation of C language constructs such as functions, variables, data structures, and declarations. It leverages static analysis to parse C/C++ code and generate structured representations of these constructs using classes like `CDeclarationRawSymbolCollection`, `CFunctionRawSymbolCollection`, `CVariableRawSymbolCollection`, and others. The file defines several classes that extend base classes like `RawSymbolCollection`, `IrCollection`, and `FnData`, each tailored to handle specific types of C language symbols. These classes provide methods for creating instances from static analysis results, generating prompts for language models, and converting data to dictionary formats.
-
-The file is structured to support a modular approach to handling C code analysis and documentation. It imports utility modules for model handling and tree-sitter-based parsing, indicating its reliance on external libraries for code analysis. The classes defined in the file are primarily focused on transforming raw symbol data into intermediate representations (IR) and generating prompts for language models to produce documentation. This setup suggests that the file is part of a larger system aimed at automating the documentation process for C code, providing a bridge between raw code analysis and natural language processing for documentation generation.
+This Python source code file is a comprehensive module designed to facilitate the extraction and documentation of C language symbols, such as functions, variables, and data structures, using static analysis. It imports various utilities and classes from other modules to handle structured prompting, model interactions, and tree-sitter parsing for C/C++ code. The file defines several classes, each responsible for handling different types of C symbols, such as `CDeclarationRawSymbolCollection`, `CFnDeclData`, `CDataStructureData`, and others, which are used to collect, analyze, and convert C code symbols into structured data. The module provides a narrow functionality focused on parsing and documenting C code, leveraging static analysis to extract symbol information and generate documentation prompts. It is not a standalone script but rather a part of a larger system that processes C code for documentation purposes.
 # Imports and Dependencies
 
 ---
 - `pathlib.Path`
 - `typing.Self`
+- `shared.prompts.structured_prompting.GENERAL_STE_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS`
+- `shared.prompts.structured_prompting.USE_BACKTICKS_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.Component`
+- `shared.prompts.structured_prompting.Prompt`
 - `utils.models.ChatOpenAI`
 - `utils.treesitter_drivers.c_cpp_driver.CppCDriverTree`
 - `.ir_common.DataStructureData`
@@ -34,78 +37,78 @@ The file is structured to support a modular approach to handling C code analysis
 ---
 ### C\_VARIABLES
 - **Type**: `set`
-- **Description**: `C_VARIABLES` is a global variable defined as a set containing two string elements: 'variable' and 'externvar'. This set likely represents a collection of C language variable types or identifiers that are relevant in the context of the surrounding code.
-- **Use**: This variable is used to store and reference specific C variable identifiers or types.
+- **Description**: `C_VARIABLES` is a global variable defined as a set containing two string elements: 'variable' and 'externvar'. This set is likely used to store or reference specific C-related variable names or types that are of interest in the context of the code.
+- **Use**: This variable is used to hold a collection of C variable names or types for further processing or reference.
 
 
 ---
 ### SOURCE\_CODE\_LARGE\_SYSTEM\_PROMPT\_GENERAL\_C
 - **Type**: `str`
-- **Description**: The variable `SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_C` is a string that contains a detailed prompt for a system designed to generate documentation for C code. The prompt emphasizes the expertise of the user in C programming and documentation, highlighting their ability to explain technical details and the conceptual components of software.
-- **Use**: This variable is used as a system prompt to guide the generation of documentation for large C codebases.
+- **Description**: The variable `SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_C` is a string that contains a detailed prompt for a system designed to generate documentation for C programming code. It emphasizes the expertise of the user in C programming and documentation, focusing on explaining technical details and the conceptual components of software.
+- **Use**: This variable is used as a prompt template for generating detailed documentation for large C codebases.
 
 
 ---
 ### SOURCE\_CODE\_SMALL\_SYSTEM\_PROMPT\_GENERAL\_C
 - **Type**: `str`
-- **Description**: This variable is a multi-line string that serves as a prompt for a system designed to document small and simple C source code files. It emphasizes the user's expertise in C programming and documentation, and the goal of providing clear and concise explanations for small code files.
-- **Use**: This variable is used as a system prompt to guide the documentation process for small C source code files.
+- **Description**: This variable is a multi-line string that serves as a system prompt for a documentation expert specializing in C programming. It provides guidance on how to write detailed documentation for small and simple C source code files, emphasizing clarity and conciseness.
+- **Use**: This variable is used as a prompt to guide the generation of documentation for small C source code files.
 
 
 ---
 ### SOURCE\_CODE\_LARGE\_PURPOSE\_USER\_PROMPT
 - **Type**: `str`
-- **Description**: The variable `SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT` is a string that contains a detailed prompt intended for users who need to explain the purpose of a large source code file. It provides guidance on how to write a comprehensive explanation by considering various aspects of the code, such as its functionality, components, and whether it defines public APIs or interfaces.
-- **Use**: This variable is used to instruct users on how to articulate the purpose of a large source code file in a structured and informative manner.
+- **Description**: The variable `SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT` is a string that contains a detailed prompt intended for users who need to explain the purpose of a large source code file. It provides guidance on how to write a comprehensive explanation by considering various aspects of the code, such as its functionality, components, and type.
+- **Use**: This variable is used to instruct users on how to document the purpose of large source code files effectively.
 
 
 ---
 ### SOURCE\_CODE\_SMALL\_PURPOSE\_USER\_PROMPT
 - **Type**: `str`
-- **Description**: This variable is a string that contains a prompt template for explaining the purpose of a source code file. It guides the user to provide a concise explanation of the file's purpose, focusing on the type of code and its components.
-- **Use**: This variable is used to instruct users on how to summarize the purpose of a source code file in a concise manner.
+- **Description**: The variable `SOURCE_CODE_SMALL_PURPOSE_USER_PROMPT` is a string that contains a template for a user prompt. This prompt is designed to guide users in explaining the purpose of a source code file in a concise manner. It provides specific questions to consider, such as the type of code and its components, to help structure the explanation.
+- **Use**: This variable is used to provide a structured prompt for users to describe the purpose of a small source code file.
 
 
 ---
 ### TECHNICAL\_CONCEPTS
 - **Type**: `str`
-- **Description**: TECHNICAL_CONCEPTS is a string variable that contains a template for describing the important technical features and their interactions in a source code file. The template guides the user to focus on conceptual use cases, applications, logic, and component interactions rather than specific functions or variables. This variable is likely used in a context where detailed technical documentation or analysis of code is required.
-- **Use**: This variable is used as a template for generating technical descriptions of source code files.
+- **Description**: TECHNICAL_CONCEPTS is a multi-line string variable that provides instructions for describing the important technical features and their interactions in a source code file. It emphasizes writing about conceptual use cases, applications, logic, and component interactions rather than focusing on specific functions or variables. This variable serves as a template or guideline for generating technical documentation.
+- **Use**: This variable is used as a guideline for writing technical descriptions of source code files.
 
 
 ---
 ### DATA\_STRUCTURES\_FOUND\_SYSTEM\_PROMPT\_JSON
-- **Type**: `str`
-- **Description**: The variable `DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON` is a multi-line string that serves as a system prompt for generating documentation for data structures in C programming. It provides a template for how to describe data structures using a specific JSON schema, focusing on the type, members, and a detailed description of the data structure.
+- **Type**: `string`
+- **Description**: The variable `DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON` is a multi-line string that contains a detailed prompt for generating documentation for data structures in C programming. It instructs the user to describe data structures using a specific JSON schema, focusing on technical details and the purpose of the software.
 - **Use**: This variable is used as a system prompt to guide the generation of structured documentation for C data structures.
 
 
 ---
 ### DATA\_STRUCTURES\_FOUND\_USER\_PROMPT
 - **Type**: `str`
-- **Description**: The variable `DATA_STRUCTURES_FOUND_USER_PROMPT` is a multi-line string that serves as a template for prompting users to summarize data structures in a given code. It provides guidelines on how to describe data structures, emphasizing the need for detail proportional to the complexity of the data structure.
-- **Use**: This variable is used as a prompt template for users to document data structures in code.
+- **Description**: The variable `DATA_STRUCTURES_FOUND_USER_PROMPT` is a multi-line string that serves as a template for prompting users to summarize data structures in provided code. It includes instructions on how to describe data structures, emphasizing the need for detail proportional to the complexity of the data structure.
+- **Use**: This variable is used as a prompt template to guide users in documenting data structures in code.
 
 
 ---
 ### DATA\_STRUCTURES\_NONE\_CONTENT
 - **Type**: `str`
-- **Description**: The variable `DATA_STRUCTURES_NONE_CONTENT` is a string that contains a message indicating that no custom data structures are defined in the file. It is a simple, static message used to convey the absence of data structures.
-- **Use**: This variable is used to provide a default message when no custom data structures are present in the file.
+- **Description**: The variable `DATA_STRUCTURES_NONE_CONTENT` is a string that contains a message indicating that no custom data structures are defined in the file. It is a simple, constant string value.
+- **Use**: This variable is used to signal the absence of custom data structures in a file.
 
 
 ---
 ### FUNCTIONS\_FOUND\_SYSTEM\_PROMPT\_JSON
 - **Type**: `str`
-- **Description**: The variable `FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON` is a multi-line string that contains a detailed system prompt for documenting C functions. It instructs the user to provide documentation for functions using a specific JSON schema, focusing on inputs, control flow, and output.
-- **Use**: This variable is used as a template or guideline for generating documentation for C functions, ensuring consistency and completeness in the documentation process.
+- **Description**: The variable `FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON` is a multi-line string that contains a detailed prompt for generating documentation for C functions. It instructs the user to describe a function using a specific JSON schema, focusing on inputs, control flow, and output.
+- **Use**: This variable is used as a template or guideline for generating structured documentation for C functions.
 
 
 ---
 ### FUNCTION\_DECLS\_FOUND\_SYSTEM\_PROMPT\_JSON
 - **Type**: `str`
-- **Description**: The variable `FUNCTION_DECLS_FOUND_SYSTEM_PROMPT_JSON` is a multi-line string that serves as a system prompt for generating documentation for public C APIs declared in header files. It provides detailed instructions and a JSON schema for documenting C functions, focusing on the public API interface and avoiding implementation details.
-- **Use**: This variable is used to guide the generation of documentation for C function declarations, ensuring consistency and clarity in the output.
+- **Description**: The variable `FUNCTION_DECLS_FOUND_SYSTEM_PROMPT_JSON` is a multi-line string that serves as a template for generating documentation for public C APIs declared in header files. It provides detailed instructions and a JSON schema for documenting functions, focusing on the public API interface and avoiding implementation details.
+- **Use**: This variable is used to guide the generation of documentation for C function declarations, ensuring consistency and clarity.
 
 
 ---
@@ -118,81 +121,87 @@ The file is structured to support a modular approach to handling C code analysis
 ---
 ### FUNCTIONS\_FOUND\_USER\_PROMPT
 - **Type**: `str`
-- **Description**: `FUNCTIONS_FOUND_USER_PROMPT` is a multi-line string variable that contains a template prompt for summarizing functions in a given code. It instructs the user to describe the inputs, control flow, logic, and output of a function, with the level of detail matching the complexity of the function.
-- **Use**: This variable is used as a template prompt for users to document functions in code.
+- **Description**: The `FUNCTIONS_FOUND_USER_PROMPT` is a multi-line string variable that contains a template for summarizing functions in a given code. It provides instructions on how to describe the inputs, control flow, logic, and output of a function, with an emphasis on matching the complexity of the function body.
+- **Use**: This variable is used as a prompt template for generating detailed documentation of functions in code.
 
 
 ---
 ### FUNCTIONS\_NONE\_CONTENT
 - **Type**: `str`
-- **Description**: `FUNCTIONS_NONE_CONTENT` is a string variable that contains a message indicating that no functions or function prototypes are defined in a given file. This message is formatted with a markdown-like separator for clarity.
+- **Description**: `FUNCTIONS_NONE_CONTENT` is a string variable that contains a message indicating that no functions or function prototypes are defined in a given file. The message is formatted with a newline and dashes for emphasis.
 - **Use**: This variable is used to provide a default message when no functions are found in a file.
 
 
 ---
 ### VARIABLES\_FOUND\_SYSTEM\_PROMPT\_JSON
 - **Type**: `str`
-- **Description**: `VARIABLES_FOUND_SYSTEM_PROMPT_JSON` is a string variable that contains a detailed system prompt for documenting variables in C code. The prompt instructs the user to describe a variable using a specific JSON schema, focusing on technical details and the purpose of the software.
-- **Use**: This variable is used to provide a template for generating documentation for C variables.
+- **Description**: The variable `VARIABLES_FOUND_SYSTEM_PROMPT_JSON` is a multi-line string that contains a detailed system prompt for documenting variables in C code. It provides instructions on how to describe a variable using a specific JSON schema, focusing on technical details and the purpose of the software.
+- **Use**: This variable is used to provide a template and guidelines for generating documentation for C variables.
 
 
 ---
 ### VARIABLES\_FOUND\_USER\_PROMPT
 - **Type**: `str`
-- **Description**: `VARIABLES_FOUND_USER_PROMPT` is a multi-line string variable that contains a prompt template for summarizing a global variable in a given code. It provides instructions on how to describe a global variable, emphasizing the need for detail proportional to the complexity of the variable.
-- **Use**: This variable is used as a template for generating prompts to guide users in documenting global variables in code.
+- **Description**: `VARIABLES_FOUND_USER_PROMPT` is a multi-line string variable that contains a template for summarizing a global variable in a given code. It provides instructions on how to describe a global variable, emphasizing the need for detail proportional to the complexity of the variable.
+- **Use**: This variable is used as a prompt template for generating documentation or summaries of global variables in code.
 
 
 ---
 ### VARIABLES\_NONE\_CONTENT
 - **Type**: `str`
 - **Description**: The variable `VARIABLES_NONE_CONTENT` is a string that contains a message indicating that no global variables are defined in the file. It is a simple string with a newline character followed by a separator and a descriptive message.
-- **Use**: This variable is used to signal the absence of global variables in the file.
+- **Use**: This variable is used to convey that there are no global variables present in the file.
 
 
 # Classes
 
 ---
 ### CDeclarationRawSymbolCollection<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/c.CDeclarationRawSymbolCollection}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L229>)
+
 - **Members**:
     - `data`: A dictionary mapping string keys to RawSymbolData instances.
-- **Description**: The CDeclarationRawSymbolCollection class is a specialized collection for handling raw symbol data related to C declarations. It extends the RawSymbolCollection class and is designed to store and manage symbol data extracted from C code, specifically focusing on declarations. The class provides methods to create instances from static analysis, filtering and processing reified symbols that are declarations, and converting the collection to a dictionary format. This class is integral for managing and organizing symbol data in the context of C code analysis.
+- **Description**: The `CDeclarationRawSymbolCollection` class is a specialized collection for handling raw symbol data related to C declarations. It extends the `RawSymbolCollection` class and primarily stores a dictionary of `RawSymbolData` objects, indexed by their symbol names. This class provides methods to create instances from static analysis, specifically focusing on symbols that are declarations. It is designed to facilitate the organization and retrieval of symbol data extracted from C code, particularly for use in static analysis workflows.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDeclarationRawSymbolCollection.from_static_analysis`](#CDeclarationRawSymbolCollectionfrom_static_analysis)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDeclarationRawSymbolCollection.from_llm`](#CDeclarationRawSymbolCollectionfrom_llm)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDeclarationRawSymbolCollection.to_dict`](#CDeclarationRawSymbolCollectionto_dict)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDeclarationRawSymbolCollection.from_static_analysis`](<#CDeclarationRawSymbolCollectionfrom_static_analysis>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDeclarationRawSymbolCollection.from_llm`](<#CDeclarationRawSymbolCollectionfrom_llm>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDeclarationRawSymbolCollection.to_dict`](<#CDeclarationRawSymbolCollectionto_dict>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](symbol_common.py.md#RawSymbolCollection)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<symbol_common.py.md#RawSymbolCollection>)
 
 **Methods**
 
 ---
 #### CDeclarationRawSymbolCollection\.from\_static\_analysis<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c.CDeclarationRawSymbolCollection.from_static_analysis}} -->
-The `from_static_analysis` method creates an instance of `CDeclarationRawSymbolCollection` from static analysis data if any declaration symbols are matched to definitions.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L232>)
+
+The `from_static_analysis` method creates an instance of `CDeclarationRawSymbolCollection` from static analysis of code, focusing on declaration symbols.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `code`: A string representing the source code to be analyzed.
     - `root_rel_path`: A `Path` object representing the root relative path of the source code file.
-    - `reified_symbols`: A list of `ReifiedSymbol` objects or `None`, representing the symbols extracted from the code that may include declarations.
+    - `reified_symbols`: A list of `ReifiedSymbol` objects or `None`, representing symbols extracted from the code that may include declarations.
 - **Control Flow**:
     - Initialize an empty dictionary `declaration_raw_symbol_data` to store raw symbol data for declarations.
-    - Determine if the file is large by calling [`code_requires_multi_prompt`](symbol_common.py.md#code_requires_multi_prompt) with the `code` argument.
-    - Filter `reified_symbols` to get only those that are declarations and store them in `decl_symbols`.
+    - Determine if the file is large by calling [`code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>) with the `code` argument.
+    - Filter `reified_symbols` to get only those that are declarations, storing them in `decl_symbols`.
     - Iterate over each `reified_sym` in `decl_symbols`.
-    - For each `reified_sym`, check if the `ts_symbol` has a name and a definition.
+    - For each `reified_sym`, check if its `ts_symbol.name` is not `None` and it has a `definition`.
     - If both conditions are met, create a `RawSymbolData` object using `RawSymbolData.from_tree_sitter_raw_symbol` with various parameters including `ts_symbol`, `root_rel_path`, and `code`.
-    - Store the created `RawSymbolData` object in `declaration_raw_symbol_data` with the symbol's name as the key.
-    - Check if `declaration_raw_symbol_data` is empty; if it is, set `output` to `None`, otherwise create an instance of `cls` with `declaration_raw_symbol_data` and assign it to `output`.
-    - Return `output`.
-- **Output**: Returns an instance of `CDeclarationRawSymbolCollection` if there are any matched declaration symbols, otherwise returns `None`.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](symbol_common.py.md#code_requires_multi_prompt)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData.from_tree_sitter_raw_symbol`](symbol_common.py.md#RawSymbolDatafrom_tree_sitter_raw_symbol)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDeclarationRawSymbolCollection`](#CDeclarationRawSymbolCollection)  (Base Class)
+    - Store the created `RawSymbolData` object in `declaration_raw_symbol_data` with the key as `ts_symbol.name`.
+    - Check if `declaration_raw_symbol_data` is empty; if so, set `output` to `None`, otherwise create a new instance of `cls` with `declaration_raw_symbol_data` as its data.
+    - Return the `output`, which is either `None` or an instance of `CDeclarationRawSymbolCollection`.
+- **Output**: Returns an instance of `CDeclarationRawSymbolCollection` containing raw symbol data for declarations, or `None` if no declarations are found.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData.from_tree_sitter_raw_symbol`](<symbol_common.py.md#RawSymbolDatafrom_tree_sitter_raw_symbol>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDeclarationRawSymbolCollection`](<#CDeclarationRawSymbolCollection>)  (Base Class)
 
 
 ---
 #### CDeclarationRawSymbolCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c.CDeclarationRawSymbolCollection.from_llm}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L269>)
+
 The `from_llm` method raises a NotImplementedError indicating that static analysis should be used for C declarations.
 - **Decorators**: `@classmethod`
 - **Inputs**:
@@ -201,60 +210,87 @@ The `from_llm` method raises a NotImplementedError indicating that static analys
 - **Control Flow**:
     - The method immediately raises a NotImplementedError with a message indicating that static analysis should be used for C declarations.
 - **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDeclarationRawSymbolCollection`](#CDeclarationRawSymbolCollection)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDeclarationRawSymbolCollection`](<#CDeclarationRawSymbolCollection>)  (Base Class)
 
 
 ---
 #### CDeclarationRawSymbolCollection\.to\_dict<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c.CDeclarationRawSymbolCollection.to_dict}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L273>)
+
 The `to_dict` method returns the `data` attribute of the `CDeclarationRawSymbolCollection` instance as a dictionary.
 - **Inputs**: None
 - **Control Flow**:
     - The method directly returns the `data` attribute of the instance.
 - **Output**: A dictionary where keys are strings and values are `RawSymbolData` objects.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDeclarationRawSymbolCollection`](#CDeclarationRawSymbolCollection)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDeclarationRawSymbolCollection`](<#CDeclarationRawSymbolCollection>)  (Base Class)
 
 
 
 ---
 ### CFnDeclData<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/c.CFnDeclData}} -->
-- **Description**: The `CFnDeclData` class is a specialized subclass of `FnDeclData` designed to handle C function declarations. It provides class methods to generate system and user prompts for documenting C function declarations, ensuring that the documentation is based on the public API interface. The class also includes methods that raise `NotImplementedError` for operations related to child elements, indicating that C declarations should not have children. This class is part of a larger framework for analyzing and documenting C code, focusing on the interface rather than implementation details.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L277>)
+
+- **Description**: The `CFnDeclData` class is a specialized subclass of `FnDeclData` designed to handle C function declaration data. It provides class methods to generate system and user prompts based on a given `RawSymbolData` object, which represents a symbol in the code. The class also includes methods that raise `NotImplementedError` for operations related to child symbols, indicating that C declarations should not have children. This class is part of a larger framework for processing and documenting C code, focusing on the representation and manipulation of function declarations.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFnDeclData.system_prompt`](#CFnDeclDatasystem_prompt)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFnDeclData.user_prompt`](#CFnDeclDatauser_prompt)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFnDeclData.child_to_ir`](#CFnDeclDatachild_to_ir)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFnDeclData.child_to_field_name`](#CFnDeclDatachild_to_field_name)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFnDeclData.system_prompt`](<#CFnDeclDatasystem_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFnDeclData.user_prompt`](<#CFnDeclDatauser_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFnDeclData.child_to_ir`](<#CFnDeclDatachild_to_ir>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFnDeclData.child_to_field_name`](<#CFnDeclDatachild_to_field_name>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FnDeclData`](ir_common.py.md#FnDeclData)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FnDeclData`](<ir_common.py.md#FnDeclData>)
 
 **Methods**
 
 ---
 #### CFnDeclData\.system\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c.CFnDeclData.system_prompt}} -->
-Returns a JSON schema for documenting public C API functions.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L278>)
+
+Generates a system prompt string for documenting C function declarations.
 - **Decorators**: `@classmethod`
-- **Inputs**: None
+- **Inputs**:
+    - `symbol`: An instance of RawSymbolData representing the symbol for which the system prompt is being generated.
 - **Control Flow**:
-    - The method directly returns a predefined JSON schema string named FUNCTION_DECLS_FOUND_SYSTEM_PROMPT_JSON.
-- **Output**: A string containing a JSON schema for documenting public C API functions.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFnDeclData`](#CFnDeclData)  (Base Class)
+    - Create an empty Prompt object.
+    - Append a Component with a string containing the JSON schema for documenting C function declarations.
+    - Append a general style instruction for structured prompting.
+    - Append an instruction to use backticks for style.
+    - Convert the constructed Prompt into a string and return it.
+- **Output**: A string representing the system prompt for documenting C function declarations.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFnDeclData`](<#CFnDeclData>)  (Base Class)
 
 
 ---
 #### CFnDeclData\.user\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c.CFnDeclData.user_prompt}} -->
-Generates a user prompt string for a given symbol, including its definition and optionally its associated header file code.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L288>)
+
+The `user_prompt` method generates a user prompt string based on a given symbol's code and associated header file code.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of RawSymbolData representing the symbol for which the user prompt is being generated.
+    - `symbol`: An instance of `RawSymbolData` representing the symbol for which the user prompt is being generated.
 - **Control Flow**:
-    - Retrieve the symbol's definition code from the reified symbol's raw data.
-    - Initialize the user prompt with a predefined message followed by the symbol's definition code.
-    - Check if the symbol has associated header file code; if so, append it to the user prompt.
-- **Output**: A string containing the user prompt, which includes the symbol's definition and optionally its associated header file code.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFnDeclData`](#CFnDeclData)  (Base Class)
+    - Retrieve the symbol's code from the `symbol` argument.
+    - Create an empty `Prompt` object and append a no-restatement style instruction to it.
+    - Append the symbol's code to the prompt with a declaration found user prompt message.
+    - Check if the symbol has associated header file code; if so, append it to the prompt.
+    - Convert the constructed prompt into a string and return it.
+- **Output**: A string representing the constructed user prompt.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFnDeclData`](<#CFnDeclData>)  (Base Class)
 
 
 ---
 #### CFnDeclData\.child\_to\_ir<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c.CFnDeclData.child_to_ir}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L304>)
+
 The `child_to_ir` method raises a `NotImplementedError` indicating that C declarations should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
@@ -262,92 +298,103 @@ The `child_to_ir` method raises a `NotImplementedError` indicating that C declar
 - **Control Flow**:
     - The method immediately raises a `NotImplementedError` with a message stating that C declarations should not have children.
 - **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFnDeclData`](#CFnDeclData)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFnDeclData`](<#CFnDeclData>)  (Base Class)
 
 
 ---
 #### CFnDeclData\.child\_to\_field\_name<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c.CFnDeclData.child_to_field_name}} -->
-The method raises a NotImplementedError indicating that C declarations should not have children.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L308>)
+
+The `child_to_field_name` method raises a `NotImplementedError` indicating that C declarations should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of RawSymbolData representing a symbol in the code.
+    - `symbol`: An instance of `RawSymbolData` representing a symbol in the code.
 - **Control Flow**:
-    - The method immediately raises a NotImplementedError with a specific message.
+    - The method immediately raises a `NotImplementedError` with a specific message.
 - **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFnDeclData`](#CFnDeclData)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFnDeclData`](<#CFnDeclData>)  (Base Class)
 
 
 
 ---
 ### CDeclarationCollection<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/c.CDeclarationCollection}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L313>)
+
 - **Members**:
     - `data`: A dictionary mapping strings to CFnDeclData or lists of CFnDeclData.
-- **Description**: The CDeclarationCollection class is a specialized collection that extends the IrCollection class, designed to manage and store C function declaration data. It holds a dictionary where keys are strings and values are either CFnDeclData instances or lists of such instances. This class provides a class method, from_llm, which facilitates the creation of a CDeclarationCollection instance from a language model and a collection of raw symbols, leveraging the CFnDeclData class to process intermediate representation data.
+- **Description**: The CDeclarationCollection class is a specialized collection that extends the IrCollection class, designed to manage and store C function declaration data. It holds a dictionary where keys are strings and values are either CFnDeclData instances or lists of such instances, representing the function declarations. The class provides a class method, from_llm, which facilitates the creation of a CDeclarationCollection instance from a language model and a collection of raw symbols, leveraging the from_llm_with_ir_data method to populate the collection with CFnDeclData.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDeclarationCollection.from_llm`](#CDeclarationCollectionfrom_llm)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDeclarationCollection.from_llm`](<#CDeclarationCollectionfrom_llm>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](ir_common.py.md#IrCollection)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](<ir_common.py.md#IrCollection>)
 
 **Methods**
 
 ---
 #### CDeclarationCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c.CDeclarationCollection.from_llm}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L316>)
+
 The `from_llm` method creates an instance of the class using data from a language model and a collection of symbols.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `llm`: An instance of the ChatOpenAI class, representing the language model to be used.
     - `symbols_list`: A RawSymbolCollection object containing a list of symbols to be processed.
 - **Control Flow**:
-    - The method is a class method, indicated by the @classmethod decorator, which means it is called on the class itself rather than an instance of the class.
-    - It calls another class method, [`from_llm_with_ir_data`](ir_common.py.md#IrCollectionfrom_llm_with_ir_data), passing `CFnDeclData`, `llm`, and `symbols_list` as arguments.
-    - The method returns the result of the [`from_llm_with_ir_data`](ir_common.py.md#IrCollectionfrom_llm_with_ir_data) call, which is an instance of the class.
-- **Output**: An instance of the class, created using the provided language model and symbol collection.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](ir_common.py.md#IrCollectionfrom_llm_with_ir_data)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDeclarationCollection`](#CDeclarationCollection)  (Base Class)
+    - The method calls another class method [`from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>) with `CFnDeclData`, `llm`, and `symbols_list` as arguments.
+    - The [`from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>) method is expected to handle the creation of the class instance using the provided data.
+- **Output**: Returns an instance of the class initialized with the data from the language model and symbols list.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDeclarationCollection`](<#CDeclarationCollection>)  (Base Class)
 
 
 
 ---
 ### CIncludeRawSymbolCollection<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/c.CIncludeRawSymbolCollection}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L329>)
+
 - **Members**:
-    - `data`: A dictionary mapping string keys to RawSymbolData objects, representing the collection of raw symbols.
-- **Description**: The CIncludeRawSymbolCollection class is a specialized collection for managing raw symbol data extracted from C/C++ code. It extends the RawSymbolCollection class and provides functionality to populate the collection through static analysis of code, specifically focusing on import symbols. The class includes a method to convert the collection into a dictionary format, facilitating easy access and manipulation of the raw symbol data. It is designed to handle large files efficiently by determining if multi-prompt processing is required.
+    - `data`: A dictionary mapping string keys to RawSymbolData objects.
+- **Description**: The `CIncludeRawSymbolCollection` class is a specialized collection that extends `RawSymbolCollection` to handle raw symbol data specifically for C include statements. It provides functionality to create instances from static analysis of C code, extracting import symbols using a C++ driver tree. The class is designed to store and manage raw symbol data related to C includes, facilitating the organization and retrieval of this data in a structured manner.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CIncludeRawSymbolCollection.from_static_analysis`](#CIncludeRawSymbolCollectionfrom_static_analysis)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CIncludeRawSymbolCollection.from_llm`](#CIncludeRawSymbolCollectionfrom_llm)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CIncludeRawSymbolCollection.to_dict`](#CIncludeRawSymbolCollectionto_dict)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CIncludeRawSymbolCollection.from_static_analysis`](<#CIncludeRawSymbolCollectionfrom_static_analysis>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CIncludeRawSymbolCollection.from_llm`](<#CIncludeRawSymbolCollectionfrom_llm>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CIncludeRawSymbolCollection.to_dict`](<#CIncludeRawSymbolCollectionto_dict>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](symbol_common.py.md#RawSymbolCollection)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<symbol_common.py.md#RawSymbolCollection>)
 
 **Methods**
 
 ---
 #### CIncludeRawSymbolCollection\.from\_static\_analysis<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c.CIncludeRawSymbolCollection.from_static_analysis}} -->
-The `from_static_analysis` method creates an instance of the class by analyzing C/C++ code to extract import symbols and their associated data.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L332>)
+
+The `from_static_analysis` method creates an instance of the class by analyzing C++ code to extract import symbols and their associated data.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `code`: A string representing the C/C++ source code to be analyzed.
+    - `code`: A string representing the C++ source code to be analyzed.
     - `root_rel_path`: A Path object representing the root relative path of the source code file.
 - **Control Flow**:
     - The method begins by creating a `CppCDriverTree` object from the provided code and path.
-    - It checks if the code requires multi-prompt processing by calling [`code_requires_multi_prompt`](symbol_common.py.md#code_requires_multi_prompt).
+    - It checks if the code requires multi-prompt processing by calling [`code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>).
     - An empty dictionary `import_dict` is initialized to store import symbols and their data.
-    - The method iterates over each import symbol extracted from the `driver_tree`.
-    - For each symbol, it creates a `RawSymbolData` object using `RawSymbolData.from_tree_sitter_raw_symbol` with various parameters including the symbol, path, and code.
-    - The `RawSymbolData` object is added to `import_dict` with the symbol's name as the key.
+    - The method iterates over each import symbol extracted from the driver tree.
+    - For each symbol, it creates a `RawSymbolData` object using the [`from_tree_sitter_raw_symbol`](<symbol_common.py.md#RawSymbolDatafrom_tree_sitter_raw_symbol>) method, passing various parameters including the symbol, path, and code.
+    - The `RawSymbolData` object is added to the `import_dict` with the symbol's name as the key.
     - Finally, the method returns `None` if `import_dict` is empty, otherwise it returns an instance of the class initialized with `import_dict`.
-- **Output**: Returns an instance of the class with the import data if any imports are found, otherwise returns None.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](../treesitter_drivers/base.py.md#DriverTreefrom_code)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](symbol_common.py.md#code_requires_multi_prompt)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_imports`](../treesitter_drivers/c_cpp_driver.py.md#CppCDriverTreeextract_imports)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData.from_tree_sitter_raw_symbol`](symbol_common.py.md#RawSymbolDatafrom_tree_sitter_raw_symbol)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CIncludeRawSymbolCollection`](#CIncludeRawSymbolCollection)  (Base Class)
+- **Output**: Returns an instance of the class containing a dictionary of import symbols and their data, or `None` if no imports are found.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<../treesitter_drivers/base.py.md#DriverTreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.extract_imports`](<../treesitter_drivers/base.py.md#DriverTreeextract_imports>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData.from_tree_sitter_raw_symbol`](<symbol_common.py.md#RawSymbolDatafrom_tree_sitter_raw_symbol>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CIncludeRawSymbolCollection`](<#CIncludeRawSymbolCollection>)  (Base Class)
 
 
 ---
 #### CIncludeRawSymbolCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c.CIncludeRawSymbolCollection.from_llm}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L356>)
+
 The `from_llm` method raises a NotImplementedError indicating that static analysis should be used for C imports.
 - **Decorators**: `@classmethod`
 - **Inputs**:
@@ -356,399 +403,507 @@ The `from_llm` method raises a NotImplementedError indicating that static analys
 - **Control Flow**:
     - The method immediately raises a NotImplementedError with a message indicating that static analysis should be used for C imports.
 - **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CIncludeRawSymbolCollection`](#CIncludeRawSymbolCollection)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CIncludeRawSymbolCollection`](<#CIncludeRawSymbolCollection>)  (Base Class)
 
 
 ---
 #### CIncludeRawSymbolCollection\.to\_dict<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c.CIncludeRawSymbolCollection.to_dict}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L360>)
+
 The `to_dict` method returns the `data` attribute of the `CIncludeRawSymbolCollection` class as a dictionary.
 - **Inputs**: None
 - **Control Flow**:
     - The method directly returns the `data` attribute of the instance.
 - **Output**: A dictionary where keys are strings and values are `RawSymbolData` objects.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CIncludeRawSymbolCollection`](#CIncludeRawSymbolCollection)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CIncludeRawSymbolCollection`](<#CIncludeRawSymbolCollection>)  (Base Class)
 
 
 
 ---
 ### CDataStructureData<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/c.CDataStructureData}} -->
-- **Description**: The `CDataStructureData` class is a specialized subclass of `DataStructureData` designed to handle C data structures. It provides class methods for generating system and user prompts related to C data structures, utilizing predefined JSON templates. The class also includes methods to convert child symbols to intermediate representations (IR) and field names, although these methods are not implemented as C data structures are not expected to have children in this context. This class is part of a larger framework for analyzing and documenting C code, focusing on data structures.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L364>)
+
+- **Description**: The `CDataStructureData` class is a specialized subclass of `DataStructureData` designed to handle C data structures. It provides class methods for generating system and user prompts related to C data structures, utilizing a structured prompting approach. The class also includes methods that raise `NotImplementedError` for operations related to child data structures, indicating that C data structures should not have children in this context. This class is part of a larger framework for analyzing and documenting C code, focusing on data structures.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDataStructureData.system_prompt`](#CDataStructureDatasystem_prompt)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDataStructureData.user_prompt`](#CDataStructureDatauser_prompt)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDataStructureData.child_to_ir`](#CDataStructureDatachild_to_ir)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDataStructureData.child_to_field_name`](#CDataStructureDatachild_to_field_name)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDataStructureData.system_prompt`](<#CDataStructureDatasystem_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDataStructureData.user_prompt`](<#CDataStructureDatauser_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDataStructureData.child_to_ir`](<#CDataStructureDatachild_to_ir>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDataStructureData.child_to_field_name`](<#CDataStructureDatachild_to_field_name>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.DataStructureData`](ir_common.py.md#DataStructureData)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.DataStructureData`](<ir_common.py.md#DataStructureData>)
 
 **Methods**
 
 ---
 #### CDataStructureData\.system\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c.CDataStructureData.system_prompt}} -->
-The `system_prompt` method returns a predefined JSON string for documenting C data structures.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L365>)
+
+The `system_prompt` method constructs and returns a formatted string prompt for documenting C data structures.
 - **Decorators**: `@classmethod`
-- **Inputs**: None
+- **Inputs**:
+    - `symbol`: An instance of `RawSymbolData` representing the data structure to be documented.
 - **Control Flow**:
-    - The method directly returns the constant `DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON`.
-- **Output**: A string containing a JSON schema for documenting C data structures.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDataStructureData`](#CDataStructureData)  (Base Class)
+    - The method starts by creating an empty `Prompt` object.
+    - It appends a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>) containing a predefined JSON schema string for documenting C data structures.
+    - It appends general style instructions for structured prompting.
+    - It appends instructions for using backticks in the style.
+    - Finally, it converts the `Prompt` object into a string and returns it.
+- **Output**: A string representing the formatted prompt for documenting C data structures.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDataStructureData`](<#CDataStructureData>)  (Base Class)
 
 
 ---
 #### CDataStructureData\.user\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c.CDataStructureData.user_prompt}} -->
-Generates a user prompt string for a given C data structure symbol.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L375>)
+
+The `user_prompt` method generates a user prompt string for a given symbol, including its name, code, and optionally the full file code.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of RawSymbolData representing a C data structure, containing attributes like name, symbol_code, and optionally file_code.
+    - `cls`: The class reference to `CDataStructureData`, used to call class methods.
+    - `symbol`: An instance of `RawSymbolData` containing information about a data structure, including its name, symbol code, and optionally file code.
 - **Control Flow**:
-    - Initialize the user_prompt string with a predefined prompt and the symbol's name and code.
-    - Check if the symbol has associated file code; if so, append it to the user_prompt string.
-    - Return the constructed user_prompt string.
-- **Output**: A string that contains a formatted user prompt including the data structure's name, code, and optionally the full file code.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDataStructureData`](#CDataStructureData)  (Base Class)
+    - Initialize an empty `Prompt` object and append a no-restatement style instruction for symbols.
+    - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>) to the prompt with a string containing the user prompt for the data structure, including its name and symbol code.
+    - Check if the `symbol` has associated file code; if so, append another [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>) with the full file code to the prompt.
+    - Convert the constructed prompt into a string and return it.
+- **Output**: A string representing the constructed user prompt for the given symbol, including its name, symbol code, and optionally the full file code.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDataStructureData`](<#CDataStructureData>)  (Base Class)
 
 
 ---
 #### CDataStructureData\.child\_to\_ir<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c.CDataStructureData.child_to_ir}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L392>)
+
 The `child_to_ir` method raises a NotImplementedError indicating that C data structures should not have children.
+- **Decorators**: `@classmethod`
+- **Inputs**:
+    - `symbol`: An instance of RawSymbolData representing a symbol in the code.
+- **Control Flow**:
+    - The method immediately raises a NotImplementedError with a specific message.
+- **Output**: The method does not return any value as it raises an exception.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDataStructureData`](<#CDataStructureData>)  (Base Class)
+
+
+---
+#### CDataStructureData\.child\_to\_field\_name<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c.CDataStructureData.child_to_field_name}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L396>)
+
+The `child_to_field_name` method raises a NotImplementedError indicating that C data structures should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `symbol`: An instance of RawSymbolData representing a symbol related to a C data structure.
 - **Control Flow**:
     - The method immediately raises a NotImplementedError with a specific message.
 - **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDataStructureData`](#CDataStructureData)  (Base Class)
-
-
----
-#### CDataStructureData\.child\_to\_field\_name<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c.CDataStructureData.child_to_field_name}} -->
-The `child_to_field_name` method raises a `NotImplementedError` indicating that C data structures should not have children.
-- **Decorators**: `@classmethod`
-- **Inputs**:
-    - `symbol`: An instance of `RawSymbolData` representing a symbol related to a C data structure.
-- **Control Flow**:
-    - The method immediately raises a `NotImplementedError` with a message stating that C data structures should not have children.
-- **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDataStructureData`](#CDataStructureData)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDataStructureData`](<#CDataStructureData>)  (Base Class)
 
 
 
 ---
 ### CDataStructureCollection<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/c.CDataStructureCollection}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L401>)
+
 - **Members**:
     - `data`: A dictionary mapping strings to either CDataStructureData or a list of CDataStructureData.
-- **Description**: The CDataStructureCollection class is a specialized collection designed to manage and organize C data structure information within an intermediate representation (IR) framework. It extends the IrCollection class and primarily holds a dictionary where keys are strings and values are either instances of CDataStructureData or lists of such instances. This class provides a class method, from_llm, which facilitates the creation of a CDataStructureCollection instance by leveraging a language model and a collection of raw symbols, thereby integrating data structure information into the IR system.
+- **Description**: The CDataStructureCollection class is a specialized collection that extends the IrCollection class, designed to manage and store data structures related to C programming. It holds a dictionary where keys are strings and values are either instances of CDataStructureData or lists of such instances. This class provides a class method, from_llm, to create an instance of the collection using a language model and a list of raw symbols, facilitating the integration of language model outputs with intermediate representation data.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDataStructureCollection.from_llm`](#CDataStructureCollectionfrom_llm)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDataStructureCollection.from_llm`](<#CDataStructureCollectionfrom_llm>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](ir_common.py.md#IrCollection)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](<ir_common.py.md#IrCollection>)
 
 **Methods**
 
 ---
 #### CDataStructureCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c.CDataStructureCollection.from_llm}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L404>)
+
 The `from_llm` method creates an instance of the class using data from a language model and a collection of symbols.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `llm`: An instance of the ChatOpenAI class, representing the language model to be used for data extraction.
-    - `symbols_list`: A RawSymbolCollection object containing a list of symbols to be used in conjunction with the language model.
+    - `llm`: An instance of the ChatOpenAI class, representing the language model to be used.
+    - `symbols_list`: A RawSymbolCollection object containing a list of symbols to be processed.
 - **Control Flow**:
-    - The method calls another class method [`from_llm_with_ir_data`](ir_common.py.md#IrCollectionfrom_llm_with_ir_data) with `CDataStructureData`, `llm`, and `symbols_list` as arguments.
-    - The result of the [`from_llm_with_ir_data`](ir_common.py.md#IrCollectionfrom_llm_with_ir_data) method call is returned as the output of the `from_llm` method.
-- **Output**: An instance of the class, initialized with data derived from the language model and the provided symbols list.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](ir_common.py.md#IrCollectionfrom_llm_with_ir_data)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDataStructureCollection`](#CDataStructureCollection)  (Base Class)
+    - The method calls another class method [`from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>) with `CDataStructureData`, `llm`, and `symbols_list` as arguments.
+    - The result of the [`from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>) method call is returned as the output of the `from_llm` method.
+- **Output**: An instance of the class, initialized with data from the language model and symbols list.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDataStructureCollection`](<#CDataStructureCollection>)  (Base Class)
 
 
 
 ---
 ### CFnData<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/c.CFnData}} -->
-- **Description**: The `CFnData` class is a specialized subclass of `FnData` designed to handle function-related data specifically for C programming. It provides class methods to generate system and user prompts for documenting C functions, ensuring that the documentation is tailored to the specific needs of C code. The class also includes methods to handle the conversion of child symbols to intermediate representations (IR), although these methods are not implemented as C functions are not expected to have children in this context. This class is part of a larger framework for analyzing and documenting C code, leveraging static analysis and possibly machine learning models to generate comprehensive documentation.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L409>)
+
+- **Description**: The `CFnData` class is a specialized subclass of `FnData` designed to handle function-related data specifically for C functions. It provides class methods to generate system and user prompts for C functions, ensuring that the prompts are structured according to specific styles and instructions. The class also includes methods to handle child-to-IR conversions and field name derivations, but these are not implemented as C functions are not expected to have children in this context. This class is part of a larger framework for processing and documenting C code, focusing on the function aspect of the code.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFnData.system_prompt`](#CFnDatasystem_prompt)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFnData.user_prompt`](#CFnDatauser_prompt)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFnData.child_to_ir`](#CFnDatachild_to_ir)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFnData.child_to_field_name`](#CFnDatachild_to_field_name)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFnData.system_prompt`](<#CFnDatasystem_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFnData.user_prompt`](<#CFnDatauser_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFnData.child_to_ir`](<#CFnDatachild_to_ir>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFnData.child_to_field_name`](<#CFnDatachild_to_field_name>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FnData`](ir_common.py.md#FnData)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FnData`](<ir_common.py.md#FnData>)
 
 **Methods**
 
 ---
 #### CFnData\.system\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c.CFnData.system_prompt}} -->
-The `system_prompt` method returns a predefined JSON string for documenting C functions.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L410>)
+
+Generates a system prompt string for documenting C functions using predefined components and instructions.
 - **Decorators**: `@classmethod`
-- **Inputs**: None
+- **Inputs**:
+    - `symbol`: An instance of RawSymbolData representing the symbol for which the system prompt is being generated.
 - **Control Flow**:
-    - The method directly returns the constant `FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON`.
-- **Output**: A string containing JSON schema instructions for documenting C functions.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFnData`](#CFnData)  (Base Class)
+    - Create an empty Prompt object.
+    - Append a Component containing the FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON string to the Prompt.
+    - Append the GENERAL_STE_STYLE_INSTRUCTION to the Prompt.
+    - Append the USE_BACKTICKS_STYLE_INSTRUCTION to the Prompt.
+    - Convert the Prompt into a string and return it.
+- **Output**: A string representing the system prompt for documenting C functions.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFnData`](<#CFnData>)  (Base Class)
 
 
 ---
 #### CFnData\.user\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c.CFnData.user_prompt}} -->
-Generates a user prompt string containing function and file code details for a given symbol.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L420>)
+
+The `user_prompt` method generates a user prompt string based on a given symbol's data, including its name and code, and optionally its file code.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class object, used to call the class method.
-    - `symbol`: An instance of RawSymbolData containing details about the symbol, including its name, symbol code, and optionally file code.
+    - `symbol`: An instance of RawSymbolData containing information about a symbol, including its name, symbol code, and optionally file code.
 - **Control Flow**:
-    - Initialize a string 'user_prompt' with a predefined prompt and the symbol's name and code.
-    - Check if the symbol has associated file code.
-    - If file code is present, append it to the 'user_prompt' string.
-- **Output**: Returns a string that includes the function's name, its code, and optionally the full file code if available.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFnData`](#CFnData)  (Base Class)
+    - Initialize an empty Prompt object and append a no-restatement style instruction for symbols.
+    - Append a Component to the Prompt with a string containing the function's name and code from the symbol.
+    - Check if the symbol has associated file code; if so, append another Component with the full file code to the Prompt.
+    - Convert the constructed Prompt into a string and return it.
+- **Output**: A string representing the constructed user prompt based on the symbol's data.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFnData`](<#CFnData>)  (Base Class)
 
 
 ---
 #### CFnData\.child\_to\_ir<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c.CFnData.child_to_ir}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L437>)
+
 The `child_to_ir` method raises a NotImplementedError indicating that C functions should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of RawSymbolData representing a symbol, which is expected to be processed by the method.
+    - `symbol`: An instance of RawSymbolData representing the symbol for which the method is called.
 - **Control Flow**:
     - The method immediately raises a NotImplementedError with the message 'C functions should not have children'.
 - **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFnData`](#CFnData)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFnData`](<#CFnData>)  (Base Class)
 
 
 ---
 #### CFnData\.child\_to\_field\_name<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c.CFnData.child_to_field_name}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L441>)
+
 The `child_to_field_name` method raises a `NotImplementedError` indicating that C functions should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of `RawSymbolData` representing a symbol related to a C function.
+    - `symbol`: An instance of `RawSymbolData` representing a symbol, which is expected to be a C function.
 - **Control Flow**:
-    - The method immediately raises a `NotImplementedError` with a specific message.
+    - The method immediately raises a `NotImplementedError` with the message 'C functions should not have children'.
 - **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFnData`](#CFnData)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFnData`](<#CFnData>)  (Base Class)
 
 
 
 ---
 ### CFunctionCollection<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/c.CFunctionCollection}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L446>)
+
 - **Members**:
     - `data`: A dictionary mapping strings to CFnData or lists of CFnData.
-- **Description**: The CFunctionCollection class is a specialized collection that extends the IrCollection class, designed to manage and store C function data. It holds a dictionary where keys are strings representing function names, and values are either CFnData instances or lists of CFnData, which encapsulate information about C functions. This class provides a class method, from_llm, to create an instance from a language model and a collection of raw symbols, facilitating the integration of function data into the collection.
+- **Description**: The CFunctionCollection class is a specialized collection that extends the IrCollection class, designed to manage and store function-related data in the form of CFnData objects. It provides a structured way to handle collections of functions, allowing for the organization and retrieval of function data, potentially from a language model (LLM) and symbol list. This class is particularly useful in contexts where function data needs to be aggregated and processed in a systematic manner, such as in code analysis or documentation generation.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFunctionCollection.from_llm`](#CFunctionCollectionfrom_llm)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFunctionCollection.from_llm`](<#CFunctionCollectionfrom_llm>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](ir_common.py.md#IrCollection)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](<ir_common.py.md#IrCollection>)
 
 **Methods**
 
 ---
 #### CFunctionCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c.CFunctionCollection.from_llm}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L449>)
+
 The `from_llm` method creates an instance of the class using data from a language model and a collection of symbols.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `llm`: An instance of the `ChatOpenAI` class, representing the language model to be used for data extraction.
+    - `llm`: An instance of the `ChatOpenAI` class, representing the language model to be used for generating data.
     - `symbols_list`: An instance of `RawSymbolCollection`, representing a collection of symbols to be used in conjunction with the language model.
 - **Control Flow**:
     - The method is a class method, indicated by the `@classmethod` decorator, allowing it to be called on the class itself rather than an instance.
-    - It calls another class method [`from_llm_with_ir_data`](ir_common.py.md#IrCollectionfrom_llm_with_ir_data) with `CFnData`, `llm`, and `symbols_list` as arguments to create and return an instance of the class.
-- **Output**: Returns an instance of the class (`Self`) created using the provided language model and symbol collection.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](ir_common.py.md#IrCollectionfrom_llm_with_ir_data)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFunctionCollection`](#CFunctionCollection)  (Base Class)
+    - It calls another class method [`from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>) with `CFnData`, `llm`, and `symbols_list` as arguments to create and return an instance of the class.
+- **Output**: Returns an instance of the class (`Self`) created using the language model and symbol collection data.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFunctionCollection`](<#CFunctionCollection>)  (Base Class)
 
 
 
 ---
 ### CVariableData<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/c.CVariableData}} -->
-- **Description**: The `CVariableData` class is a specialized subclass of `VariableData` designed to handle C language variables within a documentation or analysis context. It provides class methods to generate system and user prompts for variables, ensuring that the documentation is tailored to the specifics of C variables. The class also includes methods to convert child symbols to intermediate representations (IR), although these are not implemented as C variables are not expected to have children in this context. This class is part of a larger framework for analyzing and documenting C code, focusing on variables.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L454>)
+
+- **Description**: The `CVariableData` class is a specialized subclass of `VariableData` designed to handle C language variables within a documentation or analysis context. It provides class methods to generate system and user prompts for C variables, ensuring that the prompts are formatted and styled according to specific instructions. The class also includes methods that raise `NotImplementedError` for operations related to child elements, indicating that C variables should not have children in this context. This class is part of a larger framework for processing and documenting C code, focusing on the representation and handling of variable data.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CVariableData.system_prompt`](#CVariableDatasystem_prompt)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CVariableData.user_prompt`](#CVariableDatauser_prompt)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CVariableData.child_to_ir`](#CVariableDatachild_to_ir)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CVariableData.child_to_field_name`](#CVariableDatachild_to_field_name)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CVariableData.system_prompt`](<#CVariableDatasystem_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CVariableData.user_prompt`](<#CVariableDatauser_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CVariableData.child_to_ir`](<#CVariableDatachild_to_ir>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CVariableData.child_to_field_name`](<#CVariableDatachild_to_field_name>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.VariableData`](ir_common.py.md#VariableData)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.VariableData`](<ir_common.py.md#VariableData>)
 
 **Methods**
 
 ---
 #### CVariableData\.system\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c.CVariableData.system_prompt}} -->
-The `system_prompt` method returns a predefined JSON string for documenting variables in C code.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L455>)
+
+Generates a system prompt string for documenting C variables using predefined instructions and components.
 - **Decorators**: `@classmethod`
-- **Inputs**: None
+- **Inputs**:
+    - `symbol`: An instance of RawSymbolData representing the symbol for which the system prompt is being generated.
 - **Control Flow**:
-    - The method directly returns the constant `VARIABLES_FOUND_SYSTEM_PROMPT_JSON`.
-- **Output**: A string containing the JSON schema for documenting variables in C code.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CVariableData`](#CVariableData)  (Base Class)
+    - Creates an empty Prompt object.
+    - Appends a Component with a predefined JSON string for system prompts related to variables.
+    - Appends a general style instruction component.
+    - Appends a style instruction component for using backticks.
+    - Converts the constructed Prompt into a string and returns it.
+- **Output**: A string representing the constructed system prompt for C variable documentation.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CVariableData`](<#CVariableData>)  (Base Class)
 
 
 ---
 #### CVariableData\.user\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c.CVariableData.user_prompt}} -->
-Generates a user prompt string containing variable information from a given RawSymbolData object.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L465>)
+
+Generates a user prompt string based on the provided symbol data.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of RawSymbolData containing information about a variable, including its name, symbol code, and optionally file code.
+    - `symbol`: An instance of RawSymbolData containing information about a symbol, including its name, symbol code, and optionally, file code.
 - **Control Flow**:
-    - Initialize a string 'user_prompt' with a formatted message containing the variable's name and symbol code.
-    - Check if the 'file_code' attribute of the symbol is present.
-    - If 'file_code' is present, append the full file code to the 'user_prompt' string.
-- **Output**: Returns a string that includes the variable's name, symbol code, and optionally the full file code if available.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CVariableData`](#CVariableData)  (Base Class)
+    - Initialize an empty Prompt object and append a component with the user prompt and symbol name.
+    - Append a component with a no-restatement style instruction for symbols.
+    - Append a component with the variable code from the symbol data.
+    - Check if the symbol has associated file code; if so, append a component with the full file code.
+    - Convert the constructed Prompt object into a string and return it.
+- **Output**: A string representing the constructed user prompt.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CVariableData`](<#CVariableData>)  (Base Class)
 
 
 ---
 #### CVariableData\.child\_to\_ir<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c.CVariableData.child_to_ir}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L479>)
+
 The `child_to_ir` method raises a NotImplementedError indicating that C variables should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `symbol`: An instance of RawSymbolData representing a symbol, which is expected to be a C variable.
 - **Control Flow**:
-    - The method immediately raises a NotImplementedError with a message stating that C variables should not have children.
+    - The method immediately raises a NotImplementedError with the message 'C variables should not have children'.
 - **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CVariableData`](#CVariableData)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CVariableData`](<#CVariableData>)  (Base Class)
 
 
 ---
 #### CVariableData\.child\_to\_field\_name<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c.CVariableData.child_to_field_name}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L483>)
+
 The `child_to_field_name` method raises a `NotImplementedError` indicating that C variables should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `symbol`: An instance of `RawSymbolData` representing a symbol related to a C variable.
+    - `symbol`: An instance of `RawSymbolData` representing a symbol in the code.
 - **Control Flow**:
     - The method immediately raises a `NotImplementedError` with a specific message.
 - **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CVariableData`](#CVariableData)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CVariableData`](<#CVariableData>)  (Base Class)
 
 
 
 ---
 ### CVariableCollection<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/c.CVariableCollection}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L488>)
+
 - **Members**:
     - `data`: A dictionary mapping strings to CVariableData or lists of CVariableData.
-- **Description**: The CVariableCollection class is a specialized collection that extends the IrCollection class, designed to manage and store variable-related data in the form of CVariableData objects. It provides a structured way to handle collections of variables, allowing for the integration of variable data from different sources, such as language models or static analysis. The class includes a class method, from_llm, which facilitates the creation of a CVariableCollection instance using data from a language model and a list of raw symbols, ensuring that variable data is consistently and efficiently organized.
+- **Description**: The CVariableCollection class is a specialized collection that extends the IrCollection class, designed to manage and store variable data related to C programming. It holds a dictionary where keys are strings and values are either CVariableData instances or lists of such instances. This class provides a class method, from_llm, to create an instance of CVariableCollection using a language model and a collection of raw symbols, facilitating the integration of language model outputs with intermediate representation data.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CVariableCollection.from_llm`](#CVariableCollectionfrom_llm)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CVariableCollection.from_llm`](<#CVariableCollectionfrom_llm>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](ir_common.py.md#IrCollection)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](<ir_common.py.md#IrCollection>)
 
 **Methods**
 
 ---
 #### CVariableCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c.CVariableCollection.from_llm}} -->
-The `from_llm` method creates an instance of the class using a language model and a collection of raw symbols.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L491>)
+
+The `from_llm` method creates an instance of the class using data from a language model and a collection of symbols.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `llm`: An instance of the ChatOpenAI class, representing a language model.
-    - `symbols_list`: A collection of raw symbols, represented by the RawSymbolCollection class.
+    - `llm`: An instance of the ChatOpenAI class, representing the language model to be used.
+    - `symbols_list`: A RawSymbolCollection object containing a list of symbols to be processed.
 - **Control Flow**:
-    - The method calls another class method [`from_llm_with_ir_data`](ir_common.py.md#IrCollectionfrom_llm_with_ir_data) with `CVariableData`, `llm`, and `symbols_list` as arguments.
-    - The result of the [`from_llm_with_ir_data`](ir_common.py.md#IrCollectionfrom_llm_with_ir_data) method call is returned as the output of the `from_llm` method.
-- **Output**: An instance of the class that `from_llm` is called on, initialized using the provided language model and symbols list.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](ir_common.py.md#IrCollectionfrom_llm_with_ir_data)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CVariableCollection`](#CVariableCollection)  (Base Class)
+    - The method calls another class method [`from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>) with `CVariableData`, `llm`, and `symbols_list` as arguments.
+    - The method returns the result of the [`from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>) call, which is an instance of the class.
+- **Output**: An instance of the class, created using the provided language model and symbols list.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CVariableCollection`](<#CVariableCollection>)  (Base Class)
 
 
 
 ---
 ### CDataStructureRawSymbolCollection<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/c.CDataStructureRawSymbolCollection}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L496>)
+
 - **Members**:
-    - `data`: A dictionary mapping string keys to RawSymbolData objects.
-- **Description**: The CDataStructureRawSymbolCollection class is a specialized collection for handling raw symbol data related to C data structures. It extends the RawSymbolCollection class and provides functionality to populate its data from static analysis of C code. The class includes a method to convert the collection into a dictionary format, facilitating easy access to the raw symbol data. It is designed to work with C data structures, leveraging static analysis to extract relevant symbol information.
+    - `data`: A dictionary mapping string keys to RawSymbolData instances.
+- **Description**: The CDataStructureRawSymbolCollection class is a specialized collection that extends RawSymbolCollection to handle raw symbol data specifically for C data structures. It provides methods to populate the collection from static analysis of C code, extracting data structure definitions using a C++ driver tree. The class is designed to facilitate the organization and retrieval of raw symbol data related to C data structures, with a focus on static analysis rather than dynamic or LLM-based methods.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDataStructureRawSymbolCollection.from_static_analysis`](#CDataStructureRawSymbolCollectionfrom_static_analysis)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDataStructureRawSymbolCollection.from_llm`](#CDataStructureRawSymbolCollectionfrom_llm)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDataStructureRawSymbolCollection.to_dict`](#CDataStructureRawSymbolCollectionto_dict)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDataStructureRawSymbolCollection.from_static_analysis`](<#CDataStructureRawSymbolCollectionfrom_static_analysis>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDataStructureRawSymbolCollection.from_llm`](<#CDataStructureRawSymbolCollectionfrom_llm>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDataStructureRawSymbolCollection.to_dict`](<#CDataStructureRawSymbolCollectionto_dict>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](symbol_common.py.md#RawSymbolCollection)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<symbol_common.py.md#RawSymbolCollection>)
 
 **Methods**
 
 ---
 #### CDataStructureRawSymbolCollection\.from\_static\_analysis<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c.CDataStructureRawSymbolCollection.from_static_analysis}} -->
-The `from_static_analysis` method creates an instance of `CDataStructureRawSymbolCollection` from C++ code by analyzing its data structure definitions.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L499>)
+
+The `from_static_analysis` method creates an instance of the class by analyzing C++ code to extract data structure definitions and convert them into raw symbol data.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `code`: A string representing the C++ source code to be analyzed.
-    - `root_rel_path`: A `Path` object representing the root relative path of the source code file.
+    - `code`: A string containing the C++ source code to be analyzed.
+    - `root_rel_path`: A Path object representing the root relative path of the source code file.
 - **Control Flow**:
-    - Initialize a `CppCDriverTree` object using the provided code and root relative path.
-    - Create an empty dictionary `data_structure_raw_symbol_data` to store raw symbol data.
-    - Determine if the code requires multi-prompt processing by calling [`code_requires_multi_prompt`](symbol_common.py.md#code_requires_multi_prompt).
+    - Initialize a CppCDriverTree object using the provided code and root_rel_path.
+    - Determine if the code requires multi-prompt processing by calling code_requires_multi_prompt.
     - Iterate over each data structure definition extracted from the driver tree.
-    - For each symbol with a non-null name, create a `RawSymbolData` object using the symbol and other parameters, and store it in the dictionary with the symbol's name as the key.
-    - Check if the dictionary is empty; if it is, set `output` to `None`, otherwise create an instance of `CDataStructureRawSymbolCollection` with the dictionary.
-    - Return the `output`, which is either `None` or the created instance.
-- **Output**: Returns an instance of `CDataStructureRawSymbolCollection` containing the raw symbol data if any data structures are found, otherwise returns `None`.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](../treesitter_drivers/base.py.md#DriverTreefrom_code)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](symbol_common.py.md#code_requires_multi_prompt)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_data_structure_definitions`](../treesitter_drivers/c_cpp_driver.py.md#CppCDriverTreeextract_data_structure_definitions)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData.from_tree_sitter_raw_symbol`](symbol_common.py.md#RawSymbolDatafrom_tree_sitter_raw_symbol)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDataStructureRawSymbolCollection`](#CDataStructureRawSymbolCollection)  (Base Class)
+    - For each symbol with a name, create a RawSymbolData object using the symbol and other parameters.
+    - Store the RawSymbolData object in a dictionary with the symbol's name as the key.
+    - Return None if no data structures were found, otherwise return an instance of the class with the collected data.
+- **Output**: Returns an instance of the class containing a dictionary of raw symbol data if any data structures are found, otherwise returns None.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<../treesitter_drivers/base.py.md#DriverTreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_data_structure_definitions`](<../treesitter_drivers/c_cpp_driver.py.md#CppCDriverTreeextract_data_structure_definitions>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData.from_tree_sitter_raw_symbol`](<symbol_common.py.md#RawSymbolDatafrom_tree_sitter_raw_symbol>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDataStructureRawSymbolCollection`](<#CDataStructureRawSymbolCollection>)  (Base Class)
 
 
 ---
 #### CDataStructureRawSymbolCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c.CDataStructureRawSymbolCollection.from_llm}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L528>)
+
 The `from_llm` method raises a NotImplementedError indicating that static analysis should be used for C data structures.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `code`: A string representing the code to be analyzed.
+    - `code`: A string representing the C code to be analyzed.
     - `root_rel_path`: A string representing the root relative path for the code.
 - **Control Flow**:
-    - The method immediately raises a NotImplementedError with a specific message.
+    - The method immediately raises a NotImplementedError with a message indicating that static analysis should be used for C data structures.
 - **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDataStructureRawSymbolCollection`](#CDataStructureRawSymbolCollection)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDataStructureRawSymbolCollection`](<#CDataStructureRawSymbolCollection>)  (Base Class)
 
 
 ---
 #### CDataStructureRawSymbolCollection\.to\_dict<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c.CDataStructureRawSymbolCollection.to_dict}} -->
-The `to_dict` method returns the `data` attribute of the `CDataStructureRawSymbolCollection` class as a dictionary.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L534>)
+
+The `to_dict` method returns the `data` attribute of the class as a dictionary.
 - **Inputs**: None
 - **Control Flow**:
     - The method directly returns the `data` attribute of the class instance.
 - **Output**: A dictionary where keys are strings and values are `RawSymbolData` objects.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDataStructureRawSymbolCollection`](#CDataStructureRawSymbolCollection)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CDataStructureRawSymbolCollection`](<#CDataStructureRawSymbolCollection>)  (Base Class)
 
 
 
 ---
 ### CFunctionRawSymbolCollection<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/c.CFunctionRawSymbolCollection}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L538>)
+
+- **Decorators**: `@classmethod`, `@classmethod`, `@classmethod`
 - **Members**:
     - `data`: A dictionary mapping string keys to RawSymbolData instances.
-- **Description**: The CFunctionRawSymbolCollection class is a specialized collection for handling raw symbol data related to C functions. It extends the RawSymbolCollection class and is designed to process and store information about callable symbols extracted from C code. The class provides a method to populate its data from static analysis, filtering symbols to include only those that represent callable entities, and it can convert its stored data into a dictionary format. This class is particularly useful for organizing and managing function-related symbol data in the context of static code analysis.
+- **Description**: The CFunctionRawSymbolCollection class is a specialized collection for handling raw symbol data related to C functions. It extends the RawSymbolCollection class and is designed to store and manage function symbols extracted from static analysis of C code. The class provides methods to create instances from static analysis, filtering symbols to include only those of callable kind, and converting the collection to a dictionary format. It is particularly useful for organizing and accessing raw symbol data for C functions in a structured manner.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFunctionRawSymbolCollection.from_static_analysis`](#CFunctionRawSymbolCollectionfrom_static_analysis)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFunctionRawSymbolCollection.from_llm`](#CFunctionRawSymbolCollectionfrom_llm)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFunctionRawSymbolCollection.to_dict`](#CFunctionRawSymbolCollectionto_dict)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFunctionRawSymbolCollection.from_static_analysis`](<#CFunctionRawSymbolCollectionfrom_static_analysis>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFunctionRawSymbolCollection.from_llm`](<#CFunctionRawSymbolCollectionfrom_llm>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFunctionRawSymbolCollection.to_dict`](<#CFunctionRawSymbolCollectionto_dict>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](symbol_common.py.md#RawSymbolCollection)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<symbol_common.py.md#RawSymbolCollection>)
 
 **Methods**
 
 ---
 #### CFunctionRawSymbolCollection\.from\_static\_analysis<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c.CFunctionRawSymbolCollection.from_static_analysis}} -->
-The `from_static_analysis` method creates an instance of `CFunctionRawSymbolCollection` from static analysis data of C function symbols.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L541>)
+
+The `from_static_analysis` method creates an instance of `CFunctionRawSymbolCollection` from static analysis data of C function symbols in the provided code.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `code`: A string representing the source code to be analyzed.
     - `root_rel_path`: A `Path` object representing the root relative path of the source code file.
-    - `reified_symbols`: A list of `ReifiedSymbol` objects or `None`, representing the symbols extracted from the code.
+    - `reified_symbols`: A list of `ReifiedSymbol` objects or `None`, representing the symbols extracted from the code for analysis.
 - **Control Flow**:
-    - Filter the `reified_symbols` to include only those with a `SymbolKind.CALLABLE` kind.
-    - Initialize an empty dictionary `function_raw_symbol_data` to store raw symbol data.
-    - Determine if the code requires multi-prompt processing using [`code_requires_multi_prompt`](symbol_common.py.md#code_requires_multi_prompt).
-    - Iterate over each `reified_sym` in `func_symbols`.
-    - For each `reified_sym`, extract the `ts_symbol` and check if it has a name.
-    - If the `ts_symbol` has a name, create a `RawSymbolData` object using `RawSymbolData.from_tree_sitter_raw_symbol` with various parameters including `ts_symbol`, `root_rel_path`, and `code`.
-    - Store the `raw_symbol_data` in `function_raw_symbol_data` with the `ts_symbol.name` as the key.
-    - Return `None` if `function_raw_symbol_data` is empty, otherwise return an instance of `cls` initialized with `function_raw_symbol_data`.
+    - Filter the `reified_symbols` list to include only those symbols that are of kind `SymbolKind.CALLABLE`.
+    - Initialize an empty dictionary `function_raw_symbol_data` to store raw symbol data for functions.
+    - Determine if the code requires multi-prompt processing by calling [`code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>) with the `code` argument.
+    - Iterate over each `reified_sym` in the filtered list of function symbols.
+    - For each `reified_sym`, extract the raw symbol `ts_symbol` and check if it has a non-None name.
+    - If the name is not None, create a `RawSymbolData` object using `RawSymbolData.from_tree_sitter_raw_symbol` with various parameters including `ts_symbol`, `root_rel_path`, and `code`.
+    - Store the created `RawSymbolData` object in the `function_raw_symbol_data` dictionary with the symbol's name as the key.
+    - Check if `function_raw_symbol_data` is empty; if it is, set `output` to `None`, otherwise create an instance of `cls` with `function_raw_symbol_data` as its data.
+    - Return the `output`, which is either `None` or an instance of `CFunctionRawSymbolCollection`.
 - **Output**: Returns an instance of `CFunctionRawSymbolCollection` containing the raw symbol data for functions, or `None` if no function symbols are found.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](symbol_common.py.md#code_requires_multi_prompt)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData.from_tree_sitter_raw_symbol`](symbol_common.py.md#RawSymbolDatafrom_tree_sitter_raw_symbol)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFunctionRawSymbolCollection`](#CFunctionRawSymbolCollection)  (Base Class)
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData.from_tree_sitter_raw_symbol`](<symbol_common.py.md#RawSymbolDatafrom_tree_sitter_raw_symbol>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFunctionRawSymbolCollection`](<#CFunctionRawSymbolCollection>)  (Base Class)
 
 
 ---
 #### CFunctionRawSymbolCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c.CFunctionRawSymbolCollection.from_llm}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L577>)
+
 The `from_llm` method raises a NotImplementedError indicating that static analysis should be used for C functions.
 - **Decorators**: `@classmethod`
 - **Inputs**:
@@ -757,78 +912,88 @@ The `from_llm` method raises a NotImplementedError indicating that static analys
 - **Control Flow**:
     - The method immediately raises a NotImplementedError with a message indicating that static analysis should be used for C functions.
 - **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFunctionRawSymbolCollection`](#CFunctionRawSymbolCollection)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFunctionRawSymbolCollection`](<#CFunctionRawSymbolCollection>)  (Base Class)
 
 
 ---
 #### CFunctionRawSymbolCollection\.to\_dict<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c.CFunctionRawSymbolCollection.to_dict}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L581>)
+
 The `to_dict` method returns the `data` attribute of the `CFunctionRawSymbolCollection` instance as a dictionary.
 - **Inputs**: None
 - **Control Flow**:
     - The method directly returns the `data` attribute of the instance.
 - **Output**: A dictionary where keys are strings and values are `RawSymbolData` objects.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFunctionRawSymbolCollection`](#CFunctionRawSymbolCollection)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CFunctionRawSymbolCollection`](<#CFunctionRawSymbolCollection>)  (Base Class)
 
 
 
 ---
 ### CVariableRawSymbolCollection<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/c.CVariableRawSymbolCollection}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L585>)
+
 - **Members**:
-    - `data`: A dictionary mapping variable names to their corresponding RawSymbolData.
-- **Description**: The `CVariableRawSymbolCollection` class is a specialized collection for handling raw symbol data related to C variables. It extends the `RawSymbolCollection` class and is designed to facilitate the extraction and storage of variable symbols from C code using static analysis. The class provides a method to populate its data from a given code string and root path, leveraging a C++ driver tree to extract variable information. This class is particularly useful for analyzing and managing variable symbols in C codebases.
+    - `data`: A dictionary mapping variable names to their corresponding RawSymbolData objects.
+- **Description**: The `CVariableRawSymbolCollection` class is a specialized collection for handling raw symbol data related to C variables. It extends the `RawSymbolCollection` class and is designed to facilitate the extraction and storage of variable symbols from C code using static analysis. The class provides a method to populate its data from a given code string and root path, leveraging a C++ driver tree to extract variable information. The collected data is stored in a dictionary, mapping variable names to their respective `RawSymbolData` instances. This class is particularly useful for analyzing and managing variable symbols in C codebases.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CVariableRawSymbolCollection.from_static_analysis`](#CVariableRawSymbolCollectionfrom_static_analysis)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CVariableRawSymbolCollection.from_llm`](#CVariableRawSymbolCollectionfrom_llm)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CVariableRawSymbolCollection.to_dict`](#CVariableRawSymbolCollectionto_dict)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CVariableRawSymbolCollection.from_static_analysis`](<#CVariableRawSymbolCollectionfrom_static_analysis>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CVariableRawSymbolCollection.from_llm`](<#CVariableRawSymbolCollectionfrom_llm>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CVariableRawSymbolCollection.to_dict`](<#CVariableRawSymbolCollectionto_dict>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](symbol_common.py.md#RawSymbolCollection)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<symbol_common.py.md#RawSymbolCollection>)
 
 **Methods**
 
 ---
 #### CVariableRawSymbolCollection\.from\_static\_analysis<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c.CVariableRawSymbolCollection.from_static_analysis}} -->
-The `from_static_analysis` method creates an instance of `CVariableRawSymbolCollection` from static analysis of C/C++ code, extracting variable symbols and their associated raw data.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L588>)
+
+The `from_static_analysis` method creates an instance of `CVariableRawSymbolCollection` from static analysis of C++ code, extracting variable symbols and their associated raw data.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `code`: A string representing the C/C++ source code to be analyzed.
+    - `code`: A string representing the C++ source code to be analyzed.
     - `root_rel_path`: A `Path` object representing the root relative path of the source code file.
 - **Control Flow**:
     - Initialize a `CppCDriverTree` object using the provided code and root relative path.
-    - Determine if the code requires multi-prompt processing by calling [`code_requires_multi_prompt`](symbol_common.py.md#code_requires_multi_prompt).
+    - Determine if the code requires multi-prompt processing by calling [`code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>).
     - Iterate over each variable symbol extracted from the driver tree.
-    - For each symbol with a non-None name, create a `RawSymbolData` object using the symbol and other parameters.
+    - For each symbol with a non-null name, create a `RawSymbolData` object using the symbol and other parameters.
     - Store the `RawSymbolData` object in a dictionary with the symbol's name as the key.
-    - Return `None` if no symbols were processed, otherwise return an instance of `CVariableRawSymbolCollection` initialized with the dictionary of raw symbol data.
-- **Output**: Returns an instance of `CVariableRawSymbolCollection` containing the extracted variable symbols and their raw data, or `None` if no symbols are found.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](../treesitter_drivers/base.py.md#DriverTreefrom_code)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](symbol_common.py.md#code_requires_multi_prompt)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/c_cpp_driver.CppCDriverTree.extract_variables`](../treesitter_drivers/c_cpp_driver.py.md#CppCDriverTreeextract_variables)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData.from_tree_sitter_raw_symbol`](symbol_common.py.md#RawSymbolDatafrom_tree_sitter_raw_symbol)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CVariableRawSymbolCollection`](#CVariableRawSymbolCollection)  (Base Class)
+    - Return `None` if no variable symbols were found, otherwise return an instance of `CVariableRawSymbolCollection` initialized with the dictionary of raw symbol data.
+- **Output**: Returns an instance of `CVariableRawSymbolCollection` containing raw symbol data for variables found in the code, or `None` if no variables are found.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.from_code`](<../treesitter_drivers/base.py.md#DriverTreefrom_code>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/base.DriverTree.extract_variables`](<../treesitter_drivers/base.py.md#DriverTreeextract_variables>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData.from_tree_sitter_raw_symbol`](<symbol_common.py.md#RawSymbolDatafrom_tree_sitter_raw_symbol>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CVariableRawSymbolCollection`](<#CVariableRawSymbolCollection>)  (Base Class)
 
 
 ---
 #### CVariableRawSymbolCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c.CVariableRawSymbolCollection.from_llm}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L618>)
+
 The `from_llm` method raises a NotImplementedError indicating that static analysis should be used for C variables.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `code`: A string representing the C code to be analyzed.
+    - `code`: A string representing the code to be analyzed.
     - `root_rel_path`: A string representing the root relative path for the code.
 - **Control Flow**:
     - The method immediately raises a NotImplementedError with a message indicating that static analysis should be used for C variables.
-- **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CVariableRawSymbolCollection`](#CVariableRawSymbolCollection)  (Base Class)
+- **Output**: The method does not return any output as it raises an exception.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CVariableRawSymbolCollection`](<#CVariableRawSymbolCollection>)  (Base Class)
 
 
 ---
 #### CVariableRawSymbolCollection\.to\_dict<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/c.CVariableRawSymbolCollection.to_dict}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/c.py#L622>)
+
 The `to_dict` method returns the `data` attribute of the `CVariableRawSymbolCollection` instance as a dictionary.
 - **Inputs**: None
 - **Control Flow**:
     - The method directly returns the `data` attribute of the instance.
 - **Output**: A dictionary where keys are strings and values are `RawSymbolData` objects.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CVariableRawSymbolCollection`](#CVariableRawSymbolCollection)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/c.CVariableRawSymbolCollection`](<#CVariableRawSymbolCollection>)  (Base Class)
 
 
 

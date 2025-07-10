@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `block_kind_any.py` file defines a Pydantic model `BlockKindCopyEditorAny` for handling markdown content responses from a copy editor agent.
+The `block_kind_any.py` file defines a Pydantic model `BlockKindCopyEditorAny` for handling markdown-formatted content responses for a copy editor agent.
 
 # Purpose
-This code defines a Pydantic model class named `BlockKindCopyEditorAny`, which is designed to handle structured data for a copy editor agent dealing with markdown content. The class includes a single attribute, `response`, which is a string expected to contain markdown-formatted content. The method [`to_markdown`](#BlockKindCopyEditorAnyto_markdown) returns the `response` attribute, effectively providing a way to retrieve the markdown content. Additionally, the code includes a global dictionary `MESSAGE` with a key-value pair, where the value is a string constant `PROMPT`, though `PROMPT` is currently an empty string. This code provides narrow functionality, focusing specifically on encapsulating and managing markdown content within a structured format.
+This code defines a simple data model using the Pydantic library, which is a popular tool for data validation and settings management in Python. The `BlockKindCopyEditorAny` class is a subclass of `BaseModel` and is designed to represent a structured response for a copy editor agent that handles content in markdown format. It includes a single attribute, `response`, which is a string expected to contain markdown content. The class also provides a method, [`to_markdown`](<#BlockKindCopyEditorAnyto_markdown>), which returns the markdown content stored in the `response` attribute. This code offers narrow functionality, focusing specifically on encapsulating and managing markdown content for a copy editing context.
 # Imports and Dependencies
 
 ---
@@ -18,15 +18,15 @@ This code defines a Pydantic model class named `BlockKindCopyEditorAny`, which i
 ---
 ### PROMPT
 - **Type**: `str`
-- **Description**: The variable `PROMPT` is a string that is initialized as an empty multiline string. It is intended to hold a prompt or template text, but currently, it does not contain any content.
-- **Use**: This variable is used to store a prompt or template text that can be utilized elsewhere in the code, potentially for generating or formatting messages.
+- **Description**: The variable `PROMPT` is a string that is initialized as an empty multi-line string. It is intended to hold a prompt or template text that can be used in various contexts, such as generating messages or content dynamically.
+- **Use**: `PROMPT` is used as a placeholder for content that can be dynamically inserted into the `MESSAGE` dictionary.
 
 
 ---
 ### MESSAGE
 - **Type**: `dict`
 - **Description**: The `MESSAGE` variable is a dictionary with two key-value pairs: 'role' and 'content'. The 'role' key is assigned the string 'system', and the 'content' key is assigned the value of the `PROMPT` variable, which is currently an empty string.
-- **Use**: This variable is used to define a message structure, likely for communication or configuration purposes, with a predefined role and content.
+- **Use**: This variable is used to define a structured message format, likely for communication or configuration purposes, with a specific role and content.
 
 
 # Classes
@@ -35,9 +35,9 @@ This code defines a Pydantic model class named `BlockKindCopyEditorAny`, which i
 ### BlockKindCopyEditorAny<!-- {{#class:python-backend/packages/shared/shared/prompts/block_kind/block_kind_any.BlockKindCopyEditorAny}} -->
 - **Members**:
     - `response`: A markdown representation of the content.
-- **Description**: The BlockKindCopyEditorAny class is a model that encapsulates a response for a copy editor agent, specifically designed to handle content in markdown format. It inherits from the BaseModel class provided by Pydantic, which offers data validation and settings management using Python type annotations. The primary attribute of this class is 'response', which stores the markdown content as a string. This class provides a method to return the markdown content, facilitating easy access to the stored response.
+- **Description**: The `BlockKindCopyEditorAny` class is a Pydantic model that encapsulates a structured response for a copy editor agent, specifically designed to handle content in markdown format. It includes a single attribute, `response`, which stores the markdown content as a string. This class provides a method to return the markdown content, facilitating the handling and manipulation of markdown data within applications.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/prompts/block_kind/block_kind_any.BlockKindCopyEditorAny.to_markdown`](#BlockKindCopyEditorAnyto_markdown)
+    - [`python-backend/packages/shared/shared/prompts/block_kind/block_kind_any.BlockKindCopyEditorAny.to_markdown`](<#BlockKindCopyEditorAnyto_markdown>)
 - **Inherits From**:
     - `BaseModel`
 
@@ -49,8 +49,8 @@ The `to_markdown` method returns the markdown-formatted response stored in the `
 - **Inputs**: None
 - **Control Flow**:
     - The method directly returns the value of the `response` attribute.
-- **Output**: A string containing the markdown representation of the content.
-- **See also**: [`python-backend/packages/shared/shared/prompts/block_kind/block_kind_any.BlockKindCopyEditorAny`](#BlockKindCopyEditorAny)  (Base Class)
+- **Output**: A string that is the markdown representation of the content stored in the `response` attribute.
+- **See also**: [`python-backend/packages/shared/shared/prompts/block_kind/block_kind_any.BlockKindCopyEditorAny`](<#BlockKindCopyEditorAny>)  (Base Class)
 
 
 

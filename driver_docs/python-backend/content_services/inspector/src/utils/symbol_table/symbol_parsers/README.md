@@ -3,15 +3,16 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `symbol_parsers` folder in the `python-backend` codebase contains various parser classes for different programming languages, including C/C++, Java, JavaScript/TypeScript, and Python, each utilizing specific parsing drivers.
+Parser classes for C/C++, C#, Java, JavaScript/TypeScript, and Python using tree-sitter and other drivers.
 
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[c_cpp_parser.py](c_cpp_parser.py.md)**: The `c_cpp_parser.py` file defines a `CCppParser` class that serves as a shared parser for both C and C++ languages, utilizing the `CppCDriverTree` for parsing.
-- **[java_parser.py](java_parser.py.md)**: The `java_parser.py` file defines a `JavaParser` class for parsing Java code, utilizing a `JavaDriverTree` and inheriting from `SymbolParser`.
+- **[c_cpp_parser.py](c_cpp_parser.py.md)**: The `c_cpp_parser.py` file defines a `CCppParser` class that serves as a shared symbol parser for both C and C++ languages using a C/C++ driver tree.
+- **[csharp_parser.py](csharp_parser.py.md)**: The `csharp_parser.py` file defines a `CSharpParser` class for parsing C# code using a tree-sitter driver.
+- **[java_parser.py](java_parser.py.md)**: The `java_parser.py` file defines a `JavaParser` class for parsing Java symbols using a tree-sitter driver.
 - **[js_ts_parser.py](js_ts_parser.py.md)**: The `js_ts_parser.py` file defines a `JsTsParser` class for parsing JavaScript and TypeScript code using a tree-sitter driver.
-- **[python_parser.py](python_parser.py.md)**: The `python_parser.py` file defines a `PythonParser` class for parsing Python code using a tree-sitter driver.
+- **[python_parser.py](python_parser.py.md)**: The `python_parser.py` file defines a `PythonParser` class for parsing Python code using a tree-sitter driver and specifies the language and fully qualified name delimiter.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

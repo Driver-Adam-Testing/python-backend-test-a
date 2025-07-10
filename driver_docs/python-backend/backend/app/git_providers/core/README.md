@@ -3,11 +3,11 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `core` folder in the `python-backend` codebase contains configuration-related files for Git provider settings, including a Pydantic model and a configuration loader function for GitLab Enterprise Self-Managed providers.
+The `core` folder in the `python-backend` codebase contains configuration-related files for Git provider settings, including a Pydantic model and a configuration loader for GitLab Enterprise Self-Managed providers.
 
 
 ## Files
-- **[config.py](config.py.md)**: The `config.py` file defines a Pydantic model for configuring Git provider settings, including endpoints and authentication details, in the `python-backend` codebase.
+- **[config.py](config.py.md)**: The `config.py` file defines a Pydantic model for configuring Git provider settings, including endpoints and credentials, within the `python-backend` codebase.
 - **[config_loader.py](config_loader.py.md)**: The `config_loader.py` file defines a function to load configuration settings for Git provider applications, specifically handling GitLab Enterprise Self-Managed providers.
 
 ---

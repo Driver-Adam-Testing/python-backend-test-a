@@ -3,12 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `test_variables.java` file demonstrates the use of class, instance, and local variables in a Java class.
+The `test_variables.java` file demonstrates the use of class, instance, and local variables in Java, including static and final modifiers.
 
 # Purpose
-The `VariableExamples` class in the `com.example` package serves as a demonstration of different types of variables in Java, including class variables, instance variables, and local variables. This class provides a clear illustration of how variables are declared and used within a Java class. It includes static class variables such as `MAX_SIZE`, which is a public constant, and `defaultName`, a private static variable. The class also defines instance variables like `id`, `name`, and `active`, showcasing different access modifiers: private, protected, and public, respectively.
-
-Additionally, the [`localVariables`](#VariableExampleslocalVariables) method within the class exemplifies the use of local variables, including a local integer `localVar`, a string `message`, and a final double `PI`. The method also contains a for-loop that demonstrates the declaration of a loop variable `i` and a temporary string `temp` within the loop's scope. This class does not define any public APIs or external interfaces; instead, it focuses on illustrating the scope and accessibility of various types of variables in Java, making it a useful educational tool for understanding variable management in object-oriented programming.
+The `VariableExamples` class in the `com.example` package demonstrates the use of different types of variables in Java, providing a narrow functionality focused on illustrating variable scope and accessibility. It includes class variables, such as the constant `MAX_SIZE` and the private `defaultName`, which are shared across all instances of the class. Instance variables like `id`, `name`, and `active` are specific to each object created from the class, showcasing different access levels (private, protected, and public). The [`localVariables`](<#VariableExampleslocalVariables>) method further exemplifies the use of local variables within a method, including a loop with its own scoped variable, `temp`. This class serves primarily as an educational example to highlight the distinctions between variable types and their scopes in Java.
 # Imports and Dependencies
 
 ---
@@ -28,24 +26,24 @@ Additionally, the [`localVariables`](#VariableExampleslocalVariables) method wit
     - `name`: `String` A protected string representing the name of an instance.
     - `active`: `boolean` A public boolean indicating whether an instance is active.
 - **Methods**:
-    - [`com.example.VariableExamples.localVariables`](#VariableExampleslocalVariables)
+    - [`com.example.VariableExamples.localVariables`](<#VariableExampleslocalVariables>)
 
 **Methods**
 
 ---
 #### VariableExamples\.localVariables<!-- {{#callable:com.example.VariableExamples.localVariables}} -->
-The `localVariables` method demonstrates the declaration and usage of local variables within a method and a loop.
+The `localVariables` method demonstrates the declaration and initialization of local variables within a method and a loop.
 - **Modifiers**: `public`
 - **Inputs**: None
 - **Control Flow**:
-    - Declare an integer local variable `localVar` and initialize it to 42.
-    - Declare a string local variable `message` and initialize it to "Hello".
-    - Declare a final double local variable `PI` and initialize it to 3.14159.
-    - Start a for loop that iterates from 0 to 9 (inclusive).
-    - Within the loop, declare a string local variable `temp` and initialize it with the current iteration number.
+    - Declare and initialize an integer `localVar` with the value 42.
+    - Declare and initialize a `String` variable `message` with the value "Hello".
+    - Declare and initialize a `final double` variable `PI` with the value 3.14159.
+    - Start a for loop that iterates from 0 to 9.
+    - Within the loop, declare and initialize a `String` variable `temp` with the value "iteration " concatenated with the current loop index `i`.
 - **Output**:
     - The method does not return any value or produce any output.
-- **See also**: [`com.example.VariableExamples`](#VariableExamples)  (Base Class)
+- **See also**: [`com.example.VariableExamples`](<#VariableExamples>)  (Base Class)
 
 
 

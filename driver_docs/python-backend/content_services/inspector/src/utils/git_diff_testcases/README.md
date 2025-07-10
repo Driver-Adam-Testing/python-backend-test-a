@@ -3,7 +3,7 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `git_diff_testcases` folder in the `python-backend` codebase contains Python files primarily focused on recursive implementations of the Fibonacci sequence, with two files being empty and two files providing similar Fibonacci functionality.
+Python files focused on recursive Fibonacci implementations, with two files being empty.
 
 
 ## Files

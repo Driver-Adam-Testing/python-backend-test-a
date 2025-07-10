@@ -3,15 +3,20 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_large_c.py` file defines a template for analyzing and organizing C source code, focusing on elements such as imports, global variables, data structures, functions, and function declarations.
+The `source_code_large_c.py` file defines a template for generating structured prompts and analyzing C source code, including sections for imports, global variables, data structures, functions, and function declarations.
 
 # Purpose
-This Python code file is designed to facilitate the analysis and documentation of C source code by defining a structured template for extracting and organizing various components of C code. It imports several specialized classes and constants from modules related to language specialization and templates, indicating its reliance on a broader framework for code analysis. The file defines a template, `SOURCE_CODE_LARGE_TEMPLATE_C`, which is a list of tuples. Each tuple represents a specific aspect of C code, such as imports, global variables, data structures, functions, and function declarations, and associates them with methods for extracting and processing these components. The template uses a combination of static analysis and language model (LLM) processing to gather and format information about the C code, suggesting that it is part of a larger system for automated code documentation or analysis.
+This Python code defines a structured template for analyzing and documenting C source code. It is part of a larger system that appears to be designed for generating detailed documentation or analysis reports for C codebases. The file imports various components and utilities from other modules, indicating that it is part of a broader framework. The main functionality revolves around creating a template (`SOURCE_CODE_LARGE_TEMPLATE_C`) that outlines different sections of a C code analysis, such as purpose, imports and dependencies, global variables, data structures, functions, and public API declarations. Each section is associated with specific components and instructions, leveraging both static analysis and language model (LLM) capabilities to extract and format information.
 
-The code is structured to provide a comprehensive overview of C source code by categorizing and detailing its elements. It is not a standalone script but rather a library component intended to be integrated into a larger system that processes and documents C code. The use of classes like `CFunctionCollection` and `CVariableCollection` indicates that the system can handle complex data structures and functions, while the inclusion of public API declarations suggests a focus on documenting interfaces. This file serves as a bridge between raw static analysis data and a more human-readable format, likely intended for generating documentation or aiding in code review processes.
+The code is structured to facilitate the generation of comprehensive documentation by combining static analysis results with language model insights. It uses a combination of prompts and components to guide the extraction and presentation of information. The template is designed to be extensible and adaptable, allowing for the integration of various data collection and processing methods. This file is likely intended to be part of a larger documentation generation tool or library, providing a standardized way to document C codebases by breaking down their components and presenting them in a structured format.
 # Imports and Dependencies
 
 ---
+- `shared.prompts.structured_prompting.GENERAL_STE_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_CODE_PURPOSE`
+- `shared.prompts.structured_prompting.USE_BACKTICKS_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.Component`
+- `shared.prompts.structured_prompting.Prompt`
 - `utils.lang_specialization.c.SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT`
 - `utils.lang_specialization.c.SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_C`
 - `utils.lang_specialization.c.CDataStructureCollection`
@@ -32,8 +37,8 @@ The code is structured to provide a comprehensive overview of C source code by c
 ---
 ### SOURCE\_CODE\_LARGE\_TEMPLATE\_C
 - **Type**: `list`
-- **Description**: `SOURCE_CODE_LARGE_TEMPLATE_C` is a list of tuples, each representing a section of a C source code analysis template. Each tuple contains a type identifier, a section title, a method for extracting raw symbols from static analysis, a method for processing these symbols, and an optional placeholder for additional data.
-- **Use**: This variable is used to define the structure and processing logic for analyzing and documenting various components of C source code, such as imports, global variables, data structures, functions, and public API declarations.
+- **Description**: `SOURCE_CODE_LARGE_TEMPLATE_C` is a list of tuples, each representing a different section of a structured prompt template for analyzing C source code. Each tuple contains a section identifier, a section title, and a combination of static analysis and LLM-based methods to extract and process information related to that section, such as imports, global variables, data structures, functions, and public API declarations.
+- **Use**: This variable is used to define a structured template for generating prompts that guide the analysis and documentation of C source code.
 
 
 

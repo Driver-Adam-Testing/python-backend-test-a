@@ -3,15 +3,16 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `providers` folder in the `python-backend` codebase contains language-specific provider modules, each offering parsing and resolving capabilities for different programming languages, including C/C++, Java, JavaScript/TypeScript, and Python.
+Various language provider modules defining classes and methods for parsing and resolving C/C++, C#, Java, JavaScript/TypeScript, and Python.
 
 
 ## Files
 - **[__init__.py](__init__.py.md)**: The `__init__.py` file in `python-backend/content_services/inspector/src/utils/symbol_table/providers` serves as an initializer for the language providers module, which supports different programming languages.
-- **[c_cpp_provider.py](c_cpp_provider.py.md)**: The `c_cpp_provider.py` file defines a language provider for C and C++ that utilizes a parser and resolver specific to these languages.
-- **[java_provider.py](java_provider.py.md)**: The `java_provider.py` file defines the `JavaLanguageProvider` class, which specifies Java as the language and provides methods to obtain a Java parser and resolver.
-- **[js_ts_provider.py](js_ts_provider.py.md)**: The `js_ts_provider.py` file defines the `JsTsLanguageProvider` class, which provides JavaScript and TypeScript parsing and resolving capabilities using `JsTsParser` and `JsTsResolver`.
-- **[python_provider.py](python_provider.py.md)**: The `python_provider.py` file defines the `PythonLanguageProvider` class, which specifies Python as the language and provides methods to retrieve a parser and resolver for Python code.
+- **[c_cpp_provider.py](c_cpp_provider.py.md)**: The `c_cpp_provider.py` file defines a language provider for C and C++ that utilizes a parser and resolver specific to this language family.
+- **[csharp_provider.py](csharp_provider.py.md)**: The `csharp_provider.py` file defines a `CSharpLanguageProvider` class that specifies the C# language and provides methods to obtain a C# parser and resolver.
+- **[java_provider.py](java_provider.py.md)**: The `java_provider.py` file defines a `JavaLanguageProvider` class that specifies Java as the language and provides methods to retrieve a Java parser and resolver.
+- **[js_ts_provider.py](js_ts_provider.py.md)**: The `js_ts_provider.py` file defines the `JsTsLanguageProvider` class, which provides JavaScript and TypeScript language support by utilizing a parser and resolver.
+- **[python_provider.py](python_provider.py.md)**: The `python_provider.py` file defines the `PythonLanguageProvider` class, which specifies Python as the language and provides methods to obtain a parser and resolver for Python code.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

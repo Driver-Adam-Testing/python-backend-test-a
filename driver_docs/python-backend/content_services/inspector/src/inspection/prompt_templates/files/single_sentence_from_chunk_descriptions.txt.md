@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `single_sentence_from_chunk_descriptions.txt` file provides instructions for summarizing a software file into a single sentence using detailed descriptions of its overlapping chunks.
+The `single_sentence_from_chunk_descriptions.txt` file provides instructions for summarizing a software file by using detailed descriptions of its overlapping chunks.
 
 # Purpose
-The provided content outlines a task for summarizing a software file using detailed descriptions of its parts. The purpose of this task is to create a concise, single-sentence summary of a large software file, which is too extensive to describe in its entirety at once. The process involves analyzing overlapping descriptions of different sections of the file, each labeled with the file name and codebase name, to construct an accurate and comprehensive summary. This approach ensures that the summary is based solely on the provided information, without introducing any assumptions or external data.
+The provided content outlines a task for a software engineering expert to create a concise summary of a software file's contents and purpose. This task involves analyzing a series of detailed descriptions that cover overlapping sections of a large software file, which cannot be described in its entirety at once. The expert's role is to synthesize these detailed descriptions into a single, coherent sentence that accurately reflects the file's overall function and significance within the codebase. This process requires careful consideration of the information provided in each description to ensure that the final summary is both comprehensive and precise, without introducing any speculative or extraneous information.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

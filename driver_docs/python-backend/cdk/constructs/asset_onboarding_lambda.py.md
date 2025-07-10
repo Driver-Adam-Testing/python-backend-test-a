@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `asset_onboarding_lambda.py` file defines a CDK construct for deploying an AWS Lambda function that handles asset onboarding, integrating with various AWS services such as S3, SNS, and Secrets Manager.
+The `asset_onboarding_lambda.py` file defines a CDK construct for an AWS Lambda function that handles asset onboarding, integrating with various AWS services such as S3, SNS, and Secrets Manager.
 
 # Purpose
-This Python code defines a construct for deploying an AWS Lambda function using the AWS Cloud Development Kit (CDK). The primary purpose of this file is to set up an AWS Lambda function, `AssetOnboardingLambda`, which is designed to handle asset onboarding events. The code leverages several AWS services, including IAM for permissions, S3 for storage, SNS for notifications, and Secrets Manager for managing sensitive information. The `AssetOnboardingLambda` class is a CDK construct that encapsulates the configuration and deployment of the Lambda function, including its environment variables, permissions, and event sources.
+This Python code defines a construct for deploying an AWS Lambda function using the AWS Cloud Development Kit (CDK). The primary purpose of this file is to set up an AWS Lambda function, `AssetOnboardingLambda`, which is designed to handle asset onboarding events. The code leverages several AWS services, including IAM for permissions, S3 for storage, SNS for notifications, and Secrets Manager for managing sensitive information. The `AssetOnboardingLambdaParams` dataclass is used to encapsulate configuration parameters required for the Lambda function, such as environment details, API URLs, and bucket references.
 
-The code is structured to be part of a larger infrastructure-as-code setup, likely intended to be imported and used within a broader CDK application. It defines a public API through the `AssetOnboardingLambda` class, which takes parameters encapsulated in the `AssetOnboardingLambdaParams` dataclass. This setup allows for flexible configuration of the Lambda function's environment and behavior. The Lambda function is configured to respond to SNS events and has permissions to read from specified S3 buckets. The file also includes a note indicating a need to refine the IAM permissions, suggesting ongoing development and optimization of the security model.
+The `AssetOnboardingLambda` class extends the `Construct` class, indicating that it is intended to be part of a larger infrastructure setup. It configures a Python-based Lambda function with specific environment variables and permissions, including access to secrets and S3 buckets. The Lambda function is triggered by SNS events, and it has full access to S3 resources, which is noted as a potential area for improvement in terms of scoping down privileges. This file is likely part of a broader infrastructure-as-code solution, providing a reusable component for deploying and managing asset onboarding processes in a cloud environment.
 # Imports and Dependencies
 
 ---
@@ -43,9 +43,9 @@ The code is structured to be part of a larger infrastructure-as-code setup, like
 
 ---
 ### AssetOnboardingLambda<!-- {{#class:python-backend/cdk/constructs/asset_onboarding_lambda.AssetOnboardingLambda}} -->
-- **Description**: The `AssetOnboardingLambda` class is a construct that sets up an AWS Lambda function for handling asset onboarding events. It configures the Lambda function with necessary environment variables, secrets, and permissions, including access to AWS Secrets Manager for client secrets, and integrates with AWS SNS for event sourcing. The class also manages permissions for reading from S3 buckets and includes a TODO note for refining the scope of S3 access permissions.
+- **Description**: The `AssetOnboardingLambda` class is a construct that sets up an AWS Lambda function for handling asset onboarding events. It integrates with various AWS services such as Secrets Manager for managing secrets, SSM for parameter retrieval, SNS for event notifications, and S3 for bucket operations. The class configures the Lambda function with necessary environment variables, permissions, and event sources, ensuring it can interact with the required AWS resources to perform its tasks effectively.
 - **Methods**:
-    - [`python-backend/cdk/constructs/asset_onboarding_lambda.AssetOnboardingLambda.__init__`](#AssetOnboardingLambda__init__)
+    - [`python-backend/cdk/constructs/asset_onboarding_lambda.AssetOnboardingLambda.__init__`](<#AssetOnboardingLambda__init__>)
 - **Inherits From**:
     - `Construct`
 
@@ -53,23 +53,22 @@ The code is structured to be part of a larger infrastructure-as-code setup, like
 
 ---
 #### AssetOnboardingLambda\.\_\_init\_\_<!-- {{#callable:python-backend/cdk/constructs/asset_onboarding_lambda.AssetOnboardingLambda.__init__}} -->
-The `__init__` method initializes an `AssetOnboardingLambda` construct, setting up AWS resources such as secrets, a Lambda function, SNS topic, and S3 bucket notifications for asset onboarding.
+The `__init__` method initializes an `AssetOnboardingLambda` construct, setting up AWS resources such as Lambda functions, secrets, and SNS topics for asset onboarding.
 - **Inputs**:
     - `scope`: A `Construct` object that defines the scope in which this construct is created.
     - `id`: A string identifier for this construct.
     - `params`: An `AssetOnboardingLambdaParams` object containing configuration parameters such as environment, API URL, Auth0 details, and S3 bucket information.
 - **Control Flow**:
-    - Call the superclass `__init__` method to initialize the base `Construct` class.
-    - Create AWS Secrets Manager secrets for client ID and client secret.
-    - Retrieve the Sentry secret name from AWS SSM Parameter Store and fetch the corresponding secret from AWS Secrets Manager.
-    - Create a Python Lambda function with specified environment variables, entry point, runtime, and bundling options.
-    - Grant read access to the Lambda function for the client ID and client secret secrets, and the dropzone bucket specified in `params`.
-    - Create an SNS topic and add it as an event source for the Lambda function.
-    - Add a managed policy to the Lambda function's role to grant full access to Amazon S3.
-    - Retrieve a legacy dropzone bucket by name and set up an event notification for object tagging, sending notifications to the SNS topic.
-    - Grant read access to the legacy dropzone bucket for the Lambda function.
+    - Calls the parent class `Construct`'s `__init__` method with `scope` and `id`.
+    - Creates two AWS Secrets Manager secrets for client ID and client secret.
+    - Retrieves a Sentry secret name from AWS SSM and fetches the corresponding secret from AWS Secrets Manager.
+    - Initializes a Python Lambda function with specified entry point, runtime, environment variables, and bundling options.
+    - Grants read access to the Lambda function for the client ID and client secret secrets, and the dropzone bucket.
+    - Creates an SNS topic and adds it as an event source to the Lambda function.
+    - Adds a managed policy for full S3 access to the Lambda function's role.
+    - Sets up an S3 bucket for legacy dropzone, adds an event notification for object tagging, and grants read access to the Lambda function.
 - **Output**: The method does not return any value; it sets up the necessary AWS resources and configurations for the `AssetOnboardingLambda` construct.
-- **See also**: [`python-backend/cdk/constructs/asset_onboarding_lambda.AssetOnboardingLambda`](#AssetOnboardingLambda)  (Base Class)
+- **See also**: [`python-backend/cdk/constructs/asset_onboarding_lambda.AssetOnboardingLambda`](<#AssetOnboardingLambda>)  (Base Class)
 
 
 

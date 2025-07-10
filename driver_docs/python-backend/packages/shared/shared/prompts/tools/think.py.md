@@ -6,7 +6,7 @@
 The `think.py` file in the `python-backend` codebase imports a module named `think` and defines an empty string variable `PROMPT`.
 
 # Purpose
-This source code file is a configuration or setup script that appears to be part of a larger Python package or module. It imports a module or submodule named `think` from the current package, suggesting that it is intended to be used within a specific context or application. The presence of the `PROMPT` variable, initialized as an empty string, indicates that it might be used to store or manipulate user input or command prompts within the application. The `# flake8: noqa` comment at the top of the file disables linting checks, which suggests that the author intentionally wants to bypass style or syntax checks, possibly due to the simplicity or specific requirements of this file. Overall, the file provides narrow functionality, likely serving as a small part of a larger system.
+This code is a minimal configuration or setup file, likely part of a larger Python package or module. It imports a module or submodule named `think` from the current package, suggesting that `think` might contain functions or classes that are utilized elsewhere in the package. The `PROMPT` variable is defined as an empty string, which could serve as a placeholder for user input or command prompts in a broader application context. The presence of `# flake8: noqa` indicates that linting checks are intentionally disabled for this file, possibly to avoid warnings about unused imports or variables, suggesting that this file is more about establishing a structure or interface rather than implementing functionality.
 # Imports and Dependencies
 
 ---

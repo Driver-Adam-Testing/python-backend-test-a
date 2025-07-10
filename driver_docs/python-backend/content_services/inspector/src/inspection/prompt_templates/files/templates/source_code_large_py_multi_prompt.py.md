@@ -3,15 +3,20 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_large_py_multi_prompt.py` file defines a template for generating multi-prompt text related to Python source code, including sections for purpose, imports, global variables, classes, and functions.
+The `source_code_large_py_multi_prompt.py` file defines a template for generating structured prompts related to Python source code, including sections for purpose, imports, global variables, classes, and functions.
 
 # Purpose
-This Python code defines a structured template for generating multi-context prompts specifically tailored for analyzing Python source code. The file imports various components from utility modules that specialize in language processing and Python-specific code analysis. The primary purpose of this code is to create a comprehensive framework for extracting and organizing information about the purpose, imports, global variables, classes, and functions from Python source code. It leverages collections and templates to systematically analyze and present this information, making it useful for applications that require detailed code analysis or documentation generation.
+This Python code defines a structured template for generating multi-prompt text specifically tailored for analyzing and documenting the purpose and structure of large Python source code files. The file is organized around a series of tuples, each representing a different aspect of the code analysis, such as purpose, imports and dependencies, global variables, classes, and functions. Each tuple contains a specific template identifier, a descriptive comment, and a series of components or functions that are used to extract and format the relevant information. The code leverages various utility modules and classes, such as `Component`, `Prompt`, and collections for Python classes, functions, and variables, to facilitate the extraction and organization of code elements.
 
-The code is organized as a list of tuples, each representing a different aspect of the source code to be analyzed. Each tuple contains a template identifier, a section header, and a series of processing functions or collections that facilitate the extraction and transformation of code elements. The use of static analysis and language model (LLM) outputs indicates that this code is designed to work with both syntactic and semantic information, providing a robust mechanism for understanding and documenting Python codebases. This file is likely part of a larger system or library intended to be imported and used in contexts where automated code documentation or analysis is required.
+The primary purpose of this file is to provide a comprehensive framework for analyzing Python code and generating structured documentation. It is designed to be part of a larger system, likely a documentation or code analysis tool, where it can be imported and used to automate the process of understanding and documenting codebases. The file does not define public APIs or external interfaces directly but rather serves as a backend component that supports the generation of detailed and organized code documentation. The use of static analysis and language model (LLM) components suggests an integration of automated code analysis techniques to enhance the accuracy and depth of the generated documentation.
 # Imports and Dependencies
 
 ---
+- `shared.prompts.structured_prompting.GENERAL_STE_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_CODE_PURPOSE`
+- `shared.prompts.structured_prompting.USE_BACKTICKS_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.Component`
+- `shared.prompts.structured_prompting.Prompt`
 - `utils.lang_specialization.default_multi_context.SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT_MULTI_CONTEXT`
 - `utils.lang_specialization.default_multi_context.SOURCE_CODE_PURPOSE_FROM_CHUNKS`
 - `utils.lang_specialization.ir_common.ListData`
@@ -31,8 +36,8 @@ The code is organized as a list of tuples, each representing a different aspect 
 ---
 ### SOURCE\_CODE\_LARGE\_MULTI\_PROMPT\_TEMPLATE\_PY
 - **Type**: `list`
-- **Description**: `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_PY` is a list of tuples, where each tuple represents a different section of a multi-prompt template for analyzing Python source code. Each tuple contains a prompt type, a section header, and various functions or data structures used to process or analyze that section of the code.
-- **Use**: This variable is used to define a structured template for generating prompts that guide the analysis of different components of Python source code, such as purpose, imports, global variables, classes, and functions.
+- **Description**: `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_PY` is a list of tuples, each containing structured data for generating prompts related to different aspects of Python source code analysis. Each tuple includes a type identifier, a description, and various components or functions that are used to construct or process the prompts.
+- **Use**: This variable is used to define a template for generating multi-part prompts that facilitate the analysis and documentation of Python source code, including its purpose, imports, global variables, classes, and functions.
 
 
 

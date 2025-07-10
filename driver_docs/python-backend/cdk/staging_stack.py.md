@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `staging_stack.py` file defines a CDK stack for the staging environment, setting up components such as a metrics lambda, API backend, asset onboarding lambda, and inspector.
+The `staging_stack.py` file defines a CDK stack for the staging environment, incorporating components such as a metrics lambda, API backend, asset onboarding lambda, and an inspector.
 
 # Purpose
-The provided Python code defines a class `StagingStack` that extends the AWS CDK `Stack` class, indicating that it is part of an infrastructure-as-code setup using the AWS Cloud Development Kit (CDK). This code is designed to configure and deploy a staging environment for a web application, specifically for the domain "driverai.com". The `StagingStack` class initializes several key components: `MetricsLambda`, `Backend`, `AssetOnboardingLambda`, and `Inspector`, each with parameters tailored for a staging environment. These components are likely custom constructs defined elsewhere in the project, as indicated by their import paths.
+The provided code defines a class `StagingStack` that extends the AWS Cloud Development Kit (CDK) `Stack` class. This code is designed to set up a staging environment infrastructure using AWS services. It is part of a broader infrastructure-as-code solution, leveraging the AWS CDK to define cloud resources programmatically. The `StagingStack` class is responsible for creating and configuring several key components: a `MetricsLambda` for handling metrics, a `Backend` for API operations, an `AssetOnboardingLambda` for asset onboarding processes, and an `Inspector` for inspection tasks. Each component is instantiated with specific parameters tailored for a staging environment, such as environment identifiers, API URLs, and other configuration details.
 
-The `StagingStack` class is responsible for setting up the necessary AWS resources and configurations to support the staging environment. It configures a metrics collection system via `MetricsLambda`, an API backend with CORS settings through `Backend`, an asset onboarding process using `AssetOnboardingLambda`, and an inspection mechanism with `Inspector`. The use of parameters such as environment settings, API URLs, and authentication details suggests that this stack is specifically tailored for testing and development purposes in a staging environment, providing a controlled setting to validate application behavior before production deployment.
+The code is structured to be part of a larger application, likely a microservices architecture, where each construct represents a distinct service or functionality. The use of specific parameters like `environment`, `cloudwatch_alarm_arn`, and `cors_origins` indicates that this stack is configured for a staging environment, which is typically used for testing and validation before deploying to production. The code does not define public APIs or external interfaces directly but rather sets up the necessary infrastructure components that would support such interfaces. This file is intended to be used as part of a deployment script or process, where it would be executed to provision the necessary AWS resources for the staging environment.
 # Imports and Dependencies
 
 ---
@@ -31,11 +31,11 @@ The `StagingStack` class is responsible for setting up the necessary AWS resourc
 - **Members**:
     - `metrics_lambda`: An instance of MetricsLambda configured for the staging environment.
     - `backend`: An instance of Backend configured for the staging environment with specific CORS and IP settings.
-    - `onboarding_lambda`: An instance of AssetOnboardingLambda configured for the staging environment with API and Auth0 URLs.
+    - `onboarding_lambda`: An instance of AssetOnboardingLambda configured for the staging environment with specific API and Auth0 settings.
     - `inspector`: An instance of Inspector configured for the staging environment.
-- **Description**: The StagingStack class is a specialized AWS CDK stack designed for the staging environment of the DriverAI application. It initializes and configures several components including MetricsLambda, Backend, AssetOnboardingLambda, and Inspector, each tailored with parameters suitable for the staging environment. This setup includes specific configurations for CORS, API URLs, and other environment-specific settings to ensure the staging environment mimics production as closely as possible while allowing for testing and development.
+- **Description**: The StagingStack class is a specialized AWS CDK stack designed for the staging environment of the DriverAI application. It initializes and configures several components, including a metrics lambda, an API backend, an asset onboarding lambda, and an inspector, each tailored with parameters suitable for the staging environment. This setup ensures that the staging environment mimics production settings closely, allowing for effective testing and validation of the application before deployment.
 - **Methods**:
-    - [`python-backend/cdk/staging_stack.StagingStack.__init__`](#StagingStack__init__)
+    - [`python-backend/cdk/staging_stack.StagingStack.__init__`](<#StagingStack__init__>)
 - **Inherits From**:
     - `Stack`
 
@@ -43,30 +43,29 @@ The `StagingStack` class is responsible for setting up the necessary AWS resourc
 
 ---
 #### StagingStack\.\_\_init\_\_<!-- {{#callable:python-backend/cdk/staging_stack.StagingStack.__init__}} -->
-The [`__init__`](constructs/metrics_lambda.py.md#MetricsLambdaParams__init__) method initializes a `StagingStack` object by setting up various components such as [`MetricsLambda`](constructs/metrics_lambda.py.md#MetricsLambda), [`Backend`](constructs/backend.py.md#Backend), [`AssetOnboardingLambda`](constructs/asset_onboarding_lambda.py.md#AssetOnboardingLambda), and [`Inspector`](constructs/inspector.py.md#Inspector) with specific parameters for a staging environment.
+The `__init__` method initializes a `StagingStack` object by setting up various AWS resources and configurations for a staging environment.
 - **Inputs**:
-    - `scope`: A `Construct` object that represents the scope in which this stack is defined.
+    - `scope`: A `Construct` object that defines the scope in which this stack is created.
     - `construct_id`: A string that uniquely identifies this construct within its scope.
     - `kwargs`: Additional keyword arguments that can be passed to the parent class constructor.
 - **Control Flow**:
-    - The method begins by calling the parent class `Stack`'s [`__init__`](constructs/metrics_lambda.py.md#MetricsLambdaParams__init__) method with `scope`, `construct_id`, and `kwargs` to initialize the base class.
+    - The method begins by calling the parent class `__init__` method with `scope`, `construct_id`, and `kwargs` to initialize the base `Stack` class.
     - A CORS origin URL is defined for the staging environment.
-    - A [`MetricsLambda`](constructs/metrics_lambda.py.md#MetricsLambda) object is created with parameters specifying the environment as 'staging' and a CloudWatch alarm ARN.
-    - A [`Backend`](constructs/backend.py.md#Backend) object is instantiated with parameters including the environment, CORS origins, allowed IPs, and a reference to the metrics bus from the [`MetricsLambda`](constructs/metrics_lambda.py.md#MetricsLambda).
-    - An [`AssetOnboardingLambda`](constructs/asset_onboarding_lambda.py.md#AssetOnboardingLambda) object is created with parameters for the environment, API URL, Auth0 URL, Auth0 audience, and a reference to the dropzone bucket from the [`Backend`](constructs/backend.py.md#Backend).
-    - An [`Inspector`](constructs/inspector.py.md#Inspector) object is instantiated with parameters specifying the environment as 'staging'.
-- **Output**: The method does not return any value; it initializes the `StagingStack` object with various components configured for a staging environment.
-- **Functions called**:
-    - [`python-backend/cdk/constructs/metrics_lambda.MetricsLambdaParams.__init__`](constructs/metrics_lambda.py.md#MetricsLambdaParams__init__)
-    - [`python-backend/cdk/constructs/metrics_lambda.MetricsLambda`](constructs/metrics_lambda.py.md#MetricsLambda)
-    - [`python-backend/cdk/constructs/metrics_lambda.MetricsLambdaParams`](constructs/metrics_lambda.py.md#MetricsLambdaParams)
-    - [`python-backend/cdk/constructs/backend.Backend`](constructs/backend.py.md#Backend)
-    - [`python-backend/cdk/constructs/backend.BackendParams`](constructs/backend.py.md#BackendParams)
-    - [`python-backend/cdk/constructs/asset_onboarding_lambda.AssetOnboardingLambda`](constructs/asset_onboarding_lambda.py.md#AssetOnboardingLambda)
-    - [`python-backend/cdk/constructs/asset_onboarding_lambda.AssetOnboardingLambdaParams`](constructs/asset_onboarding_lambda.py.md#AssetOnboardingLambdaParams)
-    - [`python-backend/cdk/constructs/inspector.Inspector`](constructs/inspector.py.md#Inspector)
-    - [`python-backend/cdk/constructs/inspector.InspectorParams`](constructs/inspector.py.md#InspectorParams)
-- **See also**: [`python-backend/cdk/staging_stack.StagingStack`](#StagingStack)  (Base Class)
+    - A [`MetricsLambda`](<constructs/metrics_lambda.py.md#MetricsLambda>) object is instantiated with parameters specific to the staging environment, including a CloudWatch alarm ARN, and assigned to `self.metrics_lambda`.
+    - A [`Backend`](<constructs/backend.py.md#Backend>) object is created with parameters such as CORS origins, allowed IPs, and a reference to the metrics bus from `self.metrics_lambda`, and assigned to `self.backend`.
+    - An [`AssetOnboardingLambda`](<../dev_stack/cdk/constructs/asset_onboarding_lambda.py.md#AssetOnboardingLambda>) object is instantiated with parameters including API and Auth0 URLs, and a reference to the dropzone bucket from `self.backend`, and assigned to `self.onboarding_lambda`.
+    - An [`Inspector`](<constructs/inspector.py.md#Inspector>) object is created with parameters for the staging environment and assigned to `self.inspector`.
+- **Output**: The method does not return any value; it initializes the `StagingStack` instance with configured AWS resources.
+- **Functions Called**:
+    - [`python-backend/cdk/constructs/metrics_lambda.MetricsLambda`](<constructs/metrics_lambda.py.md#MetricsLambda>)
+    - [`python-backend/cdk/constructs/metrics_lambda.MetricsLambdaParams`](<constructs/metrics_lambda.py.md#MetricsLambdaParams>)
+    - [`python-backend/cdk/constructs/backend.Backend`](<constructs/backend.py.md#Backend>)
+    - [`python-backend/cdk/constructs/backend.BackendParams`](<constructs/backend.py.md#BackendParams>)
+    - [`python-backend/dev_stack/cdk/constructs/asset_onboarding_lambda.AssetOnboardingLambda`](<../dev_stack/cdk/constructs/asset_onboarding_lambda.py.md#AssetOnboardingLambda>)
+    - [`python-backend/dev_stack/cdk/constructs/asset_onboarding_lambda.AssetOnboardingLambdaParams`](<../dev_stack/cdk/constructs/asset_onboarding_lambda.py.md#AssetOnboardingLambdaParams>)
+    - [`python-backend/cdk/constructs/inspector.Inspector`](<constructs/inspector.py.md#Inspector>)
+    - [`python-backend/cdk/constructs/inspector.InspectorParams`](<constructs/inspector.py.md#InspectorParams>)
+- **See also**: [`python-backend/cdk/staging_stack.StagingStack`](<#StagingStack>)  (Base Class)
 
 
 

@@ -3,31 +3,31 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `fifth_grader.py` file contains a prompt and message setup for creating content aimed at explaining computers and software to a fifth-grade audience in an engaging and interactive manner.
+The `fifth_grader.py` file contains a prompt and message setup for creating content tailored to a fifth grader's understanding of computers and software, emphasizing simplicity, engagement, and interactive learning.
 
 # Purpose
-This code is a configuration setup for a conversational AI or chatbot system, providing a specific prompt and message structure. It defines a `PROMPT` string that outlines a scenario where the AI needs to explain computer and software concepts to a fifth grader in an engaging and simple manner. The `MESSAGE` and `ASSISTANT_MESSAGE` dictionaries are used to structure the interaction, specifying roles and content for both the user and the assistant. This code offers narrow functionality, focusing on setting up a specific conversational context rather than implementing a broad range of features.
+This code is a configuration setup for a conversational AI or chatbot system, providing a narrow and specific functionality. It defines a prompt and message structure that guides the AI on how to interact with a specific audience—in this case, a fifth grader interested in learning about computers and software. The `PROMPT` variable contains a detailed description of the target audience and the type of content they would find engaging, while the `MESSAGE` and `ASSISTANT_MESSAGE` dictionaries define the roles and content for the user and assistant, respectively. This setup is likely part of a larger system where these configurations help tailor the AI's responses to be age-appropriate and engaging for young learners.
 # Global Variables
 
 ---
 ### PROMPT
 - **Type**: `str`
-- **Description**: The variable `PROMPT` is a multi-line string that describes the content requirements for a reader persona, specifically a fifth grader interested in learning about computers and software. It outlines the need for simple explanations, colorful illustrations, and interactive elements to engage the young audience.
-- **Use**: This variable is used to store the content guidelines for creating educational material tailored to a fifth-grade audience.
+- **Description**: The variable `PROMPT` is a multi-line string that contains a detailed description of the content to be curated for a specific audience, namely a fifth grader. It outlines the type of content that should be created, focusing on simple and engaging explanations of computers and software, with an emphasis on visual and interactive elements.
+- **Use**: This variable is used to store the content guidelines for creating educational material tailored to a young audience.
 
 
 ---
 ### MESSAGE
 - **Type**: `dict`
-- **Description**: The `MESSAGE` variable is a dictionary that contains two key-value pairs: 'role' and 'content'. The 'role' key is assigned the string 'user', indicating the role of the message sender, while the 'content' key is assigned the value of the `PROMPT` variable, which is a multi-line string describing a task for curating content for a fifth grader.
-- **Use**: This variable is used to store and represent a message from a user, including their role and the content they are interested in, which is then likely used in a communication or processing context.
+- **Description**: The `MESSAGE` variable is a dictionary that contains two key-value pairs: 'role' and 'content'. The 'role' key is assigned the value 'user', indicating the role of the message sender, while the 'content' key is assigned the value of the `PROMPT` variable, which is a string describing a task for creating content suitable for a fifth grader.
+- **Use**: This variable is used to store and represent a message from the user, including their role and the content they wish to communicate.
 
 
 ---
 ### ASSISTANT\_MESSAGE
 - **Type**: `dict`
-- **Description**: The `ASSISTANT_MESSAGE` variable is a dictionary that represents a message from an assistant in a conversational context. It contains two key-value pairs: 'role', which is set to 'assistant', and 'content', which is a string indicating the assistant's intention to communicate in a manner suitable for a fifth grader.
-- **Use**: This variable is used to define the assistant's role and the style of communication it will adopt when interacting with the user.
+- **Description**: The `ASSISTANT_MESSAGE` variable is a dictionary that represents a message from an assistant, with a specific role and content. The role is set to 'assistant', and the content indicates that the assistant will respond in a manner suitable for a fifth grader.
+- **Use**: This variable is used to define the assistant's response style and role in a communication context, likely for a conversational AI or chatbot.
 
 
 

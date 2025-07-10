@@ -3,15 +3,15 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `workflows` folder in the `python-backend` codebase contains GitHub Actions workflow configuration files for automating tasks such as dependency updates, environment deployments (development, staging, production), backend operations, and running unit tests.
+GitHub Actions workflow configuration files for automating dependency updates, deployments, and unit testing.
 
 
 ## Files
 - **[dependabot.yml](dependabot.yml.md)**: The `dependabot.yml` file in the `python-backend` codebase configures a GitHub Actions workflow to automatically update and commit changes to interdependent packages and lock files when Dependabot opens or synchronizes a pull request.
 - **[develop.yaml](develop.yaml.md)**: The `develop.yaml` file in the `python-backend` codebase defines a GitHub Actions workflow for deploying the backend development environment, triggered by successful unit tests or manual dispatch, and includes steps for setting up Node.js, Python, AWS credentials, and deploying various services using Poetry and Modal.
 - **[main.yaml](main.yaml.md)**: The `main.yaml` file in the `python-backend` codebase defines a GitHub Actions workflow for deploying the backend to production upon pushes to the main branch, including setting up Node.js and Python environments, configuring AWS credentials, and deploying various content services using Poetry and Modal.
-- **[ops.yaml](ops.yaml.md)**: The `ops.yaml` file defines a GitHub Actions workflow for deploying backend operations, including setting up Node.js and Python environments, installing dependencies, configuring AWS credentials, and deploying with AWS CDK.
-- **[staging.yaml](staging.yaml.md)**: The `staging.yaml` file in the `python-backend` codebase defines a GitHub Actions workflow for deploying the backend to a staging environment upon pushes to branches prefixed with 'release/', including steps for setting up Node.js and Python, installing dependencies, configuring AWS credentials, and deploying various services.
+- **[ops.yaml](ops.yaml.md)**: The `ops.yaml` file defines a GitHub Actions workflow for deploying backend operations, triggered by pushes to the "ops" branch, and includes steps for setting up Node.js, Python, and AWS credentials, as well as deploying with CDK.
+- **[staging.yaml](staging.yaml.md)**: The `staging.yaml` file in the `python-backend` codebase defines a GitHub Actions workflow for deploying the backend to a staging environment, triggered by pushes to branches prefixed with 'release/' or manually from the Actions tab.
 - **[unittest.yml](unittest.yml.md)**: The `unittest.yml` file in the `python-backend` codebase defines a GitHub Actions workflow for running unit tests on the `develop` and `staging` branches, setting up the environment, installing dependencies, executing tests, and archiving code coverage results.
 
 ---

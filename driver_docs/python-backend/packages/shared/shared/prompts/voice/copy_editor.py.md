@@ -3,24 +3,24 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `copy_editor.py` file contains a prompt for a technical copy editor, outlining detailed instructions for editing technical documents to ensure clarity, conciseness, and relevance to the specific project.
+The `copy_editor.py` file contains a prompt for a technical copy editor, outlining detailed instructions for editing technical documents to ensure clarity, conciseness, and relevance.
 
 # Purpose
-This code defines a configuration for a language model prompt, specifically tailored for a technical copy editor role. It provides a detailed and specific set of instructions for editing technical documents, emphasizing clarity, conciseness, and relevance to the project at hand. The code is a collection of configuration variables encapsulated in a string, which outlines the editing guidelines, such as removing redundant or generic content, and focusing on making the document useful and specific. The `MESSAGE` dictionary pairs this prompt with a role, indicating its use in a system that likely involves automated or assisted document editing processes. Overall, the functionality is narrow, focusing on refining technical documentation to enhance its utility and precision.
+This code defines a configuration for a language model prompt used in a technical copy editing context. It consists of a multi-line string `PROMPT` that outlines the role and instructions for a technical copy editor, emphasizing the need for concise, specific, and useful documentation. The instructions focus on removing redundant, generic, or speculative content and ensuring clarity and relevance to the project at hand. Additionally, a dictionary `MESSAGE` is created with a "system" role and the `PROMPT` content, likely intended for use in a larger system where this configuration guides the behavior of a language model or similar tool. This code provides narrow functionality, specifically tailored for refining technical documentation.
 # Global Variables
 
 ---
 ### PROMPT
 - **Type**: `str`
-- **Description**: The variable `PROMPT` is a multi-line string that contains detailed instructions for a technical copy editor. It outlines the editor's role, expertise, and specific guidelines for editing technical documents to ensure clarity, conciseness, and relevance. The instructions emphasize removing unnecessary content and focusing on making the document useful and specific to the project.
-- **Use**: This variable is used to provide a set of comprehensive editing guidelines for a technical copy editor, ensuring that the resulting documentation is clear, concise, and project-specific.
+- **Description**: The `PROMPT` variable is a multi-line string that contains detailed instructions for a technical copy editor. It outlines the editor's role, expertise, and specific guidelines for editing technical documents to ensure clarity, conciseness, and relevance to the project at hand.
+- **Use**: This variable is used to provide a comprehensive set of instructions for a technical copy editor to follow when editing a section of a technical document.
 
 
 ---
 ### MESSAGE
 - **Type**: `dict`
 - **Description**: The `MESSAGE` variable is a dictionary that contains two key-value pairs: 'role' and 'content'. The 'role' key is assigned the string 'system', and the 'content' key is assigned the value of the `PROMPT` variable, which is a multi-line string providing detailed instructions for a technical copy editor.
-- **Use**: This variable is used to define a system message with specific content instructions for a technical copy editor, likely in the context of a larger application or system that processes or generates technical documentation.
+- **Use**: This variable is used to encapsulate the role and instructions for a system, likely in the context of a conversational AI or similar application.
 
 
 

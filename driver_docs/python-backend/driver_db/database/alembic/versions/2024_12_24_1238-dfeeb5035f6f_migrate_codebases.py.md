@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `2024_12_24_1238-dfeeb5035f6f_migrate_codebases.py` file is an Alembic migration script that executes a codebase migration during the upgrade process in the `python-backend` codebase.
+The `2024_12_24_1238-dfeeb5035f6f_migrate_codebases.py` file is an Alembic migration script that executes a codebase migration using the `MIGRATE_CODEBASE` operation during the upgrade process.
 
 # Purpose
-This code is a database migration script using Alembic, a lightweight database migration tool for usage with SQLAlchemy. It provides narrow functionality, specifically designed to handle the migration of codebases within a database schema. The script includes metadata such as a unique revision ID and a reference to a previous revision, which helps in tracking the sequence of migrations. The [`upgrade`](#upgrade) function executes a migration operation defined in `MIGRATE_CODEBASE`, which is imported from another module, while the [`downgrade`](#downgrade) function is left empty, indicating that this migration is not reversible. This script is part of a larger system for managing database schema changes in a controlled and versioned manner.
+This code is a database migration script using Alembic, a lightweight database migration tool for usage with SQLAlchemy. It provides narrow functionality, specifically designed to handle a single migration task within a database schema. The script defines an [`upgrade`](<#upgrade>) function that executes a migration operation, `MIGRATE_CODEBASE`, which is imported from another module, indicating that the actual migration logic is encapsulated elsewhere. The [`downgrade`](<#downgrade>) function is defined but left empty, suggesting that this migration is either irreversible or that a rollback procedure has not been implemented. The script includes metadata such as `revision`, `down_revision`, and timestamps, which are essential for Alembic to track the sequence of migrations.
 # Imports and Dependencies
 
 ---
@@ -26,8 +26,8 @@ This code is a database migration script using Alembic, a lightweight database m
 ---
 ### down\_revision
 - **Type**: `str`
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in a migration script. It is used by Alembic, a database migration tool, to determine the order of migrations and ensure that they are applied in the correct sequence.
-- **Use**: This variable is used by Alembic to track the dependency of the current migration on a previous migration.
+- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in a sequence of migrations. It is used by Alembic, a database migration tool, to determine the order of migrations and ensure that they are applied in the correct sequence.
+- **Use**: This variable is used by Alembic to track the migration history and dependencies between different schema revisions.
 
 
 ---
@@ -40,8 +40,8 @@ This code is a database migration script using Alembic, a lightweight database m
 ---
 ### depends\_on
 - **Type**: `NoneType`
-- **Description**: The variable `depends_on` is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes information about dependencies between migration scripts.
-- **Use**: This variable is used to indicate that the current migration script does not depend on any other migration scripts.
+- **Description**: The variable `depends_on` is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically indicates dependencies on other migrations.
+- **Use**: This variable is used to specify that the current migration does not depend on any other migrations.
 
 
 # Functions

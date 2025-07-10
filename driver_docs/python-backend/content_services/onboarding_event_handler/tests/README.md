@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `tests` folder in the `python-backend` codebase contains unit tests, including a test for the `handler` function from the `src.main` module using a mock SNS event.
+Unit tests for the onboarding event handler, focusing on the lambda handler function with a mock SNS event.
 
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[test_main.py](test_main.py.md)**: The `test_main.py` file contains a unit test for the `handler` function from the `src.main` module, using a mock SNS event to verify that the function returns "OK".
+- **[test_main.py](test_main.py.md)**: The `test_main.py` file contains unit tests for the onboarding event handler, specifically testing the lambda handler function using a mock SNS event.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

@@ -6,7 +6,7 @@
 The `file_content.py` file defines a Pydantic model `ProcessedFileContent` for handling file content as a string.
 
 # Purpose
-This code defines a simple data model using the Pydantic library, which is a popular tool for data validation and settings management in Python. The `ProcessedFileContent` class inherits from `BaseModel`, indicating that it is designed to handle structured data with validation. The class contains a single attribute, `content`, which is a string, suggesting that it is intended to store and manage the content of a processed file. The commented-out section hints at a potential custom initialization method that would pretty-print the model's data, but it is not active in the current code. Overall, this file provides narrow functionality focused on encapsulating and validating file content data within a structured model.
+This code defines a simple data model using the Pydantic library, which is a popular tool for data validation and settings management in Python. The `ProcessedFileContent` class inherits from `BaseModel` and includes a single attribute, `content`, which is a string. This class is designed to encapsulate the content of a processed file, providing a structured way to handle and validate this data. The commented-out section suggests an intention to include a custom initializer that would pretty-print the model's data, but this functionality is currently not active. Overall, the code provides narrow functionality focused on defining and managing a specific data structure.
 # Imports and Dependencies
 
 ---
@@ -18,7 +18,7 @@ This code defines a simple data model using the Pydantic library, which is a pop
 ---
 ### ProcessedFileContent<!-- {{#class:python-backend/packages/shared/shared/interfaces/file_content/file_content.ProcessedFileContent}} -->
 - **Members**:
-    - `content`: A string representing the content of the processed file.
+    - `content`: A string representing the content of a processed file.
 - **Description**: The ProcessedFileContent class is a Pydantic model that encapsulates the content of a processed file as a string. It inherits from BaseModel, which provides data validation and serialization capabilities. The class is designed to handle the content of a file in a structured manner, leveraging Pydantic's features for data management.
 - **Inherits From**:
     - `BaseModel`

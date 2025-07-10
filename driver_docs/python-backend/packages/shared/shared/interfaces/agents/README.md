@@ -3,16 +3,16 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `agents` folder in the `python-backend` codebase contains various Python files that define classes and structures for managing agent configurations, block categorizations, data scopes, pipeline systems, and user prompts.
+Python files that define classes and configurations for managing agent operations, including agent configuration, block types and responses, data scope management, pipeline configuration, and user prompts with context.
 
 
 ## Files
 - **[agent_configuration.py](agent_configuration.py.md)**: The `agent_configuration.py` file defines the `AgentConfiguration` class, which manages the configuration of an agent, including model selection, system prompts, iterations, tool configurations, and data scope.
-- **[block_kind.py](block_kind.py.md)**: The `block_kind.py` file defines an enumeration `BlockKind` that categorizes different types of blocks such as LIST, TABLE, DIAGRAM, CODE, TEXT, and ANY.
+- **[block_kind.py](block_kind.py.md)**: The `block_kind.py` file defines an enumeration `BlockKind` representing different types of blocks such as LIST, TABLE, DIAGRAM, CODE, TEXT, and ANY.
 - **[block_response.py](block_response.py.md)**: The `block_response.py` file defines an abstract base class `BlockResponse` that extends `BaseModel` and requires the implementation of a `to_markdown` method.
 - **[data_scope.py](data_scope.py.md)**: The `data_scope.py` file defines the `DataScope` class, which manages the scope of an agent's operation by handling nodes accessible to the agent, including methods for retrieving nodes by identifier, creating child data scopes, and generating human-readable summaries.
-- **[pipeline_configuration.py](pipeline_configuration.py.md)**: The `pipeline_configuration.py` file defines the structure and behavior of a pipeline system for agents, including step types, configurations, inputs, and responses within the `python-backend` codebase.
-- **[prompt.py](prompt.py.md)**: The `prompt.py` file defines a `PromptWithContext` class that manages user prompts with additional context, providing functionality to convert the context into an XML format and update it with additional information.
+- **[pipeline_configuration.py](pipeline_configuration.py.md)**: The `pipeline_configuration.py` file defines classes and enums for configuring and executing pipeline steps in an agent-based system, including step types, input, and response handling.
+- **[prompt.py](prompt.py.md)**: The `prompt.py` file defines a `PromptWithContext` class that manages user prompts with additional context, providing functionality to convert the context into an XML format and to update the context with additional information.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

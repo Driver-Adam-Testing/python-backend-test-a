@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `response.py` file defines a Pydantic model `DriverResponse` and a subclass `DriverModalResponse` with an additional `call_id` attribute.
+The `response.py` file defines a Pydantic model `DriverResponse` and a subclass `DriverModalResponse` that includes a `call_id` attribute.
 
 # Purpose
-This code defines a simple data model using the Pydantic library, which is used for data validation and settings management in Python. It provides narrow functionality by defining a base class `DriverResponse` and a subclass `DriverModalResponse` that extends it. The `DriverModalResponse` class includes a single attribute, `call_id`, which is a string. This setup is typical for defining structured data models that can be easily validated and serialized, often used in applications that require strict data handling, such as APIs or data processing pipelines.
+This code defines a simple data model using the Pydantic library, which is used for data validation and settings management in Python. It provides narrow functionality by defining a base class `DriverResponse` and a subclass `DriverModalResponse` that extends it. The `DriverModalResponse` class includes a single attribute, `call_id`, which is a string. This setup suggests that the code is likely part of a larger system where structured data responses are required, possibly in an API or a service that handles driver-related operations. The use of Pydantic ensures that the data conforms to the specified schema, providing type safety and validation.
 # Imports and Dependencies
 
 ---
@@ -28,7 +28,7 @@ This code defines a simple data model using the Pydantic library, which is used 
     - `call_id`: A string representing the call identifier.
 - **Description**: The DriverModalResponse class extends the DriverResponse class and includes an additional attribute, call_id, which is used to store a unique identifier for a call. This class is likely part of a system that handles driver-related operations, where each response needs to be associated with a specific call through the call_id.
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/interfaces/response.DriverResponse`](#DriverResponse)
+    - [`python-backend/packages/shared/shared/interfaces/response.DriverResponse`](<#DriverResponse>)
 
 
 

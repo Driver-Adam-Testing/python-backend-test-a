@@ -3,7 +3,7 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `templates` folder in the `python-backend` codebase contains a file that defines a template for creating a comprehensive guide to assist users in understanding and interacting with the codebase.
+The `templates` folder in the `python-backend` codebase contains a file, `getting_started_guide.py`, which provides a template for creating a detailed guide to assist users in understanding and using the codebase.
 
 
 ## Files

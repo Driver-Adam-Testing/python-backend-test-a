@@ -3,11 +3,11 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `certs` folder in the `python-backend` codebase contains public key certificates for secure communication with both development and production databases.
+Public key certificates for database driver authentication and secure database connections.
 
 
 ## Files
-- **[dev_db_public_key.cert](dev_db_public_key.cert.md)**: The `dev_db_public_key.cert` file contains a public key certificate used for secure communication with the development database in the `python-backend` codebase.
+- **[dev_db_public_key.cert](dev_db_public_key.cert.md)**: The `dev_db_public_key.cert` file contains a public key certificate used in the `python-backend` codebase for database driver authentication.
 - **[prod_db_public_key.cert](prod_db_public_key.cert.md)**: The `prod_db_public_key.cert` file contains a public key certificate used for secure database connections in the `python-backend` codebase.
 
 ---

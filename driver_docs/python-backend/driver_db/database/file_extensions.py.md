@@ -6,7 +6,7 @@
 The `file_extensions.py` file defines an enumeration of file types and provides a function to map file extensions to these types, returning an appropriate `FileTypeEnum` value or `UNKNOWN` if the extension is not recognized.
 
 # Purpose
-This Python code defines an enumeration `FileTypeEnum` to categorize various file types based on their extensions, providing a broad functionality for file type identification. The [`get_file_type`](#get_file_type) function maps file extensions to their corresponding `FileTypeEnum` values using a dictionary, allowing for quick lookup and classification of files. This code is a utility module that can be integrated into larger systems to facilitate file handling and processing by determining the type of file based on its extension. It covers a wide range of programming, scripting, markup, and configuration file types, making it versatile for applications that need to manage diverse file formats. The function returns `FileTypeEnum.UNKNOWN` for any unrecognized extensions, ensuring robustness in handling unexpected inputs.
+This Python code defines an enumeration, `FileTypeEnum`, which categorizes various file types based on their extensions, and provides a function, [`get_file_type`](<#get_file_type>), to map file extensions to these categories. The code offers narrow functionality, specifically for identifying and classifying file types by their extensions, which is useful in applications that need to handle files differently based on their type, such as file management systems or code editors. The `FileTypeEnum` class lists a comprehensive set of file types, including programming languages, markup languages, and configuration files, while the [`get_file_type`](<#get_file_type>) function uses a dictionary to map common file extensions to these enumerated types, defaulting to `UNKNOWN` if an extension is not recognized. This script is a utility module that can be integrated into larger systems requiring file type identification.
 # Imports and Dependencies
 
 ---
@@ -52,7 +52,7 @@ This Python code defines an enumeration `FileTypeEnum` to categorize various fil
     - `PERL`: Represents a Perl file type.
     - `COBOL`: Represents a COBOL file type.
     - `D`: Represents a D file type.
-    - `NSIS`: Represents an NSIS file type.
+    - `NSIS`: Represents a NSIS file type.
     - `SCSS`: Represents a SCSS file type.
     - `LESS`: Represents a LESS file type.
     - `HTML`: Represents an HTML file type.
@@ -79,7 +79,7 @@ This Python code defines an enumeration `FileTypeEnum` to categorize various fil
     - `LST`: Represents a LST file type.
     - `DRIVER_PAGE`: Represents a driver page file type.
     - `UNKNOWN`: Represents an unknown file type.
-- **Description**: The `FileTypeEnum` class is an enumeration that defines a comprehensive list of file types, each represented by a unique string identifier. This class is used to categorize and identify different types of files based on their extensions, providing a standardized way to handle various file formats in a program. It includes a wide range of file types from programming languages, markup languages, configuration files, and more, ensuring broad applicability in file type recognition and processing tasks.
+- **Description**: The `FileTypeEnum` class is an enumeration that defines a comprehensive list of file types, each represented by a unique string identifier. This class is used to categorize and identify different types of files based on their extensions, providing a standardized way to handle various file formats in a program. It includes a wide range of programming, scripting, markup, and configuration file types, as well as a generic 'UNKNOWN' type for unrecognized file extensions.
 - **Inherits From**:
     - `Enum`
 

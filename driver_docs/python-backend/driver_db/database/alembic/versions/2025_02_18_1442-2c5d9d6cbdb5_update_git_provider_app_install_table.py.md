@@ -6,7 +6,7 @@
 The `2025_02_18_1442-2c5d9d6cbdb5_update_git_provider_app_install_table.py` file contains an Alembic migration script that updates the `git_provider_apps` and `git_provider_app_installations` tables by altering column nullability and adding a new JSONB column.
 
 # Purpose
-This source code file is an Alembic migration script designed to modify the database schema for a project that involves Git provider applications. It provides narrow functionality, specifically focusing on altering the structure of two tables: `git_provider_apps` and `git_provider_app_installations`. The script includes an [`upgrade`](#upgrade) function to make columns nullable and add a new JSONB column named `metadata` to the `git_provider_app_installations` table, and a [`downgrade`](#downgrade) function to revert these changes. This script is part of a version-controlled database migration process, ensuring that the database schema can be updated or rolled back in a controlled manner.
+This Python script is an Alembic migration file used to modify the database schema for a project that involves Git provider applications. It provides narrow functionality, specifically focusing on altering the structure of two tables: `git_provider_apps` and `git_provider_app_installations`. The [`upgrade`](<#upgrade>) function makes several changes, such as altering columns to be nullable and adding a new JSONB column named `metadata` to the `git_provider_app_installations` table. Conversely, the [`downgrade`](<#downgrade>) function reverses these changes, ensuring that the database schema can be rolled back to its previous state if needed. This script is part of a version-controlled database migration system, allowing for systematic and reversible updates to the database schema.
 # Imports and Dependencies
 
 ---
@@ -20,36 +20,36 @@ This source code file is an Alembic migration script designed to modify the data
 ---
 ### revision
 - **Type**: `string`
-- **Description**: The `revision` variable is a string that represents the unique identifier for the current database schema migration. It is used by Alembic, a database migration tool for SQLAlchemy, to track and apply changes to the database schema.
-- **Use**: This variable is used to identify the specific migration script in the Alembic migration history.
+- **Description**: The `revision` variable is a string that represents the unique identifier for the current database migration script. It is used by Alembic, a database migration tool for SQLAlchemy, to track and apply changes to the database schema.
+- **Use**: This variable is used by Alembic to identify the current migration script in the version control history.
 
 
 ---
 ### down\_revision
-- **Type**: `string`
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a linear sequence of migrations by indicating which revision this migration is based on.
+- **Type**: `str`
+- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a link between the current revision and its predecessor, allowing Alembic to maintain a linear history of database changes.
 - **Use**: This variable is used by Alembic to determine the order of database migrations and ensure that they are applied in the correct sequence.
 
 
 ---
 ### branch\_labels
 - **Type**: `NoneType`
-- **Description**: The variable `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes revision identifiers and other configuration details.
-- **Use**: This variable is used to define branch labels for the migration, but is currently set to `None`, indicating no specific branch labels are associated with this migration.
+- **Description**: The variable `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes identifiers for the migration such as revision ID and down revision.
+- **Use**: `branch_labels` is used to specify labels for the branch in Alembic migrations, but in this case, it is not utilized as it is set to `None`.
 
 
 ---
 ### depends\_on
 - **Type**: `NoneType`
-- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically indicates dependencies on other migrations.
-- **Use**: This variable is used to specify that the current migration does not depend on any other migrations.
+- **Description**: The `depends_on` variable is a global variable set to `None`. It is used in the context of Alembic migrations to specify dependencies on other migrations, but in this case, it indicates that there are no dependencies for this migration script.
+- **Use**: This variable is used to indicate that the current Alembic migration does not depend on any other migration.
 
 
 # Functions
 
 ---
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2025_02_18_1442-2c5d9d6cbdb5_update_git_provider_app_install_table.upgrade}} -->
-The `upgrade` function modifies the database schema by altering columns in the `git_provider_apps` and `git_provider_app_installations` tables to allow null values and adds a new JSONB column to the `git_provider_app_installations` table.
+The `upgrade` function modifies the database schema by altering columns in the `git_provider_apps` and `git_provider_app_installations` tables and adding a new column to the latter.
 - **Inputs**: None
 - **Control Flow**:
     - The function begins by altering the 'scopes' column in the 'git_provider_apps' table to allow null values.

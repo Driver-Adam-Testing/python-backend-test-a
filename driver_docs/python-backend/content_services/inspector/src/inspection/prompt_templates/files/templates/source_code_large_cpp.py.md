@@ -3,13 +3,18 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_large_cpp.py` file defines a template for analyzing and organizing large C++ source code files, focusing on aspects such as purpose, imports, global variables, data structures, and functions.
+The `source_code_large_cpp.py` file defines a template for generating structured prompts related to large C++ source code, including sections for purpose, imports, global variables, data structures, and functions.
 
 # Purpose
-This Python code defines a configuration for processing and analyzing C++ source code, specifically focusing on extracting and organizing various components such as imports, global variables, data structures, and functions. It utilizes a series of templates and collections from the `utils.lang_specialization.cpp` and `utils.lang_specialization.ir_common` modules to facilitate the static analysis and transformation of C++ code into structured data. The code is a configuration script that sets up a series of processing steps, each associated with a specific aspect of C++ code, such as identifying and listing global variables or data structures. This setup is narrow in functionality, as it is specifically tailored for handling C++ code analysis and transformation tasks, leveraging predefined templates and symbol collections to achieve its purpose.
+This Python code is a configuration file that defines a template for generating structured prompts related to C++ source code analysis. It imports various components and utilities from shared modules and language specialization modules, specifically for C++ language constructs. The template, `SOURCE_CODE_LARGE_TEMPLATE_CPP`, is a list of tuples, each representing a section of the prompt, such as "Purpose," "Imports and Dependencies," "Global Variables," "Data Structures," and "Functions." Each section is associated with specific instructions or methods for extracting and formatting information from C++ code, using both static analysis and language model (LLM) outputs. This file provides narrow functionality focused on creating structured prompts for analyzing and documenting large C++ codebases.
 # Imports and Dependencies
 
 ---
+- `shared.prompts.structured_prompting.GENERAL_STE_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_CODE_PURPOSE`
+- `shared.prompts.structured_prompting.USE_BACKTICKS_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.Component`
+- `shared.prompts.structured_prompting.Prompt`
 - `utils.lang_specialization.cpp.SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT`
 - `utils.lang_specialization.cpp.SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_CPP`
 - `utils.lang_specialization.cpp.CppDataStructureCollection`
@@ -28,8 +33,8 @@ This Python code defines a configuration for processing and analyzing C++ source
 ---
 ### SOURCE\_CODE\_LARGE\_TEMPLATE\_CPP
 - **Type**: `list`
-- **Description**: `SOURCE_CODE_LARGE_TEMPLATE_CPP` is a list of tuples, where each tuple represents a section of a C++ source code analysis template. Each tuple contains a prompt type, a section title, and functions or lambdas for processing C++ code to extract specific information such as imports, global variables, data structures, and functions.
-- **Use**: This variable is used to define a structured template for analyzing and extracting information from large C++ source code files.
+- **Description**: `SOURCE_CODE_LARGE_TEMPLATE_CPP` is a list of tuples, each containing structured information for generating prompts related to C++ source code analysis. Each tuple includes a section identifier, a section title, and various components or functions that are used to process or generate content for that section.
+- **Use**: This variable is used to define the structure and content of prompts for analyzing and documenting different aspects of C++ source code, such as purpose, imports, global variables, data structures, and functions.
 
 
 

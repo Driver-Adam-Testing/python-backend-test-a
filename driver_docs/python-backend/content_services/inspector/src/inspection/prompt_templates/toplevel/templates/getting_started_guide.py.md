@@ -6,7 +6,7 @@
 The `getting_started_guide.py` file defines a template for creating a comprehensive guide to help users understand and interact with a codebase, including sections on purpose, problem statement, functionality, user information, technical overview, and setup instructions.
 
 # Purpose
-This Python code defines a template for a "Getting Started Guide" for a codebase, utilizing a structured format to ensure comprehensive documentation. It imports a utility class `S` from `utils.templates`, which is likely used to define different types of sections or prompts within the guide. The code provides a series of prompts, each designed to elicit specific information about the codebase, such as its purpose, problem statement, functionality, user interactions, and technical overview. These prompts are organized into a list of tuples, `GETTING_STARTED_GUIDE_TEMPLATE`, where each tuple specifies the type of content (e.g., raw text or a single prompt) and the corresponding section title. This setup suggests that the code is part of a broader documentation framework, offering narrow functionality focused on generating structured documentation for software projects.
+This Python code defines a template for a "Getting Started Guide" for a codebase, utilizing a structured format to ensure comprehensive documentation. It imports a utility for handling templates and defines a series of prompts that guide the documentation process, covering aspects such as the codebase's purpose, problem statement, functionality, user interactions, and technical overview. The code is narrow in functionality, focusing specifically on generating documentation templates rather than executing any business logic or application functionality. It is essentially a configuration script that outlines the sections and prompts needed to create a detailed and organized guide for users and developers to understand and interact with a codebase effectively. The use of structured prompts ensures that all critical aspects of the codebase are documented, facilitating easier onboarding and continued exploration for users.
 # Imports and Dependencies
 
 ---
@@ -18,8 +18,8 @@ This Python code defines a template for a "Getting Started Guide" for a codebase
 ---
 ### PURPOSE\_PROMPT
 - **Type**: `str`
-- **Description**: PURPOSE_PROMPT is a string variable that contains a template prompt asking for a concise statement of the codebase's purpose. It is designed to elicit a brief, yet comprehensive, description of what the codebase aims to achieve.
-- **Use**: This variable is used as a prompt in documentation or user guides to help users or developers articulate the primary purpose of the codebase in a structured manner.
+- **Description**: The `PURPOSE_PROMPT` variable is a string that contains a template prompt asking for a concise statement of the codebase's purpose. It is designed to elicit a paragraph of 3 to 5 sentences that clearly and concisely describes the overall aim and function of the codebase.
+- **Use**: This variable is used as a template prompt in documentation or guides to help users articulate the purpose of the codebase.
 
 
 ---
@@ -32,15 +32,15 @@ This Python code defines a template for a "Getting Started Guide" for a codebase
 ---
 ### FUNCTIONALITY\_OVERVIEW\_PROMPT
 - **Type**: `str`
-- **Description**: The `FUNCTIONALITY_OVERVIEW_PROMPT` is a string variable that contains a prompt asking for a high-level overview of the codebase's functionality. It is used as part of a template to guide users in documenting or understanding the codebase.
-- **Use**: This variable is used in the `GETTING_STARTED_GUIDE_TEMPLATE` to prompt users to provide a summary of the codebase's functionality.
+- **Description**: `FUNCTIONALITY_OVERVIEW_PROMPT` is a string variable that contains a prompt asking for a high-level overview of the codebase's functionality. It is used as part of a template system to guide users in documenting or understanding the codebase.
+- **Use**: This variable is used to prompt users to provide a summary of the codebase's functionality in documentation or guides.
 
 
 ---
 ### TARGET\_USER\_ARCHETYPES\_PROMPT
-- **Type**: `str`
-- **Description**: The `TARGET_USER_ARCHETYPES_PROMPT` is a string variable that contains a prompt asking for a description of the intended users of the codebase. It is part of a series of prompts used to gather detailed documentation about a codebase.
-- **Use**: This variable is used to prompt users or developers to describe the target user archetypes for the codebase, aiding in the creation of comprehensive documentation.
+- **Type**: `string`
+- **Description**: `TARGET_USER_ARCHETYPES_PROMPT` is a string variable that contains a prompt asking for a description of the intended users of the codebase. It is part of a series of prompts used to gather detailed documentation about a codebase.
+- **Use**: This variable is used to prompt users or developers to provide information about the target user archetypes for the codebase, which is then included in the documentation.
 
 
 ---
@@ -53,7 +53,7 @@ This Python code defines a template for a "Getting Started Guide" for a codebase
 ---
 ### USER\_JOURNEYS\_PROMPT
 - **Type**: `str`
-- **Description**: The `USER_JOURNEYS_PROMPT` is a string variable that contains a template for listing user journeys in a bulleted format. It instructs users to describe user journeys by specifying what a user wants to achieve and the reason behind it, using the format 'As a user, I want to <X> so that I can <Y>.'
+- **Description**: `USER_JOURNEYS_PROMPT` is a string variable that contains a template for listing user journeys in a bulleted list format. It instructs users to describe user journeys by specifying what a user wants to achieve and the reason behind it, using the format: 'As a user, I want to <X> so that I can <Y>.'
 - **Use**: This variable is used to guide users in documenting user journeys for the codebase, ensuring a consistent and structured format.
 
 
@@ -61,7 +61,7 @@ This Python code defines a template for a "Getting Started Guide" for a codebase
 ### USER\_INTERACTION\_METHODS\_PROMPT
 - **Type**: `str`
 - **Description**: The `USER_INTERACTION_METHODS_PROMPT` is a string variable that contains a prompt asking for a description of how users or developers interact with the codebase. It is part of a series of prompts used to gather detailed documentation about a codebase.
-- **Use**: This variable is used as a prompt in documentation templates to elicit information about user and developer interactions with the codebase.
+- **Use**: This variable is used as a template prompt to guide users or developers in documenting the interaction methods with the codebase.
 
 
 ---
@@ -81,29 +81,29 @@ This Python code defines a template for a "Getting Started Guide" for a codebase
 ---
 ### COMPONENT\_INTERACTIONS\_PROMPT
 - **Type**: `str`
-- **Description**: The `COMPONENT_INTERACTIONS_PROMPT` is a string variable that contains a prompt asking for an explanation of how the key components of a codebase interact with each other. This prompt is likely used in documentation or user guides to help users understand the relationships and interactions between different parts of the codebase.
-- **Use**: This variable is used to provide a template prompt for generating documentation about component interactions within a codebase.
+- **Description**: The `COMPONENT_INTERACTIONS_PROMPT` is a string variable that contains a prompt asking for an explanation of how the key components of a codebase interact with each other. It is part of a series of prompts used to gather detailed documentation about a codebase.
+- **Use**: This variable is used in the `GETTING_STARTED_GUIDE_TEMPLATE` to guide users in documenting the interactions between different components of the codebase.
 
 
 ---
 ### SETUP\_AND\_INSTALLATION\_PROMPT
-- **Type**: `str`
-- **Description**: The `SETUP_AND_INSTALLATION_PROMPT` is a string variable that contains a prompt asking for step-by-step instructions for setting up and installing the codebase. It is part of a series of prompts used to guide the documentation process for a codebase.
+- **Type**: `string`
+- **Description**: The `SETUP_AND_INSTALLATION_PROMPT` is a string variable that contains a prompt asking for step-by-step instructions for setting up and installing the codebase. It is part of a series of prompts used to guide the creation of documentation for a codebase.
 - **Use**: This variable is used in the `GETTING_STARTED_GUIDE_TEMPLATE` to prompt users to provide detailed setup and installation instructions for the codebase.
 
 
 ---
 ### CONTINUED\_EXPLORATION\_PROMPT
 - **Type**: `str`
-- **Description**: The `CONTINUED_EXPLORATION_PROMPT` is a string variable that contains a prompt asking for an outline to continue learning about the codebase. It is part of a series of prompts designed to guide users in understanding and documenting various aspects of a codebase.
-- **Use**: This variable is used as a prompt in documentation or guides to encourage users to explore and learn more about the codebase beyond the initial setup and basic usage.
+- **Description**: The `CONTINUED_EXPLORATION_PROMPT` is a string variable that contains a prompt asking for an outline to continue learning about the codebase. It is part of a series of prompts designed to guide users in understanding various aspects of the codebase.
+- **Use**: This variable is used as a prompt in documentation or guides to encourage users to explore and learn more about the codebase.
 
 
 ---
 ### GETTING\_STARTED\_GUIDE\_TEMPLATE
 - **Type**: `list`
-- **Description**: `GETTING_STARTED_GUIDE_TEMPLATE` is a list of tuples that serves as a template for creating a 'Getting Started' guide for a codebase. Each tuple contains a type of section (e.g., `S.RAW` or `S.SINGLE_PROMPT_TEXT`), a section title, and a prompt or description related to that section. The template is structured to cover various aspects of a codebase, including its purpose, user information, technical overview, and setup instructions.
-- **Use**: This variable is used to generate a structured guide that helps users understand and start using a codebase effectively.
+- **Description**: `GETTING_STARTED_GUIDE_TEMPLATE` is a list of tuples that serves as a template for creating a 'Getting Started' guide for a codebase. Each tuple contains a type of section (e.g., `S.RAW` or `S.SINGLE_PROMPT_TEXT`), a section title, and a prompt or description related to that section. The template is structured to guide users through understanding the codebase's purpose, user information, technical overview, and setup instructions.
+- **Use**: This variable is used to generate a structured guide for new users to understand and start using the codebase effectively.
 
 
 

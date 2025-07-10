@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `prompt_templates` folder in the `python-backend` codebase contains subfolders with templates and instructions for generating descriptions and summaries of software code, folders, and the overall codebase at various levels of detail.
+Subfolders with Python files and text templates for generating structured prompts and summarizing software.
 
 ## Folders
-- **[files](files/README.md)**: The `files` folder in the `python-backend` codebase contains a collection of text files and a `templates` folder, all of which provide templates and instructions for generating detailed and concise descriptions of software code and its components.
-- **[folders](folders/README.md)**: The `folders` folder in the `python-backend` codebase contains various text files that serve as templates and guides for summarizing the contents of a software folder, using different methods such as single sentences or paragraphs derived from descriptions of child files and folders.
-- **[toplevel](toplevel/README.md)**: The `toplevel` folder in the `python-backend` codebase contains templates and various text files that provide guidelines and instructions for summarizing and describing the codebase and its modules at different levels of detail, from comprehensive guides to single sentences.
+- **[files](files/README.md)**: Templates for generating structured prompts and analyzing code, with text files for writing software descriptions.
+- **[folders](folders/README.md)**: Various text files that provide templates and instructions for summarizing folder contents in single sentences or paragraphs.
+- **[toplevel](toplevel/README.md)**: Various text files with guidelines for summarizing software modules and a `templates` folder with a guide template.
 
 
 ---

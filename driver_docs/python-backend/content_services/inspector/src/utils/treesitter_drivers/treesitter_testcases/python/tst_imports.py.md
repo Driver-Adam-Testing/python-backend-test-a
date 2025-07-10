@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `tst_imports.py` file contains various test cases for different types of Python import statements, including simple imports, imports with aliases, conditional imports, and more complex scenarios like dynamic and programmatic imports.
+The `tst_imports.py` file contains various test cases for different types of Python import statements, demonstrating scenarios such as simple imports, imports with aliases, conditional imports, and more complex import patterns.
 
 # Purpose
-This Python script serves as a comprehensive demonstration of various import statement techniques and patterns. It covers a wide range of import scenarios, including simple module imports, aliasing, specific item imports, wildcard imports, conditional imports, and dynamic imports within functions. Additionally, it illustrates more advanced concepts such as relative imports, future imports, and programmatic imports using `importlib`. The script also highlights less common practices like nested try-except blocks for fallback imports and imports within class methods. While the script is primarily educational, showcasing both recommended and discouraged practices, it does not provide functional application logic but rather serves as a reference or test case collection for understanding Python's import capabilities.
+This Python script serves as a comprehensive demonstration of various import statement techniques and patterns used in Python programming. It covers a wide range of import scenarios, including simple module imports, aliasing, specific item imports, wildcard imports, conditional imports, and dynamic imports within functions. Additionally, it illustrates more advanced concepts such as relative imports, future imports, and programmatic imports using `importlib`. The script also highlights less common practices like nested try-except blocks for fallback imports and imports within class methods. While the script is primarily educational, showcasing both recommended and discouraged practices, it does not provide functional application code but rather serves as a reference for understanding the flexibility and nuances of Python's import system.
 # Imports and Dependencies
 
 ---
@@ -71,29 +71,30 @@ This Python script serves as a comprehensive demonstration of various import sta
 
 ---
 ### ImportInClass<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_imports.ImportInClass}} -->
-- **Description**: The `ImportInClass` class contains a single method, `method_with_import`, which demonstrates the use of an import statement within a method. This method imports the `hashlib` module and uses it to compute and return the MD5 hash of the byte string "test".
+- **Description**: The `ImportInClass` class demonstrates the use of an import statement within a method. It contains a single method, `method_with_import`, which imports the `hashlib` module and uses it to compute and return the MD5 hash of the byte string "test". This class serves as an example of how imports can be scoped to a specific method, allowing for dynamic or conditional importing of modules.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_imports.ImportInClass.method_with_import`](#ImportInClassmethod_with_import)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_imports.ImportInClass.method_with_import`](<#ImportInClassmethod_with_import>)
 
 **Methods**
 
 ---
 #### ImportInClass\.method\_with\_import<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_imports.ImportInClass.method_with_import}} -->
-The method `method_with_import` computes and returns the MD5 hash of the byte string 'test'.
+The method_with_import method imports the hashlib module and returns the MD5 hash of the string 'test'.
 - **Inputs**:
-    - `self`: Represents the instance of the class `ImportInClass` to which the method belongs.
+    - `self`: Represents the instance of the class ImportInClass to which the method belongs.
 - **Control Flow**:
-    - The method begins by importing the `hashlib` module, which is used for secure hash and message digest algorithms.
-    - It then computes the MD5 hash of the byte string `b"test"` using `hashlib.md5` and calls the `hexdigest` method to get the hexadecimal representation of the hash.
-    - Finally, it returns the computed hash as a string.
-- **Output**: A string representing the hexadecimal MD5 hash of the byte string 'test'.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_imports.ImportInClass`](#ImportInClass)  (Base Class)
+    - The method begins by importing the hashlib module within its scope.
+    - It then computes the MD5 hash of the byte string b'test' using hashlib.md5().
+    - The resulting hash object is converted to a hexadecimal string using the hexdigest() method.
+    - The hexadecimal string is returned as the output of the method.
+- **Output**: A hexadecimal string representing the MD5 hash of the byte string b'test'.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_imports.ImportInClass`](<#ImportInClass>)  (Base Class)
 
 
 
 ---
 ### PublicClass<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_imports.PublicClass}} -->
-- **Description**: The `PublicClass` is a placeholder class defined without any attributes or methods, serving as a basic example or a potential starting point for further development.
+- **Description**: The `PublicClass` is a minimal class definition that currently does not contain any attributes or methods. It serves as a placeholder or a base for further development, allowing for future expansion or customization.
 
 
 # Functions
@@ -105,19 +106,19 @@ The function `dynamic_import_example` dynamically imports the `random` and `secr
 - **Control Flow**:
     - The function begins by importing the `random` module and the `token_hex` function from the `secrets` module.
     - It then generates a random integer between 1 and 100 using `random.randint(1, 100)`.
-    - Simultaneously, it generates a secure random token of 8 bytes using `token_hex(8)`.
-    - Finally, the function returns a tuple containing the random integer and the secure token.
+    - It also generates a secure random token of 8 bytes using `token_hex(8)`.
+    - Finally, it returns a tuple containing the random integer and the secure token.
 - **Output**: A tuple containing a random integer between 1 and 100 and a secure random token of 8 bytes.
 
 
 ---
 ### conditional\_feature<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_imports.conditional_feature}} -->
-The `conditional_feature` function checks if a specific feature is available in the `sys` module.
+The `conditional_feature` function checks if a specific feature exists in the `sys` module and returns a boolean indicating its presence.
 - **Inputs**: None
 - **Control Flow**:
     - Imports the `sys` module within the function scope.
     - Uses `getattr` to attempt to retrieve the attribute `some_new_feature` from the `sys` module, defaulting to `None` if it does not exist.
-    - Checks if the retrieved feature is not `None`, indicating its presence.
+    - Returns `True` if the feature is found (i.e., not `None`), otherwise returns `False`.
 - **Output**: A boolean value indicating whether the `some_new_feature` attribute exists in the `sys` module.
 
 
@@ -129,7 +130,7 @@ The `programmatic_import` function dynamically imports a module by its name usin
 - **Control Flow**:
     - The function uses `importlib.import_module` to import the module specified by `module_name`.
     - The imported module is then returned.
-- **Output**: The function returns the imported module object.
+- **Output**: The function returns the module object corresponding to the imported module.
 
 
 ---

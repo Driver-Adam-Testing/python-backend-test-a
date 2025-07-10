@@ -6,7 +6,7 @@
 The `user.py` file defines API routes for retrieving user profile and organization information using Auth0 authentication.
 
 # Purpose
-This code is a FastAPI router module that provides a narrow set of API endpoints related to user information and organization details. It defines two asynchronous GET endpoints: `/me` and `/me/organization`. These endpoints utilize an `Auth0Service` instance to fetch and return user profile and organization data, respectively, based on the credentials provided by an `ApiKeyToken`. The code is structured to integrate with an authentication system, likely using Auth0, to ensure that requests are authenticated and authorized. Overall, this module is a concise implementation focused on handling user-related data retrieval in a web application.
+This code is a FastAPI router module that provides a narrow set of API endpoints related to user information and organization details. It imports necessary components, such as `ApiKeyToken` for authentication and `Auth0Service` for interacting with an external authentication service. The module defines two asynchronous GET endpoints: `/me`, which retrieves the user's profile information, and `/me/organization`, which fetches the user's organization details. Both endpoints require an `ApiKeyToken` to authenticate the caller and utilize the `Auth0Service` to obtain the necessary data. This code is part of a larger application, focusing specifically on user-related data retrieval through authenticated API requests.
 # Imports and Dependencies
 
 ---
@@ -20,15 +20,15 @@ This code is a FastAPI router module that provides a narrow set of API endpoints
 ---
 ### router
 - **Type**: `APIRouter`
-- **Description**: The `router` variable is an instance of FastAPI's `APIRouter` class. It is used to define a set of routes for the application, allowing for modular and organized route management.
-- **Use**: This variable is used to register HTTP endpoints, such as '/me' and '/me/organization', which handle requests and responses in the application.
+- **Description**: The `router` variable is an instance of the `APIRouter` class from the FastAPI framework. It is used to define and manage a group of related API routes within the application. This allows for modular and organized route management, making it easier to handle different endpoints and their associated logic.
+- **Use**: The `router` is used to register and handle HTTP GET requests for user information and organization details.
 
 
 ---
 ### auth0\_service
 - **Type**: `Auth0Service`
-- **Description**: The `auth0_service` variable is an instance of the `Auth0Service` class, which is likely responsible for handling authentication-related operations using the Auth0 platform. This instance is used to interact with user profiles and organizations, as seen in the provided API endpoints.
-- **Use**: This variable is used to call methods that retrieve user profile and organization information based on the provided API key token.
+- **Description**: The `auth0_service` variable is an instance of the `Auth0Service` class. This class is likely responsible for handling authentication-related operations, such as retrieving user profiles and organization information, by interfacing with the Auth0 authentication platform.
+- **Use**: This variable is used to call methods that fetch user profile and organization data based on the provided user or organization ID.
 
 
 # Functions
@@ -38,12 +38,12 @@ This code is a FastAPI router module that provides a narrow set of API endpoints
 The `user_info` function retrieves the user profile information for the authenticated user using their API key token.
 - **Decorators**: `@router.get`
 - **Inputs**:
-    - `caller`: An instance of `ApiKeyToken` representing the authenticated user, which contains the user's ID.
+    - `caller`: An instance of `ApiKeyToken` representing the authenticated user's API key token.
 - **Control Flow**:
     - The function calls `auth0_service.get_user_profile` with the `user_id` extracted from the `caller` object.
-- **Output**: A dictionary containing the user's profile information retrieved from the Auth0 service.
-- **Functions called**:
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.get_user_profile`](../../../services/auth0_service.py.md#Auth0Serviceget_user_profile)
+- **Output**: A dictionary containing the user's profile information.
+- **Functions Called**:
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.get_user_profile`](<../../../services/auth0_service.py.md#Auth0Serviceget_user_profile>)
 
 
 ---
@@ -53,12 +53,13 @@ The `user_organization` function retrieves the organization details for the auth
 - **Inputs**:
     - `caller`: An instance of `ApiKeyToken` representing the authenticated user's API key token, which contains the user's organization ID.
 - **Control Flow**:
-    - The function is an asynchronous FastAPI route handler that responds to GET requests at the '/me/organization' endpoint.
-    - It calls the [`get_organization`](../../../services/auth0_service.py.md#Auth0Serviceget_organization) method of the `auth0_service` object, passing the `organization_id` from the `caller` object.
-    - The result from [`get_organization`](../../../services/auth0_service.py.md#Auth0Serviceget_organization) is returned as the response.
-- **Output**: A dictionary containing the organization details associated with the authenticated user's organization ID.
-- **Functions called**:
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.get_organization`](../../../services/auth0_service.py.md#Auth0Serviceget_organization)
+    - The function is an asynchronous endpoint defined with FastAPI's `@router.get` decorator, indicating it handles GET requests to the `/me/organization` path.
+    - It takes a single parameter `caller`, which is an instance of `ApiKeyToken`.
+    - The function calls `auth0_service.get_organization` with `caller.organization_id` to retrieve the organization details associated with the user's organization ID.
+    - The result from `auth0_service.get_organization` is returned as the response of the function.
+- **Output**: A dictionary containing the organization details retrieved from the `auth0_service`.
+- **Functions Called**:
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.get_organization`](<../../../services/auth0_service.py.md#Auth0Serviceget_organization>)
 
 
 

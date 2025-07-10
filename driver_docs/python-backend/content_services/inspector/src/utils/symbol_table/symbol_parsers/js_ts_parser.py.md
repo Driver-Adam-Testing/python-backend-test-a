@@ -6,7 +6,7 @@
 The `js_ts_parser.py` file defines a `JsTsParser` class for parsing JavaScript and TypeScript code using a tree-sitter driver.
 
 # Purpose
-This code defines a class `JsTsParser` that extends the `SymbolParser` class, providing specialized functionality for parsing JavaScript and TypeScript code. It is a narrow-focused piece of code, primarily serving as a configuration or setup for a parser that uses the `JsTsDriverTree` to interpret the syntax tree of JavaScript and TypeScript files. The class sets specific attributes such as `language`, `fqn_delimiter`, and `tree`, which are likely used by the parent class or other components in the system to handle language-specific parsing tasks. This code is part of a larger system, likely a code analysis or language processing tool, and acts as a bridge between the generic parsing capabilities of `SymbolParser` and the specific requirements for JavaScript and TypeScript.
+This code defines a class `JsTsParser` that extends the `SymbolParser` class, providing specialized functionality for parsing JavaScript and TypeScript code. It is a narrow-focused piece of code, primarily serving as a configuration or setup for a parser that uses the `JsTsDriverTree` to interpret the syntax tree of JavaScript and TypeScript files. The class sets specific attributes such as `language`, `fqn_delimiter`, and `tree`, which are likely used by the parent class `SymbolParser` to handle language-specific parsing tasks. This code is part of a larger system, likely a code analysis or language processing tool, where it acts as a bridge between the generic parsing logic and the specific requirements of JavaScript and TypeScript syntax.
 # Imports and Dependencies
 
 ---
@@ -22,9 +22,9 @@ This code defines a class `JsTsParser` that extends the `SymbolParser` class, pr
     - `language`: Specifies the language as JavaScript/TypeScript with the value 'js_ts'.
     - `fqn_delimiter`: Defines the delimiter for fully qualified names as a period ('.').
     - `tree`: References the JsTsDriverTree for parsing JavaScript/TypeScript code.
-- **Description**: The JsTsParser class is a specialized parser for JavaScript and TypeScript code, extending the SymbolParser class. It sets the language to 'js_ts', uses a period as the delimiter for fully qualified names, and employs the JsTsDriverTree for parsing operations. This class is part of a system that likely involves symbol parsing and tree-sitter based syntax tree generation for JavaScript and TypeScript.
+- **Description**: The JsTsParser class is a specialized parser for JavaScript and TypeScript code, extending the SymbolParser class. It sets specific configurations for parsing these languages, including the language identifier, the delimiter for fully qualified names, and the tree structure used for parsing. This class is part of a system that utilizes tree-sitter drivers to analyze and parse code symbols in JavaScript and TypeScript.
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.SymbolParser`](../base.py.md#SymbolParser)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.SymbolParser`](<../base.py.md#SymbolParser>)
 
 
 

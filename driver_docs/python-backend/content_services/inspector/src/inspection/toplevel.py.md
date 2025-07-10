@@ -3,18 +3,23 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `toplevel.py` file in the `python-backend` codebase provides functions for generating and compressing descriptions of codebase content using a language model, including methods for creating various levels of detail from chunked descriptions.
+The `toplevel.py` file in the `python-backend` codebase provides functions for generating and compressing descriptions of codebase content using a language model, including methods for creating various levels of detail such as single sentences, paragraphs, and long descriptions.
 
 # Purpose
-This Python code file is designed to process and generate descriptive summaries of a codebase. It provides a set of functions that utilize a language model, specifically `ChatOpenAI`, to create various levels of descriptions for different components of a codebase, such as files and folders. The primary functionality revolves around breaking down the codebase into manageable chunks, generating detailed descriptions for each chunk, and then compressing these descriptions into more concise forms. The code employs a multi-threaded approach using `FastShutdownThreadPoolExecutor` to efficiently handle the processing of multiple chunks concurrently, ensuring that the original order of chunks is preserved.
+This Python code file is designed to process and generate descriptive summaries of a codebase by leveraging a language model, specifically `ChatOpenAI`. The file defines a series of functions that create structured prompts and interact with the language model to produce various levels of descriptions, ranging from terse sentences to detailed paragraphs. The primary functionality revolves around breaking down the codebase into manageable chunks, processing these chunks to generate descriptions, and then aggregating these descriptions into a coherent summary. The code utilizes concurrent processing to handle multiple chunks simultaneously, improving efficiency and performance.
 
-The file defines a series of functions that serve as a public API for generating descriptions at different levels of granularity, from detailed long descriptions to terse sentences. The [`comprehend_codebase_top_down`](#comprehend_codebase_top_down) function orchestrates the entire process, aggregating module information, chunking the content, and iteratively compressing it until a final set of descriptions is produced. This function also handles the generation of the final top-level content, which includes long descriptions, single sentences, and paragraphs. The code is structured to be part of a larger system, likely a library, that can be imported and used to analyze and document codebases, providing a comprehensive overview of their structure and content.
+The file is structured as a library intended to be imported and used within a larger system, as indicated by its reliance on external modules and the absence of a main execution block. It defines a public API through its functions, which are designed to be called with specific parameters such as the language model instance, codebase name, and content data. The functions use a combination of prompt templates and style instructions to guide the language model in generating the desired output. The code also includes mechanisms for compressing and aggregating descriptions, ensuring that the final output is concise and informative. Overall, this file provides a specialized utility for generating structured documentation of a codebase using AI-driven natural language processing.
 # Imports and Dependencies
 
 ---
 - `concurrent.futures`
 - `pathlib.Path`
 - `typing.Any`
+- `shared.prompts.structured_prompting.GENERAL_STE_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_NODES`
+- `shared.prompts.structured_prompting.TERSE_TWITTER_SINGLE_SENTENCE_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.Component`
+- `shared.prompts.structured_prompting.Prompt`
 - `tqdm.tqdm`
 - `utils.dag.LiteNode`
 - `utils.dag.NodeKind`
@@ -29,212 +34,274 @@ The file defines a series of functions that serve as a public API for generating
 ---
 ### PARENT\_PATH
 - **Type**: `Path`
-- **Description**: `PARENT_PATH` is a global variable that holds the directory path of the current file. It is derived using the `Path` class from the `pathlib` module, specifically by accessing the `parent` attribute of the `Path` object representing the current file (`__file__`).
-- **Use**: This variable is used to construct paths to other files or directories relative to the current file's location, such as loading prompt templates from a specific directory.
+- **Description**: `PARENT_PATH` is a global variable that holds the directory path of the current file. It is defined using the `Path` class from the `pathlib` module, which provides an object-oriented interface for filesystem paths.
+- **Use**: This variable is used to construct file paths relative to the current file's directory, such as when loading prompt templates.
 
 
 # Functions
 
 ---
 ### toplevel\_chunk\_description<!-- {{#callable:python-backend/content_services/inspector/src/inspection/toplevel.toplevel_chunk_description}} -->
-The `toplevel_chunk_description` function generates a response from a language model based on a system prompt and a human prompt that includes a codebase name and a description chunk.
+[View Source →](<../../../../../../content_services/inspector/src/inspection/toplevel.py#L24>)
+
+The `toplevel_chunk_description` function generates a response from a language model based on a system prompt and a user prompt that includes a codebase name and a description chunk.
 - **Inputs**:
-    - `llm`: An instance of the `ChatOpenAI` class, which is used to generate responses from a language model.
-    - `codebase_name`: A string representing the name of the codebase for which the description chunk is being processed.
-    - `description_chunk`: A string containing a chunk of content descriptions related to the codebase.
+    - `llm`: An instance of the `ChatOpenAI` class, representing the language model used to generate responses.
+    - `codebase_name`: A string representing the name of the codebase for which the description chunk is provided.
+    - `description_chunk`: A string containing a chunk of content descriptions related to the specified codebase.
 - **Control Flow**:
-    - The function first retrieves a system prompt template from a file located at `PARENT_PATH / 'prompt_templates/toplevel/chunk_description.txt'` using the [`get_prompt_template`](../utils/io.py.md#get_prompt_template) function.
-    - It then constructs a human prompt by formatting a string that includes the `codebase_name` and the `description_chunk`.
-    - Finally, it calls the [`generate_response`](../utils/models.py.md#ChatOpenAIgenerate_response) method on the `llm` object, passing the system prompt and the human prompt as arguments, and returns the generated response.
-- **Output**: The function returns a string, which is the response generated by the language model based on the provided prompts.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/io.get_prompt_template`](../utils/io.py.md#get_prompt_template)
-    - [`python-backend/content_services/inspector/src/utils/models.ChatOpenAI.generate_response`](../utils/models.py.md#ChatOpenAIgenerate_response)
+    - Create a system prompt by initializing an empty `Prompt`, appending a [`Component`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>) with a prompt template loaded from a file, and appending a general style instruction.
+    - Convert the system prompt to a string using the [`into_str`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>) method.
+    - Construct a user prompt string that includes the codebase name and the description chunk.
+    - Call the [`generate_response`](<../../../../packages/shared/shared/agent/chat_openai.py.md#ChatOpenAIgenerate_response>) method of the `llm` object with the system prompt and user prompt as arguments.
+- **Output**: Returns a string which is the response generated by the language model based on the provided prompts.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
+    - [`python-backend/content_services/inspector/src/utils/io.get_prompt_template`](<../utils/io.py.md#get_prompt_template>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
+    - [`python-backend/packages/shared/shared/agent/chat_openai.ChatOpenAI.generate_response`](<../../../../packages/shared/shared/agent/chat_openai.py.md#ChatOpenAIgenerate_response>)
 
 
 ---
 ### toplevel\_compress\_chunks<!-- {{#callable:python-backend/content_services/inspector/src/inspection/toplevel.toplevel_compress_chunks}} -->
+[View Source →](<../../../../../../content_services/inspector/src/inspection/toplevel.py#L45>)
+
 The `toplevel_compress_chunks` function generates a compressed response for a given codebase description chunk using a language model.
 - **Inputs**:
-    - `llm`: An instance of the `ChatOpenAI` class, which is used to generate responses based on prompts.
+    - `llm`: An instance of the `ChatOpenAI` class, representing the language model used to generate responses.
     - `codebase_name`: A string representing the name of the codebase for which the description chunk is provided.
     - `description_chunk`: A string containing a chunk of module subset descriptions for the specified codebase.
 - **Control Flow**:
-    - Retrieve a system prompt template from a file located at `PARENT_PATH/prompt_templates/toplevel/compress_chunks.txt` using the [`get_prompt_template`](../utils/io.py.md#get_prompt_template) function.
-    - Construct a human-readable prompt by embedding the `codebase_name` and `description_chunk` into a formatted string.
-    - Invoke the [`generate_response`](../utils/models.py.md#ChatOpenAIgenerate_response) method of the `llm` object, passing the system prompt and human prompt as arguments, and return the generated response.
-- **Output**: A string that is the response generated by the language model based on the provided system and human prompts.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/io.get_prompt_template`](../utils/io.py.md#get_prompt_template)
-    - [`python-backend/content_services/inspector/src/utils/models.ChatOpenAI.generate_response`](../utils/models.py.md#ChatOpenAIgenerate_response)
+    - Create a system prompt by initializing an empty `Prompt`, appending a [`Component`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>) with a prompt template from a file, and appending a general style instruction.
+    - Convert the system prompt to a string using `into_str()`.
+    - Create a user prompt by formatting a string with the codebase name and description chunk.
+    - Call the [`generate_response`](<../../../../packages/shared/shared/agent/chat_openai.py.md#ChatOpenAIgenerate_response>) method of the `llm` object with the system and user prompts to generate a response.
+- **Output**: Returns a string which is the response generated by the language model for the given prompts.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
+    - [`python-backend/content_services/inspector/src/utils/io.get_prompt_template`](<../utils/io.py.md#get_prompt_template>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
+    - [`python-backend/packages/shared/shared/agent/chat_openai.ChatOpenAI.generate_response`](<../../../../packages/shared/shared/agent/chat_openai.py.md#ChatOpenAIgenerate_response>)
 
 
 ---
 ### toplevel\_long\_from\_chunk\_descriptions<!-- {{#callable:python-backend/content_services/inspector/src/inspection/toplevel.toplevel_long_from_chunk_descriptions}} -->
-The function generates a long-form response from chunk descriptions of a codebase using a language model.
+[View Source →](<../../../../../../content_services/inspector/src/inspection/toplevel.py#L66>)
+
+The function `toplevel_long_from_chunk_descriptions` generates a long-form response from a set of module subset descriptions for a given codebase using a language model.
 - **Inputs**:
-    - `llm`: An instance of the ChatOpenAI class, representing the language model used to generate responses.
+    - `llm`: An instance of the `ChatOpenAI` class, which is used to generate responses based on the provided prompts.
     - `codebase_name`: A string representing the name of the codebase for which the descriptions are being generated.
-    - `data`: A string containing the chunk descriptions of the codebase.
+    - `data`: A string containing the chunk of module subset descriptions for the specified codebase.
 - **Control Flow**:
-    - Retrieve a system prompt template from a predefined file path using the get_prompt_template function.
-    - Initialize an empty string for the human prompt and append a formatted string that includes the codebase name and the provided data.
-    - Call the generate_response method of the llm object with the system prompt and the constructed human prompt as arguments.
-    - Return the response generated by the llm.
-- **Output**: A string representing the generated long-form response from the language model.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/io.get_prompt_template`](../utils/io.py.md#get_prompt_template)
-    - [`python-backend/content_services/inspector/src/utils/models.ChatOpenAI.generate_response`](../utils/models.py.md#ChatOpenAIgenerate_response)
+    - Create a system prompt by loading a template from a file and appending a general instruction.
+    - Construct a user prompt by formatting the codebase name and data into a string.
+    - Call the [`generate_response`](<../../../../packages/shared/shared/agent/chat_openai.py.md#ChatOpenAIgenerate_response>) method of the `llm` object with the system and user prompts to generate a response.
+- **Output**: Returns a string which is the response generated by the language model based on the provided prompts.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
+    - [`python-backend/content_services/inspector/src/utils/io.get_prompt_template`](<../utils/io.py.md#get_prompt_template>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
+    - [`python-backend/packages/shared/shared/agent/chat_openai.ChatOpenAI.generate_response`](<../../../../packages/shared/shared/agent/chat_openai.py.md#ChatOpenAIgenerate_response>)
 
 
 ---
 ### toplevel\_terse\_sentence\_from\_chunk\_descriptions<!-- {{#callable:python-backend/content_services/inspector/src/inspection/toplevel.toplevel_terse_sentence_from_chunk_descriptions}} -->
-The function generates a terse sentence summary from chunk descriptions of a codebase using a language model.
+[View Source →](<../../../../../../content_services/inspector/src/inspection/toplevel.py#L90>)
+
+The function generates a terse sentence summarizing module subset descriptions for a given codebase using a language model.
+- **Inputs**:
+    - `llm`: An instance of the ChatOpenAI class, which is used to generate responses based on prompts.
+    - `data`: A string containing chunk descriptions of module subsets for the specified codebase.
+    - `codebase_name`: A string representing the name of the codebase for which the descriptions are provided.
+- **Control Flow**:
+    - Create a system prompt by loading a template from a file and appending a general style instruction.
+    - Create a user prompt by formatting the input data and appending specific style instructions for terse sentence generation.
+    - Use the language model (llm) to generate a response based on the system and user prompts.
+- **Output**: A string containing the generated terse sentence summarizing the input chunk descriptions.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
+    - [`python-backend/content_services/inspector/src/utils/io.get_prompt_template`](<../utils/io.py.md#get_prompt_template>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
+    - [`python-backend/packages/shared/shared/agent/chat_openai.ChatOpenAI.generate_response`](<../../../../packages/shared/shared/agent/chat_openai.py.md#ChatOpenAIgenerate_response>)
+
+
+---
+### toplevel\_single\_sentence\_from\_chunk\_descriptions<!-- {{#callable:python-backend/content_services/inspector/src/inspection/toplevel.toplevel_single_sentence_from_chunk_descriptions}} -->
+[View Source →](<../../../../../../content_services/inspector/src/inspection/toplevel.py#L122>)
+
+The function generates a single sentence summary from chunk descriptions of a codebase using a language model.
 - **Inputs**:
     - `llm`: An instance of the ChatOpenAI class, which is used to generate responses based on prompts.
     - `data`: A string containing chunk descriptions of a codebase.
     - `codebase_name`: A string representing the name of the codebase for which the chunk descriptions are provided.
 - **Control Flow**:
-    - Retrieve a system prompt template from a file path specific to terse sentence generation.
-    - Construct a human-readable prompt by appending the codebase name and the provided data to a predefined string.
-    - Invoke the [`generate_response`](../utils/models.py.md#ChatOpenAIgenerate_response) method of the `llm` object with the system and human prompts to generate a response.
-- **Output**: Returns a string that is a terse sentence generated by the language model based on the provided chunk descriptions and codebase name.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/io.get_prompt_template`](../utils/io.py.md#get_prompt_template)
-    - [`python-backend/content_services/inspector/src/utils/models.ChatOpenAI.generate_response`](../utils/models.py.md#ChatOpenAIgenerate_response)
-
-
----
-### toplevel\_single\_sentence\_from\_chunk\_descriptions<!-- {{#callable:python-backend/content_services/inspector/src/inspection/toplevel.toplevel_single_sentence_from_chunk_descriptions}} -->
-The function generates a single sentence summary from chunk descriptions of a codebase using a language model.
-- **Inputs**:
-    - `llm`: An instance of the ChatOpenAI class, representing the language model used to generate responses.
-    - `data`: A string containing chunk descriptions of a codebase.
-    - `codebase_name`: A string representing the name of the codebase for which the summary is being generated.
-- **Control Flow**:
-    - Retrieve a system prompt template from a predefined file path specific to generating a single sentence from chunk descriptions.
-    - Construct a human-readable prompt by appending the codebase name and the provided data to a predefined string format.
-    - Invoke the [`generate_response`](../utils/models.py.md#ChatOpenAIgenerate_response) method of the `llm` object, passing the system and human prompts to generate a single sentence summary.
-- **Output**: Returns a string that is a single sentence summary generated by the language model based on the provided chunk descriptions.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/io.get_prompt_template`](../utils/io.py.md#get_prompt_template)
-    - [`python-backend/content_services/inspector/src/utils/models.ChatOpenAI.generate_response`](../utils/models.py.md#ChatOpenAIgenerate_response)
+    - Create a system prompt by loading a template and appending a general style instruction.
+    - Create a user prompt by formatting the chunk descriptions with the codebase name and appending a no-restatement style instruction.
+    - Use the language model (llm) to generate a response based on the system and user prompts.
+    - Return the generated response as a single sentence summary.
+- **Output**: A string representing a single sentence summary generated from the chunk descriptions of the codebase.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
+    - [`python-backend/content_services/inspector/src/utils/io.get_prompt_template`](<../utils/io.py.md#get_prompt_template>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
+    - [`python-backend/packages/shared/shared/agent/chat_openai.ChatOpenAI.generate_response`](<../../../../packages/shared/shared/agent/chat_openai.py.md#ChatOpenAIgenerate_response>)
 
 
 ---
 ### toplevel\_single\_paragraph\_from\_chunk\_descriptions<!-- {{#callable:python-backend/content_services/inspector/src/inspection/toplevel.toplevel_single_paragraph_from_chunk_descriptions}} -->
-The function generates a single-paragraph description from chunk descriptions of a codebase using a language model.
+[View Source →](<../../../../../../content_services/inspector/src/inspection/toplevel.py#L153>)
+
+The function generates a single-paragraph summary from chunk descriptions of a codebase using a language model.
 - **Inputs**:
     - `llm`: An instance of the ChatOpenAI class, which is used to generate responses based on prompts.
     - `data`: A string containing chunk descriptions of a codebase.
-    - `codebase_name`: The name of the codebase for which the descriptions are being generated.
+    - `codebase_name`: The name of the codebase for which the chunk descriptions are provided.
 - **Control Flow**:
-    - Retrieve a system prompt template from a predefined file path specific to generating a single paragraph from chunk descriptions.
-    - Initialize an empty string for the human prompt.
-    - Append a formatted string containing the codebase name and the data to the human prompt.
-    - Call the [`generate_response`](../utils/models.py.md#ChatOpenAIgenerate_response) method of the `llm` object with the system and human prompts to generate a response.
-- **Output**: A string representing the generated single-paragraph description of the codebase.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/io.get_prompt_template`](../utils/io.py.md#get_prompt_template)
-    - [`python-backend/content_services/inspector/src/utils/models.ChatOpenAI.generate_response`](../utils/models.py.md#ChatOpenAIgenerate_response)
+    - Create a system prompt by loading a template for generating a single paragraph from chunk descriptions and appending a general style instruction.
+    - Create a user prompt by formatting the chunk descriptions with the codebase name and appending a no-restatement style instruction.
+    - Use the language model (llm) to generate a response based on the system and user prompts.
+- **Output**: A string containing the generated single-paragraph summary of the codebase chunk descriptions.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
+    - [`python-backend/content_services/inspector/src/utils/io.get_prompt_template`](<../utils/io.py.md#get_prompt_template>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
+    - [`python-backend/packages/shared/shared/agent/chat_openai.ChatOpenAI.generate_response`](<../../../../packages/shared/shared/agent/chat_openai.py.md#ChatOpenAIgenerate_response>)
 
 
 ---
 ### toplevel\_long\_from\_long\_descriptions<!-- {{#callable:python-backend/content_services/inspector/src/inspection/toplevel.toplevel_long_from_long_descriptions}} -->
+[View Source →](<../../../../../../content_services/inspector/src/inspection/toplevel.py#L184>)
+
 The function generates a long-form response from long descriptions using a language model.
 - **Inputs**:
-    - `llm`: An instance of the ChatOpenAI class, which is used to generate responses based on prompts.
+    - `llm`: An instance of the ChatOpenAI class, representing the language model to generate responses.
     - `codebase_name`: A string representing the name of the codebase for which the descriptions are being generated.
-    - `data`: A string containing the long descriptions of the codebase.
+    - `data`: A string containing the long descriptions from which a long-form response is to be generated.
 - **Control Flow**:
-    - Retrieve a system prompt template from a predefined file path specific to long descriptions.
-    - Initialize an empty string for the human prompt and append the codebase name and the provided data to it.
-    - Use the llm instance to generate a response by passing the system prompt and the constructed human prompt.
-    - Return the generated response as a string.
-- **Output**: A string that is the generated response from the language model based on the provided long descriptions and codebase name.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/io.get_prompt_template`](../utils/io.py.md#get_prompt_template)
-    - [`python-backend/content_services/inspector/src/utils/models.ChatOpenAI.generate_response`](../utils/models.py.md#ChatOpenAIgenerate_response)
+    - Create a system prompt by loading a template from a file and appending a general instruction.
+    - Construct a user prompt by combining the codebase name and the provided data.
+    - Call the [`generate_response`](<../../../../packages/shared/shared/agent/chat_openai.py.md#ChatOpenAIgenerate_response>) method of the `llm` object with the system and user prompts to generate a response.
+- **Output**: Returns a string which is the generated long-form response from the language model.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
+    - [`python-backend/content_services/inspector/src/utils/io.get_prompt_template`](<../utils/io.py.md#get_prompt_template>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
+    - [`python-backend/packages/shared/shared/agent/chat_openai.ChatOpenAI.generate_response`](<../../../../packages/shared/shared/agent/chat_openai.py.md#ChatOpenAIgenerate_response>)
 
 
 ---
 ### toplevel\_terse\_sentence\_from\_long\_descriptions<!-- {{#callable:python-backend/content_services/inspector/src/inspection/toplevel.toplevel_terse_sentence_from_long_descriptions}} -->
-Generates a terse sentence from long descriptions using a language model.
+[View Source →](<../../../../../../content_services/inspector/src/inspection/toplevel.py#L206>)
+
+The function generates a terse single sentence summary from long descriptions using a language model.
 - **Inputs**:
-    - `llm`: An instance of the ChatOpenAI class used to generate responses.
+    - `llm`: An instance of the ChatOpenAI class, which is used to generate responses based on prompts.
     - `codebase_name`: A string representing the name of the codebase for which the description is being generated.
     - `data`: A string containing the long descriptions from which a terse sentence is to be generated.
 - **Control Flow**:
-    - Retrieve a system prompt template from a file located at 'prompt_templates/toplevel/terse_sentence_from_long_descriptions.txt'.
-    - Initialize an empty string for the human prompt.
-    - Append the codebase name to the human prompt, followed by the data string.
-    - Use the llm instance to generate a response using the system prompt and the constructed human prompt.
-- **Output**: Returns a string which is a terse sentence generated from the long descriptions.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/io.get_prompt_template`](../utils/io.py.md#get_prompt_template)
-    - [`python-backend/content_services/inspector/src/utils/models.ChatOpenAI.generate_response`](../utils/models.py.md#ChatOpenAIgenerate_response)
+    - Create a system prompt by loading a template from a file and appending a general style instruction.
+    - Create a user prompt by appending specific style instructions and the codebase name with data to a prompt object.
+    - Generate a response using the language model (llm) with the constructed system and user prompts.
+    - Return the generated response as a string.
+- **Output**: A string containing the generated terse single sentence summary.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
+    - [`python-backend/content_services/inspector/src/utils/io.get_prompt_template`](<../utils/io.py.md#get_prompt_template>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
+    - [`python-backend/packages/shared/shared/agent/chat_openai.ChatOpenAI.generate_response`](<../../../../packages/shared/shared/agent/chat_openai.py.md#ChatOpenAIgenerate_response>)
 
 
 ---
 ### toplevel\_single\_sentence\_from\_long\_descriptions<!-- {{#callable:python-backend/content_services/inspector/src/inspection/toplevel.toplevel_single_sentence_from_long_descriptions}} -->
-Generates a single sentence summary from long descriptions using a language model.
+[View Source →](<../../../../../../content_services/inspector/src/inspection/toplevel.py#L232>)
+
+The function generates a single sentence summary from long descriptions of a codebase using a language model.
 - **Inputs**:
     - `llm`: An instance of the ChatOpenAI class, which is used to generate responses based on prompts.
     - `codebase_name`: A string representing the name of the codebase for which the description is being generated.
-    - `data`: A string containing the long descriptions from which a single sentence summary is to be generated.
+    - `data`: A string containing the long descriptions of the codebase that need to be summarized into a single sentence.
 - **Control Flow**:
-    - Retrieve a system prompt template from a predefined file path specific to generating single sentence summaries from long descriptions.
-    - Construct a human-readable prompt by appending the codebase name and the provided data to the human prompt string.
-    - Invoke the [`generate_response`](../utils/models.py.md#ChatOpenAIgenerate_response) method of the `llm` object, passing the system and human prompts to generate a single sentence summary.
-- **Output**: Returns a string that is a single sentence summary generated by the language model.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/io.get_prompt_template`](../utils/io.py.md#get_prompt_template)
-    - [`python-backend/content_services/inspector/src/utils/models.ChatOpenAI.generate_response`](../utils/models.py.md#ChatOpenAIgenerate_response)
+    - Create a system prompt by loading a template from a file and appending a general style instruction.
+    - Create a user prompt by appending a no-restatement style instruction and the codebase name with its data.
+    - Generate a response from the language model using the system and user prompts.
+- **Output**: A string that is a single sentence summary of the provided long descriptions of the codebase.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
+    - [`python-backend/content_services/inspector/src/utils/io.get_prompt_template`](<../utils/io.py.md#get_prompt_template>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
+    - [`python-backend/packages/shared/shared/agent/chat_openai.ChatOpenAI.generate_response`](<../../../../packages/shared/shared/agent/chat_openai.py.md#ChatOpenAIgenerate_response>)
 
 
 ---
 ### toplevel\_single\_paragraph\_from\_long\_descriptions<!-- {{#callable:python-backend/content_services/inspector/src/inspection/toplevel.toplevel_single_paragraph_from_long_descriptions}} -->
-The function generates a single-paragraph summary from long descriptions using a language model.
+[View Source →](<../../../../../../content_services/inspector/src/inspection/toplevel.py#L257>)
+
+The function generates a single-paragraph summary from long descriptions of a codebase using a language model.
 - **Inputs**:
-    - `llm`: An instance of the ChatOpenAI class, representing the language model used to generate responses.
-    - `codebase_name`: A string representing the name of the codebase for which the description is being generated.
-    - `data`: A string containing the long descriptions from which a single-paragraph summary is to be generated.
+    - `llm`: An instance of the ChatOpenAI class, which is used to generate responses based on prompts.
+    - `codebase_name`: A string representing the name of the codebase for which the summary is being generated.
+    - `data`: A string containing the long descriptions of the codebase that need to be summarized.
 - **Control Flow**:
-    - Retrieve a system prompt template from a predefined file path specific to generating a single paragraph from long descriptions.
-    - Construct a human-readable prompt by appending the codebase name and the provided data to an initially empty string.
-    - Invoke the [`generate_response`](../utils/models.py.md#ChatOpenAIgenerate_response) method of the `llm` object, passing the system prompt and the constructed human prompt to generate a response.
-- **Output**: Returns a string containing the generated single-paragraph summary.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/io.get_prompt_template`](../utils/io.py.md#get_prompt_template)
-    - [`python-backend/content_services/inspector/src/utils/models.ChatOpenAI.generate_response`](../utils/models.py.md#ChatOpenAIgenerate_response)
+    - Create a system prompt by loading a template for generating a single paragraph from long descriptions and appending a general style instruction.
+    - Create a user prompt by appending a no-restatement style instruction and the codebase name with its descriptions.
+    - Call the [`generate_response`](<../../../../packages/shared/shared/agent/chat_openai.py.md#ChatOpenAIgenerate_response>) method of the `llm` object with the system and user prompts to generate the summary.
+- **Output**: A string containing the generated single-paragraph summary of the codebase.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
+    - [`python-backend/content_services/inspector/src/utils/io.get_prompt_template`](<../utils/io.py.md#get_prompt_template>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
+    - [`python-backend/packages/shared/shared/agent/chat_openai.ChatOpenAI.generate_response`](<../../../../packages/shared/shared/agent/chat_openai.py.md#ChatOpenAIgenerate_response>)
 
 
 ---
 ### comprehend\_codebase\_top\_down<!-- {{#callable:python-backend/content_services/inspector/src/inspection/toplevel.comprehend_codebase_top_down}} -->
-The function `comprehend_codebase_top_down` processes and summarizes a codebase by aggregating module information, chunking content, and generating descriptive summaries using a language model.
+[View Source →](<../../../../../../content_services/inspector/src/inspection/toplevel.py#L282>)
+
+The function `comprehend_codebase_top_down` processes and summarizes a codebase's documentation into various descriptive formats using chunking and parallel processing.
 - **Inputs**:
-    - `llm`: An instance of `ChatOpenAI` used to generate responses and descriptions.
-    - `docs`: A dictionary mapping `LiteNode` objects to their associated documentation, which includes short descriptions.
+    - `llm`: An instance of `ChatOpenAI` used for generating responses based on prompts.
+    - `docs`: A dictionary mapping `LiteNode` objects to their associated documentation details.
     - `codebase_name`: A string representing the name of the codebase being processed.
-    - `chunk_size`: An integer specifying the size of each chunk when splitting the codebase content.
+    - `chunk_size`: An integer specifying the size of each chunk for processing.
     - `chunk_overlap`: An integer specifying the overlap size between chunks.
-    - `max_workers`: An integer indicating the maximum number of workers for parallel processing.
+    - `max_workers`: An integer indicating the maximum number of worker threads for parallel processing.
     - `include_exploratory_generation`: A boolean flag indicating whether to include exploratory generation in the process.
     - `compression_loop_max_itr`: An integer specifying the maximum number of iterations for the compression loop.
 - **Control Flow**:
     - Initialize an empty string `codebase_content` to aggregate module information.
-    - Iterate over each node in `docs` to append file or folder descriptions to `codebase_content`.
-    - Chunk the aggregated `codebase_content` using [`chunk_str`](../utils/llm.py.md#chunk_str) with specified `chunk_size` and `chunk_overlap`.
-    - If there are multiple chunks, use a thread pool executor to process each chunk in parallel, generating detailed descriptions.
+    - Iterate over each node in `docs` and append its description to `codebase_content` based on its kind (file or folder).
+    - Chunk the `codebase_content` into smaller parts using [`chunk_str`](<../utils/llm.py.md#chunk_str>) with specified `chunk_size` and `chunk_overlap`.
+    - If there are multiple chunks, use a [`FastShutdownThreadPoolExecutor`](<../utils/threadpool.py.md#FastShutdownThreadPoolExecutor>) to process each chunk in parallel, generating detailed descriptions.
     - Aggregate the detailed descriptions and iteratively compress them if they exceed `chunk_size`, up to `compression_loop_max_itr` times.
-    - Determine the aggregation state ('chunks' or 'no_chunks') based on the number of chunks and prepare the data accordingly.
-    - Use a thread pool executor to generate final top-level content descriptions (long, terse sentence, single sentence, single paragraph) based on the aggregation state.
-    - Replace any null characters in the generated descriptions and prepare a dictionary of short descriptions.
-    - Return a dictionary containing the aggregated description, short descriptions, and long description.
+    - Determine the aggregation state (either 'chunks' or 'no_chunks') based on whether compression was performed.
+    - Generate final top-level content descriptions (long, terse sentence, single sentence, single paragraph) using parallel processing based on the aggregation state.
+    - Clean the generated descriptions by removing null characters and prepare the final output dictionary.
 - **Output**: A dictionary containing the aggregated description, short descriptions (terse sentence, single sentence, single paragraph), and a long description of the codebase.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/llm.chunk_str`](../utils/llm.py.md#chunk_str)
-    - [`python-backend/content_services/inspector/src/utils/threadpool.FastShutdownThreadPoolExecutor`](../utils/threadpool.py.md#FastShutdownThreadPoolExecutor)
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/llm.chunk_str`](<../utils/llm.py.md#chunk_str>)
+    - [`python-backend/content_services/inspector/src/utils/threadpool.FastShutdownThreadPoolExecutor`](<../utils/threadpool.py.md#FastShutdownThreadPoolExecutor>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
 
 
 

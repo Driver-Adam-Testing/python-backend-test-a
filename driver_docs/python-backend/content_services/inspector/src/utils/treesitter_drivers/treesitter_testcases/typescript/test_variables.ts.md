@@ -3,15 +3,15 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `test_variables.ts` file is a TypeScript test file that demonstrates various variable declaration types, including const, let, and var, as well as advanced features like type annotations, union and intersection types, type aliases, generics, spread operators, template literals, and export declarations.
+The `test_variables.ts` file is a TypeScript test file that demonstrates various variable declaration types, including const, let, var, arrays, objects, type annotations, union and intersection types, type aliases, generics, spread operators, template literals, exports, conditional expressions, readonly modifiers, and iterators.
 
 # Purpose
-This TypeScript file serves as a comprehensive test or demonstration of various variable declaration techniques and type features available in TypeScript. It includes examples of constant, let, and var declarations, showcasing both modern and legacy variable declaration styles. The file also demonstrates the use of type annotations, union and intersection types, type aliases, and generic types, providing a broad overview of TypeScript's type system. Additionally, it illustrates advanced features such as the spread operator, template literals, and export declarations, which are essential for module management. The presence of commented-out sections suggests that the file may also serve as a template or educational resource for understanding TypeScript's capabilities, particularly in variable handling and type safety.
+This TypeScript file serves as a comprehensive demonstration of various variable declaration techniques and type features available in TypeScript. It includes examples of `const`, `let`, and `var` declarations, showcasing both single and multiple variable declarations. The file also illustrates the use of arrays, objects, type annotations, union and intersection types, type aliases, and generic types. Additionally, it demonstrates advanced features such as the spread operator, template literals, and export declarations. The file further explores TypeScript's support for readonly modifiers, the iterator protocol, and async iterators, providing a broad overview of TypeScript's capabilities in handling variables and types. This file is primarily educational, aimed at showcasing the syntax and features of TypeScript for variable declarations and type management.
 # Global Variables
 
 ---
 ### simpleConst
-- **Type**: `string`
+- **Type**: ``string``
 - **Description**: The variable `simpleConst` is a constant string initialized with the value 'hello'. It is declared using the `const` keyword, indicating that its value cannot be reassigned after its initial definition.
 - **Use**: This variable is used to store a constant string value that remains unchanged throughout the program.
 
@@ -19,204 +19,220 @@ This TypeScript file serves as a comprehensive test or demonstration of various 
 ---
 ### simpleLet
 - **Type**: `string`
-- **Description**: The variable `simpleLet` is a global variable declared using the `let` keyword and is initialized with the string value 'world'. It is a mutable variable, meaning its value can be changed after its initial declaration.
-- **Use**: This variable is used to store a string value that can be modified later in the code.
+- **Description**: The variable `simpleLet` is a global variable declared using the `let` keyword and is assigned the string value 'world'. It is defined at the top level of the file, making it accessible throughout the entire file.
+- **Use**: This variable is used to store a simple string value that can be modified later in the code if needed.
 
 
 ---
 ### simpleVar
 - **Type**: `string`
-- **Description**: The variable `simpleVar` is a global variable declared using the `var` keyword and is assigned the string value 'legacy'. It is a legacy declaration style in JavaScript and TypeScript, which means it is function-scoped and can be redeclared and updated.
-- **Use**: This variable is used to store a string value and demonstrates the legacy `var` declaration style.
+- **Description**: The variable `simpleVar` is a global variable declared using the `var` keyword and is assigned the string value 'legacy'. This indicates that it is a legacy variable, likely used for backward compatibility or to demonstrate the use of `var` in contrast to `let` and `const`.
+- **Use**: This variable is used to store a string value and demonstrate the use of `var` for variable declaration.
 
 
 ---
 ### a
 - **Type**: `number`
-- **Description**: The variable `a` is a constant number initialized with the value 1. It is declared using the `const` keyword, indicating that its value cannot be changed after initialization.
-- **Use**: This variable is used to store a constant numeric value of 1.
+- **Description**: The variable `a` is a constant number initialized with the value 1. It is part of a multiple constant declaration alongside variables `b` and `c`. This variable is immutable due to the use of `const`, meaning its value cannot be changed after initialization.
+- **Use**: The variable `a` is used to store a constant numeric value of 1.
 
 
 ---
 ### b
 - **Type**: `number`
-- **Description**: The variable `b` is a constant number initialized with the value 2. It is part of a multiple constant declaration alongside variables `a` and `c`. This variable is immutable due to its declaration with `const`, meaning its value cannot be changed after initialization.
-- **Use**: `b` is used as a constant numeric value within the scope of the module.
+- **Description**: The variable `b` is a constant declared with the `const` keyword and assigned the numeric value 2. It is part of a multiple declaration statement where `a`, `b`, and `c` are initialized with numeric values.
+- **Use**: This variable is used to store a constant numeric value of 2, which can be used throughout the code where a constant value is needed.
 
 
 ---
 ### c
 - **Type**: `number`
-- **Description**: The variable `c` is a constant declared with the value `3`. It is part of a multiple constant declaration alongside `a` and `b`. As a constant, its value cannot be changed after its initial assignment.
-- **Use**: The variable `c` is used to store the integer value `3` as a constant.
+- **Description**: The variable `c` is a constant declared with the value `3`. It is part of a multiple constant declaration alongside `a` and `b`. Being a constant, its value cannot be changed after its initial assignment.
+- **Use**: `c` is used as a constant numeric value within the global scope of the file.
 
 
 ---
 ### x
 - **Type**: `string`
-- **Description**: The variable `x` is a global variable declared using the `let` keyword and initialized with the string value 'x'. It is part of a multiple declaration statement where other variables `y` and `z` are also declared and initialized with string values 'y' and 'z', respectively.
-- **Use**: This variable is used to store a string value and can be reassigned later in the code.
+- **Description**: The variable `x` is a global variable declared using the `let` keyword and initialized with the string value 'x'. It is part of a multiple variable declaration statement that also includes `y` and `z`. The use of `let` indicates that `x` is block-scoped and can be reassigned within its scope.
+- **Use**: The variable `x` is used to store the string 'x' and can be reassigned within its block scope.
 
 
 ---
 ### y
 - **Type**: `string`
-- **Description**: The variable `y` is a global variable declared using the `let` keyword and is initialized with the string value `'y'`. It is part of a multiple declaration statement where `x`, `y`, and `z` are all declared and initialized as strings.
-- **Use**: This variable is used to store a string value and can be reassigned within its scope.
+- **Description**: The variable `y` is a global variable declared using the `let` keyword and is initialized with the string value `'y'`. It is part of a multiple variable declaration statement that also includes `x` and `z`. This variable is defined at the top level of the file, making it accessible throughout the entire script.
+- **Use**: The variable `y` is used to store the string value `'y'` and can be accessed globally within the script.
 
 
 ---
 ### z
 - **Type**: `string`
-- **Description**: The variable `z` is a global variable declared using the `let` keyword and is initialized with the string value 'z'. It is part of a multiple declaration statement where other variables `x` and `y` are also declared and initialized with string values.
-- **Use**: This variable is used to store a string value and can be reassigned later in the code.
+- **Description**: The variable `z` is a global variable declared using the `let` keyword and is initialized with the string value `'z'`. It is part of a multiple variable declaration alongside `x` and `y`. This variable is defined at the top level of the file, making it accessible throughout the entire script.
+- **Use**: The variable `z` is used to store the string value `'z'` and can be accessed globally within the script.
 
 
 ---
 ### m
 - **Type**: `boolean`
-- **Description**: The variable `m` is a global variable declared using the `var` keyword and is initialized with the boolean value `true`. It is part of a group of variables declared together, including `n` and `o`. The use of `var` indicates that `m` has function scope or global scope, depending on where it is declared.
-- **Use**: The variable `m` is used to store a boolean value and can be accessed globally within the script.
+- **Description**: The variable `m` is a global variable declared using the `var` keyword and is initialized with the boolean value `true`. It is part of a group of variables declared in a single statement, which also includes `n` and `o`. The use of `var` indicates that `m` is function-scoped or globally-scoped, depending on the context of its declaration.
+- **Use**: The variable `m` is used to store a boolean value, which can be accessed and modified throughout the global scope of the program.
 
 
 ---
 ### n
 - **Type**: `boolean`
-- **Description**: The variable `n` is a global variable declared using the `var` keyword and is assigned a boolean value of `false`. It is part of a group of variables declared together, including `m` and `o`. The use of `var` indicates that `n` is function-scoped and can be redeclared within its scope.
-- **Use**: The variable `n` is used to store a boolean value, specifically `false`, and can be accessed or modified throughout its scope.
+- **Description**: The variable `n` is a global variable declared using the `var` keyword and is assigned the boolean value `false`. It is part of a group of variables declared together, including `m` and `o`. The use of `var` indicates that `n` is function-scoped and can be redeclared within its scope.
+- **Use**: The variable `n` is used to store a boolean value, specifically `false`, and can be accessed or modified throughout the global scope of the program.
 
 
 ---
 ### o
 - **Type**: `null`
-- **Description**: The variable `o` is a global variable declared using the `var` keyword and is initialized to `null`. It is part of a group of variables declared together (`m`, `n`, and `o`) using the `var` keyword, which is a legacy way of declaring variables in JavaScript and TypeScript.
-- **Use**: The variable `o` is used to hold a `null` value, indicating the absence of any object value.
+- **Description**: The variable `o` is a global variable declared using the `var` keyword and is initialized with the value `null`. It is part of a group of variables declared in a single statement, alongside `m` and `n`. The use of `null` indicates that `o` is explicitly set to have no value, which can be useful for resetting or clearing a variable's value.
+- **Use**: The variable `o` is used to represent a global state or value that is initially set to `null`, indicating an absence of value.
 
 
 ---
 ### simpleArray
 - **Type**: `Array<number>`
-- **Description**: The `simpleArray` variable is a constant array containing three numeric elements: 1, 2, and 3. It is defined using the `const` keyword, indicating that the reference to the array cannot be changed, although the contents of the array can be modified.
-- **Use**: This variable is used to store a fixed set of numeric values in an array format.
+- **Description**: The variable `simpleArray` is a constant array containing three numeric elements: 1, 2, and 3. It is defined using the `const` keyword, indicating that the reference to the array cannot be changed, although the contents of the array can be modified.
+- **Use**: This variable is used to store a simple list of numbers for potential iteration or manipulation in the code.
 
 
 ---
 ### simpleObject
 - **Type**: `object`
-- **Description**: The `simpleObject` is a constant object with a single key-value pair, where the key is 'key' and the value is 'value'. It is a straightforward object declaration in TypeScript.
-- **Use**: This variable is used to store a simple object with one property for demonstration purposes.
+- **Description**: The `simpleObject` variable is a constant object with a single key-value pair, where the key is 'key' and the value is 'value'. It is a straightforward object declaration used to demonstrate object syntax in TypeScript.
+- **Use**: This variable is used to illustrate a basic object declaration with a single property in TypeScript.
 
 
 ---
 ### annotatedString
 - **Type**: `string`
-- **Description**: The variable `annotatedString` is a constant string variable explicitly annotated with the type `string`. It is initialized with the value 'explicit type', demonstrating the use of type annotations in TypeScript.
-- **Use**: This variable is used to illustrate the explicit type annotation feature in TypeScript, ensuring that `annotatedString` is always treated as a string.
+- **Description**: The variable `annotatedString` is a constant string variable explicitly typed as a string in TypeScript. It is initialized with the value 'explicit type', demonstrating the use of type annotations in TypeScript.
+- **Use**: This variable is used to illustrate the explicit type annotation feature in TypeScript for string variables.
 
 
 ---
 ### stringOrNumber
 - **Type**: `string | number`
-- **Description**: The variable `stringOrNumber` is a global variable that can hold either a string or a number, as indicated by its union type annotation `string | number`. It is initially assigned the value 'string', which is a string type.
-- **Use**: This variable is used to store values that can be either a string or a number, providing flexibility in handling different data types.
+- **Description**: The variable `stringOrNumber` is a global variable that can hold either a string or a number, as indicated by its union type annotation `string | number`. It is initially assigned the string value 'string', but it can be reassigned to a number later in the code.
+- **Use**: This variable is used to demonstrate the use of union types in TypeScript, allowing for flexible type assignments.
 
 
 ---
 ### intersection
-- **Type**: ``{ a: string } & { b: number }``
-- **Description**: The `intersection` variable is a constant that represents an intersection type in TypeScript, combining two object types: one with a property `a` of type `string` and another with a property `b` of type `number`. This means that `intersection` must have both properties `a` and `b`, with their respective types, in order to satisfy the type requirements.
-- **Use**: This variable is used to demonstrate the use of intersection types in TypeScript, ensuring that an object satisfies multiple type constraints simultaneously.
+- **Type**: `{ a: string } & { b: number }`
+- **Description**: The `intersection` variable is an object that combines two types using TypeScript's intersection type feature. It has properties `a` of type `string` and `b` of type `number`, initialized with the values 'hello' and 42, respectively.
+- **Use**: This variable is used to demonstrate the use of intersection types in TypeScript, allowing an object to have properties from multiple types.
 
 
 ---
 ### genericArray
 - **Type**: `Array<number>`
-- **Description**: The `genericArray` is a constant variable that holds an array of numbers. It is defined using TypeScript's generic `Array` type, which specifies that the array will contain elements of type `number`. This ensures type safety by restricting the array to only hold numeric values.
-- **Use**: This variable is used to store a collection of numbers in a type-safe manner.
+- **Description**: The `genericArray` is a global constant variable that holds an array of numbers, specifically the numbers 1, 2, and 3. It is defined using TypeScript's generic array type annotation, `Array<number>`, which ensures that all elements in the array are of type number.
+- **Use**: This variable is used to store a fixed list of numeric values in a type-safe manner.
 
 
 ---
 ### spreadArray
-- **Type**: `Array<number>`
-- **Description**: The `spreadArray` variable is a global constant array that combines elements from two separate arrays using the spread operator. It results in a single array containing the numbers [1, 2, 3, 4].
+- **Type**: `array`
+- **Description**: The `spreadArray` variable is an array that combines two arrays using the spread operator. It merges the elements of the arrays `[1, 2]` and `[3, 4]` into a single array, resulting in `[1, 2, 3, 4]`. The spread operator (`...`) is used to expand the elements of each array into the new array.
 - **Use**: This variable is used to demonstrate the use of the spread operator to merge multiple arrays into one.
 
 
 ---
 ### spreadObject
 - **Type**: `object`
-- **Description**: The `spreadObject` is a global constant object that is created using the spread operator to combine two objects. It merges the properties of two objects, `{ a: 1 }` and `{ b: 2 }`, into a single object. The resulting object has two properties: `a` with a value of 1 and `b` with a value of 2.
-- **Use**: This variable is used to demonstrate the use of the spread operator for merging objects in TypeScript.
+- **Description**: The `spreadObject` variable is an object created using the spread operator to merge two objects: `{ a: 1 }` and `{ b: 2 }`. This results in a single object with properties `a` and `b`, each with their respective values.
+- **Use**: This variable is used to demonstrate the use of the spread operator for merging objects in JavaScript.
 
 
 ---
 ### template
 - **Type**: `string`
-- **Description**: The `template` variable is a string that utilizes a template literal to dynamically include the value of the `name` variable within the string. Template literals allow for embedded expressions, making it easy to construct strings with variable content.
-- **Use**: This variable is used to create a personalized greeting message by embedding the `name` variable within the string.
+- **Description**: The `template` variable is a string that uses a template literal to include a dynamic value, `name`, within a greeting message. This allows for the creation of personalized messages by embedding expressions within the string.
+- **Use**: This variable is used to generate a personalized greeting message by embedding the `name` variable within the string.
 
 
 ---
 ### multiline
 - **Type**: `string`
-- **Description**: The `multiline` variable is a string that uses template literals to define a multi-line string. It contains two lines of text: 'Line 1' and 'Line 2', each on a separate line within the string.
-- **Use**: This variable is used to store and represent a multi-line string using template literals.
-
-
----
-### tagged
-- **Type**: `TemplateLiteral`
-- **Description**: The `tagged` variable is a template literal that is processed by a tag function `myTag`. It uses the template string `${template}` to interpolate values into the literal. This allows for custom processing of the template string by the `myTag` function.
-- **Use**: The `tagged` variable is used to store the result of the `myTag` function applied to a template literal.
+- **Description**: The `multiline` variable is a string that contains a multi-line template literal. It includes two lines of text: 'Line 1' and 'Line 2', each on a separate line within the string.
+- **Use**: This variable is used to store a multi-line string, which can be useful for formatting text output or storing text data that spans multiple lines.
 
 
 ---
 ### exportedConst
 - **Type**: `string`
-- **Description**: The `exportedConst` is a global constant variable that holds a string value 'exported'. It is declared using the `export` keyword, making it available for import in other modules.
+- **Description**: The variable `exportedConst` is a constant string with the value 'exported'. It is declared using the `export` keyword, making it available for import in other modules.
 - **Use**: This variable is used to provide a constant string value that can be accessed by other modules that import it.
 
 
 ---
 ### exportedLet
 - **Type**: `number`
-- **Description**: The `exportedLet` is a global variable declared using the `let` keyword and is initialized with the numeric value 42. It is exported from the module, making it accessible to other modules that import it.
-- **Use**: This variable is used to store a numeric value that can be modified and accessed by other modules due to its export status.
+- **Description**: The variable `exportedLet` is a global variable declared using the `let` keyword and is initialized with the numeric value 42. It is exported from the module, making it accessible to other modules that import it.
+- **Use**: This variable is used to store a numeric value and is made available for import in other modules.
 
 
 ---
 ### exportedVar
 - **Type**: `boolean`
-- **Description**: The variable `exportedVar` is a global variable declared using the `var` keyword and is exported from the module. It is initialized with a boolean value of `true`. This variable is part of the module's public API, allowing other modules to import and use it.
-- **Use**: `exportedVar` is used to provide a boolean value that can be accessed by other modules that import it.
+- **Description**: The variable `exportedVar` is a global variable declared using the `var` keyword and is initialized with the boolean value `true`. It is exported from the module, making it accessible to other modules that import it.
+- **Use**: This variable is used to provide a boolean value that can be accessed by other modules when imported.
 
 
 ---
 ### conditional
 - **Type**: `string`
-- **Description**: The `conditional` variable is a constant string that is assigned a value based on a ternary conditional expression. It evaluates the `condition` and assigns 'true' if the condition is truthy, otherwise it assigns 'false'. This variable demonstrates the use of conditional (ternary) operators in TypeScript.
-- **Use**: The `conditional` variable is used to store a string value that reflects the result of a conditional check, providing a simple example of conditional logic in variable assignment.
+- **Description**: The `conditional` variable is a string that is assigned the value 'true' or 'false' based on the evaluation of the `condition` expression. It uses a ternary operator to determine its value.
+- **Use**: This variable is used to store a string representation of a boolean condition's result.
 
 
 ---
 ### readonlyObj
 - **Type**: `Readonly<{ x: number }>`
-- **Description**: `readonlyObj` is a constant variable defined as a readonly object with a single property `x` of type number. The readonly modifier ensures that the properties of the object cannot be changed after the object is created.
-- **Use**: This variable is used to store an immutable object with a numeric property `x`, ensuring that its value remains constant throughout the program.
+- **Description**: `readonlyObj` is a constant variable defined as a read-only object with a single property `x` of type number, initialized to the value 10. The `Readonly` utility type is used to ensure that the properties of the object cannot be modified after initialization.
+- **Use**: This variable is used to store an immutable object with a numeric property `x`.
 
 
 ---
 ### iteratorResult
 - **Type**: `IteratorResult<number>`
-- **Description**: The `iteratorResult` is a global constant variable that implements the `IteratorResult` interface with a generic type of `number`. It represents the result of an iteration step, containing a `value` of type `number` and a `done` flag indicating whether the iteration is complete.
-- **Use**: This variable is used to represent a single step result in an iteration process, providing both the current value and the completion status.
+- **Description**: The `iteratorResult` variable is an object that implements the `IteratorResult` interface with a `number` type. It contains two properties: `value`, which is set to the number 1, and `done`, which is a boolean set to false, indicating that the iteration is not yet complete.
+- **Use**: This variable is used to represent the result of an iteration step in a custom iterator, providing both the current value and the completion status of the iteration.
 
 
 ---
 ### asyncIterable
 - **Type**: `AsyncIterable<number>`
-- **Description**: The `asyncIterable` variable is an instance of an `AsyncIterable` that yields numbers. It is defined using an asynchronous generator function, which allows it to produce a sequence of numbers asynchronously.
-- **Use**: This variable is used to asynchronously iterate over a sequence of numbers, yielding each number in turn.
+- **Description**: The `asyncIterable` variable is an object that implements the `AsyncIterable` interface for numbers. It defines an asynchronous generator function using the `Symbol.asyncIterator` method, which yields the numbers 1 and 2 sequentially.
+- **Use**: This variable is used to create an asynchronous iterable sequence of numbers, allowing for iteration using `for await...of` loops.
+
+
+# Types
+
+---
+### Point<!-- {{#data_structure:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_variables.Point}} -->
+- **Members**:
+    - `x`: The x-coordinate of the point, represented as a number.
+    - `y`: The y-coordinate of the point, represented as a number.
+- **Description**: The `Point` type alias defines a simple structure for representing a point in a 2D space with two properties: `x` and `y`, both of which are numbers. This type provides a clear and concise way to handle coordinates in applications that require geometric calculations or graphical representations.
+
+
+# Functions
+
+---
+### \[Symbol\.asyncIterator\]<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/typescript/test_variables.asyncIterable.[Symbol.asyncIterator]}} -->
+The [Symbol.asyncIterator] method defines an asynchronous iterator that yields the numbers 1 and 2 sequentially.
+- **Inputs**: None
+- **Control Flow**:
+    - The method is defined as an asynchronous generator function using the 'async *' syntax.
+    - The method yields the number 1 using the 'yield' keyword.
+    - The method yields the number 2 using the 'yield' keyword.
+- **Output**: An asynchronous iterator that yields the numbers 1 and 2.
 
 
 

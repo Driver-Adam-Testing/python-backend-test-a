@@ -3,15 +3,15 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `c` folder in the `python-backend` codebase contains a collection of C test files that demonstrate and test various C programming concepts such as enumerations, function calls, function declarations, function definitions, global variables, structs, and unions.
+A collection of C test files demonstrating and testing C programming concepts like enumerations, function calls, declarations, definitions, global variables, structs, and unions.
 
 
 ## Files
-- **[test_enums.c](test_enums.c.md)**: The `test_enums.c` file demonstrates various ways to define and use enumerations in C, including named and unnamed enums, typedefs, and combined definition and declaration.
+- **[test_enums.c](test_enums.c.md)**: The `test_enums.c` file demonstrates various ways to define and use enumerations in C, including named and unnamed enums, typedefs, and combined definition and declaration of enums with variables.
 - **[test_func_calls.c](test_func_calls.c.md)**: The `test_func_calls.c` file contains test functions for demonstrating function calls as arguments and conditional function calls, with one function wrapped in a preprocessor conditional directive.
 - **[test_func_declarations.c](test_func_declarations.c.md)**: The `test_func_declarations.c` file contains various function declarations, a function definition, a variable declaration, and a typedef for a function pointer, likely for testing purposes in the `python-backend` codebase.
-- **[test_func_defs.c](test_func_defs.c.md)**: The `test_func_defs.c` file contains various function definitions and a `main` function that demonstrates their usage, including functions with different return types, parameter types, and attributes, as well as struct and union handling.
-- **[test_globals.c](test_globals.c.md)**: The `test_globals.c` file defines various global variables with different types, storage classes, type qualifiers, attributes, and assembly specifics, while also including some conditional compilation and function declarations that are not considered global.
+- **[test_func_defs.c](test_func_defs.c.md)**: The `test_func_defs.c` file contains various function definitions and a `main` function that demonstrates their usage, including handling of pointers, structures, and unions.
+- **[test_globals.c](test_globals.c.md)**: The `test_globals.c` file in the `python-backend` codebase defines various global variables with different types, storage classes, type qualifiers, attributes, and assembly specifics, while also including some conditional compilation directives and function declarations.
 - **[test_structs.c](test_structs.c.md)**: The `test_structs.c` file demonstrates various struct declarations, definitions, and usages in C, including named, unnamed, forward-declared, and typedef'd structs, as well as struct variable initialization and usage.
 - **[test_unions.c](test_unions.c.md)**: The `test_unions.c` file demonstrates various usages and definitions of unions in C, including forward declarations, named and unnamed unions, typedefs, and nested structures, along with examples of how to manipulate and print their values.
 

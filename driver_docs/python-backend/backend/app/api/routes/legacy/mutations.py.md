@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `mutations.py` file in the `python-backend` codebase defines GraphQL mutations for managing application notes, documents, and uploading content, including handling access checks and generating presigned URLs for uploads.
+The `mutations.py` file in the `python-backend` codebase defines GraphQL mutations for managing application notes, documents, and uploading content, including generating presigned URLs for AWS S3 uploads, with access control and error handling.
 
 # Purpose
-This Python file is a GraphQL API implementation using the Strawberry library, designed to handle various operations related to application notes, documents, and codebase uploads. The file defines several GraphQL types and inputs, such as `GenerateApplicationNoteOutput`, `UpdateApplicationNoteInput`, and `UploadCodebaseInput`, which are used to structure the data for mutations. The primary functionality revolves around creating, updating, and deleting application notes, as well as uploading source content and codebases. The mutations include [`updateApplicationNote`](#MutationupdateApplicationNote), [`deleteApplicationNote`](#MutationdeleteApplicationNote), [`uploadSourceContent`](#MutationuploadSourceContent), [`updateDocument`](#MutationupdateDocument), and [`uploadCodebase`](#MutationuploadCodebase), each performing specific operations on the database and interacting with AWS S3 for file uploads.
+This Python file is a GraphQL API implementation using the Strawberry library, designed to handle various operations related to application notes, documents, and codebase uploads. The file defines several GraphQL types and inputs, such as `GenerateApplicationNoteOutput`, `UpdateApplicationNoteInput`, and `UploadCodebaseInput`, which are used to structure the data for mutations. The primary functionality revolves around creating, updating, and deleting application notes, as well as uploading source content and codebases. The file includes several mutation methods, such as [`updateApplicationNote`](<#MutationupdateApplicationNote>), [`deleteApplicationNote`](<#MutationdeleteApplicationNote>), [`uploadSourceContent`](<#MutationuploadSourceContent>), and [`uploadCodebase`](<#MutationuploadCodebase>), each performing specific operations on the data, often involving database interactions and access control checks.
 
-The code integrates with a database through SQLAlchemy models like `DerivedContent`, `Node`, `PrimaryAsset`, and `Version`, and it uses utility functions such as `check_access` and `get_derived_content_by_id` to manage access control and data retrieval. Error handling is implemented using `GraphQLError` to provide meaningful feedback in case of failures. The file also includes logging for tracking operations and errors, enhancing the maintainability and debuggability of the system. Overall, this code serves as a backend component for managing application notes and related content, providing a structured API for client interactions.
+The code is structured to be part of a larger application, likely a backend service, where it serves as a module for handling specific GraphQL mutations. It integrates with other components, such as a database for storing and retrieving application notes and documents, and AWS S3 for generating presigned URLs for file uploads. The use of access control checks and error handling ensures that operations are performed securely and that users have the necessary permissions. The file is not a standalone script but rather a part of a broader system, intended to be imported and used within a GraphQL server setup.
 # Imports and Dependencies
 
 ---
@@ -46,7 +46,7 @@ The code integrates with a database through SQLAlchemy models like `DerivedConte
 - **Members**:
     - `call_id`: A string representing the unique identifier for the call.
     - `status`: A string indicating the status of the application note edit.
-- **Description**: The `GenerateApplicationNoteEditOutput` class is a data structure used in a GraphQL API to represent the output of an operation that generates an application note edit. It contains two fields: `call_id`, which uniquely identifies the call, and `status`, which indicates the current status of the edit operation. This class is decorated with `@strawberry.type`, indicating its use in a Strawberry GraphQL schema.
+- **Description**: The `GenerateApplicationNoteEditOutput` class is a data structure used to represent the output of an application note edit operation, containing a call identifier and the status of the operation. It is decorated with `@strawberry.type`, indicating its use in a GraphQL API context.
 
 
 ---
@@ -69,16 +69,16 @@ The code integrates with a database through SQLAlchemy models like `DerivedConte
 ### WebhookOutput<!-- {{#class:python-backend/backend/app/api/routes/legacy/mutations.WebhookOutput}} -->
 - **Decorators**: `@strawberry.type`
 - **Members**:
-    - `document_id`: A string representing the ID of the document associated with the webhook.
-- **Description**: The `WebhookOutput` class is a simple data structure used in a GraphQL API, defined with the Strawberry library, to represent the output of a webhook operation. It contains a single field, `document_id`, which holds the identifier of the document related to the webhook event. This class is likely used to structure the response data for GraphQL queries or mutations involving webhooks.
+    - `document_id`: A string representing the unique identifier of a document.
+- **Description**: The `WebhookOutput` class is a simple data structure used in a GraphQL API, defined with the Strawberry library, to represent the output of a webhook operation. It contains a single field, `document_id`, which holds the unique identifier of a document, facilitating the communication of this identifier in API responses.
 
 
 ---
 ### UploadSourceContentOutput<!-- {{#class:python-backend/backend/app/api/routes/legacy/mutations.UploadSourceContentOutput}} -->
 - **Decorators**: `@strawberry.type`
 - **Members**:
-    - `upload_url`: A string representing the URL for uploading content.
-- **Description**: The `UploadSourceContentOutput` class is a simple data structure used in a GraphQL API, defined with the Strawberry library, to represent the output of an upload operation. It contains a single member, `upload_url`, which holds the URL where content can be uploaded. This class is likely used to facilitate the process of uploading files to a server or cloud storage by providing clients with a pre-signed URL.
+    - `upload_url`: A string representing the URL for uploading source content.
+- **Description**: The `UploadSourceContentOutput` class is a simple data structure used in a GraphQL API, defined with the Strawberry library, to represent the output of an operation that generates a URL for uploading source content. It contains a single member, `upload_url`, which holds the URL string where the content can be uploaded.
 
 
 ---
@@ -88,7 +88,7 @@ The code integrates with a database through SQLAlchemy models like `DerivedConte
     - `id`: The unique identifier for the application note.
     - `content`: The content of the application note, which can be None.
     - `name`: The name of the application note, which can be None.
-- **Description**: The `UpdateApplicationNoteInput` class is a data structure used to encapsulate the input data required for updating an application note, including its unique identifier, content, and name. It is designed to be used with the Strawberry GraphQL library as an input type, allowing for optional content and name fields.
+- **Description**: The `UpdateApplicationNoteInput` class is a data structure used to encapsulate the input data required for updating an application note. It includes an identifier for the note, as well as optional fields for the note's content and name, allowing for partial updates.
 
 
 ---
@@ -98,7 +98,7 @@ The code integrates with a database through SQLAlchemy models like `DerivedConte
     - `id`: The unique identifier for the document.
     - `content`: The content of the document, which can be None.
     - `name`: The name of the document, which can be None.
-- **Description**: The `UpdateDocumentInput` class is a Strawberry input type used to encapsulate the data required to update a document. It includes an identifier for the document, and optionally, new content and a new name for the document. This class is part of a GraphQL API, facilitating the mutation operations for document updates.
+- **Description**: The `UpdateDocumentInput` class is a data structure used to encapsulate the input data required for updating a document in a system. It includes an identifier for the document, and optionally, the content and name of the document, allowing for partial updates where only some fields are modified.
 
 
 ---
@@ -110,7 +110,7 @@ The code integrates with a database through SQLAlchemy models like `DerivedConte
     - `prompt`: A string prompt for generating application notes.
     - `editor_id`: An optional identifier for the editor.
     - `organization_id`: An optional identifier for the organization.
-- **Description**: The `GenerateApplicationNoteInput` class is a data structure used to encapsulate input parameters for generating application notes within a system. It includes identifiers for the codebase and workspace, a prompt string, and optional identifiers for the editor and organization. This class is decorated with `@strawberry.input`, indicating its use in a GraphQL API for input purposes.
+- **Description**: The `GenerateApplicationNoteInput` class is a data structure used to encapsulate input parameters for generating application notes within a system. It includes identifiers for the codebase and workspace, a prompt string, and optional identifiers for the editor and organization, facilitating the creation of application notes in a structured manner.
 
 
 ---
@@ -118,20 +118,20 @@ The code integrates with a database through SQLAlchemy models like `DerivedConte
 - **Decorators**: `@strawberry.input`
 - **Members**:
     - `id`: The unique identifier for the application note.
-    - `prompt`: The prompt associated with the application note.
-    - `workspace_id`: The identifier for the workspace where the application note resides.
-- **Description**: The `ApplicationNoteEditInput` class is a data structure used to encapsulate the input data required for editing an application note within a specific workspace. It includes fields for the note's unique identifier, the prompt text, and the workspace identifier, facilitating the modification of application notes in a structured manner.
+    - `prompt`: The prompt or description associated with the application note.
+    - `workspace_id`: The identifier for the workspace where the application note is located.
+- **Description**: The `ApplicationNoteEditInput` class is a data structure used to encapsulate the input data required for editing an application note within a specific workspace. It includes fields for the note's unique identifier, the prompt or description, and the workspace identifier, facilitating the process of updating or modifying existing application notes in a structured manner.
 
 
 ---
 ### DocumentEditInput<!-- {{#class:python-backend/backend/app/api/routes/legacy/mutations.DocumentEditInput}} -->
 - **Decorators**: `@strawberry.input`
 - **Members**:
-    - `document_id`: The unique identifier for the document.
-    - `workspace_id`: The unique identifier for the workspace.
-    - `codebase_id`: The unique identifier for the codebase.
-    - `options`: A JSON object containing additional options for the document edit.
-- **Description**: The `DocumentEditInput` class is a data structure used to encapsulate the input parameters required for editing a document within a specific workspace and codebase. It includes identifiers for the document, workspace, and codebase, as well as a JSON object for additional options, facilitating structured data handling in GraphQL mutations.
+    - `document_id`: An identifier for the document to be edited.
+    - `workspace_id`: An identifier for the workspace associated with the document.
+    - `codebase_id`: An identifier for the codebase related to the document.
+    - `options`: A JSON object containing additional options for editing the document.
+- **Description**: The `DocumentEditInput` class is a Strawberry input type used to encapsulate the necessary identifiers and options for editing a document within a specific workspace and codebase. It includes fields for the document ID, workspace ID, codebase ID, and a JSON object for additional options, facilitating structured input for document editing operations.
 
 
 ---
@@ -140,7 +140,7 @@ The code integrates with a database through SQLAlchemy models like `DerivedConte
 - **Members**:
     - `workspace_id`: A string representing the ID of the workspace.
     - `file_path`: A string representing the path to the file to be uploaded.
-- **Description**: The `UploadCodebaseInput` class is a Strawberry input type used to encapsulate the necessary data for uploading a codebase, specifically the workspace ID and the file path. This class is part of a GraphQL API and is used to facilitate the transfer of codebase data from the client to the server.
+- **Description**: The `UploadCodebaseInput` class is a data structure used to encapsulate the input parameters required for uploading a codebase, specifically the workspace ID and the file path. It is decorated with `@strawberry.input`, indicating its use in a GraphQL API for input purposes.
 
 
 ---
@@ -153,19 +153,19 @@ The code integrates with a database through SQLAlchemy models like `DerivedConte
     - `extra_context`: Optional JSON object providing additional context for the webhook.
     - `name`: Optional string representing the name associated with the webhook.
     - `prompt`: String representing the prompt for the webhook.
-- **Description**: The `WebhookInput` class is a data structure used to define the input schema for a webhook in a GraphQL API using Strawberry. It includes fields for content, document identification, error messages, additional context, a name, and a prompt, allowing for comprehensive data capture and processing related to webhook events.
+- **Description**: The `WebhookInput` class is a data structure used to define the input schema for a webhook in a GraphQL API, utilizing the Strawberry library's input decorator. It includes fields for content, document identification, error messages, additional context, a name, and a prompt, allowing for comprehensive data capture and processing related to webhook events.
 
 
 ---
 ### Mutation<!-- {{#class:python-backend/backend/app/api/routes/legacy/mutations.Mutation}} -->
 - **Decorators**: `@strawberry.type`
-- **Description**: The `Mutation` class is a GraphQL type defined using the Strawberry library, designed to handle various mutation operations related to application notes and content management. It includes methods for updating and deleting application notes, uploading source content, updating documents, and uploading codebases. The class ensures access control and error handling through the use of session management and GraphQL errors, providing a structured way to manage content and application notes within an organization.
+- **Description**: The `Mutation` class is a GraphQL type defined using the Strawberry library, designed to handle various mutation operations related to application notes and content management. It includes methods for updating and deleting application notes, uploading source content, updating documents, and uploading codebases. The class ensures access control and error handling through the use of session management and GraphQL errors, providing a structured way to manage content and permissions within an application.
 - **Methods**:
-    - [`python-backend/backend/app/api/routes/legacy/mutations.Mutation.updateApplicationNote`](#MutationupdateApplicationNote)
-    - [`python-backend/backend/app/api/routes/legacy/mutations.Mutation.deleteApplicationNote`](#MutationdeleteApplicationNote)
-    - [`python-backend/backend/app/api/routes/legacy/mutations.Mutation.uploadSourceContent`](#MutationuploadSourceContent)
-    - [`python-backend/backend/app/api/routes/legacy/mutations.Mutation.updateDocument`](#MutationupdateDocument)
-    - [`python-backend/backend/app/api/routes/legacy/mutations.Mutation.uploadCodebase`](#MutationuploadCodebase)
+    - [`python-backend/backend/app/api/routes/legacy/mutations.Mutation.updateApplicationNote`](<#MutationupdateApplicationNote>)
+    - [`python-backend/backend/app/api/routes/legacy/mutations.Mutation.deleteApplicationNote`](<#MutationdeleteApplicationNote>)
+    - [`python-backend/backend/app/api/routes/legacy/mutations.Mutation.uploadSourceContent`](<#MutationuploadSourceContent>)
+    - [`python-backend/backend/app/api/routes/legacy/mutations.Mutation.updateDocument`](<#MutationupdateDocument>)
+    - [`python-backend/backend/app/api/routes/legacy/mutations.Mutation.uploadCodebase`](<#MutationuploadCodebase>)
 
 **Methods**
 
@@ -178,78 +178,81 @@ The `updateApplicationNote` method updates an application note's content and nam
     - `input`: An `UpdateApplicationNoteInput` object containing the ID of the note to update, and optionally the new content and name for the note.
 - **Control Flow**:
     - Retrieve the session and user from the `info` context.
-    - Check if the user has access to update the note using [`check_access`](orm_ops.py.md#check_access); if not, raise a `GraphQLError` with 'FORBIDDEN' code.
-    - Attempt to retrieve the note by its ID using [`get_derived_content_by_id`](orm_ops.py.md#get_derived_content_by_id); if not found, raise a `GraphQLError` with 'BAD_REQUEST' code.
-    - Define a helper function `escape_html` to sanitize HTML content by replacing special characters with their HTML-safe equivalents.
+    - Check if the user has access to update the note using [`check_access`](<orm_ops.py.md#check_access>); if not, raise a `GraphQLError` with 'FORBIDDEN' code.
+    - Attempt to retrieve the note by its ID using [`get_derived_content_by_id`](<orm_ops.py.md#get_derived_content_by_id>); if not found, raise a `GraphQLError` with 'BAD_REQUEST' code.
+    - Define a helper function `escape_html` to sanitize strings by replacing HTML special characters with their corresponding HTML entities.
     - Sanitize the `name` and `content` from the input using `escape_html` if they are provided.
     - Parse the existing note content from JSON, update it with the sanitized name and content if they are provided, and convert it back to JSON.
     - Add the updated note to the session and commit the transaction to save changes.
-    - If any exception occurs, rollback the session and log the error, then raise a `GraphQLError` with 'BAD_REQUEST' code.
+    - If any exception occurs, rollback the session, log the error, and raise a `GraphQLError` with 'BAD_REQUEST' code.
 - **Output**: The method returns `None` after successfully updating the application note or raises a `GraphQLError` if an error occurs.
-- **Functions called**:
-    - [`python-backend/backend/app/api/routes/legacy/orm_ops.check_access`](orm_ops.py.md#check_access)
-    - [`python-backend/backend/app/api/routes/legacy/orm_ops.get_derived_content_by_id`](orm_ops.py.md#get_derived_content_by_id)
-- **See also**: [`python-backend/backend/app/api/routes/legacy/mutations.Mutation`](#Mutation)  (Base Class)
+- **Functions Called**:
+    - [`python-backend/backend/app/api/routes/legacy/orm_ops.check_access`](<orm_ops.py.md#check_access>)
+    - [`python-backend/backend/app/api/routes/legacy/orm_ops.get_derived_content_by_id`](<orm_ops.py.md#get_derived_content_by_id>)
+- **See also**: [`python-backend/backend/app/api/routes/legacy/mutations.Mutation`](<#Mutation>)  (Base Class)
 
 
 ---
 #### Mutation\.deleteApplicationNote<!-- {{#callable:python-backend/backend/app/api/routes/legacy/mutations.Mutation.deleteApplicationNote}} -->
-The `deleteApplicationNote` method deletes an application note from the database if the user has the necessary access rights.
+The `deleteApplicationNote` method deletes an application note by its ID after verifying user access permissions.
 - **Decorators**: `@strawberry.mutation`
 - **Inputs**:
-    - `info`: An object containing context information, including the session and user details.
-    - `id`: The ID of the application note to be deleted, which can be None.
+    - `info`: An `Info` object containing context information such as the session and user.
+    - `id`: An optional `ID` representing the unique identifier of the application note to be deleted.
 - **Control Flow**:
-    - Retrieve the session and user from the info context.
-    - Check if the user has access to delete the note using the [`check_access`](orm_ops.py.md#check_access) function; if not, raise a `GraphQLError` with a 'FORBIDDEN' code.
-    - Attempt to retrieve the application note by its ID using [`get_derived_content_by_id`](orm_ops.py.md#get_derived_content_by_id); if not found, raise a `GraphQLError` with a 'BAD_REQUEST' code.
+    - Retrieve the session and user from the `info` context.
+    - Check if the user has access to delete the note using [`check_access`](<orm_ops.py.md#check_access>); if not, raise a `GraphQLError` with 'FORBIDDEN' code.
+    - Attempt to retrieve the application note by its ID using [`get_derived_content_by_id`](<orm_ops.py.md#get_derived_content_by_id>).
+    - If the note is not found, raise a `GraphQLError` with 'BAD_REQUEST' code indicating the note was not found.
     - If the note is found, delete it from the session and commit the transaction.
-    - If any exception occurs during the process, log the error and raise a `GraphQLError` with a 'BAD_REQUEST' code.
-- **Output**: The method returns None, indicating the deletion process is complete or an error has occurred.
-- **Functions called**:
-    - [`python-backend/backend/app/api/routes/legacy/orm_ops.check_access`](orm_ops.py.md#check_access)
-    - [`python-backend/backend/app/api/routes/legacy/orm_ops.get_derived_content_by_id`](orm_ops.py.md#get_derived_content_by_id)
-- **See also**: [`python-backend/backend/app/api/routes/legacy/mutations.Mutation`](#Mutation)  (Base Class)
+    - If any exception occurs during the process, log the error and raise a `GraphQLError` with 'BAD_REQUEST' code indicating the note was not deleted.
+- **Output**: The method returns `None` after successfully deleting the application note or raises a `GraphQLError` if an error occurs.
+- **Functions Called**:
+    - [`python-backend/backend/app/api/routes/legacy/orm_ops.check_access`](<orm_ops.py.md#check_access>)
+    - [`python-backend/backend/app/api/routes/legacy/orm_ops.get_derived_content_by_id`](<orm_ops.py.md#get_derived_content_by_id>)
+- **See also**: [`python-backend/backend/app/api/routes/legacy/mutations.Mutation`](<#Mutation>)  (Base Class)
 
 
 ---
 #### Mutation\.uploadSourceContent<!-- {{#callable:python-backend/backend/app/api/routes/legacy/mutations.Mutation.uploadSourceContent}} -->
-The `uploadSourceContent` method generates a presigned URL for uploading a document to a specified codebase after validating access permissions.
+The `uploadSourceContent` method generates a presigned URL for uploading a document to a specified codebase after validating access permissions and input data.
 - **Decorators**: `@strawberry.mutation`
 - **Inputs**:
-    - `info`: An object containing context information, including the user and session.
-    - `input`: An instance of `UploadContentInput` containing `workspace_id`, `codebase_id`, and `file_path`.
+    - `info`: An `Info` object containing context information such as the user and session.
+    - `input`: An `UploadContentInput` object containing `workspace_id`, `codebase_id`, and `file_path` for the content to be uploaded.
 - **Control Flow**:
-    - Extracts `workspace_id`, `codebase_id`, and `file_path` from the input and user information from the context.
+    - Extracts `workspace_id`, `codebase_id`, and `file_path` from the `input` parameter.
+    - Retrieves the user and session from the `info.context` object.
     - Logs the upload attempt with organization, workspace, and user details.
-    - Checks if any of the required fields (`codebase_id`, `file_path`, `workspace_id`, `creator_id`) are missing and raises a `GraphQLError` if so.
-    - Validates access to the codebase using [`check_access`](orm_ops.py.md#check_access) and raises a `GraphQLError` if access is denied.
+    - Checks if any of `codebase_id`, `file_path`, `workspace_id`, or `creator_id` are missing and raises a `GraphQLError` if so.
+    - Validates access to the codebase using [`check_access`](<orm_ops.py.md#check_access>) and raises a `GraphQLError` if access is denied.
     - Attempts to generate a presigned URL for uploading the document by creating a unique `upload_key` and metadata.
     - Logs the successful generation of the upload URL and returns it.
     - Catches any exceptions during URL generation, logs the error, and raises a `GraphQLError` indicating the failure.
-- **Output**: A presigned URL as a string for uploading the document to the specified codebase.
-- **Functions called**:
-    - [`python-backend/backend/app/api/routes/legacy/orm_ops.check_access`](orm_ops.py.md#check_access)
-    - [`python-backend/backend/app/utils/aws_s3.generate_put_presigned_url`](../../../utils/aws_s3.py.md#generate_put_presigned_url)
-- **See also**: [`python-backend/backend/app/api/routes/legacy/mutations.Mutation`](#Mutation)  (Base Class)
+- **Output**: Returns a presigned URL as a string for uploading the document if successful, otherwise raises a `GraphQLError`.
+- **Functions Called**:
+    - [`python-backend/backend/app/api/routes/legacy/orm_ops.check_access`](<orm_ops.py.md#check_access>)
+    - [`python-backend/backend/app/utils/aws_s3.generate_put_presigned_url`](<../../../utils/aws_s3.py.md#generate_put_presigned_url>)
+- **See also**: [`python-backend/backend/app/api/routes/legacy/mutations.Mutation`](<#Mutation>)  (Base Class)
 
 
 ---
 #### Mutation\.updateDocument<!-- {{#callable:python-backend/backend/app/api/routes/legacy/mutations.Mutation.updateDocument}} -->
-The `updateDocument` method updates the content of a document in the database if it belongs to the user's organization.
+The `updateDocument` method updates the content of a document in the database if it exists and belongs to the user's organization, handling errors and rolling back transactions if necessary.
 - **Decorators**: `@strawberry.mutation`
 - **Inputs**:
-    - `info`: An object containing context information, including the database session and user details.
-    - `input`: An instance of `UpdateDocumentInput` containing the document ID and new content to update.
+    - `info`: An `Info` object containing context information such as the session and user.
+    - `input`: An `UpdateDocumentInput` object containing the document ID and new content to update.
 - **Control Flow**:
-    - Retrieve the database session and user from the `info` context.
-    - Attempt to query the `DerivedContent` table to find a document with the specified ID that belongs to the user's organization.
+    - Retrieve the session and user from the `info` context.
+    - Attempt to query the `DerivedContent` table to find a document with the specified ID that is associated with the user's organization.
     - If the document is not found, raise a `GraphQLError` indicating the document was not found.
-    - If the document is found, update its content with the new content provided in the `input`.
+    - If the document is found, update its content with the new content from the input.
     - Add the updated document to the session and commit the transaction to save changes.
-    - If any exception occurs during the process, rollback the session and log the error, then raise a `GraphQLError` indicating the update failed.
+    - If any exception occurs during the process, roll back the session to undo changes and log the error.
+    - Raise a `GraphQLError` if the update fails due to an exception.
 - **Output**: The method returns `None` after successfully updating the document or raises a `GraphQLError` if an error occurs.
-- **See also**: [`python-backend/backend/app/api/routes/legacy/mutations.Mutation`](#Mutation)  (Base Class)
+- **See also**: [`python-backend/backend/app/api/routes/legacy/mutations.Mutation`](<#Mutation>)  (Base Class)
 
 
 ---
@@ -257,24 +260,23 @@ The `updateDocument` method updates the content of a document in the database if
 The `uploadCodebase` method generates a presigned URL for uploading a codebase file to a specified workspace and organization.
 - **Decorators**: `@strawberry.mutation`
 - **Inputs**:
-    - `info`: An `Info` object containing context information, such as the current user.
+    - `info`: An `Info` object containing context information, including the user and session.
     - `input`: An `UploadCodebaseInput` object containing the `workspace_id` and `file_path` for the codebase to be uploaded.
 - **Control Flow**:
-    - Retrieve the current user from the `info` context.
-    - Extract `workspace_id`, `file_path`, `creator_id`, and `org_id` from the input and user context.
-    - Derive `codebase_name` from the file path by removing the extension.
+    - Retrieve the user from the `info` context and extract `workspace_id`, `file_path`, `creator_id`, and `org_id` from the input and user context.
+    - Derive the `codebase_name` from the `file_path` by removing the file extension.
     - Log the upload attempt with organization, workspace, and owner details.
-    - Check if any of `codebase_name`, `file_path`, `org_id`, `workspace_id`, or `creator_id` are missing and raise a `GraphQLError` if so.
-    - Generate a hash of the `org_id` to create a unique `upload_key` for the file.
+    - Check if any of the required fields (`codebase_name`, `file_path`, `org_id`, `workspace_id`, `creator_id`) are missing and raise a `GraphQLError` if so.
+    - Generate a hash of the `org_id` to create a unique `upload_key` for the codebase file.
     - Log the generated upload key.
     - Create metadata for the codebase including organization, workspace, creator, and file details.
-    - Generate a presigned URL for uploading the codebase file using the [`generate_put_presigned_url`](../../../utils/aws_s3.py.md#generate_put_presigned_url) function.
+    - Generate a presigned URL for uploading the codebase file using the [`generate_put_presigned_url`](<../../../utils/aws_s3.py.md#generate_put_presigned_url>) function.
     - Return the generated upload URL.
-    - Catch any exceptions during URL generation, log the error, and raise a `GraphQLError` if an error occurs.
+    - Catch any exceptions during URL generation, log the error, and raise a `GraphQLError` indicating the failure to create the upload URL.
 - **Output**: A string representing the presigned URL for uploading the codebase file.
-- **Functions called**:
-    - [`python-backend/backend/app/utils/aws_s3.generate_put_presigned_url`](../../../utils/aws_s3.py.md#generate_put_presigned_url)
-- **See also**: [`python-backend/backend/app/api/routes/legacy/mutations.Mutation`](#Mutation)  (Base Class)
+- **Functions Called**:
+    - [`python-backend/backend/app/utils/aws_s3.generate_put_presigned_url`](<../../../utils/aws_s3.py.md#generate_put_presigned_url>)
+- **See also**: [`python-backend/backend/app/api/routes/legacy/mutations.Mutation`](<#Mutation>)  (Base Class)
 
 
 
@@ -284,8 +286,8 @@ The `uploadCodebase` method generates a presigned URL for uploading a codebase f
 - **Members**:
     - `codebase_id`: A string representing the unique identifier for the codebase.
     - `workspace_id`: A string representing the unique identifier for the workspace.
-    - `file_path`: A string representing the file path of the content to be uploaded.
-- **Description**: The `UploadContentInput` class is a Strawberry input type used to encapsulate the necessary data for uploading content, including the codebase ID, workspace ID, and file path. This class is designed to facilitate the transfer of these parameters in a structured manner when invoking mutations related to content uploads.
+    - `file_path`: A string representing the path to the file to be uploaded.
+- **Description**: The `UploadContentInput` class is a Strawberry input type used to encapsulate the necessary data for uploading content, specifically requiring identifiers for the codebase and workspace, as well as the file path of the content to be uploaded.
 
 
 

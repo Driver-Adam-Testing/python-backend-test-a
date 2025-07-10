@@ -6,7 +6,9 @@
 The `modal_scripts.py` file contains a function to generate a bash script for deploying various content services to a specified environment using modal and poetry.
 
 # Purpose
-This Python function, [`build_modal_deploy_script`](#build_modal_deploy_script), generates a Bash script designed to automate the deployment of various services across different environments. It provides narrow functionality, specifically tailored for deploying services using the `modal` command-line tool, with authentication handled via provided `token_id` and `token_secret`. The script it generates is structured to navigate through several directories, each corresponding to a different service, and uses `poetry` to manage dependencies and execute deployments. The function is a utility for developers who need to deploy multiple services consistently and efficiently, ensuring that the correct environment is targeted and the necessary dependencies are installed before deployment.
+The provided Python function, [`build_modal_deploy_script`](<#build_modal_deploy_script>), generates a Bash script designed to automate the deployment of various services across different environments. This function takes two parameters, `token_id` and `token_secret`, which are used to set authentication tokens for a service called "modal." The generated script is structured to handle deployments for multiple components within a project, specifically targeting directories such as `inspector`, `agent`, `pdf_preprocessing`, and `autodocs` under a `content_services` directory. Each component is deployed using the `poetry` tool to manage dependencies and execute the deployment command `modal deploy` with a specified environment.
+
+The function is intended to be part of a larger system where deployment automation is necessary, likely in a continuous integration/continuous deployment (CI/CD) pipeline. It does not define a public API or external interface but rather serves as a utility to streamline the deployment process by generating a script that can be executed in a Unix-like environment. The script ensures that the correct environment is specified and that the necessary dependencies are installed before deploying each service. This function encapsulates the deployment logic, making it easier to manage and modify deployment procedures across different environments.
 # Functions
 
 ---
@@ -16,13 +18,14 @@ The function generates a bash script for deploying services to a specified envir
     - `token_id`: A string representing the token ID used for authentication with Modal.
     - `token_secret`: A string representing the token secret used for authentication with Modal.
 - **Control Flow**:
-    - The function starts by defining a multi-line string `script` that contains a bash script.
-    - The script begins with a shebang line for bash and sets the shell options to exit on error and pipefail.
+    - The function starts by defining a bash script as a multi-line string.
+    - The script sets the shell options to exit on error and pipefail, ensuring robust error handling.
     - It checks if an environment argument is provided; if not, it prints an error message and exits.
     - The environment argument is captured from the command line and echoed to the console.
-    - The script sets the Modal token using the provided `token_id` and `token_secret`, and activates the 'driver-ai' profile.
-    - It navigates to various directories (`inspector`, `agent`, `pdf_preprocessing`, `autodocs`) under `content_services`, installs dependencies using Poetry, and deploys the main Python script in each directory using Modal with the specified environment.
-- **Output**: The function returns a string containing the complete bash script.
+    - The script sets the Modal token using the provided token ID and secret, and activates the 'driver-ai' profile.
+    - It navigates to various directories (inspector, agent, pdf_preprocessing, autodocs) and installs dependencies using Poetry without installing the root package.
+    - For each directory, it runs a Modal deploy command with the specified environment on 'src/main.py'.
+- **Output**: The function returns a string containing the complete bash script for deployment.
 
 
 

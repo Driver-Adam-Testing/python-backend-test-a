@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `2025_01_08_1155-57be28321d1c_document_source_pk_reset.py` file contains an Alembic migration script that resets the primary key of the `document_sources` table and adjusts column nullability constraints.
+The `2025_01_08_1155-57be28321d1c_document_source_pk_reset.py` file contains an Alembic migration script that modifies the primary key of the `document_sources` table and adjusts column nullability constraints.
 
 # Purpose
-This Python file is an Alembic migration script designed to modify the schema of a database table named `document_sources`. The primary purpose of this script is to reset the primary key of the `document_sources` table and ensure data integrity by removing certain records. Specifically, it deletes records where either `source_node_id` or `page_node_id` is `NULL`, and it removes duplicate records based on the combination of `source_node_id` and `page_node_id`. The script then drops the existing primary key constraint and creates a new primary key using the `source_node_id` and `page_node_id` columns. Additionally, it alters several columns to adjust their nullability, making `source_node_id` and `page_node_id` non-nullable, while allowing `document_id`, `include`, and `source_id` to be nullable.
+This Python file is an Alembic migration script designed to modify the schema of a database table named `document_sources`. The primary purpose of this script is to reset the primary key of the `document_sources` table and ensure data integrity by removing certain records. The script first deletes records where either `source_node_id` or `page_node_id` is `NULL`, as well as duplicate records based on these two columns. It then drops the existing primary key constraint and creates a new primary key using the `source_node_id` and `page_node_id` columns. Additionally, the script alters the nullability of several columns, making `source_node_id` and `page_node_id` non-nullable, while allowing `document_id`, `include`, and `source_id` to be nullable.
 
-The script contains two main functions: `upgrade()` and `downgrade()`. The `upgrade()` function implements the changes to the database schema, while the `downgrade()` function reverses these changes, restoring the previous schema state. This migration script is part of a broader database version control system managed by Alembic, which is used to track and apply changes to the database schema over time. The script does not define public APIs or external interfaces; instead, it serves as an internal tool for database schema management within a larger application.
+The script includes both an [`upgrade`](<#upgrade>) function, which applies these changes, and a [`downgrade`](<#downgrade>) function, which reverts them. The [`downgrade`](<#downgrade>) function restores the original nullability settings of the columns, ensuring that the database schema can be rolled back to its previous state if necessary. This migration script is part of a broader database version control system managed by Alembic, which is used to track and apply changes to the database schema over time. The script does not define public APIs or external interfaces, as its primary focus is on database schema management.
 # Imports and Dependencies
 
 ---
@@ -35,8 +35,8 @@ The script contains two main functions: `upgrade()` and `downgrade()`. The `upgr
 ---
 ### branch\_labels
 - **Type**: `NoneType`
-- **Description**: The variable `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes information about the migration such as revision identifiers and dependencies.
-- **Use**: `branch_labels` is used to define labels for branching in Alembic migrations, but in this script, it is not utilized and remains `None`.
+- **Description**: The `branch_labels` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes information about the migration such as revision identifiers and dependencies.
+- **Use**: This variable is used to define branch labels for the migration, but in this case, it is not utilized as it is set to `None`.
 
 
 ---
@@ -50,7 +50,7 @@ The script contains two main functions: `upgrade()` and `downgrade()`. The `upgr
 
 ---
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2025_01_08_1155-57be28321d1c_document_source_pk_reset.upgrade}} -->
-The `upgrade` function modifies the `document_sources` table by cleaning up invalid or duplicate entries, altering column constraints, and resetting the primary key.
+The `upgrade` function modifies the `document_sources` table by cleaning up invalid entries, resetting the primary key, and altering column constraints.
 - **Inputs**: None
 - **Control Flow**:
     - Execute a SQL command to delete rows from `document_sources` where `source_node_id` or `page_node_id` is NULL.
@@ -68,10 +68,10 @@ The `downgrade` function reverts database schema changes by altering column null
 - **Inputs**: None
 - **Control Flow**:
     - The function begins by altering the `page_node_id` column in the `document_sources` table to allow null values.
-    - It then alters the `source_node_id` column to allow null values.
-    - The `source_id` column is altered to disallow null values.
-    - The `include` column is altered to disallow null values.
-    - Finally, the `document_id` column is altered to disallow null values.
+    - It then alters the `source_node_id` column to allow null values as well.
+    - The `source_id` column is altered to disallow null values, ensuring it is not nullable.
+    - The `include` column is also altered to disallow null values, making it non-nullable.
+    - Finally, the `document_id` column is altered to disallow null values, ensuring it is not nullable.
 - **Output**: The function does not return any value; it performs schema alterations on the database.
 
 

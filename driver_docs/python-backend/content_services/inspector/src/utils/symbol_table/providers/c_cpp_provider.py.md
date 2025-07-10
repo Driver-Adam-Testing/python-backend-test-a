@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `c_cpp_provider.py` file defines a language provider for C and C++ that utilizes a parser and resolver specific to these languages.
+The `c_cpp_provider.py` file defines a language provider for C and C++ that utilizes a parser and resolver specific to this language family.
 
 # Purpose
-This code defines a class `CCppLanguageProvider` that extends the `LanguageProvider` class, serving as a specialized provider for the C and C++ language family. It offers narrow functionality by specifically focusing on the integration and handling of C and C++ languages within a larger system, likely related to symbol table management or code analysis. The class provides two class methods, [`get_parser`](#CCppLanguageProviderget_parser) and [`get_resolver`](#CCppLanguageProviderget_resolver), which return instances of `CCppParser` and `CCppResolver`, respectively. These components suggest that the class is part of a modular system designed to parse and resolve symbols in C and C++ code, facilitating language-specific operations within a broader software framework.
+This code defines a class `CCppLanguageProvider` that extends the `LanguageProvider` class, providing specialized functionality for handling C and C++ languages as a single language family. It is a part of a larger system, likely dealing with symbol table management or language processing, as indicated by the imports from `utils.symbol_table`. The class offers narrow functionality by implementing two class methods, [`get_parser`](<#CCppLanguageProviderget_parser>) and [`get_resolver`](<#CCppLanguageProviderget_resolver>), which return instances of `CCppParser` and `CCppResolver`, respectively. These methods suggest that the class is responsible for providing language-specific parsing and resolution capabilities, making it a component of a modular system designed to handle multiple programming languages.
 # Imports and Dependencies
 
 ---
@@ -21,41 +21,41 @@ This code defines a class `CCppLanguageProvider` that extends the `LanguageProvi
 ### CCppLanguageProvider<!-- {{#class:python-backend/content_services/inspector/src/utils/symbol_table/providers/c_cpp_provider.CCppLanguageProvider}} -->
 - **Members**:
     - `language`: Specifies the language family as 'c_cpp'.
-- **Description**: The `CCppLanguageProvider` class is a specialized language provider for the C and C++ languages, treating them as a single language family. It inherits from the `LanguageProvider` base class and defines a class variable `language` to specify the language family. The class provides class methods to obtain a parser and a resolver specific to C and C++ through the `get_parser` and `get_resolver` methods, respectively, which return instances of `CCppParser` and `CCppResolver`.
+- **Description**: The CCppLanguageProvider class is a specialized language provider for the C and C++ languages, treating them as a single language family. It inherits from the LanguageProvider base class and defines a class variable 'language' to specify the language family. The class provides class methods to obtain instances of CCppParser and CCppResolver, which are responsible for parsing and resolving symbols specific to C and C++.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/providers/c_cpp_provider.CCppLanguageProvider.get_parser`](#CCppLanguageProviderget_parser)
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/providers/c_cpp_provider.CCppLanguageProvider.get_resolver`](#CCppLanguageProviderget_resolver)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/providers/c_cpp_provider.CCppLanguageProvider.get_parser`](<#CCppLanguageProviderget_parser>)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/providers/c_cpp_provider.CCppLanguageProvider.get_resolver`](<#CCppLanguageProviderget_resolver>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.LanguageProvider`](../base.py.md#LanguageProvider)
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/base.LanguageProvider`](<../base.py.md#LanguageProvider>)
 
 **Methods**
 
 ---
 #### CCppLanguageProvider\.get\_parser<!-- {{#callable:python-backend/content_services/inspector/src/utils/symbol_table/providers/c_cpp_provider.CCppLanguageProvider.get_parser}} -->
-The `get_parser` method returns an instance of the [`CCppParser`](../symbol_parsers/c_cpp_parser.py.md#CCppParser) class.
+The `get_parser` method returns an instance of the [`CCppParser`](<../symbol_parsers/c_cpp_parser.py.md#CCppParser>) class.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `cls`: The class `CCppLanguageProvider` itself, passed automatically as this is a class method.
 - **Control Flow**:
-    - The method directly returns a new instance of the [`CCppParser`](../symbol_parsers/c_cpp_parser.py.md#CCppParser) class without any additional logic or conditions.
-- **Output**: An instance of the [`CCppParser`](../symbol_parsers/c_cpp_parser.py.md#CCppParser) class.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/symbol_parsers/c_cpp_parser.CCppParser`](../symbol_parsers/c_cpp_parser.py.md#CCppParser)
-- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/providers/c_cpp_provider.CCppLanguageProvider`](#CCppLanguageProvider)  (Base Class)
+    - The method directly returns a new instance of the [`CCppParser`](<../symbol_parsers/c_cpp_parser.py.md#CCppParser>) class without any additional logic or conditions.
+- **Output**: An instance of the [`CCppParser`](<../symbol_parsers/c_cpp_parser.py.md#CCppParser>) class.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/symbol_parsers/c_cpp_parser.CCppParser`](<../symbol_parsers/c_cpp_parser.py.md#CCppParser>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/providers/c_cpp_provider.CCppLanguageProvider`](<#CCppLanguageProvider>)  (Base Class)
 
 
 ---
 #### CCppLanguageProvider\.get\_resolver<!-- {{#callable:python-backend/content_services/inspector/src/utils/symbol_table/providers/c_cpp_provider.CCppLanguageProvider.get_resolver}} -->
-The `get_resolver` method returns an instance of the [`CCppResolver`](../import_resolvers/c_cpp_resolver.py.md#CCppResolver) class.
+The `get_resolver` method returns an instance of [`CCppResolver`](<../import_resolvers/c_cpp_resolver.py.md#CCppResolver>) for resolving symbols in C and C++ code.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class `CCppLanguageProvider` itself, passed automatically as this is a class method.
+    - `cls`: Represents the class `CCppLanguageProvider` itself, not an instance of the class.
 - **Control Flow**:
-    - The method directly returns a new instance of the [`CCppResolver`](../import_resolvers/c_cpp_resolver.py.md#CCppResolver) class without any additional logic or conditions.
-- **Output**: An instance of the [`CCppResolver`](../import_resolvers/c_cpp_resolver.py.md#CCppResolver) class.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/c_cpp_resolver.CCppResolver`](../import_resolvers/c_cpp_resolver.py.md#CCppResolver)
-- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/providers/c_cpp_provider.CCppLanguageProvider`](#CCppLanguageProvider)  (Base Class)
+    - The method directly returns a new instance of [`CCppResolver`](<../import_resolvers/c_cpp_resolver.py.md#CCppResolver>) without any additional logic or conditions.
+- **Output**: An instance of [`CCppResolver`](<../import_resolvers/c_cpp_resolver.py.md#CCppResolver>).
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/symbol_table/import_resolvers/c_cpp_resolver.CCppResolver`](<../import_resolvers/c_cpp_resolver.py.md#CCppResolver>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/symbol_table/providers/c_cpp_provider.CCppLanguageProvider`](<#CCppLanguageProvider>)  (Base Class)
 
 
 

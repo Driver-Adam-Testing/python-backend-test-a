@@ -6,7 +6,7 @@
 The `api_types.py` file defines GraphQL types for a Git provider and a Git repository using the Strawberry library.
 
 # Purpose
-This code defines a GraphQL schema using the Strawberry library, which is a Python library for building GraphQL APIs. It provides narrow functionality by defining two data types, `GitProvider` and `GitRepository`, which are likely used to represent and query information about Git providers and repositories within a GraphQL API. The `GitProvider` class includes fields for the display name, name, and logo URL of a Git provider, while the `GitRepository` class includes fields for the provider name, repository name, organization, last updated timestamp, and additional metadata. This code is a concise example of how to use Strawberry to define types for a GraphQL API, focusing specifically on Git-related data.
+This code defines a GraphQL schema using the Strawberry library, which is a Python library for building GraphQL APIs. It provides narrow functionality by defining two data types, `GitProvider` and `GitRepository`, which are likely used to represent and query information about Git providers and repositories within a GraphQL API. The `GitProvider` class includes fields for the display name, name, and logo URL of a Git provider, while the `GitRepository` class includes fields for the provider name, repository name, organization, last updated timestamp, and additional metadata. This code is a short script that sets up the structure for querying Git-related data in a GraphQL API, focusing on the schema definition aspect.
 # Imports and Dependencies
 
 ---
@@ -23,7 +23,7 @@ This code defines a GraphQL schema using the Strawberry library, which is a Pyth
     - `display_name`: The human-readable name of the Git provider.
     - `name`: The internal or system name of the Git provider.
     - `logo_url`: The URL to the logo image of the Git provider.
-- **Description**: The GitProvider class is a data structure used to represent a Git service provider, encapsulating its display name, internal name, and logo URL. It is decorated with @strawberry.type, indicating its use in a GraphQL schema definition.
+- **Description**: The GitProvider class is a data structure used to represent a Git service provider, encapsulating its display name, internal name, and logo URL. It is decorated with @strawberry.type, indicating its use in a GraphQL schema with Strawberry.
 
 
 ---
@@ -35,7 +35,7 @@ This code defines a GraphQL schema using the Strawberry library, which is a Pyth
     - `org`: The organization that owns the repository.
     - `last_updated`: The date and time when the repository was last updated.
     - `metadata`: A dictionary containing additional metadata about the repository.
-- **Description**: The GitRepository class represents a repository hosted on a version control platform, encapsulating details such as the provider name, repository name, owning organization, last update timestamp, and additional metadata. It is decorated with @strawberry.type, indicating its use in a GraphQL schema.
+- **Description**: The GitRepository class represents a repository hosted on a version control platform, capturing essential details such as the provider name, repository name, owning organization, last update timestamp, and additional metadata. It is decorated with @strawberry.type, indicating its use in a GraphQL schema.
 
 
 

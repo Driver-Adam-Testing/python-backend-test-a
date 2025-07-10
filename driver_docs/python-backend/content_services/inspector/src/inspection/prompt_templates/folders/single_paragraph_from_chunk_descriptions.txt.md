@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `single_paragraph_from_chunk_descriptions.txt` file provides instructions for generating a single paragraph summary of a folder in a software codebase by using slightly overlapping descriptions of its subcomponents.
+The `single_paragraph_from_chunk_descriptions.txt` file provides instructions for writing a single paragraph description of a folder in a software codebase by synthesizing slightly overlapping descriptions of its subcomponents.
 
 # Purpose
-The provided text appears to be a set of instructions for generating a summary paragraph about a folder within a software codebase. The instructions specify that the summary should be constructed using detailed descriptions of the folder's subcomponents, which are provided in overlapping chunks. The goal is to create a concise, coherent paragraph that encapsulates the purpose and contents of the folder, using no more than six sentences. The instructions emphasize the importance of using only the given information without introducing any additional content. The name of the folder should be included in the summary to clearly identify the subject of the description.
+The provided text appears to be a template or guideline for generating a comprehensive description of a folder within a software codebase. The purpose of this template is to instruct a software engineering expert on how to synthesize detailed descriptions of various subcomponents within a folder to create a cohesive overview of the folder's purpose and contents. The expert is tasked with analyzing slightly overlapping descriptions of the folder's subcomponents and then crafting a single paragraph that accurately reflects the folder's role and the nature of its contents. The instructions emphasize the importance of deriving information solely from the provided descriptions without introducing any speculative or extraneous details. This approach ensures that the final paragraph is both precise and informative, offering a clear understanding of the folder's function within the broader context of the software project.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

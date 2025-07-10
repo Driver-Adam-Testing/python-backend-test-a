@@ -3,13 +3,18 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_large_verilog_multi_prompt.py` file defines a template for generating multi-prompt text and JSON conditions specifically for Verilog source code, utilizing various collections and context prompts.
+The `source_code_large_verilog_multi_prompt.py` file defines a template for generating prompts related to large Verilog source code, including instructions and collections for modules, functions, and tasks.
 
 # Purpose
-This Python code defines a configuration for generating prompts and analyzing Verilog source code, indicating a narrow functionality focused on Verilog code processing. It imports specific utilities and templates from a `utils` module, suggesting a modular design where this file acts as a configuration or setup script rather than containing executable logic itself. The `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_VERILOG` variable is a list of tuples, each representing a different aspect of Verilog code analysis, such as determining the purpose of the code, identifying modules, and extracting functions and tasks. This setup is likely used in a larger system for automated code analysis or documentation generation, leveraging both static analysis and machine learning models (indicated by `from_static_analysis` and `from_llm` methods) to process Verilog code.
+This Python code file defines a configuration for generating structured prompts specifically tailored for analyzing and describing Verilog source code. It imports various components and instructions from shared and utility modules, which are then used to construct a template named `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_VERILOG`. This template is a list of tuples, each containing a specific configuration for generating prompts related to the purpose, modules, and functions/tasks within Verilog code. The code provides narrow functionality focused on creating structured prompts for Verilog code analysis, leveraging both static analysis and language model insights. It is essentially a configuration file that sets up the necessary components and instructions for generating these specialized prompts.
 # Imports and Dependencies
 
 ---
+- `shared.prompts.structured_prompting.GENERAL_STE_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_CODE_PURPOSE`
+- `shared.prompts.structured_prompting.USE_BACKTICKS_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.Component`
+- `shared.prompts.structured_prompting.Prompt`
 - `utils.lang_specialization.default_multi_context.SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT_MULTI_CONTEXT`
 - `utils.lang_specialization.default_multi_context.SOURCE_CODE_PURPOSE_FROM_CHUNKS`
 - `utils.lang_specialization.verilog.SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_VERILOG`
@@ -25,8 +30,8 @@ This Python code defines a configuration for generating prompts and analyzing Ve
 ---
 ### SOURCE\_CODE\_LARGE\_MULTI\_PROMPT\_TEMPLATE\_VERILOG
 - **Type**: `list`
-- **Description**: `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_VERILOG` is a list of tuples, each containing a set of constants and functions related to Verilog code analysis and processing. Each tuple represents a different aspect of Verilog code, such as purpose, modules, and functions/tasks, and includes both static analysis and machine learning-based components.
-- **Use**: This variable is used to define a structured template for handling multiple prompts related to Verilog source code analysis.
+- **Description**: `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_VERILOG` is a list of tuples, each containing structured data for generating prompts related to Verilog code analysis. Each tuple includes a string identifier, a description, and a series of components or functions that are used to construct or analyze Verilog code prompts.
+- **Use**: This variable is used to define and organize multiple prompt templates for Verilog code analysis, facilitating structured prompting in different contexts such as purpose, modules, and functions/tasks.
 
 
 

@@ -3,15 +3,20 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_large_ruby.py` file defines a template for inspecting large Ruby source code, including prompts for purpose, imports, modules, and classes.
+The `source_code_large_ruby.py` file defines a template for inspecting and processing large Ruby source code files, including handling prompts, imports, modules, and classes.
 
 # Purpose
-This Python code file is designed to facilitate the analysis and processing of Ruby source code by defining a structured template for handling various aspects of Ruby code. It imports several components from utility modules, specifically focusing on Ruby language specialization and template management. The primary purpose of this file is to define a template, `SOURCE_CODE_LARGE_TEMPLATE_RUBY`, which outlines a series of steps or checks to be performed on Ruby source code. These steps include analyzing the purpose of the code, checking imports and dependencies, and examining modules and classes within the Ruby code. Each step in the template is associated with specific functions or prompts that guide the analysis process, such as `default_imports_checker` for checking imports and `RubyModuleCollection.from_llm` for module analysis.
+This Python code file is designed to facilitate structured prompting and analysis of Ruby source code. It serves as a configuration or template file that defines how to generate prompts and analyze Ruby code, particularly focusing on extracting and organizing information about the purpose, imports, modules, and classes within Ruby source files. The file imports several components and utilities from other modules, such as `shared.prompts.structured_prompting` and `utils.lang_specialization.ruby`, which provide specific instructions and tools for handling Ruby code. The main functionality is encapsulated in the `SOURCE_CODE_LARGE_TEMPLATE_RUBY` list, which contains tuples that define different aspects of the analysis, such as generating prompts for the purpose of the code, checking imports, and collecting module and class information.
 
-The file is structured to be part of a larger system, likely a code analysis or documentation tool, where it serves as a configuration or setup file for processing Ruby code. It does not define a public API or external interface directly but rather provides a framework for internal use within a larger application. The use of lambda functions and static analysis methods suggests that the file is intended to automate the extraction and organization of information from Ruby source code, making it easier to generate documentation or perform code reviews. The modular design, with clearly defined components for handling different aspects of Ruby code, indicates that this file provides a narrow but focused functionality within the broader context of the application it is part of.
+The code is structured to be part of a larger system, likely a library or framework, that processes and analyzes Ruby code. It does not define a standalone script but rather a set of instructions and components that can be used by other parts of the system to perform specific tasks related to Ruby code analysis. The file defines public interfaces through the `SOURCE_CODE_LARGE_TEMPLATE_RUBY` list, which acts as a configuration for how different aspects of Ruby code should be processed and presented. This setup allows for a modular and extensible approach to handling Ruby code, leveraging Python's capabilities to manage and analyze code from another programming language.
 # Imports and Dependencies
 
 ---
+- `shared.prompts.structured_prompting.GENERAL_STE_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_CODE_PURPOSE`
+- `shared.prompts.structured_prompting.USE_BACKTICKS_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.Component`
+- `shared.prompts.structured_prompting.Prompt`
 - `utils.lang_specialization.default.default_imports_checker`
 - `utils.lang_specialization.ruby.SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT`
 - `utils.lang_specialization.ruby.SOURCE_CODE_LARGE_SYSTEM_PROMPT_GENERAL_RUBY`
@@ -27,8 +32,8 @@ The file is structured to be part of a larger system, likely a code analysis or 
 ---
 ### SOURCE\_CODE\_LARGE\_TEMPLATE\_RUBY
 - **Type**: `list`
-- **Description**: `SOURCE_CODE_LARGE_TEMPLATE_RUBY` is a list of tuples, each containing a set of elements that define different aspects of Ruby source code analysis and processing. Each tuple includes a condition type, a description string, and functions or methods that are used to process or analyze Ruby code, such as checking imports, collecting module symbols, and class symbols from static analysis or language model outputs.
-- **Use**: This variable is used to structure and organize the processing of Ruby source code by defining different stages and methods for analysis and transformation.
+- **Description**: `SOURCE_CODE_LARGE_TEMPLATE_RUBY` is a list of tuples, each containing structured information for processing Ruby source code. Each tuple includes a type identifier, a description, and a series of components or functions that are used to generate or process prompts related to Ruby code, such as purpose, imports, modules, and classes.
+- **Use**: This variable is used to define a template for generating structured prompts and processing Ruby source code in a systematic way.
 
 
 

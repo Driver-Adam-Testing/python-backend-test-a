@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `prompt.py` file defines a `PromptWithContext` class that manages user prompts with additional context, providing functionality to convert the context into an XML format and update it with additional information.
+The `prompt.py` file defines a `PromptWithContext` class that manages user prompts with additional context, providing functionality to convert the context into an XML format and to update the context with additional information.
 
 # Purpose
-The provided Python code defines a class `PromptWithContext` using the Pydantic library, which is a data validation and settings management library. This class is designed to handle user prompts with additional context, encapsulating both the prompt and its associated context in a structured manner. The primary functionality of this class is to generate a user prompt in XML format, incorporating any contextual information provided. The class includes methods for converting dictionaries and objects to XML strings, ensuring that the context is properly formatted when included in the prompt. Additionally, the class provides a method to add more context to the existing context, allowing for dynamic updates.
+The provided Python code defines a class named `PromptWithContext` using the Pydantic library, which is a data validation and settings management library. This class is designed to encapsulate a user prompt along with additional context information, allowing for structured data handling and validation. The primary functionality of this class is to manage and manipulate a user prompt and its associated context, converting them into an XML format for output. The class includes methods for creating an XML representation of the prompt and context, adding additional context, and providing a string representation of the prompt with context.
 
-This code is structured as a library component, intended to be used as part of a larger application where user prompts and context management are required. It does not define a public API or external interface beyond the class methods, which are designed to be used programmatically. The use of Pydantic's `BaseModel` suggests that the class benefits from data validation and serialization features, making it robust for handling structured data. The class is self-contained, focusing on the specific task of managing and formatting prompts with context, and is likely to be imported and utilized in other parts of an application where such functionality is needed.
+The `PromptWithContext` class is a specialized utility that focuses on handling user prompts with contextual data, making it suitable for applications where prompts need to be enriched with additional information. The class leverages Pydantic's `BaseModel` to ensure that the data adheres to a defined schema, providing type safety and validation. The methods [`create_user_prompt`](<#PromptWithContextcreate_user_prompt>), [`add_to_context`](<#PromptWithContextadd_to_context>), and [`__str__`](<#PromptWithContext__str__>) are key components, with [`create_user_prompt`](<#PromptWithContextcreate_user_prompt>) being responsible for generating the XML output. This code is likely intended to be part of a larger system where prompts and context are dynamically generated and utilized, possibly in a user interface or a data processing pipeline.
 # Imports and Dependencies
 
 ---
@@ -22,11 +22,11 @@ This code is structured as a library component, intended to be used as part of a
 - **Members**:
     - `prompt`: The user prompt as a string, which can be None.
     - `context`: Context information as a dictionary or BaseModel, which can be None.
-- **Description**: The `PromptWithContext` class extends the `BaseModel` to encapsulate a user prompt along with additional context information. It provides functionality to create a user prompt in XML format by converting the context into XML, and allows for additional context to be added dynamically. The class is designed to handle both dictionary and `BaseModel` types for context, ensuring flexibility in how context data is structured and utilized.
+- **Description**: The PromptWithContext class extends the BaseModel to encapsulate a user prompt along with additional context information. It provides functionality to create a user prompt in XML format by converting the context into XML, and allows for additional context to be added dynamically. The class is designed to handle both dictionary and BaseModel types for context, ensuring flexibility in how context data is structured and utilized.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/interfaces/agents/prompt.PromptWithContext.create_user_prompt`](#PromptWithContextcreate_user_prompt)
-    - [`python-backend/packages/shared/shared/interfaces/agents/prompt.PromptWithContext.add_to_context`](#PromptWithContextadd_to_context)
-    - [`python-backend/packages/shared/shared/interfaces/agents/prompt.PromptWithContext.__str__`](#PromptWithContext__str__)
+    - [`python-backend/packages/shared/shared/interfaces/agents/prompt.PromptWithContext.create_user_prompt`](<#PromptWithContextcreate_user_prompt>)
+    - [`python-backend/packages/shared/shared/interfaces/agents/prompt.PromptWithContext.add_to_context`](<#PromptWithContextadd_to_context>)
+    - [`python-backend/packages/shared/shared/interfaces/agents/prompt.PromptWithContext.__str__`](<#PromptWithContext__str__>)
 - **Inherits From**:
     - `BaseModel`
 
@@ -38,37 +38,38 @@ The `create_user_prompt` method generates an XML-formatted string combining a us
 - **Inputs**: None
 - **Control Flow**:
     - Define a helper function `dict_to_xml` to convert a dictionary to an XML string.
-    - Define a helper function `object_to_xml` to convert an object to an XML string, using `dict_to_xml` for dictionaries or objects with `__dict__` or `model_dump` attributes.
+    - Define a helper function `object_to_xml` to convert an object to an XML string using its `__dict__` attribute or `model_dump` method if available.
     - Initialize an empty string `context_xml`.
-    - Check if `self.context` is not None; if true, convert it to XML using `object_to_xml` and wrap it in `<context>` tags.
+    - Check if `self.context` is not None; if true, convert the context to XML and wrap it in `<context>` tags.
     - Concatenate the prompt and context XML strings into `user_prompt`.
     - Return the `user_prompt` string.
 - **Output**: A string representing the user prompt and context in XML format.
-- **See also**: [`python-backend/packages/shared/shared/interfaces/agents/prompt.PromptWithContext`](#PromptWithContext)  (Base Class)
+- **See also**: [`python-backend/packages/shared/shared/interfaces/agents/prompt.PromptWithContext`](<#PromptWithContext>)  (Base Class)
 
 
 ---
 #### PromptWithContext\.add\_to\_context<!-- {{#callable:python-backend/packages/shared/shared/interfaces/agents/prompt.PromptWithContext.add_to_context}} -->
 The `add_to_context` method adds additional key-value pairs to the existing context dictionary of the `PromptWithContext` class.
 - **Inputs**:
-    - `additional_context`: A dictionary containing additional context to be added to the existing context.
+    - `additional_context`: A dictionary containing additional context information to be added to the existing context.
 - **Control Flow**:
     - Check if the current context is None or empty; if so, initialize it as an empty dictionary.
     - Update the existing context dictionary with the key-value pairs from the `additional_context` dictionary.
-- **Output**: The method does not return any value; it modifies the `context` attribute in place.
-- **See also**: [`python-backend/packages/shared/shared/interfaces/agents/prompt.PromptWithContext`](#PromptWithContext)  (Base Class)
+- **Output**: The method does not return any value; it modifies the `context` attribute of the instance in place.
+- **See also**: [`python-backend/packages/shared/shared/interfaces/agents/prompt.PromptWithContext`](<#PromptWithContext>)  (Base Class)
 
 
 ---
 #### PromptWithContext\.\_\_str\_\_<!-- {{#callable:python-backend/packages/shared/shared/interfaces/agents/prompt.PromptWithContext.__str__}} -->
-The `__str__` method returns a string representation of the user prompt with context in XML format.
+The `__str__` method returns a string representation of the user prompt with its context in XML format.
 - **Inputs**: None
 - **Control Flow**:
     - The method calls `self.create_user_prompt()` to generate the string representation.
-- **Output**: A string representing the user prompt with context in XML format.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/interfaces/agents/prompt.PromptWithContext.create_user_prompt`](#PromptWithContextcreate_user_prompt)
-- **See also**: [`python-backend/packages/shared/shared/interfaces/agents/prompt.PromptWithContext`](#PromptWithContext)  (Base Class)
+    - The [`create_user_prompt`](<#PromptWithContextcreate_user_prompt>) method constructs an XML string based on the `prompt` and `context` attributes of the instance.
+- **Output**: A string representing the user prompt and its context in XML format.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/interfaces/agents/prompt.PromptWithContext.create_user_prompt`](<#PromptWithContextcreate_user_prompt>)
+- **See also**: [`python-backend/packages/shared/shared/interfaces/agents/prompt.PromptWithContext`](<#PromptWithContext>)  (Base Class)
 
 
 

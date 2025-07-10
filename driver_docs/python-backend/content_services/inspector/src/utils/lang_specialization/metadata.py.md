@@ -3,59 +3,59 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `metadata.py` file contains various prompts designed to guide the documentation of metadata and configuration files, focusing on explaining their purpose and summarizing their content in different levels of detail.
+The `metadata.py` file in the `python-backend` codebase contains various prompts designed to guide the creation of technical documentation for metadata and configuration files, focusing on explaining their purpose and summarizing their content in different levels of detail.
 
 # Purpose
-This code is a collection of string constants that define various prompts used for generating documentation and summaries related to metadata and configuration files within a software codebase. The prompts are categorized based on the size and complexity of the files they describe, such as small, medium, and large, and are intended to guide the generation of explanations and summaries. The functionality provided by this code is narrow, focusing specifically on the creation of structured and consistent documentation prompts. These prompts are likely used in a larger system that automates or assists in the documentation process, ensuring that explanations are clear, concise, and appropriately detailed based on the file's characteristics.
+This source code file defines a set of string constants that serve as prompts for generating documentation and summaries related to metadata and configuration files within a software codebase. The file provides narrow functionality, focusing specifically on guiding the creation of technical documentation by outlining the structure and content expected in various scenarios, such as small, medium, and large files. Each prompt is tailored to different levels of detail and complexity, ensuring that the documentation produced is appropriate for the size and nature of the file being described. The constants are likely used in a system that automates or assists in the generation of documentation, ensuring consistency and clarity in the output.
 # Global Variables
 
 ---
 ### METADATA\_MEDIUM\_AND\_LARGE\_SYSTEM\_PROMPT
 - **Type**: `string`
-- **Description**: The `METADATA_MEDIUM_AND_LARGE_SYSTEM_PROMPT` is a string variable that contains a detailed prompt intended for a software engineering documentation expert. It outlines the expert's role in explaining software, particularly focusing on configuration and metadata files. The prompt emphasizes the importance of confident and accurate documentation without speculation.
-- **Use**: This variable is used to provide a detailed prompt for generating documentation related to medium and large configuration and metadata files.
+- **Description**: The `METADATA_MEDIUM_AND_LARGE_SYSTEM_PROMPT` is a string variable that contains a prompt designed for a software engineering documentation expert. It outlines the expert's role in explaining software, particularly focusing on configuration and metadata files, and emphasizes a confident tone in documentation.
+- **Use**: This variable is used to guide the behavior or responses of a system or model that generates documentation for medium and large configuration and metadata files.
 
 
 ---
 ### METADATA\_SMALL\_SYSTEM\_PROMPT
 - **Type**: `str`
 - **Description**: The `METADATA_SMALL_SYSTEM_PROMPT` is a string variable that contains a prompt designed for a software engineering documentation expert. It emphasizes the expert's ability to write detailed documentation, particularly for small configuration and metadata files, and to do so with confidence and precision.
-- **Use**: This variable is used to provide a predefined prompt for documentation experts, guiding them in creating concise and confident descriptions of small configuration and metadata files.
+- **Use**: This variable is used to guide or instruct a documentation expert on how to approach writing documentation for small configuration and metadata files.
 
 
 ---
 ### PURPOSE\_PROMPT\_LARGE
 - **Type**: `str`
-- **Description**: `PURPOSE_PROMPT_LARGE` is a string variable that contains a multi-line prompt intended to guide the explanation of the purpose of metadata or configuration files within a software codebase. The prompt encourages a detailed analysis of the file's role, functionality, and relevance to the codebase, asking specific questions to ensure a comprehensive understanding.
-- **Use**: This variable is used to provide a structured guideline for explaining the purpose of large metadata or configuration files in a software codebase.
+- **Description**: `PURPOSE_PROMPT_LARGE` is a string variable that contains a detailed prompt for generating technical documentation. It instructs the user to explain the purpose of a metadata or configuration file from a software codebase in a single paragraph. The prompt encourages the user to consider various aspects of the file, such as its type, functionality, conceptual components, and relevance to the codebase.
+- **Use**: This variable is used to guide the generation of comprehensive technical documentation for large metadata or configuration files.
 
 
 ---
 ### PURPOSE\_PROMPT\_MEDIUM
-- **Type**: `string`
-- **Description**: `PURPOSE_PROMPT_MEDIUM` is a string variable that contains a template prompt for explaining the purpose of a metadata or configuration file from a software codebase. The prompt instructs the user to provide a single paragraph explanation, consisting of 3 to 5 sentences, about the file's purpose. This prompt is designed to guide users in articulating the role and significance of non-code files within a software project.
-- **Use**: This variable is used to provide a structured prompt for users to generate concise explanations of metadata or configuration files' purposes.
+- **Type**: `str`
+- **Description**: The `PURPOSE_PROMPT_MEDIUM` variable is a string that provides a template for generating a paragraph explaining the purpose of a metadata or configuration file from a software codebase. It instructs the user to write a concise explanation in 3 to 5 sentences, suitable for technical documentation, without referencing the prompt itself.
+- **Use**: This variable is used to guide the creation of medium-length purpose descriptions for metadata or configuration files in technical documentation.
 
 
 ---
 ### PURPOSE\_PROMPT\_SMALL
 - **Type**: `str`
-- **Description**: The `PURPOSE_PROMPT_SMALL` variable is a string that provides a template for generating a concise explanation of the purpose of a small metadata or configuration file. It instructs the user to summarize the file's purpose in 1 to 3 sentences without speculation.
-- **Use**: This variable is used to guide the creation of brief and precise purpose descriptions for small files in a software codebase.
+- **Description**: PURPOSE_PROMPT_SMALL is a string variable that contains a template prompt for explaining the purpose of small metadata or configuration files. The prompt instructs the user to provide a concise explanation, in 1 to 3 sentences, of the file's purpose as part of technical documentation.
+- **Use**: This variable is used to guide the creation of brief, high-quality technical documentation for small files in a software codebase.
 
 
 ---
 ### CONTENT\_SUMMARY\_PROMPT
 - **Type**: `str`
-- **Description**: The `CONTENT_SUMMARY_PROMPT` is a string variable that contains a template prompt for summarizing the functional details of metadata or configuration files from a software codebase. It guides the user to write a summary that is proportional to the complexity and length of the content, focusing on the most important technical details relevant to developers.
-- **Use**: This variable is used to provide a structured prompt for generating detailed content summaries of non-code files within a software project.
+- **Description**: CONTENT_SUMMARY_PROMPT is a string variable that contains a template for summarizing the functional details of metadata or configuration files from a software codebase. It guides the user to write a summary that is proportional to the complexity and length of the content provided, focusing on the most important technical details relevant to developers.
+- **Use**: This variable is used as a prompt template to instruct users on how to summarize the contents of non-code files in a software codebase, ensuring that the summary is detailed and informative for developers.
 
 
 ---
 ### PURPOSE\_FROM\_CHUNKS
-- **Type**: `string`
-- **Description**: The `PURPOSE_FROM_CHUNKS` variable is a multi-line string that provides instructions for combining multiple purpose paragraphs into a single cohesive paragraph. It is intended to guide the user in synthesizing the purpose of overlapping chunks of a metadata or configuration file into a concise summary.
-- **Use**: This variable is used to instruct users on how to merge multiple purpose descriptions into a single, unified paragraph that encapsulates the overall purpose of a file.
+- **Type**: `str`
+- **Description**: The variable `PURPOSE_FROM_CHUNKS` is a multi-line string that provides instructions for combining multiple purpose paragraphs into a single cohesive paragraph. It is intended to guide the creation of a unified description of the purpose of an entire metadata or configuration file from overlapping chunks.
+- **Use**: This variable is used to instruct on how to merge multiple purpose descriptions into a single, cohesive paragraph for documentation purposes.
 
 
 ---

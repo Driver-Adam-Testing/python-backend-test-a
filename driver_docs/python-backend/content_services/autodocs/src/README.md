@@ -3,16 +3,17 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `src` folder in the `python-backend` codebase contains configuration files, utility classes, and scripts for automating the generation of structured technical documentation using AI models.
+Configuration files, utility scripts, and Python modules for automated documentation, OpenAI API, and Modal.
 
 ## Folders
-- **[configs](configs/README.md)**: The `configs` folder in the `python-backend` codebase contains TOML configuration files for generating structured documentation, including a README for a driver, a detailed architecture document, and custom architecture document settings.
-- **[utils](utils/README.md)**: The `utils` folder in the `python-backend` codebase contains a `models.py` file that defines classes for configuring output formats and managing interactions with OpenAI chat models, including implementing retry logic for error handling.
+- **[configs](configs/README.md)**: TOML configuration files for generating structured documents like README and architecture documents.
+- **[utils](utils/README.md)**: The `utils` folder in the `python-backend` codebase contains a `models.py` file that defines classes and methods for configuring output formats and generating responses using OpenAI's API, including handling different model types and retrying requests with exponential backoff.
 
 ## Files
 - **[adi_project_readme.toml](adi_project_readme.toml.md)**: The `adi_project_readme.toml` file in the `python-backend` codebase defines the configuration and structure for generating a structured README for projects in the `no-OS` codebase by ADI, including sections for supported evaluation boards, power supply requirements, and platform-specific build commands.
-- **[autodocs_prototype.py](autodocs_prototype.py.md)**: The `autodocs_prototype.py` file in the `python-backend` codebase is a comprehensive script designed to automate the generation of technical documentation by leveraging various AI models and configurations, supporting tasks such as document validation, execution, and resumption of document generation processes.
-- **[main.py](main.py.md)**: The `main.py` file in the `python-backend` codebase defines an asynchronous function `run_autodoc` that processes document sources based on a given page node ID and configuration kind, utilizing various configurations and updating the status of the document generation process.
+- **[autodocs_prototype.py](autodocs_prototype.py.md)**: The `autodocs_prototype.py` file in the `python-backend` codebase provides a comprehensive implementation for generating and managing automated documentation, including configuration validation, section generation, and document assembly, with support for both local and remote execution using Modal.
+- **[common.py](common.py.md)**: The `common.py` file in the `python-backend` codebase provides functions to check and poll for specific GuardDuty malware scan status tags on S3 objects.
+- **[main.py](main.py.md)**: The `main.py` file in the `python-backend` codebase defines functions for generating and updating autodoc content using configurations and document sources, leveraging the Modal framework for asynchronous execution and resource management.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

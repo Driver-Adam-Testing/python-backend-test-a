@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `auth0_service_test.py` file contains unit tests for the `Auth0Service` class, verifying its functionality in managing tokens, user roles, organization members, and invitations, while also checking permission constraints.
+The `auth0_service_test.py` file contains unit tests for the `Auth0Service` class, verifying its functionality in managing tokens, user roles, organization members, and invitations within the Auth0 platform.
 
 # Purpose
-This Python file is a comprehensive test suite for the `Auth0Service` class, which is part of an application that integrates with Auth0 for authentication and authorization management. The file uses the `unittest` framework along with `pytest` for marking unit tests and `unittest.mock` for mocking external dependencies, specifically the Auth0 API calls. The primary purpose of this file is to validate the functionality of various methods within the `Auth0Service` class, ensuring they interact correctly with the Auth0 API and handle different scenarios, such as token retrieval, password changes, user role modifications, and organization management tasks like listing members, invitations, and roles.
+This Python file is a comprehensive test suite for the `Auth0Service` class, which is part of an application that integrates with the Auth0 identity management platform. The file uses the `unittest` framework along with `pytest` for marking unit tests and `unittest.mock` for mocking external dependencies. The primary purpose of this file is to validate the functionality of various methods within the `Auth0Service` class, ensuring they interact correctly with the Auth0 API and handle user authentication, role management, and organization membership operations.
 
-The test suite includes a series of unit tests that cover a wide range of functionalities provided by the `Auth0Service`. Each test method is designed to simulate specific API interactions by mocking the responses from Auth0's services, allowing the tests to run in isolation without actual network calls. The tests also verify permission handling by checking that operations requiring specific permissions are correctly blocked when those permissions are absent. This ensures that the service's methods enforce security constraints as expected. The file is structured to be executed as a standalone test suite, providing a robust mechanism for validating the integration of the application with Auth0's management and authentication APIs.
+The test suite includes a series of unit tests that cover a wide range of functionalities provided by the `Auth0Service`. These tests include obtaining management API tokens, changing user passwords, listing user organizations, modifying user roles, listing organization members and invitations, creating invitations, and deleting users or invitations from organizations. Each test method uses mock objects to simulate the behavior of Auth0 API calls, allowing the tests to run in isolation without making actual network requests. The tests also verify permission handling by checking that operations requiring specific permissions are correctly blocked when those permissions are absent. This ensures that the `Auth0Service` class adheres to expected security and functionality standards.
 # Imports and Dependencies
 
 ---
@@ -29,24 +29,24 @@ The test suite includes a series of unit tests that cover a wide range of functi
 
 ---
 ### TestAuth0Service<!-- {{#class:python-backend/backend/app/services/auth0_service_test.TestAuth0Service}} -->
-- **Description**: The `TestAuth0Service` class is a unit test suite for the `Auth0Service` class, utilizing the `unittest` framework and `pytest` for marking tests. It includes various test methods that mock and verify the behavior of different Auth0 service operations such as obtaining management API tokens, changing user passwords, listing user organizations, modifying user roles, listing members and invitations, creating invitations, and deleting users or invitations from organizations. The tests ensure that the Auth0 service methods are called with the correct parameters and handle permissions appropriately.
+- **Description**: The `TestAuth0Service` class is a unit test suite for the `Auth0Service` class, utilizing the `unittest` framework and `pytest` for marking tests. It includes various test methods that mock and verify the behavior of different Auth0 service operations, such as obtaining management API tokens, changing user passwords, listing user organizations, modifying user roles, and handling organization invitations and members. The tests ensure that the `Auth0Service` methods interact correctly with the Auth0 API and handle permissions appropriately.
 - **Methods**:
-    - [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_get_mgmt_api_token`](#TestAuth0Servicetest_get_mgmt_api_token)
-    - [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_change_self_password`](#TestAuth0Servicetest_change_self_password)
-    - [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_list_user_organizations`](#TestAuth0Servicetest_list_user_organizations)
-    - [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_modify_user_roles`](#TestAuth0Servicetest_modify_user_roles)
-    - [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_modify_user_roles_perms`](#TestAuth0Servicetest_modify_user_roles_perms)
-    - [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_list_members`](#TestAuth0Servicetest_list_members)
-    - [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_list_members_perms`](#TestAuth0Servicetest_list_members_perms)
-    - [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_list_invitations`](#TestAuth0Servicetest_list_invitations)
-    - [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_list_invitations_perms`](#TestAuth0Servicetest_list_invitations_perms)
-    - [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_list_roles`](#TestAuth0Servicetest_list_roles)
-    - [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_create_invitation`](#TestAuth0Servicetest_create_invitation)
-    - [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_create_invitation_perms`](#TestAuth0Servicetest_create_invitation_perms)
-    - [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_delete_user_from_organization`](#TestAuth0Servicetest_delete_user_from_organization)
-    - [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_delete_user_from_organization_perms`](#TestAuth0Servicetest_delete_user_from_organization_perms)
-    - [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_delete_invitation`](#TestAuth0Servicetest_delete_invitation)
-    - [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_delete_invitation_perms`](#TestAuth0Servicetest_delete_invitation_perms)
+    - [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_get_mgmt_api_token`](<#TestAuth0Servicetest_get_mgmt_api_token>)
+    - [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_change_self_password`](<#TestAuth0Servicetest_change_self_password>)
+    - [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_list_user_organizations`](<#TestAuth0Servicetest_list_user_organizations>)
+    - [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_modify_user_roles`](<#TestAuth0Servicetest_modify_user_roles>)
+    - [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_modify_user_roles_perms`](<#TestAuth0Servicetest_modify_user_roles_perms>)
+    - [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_list_members`](<#TestAuth0Servicetest_list_members>)
+    - [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_list_members_perms`](<#TestAuth0Servicetest_list_members_perms>)
+    - [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_list_invitations`](<#TestAuth0Servicetest_list_invitations>)
+    - [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_list_invitations_perms`](<#TestAuth0Servicetest_list_invitations_perms>)
+    - [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_list_roles`](<#TestAuth0Servicetest_list_roles>)
+    - [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_create_invitation`](<#TestAuth0Servicetest_create_invitation>)
+    - [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_create_invitation_perms`](<#TestAuth0Servicetest_create_invitation_perms>)
+    - [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_delete_user_from_organization`](<#TestAuth0Servicetest_delete_user_from_organization>)
+    - [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_delete_user_from_organization_perms`](<#TestAuth0Servicetest_delete_user_from_organization_perms>)
+    - [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_delete_invitation`](<#TestAuth0Servicetest_delete_invitation>)
+    - [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_delete_invitation_perms`](<#TestAuth0Servicetest_delete_invitation_perms>)
 - **Inherits From**:
     - `unittest.TestCase`
 
@@ -54,73 +54,73 @@ The test suite includes a series of unit tests that cover a wide range of functi
 
 ---
 #### TestAuth0Service\.test\_get\_mgmt\_api\_token<!-- {{#callable:python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_get_mgmt_api_token}} -->
-The `test_get_mgmt_api_token` method tests the [`get_mgmt_api_token`](auth0_service.py.md#Auth0Serviceget_mgmt_api_token) function of the [`Auth0Service`](auth0_service.py.md#Auth0Service) class by mocking the Auth0 token retrieval process and verifying the expected behavior.
+The `test_get_mgmt_api_token` method tests the [`get_mgmt_api_token`](<auth0_service.py.md#Auth0Serviceget_mgmt_api_token>) function of the [`Auth0Service`](<auth0_service.py.md#Auth0Service>) class by mocking the Auth0 token retrieval process and verifying the expected behavior.
 - **Decorators**: `@pytest.mark.unit`, `@patch`
 - **Inputs**:
     - `self`: Represents the instance of the class `TestAuth0Service`.
-    - `mock_get_token`: A mock object for the `client_credentials` method of the `GetToken` class from the `auth0.authentication` module.
+    - `mock_get_token`: A mock object for the `client_credentials` method of the `auth0.authentication.GetToken` class.
 - **Control Flow**:
     - The method sets the return value of `mock_get_token` to a dictionary containing mocked access and ID tokens.
-    - An instance of [`Auth0Service`](auth0_service.py.md#Auth0Service) is created.
-    - The [`get_mgmt_api_token`](auth0_service.py.md#Auth0Serviceget_mgmt_api_token) method of [`Auth0Service`](auth0_service.py.md#Auth0Service) is called, and its response is stored in the `response` variable.
+    - An instance of [`Auth0Service`](<auth0_service.py.md#Auth0Service>) is created.
+    - The [`get_mgmt_api_token`](<auth0_service.py.md#Auth0Serviceget_mgmt_api_token>) method of [`Auth0Service`](<auth0_service.py.md#Auth0Service>) is called, and its response is stored in the `response` variable.
     - The method asserts that `mock_get_token` was called.
     - It verifies that `mock_get_token` was called with the expected URL argument.
-    - Finally, it asserts that the response from [`get_mgmt_api_token`](auth0_service.py.md#Auth0Serviceget_mgmt_api_token) matches the mocked access token.
-- **Output**: The method does not return any value, but it asserts that the [`get_mgmt_api_token`](auth0_service.py.md#Auth0Serviceget_mgmt_api_token) method returns the expected mocked access token and that the mock was called correctly.
-- **Functions called**:
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](auth0_service.py.md#Auth0Service)
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.get_mgmt_api_token`](auth0_service.py.md#Auth0Serviceget_mgmt_api_token)
-- **See also**: [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service`](#TestAuth0Service)  (Base Class)
+    - Finally, it asserts that the response from [`get_mgmt_api_token`](<auth0_service.py.md#Auth0Serviceget_mgmt_api_token>) matches the mocked access token.
+- **Output**: The method does not return any value, but it asserts that the [`get_mgmt_api_token`](<auth0_service.py.md#Auth0Serviceget_mgmt_api_token>) method returns the expected mocked access token.
+- **Functions Called**:
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](<auth0_service.py.md#Auth0Service>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.get_mgmt_api_token`](<auth0_service.py.md#Auth0Serviceget_mgmt_api_token>)
+- **See also**: [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service`](<#TestAuth0Service>)  (Base Class)
 
 
 ---
 #### TestAuth0Service\.test\_change\_self\_password<!-- {{#callable:python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_change_self_password}} -->
-The `test_change_self_password` method tests the [`change_self_password`](auth0_service.py.md#Auth0Servicechange_self_password) function of the [`Auth0Service`](auth0_service.py.md#Auth0Service) class by mocking dependencies and verifying the expected behavior.
+The `test_change_self_password` method tests the [`change_self_password`](<auth0_service.py.md#Auth0Servicechange_self_password>) functionality of the [`Auth0Service`](<auth0_service.py.md#Auth0Service>) by mocking dependencies and verifying the expected behavior.
 - **Decorators**: `@pytest.mark.unit`, `@patch`, `@patch`, `@patch`
 - **Inputs**:
-    - `self`: Represents the instance of the class `TestAuth0Service`.
-    - `mock_database_login`: A mock object for the `Database.post` method.
-    - `mock_change_password`: A mock object for the `Database.change_password` method.
-    - `mock_userinfo`: A mock object for the `Users.userinfo` method.
+    - `self`: The instance of the TestAuth0Service class, used to access the test methods and assertions.
+    - `mock_database_login`: A mock object for the `Database.post` method, used to simulate database login behavior.
+    - `mock_change_password`: A mock object for the `Database.change_password` method, used to simulate the password change behavior.
+    - `mock_userinfo`: A mock object for the `Users.userinfo` method, used to simulate fetching user information.
 - **Control Flow**:
-    - Set the return value of `mock_userinfo` to a dictionary with an email key.
+    - Set the return value of `mock_userinfo` to a dictionary containing a mock email.
     - Set the return value of `mock_change_password` to a dictionary with a mocked response.
     - Set the return value of `mock_database_login` to an empty dictionary.
-    - Instantiate the [`Auth0Service`](auth0_service.py.md#Auth0Service) class.
-    - Call the [`change_self_password`](auth0_service.py.md#Auth0Servicechange_self_password) method of [`Auth0Service`](auth0_service.py.md#Auth0Service) with a `UserToken` object and a mock access token.
-    - Assert that the response from [`change_self_password`](auth0_service.py.md#Auth0Servicechange_self_password) matches the expected mocked response.
-    - Verify that `mock_userinfo` was called with the mock access token.
+    - Instantiate the [`Auth0Service`](<auth0_service.py.md#Auth0Service>) class.
+    - Call the [`change_self_password`](<auth0_service.py.md#Auth0Servicechange_self_password>) method of [`Auth0Service`](<auth0_service.py.md#Auth0Service>) with a `UserToken` object and a mock user access token.
+    - Assert that the response from [`change_self_password`](<auth0_service.py.md#Auth0Servicechange_self_password>) matches the expected mocked response.
+    - Verify that `mock_userinfo` was called with the mock user access token.
     - Verify that `mock_change_password` was called with the expected email, connection, and organization parameters.
-- **Output**: The method does not return any value; it asserts the correctness of the [`change_self_password`](auth0_service.py.md#Auth0Servicechange_self_password) method's behavior.
-- **Functions called**:
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](auth0_service.py.md#Auth0Service)
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.change_self_password`](auth0_service.py.md#Auth0Servicechange_self_password)
-- **See also**: [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service`](#TestAuth0Service)  (Base Class)
+- **Output**: The method does not return any value; it uses assertions to verify the behavior of the [`change_self_password`](<auth0_service.py.md#Auth0Servicechange_self_password>) method.
+- **Functions Called**:
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](<auth0_service.py.md#Auth0Service>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.change_self_password`](<auth0_service.py.md#Auth0Servicechange_self_password>)
+- **See also**: [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service`](<#TestAuth0Service>)  (Base Class)
 
 
 ---
 #### TestAuth0Service\.test\_list\_user\_organizations<!-- {{#callable:python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_list_user_organizations}} -->
-The `test_list_user_organizations` method tests the [`list_user_organizations`](auth0_service.py.md#Auth0Servicelist_user_organizations) function of the [`Auth0Service`](auth0_service.py.md#Auth0Service) class by mocking the `list_organizations` method and verifying its behavior.
+The `test_list_user_organizations` method tests the [`list_user_organizations`](<auth0_service.py.md#Auth0Servicelist_user_organizations>) function of the [`Auth0Service`](<auth0_service.py.md#Auth0Service>) class by mocking the `list_organizations` method and verifying its behavior.
 - **Decorators**: `@pytest.mark.unit`, `@patch`
 - **Inputs**:
     - `self`: Represents the instance of the class `TestAuth0Service`.
     - `mock_list_organizations`: A mock object for the `list_organizations` method from `auth0.management.Users`.
 - **Control Flow**:
     - The method sets the return value of `mock_list_organizations` to a dictionary with a key 'mocked' and value 'orgs'.
-    - An instance of [`Auth0Service`](auth0_service.py.md#Auth0Service) is created.
-    - The [`list_user_organizations`](auth0_service.py.md#Auth0Servicelist_user_organizations) method of [`Auth0Service`](auth0_service.py.md#Auth0Service) is called with a `UserToken` object containing mock data.
-    - The response from [`list_user_organizations`](auth0_service.py.md#Auth0Servicelist_user_organizations) is asserted to ensure it matches the mocked return value.
-    - The `mock_list_organizations` method is asserted to have been called with the correct parameters, specifically the 'sub' from `UserToken` and `per_page` set to 100.
-- **Output**: The method does not return any value; it uses assertions to validate the behavior of the [`list_user_organizations`](auth0_service.py.md#Auth0Servicelist_user_organizations) method.
-- **Functions called**:
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](auth0_service.py.md#Auth0Service)
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.list_user_organizations`](auth0_service.py.md#Auth0Servicelist_user_organizations)
-- **See also**: [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service`](#TestAuth0Service)  (Base Class)
+    - An instance of [`Auth0Service`](<auth0_service.py.md#Auth0Service>) is created.
+    - The [`list_user_organizations`](<auth0_service.py.md#Auth0Servicelist_user_organizations>) method of [`Auth0Service`](<auth0_service.py.md#Auth0Service>) is called with a `UserToken` object containing mock data.
+    - The response from [`list_user_organizations`](<auth0_service.py.md#Auth0Servicelist_user_organizations>) is asserted to ensure it matches the mocked return value.
+    - The `mock_list_organizations` method is asserted to have been called with the correct arguments, specifically the 'sub' field from the `UserToken` and a `per_page` value of 100.
+- **Output**: The method does not return any value as it is a unit test, but it verifies that the [`list_user_organizations`](<auth0_service.py.md#Auth0Servicelist_user_organizations>) method behaves as expected.
+- **Functions Called**:
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](<auth0_service.py.md#Auth0Service>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.list_user_organizations`](<auth0_service.py.md#Auth0Servicelist_user_organizations>)
+- **See also**: [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service`](<#TestAuth0Service>)  (Base Class)
 
 
 ---
 #### TestAuth0Service\.test\_modify\_user\_roles<!-- {{#callable:python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_modify_user_roles}} -->
-The `test_modify_user_roles` method tests the functionality of modifying user roles within an organization using mocked Auth0 service calls.
+The `test_modify_user_roles` method tests the functionality of modifying user roles within an organization using mocked Auth0 service methods.
 - **Decorators**: `@pytest.mark.unit`, `@patch`, `@patch`, `@patch`
 - **Inputs**:
     - `self`: The instance of the class `TestAuth0Service`.
@@ -128,139 +128,140 @@ The `test_modify_user_roles` method tests the functionality of modifying user ro
     - `mock_create_member_roles`: A mock object for the `create_organization_member_roles` method from Auth0's Organizations management.
     - `mock_delete_member_roles`: A mock object for the `delete_organization_member_roles` method from Auth0's Organizations management.
 - **Control Flow**:
-    - Initialize mock return values for organization member roles, create member roles, and delete member roles to empty lists or dictionaries.
-    - Instantiate the [`Auth0Service`](auth0_service.py.md#Auth0Service) class.
-    - Call [`modify_user_roles`](auth0_service.py.md#Auth0Servicemodify_user_roles) on `auth0_service` with a `UserToken` and a list of roles to add, then assert the response matches the expected [`ModifyUserRolesResponse`](../schemas/auth0_schema.py.md#ModifyUserRolesResponse) with added roles and no removed roles.
-    - Change the mock return value for `mock_org_member_roles` to include a role that should be removed.
-    - Call [`modify_user_roles`](auth0_service.py.md#Auth0Servicemodify_user_roles) again with a different set of roles, then assert the response matches the expected [`ModifyUserRolesResponse`](../schemas/auth0_schema.py.md#ModifyUserRolesResponse) with the correct added and removed roles.
-- **Output**: The method does not return any value; it uses assertions to verify the expected behavior of the [`modify_user_roles`](auth0_service.py.md#Auth0Servicemodify_user_roles) method.
-- **Functions called**:
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](auth0_service.py.md#Auth0Service)
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.modify_user_roles`](auth0_service.py.md#Auth0Servicemodify_user_roles)
-    - [`python-backend/backend/app/schemas/auth0_schema.ModifyUserRolesResponse`](../schemas/auth0_schema.py.md#ModifyUserRolesResponse)
-- **See also**: [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service`](#TestAuth0Service)  (Base Class)
+    - Set return values for the mock methods: `mock_org_member_roles` returns an empty list, `mock_create_member_roles` and `mock_delete_member_roles` return empty dictionaries.
+    - Instantiate [`Auth0Service`](<auth0_service.py.md#Auth0Service>) and call [`modify_user_roles`](<auth0_service.py.md#Auth0Servicemodify_user_roles>) with a `UserToken` and roles `['mockrole1', 'mockrole2']`, expecting no roles to be removed and both roles to be added.
+    - Assert that the response matches the expected [`ModifyUserRolesResponse`](<../schemas/auth0_schema.py.md#ModifyUserRolesResponse>) with added roles `['mockrole1', 'mockrole2']` and no removed roles.
+    - Change the return value of `mock_org_member_roles` to include a role `{'id': 'shouldberemoved'}`.
+    - Call [`modify_user_roles`](<auth0_service.py.md#Auth0Servicemodify_user_roles>) again with a single role `['mockrole1']`, expecting the role `shouldberemoved` to be removed.
+    - Assert that the response matches the expected [`ModifyUserRolesResponse`](<../schemas/auth0_schema.py.md#ModifyUserRolesResponse>) with added role `['mockrole1']` and removed role `['shouldberemoved']`.
+- **Output**: The method does not return any value; it uses assertions to validate the behavior of the [`modify_user_roles`](<auth0_service.py.md#Auth0Servicemodify_user_roles>) method.
+- **Functions Called**:
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](<auth0_service.py.md#Auth0Service>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.modify_user_roles`](<auth0_service.py.md#Auth0Servicemodify_user_roles>)
+    - [`python-backend/backend/app/schemas/auth0_schema.ModifyUserRolesResponse`](<../schemas/auth0_schema.py.md#ModifyUserRolesResponse>)
+- **See also**: [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service`](<#TestAuth0Service>)  (Base Class)
 
 
 ---
 #### TestAuth0Service\.test\_modify\_user\_roles\_perms<!-- {{#callable:python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_modify_user_roles_perms}} -->
-The `test_modify_user_roles_perms` method tests the [`modify_user_roles`](auth0_service.py.md#Auth0Servicemodify_user_roles) function of the [`Auth0Service`](auth0_service.py.md#Auth0Service) to ensure it correctly handles permission errors when a user lacks the necessary permissions.
+The `test_modify_user_roles_perms` method tests the [`modify_user_roles`](<auth0_service.py.md#Auth0Servicemodify_user_roles>) function of the [`Auth0Service`](<auth0_service.py.md#Auth0Service>) to ensure it correctly handles permission errors when the user lacks necessary permissions.
 - **Decorators**: `@pytest.mark.unit`, `@patch`, `@patch`, `@patch`
 - **Inputs**:
-    - `self`: The instance of the class `TestAuth0Service`.
+    - `self`: Represents the instance of the class `TestAuth0Service`.
     - `mock_org_member_roles`: A mock object for the `all_organization_member_roles` method.
     - `mock_create_member_roles`: A mock object for the `create_organization_member_roles` method.
     - `mock_delete_member_roles`: A mock object for the `delete_organization_member_roles` method.
 - **Control Flow**:
-    - Set return values for the mock objects to simulate empty roles and successful role creation and deletion.
-    - Instantiate the [`Auth0Service`](auth0_service.py.md#Auth0Service) class.
-    - Attempt to call [`modify_user_roles`](auth0_service.py.md#Auth0Servicemodify_user_roles) with a `UserToken` that has no permissions and a list of roles to modify.
-    - Catch a `PermissionError` exception to confirm that the function correctly blocks access without sufficient permissions.
-    - If no exception is raised, call `self.fail` to indicate the test failed because the function did not block access as expected.
-- **Output**: The method does not return any value; it raises an assertion error if the [`modify_user_roles`](auth0_service.py.md#Auth0Servicemodify_user_roles) function does not block access due to insufficient permissions.
-- **Functions called**:
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](auth0_service.py.md#Auth0Service)
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.modify_user_roles`](auth0_service.py.md#Auth0Servicemodify_user_roles)
-- **See also**: [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service`](#TestAuth0Service)  (Base Class)
+    - Mocks are set up to return empty lists or dictionaries for organization member roles, creation, and deletion methods.
+    - An instance of [`Auth0Service`](<auth0_service.py.md#Auth0Service>) is created.
+    - The [`modify_user_roles`](<auth0_service.py.md#Auth0Servicemodify_user_roles>) method is called with a `UserToken` that has no permissions and a list of roles to modify.
+    - A `PermissionError` is expected to be raised due to lack of permissions.
+    - If no error is raised, the test fails with a message indicating that the operation completed without sufficient permissions.
+- **Output**: The method does not return any value; it asserts the correct handling of permission errors by raising a `PermissionError` when permissions are insufficient.
+- **Functions Called**:
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](<auth0_service.py.md#Auth0Service>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.modify_user_roles`](<auth0_service.py.md#Auth0Servicemodify_user_roles>)
+- **See also**: [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service`](<#TestAuth0Service>)  (Base Class)
 
 
 ---
 #### TestAuth0Service\.test\_list\_members<!-- {{#callable:python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_list_members}} -->
-The `test_list_members` method tests the [`list_members`](auth0_service.py.md#Auth0Servicelist_members) function of the [`Auth0Service`](auth0_service.py.md#Auth0Service) class to ensure it correctly retrieves and returns a list of organization members.
+The `test_list_members` method tests the [`list_members`](<auth0_service.py.md#Auth0Servicelist_members>) function of the [`Auth0Service`](<auth0_service.py.md#Auth0Service>) class to ensure it correctly retrieves and returns a list of organization members.
+- **Decorators**: `@pytest.mark.unit`, `@patch`
+- **Inputs**:
+    - `self`: Refers to the instance of the class `TestAuth0Service`.
+    - `mock_list_members`: A mock object for the `all_organization_members` method from `auth0.management.Organizations`, used to simulate and verify interactions with this method.
+- **Control Flow**:
+    - The method begins by setting the return value of `mock_list_members` to a dictionary with a key 'mocked' and value 'listed org members'.
+    - An instance of [`Auth0Service`](<auth0_service.py.md#Auth0Service>) is created.
+    - The [`list_members`](<auth0_service.py.md#Auth0Servicelist_members>) method of [`Auth0Service`](<auth0_service.py.md#Auth0Service>) is called with a `UserToken` object and pagination parameters `page=1` and `per_page=9`.
+    - The response from [`list_members`](<auth0_service.py.md#Auth0Servicelist_members>) is asserted to ensure it matches the mocked return value.
+    - The `mock_list_members` mock is checked to ensure it was called with the expected arguments, including the organization ID, pagination parameters, and a list of fields to retrieve.
+- **Output**: The method does not return any value; it uses assertions to validate the behavior of the [`list_members`](<auth0_service.py.md#Auth0Servicelist_members>) method.
+- **Functions Called**:
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](<auth0_service.py.md#Auth0Service>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.list_members`](<auth0_service.py.md#Auth0Servicelist_members>)
+- **See also**: [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service`](<#TestAuth0Service>)  (Base Class)
+
+
+---
+#### TestAuth0Service\.test\_list\_members\_perms<!-- {{#callable:python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_list_members_perms}} -->
+The `test_list_members_perms` method tests that the [`list_members`](<auth0_service.py.md#Auth0Servicelist_members>) function in [`Auth0Service`](<auth0_service.py.md#Auth0Service>) correctly raises a `PermissionError` when called without sufficient permissions.
 - **Decorators**: `@pytest.mark.unit`, `@patch`
 - **Inputs**:
     - `self`: Represents the instance of the class `TestAuth0Service`.
     - `mock_list_members`: A mock object for the `all_organization_members` method from `auth0.management.Organizations`.
 - **Control Flow**:
-    - The method sets the return value of `mock_list_members` to a dictionary with a key 'mocked' and value 'listed org members'.
-    - An instance of [`Auth0Service`](auth0_service.py.md#Auth0Service) is created.
-    - The [`list_members`](auth0_service.py.md#Auth0Servicelist_members) method of [`Auth0Service`](auth0_service.py.md#Auth0Service) is called with a `UserToken` object and pagination parameters `page=1` and `per_page=9`.
-    - The response from [`list_members`](auth0_service.py.md#Auth0Servicelist_members) is asserted to ensure it matches the mocked return value.
-    - The `mock_list_members` mock is asserted to have been called with specific arguments, including organization ID, pagination parameters, and a list of fields.
-- **Output**: The method does not return any value; it uses assertions to validate the behavior of the [`list_members`](auth0_service.py.md#Auth0Servicelist_members) method.
-- **Functions called**:
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](auth0_service.py.md#Auth0Service)
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.list_members`](auth0_service.py.md#Auth0Servicelist_members)
-- **See also**: [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service`](#TestAuth0Service)  (Base Class)
-
-
----
-#### TestAuth0Service\.test\_list\_members\_perms<!-- {{#callable:python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_list_members_perms}} -->
-The `test_list_members_perms` method tests the [`list_members`](auth0_service.py.md#Auth0Servicelist_members) function of the [`Auth0Service`](auth0_service.py.md#Auth0Service) to ensure it correctly handles permission errors when listing organization members without sufficient permissions.
-- **Decorators**: `@pytest.mark.unit`, `@patch`
-- **Inputs**:
-    - `mock_list_members`: A mock object for the `all_organization_members` method from the `auth0.management.Organizations` module.
-- **Control Flow**:
     - The method sets the return value of `mock_list_members` to a mock dictionary representing listed organization members.
-    - An instance of [`Auth0Service`](auth0_service.py.md#Auth0Service) is created.
-    - A `UserToken` object is instantiated with mock data, including an empty permissions list.
-    - The [`list_members`](auth0_service.py.md#Auth0Servicelist_members) method of [`Auth0Service`](auth0_service.py.md#Auth0Service) is called with the `UserToken` and pagination parameters `page=1` and `per_page=9`.
-    - A `try` block is used to catch `PermissionError` exceptions, which are expected if permissions are insufficient.
-    - If a `PermissionError` is caught, the method returns successfully, indicating the test passed.
-    - If no exception is raised, the test fails with a message indicating that the operation completed without sufficient permissions.
-- **Output**: The method does not return any value but will fail the test if the [`list_members`](auth0_service.py.md#Auth0Servicelist_members) method does not raise a `PermissionError` when called without sufficient permissions.
-- **Functions called**:
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](auth0_service.py.md#Auth0Service)
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.list_members`](auth0_service.py.md#Auth0Servicelist_members)
-- **See also**: [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service`](#TestAuth0Service)  (Base Class)
+    - An instance of [`Auth0Service`](<auth0_service.py.md#Auth0Service>) is created.
+    - A `try` block is initiated to call [`list_members`](<auth0_service.py.md#Auth0Servicelist_members>) on the `auth0_service` instance with a `UserToken` object that has no permissions and pagination parameters `page=1` and `per_page=9`.
+    - If a `PermissionError` is raised, the method returns successfully, indicating the test passed.
+    - If no `PermissionError` is raised, the method calls `self.fail` to indicate the test failed because the operation completed without sufficient permissions.
+- **Output**: The method does not return any value but will raise an assertion error if the [`list_members`](<auth0_service.py.md#Auth0Servicelist_members>) function does not raise a `PermissionError` when called without permissions.
+- **Functions Called**:
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](<auth0_service.py.md#Auth0Service>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.list_members`](<auth0_service.py.md#Auth0Servicelist_members>)
+- **See also**: [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service`](<#TestAuth0Service>)  (Base Class)
 
 
 ---
 #### TestAuth0Service\.test\_list\_invitations<!-- {{#callable:python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_list_invitations}} -->
-The `test_list_invitations` method tests the [`list_invitations`](auth0_service.py.md#Auth0Servicelist_invitations) function of the [`Auth0Service`](auth0_service.py.md#Auth0Service) class to ensure it correctly retrieves organization invitations using mocked data.
+The `test_list_invitations` method tests the [`list_invitations`](<auth0_service.py.md#Auth0Servicelist_invitations>) function of the [`Auth0Service`](<auth0_service.py.md#Auth0Service>) class by mocking the `all_organization_invitations` method and verifying its behavior.
 - **Decorators**: `@pytest.mark.unit`, `@patch`
 - **Inputs**:
+    - `self`: Represents the instance of the class `TestAuth0Service`.
     - `mock_all_org_invitations`: A mock object for the `all_organization_invitations` method from the `auth0.management.Organizations` module.
 - **Control Flow**:
-    - The mock object `mock_all_org_invitations` is set to return a dictionary with a key 'mocked' and value 'org invitations'.
-    - An instance of [`Auth0Service`](auth0_service.py.md#Auth0Service) is created.
-    - The [`list_invitations`](auth0_service.py.md#Auth0Servicelist_invitations) method of [`Auth0Service`](auth0_service.py.md#Auth0Service) is called with a `UserToken` object and pagination parameters `page=2` and `per_page=3`.
-    - The response from [`list_invitations`](auth0_service.py.md#Auth0Servicelist_invitations) is asserted to ensure it matches the mocked return value.
-    - The mock method `mock_all_org_invitations` is asserted to have been called with the correct organization ID and pagination parameters.
-- **Output**: The method does not return any value; it uses assertions to validate the behavior of the [`list_invitations`](auth0_service.py.md#Auth0Servicelist_invitations) method.
-- **Functions called**:
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](auth0_service.py.md#Auth0Service)
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.list_invitations`](auth0_service.py.md#Auth0Servicelist_invitations)
-- **See also**: [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service`](#TestAuth0Service)  (Base Class)
+    - The method sets the return value of `mock_all_org_invitations` to a dictionary with a key 'mocked' and value 'org invitations'.
+    - An instance of [`Auth0Service`](<auth0_service.py.md#Auth0Service>) is created.
+    - The [`list_invitations`](<auth0_service.py.md#Auth0Servicelist_invitations>) method of [`Auth0Service`](<auth0_service.py.md#Auth0Service>) is called with a `UserToken` object and pagination parameters `page=2` and `per_page=3`.
+    - The response from [`list_invitations`](<auth0_service.py.md#Auth0Servicelist_invitations>) is asserted to ensure it matches the mocked return value.
+    - The `mock_all_org_invitations` mock is checked to ensure it was called with the correct arguments: `id='mock_org_id'`, `page=2`, and `per_page=3`.
+- **Output**: The method does not return any value; it uses assertions to validate the behavior of the [`list_invitations`](<auth0_service.py.md#Auth0Servicelist_invitations>) method.
+- **Functions Called**:
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](<auth0_service.py.md#Auth0Service>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.list_invitations`](<auth0_service.py.md#Auth0Servicelist_invitations>)
+- **See also**: [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service`](<#TestAuth0Service>)  (Base Class)
 
 
 ---
 #### TestAuth0Service\.test\_list\_invitations\_perms<!-- {{#callable:python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_list_invitations_perms}} -->
-The `test_list_invitations_perms` method tests that the [`list_invitations`](auth0_service.py.md#Auth0Servicelist_invitations) function in the [`Auth0Service`](auth0_service.py.md#Auth0Service) class correctly raises a `PermissionError` when called without sufficient permissions.
+The `test_list_invitations_perms` method tests that the [`list_invitations`](<auth0_service.py.md#Auth0Servicelist_invitations>) function in [`Auth0Service`](<auth0_service.py.md#Auth0Service>) correctly raises a `PermissionError` when called without sufficient permissions.
 - **Decorators**: `@pytest.mark.unit`, `@patch`
 - **Inputs**:
     - `self`: Represents the instance of the class `TestAuth0Service`.
-    - `mock_all_org_invitations`: A mock object for the `all_organization_invitations` method from the `auth0.management.Organizations` module.
+    - `mock_all_org_invitations`: A mock object for the `all_organization_invitations` method from `auth0.management.Organizations`.
 - **Control Flow**:
-    - The method sets the return value of `mock_all_org_invitations` to a dictionary with a mocked response.
-    - An instance of [`Auth0Service`](auth0_service.py.md#Auth0Service) is created.
-    - A `try` block is entered where `auth0_service.list_invitations` is called with a `UserToken` object that has no permissions and specific pagination parameters.
-    - If a `PermissionError` is raised, the method returns successfully, indicating the test passed.
-    - If no error is raised, the `self.fail` method is called, indicating the test failed because the function executed without the required permissions.
-- **Output**: The method does not return any value; it either passes silently or fails by calling `self.fail` if the `PermissionError` is not raised.
-- **Functions called**:
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](auth0_service.py.md#Auth0Service)
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.list_invitations`](auth0_service.py.md#Auth0Servicelist_invitations)
-- **See also**: [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service`](#TestAuth0Service)  (Base Class)
+    - The mock object `mock_all_org_invitations` is set to return a dictionary with a mocked response for organization invitations.
+    - An instance of [`Auth0Service`](<auth0_service.py.md#Auth0Service>) is created.
+    - A `try` block is used to call the [`list_invitations`](<auth0_service.py.md#Auth0Servicelist_invitations>) method of [`Auth0Service`](<auth0_service.py.md#Auth0Service>) with a `UserToken` that has no permissions and specific pagination parameters.
+    - If a `PermissionError` is raised, the test returns successfully, indicating that the lack of permissions was correctly handled.
+    - If no `PermissionError` is raised, the test fails with a message indicating that the method completed without sufficient permissions.
+- **Output**: The method does not return any value; it either passes silently if the `PermissionError` is raised or fails the test if it is not.
+- **Functions Called**:
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](<auth0_service.py.md#Auth0Service>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.list_invitations`](<auth0_service.py.md#Auth0Servicelist_invitations>)
+- **See also**: [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service`](<#TestAuth0Service>)  (Base Class)
 
 
 ---
 #### TestAuth0Service\.test\_list\_roles<!-- {{#callable:python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_list_roles}} -->
-The `test_list_roles` method tests the [`list_roles`](auth0_service.py.md#Auth0Servicelist_roles) function of the [`Auth0Service`](auth0_service.py.md#Auth0Service) class to ensure it returns a mocked list of roles and verifies that default pagination parameters are passed correctly.
+The `test_list_roles` method tests the [`list_roles`](<auth0_service.py.md#Auth0Servicelist_roles>) function of the [`Auth0Service`](<auth0_service.py.md#Auth0Service>) class to ensure it returns a mocked list of roles and verifies that default pagination parameters are correctly passed.
 - **Decorators**: `@pytest.mark.unit`, `@patch`
 - **Inputs**:
-    - `self`: Represents the instance of the class `TestAuth0Service`.
+    - `self`: Represents the instance of the test case class `TestAuth0Service`.
     - `mock_list_roles`: A mock object for the `auth0.management.Roles.list` method, used to simulate and control its behavior during the test.
 - **Control Flow**:
-    - Set the return value of `mock_list_roles` to a dictionary with a mocked list of roles.
-    - Instantiate the [`Auth0Service`](auth0_service.py.md#Auth0Service) class.
-    - Call the [`list_roles`](auth0_service.py.md#Auth0Servicelist_roles) method on the `auth0_service` instance and store the response.
-    - Assert that the response contains the expected mocked list of roles.
-    - Verify that `mock_list_roles` was called with default pagination parameters `page=0` and `per_page=100`.
-- **Output**: The method does not return any value; it uses assertions to validate the behavior of the [`list_roles`](auth0_service.py.md#Auth0Servicelist_roles) method.
-- **Functions called**:
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](auth0_service.py.md#Auth0Service)
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.list_roles`](auth0_service.py.md#Auth0Servicelist_roles)
-- **See also**: [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service`](#TestAuth0Service)  (Base Class)
+    - The method sets the return value of `mock_list_roles` to a dictionary with a mocked list of roles.
+    - An instance of [`Auth0Service`](<auth0_service.py.md#Auth0Service>) is created.
+    - The [`list_roles`](<auth0_service.py.md#Auth0Servicelist_roles>) method of [`Auth0Service`](<auth0_service.py.md#Auth0Service>) is called, and its response is stored in the `response` variable.
+    - An assertion checks that the response contains the expected mocked list of roles.
+    - The method verifies that `mock_list_roles` was called with the default pagination parameters `page=0` and `per_page=100`.
+- **Output**: The method does not return any value; it uses assertions to validate the behavior of the [`list_roles`](<auth0_service.py.md#Auth0Servicelist_roles>) method.
+- **Functions Called**:
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](<auth0_service.py.md#Auth0Service>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.list_roles`](<auth0_service.py.md#Auth0Servicelist_roles>)
+- **See also**: [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service`](<#TestAuth0Service>)  (Base Class)
 
 
 ---
@@ -269,93 +270,91 @@ The `test_create_invitation` method tests the creation of organization invitatio
 - **Decorators**: `@pytest.mark.unit`, `@patch`, `@patch`, `@patch`
 - **Inputs**:
     - `self`: The instance of the test class `TestAuth0Service`.
-    - `mock_create_invitation`: A mock object for the `create_organization_invitation` method of the Auth0 Organizations management API.
-    - `mock_get_org`: A mock object for the `get_organization` method of the Auth0 Organizations management API.
-    - `mock_userinfo`: A mock object for the `userinfo` method of the Auth0 Users authentication API.
+    - `mock_create_invitation`: A mock object for the `create_organization_invitation` method of the Auth0 service.
+    - `mock_get_org`: A mock object for the `get_organization` method of the Auth0 service.
+    - `mock_userinfo`: A mock object for the `userinfo` method of the Auth0 service.
 - **Control Flow**:
-    - Set the return value of `mock_create_invitation` to a dictionary indicating an invitation was created.
-    - Set the return value of `mock_get_org` to a dictionary with empty metadata.
-    - Set the return value of `mock_userinfo` to a dictionary with a name 'Johnny Cache'.
-    - Instantiate an [`Auth0Service`](auth0_service.py.md#Auth0Service) object.
-    - Call the [`create_invitation`](auth0_service.py.md#Auth0Servicecreate_invitation) method of [`Auth0Service`](auth0_service.py.md#Auth0Service) with a `UserToken` and [`CreateInvitationInput`](../schemas/auth0_schema.py.md#CreateInvitationInput) containing two invitations.
-    - Assert that `mock_create_invitation` was called twice.
-    - Assert that the response contains two items and the first item indicates an invitation was created.
-    - Assert that `mock_create_invitation` was called with specific arguments including the inviter's name and invitee's email.
-- **Output**: The method does not return any value; it uses assertions to verify the behavior of the [`create_invitation`](auth0_service.py.md#Auth0Servicecreate_invitation) method.
-- **Functions called**:
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](auth0_service.py.md#Auth0Service)
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.create_invitation`](auth0_service.py.md#Auth0Servicecreate_invitation)
-    - [`python-backend/backend/app/schemas/auth0_schema.CreateInvitationInput`](../schemas/auth0_schema.py.md#CreateInvitationInput)
-    - [`python-backend/backend/app/schemas/auth0_schema.Invitation`](../schemas/auth0_schema.py.md#Invitation)
-    - [`python-backend/backend/app/schemas/auth0_schema.Invitee`](../schemas/auth0_schema.py.md#Invitee)
-- **See also**: [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service`](#TestAuth0Service)  (Base Class)
+    - Set return values for the mock objects: `mock_create_invitation`, `mock_get_org`, and `mock_userinfo`.
+    - Instantiate the [`Auth0Service`](<auth0_service.py.md#Auth0Service>) class.
+    - Call the [`create_invitation`](<auth0_service.py.md#Auth0Servicecreate_invitation>) method of [`Auth0Service`](<auth0_service.py.md#Auth0Service>) with a `UserToken` and [`CreateInvitationInput`](<../schemas/auth0_schema.py.md#CreateInvitationInput>) containing invitation details.
+    - Assert that the `create_organization_invitation` method was called twice.
+    - Assert that the response contains two created invitations.
+    - Verify that the `create_organization_invitation` method was called with the expected parameters for the first invitation.
+- **Output**: The method does not return any value; it uses assertions to validate the behavior of the [`create_invitation`](<auth0_service.py.md#Auth0Servicecreate_invitation>) method.
+- **Functions Called**:
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](<auth0_service.py.md#Auth0Service>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.create_invitation`](<auth0_service.py.md#Auth0Servicecreate_invitation>)
+    - [`python-backend/backend/app/schemas/auth0_schema.CreateInvitationInput`](<../schemas/auth0_schema.py.md#CreateInvitationInput>)
+    - [`python-backend/backend/app/schemas/auth0_schema.Invitation`](<../schemas/auth0_schema.py.md#Invitation>)
+    - [`python-backend/backend/app/schemas/auth0_schema.Invitee`](<../schemas/auth0_schema.py.md#Invitee>)
+- **See also**: [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service`](<#TestAuth0Service>)  (Base Class)
 
 
 ---
 #### TestAuth0Service\.test\_create\_invitation\_perms<!-- {{#callable:python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_create_invitation_perms}} -->
-The `test_create_invitation_perms` method tests the permission handling of the [`create_invitation`](auth0_service.py.md#Auth0Servicecreate_invitation) method in the [`Auth0Service`](auth0_service.py.md#Auth0Service) class by ensuring that a `PermissionError` is raised when the user lacks the necessary permissions.
+The `test_create_invitation_perms` method tests the permission handling of the [`create_invitation`](<auth0_service.py.md#Auth0Servicecreate_invitation>) method in the [`Auth0Service`](<auth0_service.py.md#Auth0Service>) class by simulating a scenario where the user lacks necessary permissions.
 - **Decorators**: `@pytest.mark.unit`, `@patch`, `@patch`
 - **Inputs**:
     - `self`: The instance of the test class `TestAuth0Service`.
     - `mock_create_invitation`: A mock object for the `create_organization_invitation` method from the `auth0.management.Organizations` module.
     - `mock_userinfo`: A mock object for the `userinfo` method from the `auth0.authentication.Users` module.
 - **Control Flow**:
-    - The method sets the return value of `mock_create_invitation` to a dictionary indicating an invitation was created.
-    - The method sets the return value of `mock_userinfo` to a dictionary with a mock user name.
-    - An instance of [`Auth0Service`](auth0_service.py.md#Auth0Service) is created.
-    - The method attempts to call [`create_invitation`](auth0_service.py.md#Auth0Servicecreate_invitation) on the `auth0_service` instance with a `UserToken` object lacking permissions and a [`CreateInvitationInput`](../schemas/auth0_schema.py.md#CreateInvitationInput) object.
-    - If a `PermissionError` is raised, the method returns successfully, indicating the permission check worked.
-    - If no error is raised, the method calls `self.fail` to indicate the test failed because the operation completed without sufficient permissions.
-- **Output**: The method does not return any value; it either completes successfully if a `PermissionError` is raised or fails the test if the operation completes without the expected error.
-- **Functions called**:
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](auth0_service.py.md#Auth0Service)
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.create_invitation`](auth0_service.py.md#Auth0Servicecreate_invitation)
-    - [`python-backend/backend/app/schemas/auth0_schema.CreateInvitationInput`](../schemas/auth0_schema.py.md#CreateInvitationInput)
-    - [`python-backend/backend/app/schemas/auth0_schema.Invitation`](../schemas/auth0_schema.py.md#Invitation)
-    - [`python-backend/backend/app/schemas/auth0_schema.Invitee`](../schemas/auth0_schema.py.md#Invitee)
-- **See also**: [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service`](#TestAuth0Service)  (Base Class)
+    - Set the return value of `mock_create_invitation` to a dictionary indicating an invitation was created.
+    - Set the return value of `mock_userinfo` to a dictionary with a mock user name.
+    - Instantiate the [`Auth0Service`](<auth0_service.py.md#Auth0Service>) class.
+    - Attempt to call [`create_invitation`](<auth0_service.py.md#Auth0Servicecreate_invitation>) on the `auth0_service` instance with a `UserToken` that has no permissions and a [`CreateInvitationInput`](<../schemas/auth0_schema.py.md#CreateInvitationInput>) with mock invitation data.
+    - Catch a `PermissionError` exception to confirm that access is correctly blocked without sufficient permissions.
+    - If no exception is caught, call `self.fail` to indicate the test failed because the operation completed without the required permissions.
+- **Output**: The method does not return any value; it either passes silently if the `PermissionError` is raised as expected or fails the test if the error is not raised.
+- **Functions Called**:
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](<auth0_service.py.md#Auth0Service>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.create_invitation`](<auth0_service.py.md#Auth0Servicecreate_invitation>)
+    - [`python-backend/backend/app/schemas/auth0_schema.CreateInvitationInput`](<../schemas/auth0_schema.py.md#CreateInvitationInput>)
+    - [`python-backend/backend/app/schemas/auth0_schema.Invitation`](<../schemas/auth0_schema.py.md#Invitation>)
+    - [`python-backend/backend/app/schemas/auth0_schema.Invitee`](<../schemas/auth0_schema.py.md#Invitee>)
+- **See also**: [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service`](<#TestAuth0Service>)  (Base Class)
 
 
 ---
 #### TestAuth0Service\.test\_delete\_user\_from\_organization<!-- {{#callable:python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_delete_user_from_organization}} -->
-The `test_delete_user_from_organization` method tests the functionality of deleting a user from an organization using the Auth0 service.
+The `test_delete_user_from_organization` method tests the functionality of removing a user from an organization using the Auth0 service.
 - **Decorators**: `@pytest.mark.unit`, `@patch`
 - **Inputs**:
-    - `self`: Represents the instance of the class `TestAuth0Service`.
+    - `self`: Refers to the instance of the class `TestAuth0Service`.
     - `mock_delete_members`: A mock object for the `delete_organization_members` method from the Auth0 management API.
 - **Control Flow**:
-    - The method sets the return value of `mock_delete_members` to `{'member': 'deleted'}`.
-    - An instance of [`Auth0Service`](auth0_service.py.md#Auth0Service) is created.
-    - The [`delete_user_from_organization`](auth0_service.py.md#Auth0Servicedelete_user_from_organization) method of [`Auth0Service`](auth0_service.py.md#Auth0Service) is called with a `UserToken` object and a mock user ID to remove.
-    - The method asserts that the response from [`delete_user_from_organization`](auth0_service.py.md#Auth0Servicedelete_user_from_organization) indicates the member was deleted.
-    - The method verifies that `mock_delete_members` was called with the correct organization ID and body containing the user ID to remove.
-- **Output**: The method does not return any value but asserts that the user deletion was successful and the mock was called with expected arguments.
-- **Functions called**:
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](auth0_service.py.md#Auth0Service)
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.delete_user_from_organization`](auth0_service.py.md#Auth0Servicedelete_user_from_organization)
-- **See also**: [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service`](#TestAuth0Service)  (Base Class)
+    - The mock object `mock_delete_members` is set to return a dictionary with a key 'member' and value 'deleted'.
+    - An instance of [`Auth0Service`](<auth0_service.py.md#Auth0Service>) is created.
+    - The [`delete_user_from_organization`](<auth0_service.py.md#Auth0Servicedelete_user_from_organization>) method of [`Auth0Service`](<auth0_service.py.md#Auth0Service>) is called with a `UserToken` object and a mock user ID to remove.
+    - The response from the method call is asserted to check if the 'member' key in the response equals 'deleted'.
+    - The mock `delete_organization_members` method is asserted to have been called with the correct organization ID and a JSON-encoded body containing the user ID to remove.
+- **Output**: The method does not return any value, but it asserts that the response from the [`delete_user_from_organization`](<auth0_service.py.md#Auth0Servicedelete_user_from_organization>) method indicates successful deletion and that the mock method was called with the expected arguments.
+- **Functions Called**:
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](<auth0_service.py.md#Auth0Service>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.delete_user_from_organization`](<auth0_service.py.md#Auth0Servicedelete_user_from_organization>)
+- **See also**: [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service`](<#TestAuth0Service>)  (Base Class)
 
 
 ---
 #### TestAuth0Service\.test\_delete\_user\_from\_organization\_perms<!-- {{#callable:python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_delete_user_from_organization_perms}} -->
-The `test_delete_user_from_organization_perms` method tests the permission handling of the [`delete_user_from_organization`](auth0_service.py.md#Auth0Servicedelete_user_from_organization) method in the [`Auth0Service`](auth0_service.py.md#Auth0Service) class by ensuring it raises a `PermissionError` when the user lacks necessary permissions.
+The `test_delete_user_from_organization_perms` method tests the permission handling of the [`delete_user_from_organization`](<auth0_service.py.md#Auth0Servicedelete_user_from_organization>) function in the [`Auth0Service`](<auth0_service.py.md#Auth0Service>) class by ensuring that a `PermissionError` is raised when the user lacks the necessary permissions.
 - **Decorators**: `@pytest.mark.unit`, `@patch`
 - **Inputs**:
     - `self`: The instance of the class `TestAuth0Service` to which this method belongs.
     - `mock_delete_members`: A mock object for the `delete_organization_members` method from the `auth0.management.Organizations` module.
 - **Control Flow**:
-    - The method sets the return value of `mock_delete_members` to `{'member': 'deleted'}`.
-    - An instance of [`Auth0Service`](auth0_service.py.md#Auth0Service) is created.
+    - The method sets the return value of the `mock_delete_members` mock to `{'member': 'deleted'}`.
+    - An instance of [`Auth0Service`](<auth0_service.py.md#Auth0Service>) is created.
     - A `UserToken` object is instantiated with mock data, including an empty permissions list, indicating no permissions.
-    - The [`delete_user_from_organization`](auth0_service.py.md#Auth0Servicedelete_user_from_organization) method of [`Auth0Service`](auth0_service.py.md#Auth0Service) is called with the `UserToken` and a mock user ID.
-    - A `try-except` block is used to catch `PermissionError`.
-    - If `PermissionError` is caught, the method returns successfully, indicating the permission check worked.
-    - If no exception is raised, the test fails with a message indicating that the operation completed without sufficient permissions.
-- **Output**: The method does not return any value; it either passes silently if the permission error is correctly raised or fails the test if it is not.
-- **Functions called**:
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](auth0_service.py.md#Auth0Service)
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.delete_user_from_organization`](auth0_service.py.md#Auth0Servicedelete_user_from_organization)
-- **See also**: [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service`](#TestAuth0Service)  (Base Class)
+    - The [`delete_user_from_organization`](<auth0_service.py.md#Auth0Servicedelete_user_from_organization>) method of [`Auth0Service`](<auth0_service.py.md#Auth0Service>) is called with the `UserToken` and a mock user ID to remove.
+    - A `try-except` block is used to catch a `PermissionError`.
+    - If a `PermissionError` is caught, the method returns successfully, indicating the test passed.
+    - If no `PermissionError` is caught, the test fails with a message indicating that the operation completed without sufficient permissions.
+- **Output**: The method does not return any value; it asserts the correct behavior of the [`delete_user_from_organization`](<auth0_service.py.md#Auth0Servicedelete_user_from_organization>) method when permissions are insufficient.
+- **Functions Called**:
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](<auth0_service.py.md#Auth0Service>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.delete_user_from_organization`](<auth0_service.py.md#Auth0Servicedelete_user_from_organization>)
+- **See also**: [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service`](<#TestAuth0Service>)  (Base Class)
 
 
 ---
@@ -363,39 +362,39 @@ The `test_delete_user_from_organization_perms` method tests the permission handl
 The `test_delete_invitation` method tests the deletion of an organization invitation using a mocked Auth0 service.
 - **Decorators**: `@pytest.mark.unit`, `@patch`
 - **Inputs**:
-    - `self`: Represents the instance of the test class `TestAuth0Service`.
+    - `self`: Represents the instance of the class `TestAuth0Service`.
     - `mock_delete_invitation`: A mock object for the `delete_organization_invitation` method from the Auth0 management API.
 - **Control Flow**:
     - The mock object `mock_delete_invitation` is set to return a dictionary with the key 'invitation' and value 'deleted'.
-    - An instance of [`Auth0Service`](auth0_service.py.md#Auth0Service) is created.
-    - The [`delete_invitation`](auth0_service.py.md#Auth0Servicedelete_invitation) method of [`Auth0Service`](auth0_service.py.md#Auth0Service) is called with a `UserToken` object and a mock invitation ID.
-    - The response from [`delete_invitation`](auth0_service.py.md#Auth0Servicedelete_invitation) is asserted to ensure the 'invitation' key in the response equals 'deleted'.
+    - An instance of [`Auth0Service`](<auth0_service.py.md#Auth0Service>) is created.
+    - The [`delete_invitation`](<auth0_service.py.md#Auth0Servicedelete_invitation>) method of [`Auth0Service`](<auth0_service.py.md#Auth0Service>) is called with a `UserToken` object and a mock invitation ID.
+    - The response from [`delete_invitation`](<auth0_service.py.md#Auth0Servicedelete_invitation>) is asserted to ensure the 'invitation' key in the response equals 'deleted'.
     - The mock `delete_organization_invitation` method is asserted to have been called with the correct organization ID and invitation ID.
-- **Output**: The method does not return any value but asserts that the invitation deletion process behaves as expected.
-- **Functions called**:
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](auth0_service.py.md#Auth0Service)
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.delete_invitation`](auth0_service.py.md#Auth0Servicedelete_invitation)
-- **See also**: [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service`](#TestAuth0Service)  (Base Class)
+- **Output**: The method does not return any value but asserts that the invitation deletion was successful and the mock method was called with expected arguments.
+- **Functions Called**:
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](<auth0_service.py.md#Auth0Service>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.delete_invitation`](<auth0_service.py.md#Auth0Servicedelete_invitation>)
+- **See also**: [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service`](<#TestAuth0Service>)  (Base Class)
 
 
 ---
 #### TestAuth0Service\.test\_delete\_invitation\_perms<!-- {{#callable:python-backend/backend/app/services/auth0_service_test.TestAuth0Service.test_delete_invitation_perms}} -->
-The `test_delete_invitation_perms` method tests that the [`delete_invitation`](auth0_service.py.md#Auth0Servicedelete_invitation) function in the [`Auth0Service`](auth0_service.py.md#Auth0Service) class correctly raises a `PermissionError` when called without the necessary permissions.
+The `test_delete_invitation_perms` method tests that the [`delete_invitation`](<auth0_service.py.md#Auth0Servicedelete_invitation>) function in [`Auth0Service`](<auth0_service.py.md#Auth0Service>) correctly raises a `PermissionError` when called without the necessary permissions.
 - **Decorators**: `@pytest.mark.unit`, `@patch`
 - **Inputs**:
     - `self`: Represents the instance of the class `TestAuth0Service`.
-    - `mock_delete_invitation`: A mock object for the `delete_organization_invitation` method from the `auth0.management.Organizations` module.
+    - `mock_delete_invitation`: A mock object for the `delete_organization_invitation` method from `auth0.management.Organizations`.
 - **Control Flow**:
-    - The mock object `mock_delete_invitation` is set to return a dictionary with the key 'invitation' and value 'deleted'.
-    - An instance of [`Auth0Service`](auth0_service.py.md#Auth0Service) is created.
+    - The method sets the return value of `mock_delete_invitation` to `{'invitation': 'deleted'}`.
+    - An instance of [`Auth0Service`](<auth0_service.py.md#Auth0Service>) is created.
     - A `try` block is entered where `auth0_service.delete_invitation` is called with a `UserToken` object lacking permissions and a mock invitation ID.
-    - If a `PermissionError` is raised, the function returns successfully, indicating the test passed.
-    - If no `PermissionError` is raised, the `self.fail` method is called, indicating the test failed because the function completed without sufficient permissions.
-- **Output**: The method does not return any value but will raise an assertion error if the [`delete_invitation`](auth0_service.py.md#Auth0Servicedelete_invitation) function does not raise a `PermissionError` when called without the necessary permissions.
-- **Functions called**:
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](auth0_service.py.md#Auth0Service)
-    - [`python-backend/backend/app/services/auth0_service.Auth0Service.delete_invitation`](auth0_service.py.md#Auth0Servicedelete_invitation)
-- **See also**: [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service`](#TestAuth0Service)  (Base Class)
+    - If a `PermissionError` is raised, the method returns successfully, indicating the test passed.
+    - If no error is raised, the method calls `self.fail` to indicate the test failed because the operation completed without sufficient permissions.
+- **Output**: The method does not return any value; it either passes silently or fails by calling `self.fail`.
+- **Functions Called**:
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service`](<auth0_service.py.md#Auth0Service>)
+    - [`python-backend/backend/app/services/auth0_service.Auth0Service.delete_invitation`](<auth0_service.py.md#Auth0Servicedelete_invitation>)
+- **See also**: [`python-backend/backend/app/services/auth0_service_test.TestAuth0Service`](<#TestAuth0Service>)  (Base Class)
 
 
 
@@ -403,14 +402,15 @@ The `test_delete_invitation_perms` method tests that the [`delete_invitation`](a
 
 ---
 ### mock\_get\_token<!-- {{#callable:python-backend/backend/app/services/auth0_service_test.mock_get_token}} -->
-The `mock_get_token` function is a pytest fixture that automatically patches the `client_credentials` method of the `GetToken` class from the `auth0.authentication` module to return a mocked token response.
+The `mock_get_token` function is a pytest fixture that automatically mocks the `client_credentials` method of the `GetToken` class from the `auth0.authentication` module, returning a predefined token response.
 - **Decorators**: `@pytest.fixture`
 - **Inputs**: None
 - **Control Flow**:
-    - The function uses the `patch` context manager to temporarily replace the `client_credentials` method of `GetToken` with a mock object.
-    - The mock object is configured to return a dictionary containing mocked `access_token` and `id_token` values.
-    - The function yields control back to the test, allowing the mock to be used within the test context.
-- **Output**: The function does not return any value; it yields control to allow the mock to be used in tests.
+    - The function is decorated with `@pytest.fixture` with `autouse=True`, meaning it will automatically be used in all tests within the module.
+    - It uses the `patch` function from `unittest.mock` to replace the `client_credentials` method of `GetToken` with a mock object.
+    - The mock object is configured to return a dictionary containing `access_token` and `id_token` with mocked values.
+    - The function yields control back to the test, allowing the mock to be used during the test execution.
+- **Output**: The function does not return any value directly; it yields control to allow the mock to be used in tests.
 
 
 ---
@@ -424,7 +424,7 @@ The `mock_settings` function is a pytest fixture that automatically sets mock va
     - It sets the `AUTH0_MGMT_API_CLIENT_SECRET` setting to 'mock_mgmt_api_client_secret'.
     - It sets the `AUTH0_DOMAIN` setting to 'mock_auth0_domain'.
     - It sets the `AUTH0_CLIENT_ID` setting to 'mock_auth0_client_id'.
-- **Output**: The function does not return any value; it modifies the `settings` object in place.
+- **Output**: The function does not return any value; it modifies the settings in place for testing.
 
 
 

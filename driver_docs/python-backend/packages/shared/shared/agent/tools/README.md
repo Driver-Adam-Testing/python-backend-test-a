@@ -3,13 +3,13 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `tools` folder in the `python-backend` codebase contains various Python files that define and register tools for summarizing codebase folders, opening files, and searching within content repositories, along with an abstract base class for strict tool implementations.
+Various Python files that define and register tools for summarizing codebase folders, opening files, and searching within content repositories, along with an abstract base class for strict tool implementation.
 
 
 ## Files
 - **[__init__.py](__init__.py.md)**: The `__init__.py` file in the `python-backend` codebase initializes a tool registry by importing and registering various tools such as `CodebaseFolderSummaryTool`, `OpenFileTool`, and `SearchTool`.
-- **[codebase_folder_summary_tool.py](codebase_folder_summary_tool.py.md)**: The `codebase_folder_summary_tool.py` file defines the `CodebaseFolderSummaryTool` class, which is designed to summarize the content of a codebase folder at a specified directory path by querying a database for long descriptions and returning formatted results.
-- **[open_file_tool.py](open_file_tool.py.md)**: The `open_file_tool.py` file defines the `OpenFileTool` class, which is a strict tool designed to open a file at a specified path, retrieve its content from a database, and display it, while handling exceptions and ensuring the content is not too lengthy.
+- **[codebase_folder_summary_tool.py](codebase_folder_summary_tool.py.md)**: The `codebase_folder_summary_tool.py` file defines the `CodebaseFolderSummaryTool` class, which is designed to summarize the content of a codebase folder at a specified directory path by querying a database for relevant descriptions.
+- **[open_file_tool.py](open_file_tool.py.md)**: The `open_file_tool.py` file defines the `OpenFileTool` class, which is a strict tool designed to open a file at a specified path, retrieve its content from a database, and display it, while handling exceptions and ensuring the file is not too long.
 - **[search_tool.py](search_tool.py.md)**: The `search_tool.py` file defines the `SearchTool` class, which facilitates searching within a content repository of code and technical documentation using various algorithms and content type filters.
 - **[tool_strict.py](tool_strict.py.md)**: The `tool_strict.py` file defines an abstract base class `ToolStrict` that extends `BaseModel` and requires subclasses to implement an `execute` method, while also providing a method to generate a schema based on the subclass's fields.
 

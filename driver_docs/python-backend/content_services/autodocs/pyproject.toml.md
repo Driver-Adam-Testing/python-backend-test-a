@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `pyproject.toml` file in the `python-backend` codebase specifies the project metadata and dependencies for the `autodocs` package, including Python version and various libraries, and is used to create a virtual environment for local development.
+Configuration for Poetry dependencies and build system for the autodocs project.
 
 # Purpose
-The provided file is a `pyproject.toml` configuration file used by the Python dependency management tool, Poetry. It specifies metadata and dependencies for a Python project named "autodocs" with version "0.1.0". The `[tool.poetry]` section includes basic project information such as the name, version, description, authors, and the packages to include, specifically the "src/utils" directory. The `[tool.poetry.dependencies]` section lists the required Python version and external libraries needed for the project, including specific versions or version constraints for each dependency. Additionally, it notes that the file is primarily used to create a virtual environment for local development, while dependencies for containers are managed separately by Modal. The `[build-system]` section indicates that the project requires "poetry-core" for building and specifies the build backend to be used.
+The file is a `pyproject.toml` configuration file used by the Poetry tool to manage a Python project's dependencies and metadata. It specifies the project's name as `autodocs`, with a version of `0.1.0`, and lists the author. The `packages` section includes the source directory `src/utils`. The `tool.poetry.dependencies` section defines the required Python version and lists the dependencies needed for the project, such as `openai`, `tiktoken`, and `boto3`, among others. The file also notes that it is used to create a virtual environment for the local integrated development environment (IDE), while dependencies for containers are managed separately by Modal. The `build-system` section specifies that `poetry-core` is required and sets the build backend to `poetry.core.masonry.api`.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

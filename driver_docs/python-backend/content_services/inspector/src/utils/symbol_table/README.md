@@ -3,19 +3,19 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `symbol_table` folder in the `python-backend` codebase contains modules and utilities for parsing, resolving, and managing symbols across various programming languages, including C/C++, Java, JavaScript/TypeScript, and Python, with specific folders for import resolvers, providers, and symbol parsers, and files for initializing the module, defining base classes, comparing symbol table approaches, parsing and linking symbols, retrieving language utilities, orchestrating symbol table construction, and handling symbol data.
+Modules and utilities for parsing, resolving, and managing symbols across various programming languages.
 
 ## Folders
-- **[import_resolvers](import_resolvers/README.md)**: The `import_resolvers` folder in the `python-backend` codebase contains various resolver implementations for handling import statements in different programming languages, including C/C++, Java, JavaScript/TypeScript, and Python, along with unit tests for the JavaScript/TypeScript resolver.
-- **[providers](providers/README.md)**: The `providers` folder in the `python-backend` codebase contains language-specific provider modules, each offering parsing and resolving capabilities for different programming languages, including C/C++, Java, JavaScript/TypeScript, and Python.
-- **[symbol_parsers](symbol_parsers/README.md)**: The `symbol_parsers` folder in the `python-backend` codebase contains various parser classes for different programming languages, including C/C++, Java, JavaScript/TypeScript, and Python, each utilizing specific parsing drivers.
+- **[import_resolvers](import_resolvers/README.md)**: Various resolver implementations for handling import statements in C/C++, C#, Java, JavaScript/TypeScript, and Python, plus unit tests for the JavaScript/TypeScript resolver.
+- **[providers](providers/README.md)**: Various language provider modules defining classes and methods for parsing and resolving C/C++, C#, Java, JavaScript/TypeScript, and Python.
+- **[symbol_parsers](symbol_parsers/README.md)**: Parser classes for C/C++, C#, Java, JavaScript/TypeScript, and Python using tree-sitter and other drivers.
 
 ## Files
-- **[__init__.py](__init__.py.md)**: The `__init__.py` file in the `python-backend/content_services/inspector/src/utils/symbol_table` directory initializes the symbol table module by importing and exposing functions for getting supported languages, building a symbol table, and printing a summary.
+- **[__init__.py](__init__.py.md)**: The `__init__.py` file in the `python-backend` codebase initializes the `symbol_table` module by importing and exposing functions for getting supported languages, building a symbol table, and printing a summary.
 - **[base.py](base.py.md)**: The `base.py` file defines abstract base classes for language-specific symbol parsing, import resolution, and language implementation within the `python-backend` codebase.
 - **[comparison.py](comparison.py.md)**: The `comparison.py` file in the `python-backend` codebase provides utilities for timing and comparing different symbol table approaches, including functions to compare visibility maps, calculate statistics, and print formatted results and timing comparisons.
 - **[core.py](core.py.md)**: The `core.py` file in the `python-backend` codebase provides classes and methods for parsing project files to extract and link symbols, compute file visibility using various algorithms, and create a reified project index with fully linked symbols.
-- **[language_utils.py](language_utils.py.md)**: The `language_utils.py` file defines functions to retrieve language providers and supported languages for Python, C/C++, Java, and JavaScript/TypeScript.
+- **[language_utils.py](language_utils.py.md)**: The `language_utils.py` file defines functions to retrieve language providers and supported languages for various programming languages, including Python, C/C++, Java, C#, and JavaScript/TypeScript.
 - **[orchestrator.py](orchestrator.py.md)**: The `orchestrator.py` file in the `python-backend` codebase provides functionality to build and print a symbol table for various programming languages by grouping files, building language-specific symbol tables, and returning a unified mapping of file paths to symbols, with optional timing information.
 - **[utils.py](utils.py.md)**: The `utils.py` file in the `python-backend` codebase provides utility functions for handling symbol data, including caching mechanisms, candidate mapping, and disambiguation of function calls using a language model.
 

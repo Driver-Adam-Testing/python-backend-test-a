@@ -3,13 +3,13 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `src` folder in the `python-backend` codebase contains utility functions for AWS S3 and environment configuration, as well as the main script for handling AWS Lambda events related to onboarding.
+Handles AWS Lambda events for onboarding, with utilities for AWS S3 and configuration management.
 
 ## Folders
-- **[utils](utils/README.md)**: The `utils` folder in the `python-backend` codebase contains utility files for AWS S3 interactions and environment configuration management using Pydantic.
+- **[utils](utils/README.md)**: Utility files for AWS S3 interactions and environment-specific configuration management using Pydantic.
 
 ## Files
-- **[main.py](main.py.md)**: The `main.py` file in the `python-backend` codebase handles AWS Lambda events for onboarding by processing SNS messages, interacting with AWS Secrets Manager, and making HTTP requests to external services.
+- **[main.py](main.py.md)**: The `main.py` file in the `python-backend` codebase handles AWS Lambda events for onboarding by processing SNS messages, interacting with AWS Secrets Manager, and making HTTP requests to external services using Auth0 for authentication.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

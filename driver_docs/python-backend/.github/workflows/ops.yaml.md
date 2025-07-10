@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `ops.yaml` file defines a GitHub Actions workflow for deploying backend operations, including setting up Node.js and Python environments, installing dependencies, configuring AWS credentials, and deploying with AWS CDK.
+The `ops.yaml` file defines a GitHub Actions workflow for deploying backend operations, triggered by pushes to the "ops" branch, and includes steps for setting up Node.js, Python, and AWS credentials, as well as deploying with CDK.
 
 # Purpose
-The provided file is a GitHub Actions workflow configuration written in YAML, designed to automate the deployment process for a backend operations environment. This workflow is triggered by a push to the "ops" branch or can be manually initiated from the Actions tab. It ensures that only one instance of the workflow runs at a time by using a concurrency group, and it sets specific permissions for token and content access. The workflow defines a job named "ops" that runs on the latest Ubuntu environment, setting up Node.js and Python environments, installing dependencies with Poetry, and configuring AWS credentials for deployment. Finally, it executes a deployment using the AWS CDK, bypassing approval requirements, to streamline the deployment process in the specified "ops" environment.
+The provided file is a GitHub Actions workflow configuration written in YAML, designed to automate the deployment process for a backend operations environment. This workflow is triggered by a push to the "ops" branch or can be manually initiated from the Actions tab. It ensures that only one instance of the workflow runs at a time by using a concurrency group, and it sets specific permissions for reading contents and writing ID tokens. The workflow runs on the latest Ubuntu environment and involves several steps, including checking out the code, setting up Node.js and Python environments, installing dependencies with Poetry, configuring AWS credentials, and deploying using the AWS CDK without requiring approval. This setup streamlines the deployment process, ensuring consistency and efficiency in managing backend operations.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

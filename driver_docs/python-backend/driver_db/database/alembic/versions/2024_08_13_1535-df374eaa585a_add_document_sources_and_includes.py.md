@@ -6,7 +6,7 @@
 The `2024_08_13_1535-df374eaa585a_add_document_sources_and_includes.py` file is an Alembic migration script that adds a new table `document_sources` and a new column `include` to the `tags_contents` table in the database.
 
 # Purpose
-This Python file is an Alembic migration script used to modify a database schema. It provides narrow functionality, specifically focusing on adding a new table and modifying an existing table within a database. The script defines two main functions: `upgrade()` and `downgrade()`. The `upgrade()` function creates a new table called `document_sources` with specific columns and constraints, and it adds a new column `include` to the `tags_contents` table, setting its default value to `true` and making it non-nullable. The `downgrade()` function reverses these changes by removing the `include` column from `tags_contents` and dropping the `document_sources` table. This script is part of a version-controlled database migration process, ensuring that changes to the database schema can be applied and rolled back systematically.
+This Python file is an Alembic migration script used to modify a database schema. It provides narrow functionality, specifically focusing on adding a new table called `document_sources` and a new column `include` to the existing `tags_contents` table. The [`upgrade`](<#upgrade>) function defines the changes to be applied to the database, such as creating the `document_sources` table with specific columns and constraints, and updating the `tags_contents` table to include a new boolean column. The [`downgrade`](<#downgrade>) function reverses these changes, allowing the database to be reverted to its previous state. This script is part of a version control system for database schemas, ensuring that changes can be tracked and managed efficiently.
 # Imports and Dependencies
 
 ---
@@ -19,43 +19,43 @@ This Python file is an Alembic migration script used to modify a database schema
 ---
 ### revision
 - **Type**: `string`
-- **Description**: The `revision` variable is a string that represents the unique identifier for the current database migration script. It is used by Alembic, a database migration tool for SQLAlchemy, to track the version of the database schema that this script applies.
-- **Use**: This variable is used by Alembic to identify and apply the specific migration when upgrading or downgrading the database schema.
+- **Description**: The `revision` variable is a string that represents the unique identifier for the current database schema migration. It is used by Alembic, a database migration tool for SQLAlchemy, to track changes to the database schema over time.
+- **Use**: This variable is used by Alembic to identify the specific migration script being applied or rolled back.
 
 
 ---
 ### down\_revision
 - **Type**: `str`
-- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a linear sequence of migrations, allowing Alembic to determine the order in which migrations should be applied.
-- **Use**: This variable is used by Alembic to track and apply database schema changes in the correct order.
+- **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a linear sequence of migrations by indicating which revision this migration is based on.
+- **Use**: This variable is used by Alembic to determine the order of database migrations and ensure that they are applied in the correct sequence.
 
 
 ---
 ### branch\_labels
 - **Type**: `NoneType`
 - **Description**: The variable `branch_labels` is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes information about the migration such as revision identifiers and dependencies.
-- **Use**: This variable is used to define branch labels for the migration, but in this case, it is not utilized as it is set to `None`.
+- **Use**: This variable is used to specify branch labels for the migration, but in this case, it is not utilized as it is set to `None`.
 
 
 ---
 ### depends\_on
 - **Type**: `NoneType`
-- **Description**: The `depends_on` variable is a global variable set to `None`. It is used in the context of Alembic, a database migration tool for SQLAlchemy, to specify dependencies between database revisions.
-- **Use**: This variable is used to indicate that the current database revision does not depend on any other revisions.
+- **Description**: The `depends_on` variable is a global variable set to `None`. It is used in the context of Alembic, a database migration tool for SQLAlchemy, to specify dependencies between migration scripts.
+- **Use**: This variable is used to indicate that the current migration script does not depend on any other migration scripts.
 
 
 # Functions
 
 ---
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2024_08_13_1535-df374eaa585a_add_document_sources_and_includes.upgrade}} -->
-The `upgrade` function applies database schema changes to add a new table and modify an existing table using Alembic operations.
+The `upgrade` function applies database schema changes by creating a new table and modifying an existing table using Alembic operations.
 - **Inputs**: None
 - **Control Flow**:
     - Create a new table named 'document_sources' with columns 'document_id', 'include', and 'source_id', where 'document_id' and 'source_id' are UUIDs and 'include' is a Boolean.
-    - Add foreign key constraints to 'document_sources' linking 'document_id' and 'source_id' to 'derived_contents.id'.
-    - Set a composite primary key on 'document_id' and 'source_id' for the 'document_sources' table.
+    - Add foreign key constraints on 'document_id' and 'source_id' referencing 'derived_contents.id'.
+    - Set a composite primary key on 'document_id' and 'source_id'.
     - Add a new column 'include' of type Boolean to the existing 'tags_contents' table, initially allowing null values.
-    - Execute an SQL command to set all 'include' values in 'tags_contents' to true.
+    - Execute a SQL command to set all 'include' values in 'tags_contents' to true.
     - Alter the 'include' column in 'tags_contents' to disallow null values.
 - **Output**: The function does not return any value; it performs schema modifications on the database.
 
@@ -65,8 +65,8 @@ The `upgrade` function applies database schema changes to add a new table and mo
 The `downgrade` function reverses database schema changes by dropping a column and a table.
 - **Inputs**: None
 - **Control Flow**:
-    - The function begins by dropping the 'include' column from the 'tags_contents' table using `op.drop_column`.
-    - It then drops the 'document_sources' table using `op.drop_table`.
+    - The function calls `op.drop_column` to remove the 'include' column from the 'tags_contents' table.
+    - The function calls `op.drop_table` to remove the 'document_sources' table.
 - **Output**: The function does not return any value; it performs schema changes on the database.
 
 

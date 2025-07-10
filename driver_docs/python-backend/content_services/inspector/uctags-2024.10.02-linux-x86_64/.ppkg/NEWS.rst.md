@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `NEWS.rst` file documents changes in version 6.?.0 of the `python-backend` codebase, including new parsers, integration of `pegof` into the build process, and notes on merged pull requests.
+The `NEWS.rst` file documents changes and updates in version 6.?.0 of the `python-backend` codebase, including new parsers and integration of `pegof` into the build process.
 
 # Purpose
-The provided content appears to be a section from a changelog file, which documents updates and modifications made in a specific version of a software project, in this case, version 6.?.0. This changelog outlines various categories of changes, including new and extended options, incompatible changes, and parser-related updates. It highlights the integration of a new tool, `pegof`, into the build process, and introduces new parsers such as TOML and Cargo. Additionally, it mentions changes related to parser-specific elements and provides information about merged pull requests, while noting that the list may not be exhaustive due to some cleanup activities by a contributor named masatake. The changelog serves as a historical record for developers and users to understand the evolution of the software and the specific enhancements or fixes included in this version.
+This document appears to be a changelog for a software project, detailing updates and modifications introduced in version 6.?.0. It outlines new and extended options, incompatible changes, and parser-related updates, including the integration of the `pegof` tool into the build process. The document also lists new parsers, such as TOML and Cargo, and discusses changes related to parser-specific elements like kinds, roles, fields, and extras. Additionally, it provides information on merged pull requests and notes that some contributions may not be fully attributed in the list, advising users to refer to the git log for comprehensive details.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

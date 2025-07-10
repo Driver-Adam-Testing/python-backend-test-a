@@ -6,9 +6,9 @@
 The `diagram.py` file in the `python-backend` codebase implements a function to execute a diagram block agent that generates and verifies mermaid diagrams using prompt augmentation and agent tools.
 
 # Purpose
-This Python code file defines a function [`execute_diagram_block_agent`](#execute_diagram_block_agent) that is part of a larger pipeline system, likely used for generating and validating mermaid diagrams. The function takes a `PipelineInput` object and returns a `PipelineResponse` object. It utilizes a series of tools and agents to augment prompts, create agents, and validate the syntax of mermaid diagrams. The code imports various components from shared modules, indicating that it is part of a broader software architecture, possibly a library or service that deals with automated diagram generation and validation.
+This Python code file defines a function [`execute_diagram_block_agent`](<#execute_diagram_block_agent>) that is part of a larger pipeline system, likely used for generating and validating mermaid diagrams. The function takes a `PipelineInput` object and returns a `PipelineResponse` object. It utilizes a series of tools and agents to augment prompts, create agents, and validate the syntax of mermaid diagrams. The code integrates with a large language model (LLM) session to enhance the input prompt and uses various tools such as `SearchTool`, `OpenFileTool`, and `CodebaseFolderSummaryTool` to assist in the agent's operations. The function also includes a mechanism to check and correct the syntax of the generated mermaid diagram, ensuring it is renderable.
 
-The function's primary purpose is to generate a mermaid diagram based on a given input prompt, augment the prompt with additional context, and ensure the generated diagram is syntactically correct. It uses a session management system (`LLMUsageSession`) to track usage and a series of tools (`SearchTool`, `OpenFileTool`, `CodebaseFolderSummaryTool`) to assist in the diagram generation process. The function also includes error handling to attempt corrections on non-renderable diagrams, making it robust in ensuring the final output is a valid mermaid diagram. This code is likely part of a backend service or library that provides diagram generation capabilities, possibly for documentation or visualization purposes.
+The file imports several components from shared modules, indicating that it is part of a broader system, possibly a library or service that deals with automated diagram generation and validation. The function is designed to be robust, with error handling and retry logic to ensure the output is correct. It does not define a public API but rather serves as an internal component of a larger pipeline, focusing on the specific task of generating and validating mermaid diagrams. The use of agents and prompt augmentation suggests that the code is intended to automate complex tasks that require iterative refinement and validation, leveraging AI capabilities to achieve its goals.
 # Imports and Dependencies
 
 ---
@@ -36,15 +36,15 @@ The function's primary purpose is to generate a mermaid diagram based on a given
 ---
 ### PROMPT\_AUG\_PROMPT\_SUFFIX
 - **Type**: `str`
-- **Description**: The variable `PROMPT_AUG_PROMPT_SUFFIX` is a string that contains a specific instruction to generate a comprehensive mermaid diagram as the desired output. This string is used as a suffix to augment prompts in the context of generating mermaid diagrams.
-- **Use**: This variable is used to append a specific instruction to prompts, ensuring that the output is a comprehensive mermaid diagram.
+- **Description**: `PROMPT_AUG_PROMPT_SUFFIX` is a string variable that contains a specific instruction to generate a comprehensive mermaid diagram as the desired output. This string is used as a suffix to augment prompts in the context of generating mermaid diagrams.
+- **Use**: This variable is used to append specific instructions to prompts for generating mermaid diagrams within the `execute_diagram_block_agent` function.
 
 
 ---
 ### DEFAULT\_PROMPT\_SUFFIX
 - **Type**: `str`
-- **Description**: `DEFAULT_PROMPT_SUFFIX` is a string variable that contains a formatted message emphasizing the importance of ensuring that the `diagram_mermaid` is a single, code-fenced, mermaid block. It incorporates another prompt, `CODEBLOCK_SYNTAX_MERMAID_PROMPT`, which likely provides additional syntax or instructions related to mermaid diagrams.
-- **Use**: This variable is used to append a specific instruction to prompts, ensuring that the output adheres to a required format for mermaid diagrams.
+- **Description**: `DEFAULT_PROMPT_SUFFIX` is a string variable that contains a formatted message intended to ensure that a mermaid diagram is presented as a single, code-fenced block. It incorporates a predefined prompt from `CODEBLOCK_SYNTAX_MERMAID_PROMPT` to maintain consistency in the syntax used for mermaid diagrams.
+- **Use**: This variable is used to append a specific instruction to prompts, ensuring that mermaid diagrams are correctly formatted in the output.
 
 
 # Functions
@@ -56,29 +56,30 @@ The `execute_diagram_block_agent` function generates a mermaid diagram from a gi
     - `input`: An instance of `PipelineInput` containing the prompt, context, and scope information for the pipeline execution.
 - **Control Flow**:
     - Initialize session metadata for usage tracking.
-    - Create a [`LLMUsageSession`](../../usage/llm_session.py.md#LLMUsageSession) with the provided organization and user IDs.
-    - Configure a prompt augmentation step with the input prompt and context, appending a suffix for mermaid diagram generation.
-    - Run the prompt augmentation step using [`run_agent_prompt_augmentation`](../agents/agent_prompt_augmentation.py.md#run_agent_prompt_augmentation).
-    - Create an agent with specified tools and a response type of `BlockKindCopyEditorDiagram`.
-    - Add system prompts and the augmented prompt to the agent's message queue.
-    - Invoke the agent to generate a default response and convert it to a mermaid string.
-    - Attempt to check the mermaid syntax using a remote function call, handling exceptions by assuming the diagram is renderable.
-    - If the diagram is not renderable, retry up to three times by creating a new agent and attempting to fix the diagram based on error messages.
-    - Return a [`PipelineResponse`](../../interfaces/agents/pipeline_configuration.py.md#PipelineResponse) containing the agent's response and the final mermaid diagram.
-- **Output**: A [`PipelineResponse`](../../interfaces/agents/pipeline_configuration.py.md#PipelineResponse) object containing the agent's response and the final mermaid diagram as a code-fenced string.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/interfaces/usage/event_metadata.UsageSessionMetadata`](../../interfaces/usage/event_metadata.py.md#UsageSessionMetadata)
-    - [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession`](../../usage/llm_session.py.md#LLMUsageSession)
-    - [`python-backend/packages/shared/shared/interfaces/agents/pipeline_configuration.PipelineStepConfiguration`](../../interfaces/agents/pipeline_configuration.py.md#PipelineStepConfiguration)
-    - [`python-backend/packages/shared/shared/interfaces/agents/prompt.PromptWithContext`](../../interfaces/agents/prompt.py.md#PromptWithContext)
-    - [`python-backend/packages/shared/shared/pipelines/agents/agent_prompt_augmentation.run_agent_prompt_augmentation`](../agents/agent_prompt_augmentation.py.md#run_agent_prompt_augmentation)
-    - [`python-backend/packages/shared/shared/agent/agent_factory.create_agent`](../../agent/agent_factory.py.md#create_agent)
-    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.add_message`](../../agent/agent_base.py.md#AgentBaseadd_message)
-    - [`python-backend/packages/shared/shared/agent/agent_anthropic_strict.AnthropicStrictAgent.invoke`](../../agent/agent_anthropic_strict.py.md#AnthropicStrictAgentinvoke)
-    - [`python-backend/packages/shared/shared/prompts/block_kind/block_kind_diagram.BlockKindCopyEditorDiagram.to_mermaid_interior_string`](../../prompts/block_kind/block_kind_diagram.py.md#BlockKindCopyEditorDiagramto_mermaid_interior_string)
-    - [`python-backend/packages/shared/shared/agent/models/llm_models.ModelConfig.from_name`](../../agent/models/llm_models.py.md#ModelConfigfrom_name)
-    - [`python-backend/packages/shared/shared/interfaces/agents/pipeline_configuration.PipelineResponse`](../../interfaces/agents/pipeline_configuration.py.md#PipelineResponse)
-    - [`python-backend/packages/shared/shared/interfaces/agents/pipeline_configuration.PipelineStepResponse`](../../interfaces/agents/pipeline_configuration.py.md#PipelineStepResponse)
+    - Create a [`LLMUsageSession`](<../../usage/llm_session.py.md#LLMUsageSession>) with the provided organization and user IDs.
+    - Configure a [`PipelineStepConfiguration`](<../../interfaces/agents/pipeline_configuration.py.md#PipelineStepConfiguration>) for prompt augmentation with the input prompt and context.
+    - Run the prompt augmentation step using [`run_agent_prompt_augmentation`](<../agents/agent_prompt_augmentation.py.md#run_agent_prompt_augmentation>).
+    - Create an agent with specified tools and a maximum of 4 iterations.
+    - Add system prompts to the agent for context and instructions.
+    - Invoke the agent with the augmented prompt to generate a default response.
+    - Convert the default response to a mermaid string.
+    - Attempt to check the mermaid syntax using a remote function call.
+    - If the syntax is not renderable, retry up to 3 times by creating a new agent and fixing the diagram based on error messages.
+    - Return a [`PipelineResponse`](<../../interfaces/agents/pipeline_configuration.py.md#PipelineResponse>) containing the agent's response and the final mermaid diagram.
+- **Output**: A [`PipelineResponse`](<../../interfaces/agents/pipeline_configuration.py.md#PipelineResponse>) object containing the agent's response and the final mermaid diagram as a code-fenced string.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/interfaces/usage/event_metadata.UsageSessionMetadata`](<../../interfaces/usage/event_metadata.py.md#UsageSessionMetadata>)
+    - [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession`](<../../usage/llm_session.py.md#LLMUsageSession>)
+    - [`python-backend/packages/shared/shared/interfaces/agents/pipeline_configuration.PipelineStepConfiguration`](<../../interfaces/agents/pipeline_configuration.py.md#PipelineStepConfiguration>)
+    - [`python-backend/packages/shared/shared/interfaces/agents/prompt.PromptWithContext`](<../../interfaces/agents/prompt.py.md#PromptWithContext>)
+    - [`python-backend/packages/shared/shared/pipelines/agents/agent_prompt_augmentation.run_agent_prompt_augmentation`](<../agents/agent_prompt_augmentation.py.md#run_agent_prompt_augmentation>)
+    - [`python-backend/packages/shared/shared/agent/agent_factory.create_agent`](<../../agent/agent_factory.py.md#create_agent>)
+    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.add_message`](<../../agent/agent_base.py.md#AgentBaseadd_message>)
+    - [`python-backend/packages/shared/shared/agent/agent_anthropic_strict.AnthropicStrictAgent.invoke`](<../../agent/agent_anthropic_strict.py.md#AnthropicStrictAgentinvoke>)
+    - [`python-backend/packages/shared/shared/prompts/block_kind/block_kind_diagram.BlockKindCopyEditorDiagram.to_mermaid_interior_string`](<../../prompts/block_kind/block_kind_diagram.py.md#BlockKindCopyEditorDiagramto_mermaid_interior_string>)
+    - [`python-backend/packages/shared/shared/agent/models/llm_models.ModelConfig.from_name`](<../../agent/models/llm_models.py.md#ModelConfigfrom_name>)
+    - [`python-backend/packages/shared/shared/interfaces/agents/pipeline_configuration.PipelineResponse`](<../../interfaces/agents/pipeline_configuration.py.md#PipelineResponse>)
+    - [`python-backend/packages/shared/shared/interfaces/agents/pipeline_configuration.PipelineStepResponse`](<../../interfaces/agents/pipeline_configuration.py.md#PipelineStepResponse>)
 
 
 

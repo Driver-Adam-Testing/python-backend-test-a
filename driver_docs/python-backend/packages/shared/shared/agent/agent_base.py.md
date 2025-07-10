@@ -6,9 +6,9 @@
 The `agent_base.py` file defines an abstract base class `AgentBase` for managing agent instances, including logging, message handling, and iteration control, with abstract methods for generating responses and executing iterations.
 
 # Purpose
-The provided Python code defines an abstract base class `AgentBase` that serves as a foundational component for creating agent-like entities capable of iterative processing and interaction. This class is designed to be extended by other classes that implement specific agent behaviors, as indicated by the presence of abstract methods [`_generate_response`](#AgentBase_generate_response) and [`_execute_iteration`](#AgentBase_execute_iteration), which must be defined in any subclass. The `AgentBase` class is structured to manage a sequence of interactions, logging, and message handling, with support for multiple iterations of processing, as specified by the `max_iterations` parameter. It integrates with a database to log agent instances and their messages, utilizing SQLAlchemy sessions to manage database transactions.
+This Python code defines an abstract base class `AgentBase` that serves as a foundational component for creating agent-like entities capable of iterative processing and interaction. The class is designed to be extended by other classes that implement specific agent behaviors. It provides a structured framework for managing agent state, including model configuration, data scope, and logging capabilities. The class utilizes several external modules and libraries, such as `pydantic` for data validation, and integrates with a database to log agent instances and messages. The class is equipped with methods to handle search results, manage messages, and iterate through a defined number of processing cycles, with the ability to log interactions and debug outputs.
 
-The class is part of a broader system, as evidenced by its imports from various modules such as `database`, `shared.agent.models`, and `shared.prompts.interface`. It leverages Pydantic for data validation and type enforcement, and it uses UUIDs to uniquely identify agent instances. The class also supports logging and debugging, with options to print messages and log interactions. The [`invoke`](#AgentBaseinvoke) method orchestrates the iterative process, handling prompts, managing iterations, and ensuring that responses are generated and logged appropriately. This code is likely part of a larger framework for building intelligent agents or bots that interact with users or systems in a structured manner.
+The `AgentBase` class is intended to be part of a larger system, likely involving machine learning or AI-driven processes, as suggested by the use of model configurations and logging of agent interactions. It defines an interface for agent behavior through abstract methods [`_generate_response`](<#AgentBase_generate_response>) and [`_execute_iteration`](<#AgentBase_execute_iteration>), which must be implemented by subclasses. The class also includes mechanisms for handling prompts and responses, with support for custom response formats. The use of abstract methods and the `ABC` module indicates that this code is designed to be a reusable and extendable component within a broader application, rather than a standalone script. The integration with a database for logging purposes suggests that it is part of a system that requires persistent tracking of agent activities and interactions.
 # Imports and Dependencies
 
 ---
@@ -39,25 +39,25 @@ The class is part of a broader system, as evidenced by its imports from various 
     - `scope`: Defines the data scope within which the agent operates.
     - `model`: Specifies the model used by the agent.
     - `debug`: Indicates whether debugging is enabled for the agent.
-    - `agent_id`: Unique identifier for the agent instance.
-    - `tools`: List of tools available to the agent.
-    - `max_iterations`: Maximum number of iterations the agent can perform.
-    - `iteration`: Tracks the current iteration count.
+    - `agent_id`: Stores the unique identifier for the agent instance.
+    - `tools`: Holds a list of tools available to the agent.
+    - `max_iterations`: Defines the maximum number of iterations the agent can perform.
+    - `iteration`: Tracks the current iteration count of the agent.
     - `messages`: Stores messages exchanged during the agent's operation.
     - `search_results`: Holds search results obtained by the agent.
     - `response_format`: Specifies the format for the agent's response.
-    - `llm_usage_session`: Session information for LLM usage.
-- **Description**: The `AgentBase` class serves as an abstract base class for creating agents that interact with models and perform iterative tasks. It manages the agent's configuration, including model selection, data scope, and available tools, while also handling logging and debugging options. The class maintains a record of messages and search results, and it supports a defined number of iterations for task execution. It requires subclasses to implement specific methods for generating responses and executing iterations, ensuring that each agent can be customized for its intended purpose.
+    - `llm_usage_session`: Represents the session for tracking LLM usage.
+- **Description**: The `AgentBase` class serves as an abstract base class for creating agents that interact with models and perform iterative tasks. It manages the agent's configuration, including model selection, data scope, and tool availability, while also handling logging and debugging options. The class tracks the agent's progress through iterations, manages messages and search results, and supports response formatting. It requires subclasses to implement specific methods for generating responses and executing iterations, ensuring that each agent can be customized for its intended use case.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.__init__`](#AgentBase__init__)
-    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.model_config`](#AgentBasemodel_config)
-    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.add_search_results`](#AgentBaseadd_search_results)
-    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.add_message`](#AgentBaseadd_message)
-    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase._print_agent_message`](#AgentBase_print_agent_message)
-    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase._increment_iterator_message`](#AgentBase_increment_iterator_message)
-    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase._generate_response`](#AgentBase_generate_response)
-    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase._execute_iteration`](#AgentBase_execute_iteration)
-    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.invoke`](#AgentBaseinvoke)
+    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.__init__`](<#AgentBase__init__>)
+    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.model_config`](<#AgentBasemodel_config>)
+    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.add_search_results`](<#AgentBaseadd_search_results>)
+    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.add_message`](<#AgentBaseadd_message>)
+    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase._print_agent_message`](<#AgentBase_print_agent_message>)
+    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase._increment_iterator_message`](<#AgentBase_increment_iterator_message>)
+    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase._generate_response`](<#AgentBase_generate_response>)
+    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase._execute_iteration`](<#AgentBase_execute_iteration>)
+    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.invoke`](<#AgentBaseinvoke>)
 - **Inherits From**:
     - `ABC`
 
@@ -65,27 +65,27 @@ The class is part of a broader system, as evidenced by its imports from various 
 
 ---
 #### AgentBase\.\_\_init\_\_<!-- {{#callable:python-backend/packages/shared/shared/agent/agent_base.AgentBase.__init__}} -->
-The `__init__` method initializes an instance of the `AgentBase` class, setting up various attributes and optionally retrieving or creating a [`RuntimeLogAgentInstance`](../../../../driver_db/database/models_v1.py.md#RuntimeLogAgentInstance) for logging purposes.
+The `__init__` method initializes an instance of the `AgentBase` class, setting up various attributes and optionally retrieving or creating a logging agent instance.
 - **Inputs**:
     - `model`: A string representing the model name to be used by the agent.
     - `scope`: An instance of `DataScope` that defines the data access scope for the agent.
     - `tools`: An optional list of tools that the agent can use, defaulting to an empty list if not provided.
     - `max_iterations`: An integer specifying the maximum number of iterations the agent can perform, defaulting to 1.
-    - `agent_id`: An optional UUID representing the agent's unique identifier, used to retrieve existing log data if provided.
-    - `response_format`: An optional type that defines the format of the response, defaulting to None.
+    - `agent_id`: An optional UUID representing the agent's unique identifier, used to retrieve existing agent instances.
+    - `response_format`: An optional type that defines the format of the response, if any.
     - `log`: A boolean indicating whether logging is enabled, defaulting to True.
     - `debug`: A boolean indicating whether debug mode is enabled, defaulting to True.
-    - `llm_usage_session`: An optional `LLMUsageSession` instance for tracking usage, defaulting to None.
+    - `llm_usage_session`: An optional instance of `LLMUsageSession` for tracking usage of the language model.
 - **Control Flow**:
     - Initialize instance attributes with provided arguments or default values.
-    - If `agent_id` is provided, retrieve the corresponding [`RuntimeLogAgentInstance`](../../../../driver_db/database/models_v1.py.md#RuntimeLogAgentInstance) from the database and add its messages to the agent's message list.
-    - If `agent_id` is not provided and logging is enabled, create a new [`RuntimeLogAgentInstance`](../../../../driver_db/database/models_v1.py.md#RuntimeLogAgentInstance), add it to the database, and set `agent_id` to the new instance's ID.
-- **Output**: The method does not return any value; it initializes the instance attributes and sets up logging if necessary.
-- **Functions called**:
-    - [`python-backend/driver_db/database/db.get_session`](../../../../driver_db/database/db.py.md#get_session)
-    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.add_message`](#AgentBaseadd_message)
-    - [`python-backend/driver_db/database/models_v1.RuntimeLogAgentInstance`](../../../../driver_db/database/models_v1.py.md#RuntimeLogAgentInstance)
-- **See also**: [`python-backend/packages/shared/shared/agent/agent_base.AgentBase`](#AgentBase)  (Base Class)
+    - Check if `agent_id` is provided; if so, retrieve the corresponding agent instance from the database and load its messages.
+    - If `agent_id` is not provided and logging is enabled, create a new [`RuntimeLogAgentInstance`](<../../../../driver_db/database/models_v1.py.md#RuntimeLogAgentInstance>) in the database, commit the transaction, and set `agent_id` to the new instance's ID.
+- **Output**: The method does not return any value; it initializes the instance state.
+- **Functions Called**:
+    - [`python-backend/driver_db/database/db.get_session`](<../../../../driver_db/database/db.py.md#get_session>)
+    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.add_message`](<#AgentBaseadd_message>)
+    - [`python-backend/driver_db/database/models_v1.RuntimeLogAgentInstance`](<../../../../driver_db/database/models_v1.py.md#RuntimeLogAgentInstance>)
+- **See also**: [`python-backend/packages/shared/shared/agent/agent_base.AgentBase`](<#AgentBase>)  (Base Class)
 
 
 ---
@@ -96,9 +96,9 @@ The `model_config` property method retrieves the model configuration based on th
 - **Control Flow**:
     - The method calls `ModelConfig.from_name` with `self.model` to obtain the model configuration.
 - **Output**: Returns an instance of `ModelConfig` corresponding to the model name.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/agent/models/llm_models.ModelConfig.from_name`](models/llm_models.py.md#ModelConfigfrom_name)
-- **See also**: [`python-backend/packages/shared/shared/agent/agent_base.AgentBase`](#AgentBase)  (Base Class)
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/agent/models/llm_models.ModelConfig.from_name`](<models/llm_models.py.md#ModelConfigfrom_name>)
+- **See also**: [`python-backend/packages/shared/shared/agent/agent_base.AgentBase`](<#AgentBase>)  (Base Class)
 
 
 ---
@@ -110,7 +110,7 @@ The `add_search_results` method appends a given result to the `search_results` l
     - The method takes a single argument `results`.
     - It appends the `results` to the `search_results` list attribute of the class instance.
 - **Output**: The method does not return any value; it modifies the `search_results` list in place.
-- **See also**: [`python-backend/packages/shared/shared/agent/agent_base.AgentBase`](#AgentBase)  (Base Class)
+- **See also**: [`python-backend/packages/shared/shared/agent/agent_base.AgentBase`](<#AgentBase>)  (Base Class)
 
 
 ---
@@ -120,44 +120,43 @@ The `add_message` method adds a message to the agent's message list, converting 
     - `message`: The message to be added, which can be of any type, but is expected to be either a string or an object with a `to_dict` method.
 - **Control Flow**:
     - Check if the message is a string; if so, convert it to a dictionary with 'role' as 'user' and 'content' as the message string.
-    - If the message has a `to_dict` method and it is callable, convert the message to a dictionary using this method.
-    - Append the message (now in dictionary form) to the `messages` list of the agent.
-    - If the `debug` attribute is set to True, call the [`_print_agent_message`](#AgentBase_print_agent_message) method to print the message.
-- **Output**: The method does not return any value (returns None).
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase._print_agent_message`](#AgentBase_print_agent_message)
-- **See also**: [`python-backend/packages/shared/shared/agent/agent_base.AgentBase`](#AgentBase)  (Base Class)
+    - If the message has a `to_dict` method, call it to convert the message to a dictionary.
+    - Append the message (now a dictionary) to the `messages` list of the agent.
+    - If debugging is enabled, call the [`_print_agent_message`](<#AgentBase_print_agent_message>) method to print the message.
+- **Output**: The method does not return any value; it modifies the `messages` list of the agent instance.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase._print_agent_message`](<#AgentBase_print_agent_message>)
+- **See also**: [`python-backend/packages/shared/shared/agent/agent_base.AgentBase`](<#AgentBase>)  (Base Class)
 
 
 ---
 #### AgentBase\.\_print\_agent\_message<!-- {{#callable:python-backend/packages/shared/shared/agent/agent_base.AgentBase._print_agent_message}} -->
-The `_print_agent_message` method prints a given message using the [`print_dict`](../utils/bcolors.py.md#print_dict) utility function.
+The `_print_agent_message` method prints a given message using the [`print_dict`](<../utils/bcolors.py.md#print_dict>) utility function.
 - **Inputs**:
     - `message`: The message to be printed, which can be of any type.
 - **Control Flow**:
-    - The method takes a single input parameter `message`.
-    - It calls the [`print_dict`](../utils/bcolors.py.md#print_dict) function with `message` as the argument to print the message.
+    - The method directly calls the [`print_dict`](<../utils/bcolors.py.md#print_dict>) function with the provided `message` as its argument.
 - **Output**: The method does not return any value; it outputs the message to the console.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/utils/bcolors.print_dict`](../utils/bcolors.py.md#print_dict)
-- **See also**: [`python-backend/packages/shared/shared/agent/agent_base.AgentBase`](#AgentBase)  (Base Class)
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/utils/bcolors.print_dict`](<../utils/bcolors.py.md#print_dict>)
+- **See also**: [`python-backend/packages/shared/shared/agent/agent_base.AgentBase`](<#AgentBase>)  (Base Class)
 
 
 ---
 #### AgentBase\.\_increment\_iterator\_message<!-- {{#callable:python-backend/packages/shared/shared/agent/agent_base.AgentBase._increment_iterator_message}} -->
-The `_increment_iterator_message` method increments the iteration counter and adds a user message based on the current iteration status, returning whether the iteration count is within the allowed maximum.
+The `_increment_iterator_message` method increments the iteration counter and adds a user message based on the current iteration state, returning whether the iteration count is within the allowed maximum.
 - **Inputs**: None
 - **Control Flow**:
     - Increment the `iteration` attribute by 1.
     - Check if `max_iterations` is greater than 1.
-    - If the current iteration is the first, add a message formatted with `PROMPT_FIRST_ITERATION`.
-    - If the current iteration is between the first and the last, add a message formatted with `PROMPT_MIDDLE_ITERATION`.
-    - If the current iteration is the last, add a message with `PROMPT_FINAL_ITERATION`.
-    - Return a boolean indicating if the current iteration is less than or equal to `max_iterations`.
-- **Output**: A boolean indicating whether the current iteration is less than or equal to the maximum allowed iterations.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.add_message`](#AgentBaseadd_message)
-- **See also**: [`python-backend/packages/shared/shared/agent/agent_base.AgentBase`](#AgentBase)  (Base Class)
+    - If `iteration` is 1, add a message formatted with `PROMPT_FIRST_ITERATION` indicating the remaining iterations.
+    - If `iteration` is less than `max_iterations`, add a message formatted with `PROMPT_MIDDLE_ITERATION` indicating the remaining iterations.
+    - If `iteration` equals `max_iterations`, add a message with `PROMPT_FINAL_ITERATION`.
+    - Return a boolean indicating if `iteration` is less than or equal to `max_iterations`.
+- **Output**: A boolean value indicating whether the current iteration is within the allowed maximum iterations.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.add_message`](<#AgentBaseadd_message>)
+- **See also**: [`python-backend/packages/shared/shared/agent/agent_base.AgentBase`](<#AgentBase>)  (Base Class)
 
 
 ---
@@ -170,7 +169,7 @@ The `_generate_response` method is an abstract method intended to be implemented
     - The method is defined as an abstract method, indicating that it must be implemented by any subclass of `AgentBase`.
     - The method raises a `NotImplementedError` if it is not overridden in a subclass, enforcing the requirement for subclasses to provide their own implementation.
 - **Output**: The method is expected to return any type of response, as indicated by the return type `any`, but the exact nature of the output depends on the subclass implementation.
-- **See also**: [`python-backend/packages/shared/shared/agent/agent_base.AgentBase`](#AgentBase)  (Base Class)
+- **See also**: [`python-backend/packages/shared/shared/agent/agent_base.AgentBase`](<#AgentBase>)  (Base Class)
 
 
 ---
@@ -182,7 +181,7 @@ The `_execute_iteration` method is an abstract method intended to be implemented
     - The method is defined as an abstract method, meaning it must be implemented by any subclass of `AgentBase`.
     - The method raises a `NotImplementedError` if it is not overridden in a subclass.
 - **Output**: The method is expected to return a string or None, but as an abstract method, it does not provide an implementation.
-- **See also**: [`python-backend/packages/shared/shared/agent/agent_base.AgentBase`](#AgentBase)  (Base Class)
+- **See also**: [`python-backend/packages/shared/shared/agent/agent_base.AgentBase`](<#AgentBase>)  (Base Class)
 
 
 ---
@@ -193,20 +192,20 @@ The `invoke` method executes a series of iterations to generate a response based
 - **Control Flow**:
     - Initialize the iteration counter to zero.
     - If a prompt is provided, add it as a message with the role 'user'.
-    - Enter a loop that continues as long as [`_increment_iterator_message`](#AgentBase_increment_iterator_message) returns True, indicating that the maximum number of iterations has not been reached.
-    - Within the loop, call [`_execute_iteration`](#AgentBase_execute_iteration) to attempt generating a response.
+    - Enter a loop that continues as long as [`_increment_iterator_message`](<#AgentBase_increment_iterator_message>) returns True, indicating that the maximum number of iterations has not been reached.
+    - Within the loop, call [`_execute_iteration`](<#AgentBase_execute_iteration>) to attempt generating a response.
     - If a response is generated, check if a response format is specified; if so, parse the response using the specified format, otherwise use the raw response.
     - If logging is enabled, log all messages to the database using a session context.
     - Return the final response if a valid response is generated within the allowed iterations.
-    - Raise a `RuntimeError` if no valid response is produced within the allowed iterations.
+    - If no valid response is generated after the maximum iterations, raise a `RuntimeError`.
 - **Output**: Returns either a string or a `BaseModel` object representing the final response generated by the agent.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.add_message`](#AgentBaseadd_message)
-    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase._increment_iterator_message`](#AgentBase_increment_iterator_message)
-    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase._execute_iteration`](#AgentBase_execute_iteration)
-    - [`python-backend/driver_db/database/db.get_session`](../../../../driver_db/database/db.py.md#get_session)
-    - [`python-backend/driver_db/database/models_v1.RuntimeLogAgentMessage`](../../../../driver_db/database/models_v1.py.md#RuntimeLogAgentMessage)
-- **See also**: [`python-backend/packages/shared/shared/agent/agent_base.AgentBase`](#AgentBase)  (Base Class)
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.add_message`](<#AgentBaseadd_message>)
+    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase._increment_iterator_message`](<#AgentBase_increment_iterator_message>)
+    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase._execute_iteration`](<#AgentBase_execute_iteration>)
+    - [`python-backend/driver_db/database/db.get_session`](<../../../../driver_db/database/db.py.md#get_session>)
+    - [`python-backend/driver_db/database/models_v1.RuntimeLogAgentMessage`](<../../../../driver_db/database/models_v1.py.md#RuntimeLogAgentMessage>)
+- **See also**: [`python-backend/packages/shared/shared/agent/agent_base.AgentBase`](<#AgentBase>)  (Base Class)
 
 
 

@@ -3,13 +3,13 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `process_file` folder in the `python-backend` codebase contains modules for processing files, particularly focusing on handling and extracting content from PDF files.
+Modules for processing PDF files, including parsing, summarizing, extracting content, and error handling.
 
 
 ## Files
 - **[__init__.py](__init__.py.md)**: Empty file (no analyzable contents).
-- **[process_file.py](process_file.py.md)**: The `process_file.py` file defines a system for processing files, specifically handling PDF files by utilizing a parser to read and return their contents.
-- **[process_file_pdf.py](process_file_pdf.py.md)**: The `process_file_pdf.py` file in the `python-backend` codebase provides functionality for processing PDF files, including summarizing content, extracting text, images, and tables, and handling exceptions during these processes.
+- **[process_file.py](process_file.py.md)**: The `process_file.py` file defines a system for processing files, specifically handling PDF files by utilizing a PDF parser to generate a `ProcessFileResponse` containing processed file content.
+- **[process_file_pdf.py](process_file_pdf.py.md)**: The `process_file_pdf.py` file in the `python-backend` codebase provides functionality for processing PDF files, including summarizing their content, extracting text, images, and tables, and handling errors during these processes.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

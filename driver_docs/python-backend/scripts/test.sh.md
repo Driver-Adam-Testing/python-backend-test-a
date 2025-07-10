@@ -3,10 +3,16 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `test.sh` file is a shell script for building, running, and executing tests in a Docker Compose environment for the `python-backend` codebase.
+The `test.sh` file is a shell script for building, running, and cleaning up Docker Compose environments to execute backend tests in the `python-backend` codebase.
 
 # Purpose
-This script is a shell script designed to automate the process of building, running, and testing a Docker-based application stack. It provides narrow functionality focused on managing Docker Compose operations, specifically for a development or testing environment. The script first builds the Docker images defined in the Docker Compose configuration, then ensures any previous instances of the stack are removed to prevent conflicts. It subsequently starts the stack in detached mode and executes a test script within the backend service container. Finally, it cleans up by taking down the stack and removing any orphaned volumes. This script is typically used in a development workflow to streamline testing and ensure a clean environment for each test run.
+This script is a shell script designed to automate the process of building, running, and testing a Docker Compose application. It provides narrow functionality focused on managing Docker containers, specifically for a development or testing environment. The script first builds the Docker images defined in the Docker Compose configuration, then ensures any previously running containers are stopped and removed to prevent conflicts. It subsequently starts the containers in detached mode and executes a test script within the 'backend' service container. Finally, it cleans up by stopping and removing the containers and any associated volumes. This script is typically used in a development workflow to streamline testing and ensure a clean environment for each test run.
+# Imports and Dependencies
+
+---
+- `docker`
+
+
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

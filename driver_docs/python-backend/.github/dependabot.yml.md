@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `dependabot.yml` file in the `python-backend` codebase configures Dependabot to automatically check for updates to GitHub Actions and Python packages on a weekly basis every Wednesday at 09:00 AM in the America/Los_Angeles timezone.
+The `dependabot.yml` file in the `python-backend` codebase configures Dependabot to automatically check for updates to GitHub Actions and Python packages on a weekly schedule every Wednesday at 09:00 AM in the America/Los_Angeles timezone.
 
 # Purpose
-The provided content is a configuration file for a dependency management tool, likely Dependabot, which automates the process of keeping dependencies up to date. The file specifies that updates should be checked on a weekly basis, every Wednesday at 09:00 AM, in the America/Los_Angeles timezone. It covers multiple package ecosystems, including "github-actions" and "pip" for Python packages, across various directories within the codebase. Each update is configured to generate a commit with a message prefixed by an upward arrow (⬆), indicating an upgrade. This setup ensures that the software's dependencies are regularly reviewed and updated, reducing the risk of security vulnerabilities and compatibility issues.
+The provided YAML configuration file is designed for a dependency management tool, likely Dependabot, which automates the process of keeping dependencies up to date. The file specifies a series of update configurations for different package ecosystems and directories within a codebase. Each entry defines the package ecosystem (such as "github-actions" or "pip"), the directory where the dependencies are located, and a schedule for when updates should be checked and applied. The updates are set to occur weekly on Wednesdays at 09:00 AM in the America/Los_Angeles timezone. Additionally, each update will have a commit message prefixed with an upward arrow (⬆) to indicate an update. This setup helps maintain the software's dependencies efficiently, ensuring they are current and secure.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

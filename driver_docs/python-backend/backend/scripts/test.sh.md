@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `test.sh` file is a bash script used to run tests with coverage reporting for the `app` source in the `python-backend` codebase.
+The `test.sh` file is a bash script that runs tests using pytest with coverage reporting for the `app` source, and generates both a terminal and HTML coverage report.
 
 # Purpose
-This Bash script is designed to automate the process of running test coverage analysis for a Python application. It provides a narrow functionality focused on executing tests using `pytest` and generating a coverage report. The script first ensures that the script exits immediately if a command fails (`set -e`) and enables debugging by printing each command before executing it (`set -x`). It then uses the `coverage` tool to run tests on the `app` module and generates a coverage report, highlighting any missing test coverage. Additionally, it creates an HTML report with a customizable title, which defaults to "coverage" if no arguments are provided. This script is typically used in a development environment to ensure code quality and test completeness.
+This Bash script is designed to automate the process of running test coverage analysis for a Python application. It provides a narrow functionality focused on executing tests using `pytest` while measuring code coverage with the `coverage` tool. The script first ensures that the script exits immediately if any command fails (`set -e`) and enables debugging output (`set -x`). It then runs the tests located in the `app` directory, generates a coverage report highlighting any missing coverage, and finally produces an HTML report with a customizable title. This script is not an executable or a library but rather a utility script intended to be run in a development environment to facilitate testing and coverage analysis.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

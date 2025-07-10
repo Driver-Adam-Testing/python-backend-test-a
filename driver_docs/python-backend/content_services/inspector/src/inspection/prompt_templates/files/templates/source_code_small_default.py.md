@@ -3,13 +3,18 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_small_default.py` file defines a template for inspecting source code, focusing on prompts related to purpose, imports, global variables, data structures, and functions.
+The `source_code_small_default.py` file defines a template for inspecting and structuring source code, focusing on elements such as purpose, imports, global variables, data structures, and functions.
 
 # Purpose
-This Python code defines a template for analyzing and documenting small source code files, focusing on their purpose, imports, global variables, data structures, and functions. It imports several utility functions and classes from a module named `utils.lang_specialization.default` and `utils.templates`, which are likely used to process and extract information from the source code. The `SOURCE_CODE_SMALL_TEMPLATE_DEFAULT` is a list of tuples, each representing a section of the documentation template, such as "Purpose," "Imports and Dependencies," "Global Variables," "Data Structures," and "Functions." Each tuple contains a specific prompt or function to extract and format the relevant information from the source code, indicating that this script provides a narrow functionality aimed at automating the generation of structured documentation for small Python scripts.
+This code is a configuration file that defines a template for generating structured prompts and analyzing source code. It provides narrow functionality focused on organizing and formatting information about a codebase, such as its purpose, imports, global variables, data structures, and functions. The file imports various components and utilities from other modules to construct a template (`SOURCE_CODE_SMALL_TEMPLATE_DEFAULT`) that specifies how to extract and present different aspects of a code file. This template is likely used in a larger system for code analysis or documentation generation, where it helps in structuring the output in a consistent and informative manner.
 # Imports and Dependencies
 
 ---
+- `shared.prompts.structured_prompting.GENERAL_STE_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_CODE_PURPOSE`
+- `shared.prompts.structured_prompting.USE_BACKTICKS_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.Component`
+- `shared.prompts.structured_prompting.Prompt`
 - `utils.lang_specialization.default.SOURCE_CODE_SMALL_PURPOSE_USER_PROMPT`
 - `utils.lang_specialization.default.SOURCE_CODE_SYSTEM_PROMPT_GENERAL_DEFAULT`
 - `utils.lang_specialization.default.DefaultDataStructureCollection`
@@ -27,8 +32,8 @@ This Python code defines a template for analyzing and documenting small source c
 ---
 ### SOURCE\_CODE\_SMALL\_TEMPLATE\_DEFAULT
 - **Type**: `list`
-- **Description**: `SOURCE_CODE_SMALL_TEMPLATE_DEFAULT` is a list of tuples, each representing a template for processing different sections of source code. Each tuple contains a type identifier, a section header, a primary processing function, an optional secondary processing function, and an optional placeholder for additional data or functions.
-- **Use**: This variable is used to define templates for processing and analyzing different sections of source code, such as purpose, imports, global variables, data structures, and functions.
+- **Description**: `SOURCE_CODE_SMALL_TEMPLATE_DEFAULT` is a list of tuples, each containing structured information for different sections of a code template. Each tuple includes a section identifier, a section title, and various components or functions related to that section, such as prompts, instructions, or collection methods for symbols and functions.
+- **Use**: This variable is used to define a template structure for generating or processing code, with each tuple providing specific instructions or components for a particular section of the code.
 
 
 

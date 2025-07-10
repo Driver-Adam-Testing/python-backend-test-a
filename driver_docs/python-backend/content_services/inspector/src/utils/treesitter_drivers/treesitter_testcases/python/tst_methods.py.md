@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `tst_methods.py` file contains test cases for various Python method definitions, including instance, class, static, property, special, context manager, async, abstract, decorated, private, protected, complex signature methods, and methods in nested classes.
+The `tst_methods.py` file contains test cases for various Python method definitions, including instance, class, static, property, special, context manager, async, abstract, decorated, private, protected, complex signature methods, and methods within nested classes.
 
 # Purpose
-This Python source code file is a comprehensive collection of class definitions and method implementations that demonstrate various aspects of method usage in Python. The file is structured to cover a wide range of method types and functionalities, including instance methods, class methods, static methods, property methods, special/magic methods, context manager methods, asynchronous methods, abstract methods, methods with decorators, private and protected methods, methods with complex signatures, and methods within nested classes. Each section is designed to illustrate a specific concept or feature of Python's object-oriented programming capabilities, making the file a valuable resource for understanding how different types of methods can be defined and utilized in Python classes.
+This Python source code file serves as a comprehensive collection of test cases and examples for various method definitions and their functionalities in Python. It covers a wide range of method types and class structures, demonstrating the use of instance methods, class methods, static methods, property methods, special/magic methods, context manager methods, async methods, abstract methods, methods with decorators, private and protected methods, methods with complex signatures, and methods within nested classes. Each section is designed to illustrate a specific aspect of Python's object-oriented programming capabilities, making it a valuable resource for understanding how different method types can be implemented and utilized in Python classes.
 
-The file serves as a practical guide or reference for developers looking to understand or implement different method types in their own Python projects. It does not define a public API or external interface but rather provides examples of method definitions and their usage within the context of class design. The inclusion of free functions at the end of the file, which are not meant to be extracted, further emphasizes the focus on class-based method implementations. Overall, this file is a well-organized and informative resource for exploring the diverse functionalities and design patterns associated with methods in Python.
+The file is structured to provide clear examples of each method type, with each class or function focusing on a particular concept. For instance, the `BasicClass` demonstrates simple instance methods, while `ClassAndStatic` showcases class and static methods. The `PropertyExample` class illustrates the use of property decorators, and `SpecialMethods` provides examples of overriding special methods like [`__str__`](<#SpecialMethods__str__>) and [`__repr__`](<#SpecialMethods__repr__>). The file also includes examples of more advanced concepts such as context managers, asynchronous programming, and abstract base classes. Additionally, it includes a section on methods with complex signatures and nested class structures, as well as free functions that are not part of any class. This file is not intended to be a standalone script or library but rather a reference or educational tool for developers looking to deepen their understanding of Python's method definitions and their applications.
 # Imports and Dependencies
 
 ---
@@ -27,11 +27,11 @@ The file serves as a practical guide or reference for developers looking to unde
 ### BasicClass<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.BasicClass}} -->
 - **Members**:
     - `value`: Stores an integer value initialized during object creation.
-- **Description**: The BasicClass is a simple class that encapsulates an integer value and provides methods to interact with it. It includes an initializer to set the value and two instance methods: one to return the stored value and another to perform a calculation using a multiplier and an optional suffix.
+- **Description**: The BasicClass is a simple class that encapsulates an integer value and provides methods to interact with it. It includes an initializer to set the value, a method to return the stored value, and another method that performs a calculation using the value and additional parameters.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.BasicClass.__init__`](#BasicClass__init__)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.BasicClass.instance_method`](#BasicClassinstance_method)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.BasicClass.method_with_params`](#BasicClassmethod_with_params)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.BasicClass.__init__`](<#BasicClass__init__>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.BasicClass.instance_method`](<#BasicClassinstance_method>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.BasicClass.method_with_params`](<#BasicClassmethod_with_params>)
 
 **Methods**
 
@@ -41,20 +41,21 @@ The `__init__` method initializes an instance of the `BasicClass` by setting its
 - **Inputs**:
     - `value`: An integer that is assigned to the `value` attribute of the instance.
 - **Control Flow**:
-    - The method assigns the input parameter `value` to the instance attribute `self.value`.
+    - The method takes an integer input `value`.
+    - It assigns the input `value` to the instance attribute `self.value`.
 - **Output**: This method does not return any value; it initializes the instance's state.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.BasicClass`](#BasicClass)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.BasicClass`](<#BasicClass>)  (Base Class)
 
 
 ---
 #### BasicClass\.instance\_method<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.BasicClass.instance_method}} -->
 The `instance_method` returns the value of the `value` attribute of the `BasicClass` instance.
 - **Inputs**:
-    - `self`: The instance of the `BasicClass` on which the method is called.
+    - `self`: Represents the instance of the class `BasicClass`.
 - **Control Flow**:
-    - The method directly returns the `value` attribute of the instance.
+    - The method directly returns the `value` attribute of the instance `self`.
 - **Output**: The method returns an integer, which is the value of the `value` attribute of the instance.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.BasicClass`](#BasicClass)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.BasicClass`](<#BasicClass>)  (Base Class)
 
 
 ---
@@ -69,7 +70,7 @@ The method_with_params method in the BasicClass multiplies the instance's value 
     - It appends the suffix to the result of the multiplication.
     - The final string is returned.
 - **Output**: A string that is the result of multiplying the instance's value by the multiplier and appending the suffix.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.BasicClass`](#BasicClass)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.BasicClass`](<#BasicClass>)  (Base Class)
 
 
 
@@ -78,13 +79,13 @@ The method_with_params method in the BasicClass multiplies the instance's value 
 - **Members**:
     - `count`: A class variable that keeps track of the number of instances created.
     - `name`: An instance variable that stores the name of the instance.
-- **Description**: The ClassAndStatic class demonstrates the use of class and static methods in Python. It includes a class variable 'count' to track the number of instances created, and provides class methods to retrieve this count and create a default instance. Additionally, it offers static methods for utility operations, such as adding two numbers and joining a list of strings.
+- **Description**: The ClassAndStatic class demonstrates the use of class and static methods in Python. It includes a class variable 'count' to track the number of instances created, and an instance variable 'name' to store the name of each instance. The class provides class methods to retrieve the count of instances and to create a default instance, as well as static methods for utility operations that do not depend on instance or class state.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ClassAndStatic.__init__`](#ClassAndStatic__init__)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ClassAndStatic.get_count`](#ClassAndStaticget_count)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ClassAndStatic.create_default`](#ClassAndStaticcreate_default)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ClassAndStatic.utility_function`](#ClassAndStaticutility_function)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ClassAndStatic.static_with_types`](#ClassAndStaticstatic_with_types)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ClassAndStatic.__init__`](<#ClassAndStatic__init__>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ClassAndStatic.get_count`](<#ClassAndStaticget_count>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ClassAndStatic.create_default`](<#ClassAndStaticcreate_default>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ClassAndStatic.utility_function`](<#ClassAndStaticutility_function>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ClassAndStatic.static_with_types`](<#ClassAndStaticstatic_with_types>)
 
 **Methods**
 
@@ -96,20 +97,20 @@ The __init__ method initializes an instance of the ClassAndStatic class by setti
 - **Control Flow**:
     - Assigns the provided name to the instance's name attribute.
     - Increments the class-level count attribute by 1.
-- **Output**: None, as it is a constructor method for initializing class instances.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ClassAndStatic`](#ClassAndStatic)  (Base Class)
+- **Output**: None, as it is a constructor method.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ClassAndStatic`](<#ClassAndStatic>)  (Base Class)
 
 
 ---
 #### ClassAndStatic\.get\_count<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ClassAndStatic.get_count}} -->
-The `get_count` class method returns the current value of the class variable `count` for the `ClassAndStatic` class.
+The `get_count` class method returns the current value of the class variable `count`.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: Represents the class `ClassAndStatic` itself, allowing access to class variables and methods.
+    - `cls`: The class itself, which is implicitly passed to class methods.
 - **Control Flow**:
-    - The method directly accesses the class variable `count` using `cls.count` and returns its value.
-- **Output**: An integer representing the current count of instances of the `ClassAndStatic` class.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ClassAndStatic`](#ClassAndStatic)  (Base Class)
+    - The method directly returns the value of the class variable `count` without any additional logic or computation.
+- **Output**: An integer representing the current count of instances of the class.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ClassAndStatic`](<#ClassAndStatic>)  (Base Class)
 
 
 ---
@@ -118,11 +119,11 @@ The `create_default` class method creates and returns a new instance of the `Cla
 - **Decorators**: `@classmethod`
 - **Inputs**: None
 - **Control Flow**:
-    - The method is a class method, indicated by the `@classmethod` decorator, which means it receives the class itself as the first argument, `cls`.
+    - The method is a class method, indicated by the `@classmethod` decorator, which means it receives the class itself (`cls`) as its first argument instead of an instance.
     - The method calls the class constructor `cls()` with the argument 'default', creating a new instance of the class with the `name` attribute set to 'default'.
     - The newly created instance is returned as the output of the method.
 - **Output**: A new instance of the `ClassAndStatic` class with the `name` attribute set to 'default'.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ClassAndStatic`](#ClassAndStatic)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ClassAndStatic`](<#ClassAndStatic>)  (Base Class)
 
 
 ---
@@ -136,7 +137,7 @@ The `utility_function` is a static method that adds two integers and returns the
     - The function takes two integer inputs, `x` and `y`.
     - It computes the sum of `x` and `y`.
 - **Output**: The function returns the sum of the two input integers as an integer.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ClassAndStatic`](#ClassAndStatic)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ClassAndStatic`](<#ClassAndStatic>)  (Base Class)
 
 
 ---
@@ -147,9 +148,9 @@ The `static_with_types` method is a static method that concatenates a list of st
     - `data`: A list of strings that need to be concatenated.
 - **Control Flow**:
     - The method takes a list of strings as input.
-    - It uses the `join` method of a string to concatenate all elements of the list into a single string, with each element separated by a comma.
-- **Output**: A single string that is the result of concatenating the input list of strings, separated by commas.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ClassAndStatic`](#ClassAndStatic)  (Base Class)
+    - It uses the `join` method of a string to concatenate the list elements, separating them with a comma.
+- **Output**: A single string that is the result of concatenating the input list elements, separated by commas.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ClassAndStatic`](<#ClassAndStatic>)  (Base Class)
 
 
 
@@ -158,14 +159,14 @@ The `static_with_types` method is a static method that concatenates a list of st
 - **Members**:
     - `_value`: Stores the integer value for the instance.
     - `_computed`: Caches the computed square of the value.
-- **Description**: The `PropertyExample` class demonstrates the use of property decorators in Python to manage access to instance variables. It includes a property `value` with getter, setter, and deleter methods to control the access and modification of the `_value` attribute, and a `computed` property that calculates and caches the square of `_value`. Additionally, it provides a read-only property `read_only` that returns a string representation of the current value.
+- **Description**: The `PropertyExample` class demonstrates the use of property decorators in Python to manage access to instance variables. It includes a property `value` with getter, setter, and deleter methods to manipulate the `_value` attribute, and a `computed` property that calculates and caches the square of `_value`. Additionally, it provides a read-only property `read_only` that returns a string representation of the current value.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.PropertyExample.__init__`](#PropertyExample__init__)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.PropertyExample.value`](#PropertyExamplevalue)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.PropertyExample.value`](#PropertyExamplevalue)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.PropertyExample.value`](#PropertyExamplevalue)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.PropertyExample.computed`](#PropertyExamplecomputed)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.PropertyExample.read_only`](#PropertyExampleread_only)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.PropertyExample.__init__`](<#PropertyExample__init__>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.PropertyExample.value`](<#PropertyExamplevalue>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.PropertyExample.value`](<#PropertyExamplevalue>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.PropertyExample.value`](<#PropertyExamplevalue>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.PropertyExample.computed`](<#PropertyExamplecomputed>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.PropertyExample.read_only`](<#PropertyExampleread_only>)
 
 **Methods**
 
@@ -176,20 +177,20 @@ The `__init__` method initializes an instance of the `PropertyExample` class by 
     - `value`: An integer that represents the initial value to be assigned to the instance's `_value` attribute.
 - **Control Flow**:
     - Assigns the input `value` to the instance's `_value` attribute.
-    - Initializes the `_computed` attribute to `None`, indicating that no computed value is currently stored.
+    - Initializes the `_computed` attribute to `None`, indicating that no computed value has been calculated yet.
 - **Output**: This method does not return any value; it initializes the instance attributes.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.PropertyExample`](#PropertyExample)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.PropertyExample`](<#PropertyExample>)  (Base Class)
 
 
 ---
 #### PropertyExample\.value<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.PropertyExample.value}} -->
-The `value` method is a property getter that returns the private attribute `_value` of the `PropertyExample` class.
+The `value` method is a property that returns the current integer value of the `_value` attribute in the `PropertyExample` class.
 - **Decorators**: `@property`
 - **Inputs**: None
 - **Control Flow**:
-    - The method directly returns the value of the private attribute `_value`.
-- **Output**: The method returns an integer, which is the current value of the `_value` attribute.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.PropertyExample`](#PropertyExample)  (Base Class)
+    - The method directly returns the value of the `_value` attribute without any additional computation or condition.
+- **Output**: The method outputs an integer, which is the current value of the `_value` attribute.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.PropertyExample`](<#PropertyExample>)  (Base Class)
 
 
 ---
@@ -200,22 +201,21 @@ The `value` setter method updates the `_value` attribute and resets the `_comput
     - `new_value`: An integer representing the new value to be set for the `_value` attribute.
 - **Control Flow**:
     - The method assigns the `new_value` to the `_value` attribute of the instance.
-    - The method sets the `_computed` attribute to `None` to indicate that any previously computed value is invalidated.
+    - The method sets the `_computed` attribute to `None` to indicate that any previously computed value is no longer valid.
 - **Output**: This method does not return any value; it modifies the instance's state by updating attributes.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.PropertyExample`](#PropertyExample)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.PropertyExample`](<#PropertyExample>)  (Base Class)
 
 
 ---
 #### PropertyExample\.value<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.PropertyExample.value}} -->
 The `value` deleter method resets the `_value` attribute to 0 and the `_computed` attribute to None in the `PropertyExample` class.
 - **Decorators**: `@value.deleter`
-- **Inputs**:
-    - `self`: An instance of the `PropertyExample` class.
+- **Inputs**: None
 - **Control Flow**:
     - The method sets the `_value` attribute of the instance to 0.
     - The method sets the `_computed` attribute of the instance to None.
 - **Output**: The method does not return any value (returns None).
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.PropertyExample`](#PropertyExample)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.PropertyExample`](<#PropertyExample>)  (Base Class)
 
 
 ---
@@ -225,10 +225,10 @@ The `computed` method calculates and caches the square of the `_value` attribute
 - **Inputs**: None
 - **Control Flow**:
     - Check if the `_computed` attribute is `None`.
-    - If `_computed` is `None`, calculate the square of `_value` and assign it to `_computed`.
+    - If `_computed` is `None`, calculate `_value ** 2` and assign it to `_computed`.
     - Return the value of `_computed`.
 - **Output**: The method returns an integer representing the square of the `_value` attribute.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.PropertyExample`](#PropertyExample)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.PropertyExample`](<#PropertyExample>)  (Base Class)
 
 
 ---
@@ -238,21 +238,22 @@ The `read_only` method returns a string representation of the current value of t
 - **Inputs**: None
 - **Control Flow**:
     - The method constructs a string using the current value of the `_value` attribute.
+    - It returns the constructed string.
 - **Output**: A string in the format 'Value is {self._value}'.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.PropertyExample`](#PropertyExample)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.PropertyExample`](<#PropertyExample>)  (Base Class)
 
 
 
 ---
 ### SpecialMethods<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.SpecialMethods}} -->
 - **Members**:
-    - `data`: A list of integers that the class operates on.
-- **Description**: The `SpecialMethods` class is designed to demonstrate the use of special or magic methods in Python. It encapsulates a list of integers and provides custom implementations for the `__str__`, `__repr__`, and `__len__` methods, allowing for customized string representation and length calculation of the instance. This class serves as an example of how to enhance the functionality of a class by overriding Python's built-in special methods.
+    - `data`: Holds a list of integers provided during initialization.
+- **Description**: The `SpecialMethods` class is designed to encapsulate a list of integers and provides special methods to enhance its usability. It includes a constructor to initialize the list, and implements special methods such as `__str__`, `__repr__`, and `__len__` to provide string representations and to return the length of the list, respectively. This class is useful for managing and representing a collection of integers with built-in Python special method support.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.SpecialMethods.__init__`](#SpecialMethods__init__)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.SpecialMethods.__str__`](#SpecialMethods__str__)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.SpecialMethods.__repr__`](#SpecialMethods__repr__)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.SpecialMethods.__len__`](#SpecialMethods__len__)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.SpecialMethods.__init__`](<#SpecialMethods__init__>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.SpecialMethods.__str__`](<#SpecialMethods__str__>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.SpecialMethods.__repr__`](<#SpecialMethods__repr__>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.SpecialMethods.__len__`](<#SpecialMethods__len__>)
 
 **Methods**
 
@@ -262,31 +263,29 @@ The `__init__` method initializes an instance of the `SpecialMethods` class by s
 - **Inputs**:
     - `data`: A list of integers that will be assigned to the instance's `data` attribute.
 - **Control Flow**:
-    - Assigns the input `data` to the instance's `data` attribute.
+    - The method assigns the input `data` to the instance's `data` attribute.
 - **Output**: This method does not return any value; it initializes the instance's state.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.SpecialMethods`](#SpecialMethods)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.SpecialMethods`](<#SpecialMethods>)  (Base Class)
 
 
 ---
 #### SpecialMethods\.\_\_str\_\_<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.SpecialMethods.__str__}} -->
-The __str__ method returns a string representation of the SpecialMethods object indicating the number of items in its data list.
+The `__str__` method returns a string representation of the `SpecialMethods` object indicating the number of items in its `data` attribute.
 - **Inputs**: None
 - **Control Flow**:
-    - The method constructs a string using an f-string format.
-    - It calculates the length of the 'data' attribute using the len() function.
-    - The constructed string includes the class name 'SpecialMethods' and the number of items in the 'data' list.
-- **Output**: A string in the format 'SpecialMethods(<number of items> items)'.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.SpecialMethods`](#SpecialMethods)  (Base Class)
+    - The method constructs a string using an f-string that includes the class name `SpecialMethods` and the number of items in the `data` attribute, which is obtained using the `len()` function.
+- **Output**: A string in the format `SpecialMethods(<number of items> items)`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.SpecialMethods`](<#SpecialMethods>)  (Base Class)
 
 
 ---
 #### SpecialMethods\.\_\_repr\_\_<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.SpecialMethods.__repr__}} -->
-The __repr__ method provides a string representation of the SpecialMethods object, including its data attribute.
+The __repr__ method provides a string representation of the SpecialMethods class instance, including its data attribute.
 - **Inputs**: None
 - **Control Flow**:
-    - The method constructs a string using an f-string that includes the class name 'SpecialMethods' and the 'data' attribute of the instance.
-- **Output**: A string that represents the SpecialMethods object, formatted as 'SpecialMethods(data=<data>)' where <data> is the list of integers stored in the object.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.SpecialMethods`](#SpecialMethods)  (Base Class)
+    - The method constructs a string using an f-string that includes the class name and the data attribute of the instance.
+- **Output**: A string that represents the instance of the SpecialMethods class, formatted as 'SpecialMethods(data=<data>)'.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.SpecialMethods`](<#SpecialMethods>)  (Base Class)
 
 
 ---
@@ -297,20 +296,20 @@ The `__len__` method returns the number of elements in the `data` attribute of t
 - **Control Flow**:
     - The method directly returns the length of the `data` attribute using Python's built-in `len()` function.
 - **Output**: An integer representing the number of elements in the `data` list of the `SpecialMethods` instance.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.SpecialMethods`](#SpecialMethods)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.SpecialMethods`](<#SpecialMethods>)  (Base Class)
 
 
 
 ---
 ### ContextManager<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ContextManager}} -->
 - **Members**:
-    - `resource_name`: Stores the name of the resource to be managed.
-    - `resource`: Holds the current state of the resource, initially set to None.
-- **Description**: The ContextManager class is a simple implementation of a context manager in Python, designed to manage a resource identified by a name. It provides the standard __enter__ and __exit__ methods to acquire and release the resource, respectively, ensuring that the resource is properly managed within a context block. The class does not suppress exceptions during the exit process, allowing them to propagate.
+    - `resource_name`: The name of the resource to be managed.
+    - `resource`: The current state of the resource, initially set to None.
+- **Description**: The ContextManager class is a simple implementation of a context manager in Python, designed to manage a resource identified by a name. It provides the standard __enter__ and __exit__ methods to acquire and release the resource, respectively, ensuring that the resource is properly managed within a context block. The class does not suppress exceptions during the exit process.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ContextManager.__init__`](#ContextManager__init__)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ContextManager.__enter__`](#ContextManager__enter__)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ContextManager.__exit__`](#ContextManager__exit__)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ContextManager.__init__`](<#ContextManager__init__>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ContextManager.__enter__`](<#ContextManager__enter__>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ContextManager.__exit__`](<#ContextManager__exit__>)
 
 **Methods**
 
@@ -322,8 +321,8 @@ The `__init__` method initializes a `ContextManager` instance with a specified r
 - **Control Flow**:
     - Assigns the input parameter `resource_name` to the instance variable `self.resource_name`.
     - Initializes the instance variable `self.resource` to `None`.
-- **Output**: This method does not return any value; it initializes the instance variables of the `ContextManager` class.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ContextManager`](#ContextManager)  (Base Class)
+- **Output**: This method does not return any value; it initializes the instance variables.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ContextManager`](<#ContextManager>)  (Base Class)
 
 
 ---
@@ -334,37 +333,37 @@ The `__enter__` method is part of the context management protocol, acquiring a r
     - Prints a message indicating the acquisition of the resource using the `resource_name`.
     - Sets the `resource` attribute to a string indicating the resource has been acquired.
     - Returns the `resource` attribute.
-- **Output**: The method returns the acquired resource as a string, formatted as 'acquired_<resource_name>'.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ContextManager`](#ContextManager)  (Base Class)
+- **Output**: The method returns the acquired resource as a string.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ContextManager`](<#ContextManager>)  (Base Class)
 
 
 ---
 #### ContextManager\.\_\_exit\_\_<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ContextManager.__exit__}} -->
-The `__exit__` method is part of the context management protocol, responsible for releasing resources and determining whether to suppress exceptions.
+The `__exit__` method is part of the context management protocol, responsible for releasing resources and determining whether to suppress exceptions when exiting a context.
 - **Inputs**:
-    - `exc_type`: The exception type, if an exception was raised during the execution of the block.
-    - `exc_val`: The exception value, which is the exception instance raised.
-    - `exc_tb`: The traceback object, which encapsulates the call stack at the point where the exception occurred.
+    - `exc_type`: The exception type, if an exception was raised in the context block, otherwise None.
+    - `exc_val`: The exception value, if an exception was raised in the context block, otherwise None.
+    - `exc_tb`: The traceback object, if an exception was raised in the context block, otherwise None.
 - **Control Flow**:
-    - Prints a message indicating the release of the resource associated with `self.resource_name`.
-    - Sets `self.resource` to `None`, effectively releasing the resource.
-    - Returns `False`, indicating that any exceptions raised should not be suppressed and should propagate outside the context manager.
-- **Output**: The method returns `False`, indicating that exceptions should not be suppressed.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ContextManager`](#ContextManager)  (Base Class)
+    - Prints a message indicating the release of the resource associated with the context manager.
+    - Sets the `resource` attribute to None, effectively releasing the resource.
+    - Returns False to indicate that any exceptions raised should not be suppressed and should propagate outside the context block.
+- **Output**: The method returns a boolean value, specifically False, indicating that exceptions should not be suppressed.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ContextManager`](<#ContextManager>)  (Base Class)
 
 
 
 ---
 ### AsyncExample<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.AsyncExample}} -->
 - **Members**:
-    - `data`: A list to store data within the class.
-- **Description**: The `AsyncExample` class provides asynchronous methods and context management capabilities. It includes an asynchronous method `async_method` that simulates a delay and returns a completion message, and an asynchronous generator `async_generator` that yields a sequence of numbers with a delay between each. The class also implements asynchronous context manager methods `__aenter__` and `__aexit__`, allowing it to be used with `async with` statements to manage resources asynchronously.
+    - `data`: An instance variable initialized as an empty list.
+- **Description**: The `AsyncExample` class is designed to demonstrate the use of asynchronous methods and context management in Python. It includes an asynchronous method `async_method` that simulates a delay using `asyncio.sleep`, and an asynchronous generator `async_generator` that yields a sequence of numbers with a delay between each. The class also implements asynchronous context manager methods `__aenter__` and `__aexit__`, allowing it to be used with the `async with` statement to manage resources asynchronously.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.AsyncExample.__init__`](#AsyncExample__init__)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.AsyncExample.async_method`](#AsyncExampleasync_method)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.AsyncExample.async_generator`](#AsyncExampleasync_generator)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.AsyncExample.__aenter__`](#AsyncExample__aenter__)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.AsyncExample.__aexit__`](#AsyncExample__aexit__)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.AsyncExample.__init__`](<#AsyncExample__init__>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.AsyncExample.async_method`](<#AsyncExampleasync_method>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.AsyncExample.async_generator`](<#AsyncExampleasync_generator>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.AsyncExample.__aenter__`](<#AsyncExample__aenter__>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.AsyncExample.__aexit__`](<#AsyncExample__aexit__>)
 
 **Methods**
 
@@ -375,32 +374,32 @@ The `__init__` method initializes an instance of the `AsyncExample` class by set
 - **Control Flow**:
     - The method initializes the `data` attribute as an empty list.
 - **Output**: The method does not return any value; it initializes the instance state.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.AsyncExample`](#AsyncExample)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.AsyncExample`](<#AsyncExample>)  (Base Class)
 
 
 ---
 #### AsyncExample\.async\_method<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.AsyncExample.async_method}} -->
-The `async_method` in the `AsyncExample` class is an asynchronous function that pauses execution for a specified delay and then returns a completion message.
+The `async_method` is an asynchronous method that pauses execution for a specified delay and then returns a completion message.
 - **Inputs**:
     - `delay`: A float representing the number of seconds to pause execution.
 - **Control Flow**:
     - The method begins by awaiting an asynchronous sleep for the duration specified by the `delay` parameter.
     - After the sleep period, it constructs a string message indicating the completion of the asynchronous operation.
 - **Output**: A string message indicating that the asynchronous operation has completed after the specified delay.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.AsyncExample`](#AsyncExample)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.AsyncExample`](<#AsyncExample>)  (Base Class)
 
 
 ---
 #### AsyncExample\.async\_generator<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.AsyncExample.async_generator}} -->
 The `async_generator` method is an asynchronous generator that yields integers from 0 up to, but not including, a specified count, with a delay between each yield.
 - **Inputs**:
-    - `count`: An integer specifying the number of times the generator should yield, determining the range of integers to be generated.
+    - `count`: An integer specifying the number of times the generator should yield, i.e., the upper limit of the range of integers to be generated.
 - **Control Flow**:
     - The method enters a for loop that iterates from 0 to `count - 1`.
-    - Within each iteration, the method awaits a 0.1-second delay using `asyncio.sleep`.
-    - After the delay, the method yields the current integer `i`.
-- **Output**: The method outputs an asynchronous generator that yields integers from 0 to `count - 1`, each after a 0.1-second delay.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.AsyncExample`](#AsyncExample)  (Base Class)
+    - Within each iteration, the method awaits for 0.1 seconds using `asyncio.sleep(0.1)`.
+    - After the delay, the current loop index `i` is yielded.
+- **Output**: The method yields integers starting from 0 up to `count - 1`, one at a time, asynchronously.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.AsyncExample`](<#AsyncExample>)  (Base Class)
 
 
 ---
@@ -408,36 +407,36 @@ The `async_generator` method is an asynchronous generator that yields integers f
 The `__aenter__` method is an asynchronous context manager entry method that pauses for a short duration before returning the instance of the class.
 - **Inputs**: None
 - **Control Flow**:
-    - The method is defined as asynchronous, indicated by the `async` keyword.
-    - It uses `await asyncio.sleep(0.1)` to pause execution for 0.1 seconds, simulating a delay or waiting period.
+    - The method is defined as asynchronous, allowing it to be used with `async with` statements.
+    - It uses `await asyncio.sleep(0.1)` to introduce a 0.1-second delay, simulating an asynchronous operation.
     - After the delay, the method returns the instance of the class (`self`).
-- **Output**: The method returns the instance of the class (`self`) after a brief delay.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.AsyncExample`](#AsyncExample)  (Base Class)
+- **Output**: The method returns the instance of the class (`self`) after a brief asynchronous delay.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.AsyncExample`](<#AsyncExample>)  (Base Class)
 
 
 ---
 #### AsyncExample\.\_\_aexit\_\_<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.AsyncExample.__aexit__}} -->
-The `__aexit__` method is an asynchronous context manager exit method that performs a brief sleep operation and returns `False` to indicate exceptions should not be suppressed.
+The `__aexit__` method is an asynchronous context manager exit method that performs a brief delay before returning `False`, indicating that exceptions should not be suppressed.
 - **Inputs**:
     - `exc_type`: The exception type, if an exception was raised during the context.
     - `exc_val`: The exception value, if an exception was raised during the context.
     - `exc_tb`: The traceback object, if an exception was raised during the context.
 - **Control Flow**:
-    - The method begins by awaiting a 0.1-second sleep using `asyncio.sleep(0.1)`.
-    - After the sleep, the method returns `False`, indicating that any exceptions raised should not be suppressed.
-- **Output**: The method returns `False`, which is a standard way to indicate that exceptions should not be suppressed in context managers.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.AsyncExample`](#AsyncExample)  (Base Class)
+    - The method begins by awaiting a 0.1-second sleep using `asyncio.sleep`, introducing a brief delay.
+    - After the delay, the method returns `False`, which indicates that any exceptions raised within the context should not be suppressed.
+- **Output**: The method returns `False`, indicating that exceptions should not be suppressed.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.AsyncExample`](<#AsyncExample>)  (Base Class)
 
 
 
 ---
 ### AbstractBase<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.AbstractBase}} -->
 - **Decorators**: `@abstractmethod`
-- **Description**: The `AbstractBase` class is an abstract base class that defines a blueprint for other classes by specifying two abstract methods, `required_method` and `another_required`, which must be implemented by any subclass. It also includes a concrete method, `concrete_method`, which provides a default implementation that can be used by subclasses.
+- **Description**: The `AbstractBase` class is an abstract base class that defines a blueprint for other classes by specifying two abstract methods, `required_method` and `another_required`, which must be implemented by any subclass. It also provides a concrete method, `concrete_method`, which is implemented and can be used directly by subclasses. This class serves as a template for creating classes with a specific interface, ensuring that subclasses adhere to the defined method signatures.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.AbstractBase.required_method`](#AbstractBaserequired_method)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.AbstractBase.another_required`](#AbstractBaseanother_required)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.AbstractBase.concrete_method`](#AbstractBaseconcrete_method)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.AbstractBase.required_method`](<#AbstractBaserequired_method>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.AbstractBase.another_required`](<#AbstractBaseanother_required>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.AbstractBase.concrete_method`](<#AbstractBaseconcrete_method>)
 - **Inherits From**:
     - `ABC`
 
@@ -449,10 +448,10 @@ The `required_method` is an abstract method that must be implemented by any subc
 - **Decorators**: `@abstractmethod`
 - **Inputs**: None
 - **Control Flow**:
-    - The method is defined as an abstract method using the `@abstractmethod` decorator, indicating that it must be overridden in any non-abstract subclass.
-    - The method does not contain any implementation in the `AbstractBase` class, as it is intended to be implemented by subclasses.
+    - The method is defined as an abstract method using the `@abstractmethod` decorator, indicating that it must be implemented by any subclass of `AbstractBase`.
+    - The method does not contain any implementation in the `AbstractBase` class, as it is intended to be overridden by subclasses.
 - **Output**: The method is expected to return a string when implemented in a subclass.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.AbstractBase`](#AbstractBase)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.AbstractBase`](<#AbstractBase>)  (Base Class)
 
 
 ---
@@ -462,44 +461,43 @@ The `another_required` method is an abstract method that must be implemented by 
 - **Inputs**:
     - `param`: An integer parameter that the method will use to perform its operation.
 - **Control Flow**:
-    - The method is defined as abstract, meaning it does not contain any implementation in the `AbstractBase` class.
-    - Subclasses of `AbstractBase` must provide an implementation for this method.
+    - The method is defined as an abstract method, meaning it does not contain any implementation in the base class and must be implemented by any subclass inheriting from the base class.
 - **Output**: A boolean value that results from the operation performed on the input parameter.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.AbstractBase`](#AbstractBase)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.AbstractBase`](<#AbstractBase>)  (Base Class)
 
 
 ---
 #### AbstractBase\.concrete\_method<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.AbstractBase.concrete_method}} -->
 The `concrete_method` in the `AbstractBase` class returns a fixed string indicating it is implemented.
 - **Inputs**:
-    - `self`: Represents the instance of the class and allows access to its attributes and methods.
+    - `self`: Represents the instance of the class on which the method is called.
 - **Control Flow**:
-    - The method directly returns the string 'This is implemented' without any conditions or loops.
+    - The method directly returns the string 'This is implemented' without any conditions or iterations.
 - **Output**: A string 'This is implemented'.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.AbstractBase`](#AbstractBase)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.AbstractBase`](<#AbstractBase>)  (Base Class)
 
 
 
 ---
 ### ConcreteImplementation<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ConcreteImplementation}} -->
-- **Description**: The `ConcreteImplementation` class is a concrete subclass of the `AbstractBase` abstract class. It provides implementations for the abstract methods `required_method` and `another_required`, fulfilling the contract specified by the `AbstractBase`. The `required_method` returns a string indicating it is implemented, while `another_required` takes an integer parameter and returns a boolean indicating if the parameter is greater than zero.
+- **Description**: The `ConcreteImplementation` class is a concrete subclass of the `AbstractBase` abstract class, providing implementations for the abstract methods `required_method` and `another_required`. This class fulfills the contract defined by `AbstractBase` by implementing these methods, allowing instances of `ConcreteImplementation` to be created and used where `AbstractBase` is expected.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ConcreteImplementation.required_method`](#ConcreteImplementationrequired_method)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ConcreteImplementation.another_required`](#ConcreteImplementationanother_required)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ConcreteImplementation.required_method`](<#ConcreteImplementationrequired_method>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ConcreteImplementation.another_required`](<#ConcreteImplementationanother_required>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.AbstractBase`](#AbstractBase)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.AbstractBase`](<#AbstractBase>)
 
 **Methods**
 
 ---
 #### ConcreteImplementation\.required\_method<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ConcreteImplementation.required_method}} -->
-The `required_method` in `ConcreteImplementation` class returns a string indicating the method is implemented.
+The `required_method` in `ConcreteImplementation` class provides a concrete implementation of an abstract method from the `AbstractBase` class, returning a fixed string.
 - **Inputs**:
-    - `self`: Instance of the class `ConcreteImplementation`.
+    - `self`: Represents the instance of the class `ConcreteImplementation`.
 - **Control Flow**:
-    - The method directly returns the string 'implemented'.
-- **Output**: A string 'implemented'.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ConcreteImplementation`](#ConcreteImplementation)  (Base Class)
+    - The method directly returns the string 'implemented' without any additional logic or conditions.
+- **Output**: The method returns a string 'implemented'.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ConcreteImplementation`](<#ConcreteImplementation>)  (Base Class)
 
 
 ---
@@ -510,17 +508,17 @@ The `another_required` method checks if the given integer parameter is greater t
 - **Control Flow**:
     - The method evaluates the expression `param > 0`.
 - **Output**: A boolean value indicating whether the input parameter is greater than zero.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ConcreteImplementation`](#ConcreteImplementation)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ConcreteImplementation`](<#ConcreteImplementation>)  (Base Class)
 
 
 
 ---
 ### DecoratedMethods<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.DecoratedMethods}} -->
-- **Description**: The `DecoratedMethods` class demonstrates the use of method decorators in Python. It includes three methods: an instance method, a static method, and a class method, each decorated with a custom `method_decorator` to illustrate how decorators can be applied to different types of methods within a class.
+- **Description**: The `DecoratedMethods` class demonstrates the use of method decorators in Python. It includes three methods: an instance method, a static method, and a class method, each of which is decorated with a custom `method_decorator`. This class serves as an example of how decorators can be applied to different types of methods to modify or extend their behavior.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.DecoratedMethods.decorated_method`](#DecoratedMethodsdecorated_method)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.DecoratedMethods.decorated_static`](#DecoratedMethodsdecorated_static)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.DecoratedMethods.decorated_class`](#DecoratedMethodsdecorated_class)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.DecoratedMethods.decorated_method`](<#DecoratedMethodsdecorated_method>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.DecoratedMethods.decorated_static`](<#DecoratedMethodsdecorated_static>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.DecoratedMethods.decorated_class`](<#DecoratedMethodsdecorated_class>)
 
 **Methods**
 
@@ -529,17 +527,17 @@ The `another_required` method checks if the given integer parameter is greater t
 The `decorated_method` is an instance method that returns a string 'decorated' and is wrapped with a custom decorator to print a message before execution.
 - **Decorators**: `@method_decorator`
 - **Inputs**:
-    - `self`: Refers to the instance of the class `DecoratedMethods` to which the method belongs.
+    - `self`: Represents the instance of the class `DecoratedMethods` to which the method belongs.
 - **Control Flow**:
     - The method is decorated with `@method_decorator`, which wraps the method in a function that prints a message before calling the original method.
     - The method simply returns the string 'decorated'.
-- **Output**: The method returns a string 'decorated'.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.DecoratedMethods`](#DecoratedMethods)  (Base Class)
+- **Output**: A string 'decorated'.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.DecoratedMethods`](<#DecoratedMethods>)  (Base Class)
 
 
 ---
 #### DecoratedMethods\.decorated\_static<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.DecoratedMethods.decorated_static}} -->
-The `decorated_static` method is a static method that returns a string and is wrapped with a custom decorator.
+The `decorated_static` method is a static method that returns a string 'static decorated' and is wrapped with a custom decorator.
 - **Decorators**: `@staticmethod`, `@method_decorator`
 - **Inputs**: None
 - **Control Flow**:
@@ -547,7 +545,7 @@ The `decorated_static` method is a static method that returns a string and is wr
     - The method is wrapped with a custom decorator `method_decorator`, which likely adds additional behavior when the method is called.
     - The method simply returns the string 'static decorated'.
 - **Output**: The method returns a string 'static decorated'.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.DecoratedMethods`](#DecoratedMethods)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.DecoratedMethods`](<#DecoratedMethods>)  (Base Class)
 
 
 ---
@@ -557,11 +555,11 @@ The `decorated_class` method is a class method that returns a string indicating 
 - **Inputs**:
     - `cls`: The class itself, which is automatically passed to class methods.
 - **Control Flow**:
-    - The method is decorated with `@classmethod`, making it a class method that receives the class as its first argument instead of an instance.
-    - The method is also decorated with `@method_decorator`, which wraps the method to add additional behavior, such as logging the method call.
-    - The method simply returns the string 'class decorated'.
+    - The method is decorated with `@classmethod`, allowing it to be called on the class rather than an instance.
+    - The `@method_decorator` is applied, which wraps the method to add additional behavior, such as logging the method call.
+    - The method returns the string 'class decorated'.
 - **Output**: A string 'class decorated'.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.DecoratedMethods`](#DecoratedMethods)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.DecoratedMethods`](<#DecoratedMethods>)  (Base Class)
 
 
 
@@ -569,9 +567,9 @@ The `decorated_class` method is a class method that returns a string indicating 
 ### PrivateProtected<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.PrivateProtected}} -->
 - **Description**: The `PrivateProtected` class demonstrates the use of public, protected, and private methods in Python. It includes a public method `public_method` that combines the results of a protected method `_protected_method` and a private method `__private_method`, showcasing how these different levels of method access can be utilized within a class.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.PrivateProtected.public_method`](#PrivateProtectedpublic_method)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.PrivateProtected._protected_method`](#PrivateProtected_protected_method)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.PrivateProtected.__private_method`](#PrivateProtected__private_method)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.PrivateProtected.public_method`](<#PrivateProtectedpublic_method>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.PrivateProtected._protected_method`](<#PrivateProtected_protected_method>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.PrivateProtected.__private_method`](<#PrivateProtected__private_method>)
 
 **Methods**
 
@@ -579,16 +577,16 @@ The `decorated_class` method is a class method that returns a string indicating 
 #### PrivateProtected\.public\_method<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.PrivateProtected.public_method}} -->
 The `public_method` in the `PrivateProtected` class returns a concatenated string from its protected and private methods.
 - **Inputs**:
-    - `self`: An instance of the PrivateProtected class.
+    - `self`: An instance of the `PrivateProtected` class.
 - **Control Flow**:
-    - The method calls the [`_protected_method`](#PrivateProtected_protected_method) which returns the string 'protected_'.
-    - It then calls the [`__private_method`](#PrivateProtected__private_method) which returns the string 'private'.
-    - The method concatenates the results of the two method calls and returns the combined string.
-- **Output**: A string that is the concatenation of the results from [`_protected_method`](#PrivateProtected_protected_method) and [`__private_method`](#PrivateProtected__private_method), specifically 'protected_private'.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.PrivateProtected._protected_method`](#PrivateProtected_protected_method)
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.PrivateProtected.__private_method`](#PrivateProtected__private_method)
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.PrivateProtected`](#PrivateProtected)  (Base Class)
+    - Calls the [`_protected_method`](<#PrivateProtected_protected_method>) which returns the string 'protected_'.
+    - Calls the [`__private_method`](<#PrivateProtected__private_method>) which returns the string 'private'.
+    - Concatenates the results of [`_protected_method`](<#PrivateProtected_protected_method>) and [`__private_method`](<#PrivateProtected__private_method>).
+- **Output**: A string that is the concatenation of 'protected_' and 'private', resulting in 'protected_private'.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.PrivateProtected._protected_method`](<#PrivateProtected_protected_method>)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.PrivateProtected.__private_method`](<#PrivateProtected__private_method>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.PrivateProtected`](<#PrivateProtected>)  (Base Class)
 
 
 ---
@@ -598,7 +596,7 @@ The `_protected_method` returns a string indicating it is a protected method.
 - **Control Flow**:
     - The method simply returns the string 'protected_' without any conditions or iterations.
 - **Output**: A string 'protected_' is returned.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.PrivateProtected`](#PrivateProtected)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.PrivateProtected`](<#PrivateProtected>)  (Base Class)
 
 
 ---
@@ -606,17 +604,18 @@ The `_protected_method` returns a string indicating it is a protected method.
 The `__private_method` is a private method in the `PrivateProtected` class that returns the string 'private'.
 - **Inputs**: None
 - **Control Flow**:
-    - The method simply returns the string 'private' without any conditions or iterations.
+    - The method is defined as a private method within the `PrivateProtected` class, indicated by the double underscore prefix.
+    - It simply returns the string 'private' when called.
 - **Output**: The method returns a string 'private'.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.PrivateProtected`](#PrivateProtected)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.PrivateProtected`](<#PrivateProtected>)  (Base Class)
 
 
 
 ---
 ### ComplexSignatures<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ComplexSignatures}} -->
-- **Description**: The `ComplexSignatures` class is designed to demonstrate a method with a complex signature, featuring a variety of parameter types including required, optional, variadic positional, keyword-only, and variadic keyword arguments. The method `method_with_many_params` returns a dictionary containing all the provided arguments, showcasing how to handle and return multiple types of parameters in a single method.
+- **Description**: The `ComplexSignatures` class is designed to demonstrate a method with a complex signature, featuring a variety of parameter types including required, optional, variadic positional, keyword-only, and variadic keyword arguments. The method `method_with_many_params` returns a dictionary containing all the provided arguments, showcasing how to handle and organize diverse input types in a single method.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ComplexSignatures.method_with_many_params`](#ComplexSignaturesmethod_with_many_params)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ComplexSignatures.method_with_many_params`](<#ComplexSignaturesmethod_with_many_params>)
 
 **Methods**
 
@@ -634,8 +633,8 @@ The method_with_many_params method collects various types of parameters and retu
     - The method takes a required string parameter, an optional integer parameter, and any number of additional positional and keyword arguments.
     - It collects all these parameters into a dictionary with keys corresponding to the parameter names.
     - The method then returns this dictionary.
-- **Output**: A dictionary containing the values of the required, optional, *args, keyword_only, and **kwargs parameters.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ComplexSignatures`](#ComplexSignatures)  (Base Class)
+- **Output**: A dictionary containing the values of all the parameters passed to the method, organized by parameter name.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.ComplexSignatures`](<#ComplexSignatures>)  (Base Class)
 
 
 
@@ -643,18 +642,19 @@ The method_with_many_params method collects various types of parameters and retu
 ### OuterClass<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.OuterClass}} -->
 - **Description**: The `OuterClass` is a simple class that contains a method `outer_method` which returns a string "outer". It also contains a nested class `InnerClass`, which has its own method `inner_method` that returns a string "inner". This structure demonstrates the use of nested classes in Python, where an inner class is defined within the scope of an outer class.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.OuterClass.outer_method`](#OuterClassouter_method)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.OuterClass.outer_method`](<#OuterClassouter_method>)
 
 **Methods**
 
 ---
 #### OuterClass\.outer\_method<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.OuterClass.outer_method}} -->
 The `outer_method` returns a fixed string 'outer' when called on an instance of `OuterClass`.
-- **Inputs**: None
+- **Inputs**:
+    - `self`: Represents the instance of the class `OuterClass` on which the method is called.
 - **Control Flow**:
-    - The method directly returns the string 'outer' without any conditions or loops.
+    - The method directly returns the string 'outer' without any conditions or iterations.
 - **Output**: A string 'outer'.
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.OuterClass`](#OuterClass)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.OuterClass`](<#OuterClass>)  (Base Class)
 
 
 
@@ -662,18 +662,18 @@ The `outer_method` returns a fixed string 'outer' when called on an instance of 
 ### InnerClass<!-- {{#class:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.OuterClass.InnerClass}} -->
 - **Description**: The `InnerClass` is a simple nested class within the `OuterClass` that contains a single method, `inner_method`, which returns a string "inner". It serves as an example of how to define and use nested classes in Python.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.OuterClass.InnerClass.inner_method`](#InnerClassinner_method)
+    - [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.OuterClass.InnerClass.inner_method`](<#InnerClassinner_method>)
 
 **Methods**
 
 ---
 #### InnerClass\.inner\_method<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.OuterClass.InnerClass.inner_method}} -->
-The `inner_method` returns a fixed string "inner".
+The `inner_method` returns a fixed string 'inner'.
 - **Inputs**: None
 - **Control Flow**:
-    - The method directly returns the string "inner" without any conditions or iterations.
-- **Output**: A string with the value "inner".
-- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.OuterClass.InnerClass`](#OuterClass.InnerClass)  (Base Class)
+    - The method directly returns the string 'inner' without any conditions or iterations.
+- **Output**: A string 'inner'.
+- **See also**: [`python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.OuterClass.InnerClass`](<#OuterClass.InnerClass>)  (Base Class)
 
 
 
@@ -686,11 +686,10 @@ The `method_decorator` function is a decorator that wraps a method to print a me
     - `func`: The function or method to be decorated.
 - **Control Flow**:
     - Defines an inner function `wrapper` that takes `self`, `*args`, and `**kwargs` as parameters.
-    - Prints a message indicating the name of the function being called.
-    - Calls the original function `func` with `self`, `*args`, and `**kwargs`.
-    - Returns the result of the original function call from the `wrapper` function.
-    - Returns the `wrapper` function from the `method_decorator` function.
-- **Output**: A decorated version of the input function that prints a message before executing the function.
+    - Prints a message indicating the name of the function being called using `func.__name__`.
+    - Calls the original function `func` with `self`, `*args`, and `**kwargs` and returns its result.
+    - Returns the `wrapper` function.
+- **Output**: Returns a new function `wrapper` that wraps the original function `func` with additional behavior.
 
 
 ---
@@ -701,17 +700,17 @@ The function `foo` takes two integers as input and returns their sum.
     - `y`: An integer representing the second operand for addition.
 - **Control Flow**:
     - The function directly returns the result of adding the two input integers `x` and `y`.
-- **Output**: An integer that is the sum of the two input integers.
+- **Output**: An integer which is the sum of the two input integers.
 
 
 ---
 ### bar<!-- {{#callable:python-backend/content_services/inspector/src/utils/treesitter_drivers/treesitter_testcases/python/tst_methods.bar}} -->
-The function `bar` prints a greeting message with the provided word as the 'word of the day'.
+The function `bar` prints a greeting message with a specified word.
 - **Inputs**:
     - `word`: A string representing the word to be included in the greeting message.
 - **Control Flow**:
     - Defines an inner function `baz` that takes a string `word` and prints a formatted greeting message.
-    - Calls the inner function `baz` with the input `word`.
+    - Calls the inner function `baz` with the provided `word` argument.
 - **Output**: The function does not return any value; it outputs a message to the console.
 
 

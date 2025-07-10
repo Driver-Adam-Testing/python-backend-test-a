@@ -3,21 +3,21 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `backend` folder in the `python-backend` codebase is a well-structured directory that encompasses the setup and functionality of a FastAPI application, including API routing, database operations, and testing, along with various scripts for server configuration and code management, supported by essential configuration files for Docker, Git, and dependency management.
+Built around FastAPI, featuring API configurations, scripts for operations, and configuration files for Docker, Git, and dependency management.
 
 ## Folders
-- **[app](app/README.md)**: The `app` folder in the `python-backend` codebase is a comprehensive directory that organizes the setup and functionality of a FastAPI application, including API routing, authentication, core configurations, Git provider integrations, database operations, schema definitions, service implementations, utility functions, and testing infrastructure.
-- **[scripts](scripts/README.md)**: The `scripts` folder in the `python-backend` codebase contains various Python and shell scripts for database and S3 operations, server configuration, code linting, application startup, and test execution.
+- **[app](app/README.md)**: API configurations, authentication, core settings, Git provider management, database operations, Pydantic schemas, service implementations, utility functions, and testing infrastructure, all primarily built around FastAPI.
+- **[scripts](scripts/README.md)**: Various Python and shell scripts for database and S3 operations, server configuration, code linting, application startup, and testing with coverage reporting.
 
 ## Files
 - **[.dockerignore](.dockerignore.md)**: The `.dockerignore` file in the `python-backend` codebase specifies files and directories to be excluded from Docker builds, such as Python cache files, virtual environments, and coverage reports.
-- **[.gitignore](.gitignore.md)**: The `.gitignore` file in the `python-backend` codebase specifies files and directories to be ignored by Git, including cache files, coverage reports, and virtual environment directories.
-- **[poetry.lock](poetry.lock.md)**: The `poetry.lock` file in the `python-backend` codebase is a critical component for managing dependencies in Python projects using the Poetry tool, providing detailed metadata about each package, including version constraints, optional extras, and integrity verification through SHA-256 hashes, to ensure consistent and reproducible environments across different setups.
+- **[.gitignore](.gitignore.md)**: The `.gitignore` file in the `python-backend` codebase specifies files and directories to be ignored by Git, including Python cache files, virtual environment directories, and coverage reports.
+- **[poetry.lock](poetry.lock.md)**: Ensures consistent Python environments by locking dependency versions and verifying package integrity.
 - **[prestart.sh](prestart.sh.md)**: The `prestart.sh` file is a shell script that initializes the database by starting it, running migrations, and creating initial data.
-- **[pyproject.toml](pyproject.toml.md)**: The `pyproject.toml` file in the `python-backend` codebase specifies the project's metadata, dependencies, development dependencies, build system requirements, and configuration for tools like mypy and pytest.
+- **[pyproject.toml](pyproject.toml.md)**: Configuration for a Python project using Poetry, specifying dependencies, build system, and testing tools.
 - **[README.md](README.md.md)**: The `README.md` file in the `python-backend` codebase provides comprehensive instructions for setting up and developing a FastAPI backend project, including requirements, local development setup with Docker and Poetry, backend testing, and database migrations.
 - **[tests-start.sh](tests-start.sh.md)**: The `tests-start.sh` file is a shell script that executes a Python pre-start test script followed by a test script in the `python-backend` codebase.
-- **[tst.py](tst.py.md)**: The `tst.py` file contains test functions to verify the behavior of the `LlmConfig` class methods, specifically testing the `default` and `from_name` methods for both valid and invalid model names.
+- **[tst.py](tst.py.md)**: The `tst.py` file contains test functions for verifying the behavior of the `LlmConfig` class methods, including `default` and `from_name`, within the `python-backend` codebase.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

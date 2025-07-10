@@ -3,13 +3,18 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `metadata_medium_default.py` file defines a template for medium-sized metadata prompts using specialized language utilities and template structures.
+The `metadata_medium_default.py` file defines a template for medium-sized metadata prompts using various components and style instructions.
 
 # Purpose
-This code is a configuration setup for a templating system, specifically designed to handle metadata prompts for medium-sized systems. It imports specific metadata prompts from a module `utils.lang_specialization.metadata` and a templating utility `S` from `utils.templates`. The core functionality is encapsulated in the `METADATA_MEDIUM_TEMPLATE` list, which pairs a single prompt text with metadata and purpose prompts, suggesting its use in generating or managing structured text outputs. The code provides narrow functionality, focusing on defining a specific template configuration rather than implementing broader logic or operations.
+This code is a configuration setup for generating structured prompts, specifically tailored for metadata purposes in medium-sized systems. It imports various components and instructions from shared modules and utilities, which are then used to construct a template (`METADATA_MEDIUM_TEMPLATE`) that defines how prompts should be formatted and structured. The template combines different prompt components and style instructions to ensure consistency and adherence to specific guidelines, such as using backticks and avoiding restatements. This setup provides narrow functionality focused on creating standardized prompt structures for metadata-related tasks.
 # Imports and Dependencies
 
 ---
+- `shared.prompts.structured_prompting.GENERAL_STE_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_METADATA_PURPOSE`
+- `shared.prompts.structured_prompting.USE_BACKTICKS_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.Component`
+- `shared.prompts.structured_prompting.Prompt`
 - `utils.lang_specialization.metadata.METADATA_MEDIUM_AND_LARGE_SYSTEM_PROMPT`
 - `utils.lang_specialization.metadata.PURPOSE_PROMPT_MEDIUM`
 - `utils.templates.S`
@@ -20,8 +25,8 @@ This code is a configuration setup for a templating system, specifically designe
 ---
 ### METADATA\_MEDIUM\_TEMPLATE
 - **Type**: `list`
-- **Description**: `METADATA_MEDIUM_TEMPLATE` is a list containing a single tuple. This tuple consists of four elements: a constant from the `S` module, a string literal `"# Purpose"`, and two imported constants, `METADATA_MEDIUM_AND_LARGE_SYSTEM_PROMPT` and `PURPOSE_PROMPT_MEDIUM`. The list is likely used to define a template for medium-sized metadata prompts.
-- **Use**: This variable is used to store a template configuration for medium-sized metadata prompts, combining text and predefined constants.
+- **Description**: `METADATA_MEDIUM_TEMPLATE` is a list containing a single tuple. This tuple is structured to hold metadata prompts, specifically for medium-sized metadata. It includes a prompt text identifier, a purpose header, and two formatted prompt strings created using the `Prompt` and `Component` classes.
+- **Use**: This variable is used to define and store a structured template for generating medium-sized metadata prompts.
 
 
 

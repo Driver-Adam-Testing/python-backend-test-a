@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `gunicorn_conf.py` file in the `python-backend` codebase configures Gunicorn server settings such as worker count, logging, and timeouts based on environment variables and system resources.
+The `gunicorn_conf.py` file configures Gunicorn server settings such as worker count, logging, and timeouts based on environment variables for the `python-backend` project.
 
 # Purpose
-This Python script is a configuration file for a Gunicorn server, which is a Python WSGI HTTP server for UNIX. It provides narrow functionality by setting up various server parameters based on environment variables, such as the number of worker processes, logging levels, and server binding details. The script calculates the number of workers based on the CPU core count and environment settings, ensuring efficient resource utilization. It also configures logging for access and error logs, and sets timeouts for graceful shutdowns and keep-alive connections. Finally, it outputs the configuration settings in JSON format for debugging and testing purposes, making it easier to verify the server's runtime configuration.
+This Python script is a configuration file for a Gunicorn server, which is a Python WSGI HTTP server for UNIX. It provides narrow functionality by setting up environment-based configurations for running a web server, such as determining the number of worker processes, setting logging levels, and defining server binding details. The script retrieves configuration values from environment variables, allowing for flexible deployment in different environments. It calculates the number of worker processes based on the number of CPU cores and specified environment variables, ensuring efficient resource utilization. Additionally, it outputs the configuration settings in JSON format for debugging and testing purposes, making it easier to verify the server's setup.
 # Imports and Dependencies
 
 ---
@@ -20,29 +20,29 @@ This Python script is a configuration file for a Gunicorn server, which is a Pyt
 ---
 ### workers\_per\_core\_str
 - **Type**: `str`
-- **Description**: The variable `workers_per_core_str` is a string that holds the value of the environment variable `WORKERS_PER_CORE`. If the environment variable is not set, it defaults to the string '4'.
-- **Use**: This variable is used to determine the number of workers per CPU core for configuring web server concurrency.
+- **Description**: The `workers_per_core_str` variable is a string that holds the value of the environment variable `WORKERS_PER_CORE`. If the environment variable is not set, it defaults to the string '4'. This variable is used to determine the number of worker processes per CPU core.
+- **Use**: This variable is used to calculate the number of worker processes per CPU core for a web server configuration.
 
 
 ---
 ### max\_workers\_str
-- **Type**: `str or None`
+- **Type**: `str`
 - **Description**: The `max_workers_str` variable is a string that holds the value of the 'MAX_WORKERS' environment variable. If the environment variable is not set, `max_workers_str` will be `None`. This variable is used to determine the maximum number of worker processes that can be spawned by the application.
-- **Use**: This variable is used to set the `use_max_workers` variable, which limits the maximum number of worker processes.
+- **Use**: `max_workers_str` is used to set the `use_max_workers` variable, which limits the number of worker processes if specified.
 
 
 ---
 ### use\_max\_workers
 - **Type**: `None or int`
-- **Description**: The `use_max_workers` variable is initially set to `None` and is later assigned an integer value if the `MAX_WORKERS` environment variable is set. It represents the maximum number of worker processes that can be used by the application.
-- **Use**: This variable is used to limit the number of worker processes by setting an upper bound on `web_concurrency` if it is defined.
+- **Description**: The `use_max_workers` variable is initially set to `None` and is intended to store the maximum number of worker processes if specified by the environment variable `MAX_WORKERS`. If `MAX_WORKERS` is set, `use_max_workers` is converted to an integer value from the string provided by the environment variable.
+- **Use**: This variable is used to potentially limit the number of worker processes by setting an upper bound on `web_concurrency` if `MAX_WORKERS` is defined.
 
 
 ---
 ### web\_concurrency\_str
-- **Type**: `str`
+- **Type**: `str or None`
 - **Description**: The `web_concurrency_str` variable is a string that holds the value of the 'WEB_CONCURRENCY' environment variable, or `None` if the environment variable is not set. It is used to determine the number of worker processes for handling requests in a web server context.
-- **Use**: This variable is used to configure the number of web server workers based on environment settings.
+- **Use**: This variable is used to configure the number of web server workers by converting its value to an integer and applying it to the `web_concurrency` configuration.
 
 
 ---
@@ -54,16 +54,16 @@ This Python script is a configuration file for a Gunicorn server, which is a Pyt
 
 ---
 ### port
-- **Type**: `string`
+- **Type**: `str`
 - **Description**: The `port` variable is a string that holds the port number on which the server will listen for incoming connections. It is set by retrieving the value of the 'PORT' environment variable, defaulting to '80' if the environment variable is not set.
 - **Use**: This variable is used to configure the network binding address for the server, specifically the port component.
 
 
 ---
 ### bind\_env
-- **Type**: `str`
-- **Description**: The `bind_env` variable is a string that stores the value of the 'BIND' environment variable, or `None` if the environment variable is not set. It is used to determine the binding address for the server.
-- **Use**: This variable is used to configure the server's binding address, which is later assigned to `use_bind` and ultimately used in the server configuration.
+- **Type**: `str or None`
+- **Description**: The `bind_env` variable is a global variable that retrieves the value of the 'BIND' environment variable using `os.getenv`. If the 'BIND' environment variable is not set, `bind_env` defaults to `None`. This variable is used to determine the binding address for the server.
+- **Use**: This variable is used to configure the server's binding address, which is later utilized to set the `use_bind` variable for server configuration.
 
 
 ---
@@ -76,36 +76,36 @@ This Python script is a configuration file for a Gunicorn server, which is a Pyt
 ---
 ### cores
 - **Type**: `int`
-- **Description**: The `cores` variable holds the number of CPU cores available on the machine where the code is running. It is determined using the `multiprocessing.cpu_count()` function, which returns the count of logical CPUs in the system.
-- **Use**: This variable is used to calculate the default number of web workers by multiplying it with `workers_per_core`.
+- **Description**: The `cores` variable is an integer that represents the number of CPU cores available on the machine where the code is running. It is determined using the `multiprocessing.cpu_count()` function, which returns the count of logical CPUs in the system.
+- **Use**: This variable is used to calculate the default number of web workers by multiplying it with `workers_per_core` to determine the `default_web_concurrency`.
 
 
 ---
 ### workers\_per\_core
 - **Type**: `float`
-- **Description**: The `workers_per_core` variable is a floating-point number that represents the number of worker processes to be allocated per CPU core. It is derived from the environment variable `WORKERS_PER_CORE`, defaulting to '4' if not set.
+- **Description**: The `workers_per_core` variable is a floating-point number that represents the number of worker processes to be allocated per CPU core. It is derived from the environment variable `WORKERS_PER_CORE`, defaulting to 4 if not set.
 - **Use**: This variable is used to calculate the `default_web_concurrency`, which determines the default number of worker processes based on the available CPU cores.
 
 
 ---
 ### default\_web\_concurrency
 - **Type**: `float`
-- **Description**: The `default_web_concurrency` variable is calculated as the product of `workers_per_core` and the number of CPU cores available on the machine. It represents the default number of worker processes that should be used by the web server if no specific concurrency value is provided through the `WEB_CONCURRENCY` environment variable.
-- **Use**: This variable is used to determine the default number of worker processes for the web server, ensuring efficient utilization of available CPU resources.
+- **Description**: The `default_web_concurrency` variable is a floating-point number calculated by multiplying the number of CPU cores available (`cores`) by the number of workers per core (`workers_per_core`). This calculation provides a default value for the number of web server workers that should be spawned based on the system's hardware capabilities.
+- **Use**: This variable is used to determine the default number of web server workers if no specific concurrency value is provided via the `WEB_CONCURRENCY` environment variable.
 
 
 ---
 ### accesslog\_var
 - **Type**: `str`
-- **Description**: The `accesslog_var` variable is a string that holds the value of the 'ACCESS_LOG' environment variable, defaulting to '-' if the environment variable is not set. This variable is used to specify the file path or location where access logs should be written.
-- **Use**: This variable is used to configure the access log file path for logging HTTP access requests in a server application.
+- **Description**: The `accesslog_var` variable is a string that holds the value of the environment variable `ACCESS_LOG`. If the `ACCESS_LOG` environment variable is not set, it defaults to the string "-". This variable is used to determine the file path or location where access logs should be written.
+- **Use**: This variable is used to configure the access log file path for logging purposes in the application.
 
 
 ---
 ### use\_accesslog
 - **Type**: `str or None`
 - **Description**: The `use_accesslog` variable is a global variable that holds the value of the access log file path or identifier. It is derived from the environment variable `ACCESS_LOG`, defaulting to '-' if not set, and is set to `None` if `accesslog_var` is not defined.
-- **Use**: This variable is used to configure the access log file path for the Gunicorn server.
+- **Use**: This variable is used to configure the access log file path for logging purposes in a Gunicorn server setup.
 
 
 ---
@@ -118,35 +118,35 @@ This Python script is a configuration file for a Gunicorn server, which is a Pyt
 ---
 ### use\_errorlog
 - **Type**: `Optional[str]`
-- **Description**: The `use_errorlog` variable is a global variable that holds the value of the error log file path or identifier. It is derived from the environment variable `ERROR_LOG`, defaulting to '-' if not set, and is set to `None` if `errorlog_var` is falsy.
-- **Use**: This variable is used to configure the error log location for the Gunicorn server.
+- **Description**: The `use_errorlog` variable is a global variable that holds the value of the error log file path or identifier. It is assigned the value of `errorlog_var`, which is retrieved from the environment variable `ERROR_LOG`, defaulting to '-' if not set, or `None` if `errorlog_var` is not defined.
+- **Use**: This variable is used to configure the error log location for the application, particularly in the Gunicorn server configuration.
 
 
 ---
 ### graceful\_timeout\_str
 - **Type**: `str`
-- **Description**: The `graceful_timeout_str` variable is a string that holds the value of the 'GRACEFUL_TIMEOUT' environment variable, defaulting to '120' if the environment variable is not set. This value represents the time in seconds that the server will wait for workers to finish their current requests before shutting down.
-- **Use**: This variable is used to configure the graceful timeout setting for a server, ensuring that workers have a specified amount of time to complete requests before termination.
+- **Description**: The `graceful_timeout_str` variable is a string that holds the value of the 'GRACEFUL_TIMEOUT' environment variable, defaulting to '180' if the environment variable is not set. This value represents the time in seconds for a graceful shutdown of workers in a server environment.
+- **Use**: This variable is used to configure the graceful timeout setting for server workers, ensuring they have a specified amount of time to complete ongoing requests before shutting down.
 
 
 ---
 ### timeout\_str
 - **Type**: `str`
-- **Description**: The `timeout_str` variable is a string that holds the value of the 'TIMEOUT' environment variable, defaulting to '120' if the environment variable is not set. This value represents the timeout duration for server requests.
-- **Use**: It is used to configure the timeout setting for server requests by converting it to an integer and assigning it to the `timeout` variable.
+- **Description**: The `timeout_str` variable is a string that holds the value of the 'TIMEOUT' environment variable, defaulting to '180' if the environment variable is not set. This value represents the timeout duration for a server or application process.
+- **Use**: This variable is used to configure the timeout setting for a server, which is later converted to an integer and assigned to the `timeout` configuration variable.
 
 
 ---
 ### keepalive\_str
 - **Type**: `str`
-- **Description**: The `keepalive_str` variable is a string that holds the value of the 'KEEP_ALIVE' environment variable, defaulting to '5' if the environment variable is not set. This variable is used to configure the keep-alive timeout for server connections.
-- **Use**: This variable is used to set the keep-alive timeout duration for server connections in the Gunicorn configuration.
+- **Description**: The `keepalive_str` variable is a string that holds the value of the 'KEEP_ALIVE' environment variable, defaulting to '5' if the environment variable is not set. This variable is used to configure the keep-alive timeout for connections.
+- **Use**: This variable is used to set the keep-alive timeout in the Gunicorn server configuration.
 
 
 ---
 ### loglevel
 - **Type**: `str`
-- **Description**: The `loglevel` variable is a string that represents the logging level for the application, which is used to control the verbosity of log messages. It is set to the value of the environment variable `LOG_LEVEL`, defaulting to 'info' if not specified.
+- **Description**: The `loglevel` variable is a string that represents the logging level for the application, which is used to control the verbosity of log output. It is set to the value of the `LOG_LEVEL` environment variable, defaulting to 'info' if not specified.
 - **Use**: This variable is used to configure the logging level in the Gunicorn server settings.
 
 
@@ -160,15 +160,15 @@ This Python script is a configuration file for a Gunicorn server, which is a Pyt
 ---
 ### bind
 - **Type**: `str`
-- **Description**: The `bind` variable is a string that specifies the network address and port on which the server should listen for incoming connections. It is determined by the environment variable `BIND`, if set, or defaults to a combination of the `HOST` and `PORT` environment variables.
-- **Use**: This variable is used to configure the server's listening address and port in the Gunicorn configuration.
+- **Description**: The `bind` variable is a string that specifies the network address and port on which the server should listen for incoming connections. It is determined by the environment variable `BIND`, or defaults to a combination of the `HOST` and `PORT` environment variables if `BIND` is not set.
+- **Use**: This variable is used to configure the address and port for the server to bind to, allowing it to accept incoming network requests.
 
 
 ---
 ### errorlog
 - **Type**: `str or None`
-- **Description**: The `errorlog` variable is a global variable that holds the path to the error log file for the application. It is derived from the environment variable `ERROR_LOG`, defaulting to '-' if not set, which typically indicates logging to stderr.
-- **Use**: This variable is used to configure the error logging destination for the application, particularly in a Gunicorn server setup.
+- **Description**: The `errorlog` variable is a global variable that holds the path to the error log file for the application. It is derived from the environment variable `ERROR_LOG`, defaulting to '-' if not set, which typically means logging to stderr.
+- **Use**: This variable is used to configure the error logging destination for the Gunicorn server.
 
 
 ---
@@ -182,34 +182,34 @@ This Python script is a configuration file for a Gunicorn server, which is a Pyt
 ### accesslog
 - **Type**: `str or None`
 - **Description**: The `accesslog` variable is a global variable that holds the path to the access log file for the application. It is derived from the environment variable `ACCESS_LOG`, defaulting to '-' if not set, which typically indicates logging to standard output.
-- **Use**: This variable is used to configure the logging of access requests in the application, specifically for the Gunicorn server.
+- **Use**: This variable is used to configure the logging behavior of the application, specifically where access logs are written.
 
 
 ---
 ### graceful\_timeout
 - **Type**: `int`
-- **Description**: The `graceful_timeout` variable is an integer that represents the time in seconds that the server will wait for workers to finish their current requests before shutting down. It is derived from the environment variable `GRACEFUL_TIMEOUT`, with a default value of 120 seconds if the environment variable is not set.
-- **Use**: This variable is used to configure the server's shutdown behavior, ensuring that ongoing requests are completed within a specified time frame before the server stops.
+- **Description**: The `graceful_timeout` variable is an integer that represents the time in seconds that the server will wait for workers to finish their current requests before shutting down. It is derived from the environment variable `GRACEFUL_TIMEOUT`, with a default value of 180 seconds if the environment variable is not set.
+- **Use**: This variable is used to configure the graceful shutdown timeout for the server, ensuring that ongoing requests are completed before the server stops.
 
 
 ---
 ### timeout
 - **Type**: `int`
-- **Description**: The `timeout` variable is an integer that represents the maximum number of seconds a worker can take to handle a request before it is terminated. It is derived from the `TIMEOUT` environment variable, with a default value of 120 seconds if the environment variable is not set.
-- **Use**: This variable is used to configure the timeout setting for worker processes in a Gunicorn server.
+- **Description**: The `timeout` variable is an integer that represents the maximum number of seconds a worker can take to handle a request before it is terminated. It is derived from the `TIMEOUT` environment variable, with a default value of 180 seconds if the environment variable is not set.
+- **Use**: This variable is used to configure the timeout setting for worker processes in a Gunicorn server setup.
 
 
 ---
 ### keepalive
 - **Type**: `int`
-- **Description**: The `keepalive` variable is an integer that represents the keep-alive timeout duration for connections. It is derived from the environment variable `KEEP_ALIVE`, with a default value of 5 if the environment variable is not set.
-- **Use**: This variable is used to configure the keep-alive timeout setting in the Gunicorn server configuration.
+- **Description**: The `keepalive` variable is an integer that represents the keep-alive timeout duration for connections, which is retrieved from the environment variable `KEEP_ALIVE`. If the environment variable is not set, it defaults to 5 seconds.
+- **Use**: This variable is used to configure the keep-alive timeout setting for the Gunicorn server.
 
 
 ---
 ### log\_data
 - **Type**: `dict`
-- **Description**: The `log_data` variable is a dictionary that consolidates various configuration settings for a server, including both Gunicorn-specific settings and additional custom settings. It includes key-value pairs for log level, number of workers, server binding address, timeout settings, and log file paths, as well as custom settings like workers per core and server host and port.
+- **Description**: The `log_data` variable is a dictionary that consolidates various configuration settings for a server, including both Gunicorn-specific settings and additional custom settings. It includes key-value pairs for log level, number of workers, server binding address, timeout settings, and log file paths, as well as custom settings like workers per core and maximum workers.
 - **Use**: This variable is used to store and print the server configuration settings for debugging and testing purposes.
 
 

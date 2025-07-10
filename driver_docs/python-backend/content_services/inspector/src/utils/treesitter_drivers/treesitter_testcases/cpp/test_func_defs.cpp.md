@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `test_func_defs.cpp` file in the `python-backend` codebase demonstrates various C++ programming concepts, including function definitions, class and template usage, inheritance, lambda expressions, and operator overloading.
+The `test_func_defs.cpp` file in the `python-backend` codebase provides a comprehensive set of C++ function and class examples, including basic and advanced function definitions, class member functions, template functions, lambda expressions, and inheritance with virtual functions.
 
 # Purpose
-This C++ source code file provides a comprehensive demonstration of various C++ programming concepts and techniques, making it a broad and educational resource. It includes a wide array of functionalities, such as basic function definitions, template functions, constexpr functions, inline functions, and functions utilizing move semantics. The file also explores object-oriented programming through class definitions, including constructors, destructors, operator overloading, and inheritance with virtual functions. Additionally, it showcases advanced features like lambda expressions, function try blocks, specialized template functions, and friend functions. The code is structured to illustrate these concepts clearly, with examples like the [`Calculator`](#CalculatorCalculator) class for arithmetic operations, the `Shape` hierarchy for polymorphism, and the use of namespaces for organizing related functions.
+This C++ source code file provides a comprehensive demonstration of various C++ programming concepts and techniques, serving as a broad educational resource. It includes a wide array of functionalities, such as basic function definitions, template functions, constexpr functions, inline functions, and functions utilizing move semantics. The file also explores advanced topics like namespaces, class definitions with constructors, destructors, operator overloading, and inheritance with virtual functions. Additionally, it showcases the use of lambda expressions, function try blocks, specialized template functions, and friend functions. The code is structured to illustrate these concepts through practical examples, making it a valuable reference for understanding C++ programming paradigms.
 
-The file serves as an executable program, as indicated by the presence of the [`main`](#main) function, which ties together various components demonstrated in the code. The [`main`](#main) function creates instances of the [`Calculator`](#CalculatorCalculator) class, utilizes lambda expressions, and demonstrates polymorphism with a collection of `Shape` objects. This file does not define a public API or external interfaces but rather focuses on showcasing C++ language features and best practices. It is a valuable resource for learning and understanding C++ programming, offering a rich set of examples that cover both fundamental and advanced topics.
+The file culminates in a [`main`](<#main>) function, which acts as an executable entry point, demonstrating the instantiation and manipulation of objects from the defined classes, such as [`Calculator`](<#CalculatorCalculator>), [`Circle`](<#CircleCircle>), and [`Rectangle`](<#RectangleRectangle>). It also illustrates the use of lambda expressions and the handling of polymorphic objects through a vector of `Shape` pointers. The inclusion of a [`main`](<#main>) function indicates that this file is intended to be compiled and executed directly, rather than serving as a library or header file for importation. Overall, the file serves as a comprehensive showcase of C++ features, providing both foundational and advanced insights into the language's capabilities.
 # Imports and Dependencies
 
 ---
@@ -24,74 +24,74 @@ The file serves as an executable program, as indicated by the presence of the [`
 - **Type**: `class`
 - **Members**:
     - `value`: A private double member variable that stores the current value of the calculator.
-- **Description**: The `Calculator` class is a C++ data structure designed to perform basic arithmetic operations and manage a single numeric value. It includes constructors for initialization, both copy and move semantics, and a destructor. The class provides member functions to get and set the value, as well as overloaded operators for arithmetic operations, comparison, and increment/decrement. Additionally, it includes static member functions for creating specific instances of the class. The `Calculator` class encapsulates the concept of a simple calculator with a focus on object-oriented principles, allowing for operations like addition, subtraction, multiplication, and division, as well as unary negation and equality comparison.
+- **Description**: The `Calculator` class is a simple arithmetic calculator that encapsulates a single double value and provides various operations to manipulate this value. It includes constructors for initialization, copy and move semantics, and a destructor. The class supports arithmetic operations through operator overloading, allowing addition, subtraction, multiplication, and division with other `Calculator` instances. It also provides increment operators, comparison operators, and static methods to create specific instances. The class is designed to be flexible and efficient, supporting both copy and move operations to optimize resource management.
 - **Member Functions**:
-    - [`Calculator::Calculator`](test_func_calls.cpp.md#CalculatorCalculator)
-    - [`Calculator::getValue`](test_func_calls.cpp.md#CalculatorgetValue)
-    - [`Calculator::setValue`](test_func_calls.cpp.md#CalculatorsetValue)
-    - [`Calculator::add`](test_func_calls.cpp.md#Calculatoradd)
-    - [`Calculator::multiply`](test_func_calls.cpp.md#Calculatormultiply)
-    - [`Calculator::operator+`](test_func_calls.cpp.md#Calculatoroperator)
-    - [`Calculator::operator-`](test_func_calls.cpp.md#Calculatoroperator-)
-    - [`Calculator::operator++`](test_func_calls.cpp.md#Calculatoroperator+)
-    - [`Calculator::operator++`](test_func_calls.cpp.md#Calculatoroperator+)
-    - [`Calculator::operator()`](test_func_calls.cpp.md#Calculatoroperator))
-    - [`Calculator::createZero`](test_func_calls.cpp.md#CalculatorcreateZero)
-    - [`Calculator::createOne`](test_func_calls.cpp.md#CalculatorcreateOne)
-    - [`Calculator::Calculator`](#CalculatorCalculator)
-    - [`Calculator::Calculator`](#CalculatorCalculator)
-    - [`Calculator::Calculator`](#CalculatorCalculator)
-    - [`Calculator::Calculator`](#CalculatorCalculator)
-    - [`Calculator::~Calculator`](#CalculatorCalculator)
-    - [`Calculator::operator=`](#Calculatoroperator)
-    - [`Calculator::operator=`](#Calculatoroperator)
-    - [`Calculator::getValue`](#CalculatorgetValue)
-    - [`Calculator::setValue`](#CalculatorsetValue)
-    - [`Calculator::operator+`](#Calculatoroperator)
-    - [`Calculator::operator-`](#Calculatoroperator-)
-    - [`Calculator::operator*`](#Calculatoroperator*)
-    - [`Calculator::operator/`](#Calculatoroperator/)
-    - [`Calculator::operator-`](#Calculatoroperator-)
-    - [`Calculator::operator++`](#Calculatoroperator+)
-    - [`Calculator::operator++`](#Calculatoroperator+)
-    - [`Calculator::operator==`](#Calculatoroperator=)
-    - [`Calculator::createZero`](#CalculatorcreateZero)
+    - [`Calculator::Calculator`](<test_func_calls.cpp.md#CalculatorCalculator>)
+    - [`Calculator::getValue`](<test_func_calls.cpp.md#CalculatorgetValue>)
+    - [`Calculator::setValue`](<test_func_calls.cpp.md#CalculatorsetValue>)
+    - [`Calculator::add`](<test_func_calls.cpp.md#Calculatoradd>)
+    - [`Calculator::multiply`](<test_func_calls.cpp.md#Calculatormultiply>)
+    - [`Calculator::operator+`](<test_func_calls.cpp.md#Calculatoroperator>)
+    - [`Calculator::operator-`](<test_func_calls.cpp.md#Calculatoroperator->)
+    - [`Calculator::operator++`](<test_func_calls.cpp.md#Calculatoroperator+>)
+    - [`Calculator::operator++`](<test_func_calls.cpp.md#Calculatoroperator+>)
+    - [`Calculator::operator()`](<test_func_calls.cpp.md#Calculatoroperator)>)
+    - [`Calculator::createZero`](<test_func_calls.cpp.md#CalculatorcreateZero>)
+    - [`Calculator::createOne`](<test_func_calls.cpp.md#CalculatorcreateOne>)
+    - [`Calculator::Calculator`](<#CalculatorCalculator>)
+    - [`Calculator::Calculator`](<#CalculatorCalculator>)
+    - [`Calculator::Calculator`](<#CalculatorCalculator>)
+    - [`Calculator::Calculator`](<#CalculatorCalculator>)
+    - [`Calculator::~Calculator`](<#CalculatorCalculator>)
+    - [`Calculator::operator=`](<#Calculatoroperator>)
+    - [`Calculator::operator=`](<#Calculatoroperator>)
+    - [`Calculator::getValue`](<#CalculatorgetValue>)
+    - [`Calculator::setValue`](<#CalculatorsetValue>)
+    - [`Calculator::operator+`](<#Calculatoroperator>)
+    - [`Calculator::operator-`](<#Calculatoroperator->)
+    - [`Calculator::operator*`](<#Calculatoroperator*>)
+    - [`Calculator::operator/`](<#Calculatoroperator/>)
+    - [`Calculator::operator-`](<#Calculatoroperator->)
+    - [`Calculator::operator++`](<#Calculatoroperator+>)
+    - [`Calculator::operator++`](<#Calculatoroperator+>)
+    - [`Calculator::operator==`](<#Calculatoroperator=>)
+    - [`Calculator::createZero`](<#CalculatorcreateZero>)
 
 **Methods**
 
 ---
 #### Calculator::Calculator<!-- {{#callable:Calculator::Calculator}} -->
-The `Calculator` default constructor initializes a `Calculator` object with a value of 0.0.
+The default constructor `Calculator()` initializes a `Calculator` object with a value of 0.0.
 - **Inputs**: None
 - **Control Flow**:
     - The constructor is called when a `Calculator` object is instantiated without any arguments.
     - The member variable `value` is initialized to 0.0.
 - **Output**: A `Calculator` object with its `value` member set to 0.0.
-- **See also**: [`Calculator`](#Calculator)  (Data Structure)
+- **See also**: [`Calculator`](<#Calculator>)  (Data Structure)
 
 
 ---
 #### Calculator::Calculator<!-- {{#callable:Calculator::Calculator}} -->
 The `Calculator` constructor initializes a `Calculator` object with a specified initial value.
 - **Inputs**:
-    - `initial_value`: A `double` representing the initial value to set for the `Calculator` object's `value` attribute.
+    - `initial_value`: A double representing the initial value to set for the Calculator's internal state.
 - **Control Flow**:
-    - The constructor is called with a `double` argument `initial_value`.
-    - The `value` member of the `Calculator` class is initialized with the provided `initial_value`.
-- **Output**: A `Calculator` object initialized with the specified `initial_value`.
-- **See also**: [`Calculator`](#Calculator)  (Data Structure)
+    - The constructor takes a double parameter `initial_value`.
+    - It initializes the private member `value` with the provided `initial_value`.
+- **Output**: A `Calculator` object initialized with the specified initial value.
+- **See also**: [`Calculator`](<#Calculator>)  (Data Structure)
 
 
 ---
 #### Calculator::Calculator<!-- {{#callable:Calculator::Calculator}} -->
-The `Calculator` copy constructor initializes a new `Calculator` object by copying the `value` from another `Calculator` object.
+The copy constructor for the `Calculator` class initializes a new `Calculator` object by copying the `value` from another `Calculator` object.
 - **Inputs**:
     - `other`: A constant reference to another `Calculator` object from which the `value` is copied.
 - **Control Flow**:
-    - The constructor is called when a new `Calculator` object is created as a copy of an existing one.
-    - The `value` of the new `Calculator` object is initialized to the `value` of the `other` `Calculator` object.
-- **Output**: A new `Calculator` object with the same `value` as the `other` `Calculator` object.
-- **See also**: [`Calculator`](#Calculator)  (Data Structure)
+    - The constructor is called when a new `Calculator` object is created as a copy of an existing `Calculator` object.
+    - The `value` of the new object is initialized to the `value` of the `other` object.
+- **Output**: A new `Calculator` object with its `value` initialized to the `value` of the `other` object.
+- **See also**: [`Calculator`](<#Calculator>)  (Data Structure)
 
 
 ---
@@ -102,8 +102,8 @@ The move constructor for the `Calculator` class transfers ownership of the `valu
 - **Control Flow**:
     - The constructor initializes the `value` of the current object with the `value` from the `other` object.
     - The `value` of the `other` object is then set to `0.0`, effectively transferring ownership and leaving `other` in a valid state.
-- **Output**: A new `Calculator` object with the `value` moved from the `other` object.
-- **See also**: [`Calculator`](#Calculator)  (Data Structure)
+- **Output**: A new `Calculator` object with the `value` transferred from the `other` object.
+- **See also**: [`Calculator`](<#Calculator>)  (Data Structure)
 
 
 ---
@@ -112,47 +112,47 @@ The `~Calculator` function is the destructor for the `Calculator` class, respons
 - **Inputs**: None
 - **Control Flow**:
     - The destructor `~Calculator()` is called automatically when a `Calculator` object goes out of scope or is explicitly deleted.
-    - Since the destructor is empty, it does not perform any specific actions or resource deallocation.
-- **Output**: There is no output from the destructor as it is used for cleanup purposes and does not return a value.
-- **See also**: [`Calculator`](#Calculator)  (Data Structure)
+    - Since the destructor is empty, it does not perform any specific cleanup operations.
+- **Output**: There is no output from the destructor as it is used for cleanup purposes only.
+- **See also**: [`Calculator`](<#Calculator>)  (Data Structure)
 
 
 ---
 #### Calculator::operator=<!-- {{#callable:Calculator::operator=}} -->
 The `operator=` function is a copy assignment operator for the `Calculator` class that assigns the value from another `Calculator` instance to the current instance, ensuring self-assignment safety.
 - **Inputs**:
-    - `other`: A constant reference to another `Calculator` object from which the value will be copied.
+    - `other`: A constant reference to another `Calculator` object from which the value is to be copied.
 - **Control Flow**:
     - Check if the current instance is not the same as the `other` instance to prevent self-assignment.
-    - If they are not the same, assign the `value` from the `other` instance to the current instance's `value`.
+    - If not the same, copy the `value` from the `other` instance to the current instance.
     - Return the current instance by reference.
 - **Output**: A reference to the current `Calculator` instance after assignment.
-- **See also**: [`Calculator`](#Calculator)  (Data Structure)
+- **See also**: [`Calculator`](<#Calculator>)  (Data Structure)
 
 
 ---
 #### Calculator::operator=<!-- {{#callable:Calculator::operator=}} -->
-The move assignment operator for the `Calculator` class transfers the value from another `Calculator` object to the current object, leaving the source object in a valid but unspecified state.
+The move assignment operator for the Calculator class transfers the value from another Calculator object to the current object, resetting the source object's value to zero.
 - **Inputs**:
-    - `other`: An rvalue reference to a `Calculator` object from which the value will be moved.
+    - `other`: An rvalue reference to a Calculator object from which the value will be moved.
 - **Control Flow**:
-    - Check if the current object is not the same as the `other` object to avoid self-assignment.
-    - If not the same, assign the `value` from `other` to the current object.
-    - Set the `value` of `other` to `0.0` to indicate it has been moved from.
-    - Return the current object by reference.
-- **Output**: A reference to the current `Calculator` object after the move assignment.
-- **See also**: [`Calculator`](#Calculator)  (Data Structure)
+    - Check if the current object is not the same as the 'other' object to avoid self-assignment.
+    - Assign the value from the 'other' object to the current object's value.
+    - Reset the 'other' object's value to 0.0 to indicate it has been moved from.
+    - Return a reference to the current object.
+- **Output**: A reference to the current Calculator object after the move assignment.
+- **See also**: [`Calculator`](<#Calculator>)  (Data Structure)
 
 
 ---
 #### Calculator::getValue<!-- {{#callable:Calculator::getValue}} -->
-The `getValue` function returns the current value stored in a `Calculator` object.
+The `getValue` function returns the current value stored in the `Calculator` object.
 - **Inputs**: None
 - **Control Flow**:
-    - The function is a simple getter method that directly accesses the private member variable `value` of the `Calculator` class.
-    - It is marked as `const`, indicating that it does not modify the state of the `Calculator` object.
+    - The function is a simple getter that accesses the private member `value` of the `Calculator` class.
+    - It is marked as `const`, indicating that it does not modify the state of the object.
 - **Output**: The function returns a `double` representing the current value of the `Calculator` object.
-- **See also**: [`Calculator`](#Calculator)  (Data Structure)
+- **See also**: [`Calculator`](<#Calculator>)  (Data Structure)
 
 
 ---
@@ -161,73 +161,71 @@ The `setValue` function updates the `value` member variable of the `Calculator` 
 - **Inputs**:
     - `new_value`: A double representing the new value to be assigned to the `value` member variable of the `Calculator` class.
 - **Control Flow**:
-    - The function takes a single parameter `new_value` of type double.
+    - The function takes a single argument `new_value` of type double.
     - It assigns the `new_value` to the private member variable `value` of the `Calculator` class.
-- **Output**: The function does not return any value; it modifies the internal state of the `Calculator` object by updating its `value` member variable.
-- **See also**: [`Calculator`](#Calculator)  (Data Structure)
+- **Output**: This function does not return any value; it modifies the internal state of the `Calculator` object by setting its `value` member variable.
+- **See also**: [`Calculator`](<#Calculator>)  (Data Structure)
 
 
 ---
 #### Calculator::operator\+<!-- {{#callable:Calculator::operator+}} -->
-The `operator+` function in the [`Calculator`](#CalculatorCalculator) class adds the values of two [`Calculator`](#CalculatorCalculator) objects and returns a new [`Calculator`](#CalculatorCalculator) object with the result.
+The `operator+` function in the [`Calculator`](<#CalculatorCalculator>) class adds the values of two [`Calculator`](<#CalculatorCalculator>) objects and returns a new [`Calculator`](<#CalculatorCalculator>) object with the result.
 - **Inputs**:
-    - `other`: A constant reference to another [`Calculator`](#CalculatorCalculator) object whose value is to be added to the current object's value.
+    - `other`: A constant reference to another [`Calculator`](<#CalculatorCalculator>) object whose value is to be added to the current object's value.
 - **Control Flow**:
-    - The function takes a constant reference to another [`Calculator`](#CalculatorCalculator) object as an argument.
-    - It adds the `value` of the current [`Calculator`](#CalculatorCalculator) object to the `value` of the `other` [`Calculator`](#CalculatorCalculator) object.
-    - A new [`Calculator`](#CalculatorCalculator) object is created with the sum of the two values.
-    - The new [`Calculator`](#CalculatorCalculator) object is returned.
-- **Output**: A new [`Calculator`](#CalculatorCalculator) object initialized with the sum of the `value` of the current object and the `value` of the `other` object.
-- **Functions called**:
-    - [`Calculator::Calculator`](#CalculatorCalculator)
-- **See also**: [`Calculator`](#Calculator)  (Data Structure)
+    - The function takes a constant reference to another [`Calculator`](<#CalculatorCalculator>) object as input.
+    - It adds the `value` of the current [`Calculator`](<#CalculatorCalculator>) object to the `value` of the `other` [`Calculator`](<#CalculatorCalculator>) object.
+    - A new [`Calculator`](<#CalculatorCalculator>) object is created with the result of the addition.
+    - The new [`Calculator`](<#CalculatorCalculator>) object is returned.
+- **Output**: A new [`Calculator`](<#CalculatorCalculator>) object with its `value` set to the sum of the `value` of the current object and the `value` of the `other` object.
+- **Functions Called**:
+    - [`Calculator::Calculator`](<#CalculatorCalculator>)
+- **See also**: [`Calculator`](<#Calculator>)  (Data Structure)
 
 
 ---
 #### Calculator::operator\-<!-- {{#callable:Calculator::operator-}} -->
-The `operator-` function in the [`Calculator`](#CalculatorCalculator) class overloads the subtraction operator to return a new [`Calculator`](#CalculatorCalculator) object with the value resulting from subtracting the value of another [`Calculator`](#CalculatorCalculator) object from the current one.
+The `operator-` function in the [`Calculator`](<#CalculatorCalculator>) class overloads the subtraction operator to return a new [`Calculator`](<#CalculatorCalculator>) object with a value that is the difference between the current object's value and another [`Calculator`](<#CalculatorCalculator>) object's value.
 - **Inputs**:
-    - `other`: A constant reference to another [`Calculator`](#CalculatorCalculator) object whose value will be subtracted from the current object's value.
+    - `other`: A constant reference to another [`Calculator`](<#CalculatorCalculator>) object whose value will be subtracted from the current object's value.
 - **Control Flow**:
-    - The function takes a constant reference to another [`Calculator`](#CalculatorCalculator) object as an argument.
-    - It calculates the difference between the current object's `value` and the `value` of the `other` [`Calculator`](#CalculatorCalculator) object.
-    - A new [`Calculator`](#CalculatorCalculator) object is created and initialized with the result of the subtraction.
-    - The newly created [`Calculator`](#CalculatorCalculator) object is returned.
-- **Output**: A new [`Calculator`](#CalculatorCalculator) object with the value equal to the difference between the current object's value and the `other` object's value.
-- **Functions called**:
-    - [`Calculator::Calculator`](#CalculatorCalculator)
-- **See also**: [`Calculator`](#Calculator)  (Data Structure)
+    - The function takes a constant reference to another [`Calculator`](<#CalculatorCalculator>) object as an argument.
+    - It calculates the difference between the current object's `value` and the `value` of the `other` object.
+    - A new [`Calculator`](<#CalculatorCalculator>) object is created with the result of the subtraction and returned.
+- **Output**: A new [`Calculator`](<#CalculatorCalculator>) object with its `value` set to the difference between the current object's `value` and the `other` object's `value`.
+- **Functions Called**:
+    - [`Calculator::Calculator`](<#CalculatorCalculator>)
+- **See also**: [`Calculator`](<#Calculator>)  (Data Structure)
 
 
 ---
 #### Calculator::operator\*<!-- {{#callable:Calculator::operator*}} -->
-The `operator*` function multiplies the values of two [`Calculator`](#CalculatorCalculator) objects and returns a new [`Calculator`](#CalculatorCalculator) object with the result.
+The `operator*` function multiplies the values of two [`Calculator`](<#CalculatorCalculator>) objects and returns a new [`Calculator`](<#CalculatorCalculator>) object with the result.
 - **Inputs**:
-    - `other`: A constant reference to another [`Calculator`](#CalculatorCalculator) object whose value will be multiplied with the current object's value.
+    - `other`: A constant reference to another [`Calculator`](<#CalculatorCalculator>) object whose value will be multiplied with the current object's value.
 - **Control Flow**:
-    - The function takes a constant reference to another [`Calculator`](#CalculatorCalculator) object as input.
-    - It multiplies the `value` of the current [`Calculator`](#CalculatorCalculator) object with the `value` of the `other` [`Calculator`](#CalculatorCalculator) object.
-    - A new [`Calculator`](#CalculatorCalculator) object is created with the result of the multiplication.
-    - The new [`Calculator`](#CalculatorCalculator) object is returned.
-- **Output**: A new [`Calculator`](#CalculatorCalculator) object containing the product of the values of the two [`Calculator`](#CalculatorCalculator) objects.
-- **Functions called**:
-    - [`Calculator::Calculator`](#CalculatorCalculator)
-- **See also**: [`Calculator`](#Calculator)  (Data Structure)
+    - The function takes a constant reference to another [`Calculator`](<#CalculatorCalculator>) object as an argument.
+    - It multiplies the `value` of the current [`Calculator`](<#CalculatorCalculator>) object with the `value` of the `other` [`Calculator`](<#CalculatorCalculator>) object.
+    - A new [`Calculator`](<#CalculatorCalculator>) object is created with the result of the multiplication and returned.
+- **Output**: A new [`Calculator`](<#CalculatorCalculator>) object initialized with the product of the two [`Calculator`](<#CalculatorCalculator>) objects' values.
+- **Functions Called**:
+    - [`Calculator::Calculator`](<#CalculatorCalculator>)
+- **See also**: [`Calculator`](<#Calculator>)  (Data Structure)
 
 
 ---
 #### Calculator::operator/<!-- {{#callable:Calculator::operator/}} -->
-The `operator/` function overloads the division operator to divide the values of two [`Calculator`](#CalculatorCalculator) objects and return a new [`Calculator`](#CalculatorCalculator) object with the result.
+The `operator/` function overloads the division operator to divide the `value` of one [`Calculator`](<#CalculatorCalculator>) object by the `value` of another [`Calculator`](<#CalculatorCalculator>) object and returns a new [`Calculator`](<#CalculatorCalculator>) object with the result.
 - **Inputs**:
-    - `other`: A constant reference to another [`Calculator`](#CalculatorCalculator) object whose value will be used as the divisor.
+    - `other`: A constant reference to another [`Calculator`](<#CalculatorCalculator>) object whose `value` will be used as the divisor.
 - **Control Flow**:
-    - The function takes a constant reference to another [`Calculator`](#CalculatorCalculator) object as input.
-    - It divides the `value` of the current [`Calculator`](#CalculatorCalculator) object by the `value` of the `other` [`Calculator`](#CalculatorCalculator) object.
-    - A new [`Calculator`](#CalculatorCalculator) object is created with the result of the division and returned.
-- **Output**: A new [`Calculator`](#CalculatorCalculator) object containing the result of dividing the current object's value by the other object's value.
-- **Functions called**:
-    - [`Calculator::Calculator`](#CalculatorCalculator)
-- **See also**: [`Calculator`](#Calculator)  (Data Structure)
+    - The function takes a constant reference to another [`Calculator`](<#CalculatorCalculator>) object as input.
+    - It divides the `value` of the current [`Calculator`](<#CalculatorCalculator>) object by the `value` of the `other` [`Calculator`](<#CalculatorCalculator>) object.
+    - A new [`Calculator`](<#CalculatorCalculator>) object is created with the result of the division and returned.
+- **Output**: A new [`Calculator`](<#CalculatorCalculator>) object containing the result of the division of the two [`Calculator`](<#CalculatorCalculator>) objects' `value` attributes.
+- **Functions Called**:
+    - [`Calculator::Calculator`](<#CalculatorCalculator>)
+- **See also**: [`Calculator`](<#Calculator>)  (Data Structure)
 
 
 ---
@@ -236,13 +234,12 @@ The unary operator- function returns a new Calculator object with the negated va
 - **Inputs**: None
 - **Control Flow**:
     - The function is a unary operator overload for the '-' operator.
-    - It creates a new Calculator object using the parameterized constructor, passing the negated value of the current object's value.
-    - The negated value is obtained by applying the unary minus operator to the current object's value.
-    - The newly created Calculator object is returned.
-- **Output**: A new Calculator object with the negated value of the current object's value.
-- **Functions called**:
-    - [`Calculator::Calculator`](#CalculatorCalculator)
-- **See also**: [`Calculator`](#Calculator)  (Data Structure)
+    - It creates a new Calculator object using the negated value of the current object's 'value' member.
+    - The new Calculator object is returned.
+- **Output**: A new Calculator object with the negated value of the current object's 'value'.
+- **Functions Called**:
+    - [`Calculator::Calculator`](<#CalculatorCalculator>)
+- **See also**: [`Calculator`](<#Calculator>)  (Data Structure)
 
 
 ---
@@ -252,8 +249,8 @@ The `operator++` function is a pre-increment operator overload for the `Calculat
 - **Control Flow**:
     - The function increments the `value` member of the `Calculator` object by one using the `++` operator.
     - It then returns a reference to the current object (`*this`).
-- **Output**: A reference to the current `Calculator` object with the incremented value.
-- **See also**: [`Calculator`](#Calculator)  (Data Structure)
+- **Output**: A reference to the updated `Calculator` object.
+- **See also**: [`Calculator`](<#Calculator>)  (Data Structure)
 
 
 ---
@@ -265,7 +262,7 @@ The `operator++(int)` function implements the post-increment operation for the `
     - Increment the `value` member of the current object.
     - Return the temporary `Calculator` object `temp`.
 - **Output**: A `Calculator` object representing the state of the object before the increment operation.
-- **See also**: [`Calculator`](#Calculator)  (Data Structure)
+- **See also**: [`Calculator`](<#Calculator>)  (Data Structure)
 
 
 ---
@@ -275,22 +272,22 @@ The `operator==` function checks if two `Calculator` objects have the same value
     - `other`: A reference to another `Calculator` object to compare against the current object.
 - **Control Flow**:
     - The function compares the `value` member of the current `Calculator` object with the `value` member of the `other` `Calculator` object.
-    - It returns the result of this comparison as a boolean value.
+    - It returns the result of this comparison.
 - **Output**: A boolean value indicating whether the two `Calculator` objects have equal `value` members.
-- **See also**: [`Calculator`](#Calculator)  (Data Structure)
+- **See also**: [`Calculator`](<#Calculator>)  (Data Structure)
 
 
 ---
 #### Calculator::createZero<!-- {{#callable:Calculator::createZero}} -->
-The `createZero` function is a static member function of the [`Calculator`](#CalculatorCalculator) class that creates and returns a [`Calculator`](#CalculatorCalculator) object initialized with a value of 0.0.
+The `createZero` function is a static member function of the [`Calculator`](<#CalculatorCalculator>) class that creates and returns a [`Calculator`](<#CalculatorCalculator>) object initialized with a value of 0.0.
 - **Inputs**: None
 - **Control Flow**:
-    - The function is defined as a static member of the [`Calculator`](#CalculatorCalculator) class, meaning it can be called without an instance of the class.
-    - It returns a new [`Calculator`](#CalculatorCalculator) object initialized with the value 0.0 by calling the parameterized constructor of the [`Calculator`](#CalculatorCalculator) class with 0.0 as the argument.
-- **Output**: A [`Calculator`](#CalculatorCalculator) object initialized with a value of 0.0.
-- **Functions called**:
-    - [`Calculator::Calculator`](#CalculatorCalculator)
-- **See also**: [`Calculator`](#Calculator)  (Data Structure)
+    - The function is defined as a static member of the [`Calculator`](<#CalculatorCalculator>) class, meaning it can be called without an instance of the class.
+    - It directly returns a new [`Calculator`](<#CalculatorCalculator>) object initialized with the value 0.0 using the parameterized constructor of the [`Calculator`](<#CalculatorCalculator>) class.
+- **Output**: A [`Calculator`](<#CalculatorCalculator>) object with its `value` member set to 0.0.
+- **Functions Called**:
+    - [`Calculator::Calculator`](<#CalculatorCalculator>)
+- **See also**: [`Calculator`](<#Calculator>)  (Data Structure)
 
 
 
@@ -298,7 +295,7 @@ The `createZero` function is a static member function of the [`Calculator`](#Cal
 ### Container<!-- {{#data_structure:Container}} -->
 - **Type**: `class`
 - **Members**:
-    - `data`: A private member variable of type T that stores the data for the container.
+    - `data`: A private member variable of type T that stores the data within the container.
 - **Description**: The `Container` class is a template class designed to hold a single piece of data of any type specified by the template parameter `T`. It provides basic functionality to get and set the data, as well as a method to convert and set the data from another type using static casting. This class is useful for encapsulating data and providing controlled access and modification through its member functions.
 
 **Methods**
@@ -311,8 +308,8 @@ The `Container` constructor initializes a `Container` object with a given initia
 - **Control Flow**:
     - The constructor takes a constant reference to an object of type `T` as its parameter.
     - It initializes the private member `data` with the provided `initial_data`.
-- **Output**: A `Container` object is created with its `data` member initialized to the value of `initial_data`.
-- **See also**: [`Container`](test_enums.cpp.md#Container)  (Data Structure)
+- **Output**: The function does not return any value as it is a constructor.
+- **See also**: [`Container`](<test_enums.cpp.md#Container>)  (Data Structure)
 
 
 ---
@@ -322,8 +319,8 @@ The `getData` function returns the current value of the `data` member variable f
 - **Control Flow**:
     - The function is a simple getter that directly returns the `data` member variable of the `Container` class.
     - It is marked as `const`, indicating that it does not modify the state of the `Container` object.
-- **Output**: The function returns a value of type `T`, which is the template parameter of the `Container` class, representing the type of the `data` member variable.
-- **See also**: [`Container`](test_enums.cpp.md#Container)  (Data Structure)
+- **Output**: The function returns a value of type `T`, which is the template parameter of the `Container` class, representing the stored data.
+- **See also**: [`Container`](<test_enums.cpp.md#Container>)  (Data Structure)
 
 
 ---
@@ -335,31 +332,31 @@ The `setData` function updates the `data` member of a `Container` object with a 
     - The function takes a single argument `new_data` of type `T`.
     - It assigns the value of `new_data` to the `data` member of the `Container` class.
 - **Output**: The function does not return any value; it modifies the `data` member in place.
-- **See also**: [`Container`](test_enums.cpp.md#Container)  (Data Structure)
+- **See also**: [`Container`](<test_enums.cpp.md#Container>)  (Data Structure)
 
 
 ---
 #### Container::convertAndSet<!-- {{#callable:Container::convertAndSet}} -->
-The `convertAndSet` function template converts a given value to the type of the `Container` class's data member and assigns it to that member.
+The `convertAndSet` function converts a given value to the template type `T` and assigns it to the `data` member of the `Container` class.
 - **Inputs**:
-    - `value`: A constant reference to a value of type `U` that is to be converted and assigned to the `data` member of the `Container` class.
+    - `value`: A constant reference to a value of type `U` that is to be converted and assigned to the `data` member.
 - **Control Flow**:
     - The function takes a single input parameter `value` of type `U`.
-    - It uses `static_cast` to convert `value` to the type `T`, which is the template parameter of the `Container` class.
+    - It uses `static_cast` to convert `value` to the type `T`.
     - The converted value is then assigned to the `data` member of the `Container` class.
 - **Output**: The function does not return any value; it modifies the `data` member of the `Container` class.
-- **See also**: [`Container`](test_enums.cpp.md#Container)  (Data Structure)
+- **See also**: [`Container`](<test_enums.cpp.md#Container>)  (Data Structure)
 
 
 
 ---
 ### Shape<!-- {{#data_structure:Shape}} -->
 - **Type**: `class`
-- **Description**: The `Shape` class is an abstract base class that defines a common interface for different geometric shapes. It includes a pure virtual function `calculateArea()` that must be implemented by derived classes to calculate the area of the specific shape. Additionally, it provides a virtual function `draw()` with a default implementation that outputs a generic message, which can be overridden by derived classes to provide specific drawing behavior. The class is designed to be inherited by other classes representing specific shapes, such as `Circle` and `Rectangle`, which implement the `calculateArea()` method and override the `draw()` method to provide shape-specific functionality.
+- **Description**: The `Shape` class is an abstract base class that defines a common interface for different geometric shapes. It includes a pure virtual function `calculateArea()` that must be implemented by derived classes to calculate the area of the specific shape. Additionally, it provides a virtual function `draw()` with a default implementation that outputs a generic message, which can be overridden by derived classes to provide specific drawing behavior. The class is designed to be inherited by other classes representing specific shapes, such as `Circle` and `Rectangle`, which implement the `calculateArea()` and `draw()` methods.
 - **Member Functions**:
-    - [`Shape::~Shape`](test_func_declarations.cpp.md#ShapeShape)
-    - [`Shape::~Shape`](#ShapeShape)
-    - [`Shape::draw`](#Shapedraw)
+    - [`Shape::~Shape`](<test_func_declarations.cpp.md#ShapeShape>)
+    - [`Shape::~Shape`](<#ShapeShape>)
+    - [`Shape::draw`](<#Shapedraw>)
 
 **Methods**
 
@@ -368,11 +365,10 @@ The `convertAndSet` function template converts a given value to the type of the 
 The `~Shape` function is a virtual destructor for the `Shape` class, ensuring proper cleanup of derived class objects.
 - **Inputs**: None
 - **Control Flow**:
-    - The `~Shape` function is declared as a virtual destructor, which means it is intended to be overridden by derived classes if necessary.
-    - The function is defined with `= default`, indicating that the compiler should generate the default implementation for the destructor.
-    - Being virtual ensures that when a derived class object is deleted through a base class pointer, the derived class's destructor is called, allowing for proper resource cleanup.
+    - The `~Shape` function is declared as a virtual destructor, allowing derived class destructors to be called correctly when an object is deleted through a base class pointer.
+    - The destructor is defined with `= default`, indicating that the compiler should generate the default destructor implementation.
 - **Output**: The function does not return any value as it is a destructor.
-- **See also**: [`Shape`](#Shape)  (Data Structure)
+- **See also**: [`Shape`](<#Shape>)  (Data Structure)
 
 
 ---
@@ -381,9 +377,9 @@ The `draw` function is a virtual method in the `Shape` class that provides a def
 - **Inputs**: None
 - **Control Flow**:
     - The function is declared as a virtual method, allowing derived classes to override it.
-    - It contains a single statement that outputs the message 'Drawing a shape' to the standard output stream.
+    - It contains a single statement that outputs the string 'Drawing a shape' to the standard output stream.
 - **Output**: The function does not return any value; it outputs a message to the console.
-- **See also**: [`Shape`](#Shape)  (Data Structure)
+- **See also**: [`Shape`](<#Shape>)  (Data Structure)
 
 
 
@@ -391,18 +387,10 @@ The `draw` function is a virtual method in the `Shape` class that provides a def
 ### Circle<!-- {{#data_structure:Circle}} -->
 - **Type**: `class`
 - **Members**:
-    - `radius`: A private member variable that stores the radius of the circle.
-- **Description**: The `Circle` class is a derived class from the `Shape` base class, representing a geometric circle. It encapsulates the concept of a circle by storing its radius as a private member and provides functionality to calculate the area and draw the circle. The class overrides the `calculateArea` and `draw` methods from the `Shape` class to provide specific implementations for a circle. The constructor initializes the circle with a given radius, and the class includes methods to calculate the area and perimeter, as well as to print the circle's details.
-- **Member Functions**:
-    - [`Circle::Circle`](test_classes.cpp.md#CircleCircle)
-    - [`Circle::getArea`](test_classes.cpp.md#CirclegetArea)
-    - [`Circle::getPerimeter`](test_classes.cpp.md#CirclegetPerimeter)
-    - [`Circle::print`](test_classes.cpp.md#Circleprint)
-    - [`Circle::Circle`](#CircleCircle)
-    - [`Circle::calculateArea`](#CirclecalculateArea)
-    - [`Circle::draw`](#Circledraw)
+    - `radius`: A private double member variable that stores the radius of the circle.
+- **Description**: The `Circle` class is a derived class from the `Shape` base class, representing a geometric circle. It encapsulates a single private member, `radius`, which defines the size of the circle. The class provides a constructor to initialize the radius and overrides two virtual functions from the `Shape` class: `calculateArea`, which computes the area of the circle using the formula π * radius^2, and `draw`, which outputs a message indicating the circle's radius. This class demonstrates inheritance and polymorphism by extending the `Shape` interface and providing specific implementations for circle-related operations.
 - **Inherits From**:
-    - [`Shape`](#Shape)
+    - [`Shape`](<#Shape>)
 
 **Methods**
 
@@ -414,7 +402,7 @@ The `Circle` constructor initializes a `Circle` object with a specified radius.
 - **Control Flow**:
     - The constructor takes a single argument `r` and assigns it to the private member variable `radius`.
 - **Output**: A `Circle` object with its `radius` member variable set to the provided value `r`.
-- **See also**: [`Circle`](#Circle)  (Data Structure)
+- **See also**: [`Circle`](<test_classes.cpp.md#Circle>)  (Data Structure)
 
 
 ---
@@ -425,19 +413,18 @@ The `calculateArea` function computes the area of a circle using its radius.
     - The function calculates the area by multiplying the constant π (approximated as 3.14159) with the square of the circle's radius.
     - The radius is accessed from the private member variable of the `Circle` class.
 - **Output**: The function returns a `double` representing the area of the circle.
-- **See also**: [`Circle`](#Circle)  (Data Structure)
+- **See also**: [`Circle`](<test_classes.cpp.md#Circle>)  (Data Structure)
 
 
 ---
 #### Circle::draw<!-- {{#callable:Circle::draw}} -->
-The `draw` function in the `Circle` class outputs a message to the console indicating that a circle with a specific radius is being drawn.
+The `draw` function outputs a message to the console indicating that a circle is being drawn with its radius.
 - **Inputs**: None
 - **Control Flow**:
-    - The function overrides the `draw` method from the `Shape` base class.
-    - It uses `std::cout` to print a message to the console.
-    - The message includes the radius of the circle, which is a member variable of the `Circle` class.
+    - The function uses `std::cout` to print a message to the console.
+    - The message includes the text 'Drawing a circle with radius' followed by the value of the `radius` member variable.
 - **Output**: The function does not return any value; it outputs a message to the console.
-- **See also**: [`Circle`](#Circle)  (Data Structure)
+- **See also**: [`Circle`](<test_classes.cpp.md#Circle>)  (Data Structure)
 
 
 
@@ -447,13 +434,13 @@ The `draw` function in the `Circle` class outputs a message to the console indic
 - **Members**:
     - `width`: Represents the width of the rectangle.
     - `height`: Represents the height of the rectangle.
-- **Description**: The `Rectangle` class is a derived class from the `Shape` base class, representing a geometric rectangle with specific width and height attributes. It provides functionality to calculate the area of the rectangle and to draw it, overriding the virtual methods from the `Shape` class. The class encapsulates the dimensions of the rectangle as private members and provides a constructor to initialize these dimensions.
+- **Description**: The `Rectangle` class is a derived class from the `Shape` base class, representing a geometric rectangle with specific width and height dimensions. It encapsulates the properties of a rectangle and provides functionality to calculate its area and draw it. The class overrides the `calculateArea` and `draw` methods from the `Shape` class to provide specific implementations for rectangles.
 - **Member Functions**:
-    - [`Rectangle::Rectangle`](#RectangleRectangle)
-    - [`Rectangle::calculateArea`](#RectanglecalculateArea)
-    - [`Rectangle::draw`](#Rectangledraw)
+    - [`Rectangle::Rectangle`](<#RectangleRectangle>)
+    - [`Rectangle::calculateArea`](<#RectanglecalculateArea>)
+    - [`Rectangle::draw`](<#Rectangledraw>)
 - **Inherits From**:
-    - [`Shape`](#Shape)
+    - [`Shape`](<#Shape>)
 
 **Methods**
 
@@ -464,10 +451,10 @@ The `Rectangle` constructor initializes a `Rectangle` object with specified widt
     - `w`: The width of the rectangle, a double value.
     - `h`: The height of the rectangle, a double value.
 - **Control Flow**:
-    - The constructor takes two double parameters, `w` and `h`.
-    - It initializes the private member variables `width` and `height` with the values of `w` and `h`, respectively.
-- **Output**: There is no return value as this is a constructor for initializing a `Rectangle` object.
-- **See also**: [`Rectangle`](#Rectangle)  (Data Structure)
+    - The constructor takes two parameters, `w` and `h`, representing the width and height of the rectangle, respectively.
+    - It initializes the private member variables `width` and `height` with the provided values `w` and `h`.
+- **Output**: The constructor does not return a value; it initializes a `Rectangle` object.
+- **See also**: [`Rectangle`](<#Rectangle>)  (Data Structure)
 
 
 ---
@@ -478,7 +465,7 @@ The `calculateArea` function computes the area of a rectangle by multiplying its
     - The function accesses the private member variables `width` and `height` of the `Rectangle` class.
     - It multiplies `width` by `height` to calculate the area of the rectangle.
 - **Output**: The function returns a `double` representing the area of the rectangle.
-- **See also**: [`Rectangle`](#Rectangle)  (Data Structure)
+- **See also**: [`Rectangle`](<#Rectangle>)  (Data Structure)
 
 
 ---
@@ -490,7 +477,7 @@ The `draw` function in the `Rectangle` class outputs a message to the console in
     - It uses `std::cout` to print a message to the console.
     - The message includes the dimensions of the rectangle, specifically its width and height.
 - **Output**: The function does not return any value; it outputs a message to the console.
-- **See also**: [`Rectangle`](#Rectangle)  (Data Structure)
+- **See also**: [`Rectangle`](<#Rectangle>)  (Data Structure)
 
 
 
@@ -500,12 +487,12 @@ The `draw` function in the `Rectangle` class outputs a message to the console in
 - **Members**:
     - `x`: Represents the x-coordinate of the point.
     - `y`: Represents the y-coordinate of the point.
-- **Description**: The `Point` class is a simple data structure representing a point in a 2D Cartesian coordinate system with two private member variables, `x` and `y`, which store the x and y coordinates of the point, respectively. It provides a constructor for initializing these coordinates and includes friend functions for adding two `Point` objects and for outputting a `Point` object to an output stream.
+- **Description**: The `Point` class is a simple data structure representing a point in a 2D space with x and y coordinates. It provides a constructor for initializing these coordinates and includes friend functions for adding two points and outputting a point to a stream. This class encapsulates the concept of a geometric point and allows for basic operations such as addition and formatted output.
 - **Member Functions**:
-    - [`Point::Point`](test_variables.cpp.md#PointPoint)
-    - [`Point::Point`](#PointPoint)
-    - [`Point::operator+`](#Pointoperator)
-    - [`Point::operator<<`](#Pointoperator<<)
+    - [`Point::Point`](<test_variables.cpp.md#PointPoint>)
+    - [`Point::Point`](<#PointPoint>)
+    - [`Point::operator+`](<#Pointoperator>)
+    - [`Point::operator<<`](<#Pointoperator<<>)
 
 **Methods**
 
@@ -516,28 +503,28 @@ The `Point` constructor initializes a `Point` object with specified x and y coor
     - `x_val`: The x-coordinate value for the point.
     - `y_val`: The y-coordinate value for the point.
 - **Control Flow**:
-    - The constructor is called with two arguments, `x_val` and `y_val`.
-    - The member variables `x` and `y` of the `Point` class are initialized with the values of `x_val` and `y_val`, respectively.
+    - The constructor takes two double arguments, `x_val` and `y_val`.
+    - It initializes the private member variables `x` and `y` with the values of `x_val` and `y_val`, respectively.
 - **Output**: A `Point` object with its x and y coordinates set to the provided values.
-- **See also**: [`Point`](#Point)  (Data Structure)
+- **See also**: [`Point`](<#Point>)  (Data Structure)
 
 
 ---
 #### Point::operator\+<!-- {{#callable:Point::operator+}} -->
-The `operator+` function for the [`Point`](#PointPoint) class adds the coordinates of two [`Point`](#PointPoint) objects and returns a new [`Point`](#PointPoint) object with the summed coordinates.
+The `operator+` function for the [`Point`](<#PointPoint>) class adds the coordinates of two [`Point`](<#PointPoint>) objects and returns a new [`Point`](<#PointPoint>) object with the summed coordinates.
 - **Inputs**:
-    - `lhs`: A constant reference to the first [`Point`](#PointPoint) object to be added.
-    - `rhs`: A constant reference to the second [`Point`](#PointPoint) object to be added.
+    - `lhs`: A constant reference to the first [`Point`](<#PointPoint>) object to be added.
+    - `rhs`: A constant reference to the second [`Point`](<#PointPoint>) object to be added.
 - **Control Flow**:
-    - The function takes two [`Point`](#PointPoint) objects as input parameters, `lhs` and `rhs`.
+    - The function takes two [`Point`](<#PointPoint>) objects as input parameters, `lhs` and `rhs`.
     - It calculates the sum of the `x` coordinates of `lhs` and `rhs`.
     - It calculates the sum of the `y` coordinates of `lhs` and `rhs`.
-    - A new [`Point`](#PointPoint) object is created using the summed `x` and `y` coordinates.
-    - The new [`Point`](#PointPoint) object is returned.
-- **Output**: A new [`Point`](#PointPoint) object with `x` and `y` coordinates equal to the sum of the `x` and `y` coordinates of the input [`Point`](#PointPoint) objects.
-- **Functions called**:
-    - [`Point::Point`](#PointPoint)
-- **See also**: [`Point`](#Point)  (Data Structure)
+    - A new [`Point`](<#PointPoint>) object is created using the summed `x` and `y` coordinates.
+    - The new [`Point`](<#PointPoint>) object is returned.
+- **Output**: A new [`Point`](<#PointPoint>) object with `x` and `y` coordinates equal to the sum of the corresponding coordinates of the input [`Point`](<#PointPoint>) objects.
+- **Functions Called**:
+    - [`Point::Point`](<#PointPoint>)
+- **See also**: [`Point`](<#Point>)  (Data Structure)
 
 
 ---
@@ -547,11 +534,11 @@ The `operator<<` function overloads the stream insertion operator to output a `P
     - `os`: A reference to an `std::ostream` object where the `Point` object will be output.
     - `point`: A constant reference to a `Point` object whose coordinates will be output.
 - **Control Flow**:
-    - The function takes an output stream `os` and a `Point` object `point` as parameters.
-    - It inserts the `Point` object's `x` and `y` coordinates into the stream `os` in the format '(x, y)'.
-    - The function returns the modified output stream `os`.
+    - The function takes an `std::ostream` reference and a constant `Point` reference as parameters.
+    - It inserts the `Point` object's `x` and `y` coordinates into the stream in the format '(x, y)'.
+    - The function returns the modified `std::ostream` reference.
 - **Output**: A reference to the modified `std::ostream` object, allowing for chaining of stream operations.
-- **See also**: [`Point`](#Point)  (Data Structure)
+- **See also**: [`Point`](<#Point>)  (Data Structure)
 
 
 
@@ -560,12 +547,12 @@ The `operator<<` function overloads the stream insertion operator to output a `P
 - **Type**: `class`
 - **Description**: `MyClass` is a simple C++ class that includes a constructor, a destructor, and a few member functions, including an `add` function that takes two integers and returns their sum, and an overloaded `operator+` function. It also contains an inner class `Inner` with a `display` function. The class does not have any data members, focusing instead on demonstrating function declarations and definitions.
 - **Member Functions**:
-    - [`MyClass::MyClass`](#MyClassMyClass)
-    - [`MyClass::test`](#MyClasstest)
-    - [`MyClass::~MyClass`](#MyClassMyClass)
-    - [`MyClass::operator+`](#MyClassoperator)
-    - [`MyClass::add`](#MyClassadd)
-    - [`MyClass::~MyClass`](#MyClassMyClass)
+    - [`MyClass::MyClass`](<#MyClassMyClass>)
+    - [`MyClass::test`](<#MyClasstest>)
+    - [`MyClass::~MyClass`](<#MyClassMyClass>)
+    - [`MyClass::operator+`](<#MyClassoperator>)
+    - [`MyClass::add`](<#MyClassadd>)
+    - [`MyClass::~MyClass`](<#MyClassMyClass>)
 
 **Methods**
 
@@ -574,10 +561,10 @@ The `operator<<` function overloads the stream insertion operator to output a `P
 The `MyClass` constructor initializes an instance of the `MyClass` class without any specific setup or parameters.
 - **Inputs**: None
 - **Control Flow**:
-    - The constructor `MyClass()` is defined as an empty function, meaning it does not perform any operations or initialize any member variables.
+    - The constructor is defined as an empty function body, indicating no initialization logic is performed.
     - The constructor is public, allowing instances of `MyClass` to be created from outside the class.
-- **Output**: The constructor does not return any value, as is typical for constructors in C++.
-- **See also**: [`MyClass`](#MyClass)  (Data Structure)
+- **Output**: An instance of `MyClass` is created with default initialization.
+- **See also**: [`MyClass`](<#MyClass>)  (Data Structure)
 
 
 ---
@@ -585,10 +572,10 @@ The `MyClass` constructor initializes an instance of the `MyClass` class without
 The `test` function is a member function of the `MyClass` class that is defined but does not perform any operations.
 - **Inputs**: None
 - **Control Flow**:
-    - The function is defined within the `MyClass` class.
-    - It is an empty function, meaning it has no implementation or logic inside its body.
-- **Output**: The function returns an integer, but since it is empty, it does not return any meaningful value.
-- **See also**: [`MyClass`](#MyClass)  (Data Structure)
+    - The function is defined as a member of the `MyClass` class.
+    - It has an empty body, meaning it does not execute any code or perform any operations.
+- **Output**: The function does not return any value or perform any operations.
+- **See also**: [`MyClass`](<#MyClass>)  (Data Structure)
 
 
 ---
@@ -596,10 +583,10 @@ The `test` function is a member function of the `MyClass` class that is defined 
 The destructor `~MyClass` is a default destructor for the `MyClass` class that performs no specific actions upon object destruction.
 - **Inputs**: None
 - **Control Flow**:
-    - The destructor `~MyClass` is defined as an empty function, indicating it does not perform any specific cleanup or resource deallocation.
-    - When an object of `MyClass` is destroyed, this destructor is called automatically, but since it is empty, no operations are executed.
-- **Output**: There is no output from this destructor as it is empty and performs no actions.
-- **See also**: [`MyClass`](#MyClass)  (Data Structure)
+    - The destructor `~MyClass` is defined as an empty function, indicating that it does not perform any specific cleanup or resource deallocation.
+    - When an object of `MyClass` is destroyed, this destructor is called automatically, but since it is empty, it does not alter the default destruction behavior.
+- **Output**: The destructor does not produce any output or perform any operations.
+- **See also**: [`MyClass`](<#MyClass>)  (Data Structure)
 
 
 ---
@@ -610,9 +597,9 @@ The `operator+` function in `MyClass` is an overloaded operator that takes an in
 - **Control Flow**:
     - The function is defined as an overloaded operator within the `MyClass` class.
     - It takes a single integer parameter `x`.
-    - The function body is empty, meaning it does not perform any operations or modify any state.
-- **Output**: The function does not return any value or output.
-- **See also**: [`MyClass`](#MyClass)  (Data Structure)
+    - The function body is empty, meaning it does not perform any operations or return any value.
+- **Output**: The function does not produce any output or return a value.
+- **See also**: [`MyClass`](<#MyClass>)  (Data Structure)
 
 
 ---
@@ -626,38 +613,38 @@ The `add` function in `MyClass` returns the sum of two integer arguments.
     - It calculates the sum of `a` and `b`.
     - The result of the addition is returned.
 - **Output**: The function returns an integer which is the sum of the two input integers.
-- **See also**: [`MyClass`](#MyClass)  (Data Structure)
+- **See also**: [`MyClass`](<#MyClass>)  (Data Structure)
 
 
 ---
 #### MyClass::\~MyClass<!-- {{#callable:MyClass::~MyClass}} -->
-The destructor `~MyClass` is a default destructor for the `MyClass` class that performs no specific actions upon object destruction.
+The destructor for the MyClass class is defined but does not perform any specific actions.
 - **Inputs**: None
 - **Control Flow**:
-    - The destructor `~MyClass` is called automatically when an object of `MyClass` is destroyed.
-    - Since the destructor is empty, it does not perform any specific cleanup or resource deallocation.
-- **Output**: There is no output from this destructor as it performs no operations.
-- **See also**: [`MyClass`](#MyClass)  (Data Structure)
+    - The destructor is called when an object of MyClass is destroyed.
+    - No specific actions or resource deallocations are performed within the destructor body.
+- **Output**: The destructor does not return any value, as is typical for destructors in C++.
+- **See also**: [`MyClass`](<#MyClass>)  (Data Structure)
 
 
 
 ---
 ### Inner<!-- {{#data_structure:MyClass::Inner}} -->
 - **Type**: `class`
-- **Description**: The `Inner` class is a nested class within `MyClass` that contains a single member function `display()`, which is declared within the class but defined outside. The `display()` function, when called, outputs the string "Hello" to the standard output. The `Inner` class does not have any data members or additional functionality beyond this display capability.
+- **Description**: The `Inner` class is a nested class within `MyClass` that contains a single member function declaration `display()`. This class does not have any data members or additional functionality defined within the provided code, and its primary purpose appears to be to encapsulate the `display()` function, which is defined outside the class to print a message to the console.
 - **Member Functions**:
-    - [`MyClass::Inner::display`](#Innerdisplay)
+    - [`MyClass::Inner::display`](<#Innerdisplay>)
 
 **Methods**
 
 ---
 #### Inner::display<!-- {{#callable:MyClass::Inner::display}} -->
-The `display` function in the `Inner` class of `MyClass` outputs the string "Hello" to the standard output.
+The `display` method of the `Inner` class in `MyClass` outputs the string "Hello" to the standard output.
 - **Inputs**: None
 - **Control Flow**:
-    - The function uses `std::cout` to print the string "Hello" followed by a newline character to the standard output.
-- **Output**: The function does not return any value.
-- **See also**: [`MyClass::Inner`](#MyClass::Inner)  (Data Structure)
+    - The method uses `std::cout` to print the string "Hello" followed by a newline character to the standard output.
+- **Output**: There is no return value as the function's return type is `void`.
+- **See also**: [`MyClass::Inner`](<#MyClass::Inner>)  (Data Structure)
 
 
 
@@ -672,7 +659,7 @@ The `printMessage` function outputs a given string message to the standard outpu
     - The function takes a single input parameter, `message`, which is a constant reference to a `std::string`.
     - It uses the `std::cout` stream to print the `message` to the standard output.
     - The function appends a newline character to the output using `std::endl`.
-- **Output**: This function does not return any value; it performs an output operation.
+- **Output**: The function does not return any value; it performs an output operation.
 
 
 ---
@@ -696,7 +683,7 @@ The `divide` function performs division of two double precision floating-point n
 - **Control Flow**:
     - The function takes two double arguments, `a` and `b`.
     - It returns the result of dividing `a` by `b`.
-- **Output**: A double precision floating-point number representing the result of the division of `a` by `b`.
+- **Output**: A double precision floating-point number representing the result of the division.
 
 
 ---
@@ -704,7 +691,7 @@ The `divide` function performs division of two double precision floating-point n
 The `maximum` function template returns the greater of two values of the same type.
 - **Inputs**:
     - `a`: The first value to compare, of a generic type T.
-    - `b`: The second value to compare, of the same generic type T.
+    - `b`: The second value to compare, of a generic type T.
 - **Control Flow**:
     - The function uses the ternary conditional operator to compare the two input values.
     - If the first value `a` is greater than the second value `b`, the function returns `a`.
@@ -719,14 +706,14 @@ The `fibonacci` function calculates the nth Fibonacci number using a recursive a
     - `n`: An integer representing the position in the Fibonacci sequence for which the Fibonacci number is to be calculated.
 - **Control Flow**:
     - The function checks if the input `n` is less than or equal to 1.
-    - If `n` is less than or equal to 1, the function returns `n` directly as the Fibonacci number for positions 0 and 1 are 0 and 1 respectively.
-    - If `n` is greater than 1, the function recursively calls itself twice: once with `n-1` and once with `n-2`, and returns the sum of these two calls.
-- **Output**: An integer representing the nth Fibonacci number.
+    - If `n` is less than or equal to 1, the function returns `n` as the Fibonacci number.
+    - If `n` is greater than 1, the function recursively calls itself with `n-1` and `n-2` and returns the sum of these two calls.
+- **Output**: The function returns an integer which is the nth Fibonacci number.
 
 
 ---
 ### square<!-- {{#callable:square}} -->
-The `square` function calculates the square of an integer by multiplying it by itself.
+The `square` function calculates the square of an integer by multiplying the integer by itself.
 - **Inputs**:
     - `x`: An integer value that is to be squared.
 - **Control Flow**:
@@ -754,7 +741,7 @@ The `processVector` function is designed to process a vector of integers that is
 - **Inputs**:
     - `vec`: An rvalue reference to a `std::vector<int>`, which allows the function to take ownership of the vector's resources.
 - **Control Flow**:
-    - The function takes an rvalue reference to a vector, indicating that it is intended to modify or take ownership of the vector's resources.
+    - The function takes an rvalue reference to a vector, indicating that it is intended to take ownership of the vector's resources.
     - The function body is currently empty, suggesting that the specific processing logic is yet to be implemented.
 - **Output**: The function does not return any value.
 
@@ -765,11 +752,8 @@ The function `calculateArea` computes the area of a circle given its radius.
 - **Inputs**:
     - `radius`: A double representing the radius of the circle for which the area is to be calculated.
 - **Control Flow**:
-    - The function takes a single input parameter `radius`.
-    - It calculates the area using the formula for the area of a circle: π * radius^2.
-    - The constant value 3.14159 is used as an approximation for π.
-    - The computed area is returned as the output.
-- **Output**: A double representing the area of the circle.
+    - The function multiplies the constant 3.14159 (an approximation of π) by the square of the input radius.
+- **Output**: A double representing the calculated area of the circle.
 
 
 ---
@@ -779,13 +763,13 @@ The `complexCalculation` function computes a result by multiplying two double va
     - `x`: A double representing the first operand and the radius for the area calculation.
     - `y`: A double representing the second operand for multiplication.
 - **Control Flow**:
-    - The function multiplies the input `x` and `y`.
-    - It calls the [`calculateArea`](#MathUtilscalculateArea) function with `x` as the argument to compute the area of a circle.
+    - The function multiplies the input `x` by `y`.
+    - It then calls the [`calculateArea`](<#MathUtilscalculateArea>) function with `x` as the argument to compute the area of a circle with radius `x`.
     - The result of the multiplication is added to the result of the area calculation.
     - The final result is returned.
-- **Output**: A double representing the result of the multiplication of `x` and `y` plus the area of a circle with radius `x`.
-- **Functions called**:
-    - [`MathUtils::calculateArea`](#MathUtilscalculateArea)
+- **Output**: A double representing the sum of the product of `x` and `y` and the area of a circle with radius `x`.
+- **Functions Called**:
+    - [`MathUtils::calculateArea`](<#MathUtilscalculateArea>)
 
 
 ---
@@ -793,34 +777,34 @@ The `complexCalculation` function computes a result by multiplying two double va
 The `demonstrateLambdas` function showcases the use of lambda expressions in C++ with different capture modes.
 - **Inputs**: None
 - **Control Flow**:
-    - Defines a simple lambda expression `simpleLambda` that prints 'Simple lambda' to the console.
-    - Defines a lambda expression `lambdaWithCapture` that captures variables by reference and returns the input integer multiplied by 2.
-    - Defines a lambda expression `lambdaWithMutableCapture` that captures variables by value and returns the input integer incremented by 10.
+    - Defines a simple lambda `simpleLambda` that prints 'Simple lambda' to the console.
+    - Defines a lambda `lambdaWithCapture` that captures variables by reference and returns the double of its integer parameter `x`.
+    - Defines a lambda `lambdaWithMutableCapture` that captures variables by value and returns the sum of its integer parameter `y` and 10.
 - **Output**: The function does not return any value.
 
 
 ---
 ### safeDivide<!-- {{#callable:safeDivide}} -->
-The `safeDivide` function attempts to divide two double values and returns a [`Calculator`](#CalculatorCalculator) object, handling division by zero by catching exceptions and returning a [`Calculator`](#CalculatorCalculator) initialized to zero.
+The `safeDivide` function attempts to divide two double values and returns a [`Calculator`](<#CalculatorCalculator>) object, handling division by zero by catching exceptions and returning a [`Calculator`](<#CalculatorCalculator>) with a value of 0.0.
 - **Inputs**:
-    - `a`: The numerator of the division operation, a double value.
-    - `b`: The denominator of the division operation, a double value.
+    - `a`: The numerator of the division, a double value.
+    - `b`: The denominator of the division, a double value.
 - **Control Flow**:
     - The function begins with a try block to handle potential exceptions.
     - It checks if the denominator `b` is zero, and if so, throws a `std::runtime_error` with the message "Division by zero".
-    - If no exception is thrown, it returns a [`Calculator`](#CalculatorCalculator) object initialized with the result of `a / b`.
-    - If an exception is caught, it prints an error message to `std::cerr` and returns a [`Calculator`](#CalculatorCalculator) object initialized to zero.
-- **Output**: A [`Calculator`](#CalculatorCalculator) object initialized with the result of the division if successful, or zero if an exception occurs.
-- **Functions called**:
-    - [`Calculator::Calculator`](#CalculatorCalculator)
+    - If no exception is thrown, it returns a [`Calculator`](<#CalculatorCalculator>) object initialized with the result of `a / b`.
+    - If an exception is caught, it prints an error message to `std::cerr` and returns a [`Calculator`](<#CalculatorCalculator>) object initialized with 0.0.
+- **Output**: A [`Calculator`](<#CalculatorCalculator>) object initialized with the result of the division or 0.0 if division by zero occurs.
+- **Functions Called**:
+    - [`Calculator::Calculator`](<#CalculatorCalculator>)
 
 
 ---
 ### maximum<bool><!-- {{#callable:maximum<bool>}} -->
 The specialized template function `maximum<bool>` returns the logical OR of two boolean values.
 - **Inputs**:
-    - `a`: The first boolean value to be compared.
-    - `b`: The second boolean value to be compared.
+    - `a`: The first boolean value to compare.
+    - `b`: The second boolean value to compare.
 - **Control Flow**:
     - The function takes two boolean inputs, `a` and `b`.
     - It evaluates the logical OR operation between `a` and `b`.
@@ -830,15 +814,15 @@ The specialized template function `maximum<bool>` returns the logical OR of two 
 
 ---
 ### main<!-- {{#callable:main}} -->
-The `main` function demonstrates the use of various C++ features including class instantiation, operator overloading, lambda expressions, and polymorphism with a collection of shapes.
+The `main` function demonstrates the use of various classes and features such as operator overloading, lambda expressions, and polymorphism with shapes.
 - **Inputs**: None
 - **Control Flow**:
     - Instantiate two `Calculator` objects `calc1` and `calc2` with initial values 10.0 and 5.0, respectively.
     - Add `calc1` and `calc2` using the overloaded `+` operator to create a new `Calculator` object `result`.
-    - Define a lambda function that squares an integer and apply it to the integer 5, storing the result in `squared`.
-    - Instantiate a `Circle` object with radius 5.0 and a `Rectangle` object with width 4.0 and height 6.0.
-    - Create a vector of `std::unique_ptr<Shape>` and add a `Circle` and a `Rectangle` to it using `std::make_unique`.
-    - Iterate over the vector of shapes, calling the `draw` method and printing the area of each shape using the `calculateArea` method.
+    - Define a lambda function that squares an integer and apply it to the number 5, storing the result in `squared`.
+    - Create a `Circle` object with radius 5.0 and a `Rectangle` object with width 4.0 and height 6.0.
+    - Create a vector of `unique_ptr` to `Shape` objects and add a `Circle` with radius 3.0 and a `Rectangle` with width 2.0 and height 8.0.
+    - Iterate over the vector of shapes, calling the `draw` method and printing the area of each shape using `calculateArea`.
 - **Output**: The function returns an integer value `0`, indicating successful execution.
 
 

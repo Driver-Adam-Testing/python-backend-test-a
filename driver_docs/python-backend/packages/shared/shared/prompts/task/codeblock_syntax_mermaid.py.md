@@ -6,14 +6,14 @@
 The `codeblock_syntax_mermaid.py` file contains a prompt for reviewing and correcting mermaid code blocks to ensure proper rendering by removing forbidden characters, correcting syntax, and avoiding cycles.
 
 # Purpose
-This code is a configuration script designed to guide a system, likely a chatbot or an automated tool, in reviewing and correcting Mermaid.js code blocks within a document. It provides narrow functionality focused on ensuring that Mermaid diagrams render correctly by enforcing specific syntax rules and removing problematic characters such as parentheses and double hyphens. The script includes detailed instructions on how to handle lists within Mermaid blocks and emphasizes the importance of avoiding cycles in the diagram structure. The `PROMPT` variable contains the main instructions, while the `MESSAGE` dictionary encapsulates these instructions in a format suitable for a system that processes or generates content based on this guidance.
+This code is a configuration script designed to guide a system, likely a chatbot or an automated tool, in processing and correcting Mermaid.js code blocks within a document. It provides narrow functionality focused on ensuring that Mermaid diagrams render correctly by enforcing specific syntax rules, such as removing forbidden characters like parentheses and double hyphens, and correcting list syntax within the diagrams. The script also emphasizes the importance of avoiding cycles in the diagram by not allowing an element to be its own parent. The `PROMPT` variable contains detailed instructions for handling these tasks, while the `MESSAGE` dictionary encapsulates this prompt, likely for use in a larger system that processes or generates Mermaid.js diagrams.
 # Global Variables
 
 ---
 ### PROMPT
 - **Type**: `str`
-- **Description**: The `PROMPT` variable is a multi-line string that provides detailed instructions for reviewing and correcting mermaid code blocks within a document. It includes guidelines for avoiding rendering errors by removing forbidden characters, correcting syntax for lists, and ensuring proper formatting of subgraph names and element labels.
-- **Use**: This variable is used as a template or guideline for users to follow when reviewing and correcting mermaid diagrams to ensure they render correctly.
+- **Description**: The variable `PROMPT` is a multi-line string that serves as a detailed instruction set for reviewing and correcting mermaid code blocks within a document. It provides guidelines on avoiding rendering errors by removing forbidden characters, correcting syntax for lists, and ensuring proper formatting of subgraph names and element labels.
+- **Use**: This variable is used to provide comprehensive instructions for processing and correcting mermaid diagrams to ensure they render correctly without errors.
 
 
 ---

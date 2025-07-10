@@ -3,16 +3,16 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `agents` folder in the `python-backend` codebase contains Python scripts that define various agents and their functions for tasks such as code critique, copy editing, document editing, and prompt augmentation, all of which are executed within a multi-step pipeline process.
+Python scripts for agent-based pipelines and functions like code critique, copy editing, and prompt augmentation.
 
 
 ## Files
 - **[agent_code_critic.py](agent_code_critic.py.md)**: The `agent_code_critic.py` file implements a pipeline for extracting, verifying, and correcting code snippets using an OpenAI-based agent within a multi-step process.
 - **[agent_copy_editor.py](agent_copy_editor.py.md)**: The `agent_copy_editor.py` file defines a function to run a copy editing agent using a specified configuration and session, with logic to handle specific prompt types and generate a response.
 - **[agent_default.py](agent_default.py.md)**: The `agent_default.py` file defines a function to run a default agent using specified configurations and a language model session, returning a structured pipeline step response.
-- **[agent_edit_document.py](agent_edit_document.py.md)**: The `agent_edit_document.py` file defines the process for generating smart instructions to edit a selected portion of a document using a series of agents, including prompt augmentation, default processing, and copy editing.
-- **[agent_prompt_augmentation.py](agent_prompt_augmentation.py.md)**: The `agent_prompt_augmentation.py` file defines a function to augment prompts using an agent, with a response model that includes the new prompt and its rationale, while ensuring prompts longer than 100 words are not transformed.
-- **[execute.py](execute.py.md)**: The `execute.py` file in the `python-backend` codebase defines functions to validate and execute a sequence of pipeline steps, utilizing various agents for tasks such as prompt augmentation, code critique, and copy editing.
+- **[agent_edit_document.py](agent_edit_document.py.md)**: The `agent_edit_document.py` file defines the process for generating smart instructions to edit a selected portion of a document using various agents and tools, including prompt augmentation, default agent execution, and copy editing.
+- **[agent_prompt_augmentation.py](agent_prompt_augmentation.py.md)**: The `agent_prompt_augmentation.py` file defines a function to augment prompts using an agent, returning a new prompt and rationale, and includes a response model for this process.
+- **[execute.py](execute.py.md)**: The `execute.py` file in the `python-backend` codebase defines functions to validate and execute a sequence of pipeline steps, utilizing various agent methods to process input and generate a final response.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

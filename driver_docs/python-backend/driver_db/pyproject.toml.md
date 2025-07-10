@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `pyproject.toml` file in the `python-backend` codebase specifies the project metadata, dependencies, and build system configuration for the `database` package, including both runtime and development dependencies.
+Configuration for a Python project using Poetry, specifying dependencies and build system settings.
 
 # Purpose
-The provided content is a configuration file for a Python project managed by Poetry, a dependency management and packaging tool. The `[tool.poetry]` section specifies the project's metadata, including its name, version, description, authors, and the path to the README file. The `[tool.poetry.dependencies]` section lists the project's runtime dependencies, specifying the required versions of Python and various libraries such as Alembic, SQLModel, and others, with a note to eventually remove the `strawberry-graphql` dependency. The `[tool.poetry.group.dev.dependencies]` section outlines the development dependencies, which are tools used during the development process, such as `pytest` for testing, `mypy` for type checking, and `pre-commit` for managing pre-commit hooks. Finally, the `[build-system]` section defines the build requirements and backend, indicating that `poetry-core` is needed to build the project.
+The file is a `pyproject.toml` configuration file used by the Poetry tool to manage a Python project's dependencies and metadata. The `[tool.poetry]` section specifies the project's name as `database`, its version as `0.1.0`, and includes author information and a reference to the `README.md` file. The `[tool.poetry.dependencies]` section lists the required runtime dependencies, including specific versions of Python, Alembic, SQLModel, and others, with a note to potentially remove `strawberry-graphql` in the future. The `[tool.poetry.group.dev.dependencies]` section defines development dependencies such as `pytest`, `pytest-cov`, `mypy`, and `pre-commit`, which are used for testing and code quality checks. The `[build-system]` section specifies the build requirements and backend, indicating the use of `poetry-core` for building the project.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

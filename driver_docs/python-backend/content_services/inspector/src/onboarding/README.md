@@ -3,16 +3,16 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `onboarding` folder in the `python-backend` codebase contains scripts and configurations for managing repository onboarding processes, including interactions with GitHub and GitLab, file operations, and language definitions.
+Scripts and configurations for managing the onboarding process of repositories from GitHub and GitLab.
 
 
 ## Files
 - **[gh_ops.py](gh_ops.py.md)**: The `gh_ops.py` file in the `python-backend` codebase provides functions for interacting with GitHub, including generating JWTs, fetching access tokens, retrieving repository information, downloading repositories, and creating pull requests.
 - **[gitlab_ops.py](gitlab_ops.py.md)**: The `gitlab_ops.py` file in the `python-backend` codebase provides functions for interacting with GitLab repositories, including fetching access tokens, downloading and uploading repositories, generating codebase metadata, and creating pull requests.
-- **[languages.yml](languages.yml.md)**: The `languages.yml` file in the `python-backend` codebase defines various programming, markup, prose, and data languages known to GitHub, including their properties such as file extensions, color representation, and syntax highlighting modes.
-- **[onboard.py](onboard.py.md)**: The `onboard.py` file in the `python-backend` codebase handles the onboarding process for repositories, including collecting file paths, processing files, and managing GitHub and GitLab events, as well as connecting and inspecting codebases.
-- **[onboard_utils.py](onboard_utils.py.md)**: The `onboard_utils.py` file in the `python-backend` codebase provides a comprehensive set of utilities for handling file operations related to onboarding, including file type detection, S3 interactions, archive unpacking, file encoding, and directory statistics calculation.
-- **[push_bot.py](push_bot.py.md)**: The `push_bot.py` file in the `python-backend` codebase handles the extraction of values from presigned URLs, execution of shell commands, and the asynchronous pushing of documentation updates to GitHub or GitLab repositories, including creating pull or merge requests.
+- **[languages.yml](languages.yml.md)**: The `languages.yml` file in the `python-backend` codebase defines various programming, markup, and data languages known to GitHub, including their properties such as file extensions, color representation, and syntax highlighting modes.
+- **[onboard.py](onboard.py.md)**: The `onboard.py` file in the `python-backend` codebase handles the onboarding process for repositories from GitHub and GitLab, including collecting file paths, processing files, managing repository events, and connecting codebases to a database, while utilizing various external services and configurations.
+- **[onboard_utils.py](onboard_utils.py.md)**: The `onboard_utils.py` file in the `python-backend` codebase provides a comprehensive set of utilities for handling file operations, including downloading, uploading, and processing files with S3, managing file encodings, analyzing file types and sizes, and calculating directory statistics.
+- **[push_bot.py](push_bot.py.md)**: The `push_bot.py` file in the `python-backend` codebase provides functionality for extracting values from a presigned URL, running shell commands, pushing documentation updates to GitHub or GitLab repositories, and handling S3 file downloads and directory synchronization.
 - **[test_onboard_utils.py](test_onboard_utils.py.md)**: The `test_onboard_utils.py` file contains unit tests for the `unpack_archive_to_finalized_path` function, verifying its behavior when unpacking zip archives with various directory structures and optional override names.
 
 ---

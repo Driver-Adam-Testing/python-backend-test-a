@@ -3,11 +3,11 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `response_types` folder in the `python-backend` codebase contains Python files that define classes and enumerations for handling information set definitions and generating list responses in markdown format.
+Defines classes for handling specific response types, including information set definitions and list formatting.
 
 
 ## Files
-- **[get_information_set_definitions_llm_response.py](get_information_set_definitions_llm_response.py.md)**: The `get_information_set_definitions_llm_response.py` file defines classes and enumerations for representing and retrieving information set definitions, including parameters and attributes for querying and analyzing these sets.
+- **[get_information_set_definitions_llm_response.py](get_information_set_definitions_llm_response.py.md)**: The `get_information_set_definitions_llm_response.py` file defines classes for representing and retrieving information set definitions, including parameters and enums for query types and source bounding.
 - **[response_type_list.py](response_type_list.py.md)**: The `response_type_list.py` file defines the `ListResponse` class, which is a response type for generating and formatting a list of items in markdown format.
 
 ---

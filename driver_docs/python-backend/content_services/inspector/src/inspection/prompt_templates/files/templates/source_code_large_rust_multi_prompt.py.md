@@ -3,13 +3,18 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_large_rust_multi_prompt.py` file defines a template for generating multi-prompt analyses of large Rust source code files, focusing on aspects such as imports, global variables, macros, traits, data structures, and functions.
+The `source_code_large_rust_multi_prompt.py` file defines a template for generating prompts related to Rust source code, focusing on elements like imports, global variables, macros, traits, data structures, and functions.
 
 # Purpose
-This Python code is a configuration file that defines a template for analyzing and documenting Rust source code. It provides a structured approach to extract and describe various components of Rust code, such as imports, global variables, macros, traits, data structures, and functions. The file imports several utilities and classes from a `utils` module, which are used to perform static analysis and leverage language models (LLMs) to generate detailed documentation. The template is organized as a list of tuples, each specifying a section of the documentation, the method of analysis, and the expected output format. This code offers narrow functionality, specifically tailored for generating multi-context documentation for Rust codebases.
+This Python code defines a configuration for a multi-prompt template specifically tailored for analyzing and documenting Rust source code. It imports various components and utilities from shared and specialized modules to construct a structured approach for generating documentation. The template, `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_RUST`, is a list of tuples, each representing a different aspect of Rust code analysis, such as purpose, imports, global variables, macros, traits, data structures, and functions. Each tuple specifies a prompt type, a section header, and a method for extracting or generating the relevant information, often using both static analysis and language model (LLM) insights. This code provides narrow functionality focused on creating a comprehensive documentation framework for Rust codebases, leveraging both predefined instructions and dynamic analysis.
 # Imports and Dependencies
 
 ---
+- `shared.prompts.structured_prompting.GENERAL_STE_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_CODE_PURPOSE`
+- `shared.prompts.structured_prompting.USE_BACKTICKS_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.Component`
+- `shared.prompts.structured_prompting.Prompt`
 - `utils.lang_specialization.default_multi_context.SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT_MULTI_CONTEXT`
 - `utils.lang_specialization.default_multi_context.SOURCE_CODE_PURPOSE_FROM_CHUNKS`
 - `utils.lang_specialization.default_multi_context.default_imports_checker_multi_prompt`
@@ -32,8 +37,8 @@ This Python code is a configuration file that defines a template for analyzing a
 ---
 ### SOURCE\_CODE\_LARGE\_MULTI\_PROMPT\_TEMPLATE\_RUST
 - **Type**: `list`
-- **Description**: `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_RUST` is a list of tuples, each containing a set of parameters used for generating prompts related to different aspects of Rust source code analysis. Each tuple includes a condition type, a description, a function or method for static analysis, a function or method for LLM-based analysis, and an optional additional parameter.
-- **Use**: This variable is used to define a template for generating prompts that facilitate the analysis of various components of Rust code, such as imports, global variables, macros, traits, data structures, and functions.
+- **Description**: `SOURCE_CODE_LARGE_MULTI_PROMPT_TEMPLATE_RUST` is a list of tuples, each representing a different aspect of Rust code analysis and generation. Each tuple contains a type identifier, a description string, and a series of components or functions that are used to generate or analyze specific parts of Rust code, such as purpose, imports, global variables, macros, traits, data structures, and functions.
+- **Use**: This variable is used to define a structured template for generating and analyzing Rust code using multiple prompts and components.
 
 
 

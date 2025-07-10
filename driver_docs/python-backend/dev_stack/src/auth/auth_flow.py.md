@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `auth_flow.py` file implements an authentication flow using Auth0, including generating PKCE pairs, handling callback requests, and obtaining tokens.
+The `auth_flow.py` file implements an authentication flow using Auth0, including generating PKCE pairs, handling callback requests, and obtaining tokens through a FastAPI server.
 
 # Purpose
-This Python script is designed to facilitate OAuth2 authentication using the PKCE (Proof Key for Code Exchange) extension with Auth0 as the identity provider. It is implemented as a FastAPI application that runs a local server to handle the OAuth2 callback. The script generates a PKCE pair consisting of a code verifier and a code challenge, which are used to securely obtain an authorization code from Auth0. The [`login`](#login) function initiates the authentication process by constructing an authorization URL with the necessary parameters and opening it in the user's default web browser. Once the user logs in and grants access, Auth0 redirects back to the local server's `/callback` endpoint with an authorization code, which is then exchanged for access tokens using the [`get_tokens`](#get_tokens) function.
+This Python script is designed to facilitate OAuth 2.0 authentication using the Authorization Code Flow with Proof Key for Code Exchange (PKCE) through Auth0, a popular identity management platform. The script leverages FastAPI to create a local web server that listens for a callback from Auth0 after the user has authenticated. The primary components include generating a PKCE pair (verifier and challenge), constructing an authorization URL, and opening it in the user's default web browser to initiate the login process. Once the user logs in, Auth0 redirects them to the local server's callback endpoint with an authorization code, which is then exchanged for access tokens.
 
-The script is structured to be run as a standalone application, leveraging FastAPI to handle HTTP requests and responses. It includes key components such as the [`generate_pkce_pair`](#generate_pkce_pair) function for creating the PKCE pair, the [`callback`](#callback) endpoint to capture the authorization code, and the [`get_tokens`](#get_tokens) function to retrieve tokens from Auth0. The use of threading allows the server to run concurrently with the main authentication flow, ensuring the application remains responsive. This code is primarily intended for developers who need to implement OAuth2 authentication in their applications, providing a clear example of how to integrate with Auth0 using PKCE.
+The script is structured to be run as a standalone application, not as a library to be imported elsewhere. It defines a public API endpoint (`/callback`) that handles the redirection from Auth0 and captures the authorization code. The [`login`](<#login>) function orchestrates the entire authentication process, from generating the PKCE pair to opening the browser and waiting for the authorization code. The use of threading allows the local server to run concurrently with the main program, ensuring that the script can handle the callback while waiting for user interaction. This script is a focused implementation, providing a specific functionality of handling OAuth 2.0 authentication with PKCE in a streamlined manner.
 # Imports and Dependencies
 
 ---
@@ -29,13 +29,13 @@ The script is structured to be run as a standalone application, leveraging FastA
 ---
 ### AUTH0\_DOMAIN
 - **Type**: `str`
-- **Description**: `AUTH0_DOMAIN` is a string variable that holds the domain name for the Auth0 authentication service used in the application. It is set to 'driverai-dev.us.auth0.com', which is likely a specific tenant or environment for the Auth0 service.
-- **Use**: This variable is used to construct URLs for making authentication requests to the Auth0 service.
+- **Description**: `AUTH0_DOMAIN` is a string variable that holds the domain name for the Auth0 authentication service used in the application. It is set to 'driverai-dev.us.auth0.com', which indicates the specific Auth0 tenant domain for the development environment of the DriverAI application.
+- **Use**: This variable is used to construct URLs for authentication requests to the Auth0 service, such as obtaining tokens and authorizing users.
 
 
 ---
 ### CLIENT\_ID
-- **Type**: `str`
+- **Type**: `string`
 - **Description**: `CLIENT_ID` is a string variable that holds the client identifier used for authentication purposes with the Auth0 service. It is a unique identifier assigned to the application by the Auth0 service to facilitate OAuth2 authentication flows.
 - **Use**: This variable is used in the OAuth2 authentication process to identify the client application when requesting authorization and tokens from the Auth0 service.
 
@@ -43,22 +43,22 @@ The script is structured to be run as a standalone application, leveraging FastA
 ---
 ### ORG\_ID
 - **Type**: `str`
-- **Description**: `ORG_ID` is a string variable that holds the identifier for an organization, which is used in the context of authentication and authorization processes. It is likely associated with a specific organization within the Auth0 authentication service.
-- **Use**: This variable is used to specify the organization context in authentication requests, although it is currently commented out in the code.
+- **Description**: `ORG_ID` is a string variable that holds the identifier for an organization, which is used in the context of authentication and authorization processes. It is likely associated with a specific organization within the Auth0 domain, facilitating organization-specific authentication flows.
+- **Use**: This variable is used to specify the organization in the authentication process, potentially as part of the state or organization parameters in the login function.
 
 
 ---
 ### REDIRECT\_URI
 - **Type**: `string`
-- **Description**: `REDIRECT_URI` is a string variable that holds the URL 'http://localhost:4001/callback'. This URL is used as the callback endpoint for the OAuth2 authentication process, where the authorization server will redirect the user after they have granted or denied access.
-- **Use**: This variable is used in the OAuth2 authentication flow to specify the callback URL where the authorization code will be sent.
+- **Description**: `REDIRECT_URI` is a string variable that holds the URL 'http://localhost:4001/callback'. This URL is used as the callback endpoint for the OAuth2 authentication process, where the authorization server redirects the user after they have authenticated.
+- **Use**: This variable is used in the OAuth2 flow to specify the callback URL where the authorization code will be sent.
 
 
 ---
 ### SCOPES
 - **Type**: `string`
-- **Description**: The `SCOPES` variable is a string that defines the OAuth 2.0 scopes required for authentication. It includes the scopes 'openid', 'profile', 'email', and 'offline_access', which are used to request specific permissions from the user during the authentication process.
-- **Use**: This variable is used in the `login` function to specify the scopes when constructing the authorization URL for the OAuth 2.0 flow.
+- **Description**: The `SCOPES` variable is a string that defines the OAuth 2.0 scopes required for authentication. It includes the scopes 'openid', 'profile', 'email', and 'offline_access', which are used to request specific permissions from the authentication provider.
+- **Use**: This variable is used in the OAuth 2.0 authorization request to specify the permissions the application is requesting from the user.
 
 
 ---
@@ -70,8 +70,8 @@ The script is structured to be run as a standalone application, leveraging FastA
 
 ---
 ### auth\_code\_container
-- **Type**: `dict`
-- **Description**: The `auth_code_container` is a global dictionary used to store the authorization code received during the OAuth2 authentication process. It is initially empty and is populated with the authorization code when the `/callback` endpoint is accessed.
+- **Type**: `dictionary`
+- **Description**: The `auth_code_container` is a global dictionary used to store the authorization code received during the OAuth2 authentication process. It is initially empty and is populated with the authorization code when the `/callback` endpoint is accessed with a valid code parameter.
 - **Use**: This variable is used to temporarily hold the authorization code needed to exchange for tokens in the OAuth2 flow.
 
 
@@ -85,7 +85,7 @@ The `generate_pkce_pair` function generates a PKCE (Proof Key for Code Exchange)
     - Generate a random 40-byte string using `os.urandom` and encode it in a URL-safe base64 format, removing any trailing '=' characters to create the `verifier`.
     - Hash the `verifier` using SHA-256, encode the hash in a URL-safe base64 format, and remove any trailing '=' characters to create the `challenge`.
     - Return the `verifier` and `challenge` as a tuple.
-- **Output**: A tuple containing the `verifier` and `challenge` strings, both URL-safe base64 encoded.
+- **Output**: A tuple containing the `verifier` and `challenge` strings, both encoded in URL-safe base64 format.
 
 
 ---
@@ -93,25 +93,26 @@ The `generate_pkce_pair` function generates a PKCE (Proof Key for Code Exchange)
 The `callback` function handles the OAuth callback by extracting the authorization code from the request and storing it for further processing.
 - **Decorators**: `@app.get`
 - **Inputs**:
-    - `request`: An instance of `Request` from FastAPI, representing the incoming HTTP request to the callback endpoint.
+    - `request`: An instance of `Request` representing the incoming HTTP request, which contains query parameters.
 - **Control Flow**:
-    - Extracts the 'code' query parameter from the incoming request.
-    - Checks if the 'code' is present; if not, returns an HTML response with a 400 status code indicating the absence of the code.
-    - If the 'code' is present, it stores the code in the `auth_code_container` dictionary under the key 'code'.
+    - Extracts the 'code' query parameter from the request.
+    - Checks if the 'code' is present; if not, returns an HTML response with a 400 status code indicating a missing code.
+    - Stores the extracted 'code' in the `auth_code_container` dictionary under the key 'code'.
     - Returns an HTML response indicating a successful login.
-- **Output**: An HTML response indicating either a successful login or an error message if the code is missing, with appropriate HTTP status codes.
+- **Output**: An HTML response indicating either a successful login or an error due to a missing code.
 
 
 ---
 ### run\_server<!-- {{#callable:python-backend/dev_stack/src/auth/auth_flow.run_server}} -->
-The `run_server` function starts a Uvicorn server to host a FastAPI application on a specified local host and port with critical log level and no access logs.
+The `run_server` function starts a Uvicorn server to host a FastAPI application on a specified local host and port with critical log level and access logs disabled.
 - **Inputs**: None
 - **Control Flow**:
-    - The function calls `uvicorn.run` with the FastAPI app instance `app`.
-    - It specifies the host as `127.0.0.1` and the port as `4001`.
+    - The function calls `uvicorn.run()` to start the server.
+    - The server is configured to run the FastAPI application `app`.
+    - The server listens on host `127.0.0.1` and port `4001`.
     - The log level is set to `critical`, which suppresses info and debug logs.
     - Access logs are disabled by setting `access_log` to `False`.
-- **Output**: The function does not return any value; it starts the server as a side effect.
+- **Output**: The function does not return any output; it initiates a server process.
 
 
 ---
@@ -134,16 +135,16 @@ The `get_tokens` function exchanges an authorization code for access tokens usin
 The `login` function initiates an OAuth2 authorization code flow with PKCE, opens a web browser for user login, and retrieves tokens upon successful authentication.
 - **Inputs**: None
 - **Control Flow**:
-    - Generate a PKCE verifier and challenge pair using [`generate_pkce_pair`](#generate_pkce_pair).
+    - Generate a PKCE verifier and challenge pair using [`generate_pkce_pair`](<#generate_pkce_pair>).
     - Construct the authorization URL with necessary parameters including response type, client ID, redirect URI, scope, code challenge, and code challenge method.
     - Open the constructed URL in the default web browser to prompt the user for login.
     - Start a background thread to run a local server using `run_server` to handle the callback from the authorization server.
     - Enter a loop that waits until the authorization code is stored in `auth_code_container`.
-    - Once the authorization code is available, call [`get_tokens`](#get_tokens) with the code and verifier to exchange them for tokens.
+    - Once the authorization code is available, call [`get_tokens`](<#get_tokens>) with the code and verifier to exchange them for tokens.
 - **Output**: Returns the tokens obtained from the authorization server after successful login and code exchange.
-- **Functions called**:
-    - [`python-backend/dev_stack/src/auth/auth_flow.generate_pkce_pair`](#generate_pkce_pair)
-    - [`python-backend/dev_stack/src/auth/auth_flow.get_tokens`](#get_tokens)
+- **Functions Called**:
+    - [`python-backend/dev_stack/src/auth/auth_flow.generate_pkce_pair`](<#generate_pkce_pair>)
+    - [`python-backend/dev_stack/src/auth/auth_flow.get_tokens`](<#get_tokens>)
 
 
 

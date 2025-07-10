@@ -3,18 +3,23 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `rust.py` file in the `python-backend` codebase provides classes and methods for analyzing and documenting Rust code, focusing on extracting and describing symbols such as macros, traits, data structures, methods, functions, and variables using static analysis and ctags.
+The `rust.py` file in the `python-backend` codebase provides classes and methods for analyzing and documenting Rust code, focusing on data structures, functions, methods, macros, traits, and variables using static analysis and structured prompting.
 
 # Purpose
-This Python source code file is designed to facilitate the extraction and documentation of Rust code components, such as macros, traits, data structures, methods, functions, and variables. It leverages the Pydantic library for data validation and management, and it uses a combination of static analysis and language model interactions to generate detailed documentation. The file defines several classes, each corresponding to a specific Rust code component, such as `RustMacroData`, `RustTraitData`, `RustDataStructureData`, and others. These classes are responsible for generating prompts for language models to create documentation, as well as for organizing and storing the extracted information in a structured format.
+This Python source code file is designed to facilitate the documentation of Rust code by leveraging structured prompts and data extraction techniques. It defines a series of classes and methods that work together to analyze Rust source code, extract relevant symbols using ctags, and generate detailed documentation for various Rust constructs such as macros, traits, data structures, methods, functions, and variables. The file employs the Pydantic library for data validation and type checking, and it uses a combination of static analysis and language model interactions to produce documentation in a structured JSON format.
 
-The file also includes collections of these data classes, such as `RustMacroCollection` and `RustTraitCollection`, which aggregate multiple instances of their respective data classes. The code uses the `extract_symbols_w_ctags` function to perform static analysis on Rust code, identifying and categorizing different code components based on their kind (e.g., functions, methods, variables). The file is structured to be part of a larger system that automates the documentation process for Rust code, providing a robust framework for extracting, organizing, and documenting various Rust code elements.
+The code is organized into several classes, each responsible for handling a specific type of Rust construct. For instance, `RustMacroData`, `RustTraitData`, and `RustDataStructureData` are classes that define the structure and methods for documenting Rust macros, traits, and data structures, respectively. Each class includes methods for generating system and user prompts, which are used to guide the language model in creating accurate and comprehensive documentation. The file also includes collections such as `RustMacroCollection` and `RustTraitCollection`, which manage groups of related data. Overall, this code provides a robust framework for automating the documentation process of Rust code, ensuring consistency and clarity in the generated documentation.
 # Imports and Dependencies
 
 ---
 - `pathlib.Path`
 - `typing.Self`
 - `pydantic.PrivateAttr`
+- `shared.prompts.structured_prompting.GENERAL_STE_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_SYMBOLS`
+- `shared.prompts.structured_prompting.USE_BACKTICKS_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.Component`
+- `shared.prompts.structured_prompting.Prompt`
 - `utils.codemap_ctags.extract_symbols_w_ctags`
 - `utils.models.ChatOpenAI`
 - `.ir_common.FieldNameWithBackTickContent`
@@ -41,36 +46,36 @@ The file also includes collections of these data classes, such as `RustMacroColl
 ---
 ### RUST\_DATA\_STRUCTURE
 - **Type**: `set`
-- **Description**: The `RUST_DATA_STRUCTURE` variable is a set containing the strings 'enum' and 'struct'. It represents the types of data structures commonly used in the Rust programming language. This set is likely used to categorize or identify Rust data structures within a larger system or application.
-- **Use**: This variable is used to identify and categorize Rust data structures such as enums and structs.
+- **Description**: The `RUST_DATA_STRUCTURE` variable is a set containing the strings 'enum' and 'struct'. It represents the types of data structures commonly used in the Rust programming language.
+- **Use**: This variable is used to categorize or identify Rust data structures within the code.
 
 
 ---
 ### RUST\_FUNCTIONS
 - **Type**: `set`
-- **Description**: `RUST_FUNCTIONS` is a global variable defined as a set containing a single string element, 'function'. This set is part of a collection of global variables that categorize different Rust language constructs.
-- **Use**: This variable is used to identify and categorize Rust functions within the codebase.
+- **Description**: The `RUST_FUNCTIONS` variable is a global set containing a single string element, 'function'. This set is used to categorize or identify Rust functions within the context of the code.
+- **Use**: This variable is used to identify and categorize Rust functions in the code.
 
 
 ---
 ### RUST\_METHODS
 - **Type**: `set`
-- **Description**: RUST_METHODS is a global variable defined as a set containing a single string element, 'method'. This set is used to categorize or identify Rust methods within the codebase.
+- **Description**: `RUST_METHODS` is a global variable defined as a set containing a single string element, 'method'. This set is used to categorize or identify Rust methods within the codebase.
 - **Use**: This variable is used to identify and categorize Rust methods in the code.
 
 
 ---
 ### RUST\_VARIABLES
 - **Type**: `set`
-- **Description**: `RUST_VARIABLES` is a set containing the strings 'constant' and 'variable'. This set is used to categorize or identify elements related to Rust programming language variables.
-- **Use**: This variable is used to define a set of keywords related to Rust variables for categorization or identification purposes.
+- **Description**: `RUST_VARIABLES` is a set containing two string elements: 'constant' and 'variable'. This set is used to categorize or identify different types of variables in Rust programming.
+- **Use**: This variable is used to define a collection of Rust variable types for categorization or identification purposes.
 
 
 ---
 ### RUST\_MACROS
 - **Type**: `set`
-- **Description**: `RUST_MACROS` is a global variable defined as a set containing a single string element, 'macro'. This set is used to categorize or identify Rust macros within the codebase.
-- **Use**: This variable is used to identify and categorize Rust macros in the code.
+- **Description**: The `RUST_MACROS` variable is a set containing a single string element, 'macro'. This set is used to categorize or identify Rust macros within the codebase.
+- **Use**: This variable is used to identify and work with Rust macros in the code.
 
 
 ---
@@ -83,8 +88,8 @@ The file also includes collections of these data classes, such as `RustMacroColl
 ---
 ### RUST\_IMPLEMENTATIONS
 - **Type**: `set`
-- **Description**: The variable `RUST_IMPLEMENTATIONS` is a set containing a single string element, 'implementation'. It is part of a series of global variables that categorize different Rust language constructs.
-- **Use**: This variable is used to represent and categorize Rust implementations in the code.
+- **Description**: `RUST_IMPLEMENTATIONS` is a global variable defined as a set containing a single string element, 'implementation'. This set is likely used to categorize or identify Rust language constructs related to implementations.
+- **Use**: This variable is used to represent or check for Rust implementation constructs in the code.
 
 
 ---
@@ -97,172 +102,198 @@ The file also includes collections of these data classes, such as `RustMacroColl
 ---
 ### SOURCE\_CODE\_SMALL\_SYSTEM\_PROMPT\_GENERAL\_RUST
 - **Type**: `str`
-- **Description**: This variable is a multi-line string that serves as a system prompt for a Rust programming documentation expert. It outlines the role of the expert in explaining small and short Rust source code files, emphasizing the need for clarity and conciseness.
-- **Use**: This variable is used as a prompt to guide the behavior of a system or model in generating documentation for small Rust source code files.
+- **Description**: This variable is a multi-line string that serves as a system prompt for a Rust programming expert. It provides guidance on how to write documentation for small and simple Rust source code files, emphasizing clarity and brevity.
+- **Use**: This variable is used as a prompt template for generating documentation for small Rust source code files.
 
 
 ---
 ### SOURCE\_CODE\_LARGE\_PURPOSE\_USER\_PROMPT
 - **Type**: `str`
-- **Description**: The variable `SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT` is a string that contains a detailed prompt for explaining the purpose of a source code file. It guides the user to provide a comprehensive explanation by considering various aspects of the code, such as its functionality, technical components, and whether it defines public APIs or external interfaces.
+- **Description**: The variable `SOURCE_CODE_LARGE_PURPOSE_USER_PROMPT` is a string that contains a detailed prompt for explaining the purpose of a source code file. It guides the user to write a comprehensive explanation in 1 or 2 paragraphs, focusing on the functionality, technical components, and nature of the code without using speculative language.
 - **Use**: This variable is used to instruct users on how to describe the purpose of a large source code file in a structured and detailed manner.
 
 
 ---
 ### SOURCE\_CODE\_SMALL\_PURPOSE\_USER\_PROMPT
 - **Type**: `str`
-- **Description**: The variable `SOURCE_CODE_SMALL_PURPOSE_USER_PROMPT` is a string that contains a template for a user prompt. This prompt is designed to guide users in explaining the purpose of a source code file in a concise manner. It includes questions to consider, such as the scope of functionality and the type of code being described.
-- **Use**: This variable is used to provide a structured prompt for users to generate a summary of a source code file's purpose.
+- **Description**: This variable is a string that contains a prompt template for explaining the purpose of a source code file. It guides the user to provide a concise explanation of the file's purpose, focusing on the scope and type of functionality provided by the code.
+- **Use**: This variable is used to generate a user prompt for summarizing the purpose of a small source code file.
 
 
 ---
 ### DATA\_STRUCTURES\_FOUND\_SYSTEM\_PROMPT\_JSON
 - **Type**: `str`
-- **Description**: The variable `DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON` is a multi-line string that serves as a system prompt for a documentation generation system focused on Rust data structures. It provides detailed instructions on how to document Rust data structures, including the expected JSON schema for the output.
-- **Use**: This variable is used as a template or guideline for generating documentation for Rust data structures, ensuring consistency and completeness in the documentation process.
+- **Description**: The variable `DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON` is a multi-line string that serves as a template for generating JSON-based documentation for Rust data structures. It provides a detailed instruction set for documenting Rust data structures, focusing on explaining technical details and recognizing key components and purposes of the software.
+- **Use**: This variable is used as a system prompt template for generating structured JSON documentation for Rust data structures.
 
 
 ---
 ### DATA\_STRUCTURES\_FOUND\_USER\_PROMPT
 - **Type**: `str`
-- **Description**: The variable `DATA_STRUCTURES_FOUND_USER_PROMPT` is a multi-line string that serves as a template for prompting users to summarize data structures in provided code. It includes instructions on how to describe data structures based on their complexity.
+- **Description**: The `DATA_STRUCTURES_FOUND_USER_PROMPT` is a multi-line string that serves as a template for prompting users to summarize data structures in provided code. It includes instructions on how to describe data structures based on their complexity, suggesting longer explanations for complex structures and shorter ones for simpler structures.
 - **Use**: This variable is used as a prompt template to guide users in summarizing data structures in code.
 
 
 ---
 ### METHODS\_FOUND\_SYSTEM\_PROMPT\_JSON
 - **Type**: `str`
-- **Description**: The variable `METHODS_FOUND_SYSTEM_PROMPT_JSON` is a multi-line string that contains a detailed system prompt for documenting Rust method implementations. It provides instructions on how to describe methods, including inputs, control flow, and output, using a specific JSON schema.
-- **Use**: This variable is used to guide the generation of documentation for Rust methods by providing a structured prompt.
+- **Description**: The `METHODS_FOUND_SYSTEM_PROMPT_JSON` is a multi-line string that serves as a template for generating documentation for Rust method implementations. It provides a detailed JSON schema that outlines how to describe a method, including its inputs, control flow, and output.
+- **Use**: This variable is used to guide the generation of structured documentation for Rust methods by providing a consistent format and necessary details.
 
 
 ---
 ### METHODS\_FOUND\_USER\_PROMPT
 - **Type**: `str`
-- **Description**: `METHODS_FOUND_USER_PROMPT` is a multi-line string that serves as a template for summarizing data structure methods in provided code. It instructs the user to describe the inputs, control flow, logic, and output of a method, with detail proportional to the method's complexity.
-- **Use**: This variable is used as a prompt template for generating detailed documentation of data structure methods.
+- **Description**: `METHODS_FOUND_USER_PROMPT` is a multi-line string that serves as a template for summarizing data structure methods in code. It provides instructions on how to describe the inputs, control flow, logic, and output of a method, emphasizing the need for detail proportional to the method's complexity.
+- **Use**: This variable is used as a prompt template to guide users in documenting methods found in code, ensuring comprehensive and structured descriptions.
 
 
 ---
 ### MACROS\_FOUND\_SYSTEM\_PROMPT\_JSON
 - **Type**: `str`
-- **Description**: The variable `MACROS_FOUND_SYSTEM_PROMPT_JSON` is a multi-line string that serves as a template for generating JSON documentation for Rust macros. It provides a structured format for describing the type, description, logic, and use of a macro in Rust.
-- **Use**: This variable is used as a system prompt template for generating JSON documentation for Rust macros.
+- **Description**: The variable `MACROS_FOUND_SYSTEM_PROMPT_JSON` is a multi-line string that serves as a system prompt for documenting Rust macros. It provides instructions for generating JSON documentation for Rust macros, specifying the expected format and content of the documentation.
+- **Use**: This variable is used to guide the generation of structured documentation for Rust macros by providing a template and instructions.
 
 
 ---
 ### MACROS\_FOUND\_USER\_PROMPT
 - **Type**: `str`
-- **Description**: The `MACROS_FOUND_USER_PROMPT` is a multi-line string that serves as a template for summarizing data structures in provided code. It includes instructions on how to describe data structures based on their complexity, suggesting longer explanations for complex structures and shorter ones for simpler structures.
-- **Use**: This variable is used as a prompt template for generating documentation or summaries of data structures in code.
+- **Description**: The `MACROS_FOUND_USER_PROMPT` is a multi-line string that provides instructions for summarizing a data structure in the code provided. It emphasizes the need to match the detail of the description with the complexity of the data structure, suggesting longer explanations for complex structures and shorter ones for simpler structures.
+- **Use**: This variable is used as a template or prompt for users to document data structures, ensuring consistency and clarity in the documentation process.
 
 
 ---
 ### FUNCTIONS\_FOUND\_SYSTEM\_PROMPT\_JSON
 - **Type**: `str`
-- **Description**: The `FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON` is a multi-line string that serves as a template for generating JSON documentation for Rust functions. It provides a structured format for describing functions, including their inputs, control flow, and output.
-- **Use**: This variable is used to guide the generation of JSON documentation for Rust functions by providing a consistent schema.
+- **Description**: The `FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON` is a multi-line string that serves as a template for generating documentation for Rust functions. It provides a JSON schema that outlines how to describe a function, including its inputs, control flow, and output.
+- **Use**: This variable is used as a system prompt to guide the generation of structured documentation for Rust functions.
 
 
 ---
 ### FUNCTIONS\_FOUND\_USER\_PROMPT
 - **Type**: `str`
-- **Description**: The `FUNCTIONS_FOUND_USER_PROMPT` is a multi-line string variable that contains a template for summarizing functions in a given code. It provides instructions on how to describe the inputs, control flow, logic, and output of a function, with an emphasis on matching the detail to the complexity of the function.
-- **Use**: This variable is used as a prompt template for generating detailed documentation of functions in code.
+- **Description**: The `FUNCTIONS_FOUND_USER_PROMPT` is a multi-line string that provides instructions for summarizing a function in a given code snippet. It guides the user to describe the inputs, control flow, logic, and output of the function, with an emphasis on matching the explanation length to the complexity of the function.
+- **Use**: This variable is used as a template or prompt for users to document functions in code, ensuring detailed and context-appropriate descriptions.
 
 
 ---
 ### VARIABLES\_FOUND\_SYSTEM\_PROMPT\_JSON
 - **Type**: `str`
-- **Description**: The variable `VARIABLES_FOUND_SYSTEM_PROMPT_JSON` is a string that contains a detailed system prompt for documenting global variables and constants in Python. It provides instructions for generating JSON documentation, specifying the type, description, and use of a variable.
-- **Use**: This variable is used as a template for generating documentation for global variables and constants in Python code.
+- **Description**: `VARIABLES_FOUND_SYSTEM_PROMPT_JSON` is a multi-line string that contains a detailed system prompt for documenting global variables and constants in Python code. It provides instructions on how to describe a global variable or constant using a specific JSON schema.
+- **Use**: This variable is used as a template for generating documentation for global variables and constants in Python.
 
 
 ---
 ### VARIABLES\_FOUND\_USER\_PROMPT
 - **Type**: `str`
-- **Description**: `VARIABLES_FOUND_USER_PROMPT` is a multi-line string that provides instructions for summarizing a global variable or constant in a given code. It outlines the scope of the task, emphasizing that only global variables should be described and that the level of detail should match the complexity of the variable.
-- **Use**: This variable is used as a prompt or guideline for users to document global variables in a codebase.
+- **Description**: `VARIABLES_FOUND_USER_PROMPT` is a multi-line string that provides instructions for summarizing a global variable or constant in a given code. It outlines the criteria for identifying global variables and the level of detail required based on the complexity of the variable.
+- **Use**: This variable is used as a prompt or template for generating documentation or summaries of global variables in code.
 
 
 ---
 ### TRAITS\_FOUND\_SYSTEM\_PROMPT\_JSON
 - **Type**: `str`
-- **Description**: The variable `TRAITS_FOUND_SYSTEM_PROMPT_JSON` is a multi-line string that contains a detailed system prompt for documenting Rust traits. It instructs the user to provide documentation for Rust traits using a specific JSON schema, focusing on trait bounds, generic types, methods, and a description of the trait.
-- **Use**: This variable is used as a template or guideline for generating documentation for Rust traits, ensuring consistency and completeness in the documentation process.
+- **Description**: The variable `TRAITS_FOUND_SYSTEM_PROMPT_JSON` is a multi-line string that contains a detailed system prompt for documenting Rust traits. It instructs the user to describe Rust traits using a specific JSON schema, focusing on trait bounds, generic types, methods, and a description of the trait.
+- **Use**: This variable is used as a template or guideline for generating documentation for Rust traits in a structured JSON format.
 
 
 ---
 ### TRAITS\_FOUND\_USER\_PROMPT
 - **Type**: `str`
-- **Description**: TRAITS_FOUND_USER_PROMPT is a multi-line string that serves as a template for generating user prompts related to documenting traits in Rust code. It provides instructions on how to describe traits, emphasizing the need for detail proportional to the complexity of the trait being documented.
-- **Use**: This variable is used to generate user prompts for documenting traits in Rust code, guiding users on how to provide detailed explanations.
+- **Description**: TRAITS_FOUND_USER_PROMPT is a multi-line string variable that contains a template for summarizing traits in Rust code. It provides instructions on how to describe traits, emphasizing the need for detail proportional to the complexity of the trait.
+- **Use**: This variable is used as a prompt template for generating documentation or summaries of Rust traits.
 
 
 # Classes
 
 ---
 ### RustMacroData<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroData}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L273>)
+
 - **Members**:
-    - `type`: Represents the type of the Rust macro.
-    - `description`: Provides a description of the Rust macro.
-    - `logic`: Contains the logic associated with the Rust macro.
-    - `use`: Describes how the Rust macro is used.
-- **Description**: The RustMacroData class is a specialized data structure that extends IrData to encapsulate information about Rust macros. It includes fields for the type, description, logic, and usage of a macro, providing a structured way to represent macro data. The class also includes class methods for generating system and user prompts related to macros, and it enforces that macros should not have children by raising NotImplementedError for related methods.
+    - `type`: Specifies the type of the Rust macro data.
+    - `description`: Provides a description of the Rust macro data.
+    - `logic`: Contains the logic associated with the Rust macro data.
+    - `use`: Describes the usage of the Rust macro data.
+- **Description**: The RustMacroData class is a specialized data structure that extends IrData to represent metadata and logic related to Rust macros. It includes fields for the type, description, logic, and usage of a macro, and provides class methods to generate system and user prompts for documentation purposes. The class also enforces that macros should not have children by raising NotImplementedError for related methods.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroData.system_prompt`](#RustMacroDatasystem_prompt)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroData.user_prompt`](#RustMacroDatauser_prompt)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroData.child_to_ir`](#RustMacroDatachild_to_ir)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroData.child_to_field_name`](#RustMacroDatachild_to_field_name)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroData.default_instance`](#RustMacroDatadefault_instance)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroData.system_prompt`](<#RustMacroDatasystem_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroData.user_prompt`](<#RustMacroDatauser_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroData.child_to_ir`](<#RustMacroDatachild_to_ir>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroData.child_to_field_name`](<#RustMacroDatachild_to_field_name>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroData.default_instance`](<#RustMacroDatadefault_instance>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrData`](ir_common.py.md#IrData)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrData`](<ir_common.py.md#IrData>)
 
 **Methods**
 
 ---
 #### RustMacroData\.system\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroData.system_prompt}} -->
-The `system_prompt` method returns a predefined JSON string for documenting Rust macros.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L279>)
+
+The `system_prompt` method constructs and returns a formatted string prompt for documenting Rust macros.
 - **Decorators**: `@classmethod`
-- **Inputs**: None
+- **Inputs**:
+    - `cls`: The class `RustMacroData` itself, as this is a class method.
+    - `symbol`: An instance of `RawSymbolData` representing the symbol for which the system prompt is being generated.
 - **Control Flow**:
-    - The method directly returns the constant `MACROS_FOUND_SYSTEM_PROMPT_JSON`.
-- **Output**: A string containing the JSON prompt for Rust macro documentation.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroData`](#RustMacroData)  (Base Class)
+    - Create an empty `Prompt` object.
+    - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>) with the string `MACROS_FOUND_SYSTEM_PROMPT_JSON` to the `Prompt`.
+    - Append the `GENERAL_STE_STYLE_INSTRUCTION` to the `Prompt`.
+    - Append the `USE_BACKTICKS_STYLE_INSTRUCTION` to the `Prompt`.
+    - Convert the `Prompt` into a string using `into_str()` and return it.
+- **Output**: A string representing the formatted system prompt for Rust macros.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroData`](<#RustMacroData>)  (Base Class)
 
 
 ---
 #### RustMacroData\.user\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroData.user_prompt}} -->
-The `user_prompt` method generates a user prompt string based on the provided `RawSymbolData` object, including its name and associated code.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L289>)
+
+The `user_prompt` method constructs and returns a formatted string prompt for a given symbol, including its name and code.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `cls`: The class `RustMacroData` itself, as this is a class method.
-    - `symbol`: An instance of `RawSymbolData` containing information about a symbol, including its name and code.
+    - `symbol`: An instance of `RawSymbolData` containing information about the symbol, including its name and code.
 - **Control Flow**:
-    - Initialize the `user_prompt` string with a predefined prompt followed by the symbol's name.
-    - Check if the `symbol` has `file_code`.
-    - If `file_code` is present, append it to the `user_prompt` under a 'Code' section.
-    - If `file_code` is not present, append `symbol_code` to the `user_prompt` under a 'Code' section.
-    - Return the constructed `user_prompt` string.
-- **Output**: A string containing the user prompt with the symbol's name and code.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroData`](#RustMacroData)  (Base Class)
+    - Initialize an empty `Prompt` object and append a no-restatement style instruction for symbols.
+    - Append the symbol's name to the prompt using a predefined user prompt string.
+    - Check if the symbol has associated file code; if so, append it to the prompt under the label 'Code'.
+    - If no file code is present, append the symbol's own code to the prompt under the label 'Code'.
+    - Convert the constructed prompt into a string and return it.
+- **Output**: A string representing the constructed user prompt for the given symbol, including its name and code.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroData`](<#RustMacroData>)  (Base Class)
 
 
 ---
 #### RustMacroData\.child\_to\_ir<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroData.child_to_ir}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L302>)
+
 The `child_to_ir` method raises a NotImplementedError indicating that macros should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class itself, `RustMacroData`, as this is a class method.
-    - `symbol`: An instance of `RawSymbolData` representing a symbol to be converted to an intermediate representation.
+    - `cls`: The class `RustMacroData` itself, as this is a class method.
+    - `symbol`: An instance of `RawSymbolData` representing the symbol data to be processed.
 - **Control Flow**:
-    - The method immediately raises a NotImplementedError with the message 'Macros should not have children'.
+    - The method immediately raises a `NotImplementedError` with the message 'Macros should not have children'.
 - **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroData`](#RustMacroData)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroData`](<#RustMacroData>)  (Base Class)
 
 
 ---
 #### RustMacroData\.child\_to\_field\_name<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroData.child_to_field_name}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L306>)
+
 The `child_to_field_name` method raises a NotImplementedError indicating that macros should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
@@ -270,107 +301,139 @@ The `child_to_field_name` method raises a NotImplementedError indicating that ma
 - **Control Flow**:
     - The method immediately raises a NotImplementedError with the message 'Macros should not have children'.
 - **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroData`](#RustMacroData)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroData`](<#RustMacroData>)  (Base Class)
 
 
 ---
 #### RustMacroData\.default\_instance<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroData.default_instance}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L310>)
+
 The `default_instance` method creates and returns a default instance of the `RustMacroData` class with empty or default values for its attributes.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `cls`: The class itself, `RustMacroData`, which is used to create a new instance.
     - `reified_symbol`: An optional `ReifiedSymbol` object, defaulting to `None`, which is not used in the method body.
 - **Control Flow**:
-    - The method is a class method, indicated by the `@classmethod` decorator, allowing it to be called on the class itself rather than an instance.
-    - It returns a new instance of the `RustMacroData` class.
-    - The instance is initialized with default values: an empty string for `type` and `description`, an empty list for `logic`, and an empty string for `use`.
+    - The method directly returns a new instance of `RustMacroData` using the class constructor `cls`.
+    - The `type` attribute is initialized with an empty [`FieldNameWithBackTickContent`](<ir_common.py.md#FieldNameWithBackTickContent>).
+    - The `description` attribute is initialized with an empty [`FieldNameWithRawContent`](<ir_common.py.md#FieldNameWithRawContent>).
+    - The `logic` attribute is initialized with an empty [`ListedRawContentNoNone`](<ir_common.py.md#ListedRawContentNoNone>).
+    - The `use` attribute is initialized with an empty [`FieldNameWithRawContent`](<ir_common.py.md#FieldNameWithRawContent>).
 - **Output**: A new instance of `RustMacroData` with default values for its attributes.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithBackTickContent`](ir_common.py.md#FieldNameWithBackTickContent)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithRawContent`](ir_common.py.md#FieldNameWithRawContent)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedRawContentNoNone`](ir_common.py.md#ListedRawContentNoNone)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroData`](#RustMacroData)  (Base Class)
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithBackTickContent`](<ir_common.py.md#FieldNameWithBackTickContent>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithRawContent`](<ir_common.py.md#FieldNameWithRawContent>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedRawContentNoNone`](<ir_common.py.md#ListedRawContentNoNone>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroData`](<#RustMacroData>)  (Base Class)
 
 
 
 ---
 ### RustMacroCollection<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroCollection}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L320>)
+
 - **Members**:
     - `data`: A dictionary mapping strings to RustMacroData or lists of RustMacroData.
-- **Description**: The RustMacroCollection class is a specialized collection class that inherits from IrCollection, designed to manage and organize Rust macro data. It contains a dictionary that maps strings to either a single RustMacroData instance or a list of such instances, allowing for flexible storage of macro-related information. The class also provides a class method, from_llm, which facilitates the creation of a RustMacroCollection instance from a language model and a list of raw symbols, leveraging the RustMacroData class for data representation.
+- **Description**: The RustMacroCollection class is a specialized collection class that extends IrCollection to manage and organize Rust macro data. It holds a dictionary where keys are strings and values are either a single RustMacroData instance or a list of such instances. This class provides a class method, from_llm, to create an instance of RustMacroCollection by leveraging language model data and a collection of raw symbols, facilitating the integration of Rust macro information into a structured format.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroCollection.from_llm`](#RustMacroCollectionfrom_llm)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroCollection.from_llm`](<#RustMacroCollectionfrom_llm>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](ir_common.py.md#IrCollection)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](<ir_common.py.md#IrCollection>)
 
 **Methods**
 
 ---
 #### RustMacroCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroCollection.from_llm}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L323>)
+
 The `from_llm` method creates an instance of `RustMacroCollection` using data from a language model and a collection of raw symbols.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class `RustMacroCollection` itself, used to call class methods.
-    - `llm`: An instance of `ChatOpenAI`, representing the language model to be used for data extraction.
+    - `llm`: An instance of `ChatOpenAI` representing the language model to be used for data extraction.
     - `symbols_list`: A `RawSymbolCollection` containing raw symbols to be processed into the collection.
 - **Control Flow**:
-    - Calls the [`from_llm_with_ir_data`](ir_common.py.md#IrCollectionfrom_llm_with_ir_data) method on the class `RustMacroCollection` with `RustMacroData`, `llm`, and `symbols_list` as arguments.
-    - Returns the result of the [`from_llm_with_ir_data`](ir_common.py.md#IrCollectionfrom_llm_with_ir_data) method call.
-- **Output**: An instance of `RustMacroCollection` initialized with data processed from the language model and raw symbols.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](ir_common.py.md#IrCollectionfrom_llm_with_ir_data)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroCollection`](#RustMacroCollection)  (Base Class)
+    - The method calls [`from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>) on the class `RustMacroCollection`, passing `RustMacroData`, `llm`, and `symbols_list` as arguments.
+    - The [`from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>) method processes the provided language model and symbols list to create and return an instance of `RustMacroCollection`.
+- **Output**: An instance of `RustMacroCollection` initialized with data derived from the language model and raw symbols.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroCollection`](<#RustMacroCollection>)  (Base Class)
 
 
 
 ---
 ### RustTraitData<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitData}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L328>)
+
 - **Members**:
     - `trait_bounds`: Holds the trait bounds associated with the Rust trait.
-    - `generic_types`: Contains the generic types associated with the Rust trait.
-    - `methods`: Lists the methods defined for the Rust trait.
+    - `generic_types`: Stores the generic types used in the Rust trait.
+    - `methods`: Contains the methods defined for the Rust trait.
     - `description`: Provides a description of the Rust trait.
-- **Description**: The RustTraitData class is a specialized data structure that extends IrData to encapsulate information about Rust traits, including their trait bounds, generic types, methods, and a description. It provides class methods for generating system and user prompts related to Rust traits and enforces that traits should not have children by raising NotImplementedError for related methods. The class also includes a method to create a default instance with empty content for all its fields.
+- **Description**: The RustTraitData class is a specialized data structure that extends IrData to encapsulate information about Rust traits. It includes attributes for storing trait bounds, generic types, methods, and a description, which are essential for documenting and understanding the structure and behavior of Rust traits. The class also provides class methods for generating system and user prompts, and for creating default instances, but it does not support child elements, reflecting the nature of Rust traits.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitData.system_prompt`](#RustTraitDatasystem_prompt)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitData.user_prompt`](#RustTraitDatauser_prompt)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitData.child_to_ir`](#RustTraitDatachild_to_ir)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitData.child_to_field_name`](#RustTraitDatachild_to_field_name)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitData.default_instance`](#RustTraitDatadefault_instance)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitData.system_prompt`](<#RustTraitDatasystem_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitData.user_prompt`](<#RustTraitDatauser_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitData.child_to_ir`](<#RustTraitDatachild_to_ir>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitData.child_to_field_name`](<#RustTraitDatachild_to_field_name>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitData.default_instance`](<#RustTraitDatadefault_instance>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrData`](ir_common.py.md#IrData)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrData`](<ir_common.py.md#IrData>)
 
 **Methods**
 
 ---
 #### RustTraitData\.system\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitData.system_prompt}} -->
-The `system_prompt` method returns a predefined JSON string for documenting Rust traits.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L334>)
+
+The `system_prompt` method constructs and returns a formatted string prompt for documenting Rust traits.
 - **Decorators**: `@classmethod`
-- **Inputs**: None
+- **Inputs**:
+    - `cls`: The class `RustTraitData` itself, as this is a class method.
+    - `symbol`: An instance of `RawSymbolData` representing the symbol for which the system prompt is being generated.
 - **Control Flow**:
-    - The method directly returns the constant `TRAITS_FOUND_SYSTEM_PROMPT_JSON`.
-- **Output**: A string containing the JSON schema for documenting Rust traits.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitData`](#RustTraitData)  (Base Class)
+    - Create an empty `Prompt` object.
+    - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>) with the string `TRAITS_FOUND_SYSTEM_PROMPT_JSON` to the `Prompt`.
+    - Append the `GENERAL_STE_STYLE_INSTRUCTION` to the `Prompt`.
+    - Append the `USE_BACKTICKS_STYLE_INSTRUCTION` to the `Prompt`.
+    - Convert the `Prompt` into a string using `into_str()` and return it.
+- **Output**: A string representing the constructed system prompt for Rust trait documentation.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitData`](<#RustTraitData>)  (Base Class)
 
 
 ---
 #### RustTraitData\.user\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitData.user_prompt}} -->
-The `user_prompt` method generates a user prompt string based on the provided `RawSymbolData` object, including its name and code content.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L344>)
+
+The `user_prompt` method generates a user prompt string based on the provided `RawSymbolData` object, including specific instructions and code content.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `cls`: The class `RustTraitData` itself, as this is a class method.
-    - `symbol`: An instance of `RawSymbolData` containing the symbol's name and code information.
+    - `symbol`: An instance of `RawSymbolData` containing information about a symbol, including its name and code.
 - **Control Flow**:
-    - Initialize `user_prompt` with a base prompt string concatenated with the symbol's name.
-    - Check if `symbol.file_code` is available; if so, append it to `user_prompt` under a 'Code' section.
-    - If `symbol.file_code` is not available, append `symbol.symbol_code` to `user_prompt` under a 'Code' section.
-    - Return the constructed `user_prompt` string.
-- **Output**: A string containing the user prompt with the symbol's name and relevant code content.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitData`](#RustTraitData)  (Base Class)
+    - Create an empty `Prompt` object and append a no-restatement style instruction for symbols.
+    - Append a component to the prompt with the traits found user prompt and the symbol's name.
+    - Check if the `symbol` has `file_code`; if so, append it to the prompt as a component labeled 'Code'.
+    - If `file_code` is not present, append `symbol_code` to the prompt as a component labeled 'Code'.
+    - Convert the constructed prompt into a string and return it.
+- **Output**: A string representing the constructed user prompt, including instructions and code content.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitData`](<#RustTraitData>)  (Base Class)
 
 
 ---
 #### RustTraitData\.child\_to\_ir<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitData.child_to_ir}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L357>)
+
 The `child_to_ir` method raises a NotImplementedError indicating that traits should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
@@ -379,317 +442,411 @@ The `child_to_ir` method raises a NotImplementedError indicating that traits sho
 - **Control Flow**:
     - The method immediately raises a NotImplementedError with the message 'Traits should not have children'.
 - **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitData`](#RustTraitData)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitData`](<#RustTraitData>)  (Base Class)
 
 
 ---
 #### RustTraitData\.child\_to\_field\_name<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitData.child_to_field_name}} -->
-The `child_to_field_name` method raises a NotImplementedError indicating that traits should not have children.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L361>)
+
+The `child_to_field_name` method raises a `NotImplementedError` indicating that traits should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `child`: An instance of RawSymbolData representing a child symbol.
+    - `child`: An instance of `RawSymbolData` representing a child symbol.
 - **Control Flow**:
-    - The method immediately raises a NotImplementedError with the message 'Traits should not have children'.
+    - The method immediately raises a `NotImplementedError` with the message 'Traits should not have children'.
 - **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitData`](#RustTraitData)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitData`](<#RustTraitData>)  (Base Class)
 
 
 ---
 #### RustTraitData\.default\_instance<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitData.default_instance}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L365>)
+
 The `default_instance` method creates and returns a default instance of the `RustTraitData` class with empty or default values for its attributes.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class `RustTraitData` itself, used to create a new instance.
+    - `cls`: The class itself, `RustTraitData`, which is used to create a new instance.
     - `reified_symbol`: An optional `ReifiedSymbol` object, defaulting to `None`, which is not used in the method body.
 - **Control Flow**:
     - The method is a class method, indicated by the `@classmethod` decorator, allowing it to be called on the class itself rather than an instance.
     - It returns a new instance of the `RustTraitData` class.
     - The instance is initialized with default values: empty lists for `trait_bounds`, `generic_types`, and `methods`, and an empty string for `description`.
-- **Output**: A new instance of `RustTraitData` with default values for all its attributes.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedRawContentNoNone`](ir_common.py.md#ListedRawContentNoNone)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedBacktickNameRawContentNoNone`](ir_common.py.md#ListedBacktickNameRawContentNoNone)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithRawContent`](ir_common.py.md#FieldNameWithRawContent)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitData`](#RustTraitData)  (Base Class)
+- **Output**: A new instance of `RustTraitData` with default attribute values.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedRawContentNoNone`](<ir_common.py.md#ListedRawContentNoNone>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedBacktickNameRawContentNoNone`](<ir_common.py.md#ListedBacktickNameRawContentNoNone>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithRawContent`](<ir_common.py.md#FieldNameWithRawContent>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitData`](<#RustTraitData>)  (Base Class)
 
 
 
 ---
 ### RustTraitCollection<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitCollection}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L375>)
+
 - **Members**:
     - `data`: A dictionary mapping strings to RustTraitData or lists of RustTraitData.
-- **Description**: The RustTraitCollection class is a specialized collection class that inherits from IrCollection, designed to manage and organize Rust trait data. It holds a dictionary where keys are strings and values are either RustTraitData instances or lists of such instances. This class provides a class method, from_llm, to create an instance of RustTraitCollection by processing data from a language model and a collection of raw symbols, facilitating the integration of Rust trait information into a structured format.
+- **Description**: The RustTraitCollection class is a specialized collection class that extends IrCollection to manage and organize Rust trait data. It holds a dictionary where keys are strings and values are either RustTraitData instances or lists of such instances. The class provides a class method, from_llm, to create an instance of RustTraitCollection by processing data from a language model and a collection of raw symbols, specifically using RustTraitData as the intermediate representation.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitCollection.from_llm`](#RustTraitCollectionfrom_llm)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitCollection.from_llm`](<#RustTraitCollectionfrom_llm>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](ir_common.py.md#IrCollection)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](<ir_common.py.md#IrCollection>)
 
 **Methods**
 
 ---
 #### RustTraitCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitCollection.from_llm}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L378>)
+
 The `from_llm` method creates an instance of the class using data from a language model and a collection of symbols.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `llm`: An instance of the ChatOpenAI class, representing a language model.
-    - `symbols_list`: A collection of raw symbols, represented by the RawSymbolCollection class.
+    - `cls`: The class itself, used to create an instance.
+    - `llm`: An instance of ChatOpenAI, representing the language model to be used.
+    - `symbols_list`: A collection of raw symbols, represented by RawSymbolCollection, to be used in the instance creation.
 - **Control Flow**:
-    - The method calls another class method [`from_llm_with_ir_data`](ir_common.py.md#IrCollectionfrom_llm_with_ir_data) with `RustTraitData`, `llm`, and `symbols_list` as arguments.
-    - The result of the [`from_llm_with_ir_data`](ir_common.py.md#IrCollectionfrom_llm_with_ir_data) call is returned as the output of the method.
-- **Output**: An instance of the class, initialized with data processed from the language model and symbol collection.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](ir_common.py.md#IrCollectionfrom_llm_with_ir_data)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitCollection`](#RustTraitCollection)  (Base Class)
+    - The method calls [`from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>) with `RustTraitData`, `llm`, and `symbols_list` as arguments.
+    - The method returns the result of the [`from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>) call, which is an instance of the class.
+- **Output**: An instance of the class created using the provided language model and symbols list.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitCollection`](<#RustTraitCollection>)  (Base Class)
 
 
 
 ---
 ### RustDataStructureData<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureData}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L383>)
+
 - **Members**:
     - `type`: Specifies the type of the Rust data structure.
-    - `members`: Holds the members of the Rust data structure.
+    - `members`: Holds a list of members of the Rust data structure.
     - `description`: Provides a description of the Rust data structure.
     - `trait_bounds`: Lists the trait bounds associated with the Rust data structure.
     - `_supported_child_ordering`: Defines the supported ordering of child elements for the data structure.
-- **Description**: The RustDataStructureData class is a specialized data structure representation that extends the IrData class, designed to encapsulate information about Rust data structures such as enums and structs. It includes attributes for specifying the type, members, description, and trait bounds of the data structure, as well as a private attribute for supported child ordering. The class provides class methods for generating system and user prompts related to Rust data structures, and for mapping child symbols to intermediate representations or field names.
+- **Description**: The RustDataStructureData class is designed to represent and manage metadata for Rust data structures, such as structs or enums, within a documentation or analysis context. It extends the IrData class and includes attributes for specifying the type, members, description, and trait bounds of a Rust data structure. Additionally, it provides class methods for generating system and user prompts, mapping child symbols to intermediate representations, and creating default instances of the class. This class is part of a larger framework for analyzing and documenting Rust code, focusing on data structures and their components.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureData.system_prompt`](#RustDataStructureDatasystem_prompt)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureData.user_prompt`](#RustDataStructureDatauser_prompt)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureData.child_to_ir`](#RustDataStructureDatachild_to_ir)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureData.child_to_field_name`](#RustDataStructureDatachild_to_field_name)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureData.default_instance`](#RustDataStructureDatadefault_instance)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureData.system_prompt`](<#RustDataStructureDatasystem_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureData.user_prompt`](<#RustDataStructureDatauser_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureData.child_to_ir`](<#RustDataStructureDatachild_to_ir>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureData.child_to_field_name`](<#RustDataStructureDatachild_to_field_name>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureData.default_instance`](<#RustDataStructureDatadefault_instance>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrData`](ir_common.py.md#IrData)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrData`](<ir_common.py.md#IrData>)
 
 **Methods**
 
 ---
 #### RustDataStructureData\.system\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureData.system_prompt}} -->
-The `system_prompt` method returns a predefined JSON string for documenting Rust data structures.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L392>)
+
+The `system_prompt` method constructs and returns a formatted string prompt for documenting Rust data structures.
 - **Decorators**: `@classmethod`
-- **Inputs**: None
+- **Inputs**:
+    - `cls`: The class `RustDataStructureData` itself, used to call the class method.
+    - `symbol`: An instance of `RawSymbolData` representing the symbol for which the system prompt is being generated.
 - **Control Flow**:
-    - The method directly returns the constant `DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON`.
-- **Output**: A string containing the JSON schema for documenting Rust data structures.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureData`](#RustDataStructureData)  (Base Class)
+    - Create an empty `Prompt` object.
+    - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>) with the string `DATA_STRUCTURES_FOUND_SYSTEM_PROMPT_JSON` to the `Prompt`.
+    - Append the `GENERAL_STE_STYLE_INSTRUCTION` to the `Prompt`.
+    - Append the `USE_BACKTICKS_STYLE_INSTRUCTION` to the `Prompt`.
+    - Convert the `Prompt` into a string using `into_str()` and return it.
+- **Output**: A string representing the formatted system prompt for documenting Rust data structures.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureData`](<#RustDataStructureData>)  (Base Class)
 
 
 ---
 #### RustDataStructureData\.user\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureData.user_prompt}} -->
-The `user_prompt` method generates a user prompt string by appending the name and code of a given symbol to a predefined prompt template.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L402>)
+
+The `user_prompt` method generates a user prompt string for a given symbol, including its name and code, using a structured prompt format.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class `RustDataStructureData` itself, as this is a class method.
-    - `symbol`: An instance of `RawSymbolData` containing information about a symbol, including its name and code.
+    - `cls`: The class `RustDataStructureData` to which this method belongs.
+    - `symbol`: An instance of `RawSymbolData` representing the symbol for which the user prompt is being generated.
 - **Control Flow**:
-    - Initialize `user_prompt` with a predefined prompt template followed by the symbol's name.
-    - Check if `symbol.file_code` is available; if so, append it to `user_prompt` under a 'Code' section.
-    - If `symbol.file_code` is not available, append `symbol.symbol_code` to `user_prompt` under a 'Code' section.
-    - Return the constructed `user_prompt` string.
-- **Output**: A string containing the user prompt with the symbol's name and code.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureData`](#RustDataStructureData)  (Base Class)
+    - Initialize an empty prompt using `Prompt.empty()` and append a no-restatement style instruction for symbols.
+    - Append a component to the prompt containing the user prompt template and the symbol's name.
+    - Check if the symbol has `file_code`; if so, append it to the prompt as a component labeled 'Code'.
+    - If `file_code` is not present, append the `symbol_code` to the prompt as a component labeled 'Code'.
+    - Convert the constructed prompt into a string using `into_str()` and return it.
+- **Output**: A string representing the user prompt for the given symbol, including its name and code.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureData`](<#RustDataStructureData>)  (Base Class)
 
 
 ---
 #### RustDataStructureData\.child\_to\_ir<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureData.child_to_ir}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L417>)
+
 The `child_to_ir` method maps a given `RawSymbolData` symbol's kind to a corresponding intermediate representation (IR) data type or returns `None` if no mapping exists.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class itself, `RustDataStructureData`, which is implicitly passed to class methods.
     - `symbol`: An instance of `RawSymbolData` representing a symbol whose kind is to be mapped to an IR data type.
 - **Control Flow**:
-    - A dictionary `mapping` is defined to associate `SymbolKind.CALLABLE` with `RustMethodData` and `SymbolKind.DATA_STRUCTURE` with `None`.
+    - A dictionary `mapping` is defined to associate `SymbolKind` values with corresponding IR data types or `None`.
     - The method attempts to retrieve the IR data type from the `mapping` dictionary using the `symbol.symbol_kind` as the key.
+    - If a corresponding IR data type is found, it is returned; otherwise, `None` is returned.
 - **Output**: The method returns a type of `IrData` corresponding to the symbol's kind or `None` if no mapping is found.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureData`](#RustDataStructureData)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureData`](<#RustDataStructureData>)  (Base Class)
 
 
 ---
 #### RustDataStructureData\.child\_to\_field\_name<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureData.child_to_field_name}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L425>)
+
 The `child_to_field_name` method maps a `RawSymbolData` object's `symbol_kind` to a corresponding `ScopeRelation` field name.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `child`: A `RawSymbolData` object representing a symbol whose `symbol_kind` needs to be mapped to a field name.
 - **Control Flow**:
-    - A dictionary `mapping` is defined to map `SymbolKind.CALLABLE` to `ScopeRelation.METHOD` and `SymbolKind.DATA_STRUCTURE` to `ScopeRelation.NESTED_DATA_STRUCTURE`.
-    - The method returns the value from the `mapping` dictionary corresponding to the `symbol_kind` of the `child` argument.
-- **Output**: A string representing the field name associated with the `symbol_kind` of the `child`.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureData`](#RustDataStructureData)  (Base Class)
+    - A dictionary `mapping` is defined to map `SymbolKind` values to `ScopeRelation` values.
+    - The method retrieves the `symbol_kind` from the `child` input and uses it to get the corresponding `ScopeRelation` from the `mapping` dictionary.
+    - The method returns the mapped `ScopeRelation` value or `None` if the `symbol_kind` is not found in the dictionary.
+- **Output**: A string representing the field name corresponding to the `symbol_kind` of the `child`, or `None` if no mapping exists.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureData`](<#RustDataStructureData>)  (Base Class)
 
 
 ---
 #### RustDataStructureData\.default\_instance<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureData.default_instance}} -->
-The `default_instance` method creates a default instance of the `RustDataStructureData` class with predefined values for its attributes.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L433>)
+
+The `default_instance` method creates and returns a default instance of the `RustDataStructureData` class with predefined values for its attributes.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class itself, `RustDataStructureData`, which is used to create a new instance.
+    - `cls`: The class `RustDataStructureData` itself, as this is a class method.
     - `reified_symbol`: An optional `ReifiedSymbol` object, defaulting to `None`, which is not used in the method body.
 - **Control Flow**:
-    - The method is a class method, indicated by the `@classmethod` decorator, allowing it to be called on the class itself rather than an instance.
-    - It returns a new instance of the `RustDataStructureData` class.
-    - The instance is initialized with default values: `type` is set to a [`FieldNameWithBackTickContent`](ir_common.py.md#FieldNameWithBackTickContent) with content 'N/A', `members` is an empty [`ListedBacktickNameRawContentNoNone`](ir_common.py.md#ListedBacktickNameRawContentNoNone), `description` is a [`FieldNameWithRawContent`](ir_common.py.md#FieldNameWithRawContent) with content 'Implemented elsewhere', and `trait_bounds` is an empty [`ListedRawContentNoNone`](ir_common.py.md#ListedRawContentNoNone).
-- **Output**: A new instance of `RustDataStructureData` with default attribute values.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithBackTickContent`](ir_common.py.md#FieldNameWithBackTickContent)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedBacktickNameRawContentNoNone`](ir_common.py.md#ListedBacktickNameRawContentNoNone)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithRawContent`](ir_common.py.md#FieldNameWithRawContent)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedRawContentNoNone`](ir_common.py.md#ListedRawContentNoNone)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureData`](#RustDataStructureData)  (Base Class)
+    - The method is a class method, indicated by the `@classmethod` decorator, and takes `cls` as its first argument.
+    - It returns an instance of the `RustDataStructureData` class, initialized with specific default values for its attributes: `type`, `members`, `description`, and `trait_bounds`.
+- **Output**: An instance of `RustDataStructureData` with default values for its attributes.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithBackTickContent`](<ir_common.py.md#FieldNameWithBackTickContent>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedBacktickNameRawContentNoNone`](<ir_common.py.md#ListedBacktickNameRawContentNoNone>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FieldNameWithRawContent`](<ir_common.py.md#FieldNameWithRawContent>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.ListedRawContentNoNone`](<ir_common.py.md#ListedRawContentNoNone>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureData`](<#RustDataStructureData>)  (Base Class)
 
 
 
 ---
 ### RustDataStructureCollection<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureCollection}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L443>)
+
 - **Members**:
     - `data`: A dictionary mapping strings to RustDataStructureData or lists of RustDataStructureData.
-- **Description**: The RustDataStructureCollection class is a specialized collection class that extends IrCollection, designed to manage and organize Rust data structures. It holds a dictionary where keys are strings and values are either instances of RustDataStructureData or lists of such instances. This class provides a class method, from_llm, to create an instance of the collection from a language model and a list of raw symbols, facilitating the integration of Rust data structures into a larger system of code analysis or generation.
+- **Description**: The RustDataStructureCollection class is a specialized collection class that extends IrCollection to manage and organize Rust data structures. It holds a dictionary where keys are strings and values are either instances of RustDataStructureData or lists of such instances. This class provides a class method, from_llm, to create an instance of the collection from a language model and a list of raw symbols, facilitating the integration of Rust data structures into a larger system or analysis framework.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureCollection.from_llm`](#RustDataStructureCollectionfrom_llm)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureCollection.from_llm`](<#RustDataStructureCollectionfrom_llm>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](ir_common.py.md#IrCollection)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](<ir_common.py.md#IrCollection>)
 
 **Methods**
 
 ---
 #### RustDataStructureCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureCollection.from_llm}} -->
-The `from_llm` method creates an instance of `RustDataStructureCollection` using data from a language model and a collection of raw symbols.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L446>)
+
+The `from_llm` method creates an instance of the class by invoking the [`from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>) method with `RustDataStructureData`, `llm`, and `symbols_list` as arguments.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class `RustDataStructureCollection` itself, used to call the class method.
-    - `llm`: An instance of `ChatOpenAI`, representing the language model to be used for data extraction.
-    - `symbols_list`: A `RawSymbolCollection` containing raw symbols to be processed.
+    - `cls`: The class itself, used to call class methods.
+    - `llm`: An instance of `ChatOpenAI`, representing a language model.
+    - `symbols_list`: An instance of `RawSymbolCollection`, representing a collection of raw symbols.
 - **Control Flow**:
-    - The method calls [`from_llm_with_ir_data`](ir_common.py.md#IrCollectionfrom_llm_with_ir_data) on the class `RustDataStructureCollection` with `RustDataStructureData`, `llm`, and `symbols_list` as arguments.
-- **Output**: Returns an instance of `RustDataStructureCollection` initialized with data processed from the language model and raw symbols.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](ir_common.py.md#IrCollectionfrom_llm_with_ir_data)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureCollection`](#RustDataStructureCollection)  (Base Class)
+    - The method calls `cls.from_llm_with_ir_data` with `RustDataStructureData`, `llm`, and `symbols_list` as arguments.
+- **Output**: Returns an instance of the class created by the [`from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>) method.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureCollection`](<#RustDataStructureCollection>)  (Base Class)
 
 
 
 ---
 ### RustMethodData<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMethodData}} -->
-- **Description**: The `RustMethodData` class is a specialized subclass of `FnData` designed to handle method-related data in Rust code. It provides class methods for generating system and user prompts specific to methods found in Rust code, utilizing predefined JSON templates. The class also includes methods to handle child-to-IR conversions and field name mappings, although these raise `NotImplementedError` as methods are not expected to have children in this context. This class is part of a larger framework for analyzing and documenting Rust code, focusing on method implementations.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L451>)
+
+- **Description**: The `RustMethodData` class is a specialized subclass of `FnData` designed to handle method-related data for Rust programming language constructs. It provides class methods to generate system and user prompts for documenting Rust methods, ensuring that the documentation is structured and follows specific style instructions. The class also includes methods to handle child-to-IR conversions, although these are not implemented as methods should not have children in this context. This class is part of a larger framework for analyzing and documenting Rust code, focusing on methods within data structures.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMethodData.system_prompt`](#RustMethodDatasystem_prompt)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMethodData.user_prompt`](#RustMethodDatauser_prompt)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMethodData.child_to_ir`](#RustMethodDatachild_to_ir)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMethodData.child_to_field_name`](#RustMethodDatachild_to_field_name)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMethodData.system_prompt`](<#RustMethodDatasystem_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMethodData.user_prompt`](<#RustMethodDatauser_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMethodData.child_to_ir`](<#RustMethodDatachild_to_ir>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMethodData.child_to_field_name`](<#RustMethodDatachild_to_field_name>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FnData`](ir_common.py.md#FnData)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FnData`](<ir_common.py.md#FnData>)
 
 **Methods**
 
 ---
 #### RustMethodData\.system\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMethodData.system_prompt}} -->
-The `system_prompt` method returns a predefined JSON string for documenting Rust method implementations.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L452>)
+
+The `system_prompt` method constructs and returns a formatted string prompt for documenting Rust method implementations.
 - **Decorators**: `@classmethod`
-- **Inputs**: None
+- **Inputs**:
+    - `cls`: The class `RustMethodData` itself, as this is a class method.
+    - `symbol`: An instance of `RawSymbolData` representing the symbol for which the system prompt is being generated.
 - **Control Flow**:
-    - The method directly returns the constant `METHODS_FOUND_SYSTEM_PROMPT_JSON`.
-- **Output**: A string containing JSON data for documenting Rust methods.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMethodData`](#RustMethodData)  (Base Class)
+    - Create an empty `Prompt` object.
+    - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>) with the string `METHODS_FOUND_SYSTEM_PROMPT_JSON` to the `Prompt`.
+    - Append the `GENERAL_STE_STYLE_INSTRUCTION` to the `Prompt`.
+    - Append the `USE_BACKTICKS_STYLE_INSTRUCTION` to the `Prompt`.
+    - Convert the `Prompt` into a string using `into_str()` and return it.
+- **Output**: A string representing the formatted system prompt for documenting Rust method implementations.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMethodData`](<#RustMethodData>)  (Base Class)
 
 
 ---
 #### RustMethodData\.user\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMethodData.user_prompt}} -->
-The `user_prompt` method generates a user prompt string based on the provided `RawSymbolData` object, including the symbol's name and code.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L462>)
+
+The `user_prompt` method generates a user-facing prompt string based on the provided symbol's name and code content.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `cls`: The class `RustMethodData` itself, as this is a class method.
-    - `symbol`: An instance of `RawSymbolData` containing information about a symbol, including its name and code.
+    - `symbol`: An instance of `RawSymbolData` containing information about a symbol, including its name and code content.
 - **Control Flow**:
-    - Initialize the `user_prompt` string with a predefined prompt and the symbol's name.
-    - Check if `symbol.file_code` is available; if so, append it to the `user_prompt` string.
-    - If `symbol.file_code` is not available, append `symbol.symbol_code` to the `user_prompt` string instead.
-    - Return the constructed `user_prompt` string.
-- **Output**: A string containing the user prompt, which includes the symbol's name and its associated code.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMethodData`](#RustMethodData)  (Base Class)
+    - Initialize an empty `Prompt` object and append a no-restatement style instruction for symbols.
+    - Append a component to the prompt with a string that includes a user prompt message and the symbol's name.
+    - Check if the symbol has `file_code`; if true, append a component with the file code to the prompt.
+    - If `file_code` is not present, append a component with the `symbol_code` to the prompt.
+    - Convert the constructed prompt into a string and return it.
+- **Output**: A string representing the constructed user prompt.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMethodData`](<#RustMethodData>)  (Base Class)
 
 
 ---
 #### RustMethodData\.child\_to\_ir<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMethodData.child_to_ir}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L476>)
+
 The `child_to_ir` method raises a NotImplementedError indicating that methods should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `cls`: The class itself, as this is a class method.
-    - `symbol`: An instance of RawSymbolData representing the symbol to be converted to intermediate representation (IR).
+    - `symbol`: An instance of RawSymbolData representing the symbol to be processed.
 - **Control Flow**:
     - The method immediately raises a NotImplementedError with the message 'Methods should not have children'.
 - **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMethodData`](#RustMethodData)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMethodData`](<#RustMethodData>)  (Base Class)
 
 
 ---
 #### RustMethodData\.child\_to\_field\_name<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMethodData.child_to_field_name}} -->
-The `child_to_field_name` method raises a NotImplementedError indicating that methods should not have children.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L480>)
+
+The `child_to_field_name` method raises a `NotImplementedError` indicating that methods should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `child`: An instance of RawSymbolData representing a child symbol.
+    - `child`: An instance of `RawSymbolData` representing a child symbol.
 - **Control Flow**:
-    - The method immediately raises a NotImplementedError with the message 'Methods should not have children'.
+    - The method immediately raises a `NotImplementedError` with the message 'Methods should not have children'.
 - **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMethodData`](#RustMethodData)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMethodData`](<#RustMethodData>)  (Base Class)
 
 
 
 ---
 ### RustFnData<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustFnData}} -->
-- **Description**: The `RustFnData` class is a specialized subclass of `FnData` designed to handle function-related data in the context of Rust programming. It provides class methods for generating system and user prompts specific to functions, utilizing predefined JSON templates. The class also includes methods to handle child elements, although it explicitly raises `NotImplementedError` for children, indicating that functions should not have children in this context. This class is part of a larger framework for analyzing and documenting Rust code, focusing on functions.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L485>)
+
+- **Description**: The `RustFnData` class is a specialized subclass of `FnData` designed to handle function-related data in the context of Rust programming. It provides class methods for generating system and user prompts based on a given `RawSymbolData` symbol, which are used to facilitate structured prompting for functions. The class also includes methods that raise `NotImplementedError` for operations related to child elements, indicating that functions should not have children in this context. This class is part of a larger framework for analyzing and documenting Rust code, focusing specifically on functions.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustFnData.system_prompt`](#RustFnDatasystem_prompt)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustFnData.user_prompt`](#RustFnDatauser_prompt)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustFnData.child_to_ir`](#RustFnDatachild_to_ir)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustFnData.child_to_field_name`](#RustFnDatachild_to_field_name)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustFnData.system_prompt`](<#RustFnDatasystem_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustFnData.user_prompt`](<#RustFnDatauser_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustFnData.child_to_ir`](<#RustFnDatachild_to_ir>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustFnData.child_to_field_name`](<#RustFnDatachild_to_field_name>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FnData`](ir_common.py.md#FnData)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.FnData`](<ir_common.py.md#FnData>)
 
 **Methods**
 
 ---
 #### RustFnData\.system\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustFnData.system_prompt}} -->
-The `system_prompt` method returns a predefined JSON string for documenting Rust functions.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L486>)
+
+The `system_prompt` method constructs and returns a formatted string prompt for documenting Rust functions.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class itself, `RustFnData`, which is used to call the class method.
+    - `cls`: The class `RustFnData` itself, as this is a class method.
+    - `symbol`: An instance of `RawSymbolData` representing the symbol for which the system prompt is being generated.
 - **Control Flow**:
-    - The method directly returns the constant `FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON`.
-- **Output**: A string containing the JSON schema for documenting Rust functions.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustFnData`](#RustFnData)  (Base Class)
+    - Create an empty `Prompt` object.
+    - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>) with the string `FUNCTIONS_FOUND_SYSTEM_PROMPT_JSON` to the `Prompt`.
+    - Append the `GENERAL_STE_STYLE_INSTRUCTION` to the `Prompt`.
+    - Append the `USE_BACKTICKS_STYLE_INSTRUCTION` to the `Prompt`.
+    - Convert the `Prompt` into a string using `into_str()` and return it.
+- **Output**: A string representing the constructed system prompt for Rust function documentation.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustFnData`](<#RustFnData>)  (Base Class)
 
 
 ---
 #### RustFnData\.user\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustFnData.user_prompt}} -->
-The `user_prompt` method generates a user prompt string based on the provided `RawSymbolData` object, including the symbol's name and its associated code.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L496>)
+
+The `user_prompt` method constructs and returns a formatted string prompt based on the provided `RawSymbolData` object.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `cls`: The class `RustFnData` itself, as this is a class method.
     - `symbol`: An instance of `RawSymbolData` containing information about a symbol, including its name and code.
 - **Control Flow**:
-    - Initialize the `user_prompt` string with a predefined prompt followed by the symbol's name.
-    - Check if the `symbol` has `file_code`.
-    - If `file_code` is present, append it to the `user_prompt` string under a 'Code' section.
-    - If `file_code` is not present, append `symbol_code` to the `user_prompt` string under a 'Code' section.
-    - Return the constructed `user_prompt` string.
-- **Output**: A string containing the user prompt with the symbol's name and code.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustFnData`](#RustFnData)  (Base Class)
+    - Initialize an empty `Prompt` object and append a no-restatement style instruction for symbols.
+    - Append a component to the prompt with the user's prompt message and the symbol's name.
+    - Check if the `symbol` has `file_code`; if so, append it to the prompt as 'Code'.
+    - If `file_code` is not present, append `symbol_code` to the prompt as 'Code'.
+    - Convert the constructed prompt into a string and return it.
+- **Output**: A string representing the constructed user prompt based on the symbol's data.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustFnData`](<#RustFnData>)  (Base Class)
 
 
 ---
 #### RustFnData\.child\_to\_ir<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustFnData.child_to_ir}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L509>)
+
 The `child_to_ir` method raises a NotImplementedError indicating that functions should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class itself, used to call class methods.
-    - `symbol`: An instance of RawSymbolData representing a symbol to be converted to intermediate representation (IR).
+    - `cls`: The class `RustFnData` itself, as this is a class method.
+    - `symbol`: An instance of `RawSymbolData` representing a symbol to be converted to intermediate representation (IR).
 - **Control Flow**:
     - The method immediately raises a NotImplementedError with the message 'Functions should not have children'.
 - **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustFnData`](#RustFnData)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustFnData`](<#RustFnData>)  (Base Class)
 
 
 ---
 #### RustFnData\.child\_to\_field\_name<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustFnData.child_to_field_name}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L513>)
+
 The `child_to_field_name` method raises a NotImplementedError indicating that functions should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
@@ -697,358 +854,422 @@ The `child_to_field_name` method raises a NotImplementedError indicating that fu
 - **Control Flow**:
     - The method immediately raises a NotImplementedError with the message 'Functions should not have children'.
 - **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustFnData`](#RustFnData)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustFnData`](<#RustFnData>)  (Base Class)
 
 
 
 ---
 ### RustFnCollection<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustFnCollection}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L518>)
+
 - **Members**:
     - `data`: A dictionary mapping string keys to RustFnData or lists of RustFnData.
-- **Description**: The RustFnCollection class is a specialized collection class that inherits from IrCollection, designed to manage and organize Rust function data. It holds a dictionary where each key is a string and the value is either a RustFnData object or a list of such objects, representing functions in Rust. The class provides a class method, from_llm, which facilitates the creation of a RustFnCollection instance from a language model and a list of symbols, leveraging the RustFnData class for intermediate representation data.
+- **Description**: The RustFnCollection class is a specialized collection class that inherits from IrCollection, designed to manage and organize Rust function data. It holds a dictionary where each key is a string representing a function name, and the value is either a RustFnData object or a list of such objects. This class provides a class method, from_llm, to create an instance from a language model and a collection of raw symbols, facilitating the integration of Rust function data into a larger system.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustFnCollection.from_llm`](#RustFnCollectionfrom_llm)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustFnCollection.from_llm`](<#RustFnCollectionfrom_llm>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](ir_common.py.md#IrCollection)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](<ir_common.py.md#IrCollection>)
 
 **Methods**
 
 ---
 #### RustFnCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustFnCollection.from_llm}} -->
-The `from_llm` method creates an instance of `RustFnCollection` using data from a language model and a collection of raw symbols.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L521>)
+
+The `from_llm` class method creates an instance of `RustFnCollection` using data from a language model and a collection of raw symbols.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `cls`: The class `RustFnCollection` itself, used to create an instance.
     - `llm`: An instance of `ChatOpenAI`, representing the language model to be used.
-    - `symbols_list`: A `RawSymbolCollection` containing raw symbols to be processed.
+    - `symbols_list`: A `RawSymbolCollection` containing raw symbol data to be processed.
 - **Control Flow**:
-    - Calls the [`from_llm_with_ir_data`](ir_common.py.md#IrCollectionfrom_llm_with_ir_data) method on the class `RustFnCollection`.
-    - Passes `RustFnData`, `llm`, and `symbols_list` as arguments to [`from_llm_with_ir_data`](ir_common.py.md#IrCollectionfrom_llm_with_ir_data).
+    - Calls the [`from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>) method on the class `cls` with `RustFnData`, `llm`, and `symbols_list` as arguments.
 - **Output**: Returns an instance of `RustFnCollection` initialized with data processed from the language model and raw symbols.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](ir_common.py.md#IrCollectionfrom_llm_with_ir_data)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustFnCollection`](#RustFnCollection)  (Base Class)
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustFnCollection`](<#RustFnCollection>)  (Base Class)
 
 
 
 ---
 ### RustVariableData<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustVariableData}} -->
-- **Description**: The `RustVariableData` class is a specialized subclass of `VariableData` designed to handle variable-related data in the context of Rust programming. It provides class methods to generate system and user prompts for variables, and explicitly raises `NotImplementedError` for methods related to child handling, indicating that variables should not have children in this context. This class is part of a larger framework for processing and documenting Rust code, focusing on the representation and manipulation of variable data.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L526>)
+
+- **Description**: The `RustVariableData` class is a specialized subclass of `VariableData` designed to handle variable-related data in the context of Rust programming. It provides class methods to generate system and user prompts for variables, utilizing structured prompting components to format these prompts. The class also includes methods that raise `NotImplementedError` for operations related to child elements, indicating that variables should not have children in this context. This class is part of a larger framework for processing and documenting Rust code, focusing specifically on variables.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustVariableData.system_prompt`](#RustVariableDatasystem_prompt)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustVariableData.user_prompt`](#RustVariableDatauser_prompt)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustVariableData.child_to_ir`](#RustVariableDatachild_to_ir)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustVariableData.child_to_field_name`](#RustVariableDatachild_to_field_name)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustVariableData.system_prompt`](<#RustVariableDatasystem_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustVariableData.user_prompt`](<#RustVariableDatauser_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustVariableData.child_to_ir`](<#RustVariableDatachild_to_ir>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustVariableData.child_to_field_name`](<#RustVariableDatachild_to_field_name>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.VariableData`](ir_common.py.md#VariableData)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.VariableData`](<ir_common.py.md#VariableData>)
 
 **Methods**
 
 ---
 #### RustVariableData\.system\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustVariableData.system_prompt}} -->
-The `system_prompt` method returns a predefined JSON string for system prompts related to variables.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L527>)
+
+The `system_prompt` method constructs and returns a formatted string prompt for documenting Rust variables.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `cls`: The class `RustVariableData` itself, as this is a class method.
+    - `symbol`: An instance of `RawSymbolData` representing the symbol for which the prompt is being generated.
 - **Control Flow**:
-    - The method directly returns the constant `VARIABLES_FOUND_SYSTEM_PROMPT_JSON`.
-- **Output**: A string containing the JSON for system prompts related to variables.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustVariableData`](#RustVariableData)  (Base Class)
+    - Create an empty `Prompt` object.
+    - Append a [`Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>) with the string `VARIABLES_FOUND_SYSTEM_PROMPT_JSON` to the `Prompt`.
+    - Append the `GENERAL_STE_STYLE_INSTRUCTION` to the `Prompt`.
+    - Append the `USE_BACKTICKS_STYLE_INSTRUCTION` to the `Prompt`.
+    - Convert the `Prompt` into a string using `into_str()` and return it.
+- **Output**: A string representing the constructed prompt for documenting Rust variables.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustVariableData`](<#RustVariableData>)  (Base Class)
 
 
 ---
 #### RustVariableData\.user\_prompt<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustVariableData.user_prompt}} -->
-The `user_prompt` method generates a user prompt string based on the provided `RawSymbolData` object, including its name and associated code.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L537>)
+
+The `user_prompt` method generates a user prompt string based on the provided `RawSymbolData` object, including its name and code content.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `cls`: The class `RustVariableData` itself, as this is a class method.
     - `symbol`: An instance of `RawSymbolData` containing information about a symbol, including its name and code.
 - **Control Flow**:
-    - Initialize `user_prompt` with a base string concatenated with the symbol's name.
-    - Check if `symbol.file_code` is available.
-    - If `symbol.file_code` is available, append it to `user_prompt` under a 'Code' section.
-    - If `symbol.file_code` is not available, append `symbol.symbol_code` to `user_prompt` under a 'Code' section.
-    - Return the constructed `user_prompt` string.
-- **Output**: A string representing the user prompt, which includes the symbol's name and its associated code.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustVariableData`](#RustVariableData)  (Base Class)
+    - Initialize an empty `Prompt` object and append a no-restatement style instruction for symbols.
+    - Append a component to the prompt with the user prompt string and the symbol's name.
+    - Check if the symbol has `file_code`; if so, append it to the prompt as 'Code'.
+    - If `file_code` is not present, append `symbol_code` to the prompt as 'Code'.
+    - Convert the constructed prompt into a string and return it.
+- **Output**: A string representing the constructed user prompt based on the symbol's data.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.empty`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptempty>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Component`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Component>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.into_str`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptinto_str>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustVariableData`](<#RustVariableData>)  (Base Class)
 
 
 ---
 #### RustVariableData\.child\_to\_ir<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustVariableData.child_to_ir}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L550>)
+
 The `child_to_ir` method raises a NotImplementedError indicating that variables should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class itself, used to call class methods.
-    - `symbol`: An instance of RawSymbolData representing a symbol to be converted to intermediate representation (IR).
+    - `cls`: The class `RustVariableData` itself, as this is a class method.
+    - `symbol`: An instance of `RawSymbolData` representing a symbol, which is expected to be a variable.
 - **Control Flow**:
-    - The method immediately raises a NotImplementedError with the message 'Variables should not have children'.
+    - The method immediately raises a `NotImplementedError` with the message 'Variables should not have children'.
 - **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustVariableData`](#RustVariableData)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustVariableData`](<#RustVariableData>)  (Base Class)
 
 
 ---
 #### RustVariableData\.child\_to\_field\_name<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustVariableData.child_to_field_name}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L554>)
+
 The `child_to_field_name` method raises a NotImplementedError indicating that variables should not have children.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class itself, which is a reference to the class object.
-    - `child`: An instance of RawSymbolData, representing a child symbol data.
+    - `child`: An instance of RawSymbolData representing a child symbol.
 - **Control Flow**:
     - The method immediately raises a NotImplementedError with the message 'Variables should not have children'.
 - **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustVariableData`](#RustVariableData)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustVariableData`](<#RustVariableData>)  (Base Class)
 
 
 
 ---
 ### RustVariableCollection<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustVariableCollection}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L559>)
+
 - **Members**:
-    - `data`: A dictionary mapping strings to RustVariableData or lists of RustVariableData.
-- **Description**: The RustVariableCollection class is a specialized collection class that inherits from IrCollection, designed to manage and organize RustVariableData objects. It contains a dictionary, 'data', which maps string keys to either a single RustVariableData instance or a list of such instances. This class provides a class method 'from_llm' to create an instance of RustVariableCollection using a language model and a collection of raw symbols, facilitating the integration of Rust variable data into a structured collection.
+    - `data`: A dictionary mapping string keys to RustVariableData or lists of RustVariableData.
+- **Description**: The RustVariableCollection class is a specialized collection class that inherits from IrCollection, designed to manage and organize RustVariableData objects. It provides a structure to store a dictionary where each key is a string and the value is either a single RustVariableData instance or a list of such instances. This class includes a class method, from_llm, which facilitates the creation of a RustVariableCollection instance from a language model and a collection of raw symbols, leveraging the RustVariableData class for intermediate representation.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustVariableCollection.from_llm`](#RustVariableCollectionfrom_llm)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustVariableCollection.from_llm`](<#RustVariableCollectionfrom_llm>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](ir_common.py.md#IrCollection)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection`](<ir_common.py.md#IrCollection>)
 
 **Methods**
 
 ---
 #### RustVariableCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustVariableCollection.from_llm}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L562>)
+
 The `from_llm` method creates an instance of `RustVariableCollection` using data from a language model and a collection of raw symbols.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class `RustVariableCollection` itself, used to call the class method.
-    - `llm`: An instance of `ChatOpenAI`, representing the language model to be used for data extraction.
-    - `symbols_list`: A `RawSymbolCollection` containing raw symbols to be processed.
+    - `llm`: An instance of `ChatOpenAI` representing the language model to be used for data extraction.
+    - `symbols_list`: A `RawSymbolCollection` containing raw symbols to be processed and included in the collection.
 - **Control Flow**:
-    - The method calls [`from_llm_with_ir_data`](ir_common.py.md#IrCollectionfrom_llm_with_ir_data) on the class `RustVariableCollection` with `RustVariableData`, `llm`, and `symbols_list` as arguments.
-- **Output**: Returns an instance of `RustVariableCollection` initialized with data processed from the language model and raw symbols.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](ir_common.py.md#IrCollectionfrom_llm_with_ir_data)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustVariableCollection`](#RustVariableCollection)  (Base Class)
+    - The method calls [`from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>) on the class `cls`, passing `RustVariableData`, `llm`, and `symbols_list` as arguments.
+    - The [`from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>) method processes the inputs to create and return an instance of `RustVariableCollection`.
+- **Output**: An instance of `RustVariableCollection` initialized with data derived from the language model and raw symbols.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/ir_common.IrCollection.from_llm_with_ir_data`](<ir_common.py.md#IrCollectionfrom_llm_with_ir_data>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustVariableCollection`](<#RustVariableCollection>)  (Base Class)
 
 
 
 ---
 ### RustDataStructureRawSymbolCollection<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureRawSymbolCollection}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L567>)
+
 - **Members**:
-    - `data`: A dictionary mapping symbol names to RawSymbolData or lists of RawSymbolData.
-- **Description**: The RustDataStructureRawSymbolCollection class is a specialized collection for handling raw symbol data related to Rust data structures. It extends the RawSymbolCollection class and provides methods for constructing instances from static analysis of Rust code. The class is designed to parse and organize symbols extracted from Rust code, particularly focusing on data structures and their associated methods, using ctags for symbol extraction. It supports the identification of overloaded methods and nested data structures, ensuring a comprehensive representation of the code's structure.
+    - `data`: A dictionary mapping string keys to RawSymbolData or lists of RawSymbolData.
+- **Description**: The RustDataStructureRawSymbolCollection class is a specialized collection for handling raw symbol data related to Rust data structures. It extends the RawSymbolCollection class and provides methods for constructing instances from static analysis of Rust code. The class is designed to parse and organize symbols extracted from Rust source files, focusing on data structures and their associated methods. It supports the identification of overloaded methods and nested data structures, facilitating the creation of a structured representation of Rust code components.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureRawSymbolCollection.from_static_analysis`](#RustDataStructureRawSymbolCollectionfrom_static_analysis)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureRawSymbolCollection.from_llm`](#RustDataStructureRawSymbolCollectionfrom_llm)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureRawSymbolCollection.to_dict`](#RustDataStructureRawSymbolCollectionto_dict)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureRawSymbolCollection.from_static_analysis`](<#RustDataStructureRawSymbolCollectionfrom_static_analysis>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureRawSymbolCollection.from_llm`](<#RustDataStructureRawSymbolCollectionfrom_llm>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureRawSymbolCollection.to_dict`](<#RustDataStructureRawSymbolCollectionto_dict>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](symbol_common.py.md#RawSymbolCollection)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<symbol_common.py.md#RawSymbolCollection>)
 
 **Methods**
 
 ---
 #### RustDataStructureRawSymbolCollection\.from\_static\_analysis<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureRawSymbolCollection.from_static_analysis}} -->
-The `from_static_analysis` method performs static analysis on Rust code to extract and organize symbol data into a structured format.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L570>)
+
+The `from_static_analysis` method analyzes Rust code to extract and organize data structures and methods using ctags, returning a collection of raw symbol data.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `code`: A string representing the Rust source code to be analyzed.
-    - `root_rel_path`: A Path object representing the root relative path of the file being analyzed.
+    - `root_rel_path`: A Path object indicating the root relative path of the file being analyzed.
 - **Control Flow**:
-    - Determine if the code requires multi-prompt analysis using [`code_requires_multi_prompt`](symbol_common.py.md#code_requires_multi_prompt) function.
-    - Extract symbols from the code using [`extract_symbols_w_ctags`](../codemap_ctags.py.md#extract_symbols_w_ctags) function.
+    - Determine if the code requires multi-prompt processing using [`code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>) function.
+    - Extract symbols from the code using [`extract_symbols_w_ctags`](<../codemap_ctags.py.md#extract_symbols_w_ctags>) function.
     - Initialize dictionaries for global method counts and raw symbol data for data structures.
-    - Iterate over each symbol to count method occurrences and create raw symbol data for data structures.
-    - For each symbol, check if it is a method within an implementation scope and update the data structure's children with method data.
-    - Check if a symbol is a nested data structure and update the parent data structure's children accordingly.
-    - Return an instance of the class with the collected data if any data structures were found, otherwise return None.
-- **Output**: Returns an instance of the class containing the structured symbol data if any data structures are found, otherwise returns None.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](symbol_common.py.md#code_requires_multi_prompt)
-    - [`python-backend/content_services/inspector/src/utils/codemap_ctags.extract_symbols_w_ctags`](../codemap_ctags.py.md#extract_symbols_w_ctags)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.create_raw_symbol_via_ctags`](symbol_common.py.md#create_raw_symbol_via_ctags)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData`](symbol_common.py.md#RawSymbolData)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureRawSymbolCollection`](#RustDataStructureRawSymbolCollection)  (Base Class)
+    - Iterate over extracted symbols to count method occurrences and create raw symbol data for data structures.
+    - For each symbol, check if it is a method within an implementation scope and update the raw symbol data accordingly.
+    - Check for nested data structures and update the raw symbol data with nested information.
+    - Return a new instance of the class with the collected raw symbol data if any data structures are found, otherwise return None.
+- **Output**: Returns an instance of the class containing the raw symbol data if any data structures are found, otherwise returns None.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/codemap_ctags.extract_symbols_w_ctags`](<../codemap_ctags.py.md#extract_symbols_w_ctags>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.create_raw_symbol_via_ctags`](<symbol_common.py.md#create_raw_symbol_via_ctags>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolData`](<symbol_common.py.md#RawSymbolData>)
+    - [`python-backend/packages/shared/shared/prompts/structured_prompting.Prompt.append`](<../../../../../packages/shared/shared/prompts/structured_prompting.py.md#Promptappend>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureRawSymbolCollection`](<#RustDataStructureRawSymbolCollection>)  (Base Class)
 
 
 ---
 #### RustDataStructureRawSymbolCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureRawSymbolCollection.from_llm}} -->
-The `from_llm` method raises a NotImplementedError indicating that static analysis should be used for Rust classes instead of this method.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L658>)
+
+The `from_llm` class method raises a NotImplementedError, indicating that static analysis should be used for Rust classes instead of this method.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `code`: A string representing the code to be analyzed.
     - `root_rel_path`: A string representing the root relative path of the code.
 - **Control Flow**:
-    - The method immediately raises a NotImplementedError with a specific message.
+    - The method immediately raises a NotImplementedError with a message indicating that static analysis should be used for Rust classes.
 - **Output**: The method does not return any output as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureRawSymbolCollection`](#RustDataStructureRawSymbolCollection)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureRawSymbolCollection`](<#RustDataStructureRawSymbolCollection>)  (Base Class)
 
 
 ---
 #### RustDataStructureRawSymbolCollection\.to\_dict<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureRawSymbolCollection.to_dict}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L662>)
+
 The `to_dict` method returns the `data` attribute of the `RustDataStructureRawSymbolCollection` instance as a dictionary.
 - **Inputs**:
     - `self`: An instance of the `RustDataStructureRawSymbolCollection` class.
 - **Control Flow**:
     - The method directly returns the `data` attribute of the instance.
 - **Output**: A dictionary where keys are strings and values are `RawSymbolData` objects.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureRawSymbolCollection`](#RustDataStructureRawSymbolCollection)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustDataStructureRawSymbolCollection`](<#RustDataStructureRawSymbolCollection>)  (Base Class)
 
 
 
 ---
 ### RustFnRawSymbolCollection<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustFnRawSymbolCollection}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L666>)
+
 - **Members**:
     - `data`: A dictionary mapping function names to RawSymbolData or lists of RawSymbolData.
-- **Description**: The RustFnRawSymbolCollection class is a specialized collection for managing raw symbol data related to Rust functions. It extends the RawSymbolCollection class and is designed to handle the extraction and organization of function symbols from Rust code using static analysis. The class provides methods to create instances from static analysis, specifically focusing on Rust functions, and raises a NotImplementedError for attempts to create instances from language model analysis. The primary data structure within the class is a dictionary that maps function names to their corresponding raw symbol data, facilitating easy access and manipulation of function-related information.
+- **Description**: The RustFnRawSymbolCollection class is a specialized collection for handling raw symbol data related to Rust functions. It extends the RawSymbolCollection class and is designed to extract and store function symbols from Rust code using static analysis. The class provides methods to create instances from static analysis, specifically targeting Rust functions, and raises a NotImplementedError for attempts to use LLM-based analysis. The primary purpose of this class is to facilitate the organization and retrieval of function-related symbol data in Rust projects.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustFnRawSymbolCollection.from_static_analysis`](#RustFnRawSymbolCollectionfrom_static_analysis)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustFnRawSymbolCollection.from_llm`](#RustFnRawSymbolCollectionfrom_llm)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustFnRawSymbolCollection.to_dict`](#RustFnRawSymbolCollectionto_dict)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustFnRawSymbolCollection.from_static_analysis`](<#RustFnRawSymbolCollectionfrom_static_analysis>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustFnRawSymbolCollection.from_llm`](<#RustFnRawSymbolCollectionfrom_llm>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustFnRawSymbolCollection.to_dict`](<#RustFnRawSymbolCollectionto_dict>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](symbol_common.py.md#RawSymbolCollection)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<symbol_common.py.md#RawSymbolCollection>)
 
 **Methods**
 
 ---
 #### RustFnRawSymbolCollection\.from\_static\_analysis<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustFnRawSymbolCollection.from_static_analysis}} -->
-The `from_static_analysis` method extracts Rust function symbols from code using ctags and returns a collection of these symbols if any are found.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L669>)
+
+The `from_static_analysis` method creates a `RustFnRawSymbolCollection` instance from Rust code by analyzing function symbols using ctags.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class `RustFnRawSymbolCollection` to which this method belongs.
-    - `code`: A string representing the source code to be analyzed.
-    - `root_rel_path`: A `Path` object representing the root relative path of the file being analyzed.
+    - `cls`: The class `RustFnRawSymbolCollection` itself, as this is a class method.
+    - `code`: A string containing the Rust source code to be analyzed.
+    - `root_rel_path`: A `Path` object representing the root relative path of the file containing the code.
 - **Control Flow**:
-    - Determine if the code requires multi-prompt analysis using [`code_requires_multi_prompt`](symbol_common.py.md#code_requires_multi_prompt) function.
-    - Extract symbols from the code using [`extract_symbols_w_ctags`](../codemap_ctags.py.md#extract_symbols_w_ctags) with the provided root relative path and code.
-    - Initialize an empty dictionary `fn_raw_symbol_data` to store function symbols.
-    - Iterate over each symbol extracted; if the symbol is a Rust function and not anonymous, add it to `fn_raw_symbol_data` using [`create_raw_symbol_via_ctags`](symbol_common.py.md#create_raw_symbol_via_ctags).
-    - Return `None` if no function symbols are found; otherwise, return an instance of `RustFnRawSymbolCollection` initialized with the collected function symbols.
-- **Output**: Returns an instance of `RustFnRawSymbolCollection` containing the extracted function symbols, or `None` if no symbols are found.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](symbol_common.py.md#code_requires_multi_prompt)
-    - [`python-backend/content_services/inspector/src/utils/codemap_ctags.extract_symbols_w_ctags`](../codemap_ctags.py.md#extract_symbols_w_ctags)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.create_raw_symbol_via_ctags`](symbol_common.py.md#create_raw_symbol_via_ctags)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustFnRawSymbolCollection`](#RustFnRawSymbolCollection)  (Base Class)
+    - Determine if the code requires multi-prompt processing by calling [`code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>) with the code.
+    - Extract symbols from the code using [`extract_symbols_w_ctags`](<../codemap_ctags.py.md#extract_symbols_w_ctags>), passing the root relative path and file content.
+    - Initialize an empty dictionary `fn_raw_symbol_data` to store raw symbol data for functions.
+    - Iterate over each symbol extracted; if the symbol is a Rust function and not an anonymous function, create a raw symbol using [`create_raw_symbol_via_ctags`](<symbol_common.py.md#create_raw_symbol_via_ctags>) and store it in `fn_raw_symbol_data`.
+    - Check if `fn_raw_symbol_data` is empty; if it is, set `output` to `None`, otherwise create a `RustFnRawSymbolCollection` instance with the data and assign it to `output`.
+    - Return the `output`, which is either `None` or a `RustFnRawSymbolCollection` instance.
+- **Output**: Returns a `RustFnRawSymbolCollection` instance containing raw symbol data for functions found in the code, or `None` if no such symbols are found.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/codemap_ctags.extract_symbols_w_ctags`](<../codemap_ctags.py.md#extract_symbols_w_ctags>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.create_raw_symbol_via_ctags`](<symbol_common.py.md#create_raw_symbol_via_ctags>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustFnRawSymbolCollection`](<#RustFnRawSymbolCollection>)  (Base Class)
 
 
 ---
 #### RustFnRawSymbolCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustFnRawSymbolCollection.from_llm}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L693>)
+
 The `from_llm` method raises a NotImplementedError indicating that static analysis should be used for Rust functions instead of this method.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class `RustFnRawSymbolCollection` itself, as this is a class method.
+    - `cls`: The class itself, used to call class methods.
     - `code`: A string representing the Rust code to be analyzed.
     - `root_rel_path`: A string representing the root relative path of the code file.
 - **Control Flow**:
     - The method immediately raises a NotImplementedError with a message indicating that static analysis should be used for Rust functions.
 - **Output**: The method does not return any output as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustFnRawSymbolCollection`](#RustFnRawSymbolCollection)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustFnRawSymbolCollection`](<#RustFnRawSymbolCollection>)  (Base Class)
 
 
 ---
 #### RustFnRawSymbolCollection\.to\_dict<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustFnRawSymbolCollection.to_dict}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L697>)
+
 The `to_dict` method returns the `data` attribute of the `RustFnRawSymbolCollection` instance as a dictionary.
 - **Inputs**:
-    - `self`: An instance of the `RustFnRawSymbolCollection` class.
+    - `self`: An instance of the `RustFnRawSymbolCollection` class, which contains a `data` attribute holding a dictionary of symbol data.
 - **Control Flow**:
-    - The method directly returns the `data` attribute of the instance.
+    - The method directly returns the `data` attribute of the instance without any additional processing.
 - **Output**: A dictionary where keys are strings and values are `RawSymbolData` objects.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustFnRawSymbolCollection`](#RustFnRawSymbolCollection)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustFnRawSymbolCollection`](<#RustFnRawSymbolCollection>)  (Base Class)
 
 
 
 ---
 ### RustVariablesRawSymbolCollection<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustVariablesRawSymbolCollection}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L701>)
+
 - **Members**:
     - `data`: A dictionary mapping variable names to RawSymbolData or a list of RawSymbolData.
-- **Description**: The RustVariablesRawSymbolCollection class is a specialized collection for handling raw symbol data related to Rust variables. It extends the RawSymbolCollection class and is designed to extract and store information about Rust variables using static analysis. The class provides a method to populate its data from code analysis, specifically targeting symbols identified as Rust variables, and organizes them into a dictionary for easy access and manipulation.
+- **Description**: The RustVariablesRawSymbolCollection class is a specialized collection for handling raw symbol data related to Rust variables. It extends the RawSymbolCollection class and is designed to extract and store information about Rust variables using static analysis. The class provides a method to populate its data from a given code and root path, focusing on symbols identified as Rust variables. It does not support creation from LLM and is intended to be used with static analysis tools.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustVariablesRawSymbolCollection.from_static_analysis`](#RustVariablesRawSymbolCollectionfrom_static_analysis)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustVariablesRawSymbolCollection.from_llm`](#RustVariablesRawSymbolCollectionfrom_llm)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustVariablesRawSymbolCollection.to_dict`](#RustVariablesRawSymbolCollectionto_dict)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustVariablesRawSymbolCollection.from_static_analysis`](<#RustVariablesRawSymbolCollectionfrom_static_analysis>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustVariablesRawSymbolCollection.from_llm`](<#RustVariablesRawSymbolCollectionfrom_llm>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustVariablesRawSymbolCollection.to_dict`](<#RustVariablesRawSymbolCollectionto_dict>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](symbol_common.py.md#RawSymbolCollection)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<symbol_common.py.md#RawSymbolCollection>)
 
 **Methods**
 
 ---
 #### RustVariablesRawSymbolCollection\.from\_static\_analysis<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustVariablesRawSymbolCollection.from_static_analysis}} -->
-The `from_static_analysis` method extracts and processes Rust variable symbols from a given code string using static analysis and returns a collection of these symbols if any are found.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L704>)
+
+The `from_static_analysis` method extracts and processes Rust variable symbols from code using static analysis and returns a collection of these symbols if any are found.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class `RustVariablesRawSymbolCollection` itself, as this is a class method.
-    - `code`: A string containing the Rust source code to be analyzed.
+    - `cls`: The class `RustVariablesRawSymbolCollection` to which this method belongs.
+    - `code`: A string representing the source code to be analyzed.
     - `root_rel_path`: A `Path` object representing the root relative path of the file being analyzed.
 - **Control Flow**:
-    - Determine if the code requires multi-prompt processing by calling [`code_requires_multi_prompt`](symbol_common.py.md#code_requires_multi_prompt) with the code string.
-    - Extract symbols from the code using [`extract_symbols_w_ctags`](../codemap_ctags.py.md#extract_symbols_w_ctags), passing the root relative path and code content.
+    - Determine if the code requires multi-prompt processing using [`code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>) function.
+    - Extract symbols from the code using [`extract_symbols_w_ctags`](<../codemap_ctags.py.md#extract_symbols_w_ctags>) function with the provided root relative path and code.
     - Initialize an empty dictionary `variable_raw_symbol_data` to store raw symbol data for variables.
-    - Iterate over each symbol extracted; if the symbol is a Rust variable and has no scope kind, create a raw symbol using [`create_raw_symbol_via_ctags`](symbol_common.py.md#create_raw_symbol_via_ctags) and store it in `variable_raw_symbol_data`.
-    - Check if `variable_raw_symbol_data` is empty; if it is, set `output` to `None`, otherwise instantiate `cls` with the collected data.
-    - Return the `output`, which is either `None` or an instance of `RustVariablesRawSymbolCollection` with the collected data.
-- **Output**: Returns an instance of `RustVariablesRawSymbolCollection` containing the extracted variable symbols, or `None` if no relevant symbols are found.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](symbol_common.py.md#code_requires_multi_prompt)
-    - [`python-backend/content_services/inspector/src/utils/codemap_ctags.extract_symbols_w_ctags`](../codemap_ctags.py.md#extract_symbols_w_ctags)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.create_raw_symbol_via_ctags`](symbol_common.py.md#create_raw_symbol_via_ctags)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustVariablesRawSymbolCollection`](#RustVariablesRawSymbolCollection)  (Base Class)
+    - Iterate over each symbol extracted; if the symbol is a Rust variable and has no scope kind, create a raw symbol using [`create_raw_symbol_via_ctags`](<symbol_common.py.md#create_raw_symbol_via_ctags>) and store it in `variable_raw_symbol_data`.
+    - Return `None` if no variable symbols are found; otherwise, return an instance of `RustVariablesRawSymbolCollection` initialized with the collected variable raw symbol data.
+- **Output**: An instance of `RustVariablesRawSymbolCollection` containing the extracted variable symbols, or `None` if no such symbols are found.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.code_requires_multi_prompt`](<symbol_common.py.md#code_requires_multi_prompt>)
+    - [`python-backend/content_services/inspector/src/utils/codemap_ctags.extract_symbols_w_ctags`](<../codemap_ctags.py.md#extract_symbols_w_ctags>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.create_raw_symbol_via_ctags`](<symbol_common.py.md#create_raw_symbol_via_ctags>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustVariablesRawSymbolCollection`](<#RustVariablesRawSymbolCollection>)  (Base Class)
 
 
 ---
 #### RustVariablesRawSymbolCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustVariablesRawSymbolCollection.from_llm}} -->
-The `from_llm` method is a class method that raises a NotImplementedError, indicating that static analysis should be used for Rust functions instead of this method.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L732>)
+
+The `from_llm` method raises a NotImplementedError indicating that static analysis should be used for Rust functions instead of this method.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class itself, used to call class methods.
-    - `code`: A string representing the code to be analyzed.
+    - `cls`: The class `RustVariablesRawSymbolCollection` itself, as this is a class method.
+    - `code`: A string representing the Rust code to be analyzed.
     - `root_rel_path`: A string representing the root relative path of the code file.
 - **Control Flow**:
     - The method immediately raises a NotImplementedError with a message indicating that static analysis should be used for Rust functions.
 - **Output**: The method does not return any output as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustVariablesRawSymbolCollection`](#RustVariablesRawSymbolCollection)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustVariablesRawSymbolCollection`](<#RustVariablesRawSymbolCollection>)  (Base Class)
 
 
 ---
 #### RustVariablesRawSymbolCollection\.to\_dict<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustVariablesRawSymbolCollection.to_dict}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L736>)
+
 The `to_dict` method returns the `data` attribute of the `RustVariablesRawSymbolCollection` instance as a dictionary.
 - **Inputs**:
     - `self`: An instance of the `RustVariablesRawSymbolCollection` class, which contains a `data` attribute holding a dictionary of symbol data.
 - **Control Flow**:
     - The method directly returns the `data` attribute of the instance without any additional processing.
 - **Output**: A dictionary where keys are strings and values are `RawSymbolData` objects.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustVariablesRawSymbolCollection`](#RustVariablesRawSymbolCollection)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustVariablesRawSymbolCollection`](<#RustVariablesRawSymbolCollection>)  (Base Class)
 
 
 
 ---
 ### RustMacroRawSymbolCollection<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroRawSymbolCollection}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L740>)
+
 - **Members**:
     - `data`: A dictionary mapping string keys to RawSymbolData or lists of RawSymbolData.
-- **Description**: The RustMacroRawSymbolCollection class is a specialized collection for handling raw symbol data related to Rust macros. It extends the RawSymbolCollection class and is designed to facilitate the extraction and organization of macro symbols from Rust code using static analysis. The class provides methods to create instances from static analysis, specifically targeting Rust macros, and raises a NotImplementedError for attempts to create instances from language model analysis, emphasizing its reliance on static analysis for accurate symbol extraction.
+- **Description**: The RustMacroRawSymbolCollection class is a specialized collection for handling raw symbol data related to Rust macros. It extends the RawSymbolCollection class and is designed to facilitate the extraction and organization of macro symbols from Rust code using static analysis. The class provides a method to create an instance from static analysis, leveraging ctags to identify and categorize macro symbols, and it stores this data in a dictionary format for easy access and manipulation.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroRawSymbolCollection.from_static_analysis`](#RustMacroRawSymbolCollectionfrom_static_analysis)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroRawSymbolCollection.from_llm`](#RustMacroRawSymbolCollectionfrom_llm)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroRawSymbolCollection.to_dict`](#RustMacroRawSymbolCollectionto_dict)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroRawSymbolCollection.from_static_analysis`](<#RustMacroRawSymbolCollectionfrom_static_analysis>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroRawSymbolCollection.from_llm`](<#RustMacroRawSymbolCollectionfrom_llm>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroRawSymbolCollection.to_dict`](<#RustMacroRawSymbolCollectionto_dict>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](symbol_common.py.md#RawSymbolCollection)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<symbol_common.py.md#RawSymbolCollection>)
 
 **Methods**
 
 ---
 #### RustMacroRawSymbolCollection\.from\_static\_analysis<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroRawSymbolCollection.from_static_analysis}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L743>)
+
 The `from_static_analysis` method creates a `RustMacroRawSymbolCollection` instance by performing a static analysis of Rust macro symbols in the provided code using ctags.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `code`: A string representing the Rust source code to be analyzed.
-    - `root_rel_path`: A Path object representing the root relative path of the source code file.
+    - `cls`: The class `RustMacroRawSymbolCollection` itself, used to create an instance of the class.
+    - `code`: A string containing the source code to be analyzed for Rust macro symbols.
+    - `root_rel_path`: A `Path` object representing the root relative path of the source code file being analyzed.
 - **Control Flow**:
-    - The method calls [`default_ctags_analysis`](symbol_common.py.md#default_ctags_analysis) with the class itself (`cls`), the provided code, root relative path, and specific parameters for analyzing Rust macros.
-    - The [`default_ctags_analysis`](symbol_common.py.md#default_ctags_analysis) function is responsible for extracting symbols of kind `CALLABLE` with ctags kinds `RUST_MACROS` and returns an instance of `RustMacroRawSymbolCollection`.
-- **Output**: An instance of `RustMacroRawSymbolCollection` containing the analyzed Rust macro symbols.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.default_ctags_analysis`](symbol_common.py.md#default_ctags_analysis)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroRawSymbolCollection`](#RustMacroRawSymbolCollection)  (Base Class)
+    - The method calls [`default_ctags_analysis`](<symbol_common.py.md#default_ctags_analysis>) with the class itself (`cls`), the provided code, and root relative path.
+    - It specifies `SymbolKind.CALLABLE` for the type of symbols to analyze, focusing on Rust macros (`RUST_MACROS`).
+    - The delimiter is set to `::` and `add_symbol_padding` is set to `False` to configure the analysis.
+- **Output**: Returns an instance of `RustMacroRawSymbolCollection` containing the analyzed Rust macro symbols.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.default_ctags_analysis`](<symbol_common.py.md#default_ctags_analysis>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroRawSymbolCollection`](<#RustMacroRawSymbolCollection>)  (Base Class)
 
 
 ---
 #### RustMacroRawSymbolCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroRawSymbolCollection.from_llm}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L755>)
+
 The `from_llm` method raises a NotImplementedError indicating that static analysis should be used for Rust functions instead of this method.
 - **Decorators**: `@classmethod`
 - **Inputs**:
@@ -1057,76 +1278,86 @@ The `from_llm` method raises a NotImplementedError indicating that static analys
     - `root_rel_path`: A string representing the root relative path for the code.
 - **Control Flow**:
     - The method immediately raises a NotImplementedError with a message indicating that static analysis should be used for Rust functions.
-- **Output**: The method does not return any value as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroRawSymbolCollection`](#RustMacroRawSymbolCollection)  (Base Class)
+- **Output**: The method does not return any output as it raises an exception.
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroRawSymbolCollection`](<#RustMacroRawSymbolCollection>)  (Base Class)
 
 
 ---
 #### RustMacroRawSymbolCollection\.to\_dict<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroRawSymbolCollection.to_dict}} -->
-The `to_dict` method returns the `data` attribute of the `RustMacroRawSymbolCollection` class as a dictionary.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L759>)
+
+The `to_dict` method returns the `data` attribute of the `RustMacroRawSymbolCollection` instance as a dictionary.
 - **Inputs**:
     - `self`: An instance of the `RustMacroRawSymbolCollection` class.
 - **Control Flow**:
     - The method directly returns the `data` attribute of the instance.
 - **Output**: A dictionary where keys are strings and values are `RawSymbolData` objects.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroRawSymbolCollection`](#RustMacroRawSymbolCollection)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustMacroRawSymbolCollection`](<#RustMacroRawSymbolCollection>)  (Base Class)
 
 
 
 ---
 ### RustTraitsRawSymbolCollection<!-- {{#class:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitsRawSymbolCollection}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L763>)
+
 - **Members**:
-    - `data`: A dictionary mapping string keys to RawSymbolData or lists of RawSymbolData.
-- **Description**: The RustTraitsRawSymbolCollection class is a specialized collection for handling raw symbol data related to Rust traits. It extends the RawSymbolCollection class and provides methods for creating instances from static analysis of Rust code, specifically targeting traits. The class is designed to work with ctags analysis to extract and organize trait-related symbols from Rust source code, storing them in a structured dictionary format. It does not support creation from language model analysis, emphasizing its focus on static code analysis.
+    - `data`: A dictionary mapping string keys to either a single RawSymbolData or a list of RawSymbolData.
+- **Description**: The RustTraitsRawSymbolCollection class is a specialized collection for handling raw symbol data related to Rust traits. It extends the RawSymbolCollection class and is designed to facilitate the extraction and organization of trait symbols from Rust code using static analysis. The class provides methods to create instances from static analysis, ensuring that only relevant trait symbols are collected and stored in a structured format. The data attribute holds the collected symbols, allowing for easy conversion to a dictionary representation.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitsRawSymbolCollection.from_static_analysis`](#RustTraitsRawSymbolCollectionfrom_static_analysis)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitsRawSymbolCollection.from_llm`](#RustTraitsRawSymbolCollectionfrom_llm)
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitsRawSymbolCollection.to_dict`](#RustTraitsRawSymbolCollectionto_dict)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitsRawSymbolCollection.from_static_analysis`](<#RustTraitsRawSymbolCollectionfrom_static_analysis>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitsRawSymbolCollection.from_llm`](<#RustTraitsRawSymbolCollectionfrom_llm>)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitsRawSymbolCollection.to_dict`](<#RustTraitsRawSymbolCollectionto_dict>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](symbol_common.py.md#RawSymbolCollection)
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.RawSymbolCollection`](<symbol_common.py.md#RawSymbolCollection>)
 
 **Methods**
 
 ---
 #### RustTraitsRawSymbolCollection\.from\_static\_analysis<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitsRawSymbolCollection.from_static_analysis}} -->
-The `from_static_analysis` method creates an instance of the class by performing a static analysis of Rust code using ctags to extract trait symbols.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L766>)
+
+The `from_static_analysis` method performs a static analysis on Rust code to extract trait symbols using ctags and returns a collection of these symbols.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class itself, used to create an instance.
+    - `cls`: The class itself, used to create an instance of the class.
     - `code`: A string containing the Rust source code to be analyzed.
     - `root_rel_path`: A Path object representing the root relative path of the source code file.
 - **Control Flow**:
-    - The method calls [`default_ctags_analysis`](symbol_common.py.md#default_ctags_analysis) with the class, code, root relative path, and specific parameters for analyzing Rust traits.
-    - The [`default_ctags_analysis`](symbol_common.py.md#default_ctags_analysis) function is responsible for performing the actual static analysis and returning the result.
-- **Output**: An instance of the class, populated with data from the static analysis of the provided Rust code.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.default_ctags_analysis`](symbol_common.py.md#default_ctags_analysis)
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitsRawSymbolCollection`](#RustTraitsRawSymbolCollection)  (Base Class)
+    - The method calls [`default_ctags_analysis`](<symbol_common.py.md#default_ctags_analysis>) with the class, code, root relative path, and specific parameters for analyzing Rust traits.
+    - The [`default_ctags_analysis`](<symbol_common.py.md#default_ctags_analysis>) function is responsible for performing the actual analysis and returning the result.
+- **Output**: A collection of raw symbol data representing Rust traits extracted from the provided code.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/lang_specialization/symbol_common.default_ctags_analysis`](<symbol_common.py.md#default_ctags_analysis>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitsRawSymbolCollection`](<#RustTraitsRawSymbolCollection>)  (Base Class)
 
 
 ---
 #### RustTraitsRawSymbolCollection\.from\_llm<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitsRawSymbolCollection.from_llm}} -->
-The `from_llm` method raises a NotImplementedError indicating that static analysis should be used for Rust functions instead of this method.
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L778>)
+
+The `from_llm` method raises a NotImplementedError indicating that static analysis should be used for Rust functions.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `cls`: The class `RustTraitsRawSymbolCollection` itself, as this is a class method.
-    - `code`: A string representing the Rust code to be analyzed.
-    - `root_rel_path`: A string representing the root relative path where the code is located.
+    - `cls`: The class itself, used to call class methods.
+    - `code`: A string representing the code to be analyzed.
+    - `root_rel_path`: A string representing the root relative path for the code.
 - **Control Flow**:
     - The method immediately raises a NotImplementedError with a message indicating that static analysis should be used for Rust functions.
 - **Output**: The method does not return any output as it raises an exception.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitsRawSymbolCollection`](#RustTraitsRawSymbolCollection)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitsRawSymbolCollection`](<#RustTraitsRawSymbolCollection>)  (Base Class)
 
 
 ---
 #### RustTraitsRawSymbolCollection\.to\_dict<!-- {{#callable:python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitsRawSymbolCollection.to_dict}} -->
+[View Source →](<../../../../../../../content_services/inspector/src/utils/lang_specialization/rust.py#L782>)
+
 The `to_dict` method returns the `data` attribute of the `RustTraitsRawSymbolCollection` instance as a dictionary.
 - **Inputs**:
     - `self`: An instance of the `RustTraitsRawSymbolCollection` class.
 - **Control Flow**:
-    - The method directly returns the `data` attribute of the instance.
+    - The method directly returns the `data` attribute of the instance without any additional processing.
 - **Output**: A dictionary where keys are strings and values are `RawSymbolData` objects.
-- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitsRawSymbolCollection`](#RustTraitsRawSymbolCollection)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/lang_specialization/rust.RustTraitsRawSymbolCollection`](<#RustTraitsRawSymbolCollection>)  (Base Class)
 
 
 

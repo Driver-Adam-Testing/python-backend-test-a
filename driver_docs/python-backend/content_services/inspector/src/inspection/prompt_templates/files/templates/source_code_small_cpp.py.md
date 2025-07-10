@@ -3,13 +3,18 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_small_cpp.py` file defines a template for analyzing and extracting components such as imports, global variables, data structures, and functions from small C++ source code snippets.
+The `source_code_small_cpp.py` file defines a template for generating structured prompts related to C++ source code, including sections for purpose, imports, global variables, data structures, and functions.
 
 # Purpose
-This Python code defines a configuration template for analyzing and documenting C++ source code. It provides narrow functionality focused on generating structured documentation for C++ files by categorizing and extracting information about imports, global variables, data structures, and functions. The code imports several specialized classes and functions from utility modules, which are used to perform static analysis and generate lists of symbols and data structures found in C++ code. The `SOURCE_CODE_SMALL_TEMPLATE_CPP` variable is a list of tuples, each representing a section of the documentation template, specifying the type of content to be extracted and the methods to be used for extraction. This setup is likely part of a larger system designed to automate the documentation process for C++ projects.
+This Python code file defines a template for generating structured documentation for small C++ source code files. It imports various components and utilities from shared modules and language specialization modules, specifically for C++ code analysis. The template, `SOURCE_CODE_SMALL_TEMPLATE_CPP`, is a list of tuples, each representing a section of the documentation, such as "Purpose," "Imports and Dependencies," "Global Variables," "Data Structures," and "Functions." Each section is constructed using prompts and components that guide the generation of documentation by leveraging static analysis and language model outputs. This code provides narrow functionality focused on automating the creation of structured documentation for C++ code, making it easier to understand and maintain.
 # Imports and Dependencies
 
 ---
+- `shared.prompts.structured_prompting.GENERAL_STE_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_CODE_PURPOSE`
+- `shared.prompts.structured_prompting.USE_BACKTICKS_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.Component`
+- `shared.prompts.structured_prompting.Prompt`
 - `utils.lang_specialization.cpp.SOURCE_CODE_SMALL_PURPOSE_USER_PROMPT`
 - `utils.lang_specialization.cpp.SOURCE_CODE_SMALL_SYSTEM_PROMPT_GENERAL_CPP`
 - `utils.lang_specialization.cpp.CppDataStructureCollection`
@@ -28,8 +33,8 @@ This Python code defines a configuration template for analyzing and documenting 
 ---
 ### SOURCE\_CODE\_SMALL\_TEMPLATE\_CPP
 - **Type**: `list`
-- **Description**: `SOURCE_CODE_SMALL_TEMPLATE_CPP` is a list of tuples, each representing a section of a C++ source code template. Each tuple contains a section identifier, a section title, and functions or prompts related to that section, such as static analysis functions or user prompts.
-- **Use**: This variable is used to define the structure and content of a C++ source code template, organizing it into sections like purpose, imports, global variables, data structures, and functions.
+- **Description**: `SOURCE_CODE_SMALL_TEMPLATE_CPP` is a list of tuples, each containing structured information for generating prompts related to C++ code analysis. Each tuple includes a section identifier, a section title, and various components or functions that are used to process or generate content for that section.
+- **Use**: This variable is used to define a template for generating structured prompts and processing outputs related to different aspects of C++ code, such as purpose, imports, global variables, data structures, and functions.
 
 
 

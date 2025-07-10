@@ -6,9 +6,9 @@
 The `task.py` file in the `python-backend` codebase provides a framework for managing and executing tasks with dependencies, including progress tracking, result serialization, and persistence to local disk or S3 storage.
 
 # Purpose
-This Python code defines a framework for managing and executing tasks with dependencies, focusing on task persistence and progress tracking. The code is structured around several key classes: `Task`, `TaskManager`, `TaskResult`, and persistence classes like `LocalDiskTaskResultPersistence` and `S3TaskResultPersistence`. The `Task` class is an abstract base class that represents a unit of work, which can have dependencies on other tasks. Each task is associated with a `LiteNode` and has methods for execution ([`run_implementation`](#Taskrun_implementation)) and post-execution I/O operations ([`post_run_io`](#Taskpost_run_io)). The `TaskResult` class encapsulates the result of a task, supporting serialization and deserialization using JSON or Pickle formats, ensuring compatibility across Python versions.
+This Python code defines a framework for managing and executing tasks with dependencies, focusing on task result persistence and progress tracking. The code is structured around several key classes: `Task`, `TaskManager`, `TaskResult`, and persistence classes like `LocalDiskTaskResultPersistence` and `S3TaskResultPersistence`. The `Task` class is an abstract base class representing a unit of work, which can have dependencies on other tasks. Each task is associated with a `LiteNode` and has methods for execution ([`run_implementation`](<#Taskrun_implementation>)) and post-execution I/O operations ([`post_run_io`](<#Taskpost_run_io>)). The `TaskResult` class encapsulates the result of a task, supporting serialization and deserialization using JSON or Pickle formats, which ensures compatibility across different Python versions.
 
-The `TaskManager` class orchestrates the execution of tasks, handling dependencies, progress tracking, and result persistence. It supports both serial and parallel execution of tasks using Python's `asyncio` library. The manager initializes progress tracking, schedules tasks, and updates progress as tasks complete. It also manages the persistence of task results, either locally or on AWS S3, using the `TaskResultPersistence` interface and its concrete implementations. The code includes mechanisms for loading previously persisted results to resume task execution, optimizing for scenarios where tasks can be skipped if their results are already available. Overall, this code provides a robust framework for task management, suitable for complex workflows with interdependent tasks and a need for reliable result persistence.
+The `TaskManager` class orchestrates the execution of tasks, handling dependencies, progress tracking, and result persistence. It supports both serial and parallel execution of tasks using Python's `asyncio` library. The manager initializes progress tracking, schedules tasks, and updates progress as tasks complete. It also manages the persistence of task results, either locally on disk or in an S3 bucket, using the `TaskResultPersistence` interface and its concrete implementations. The code is designed to be extensible, allowing for different persistence strategies and task types, and includes mechanisms for loading previously persisted results to resume task execution. This framework is suitable for applications requiring complex task orchestration with robust result management and progress monitoring.
 # Imports and Dependencies
 
 ---
@@ -40,7 +40,7 @@ The `TaskManager` class orchestrates the execution of tasks, handling dependenci
 ### TaskName
 - **Type**: `type`
 - **Description**: `TaskName` is a global variable defined as a type alias for the `str` type. It is used to represent the name of a task in the codebase.
-- **Use**: This variable is used to specify that task names should be of type `str` throughout the code.
+- **Use**: This variable is used to define the type of task names throughout the code, ensuring consistency and clarity when referring to task names.
 
 
 # Classes
@@ -52,11 +52,11 @@ The `TaskManager` class orchestrates the execution of tasks, handling dependenci
     - `total_work_units`: Represents the total number of work units to be completed.
     - `completed_work_units`: Tracks the number of work units that have been completed.
     - `task_count`: Indicates the total number of tasks to be completed.
-    - `completed_task_count`: Counts the number of tasks that have been completed.
-- **Description**: The `ProgressState` class is a data structure designed to track the progress of tasks and work units in a system. It maintains counts of total and completed work units and tasks, and provides properties to calculate the percentage of completion based on these counts. This class is useful for monitoring and reporting the progress of operations that involve multiple tasks and work units.
+    - `completed_task_count`: Tracks the number of tasks that have been completed.
+- **Description**: The ProgressState class is a data structure designed to track the progress of tasks and work units. It maintains counts of total and completed work units and tasks, and provides properties to calculate the percentage of completion based on these counts. This class is useful for monitoring and reporting the progress of a series of tasks or operations.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/task.ProgressState.percent_complete`](#ProgressStatepercent_complete)
-    - [`python-backend/content_services/inspector/src/utils/task.ProgressState.task_percent_complete`](#ProgressStatetask_percent_complete)
+    - [`python-backend/content_services/inspector/src/utils/task.ProgressState.percent_complete`](<#ProgressStatepercent_complete>)
+    - [`python-backend/content_services/inspector/src/utils/task.ProgressState.task_percent_complete`](<#ProgressStatetask_percent_complete>)
 
 **Methods**
 
@@ -67,21 +67,21 @@ The `percent_complete` method calculates the percentage of completed work units 
 - **Inputs**: None
 - **Control Flow**:
     - Check if `total_work_units` is zero; if true, return 0.0 to avoid division by zero.
-    - If `total_work_units` is not zero, calculate the percentage by dividing `completed_work_units` by `total_work_units` and multiplying by 100.0.
+    - If `total_work_units` is not zero, calculate the percentage by dividing `completed_work_units` by `total_work_units` and multiplying by 100.
 - **Output**: A float representing the percentage of completed work units.
-- **See also**: [`python-backend/content_services/inspector/src/utils/task.ProgressState`](#ProgressState)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/task.ProgressState`](<#ProgressState>)  (Base Class)
 
 
 ---
 #### ProgressState\.task\_percent\_complete<!-- {{#callable:python-backend/content_services/inspector/src/utils/task.ProgressState.task_percent_complete}} -->
-The `task_percent_complete` method calculates the percentage of completed tasks relative to the total number of tasks.
+The `task_percent_complete` method calculates the percentage of completed tasks out of the total task count.
 - **Decorators**: `@property`
 - **Inputs**: None
 - **Control Flow**:
-    - Check if `task_count` is zero; if true, return 0.0 to avoid division by zero.
-    - If `task_count` is not zero, calculate the percentage of completed tasks by dividing `completed_task_count` by `task_count` and multiplying by 100.0.
+    - Check if `self.task_count` is zero; if true, return 0.0 as the percentage complete.
+    - If `self.task_count` is not zero, calculate the percentage of completed tasks by dividing `self.completed_task_count` by `self.task_count` and multiplying by 100.0.
 - **Output**: A float representing the percentage of completed tasks.
-- **See also**: [`python-backend/content_services/inspector/src/utils/task.ProgressState`](#ProgressState)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/task.ProgressState`](<#ProgressState>)  (Base Class)
 
 
 
@@ -94,7 +94,7 @@ The `task_percent_complete` method calculates the percentage of completed tasks 
     - `TOP_LEVEL_DOCS`: Represents the work unit constant for the TOP_LEVEL_DOCS task type.
     - `SYMBOLS`: Represents the work unit constant for the SYMBOLS task type.
     - `EMBEDDING`: Represents the work unit constant for the EMBEDDING task type.
-- **Description**: The TaskWorkUnits class defines a set of constants representing the work units required for different types of tasks. Each constant corresponds to a specific task type, such as SYMBOL_TABLE, FILE_TECH_DOC, FOLDER_TECH_DOC, TOP_LEVEL_DOCS, SYMBOLS, and EMBEDDING, and assigns a numerical value indicating the work effort associated with that task type. This class is used to standardize the measurement of work across various tasks in a system.
+- **Description**: The TaskWorkUnits class defines a set of constants representing the work units associated with different task types. These constants are used to quantify the amount of work required for each task type, facilitating task management and progress tracking within a system. Each constant corresponds to a specific task type, such as SYMBOL_TABLE or FILE_TECH_DOC, and is assigned a numerical value indicating its relative work unit.
 
 
 ---
@@ -112,41 +112,41 @@ The `task_percent_complete` method calculates the percentage of completed tasks 
 ### TaskResult<!-- {{#class:python-backend/content_services/inspector/src/utils/task.TaskResult}} -->
 - **Decorators**: `@dataclass`, `@frozen`
 - **Members**:
-    - `data`: Holds the data associated with the task result.
-    - `serialization`: Specifies the method used for serializing the data.
-- **Description**: The `TaskResult` class is a data structure designed to encapsulate the result of a task, including the data produced by the task and the method used to serialize this data. It supports serialization and deserialization using JSON and Pickle methods, allowing for flexible storage and retrieval of task results. The class is immutable, as indicated by the `frozen=True` parameter in the `@dataclass` decorator, ensuring that once a `TaskResult` instance is created, its state cannot be altered.
+    - `data`: Holds the data to be serialized.
+    - `serialization`: Specifies the method of serialization to be used.
+- **Description**: The `TaskResult` class is a data structure designed to encapsulate the result of a task, including the data and the method of serialization. It supports serialization and deserialization of the data using either JSON or PICKLE methods, ensuring that the data can be easily stored and retrieved in a consistent format. The class is immutable, as indicated by the `frozen=True` parameter in the `@dataclass` decorator, which ensures that once a `TaskResult` instance is created, its state cannot be modified.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/task.TaskResult.serialize`](#TaskResultserialize)
-    - [`python-backend/content_services/inspector/src/utils/task.TaskResult.deserialize`](#TaskResultdeserialize)
+    - [`python-backend/content_services/inspector/src/utils/task.TaskResult.serialize`](<#TaskResultserialize>)
+    - [`python-backend/content_services/inspector/src/utils/task.TaskResult.deserialize`](<#TaskResultdeserialize>)
 
 **Methods**
 
 ---
 #### TaskResult\.serialize<!-- {{#callable:python-backend/content_services/inspector/src/utils/task.TaskResult.serialize}} -->
-The `serialize` method in the `TaskResult` class converts the `data` attribute into a serialized format (either JSON or PICKLE) based on the specified `serialization` method.
+The `serialize` method serializes the `data` attribute of a `TaskResult` instance into either a JSON string or a Pickle byte stream based on the specified serialization method.
 - **Inputs**: None
 - **Control Flow**:
     - Check if the `serialization` attribute is `SerializationMethod.JSON` and if so, serialize `data` using `json.dumps()` and return the result as a string.
     - Check if the `serialization` attribute is `SerializationMethod.PICKLE` and if so, serialize `data` using `pickle.dumps()` and return the result as bytes.
     - If the `serialization` attribute is neither JSON nor PICKLE, raise a `ValueError` indicating an unsupported serialization method.
-- **Output**: The method returns the serialized data as a string if JSON serialization is used, or as bytes if PICKLE serialization is used.
-- **See also**: [`python-backend/content_services/inspector/src/utils/task.TaskResult`](#TaskResult)  (Base Class)
+- **Output**: The method returns a serialized representation of `data` as a string if using JSON, or as bytes if using Pickle.
+- **See also**: [`python-backend/content_services/inspector/src/utils/task.TaskResult`](<#TaskResult>)  (Base Class)
 
 
 ---
 #### TaskResult\.deserialize<!-- {{#callable:python-backend/content_services/inspector/src/utils/task.TaskResult.deserialize}} -->
-The `deserialize` method converts serialized data back into a `TaskResult` object using the specified serialization method.
+The `deserialize` method reconstructs a `TaskResult` object from a serialized string or bytes using the specified serialization method.
 - **Decorators**: `@classmethod`
 - **Inputs**:
-    - `data`: The serialized data, which can be either a string or bytes, depending on the serialization method.
-    - `method`: The serialization method used, which is an instance of the `SerializationMethod` enum, indicating either JSON or PICKLE.
+    - `data`: A string or bytes object representing the serialized data.
+    - `method`: An instance of `SerializationMethod` indicating the method used for serialization, either JSON or PICKLE.
 - **Control Flow**:
-    - Check if the method is JSON and the data is a string, then deserialize using `json.loads`.
-    - Check if the method is PICKLE and the data is bytes, then deserialize using `pickle.loads`.
-    - If neither condition is met, raise a `ValueError` indicating an invalid data type for the given serialization method.
-    - Return a new `TaskResult` instance with the deserialized data and the specified serialization method.
-- **Output**: Returns a `TaskResult` object initialized with the deserialized data and the specified serialization method.
-- **See also**: [`python-backend/content_services/inspector/src/utils/task.TaskResult`](#TaskResult)  (Base Class)
+    - Check if the method is JSON and data is a string, then deserialize using `json.loads`.
+    - Check if the method is PICKLE and data is bytes, then deserialize using `pickle.loads`.
+    - Raise a `ValueError` if the data type does not match the serialization method.
+    - Return a new `TaskResult` instance with the deserialized data and the serialization method.
+- **Output**: Returns a `TaskResult` object containing the deserialized data and the serialization method used.
+- **See also**: [`python-backend/content_services/inspector/src/utils/task.TaskResult`](<#TaskResult>)  (Base Class)
 
 
 
@@ -156,10 +156,10 @@ The `deserialize` method converts serialized data back into a `TaskResult` objec
 - **Members**:
     - `_extension_for_method`: A class variable mapping serialization methods to their respective file extensions.
     - `_method_for_extension`: A class variable mapping file extensions to their respective serialization methods.
-- **Description**: The `TaskResultPersistence` class is an abstract base class that defines the interface for persisting task results, including methods for saving and loading task results. It uses serialization methods to determine the file extensions for storing results and provides a mapping between serialization methods and file extensions. This class serves as a blueprint for implementing specific persistence mechanisms, such as saving to local disk or cloud storage, by requiring subclasses to implement the `save_task_result` and `load_task_result` methods.
+- **Description**: The `TaskResultPersistence` class is an abstract base class that defines the interface for persisting task results, including methods for saving and loading task results. It uses serialization methods to determine the file extensions for storing results and provides a mapping between serialization methods and file extensions. This class serves as a blueprint for concrete implementations that handle the actual persistence logic, such as saving to local disk or cloud storage.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/task.TaskResultPersistence.save_task_result`](#TaskResultPersistencesave_task_result)
-    - [`python-backend/content_services/inspector/src/utils/task.TaskResultPersistence.load_task_result`](#TaskResultPersistenceload_task_result)
+    - [`python-backend/content_services/inspector/src/utils/task.TaskResultPersistence.save_task_result`](<#TaskResultPersistencesave_task_result>)
+    - [`python-backend/content_services/inspector/src/utils/task.TaskResultPersistence.load_task_result`](<#TaskResultPersistenceload_task_result>)
 - **Inherits From**:
     - `ABC`
 
@@ -174,10 +174,10 @@ The `save_task_result` method is an abstract method intended to save the result 
     - `task_id`: A string representing the unique identifier for the task.
     - `result`: An instance of TaskResult containing the data and serialization method to be saved.
 - **Control Flow**:
-    - The method is abstract and does not contain any implementation in the base class.
+    - The method is abstract and does not contain any implementation details.
     - It is intended to be overridden by subclasses to provide specific logic for saving task results.
 - **Output**: The method does not return any value (returns None).
-- **See also**: [`python-backend/content_services/inspector/src/utils/task.TaskResultPersistence`](#TaskResultPersistence)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/task.TaskResultPersistence`](<#TaskResultPersistence>)  (Base Class)
 
 
 ---
@@ -188,10 +188,9 @@ The `load_task_result` method is an abstract method intended to retrieve a task 
     - `run_id`: A string representing the unique identifier for a specific run of tasks.
     - `task_id`: A string representing the unique identifier for a specific task within the run.
 - **Control Flow**:
-    - The method is abstract and must be implemented by subclasses, so it does not contain any control flow logic itself.
-    - Subclasses are expected to implement logic to locate and retrieve the task result using the provided run ID and task ID.
-- **Output**: The method returns either a `TaskResult` object if the task result is found, or `None` if it is not.
-- **See also**: [`python-backend/content_services/inspector/src/utils/task.TaskResultPersistence`](#TaskResultPersistence)  (Base Class)
+    - The method is abstract and must be implemented by subclasses, meaning it does not contain any control flow or logic in its current form.
+- **Output**: The method returns either a `TaskResult` object if the task result is successfully loaded, or `None` if the result is not found.
+- **See also**: [`python-backend/content_services/inspector/src/utils/task.TaskResultPersistence`](<#TaskResultPersistence>)  (Base Class)
 
 
 
@@ -199,15 +198,15 @@ The `load_task_result` method is an abstract method intended to retrieve a task 
 ### LocalDiskTaskResultPersistence<!-- {{#class:python-backend/content_services/inspector/src/utils/task.LocalDiskTaskResultPersistence}} -->
 - **Members**:
     - `base_dir`: The base directory path where task results are stored on the local disk.
-- **Description**: The `LocalDiskTaskResultPersistence` class is a concrete implementation of the `TaskResultPersistence` abstract base class, designed to handle the storage and retrieval of task results on a local disk. It manages the directory structure for storing results, ensuring that directories are created as needed. The class supports saving and loading task results using either JSON or PICKLE serialization methods, determined by the `TaskResult`'s serialization attribute. This class is particularly useful for scenarios where task results need to be persisted locally, providing a straightforward mechanism to serialize and deserialize task data to and from the file system.
+- **Description**: The `LocalDiskTaskResultPersistence` class is a concrete implementation of the `TaskResultPersistence` abstract base class, designed to handle the storage and retrieval of task results on a local disk. It manages the file paths and directories for storing serialized task results, supporting both JSON and PICKLE serialization methods. The class ensures that the necessary directories are created and provides methods to save and load task results based on unique run and task identifiers.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/task.LocalDiskTaskResultPersistence.__init__`](#LocalDiskTaskResultPersistence__init__)
-    - [`python-backend/content_services/inspector/src/utils/task.LocalDiskTaskResultPersistence._get_file_base_path`](#LocalDiskTaskResultPersistence_get_file_base_path)
-    - [`python-backend/content_services/inspector/src/utils/task.LocalDiskTaskResultPersistence._get_run_dir`](#LocalDiskTaskResultPersistence_get_run_dir)
-    - [`python-backend/content_services/inspector/src/utils/task.LocalDiskTaskResultPersistence.save_task_result`](#LocalDiskTaskResultPersistencesave_task_result)
-    - [`python-backend/content_services/inspector/src/utils/task.LocalDiskTaskResultPersistence.load_task_result`](#LocalDiskTaskResultPersistenceload_task_result)
+    - [`python-backend/content_services/inspector/src/utils/task.LocalDiskTaskResultPersistence.__init__`](<#LocalDiskTaskResultPersistence__init__>)
+    - [`python-backend/content_services/inspector/src/utils/task.LocalDiskTaskResultPersistence._get_file_base_path`](<#LocalDiskTaskResultPersistence_get_file_base_path>)
+    - [`python-backend/content_services/inspector/src/utils/task.LocalDiskTaskResultPersistence._get_run_dir`](<#LocalDiskTaskResultPersistence_get_run_dir>)
+    - [`python-backend/content_services/inspector/src/utils/task.LocalDiskTaskResultPersistence.save_task_result`](<#LocalDiskTaskResultPersistencesave_task_result>)
+    - [`python-backend/content_services/inspector/src/utils/task.LocalDiskTaskResultPersistence.load_task_result`](<#LocalDiskTaskResultPersistenceload_task_result>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/task.TaskResultPersistence`](#TaskResultPersistence)
+    - [`python-backend/content_services/inspector/src/utils/task.TaskResultPersistence`](<#TaskResultPersistence>)
 
 **Methods**
 
@@ -219,8 +218,8 @@ The `__init__` method initializes a `LocalDiskTaskResultPersistence` object by s
 - **Control Flow**:
     - Convert the `base_dir` input to a `Path` object and assign it to the `self.base_dir` attribute.
     - Create the directory specified by `self.base_dir`, including any necessary parent directories, and do not raise an error if the directory already exists.
-- **Output**: This method does not return any value.
-- **See also**: [`python-backend/content_services/inspector/src/utils/task.LocalDiskTaskResultPersistence`](#LocalDiskTaskResultPersistence)  (Base Class)
+- **Output**: This method does not return any value; it initializes the object's state.
+- **See also**: [`python-backend/content_services/inspector/src/utils/task.LocalDiskTaskResultPersistence`](<#LocalDiskTaskResultPersistence>)  (Base Class)
 
 
 ---
@@ -230,22 +229,23 @@ The `_get_file_base_path` method constructs and returns a file path based on the
     - `run_id`: A string representing the unique identifier for a specific run.
     - `task_id`: A string representing the unique identifier for a specific task within the run.
 - **Control Flow**:
-    - The method constructs a file path by combining the base directory (`self.base_dir`), the `run_id`, and the `task_id` into a `Path` object.
+    - The method constructs a file path by combining the base directory (`self.base_dir`), the `run_id`, and the `task_id`.
+    - It uses the `/` operator to concatenate these components into a `Path` object.
 - **Output**: A `Path` object representing the constructed file path based on the base directory, run ID, and task ID.
-- **See also**: [`python-backend/content_services/inspector/src/utils/task.LocalDiskTaskResultPersistence`](#LocalDiskTaskResultPersistence)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/task.LocalDiskTaskResultPersistence`](<#LocalDiskTaskResultPersistence>)  (Base Class)
 
 
 ---
 #### LocalDiskTaskResultPersistence\.\_get\_run\_dir<!-- {{#callable:python-backend/content_services/inspector/src/utils/task.LocalDiskTaskResultPersistence._get_run_dir}} -->
-The `_get_run_dir` method constructs and returns the directory path for a specific run based on the given `run_id`.
+The `_get_run_dir` method constructs and returns a directory path for a specific run using the base directory and the provided run ID.
 - **Inputs**:
     - `run_id`: A string representing the unique identifier for a specific run, used to construct the directory path.
 - **Control Flow**:
-    - The method takes a single input parameter `run_id`.
+    - The method takes the `run_id` as an input parameter.
     - It constructs a directory path by appending the `run_id` to the `base_dir` attribute of the class instance.
     - The constructed path is returned as a `Path` object.
-- **Output**: A `Path` object representing the directory path for the specified run.
-- **See also**: [`python-backend/content_services/inspector/src/utils/task.LocalDiskTaskResultPersistence`](#LocalDiskTaskResultPersistence)  (Base Class)
+- **Output**: A `Path` object representing the directory path for the specified run ID.
+- **See also**: [`python-backend/content_services/inspector/src/utils/task.LocalDiskTaskResultPersistence`](<#LocalDiskTaskResultPersistence>)  (Base Class)
 
 
 ---
@@ -256,57 +256,54 @@ The `save_task_result` method saves a task's result to a local disk, using eithe
     - `task_id`: A string representing the unique identifier for the task.
     - `result`: An instance of `TaskResult` containing the data to be saved and the serialization method to be used.
 - **Control Flow**:
-    - Retrieve the directory path for the given run using [`_get_run_dir`](#LocalDiskTaskResultPersistence_get_run_dir) method.
-    - Ensure the directory exists by creating it if necessary.
-    - Determine the base file path for the task using [`_get_file_base_path`](#LocalDiskTaskResultPersistence_get_file_base_path) method.
-    - Select the appropriate file extension based on the serialization method of the result.
-    - Serialize the task result data using the [`serialize`](#TaskResultserialize) method of `TaskResult`.
-    - If the serialization method is JSON, write the serialized data as text to the file.
-    - If the serialization method is PICKLE, write the serialized data as bytes to the file.
+    - Retrieve the directory path for the given run ID using [`_get_run_dir`](<#LocalDiskTaskResultPersistence_get_run_dir>) method.
+    - Ensure the directory exists by creating it if necessary with `mkdir`.
+    - Determine the base file path for the task using [`_get_file_base_path`](<#LocalDiskTaskResultPersistence_get_file_base_path>).
+    - Select the file extension based on the serialization method from `_extension_for_method`.
+    - Serialize the task result data using the [`serialize`](<#TaskResultserialize>) method of `TaskResult`.
+    - Write the serialized data to the file path with the appropriate extension, using `write_text` for JSON and `write_bytes` for PICKLE.
     - Raise a `ValueError` if the serialization method is neither JSON nor PICKLE.
-- **Output**: The method does not return any value; it performs file operations to save the task result to disk.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/task.LocalDiskTaskResultPersistence._get_run_dir`](#LocalDiskTaskResultPersistence_get_run_dir)
-    - [`python-backend/content_services/inspector/src/utils/task.LocalDiskTaskResultPersistence._get_file_base_path`](#LocalDiskTaskResultPersistence_get_file_base_path)
-    - [`python-backend/content_services/inspector/src/utils/task.TaskResult.serialize`](#TaskResultserialize)
-- **See also**: [`python-backend/content_services/inspector/src/utils/task.LocalDiskTaskResultPersistence`](#LocalDiskTaskResultPersistence)  (Base Class)
+- **Output**: The method does not return any value; it performs file writing operations to save the task result.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/task.LocalDiskTaskResultPersistence._get_run_dir`](<#LocalDiskTaskResultPersistence_get_run_dir>)
+    - [`python-backend/content_services/inspector/src/utils/task.LocalDiskTaskResultPersistence._get_file_base_path`](<#LocalDiskTaskResultPersistence_get_file_base_path>)
+    - [`python-backend/content_services/inspector/src/utils/task.TaskResult.serialize`](<#TaskResultserialize>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/task.LocalDiskTaskResultPersistence`](<#LocalDiskTaskResultPersistence>)  (Base Class)
 
 
 ---
 #### LocalDiskTaskResultPersistence\.load\_task\_result<!-- {{#callable:python-backend/content_services/inspector/src/utils/task.LocalDiskTaskResultPersistence.load_task_result}} -->
-The `load_task_result` method attempts to load a task result from the local disk by checking for files with specific extensions and deserializing the data if a file is found.
+The `load_task_result` method attempts to load a task result from the local disk by checking for files with specific serialization extensions and deserializing the data if a file is found.
 - **Inputs**:
     - `run_id`: A string representing the unique identifier for the run.
     - `task_id`: A string representing the unique identifier for the task.
 - **Control Flow**:
-    - The method constructs a base file path using the provided `run_id` and `task_id`.
-    - It iterates over the available serialization methods and their corresponding file extensions.
-    - For each method, it constructs a file path by appending the extension to the base path.
-    - It checks if the file exists at the constructed path.
-    - If the file exists, it reads the file content as text if the extension is `.json`, otherwise it reads it as bytes.
-    - The method then deserializes the data using the `TaskResult.deserialize` method with the appropriate serialization method.
-    - If a file is found and deserialized, the method returns the `TaskResult` object.
+    - The method constructs a base file path using the provided `run_id` and `task_id` by calling [`_get_file_base_path`](<#LocalDiskTaskResultPersistence_get_file_base_path>).
+    - It iterates over the `_extension_for_method` dictionary to check for files with extensions corresponding to different serialization methods.
+    - For each extension, it constructs a file path and checks if the file exists.
+    - If a file exists, it reads the file's content as text if the extension is `.json`, otherwise it reads the content as bytes.
+    - It then deserializes the data using the `TaskResult.deserialize` method with the appropriate serialization method and returns the deserialized `TaskResult`.
     - If no file is found for any of the extensions, the method returns `None`.
 - **Output**: The method returns a `TaskResult` object if a file is found and successfully deserialized, otherwise it returns `None`.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/task.LocalDiskTaskResultPersistence._get_file_base_path`](#LocalDiskTaskResultPersistence_get_file_base_path)
-    - [`python-backend/content_services/inspector/src/utils/task.TaskResult.deserialize`](#TaskResultdeserialize)
-- **See also**: [`python-backend/content_services/inspector/src/utils/task.LocalDiskTaskResultPersistence`](#LocalDiskTaskResultPersistence)  (Base Class)
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/task.LocalDiskTaskResultPersistence._get_file_base_path`](<#LocalDiskTaskResultPersistence_get_file_base_path>)
+    - [`python-backend/content_services/inspector/src/utils/task.TaskResult.deserialize`](<#TaskResultdeserialize>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/task.LocalDiskTaskResultPersistence`](<#LocalDiskTaskResultPersistence>)  (Base Class)
 
 
 
 ---
 ### S3TaskResultPersistence<!-- {{#class:python-backend/content_services/inspector/src/utils/task.S3TaskResultPersistence}} -->
 - **Members**:
-    - `s3_client`: An instance of the boto3 S3 client used to interact with AWS S3.
+    - `s3_client`: An instance of the boto3 S3 client used for interacting with the S3 service.
     - `bucket_name`: The name of the S3 bucket where task results are stored.
-- **Description**: The `S3TaskResultPersistence` class is a concrete implementation of the `TaskResultPersistence` abstract base class, designed to handle the persistence of task results in an AWS S3 bucket. It provides methods to save and load task results, utilizing the boto3 library to interact with S3. The class manages serialization and deserialization of task results using either JSON or PICKLE formats, and handles exceptions related to S3 operations, such as missing keys or missing AWS credentials.
+- **Description**: The `S3TaskResultPersistence` class is a concrete implementation of the `TaskResultPersistence` abstract base class, designed to handle the storage and retrieval of task results in an Amazon S3 bucket. It utilizes the boto3 library to interact with S3, allowing task results to be serialized and saved as objects in the specified bucket, and later retrieved and deserialized. This class supports multiple serialization methods, including JSON and PICKLE, and handles exceptions related to S3 operations, such as missing keys and credential issues.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/task.S3TaskResultPersistence.__init__`](#S3TaskResultPersistence__init__)
-    - [`python-backend/content_services/inspector/src/utils/task.S3TaskResultPersistence.save_task_result`](#S3TaskResultPersistencesave_task_result)
-    - [`python-backend/content_services/inspector/src/utils/task.S3TaskResultPersistence.load_task_result`](#S3TaskResultPersistenceload_task_result)
+    - [`python-backend/content_services/inspector/src/utils/task.S3TaskResultPersistence.__init__`](<#S3TaskResultPersistence__init__>)
+    - [`python-backend/content_services/inspector/src/utils/task.S3TaskResultPersistence.save_task_result`](<#S3TaskResultPersistencesave_task_result>)
+    - [`python-backend/content_services/inspector/src/utils/task.S3TaskResultPersistence.load_task_result`](<#S3TaskResultPersistenceload_task_result>)
 - **Inherits From**:
-    - [`python-backend/content_services/inspector/src/utils/task.TaskResultPersistence`](#TaskResultPersistence)
+    - [`python-backend/content_services/inspector/src/utils/task.TaskResultPersistence`](<#TaskResultPersistence>)
 
 **Methods**
 
@@ -319,47 +316,47 @@ The `__init__` method initializes an instance of the `S3TaskResultPersistence` c
     - The method initializes an S3 client using `boto3.client('s3')`.
     - It assigns the provided `bucket_name` to the instance variable `self.bucket_name`.
 - **Output**: This method does not return any value; it initializes the instance variables for the class.
-- **See also**: [`python-backend/content_services/inspector/src/utils/task.S3TaskResultPersistence`](#S3TaskResultPersistence)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/task.S3TaskResultPersistence`](<#S3TaskResultPersistence>)  (Base Class)
 
 
 ---
 #### S3TaskResultPersistence\.save\_task\_result<!-- {{#callable:python-backend/content_services/inspector/src/utils/task.S3TaskResultPersistence.save_task_result}} -->
-The `save_task_result` method stores a serialized task result in an S3 bucket using a specific object key format.
+The `save_task_result` method stores a serialized task result in an S3 bucket using a specific object key format based on the run and task IDs.
 - **Inputs**:
-    - `run_id`: A string representing the unique identifier for the run, used as part of the S3 object key.
-    - `task_id`: A string representing the unique identifier for the task, used as part of the S3 object key.
+    - `run_id`: A string representing the unique identifier for the run.
+    - `task_id`: A string representing the unique identifier for the task.
     - `result`: An instance of `TaskResult` containing the data to be serialized and stored, along with its serialization method.
 - **Control Flow**:
     - Constructs a base object key using the `run_id` and `task_id`.
     - Determines the file extension based on the serialization method of the `result`.
-    - Combines the base object key and the extension to form the complete S3 object key.
+    - Combines the base object key and the file extension to form the complete object key.
     - Serializes the `result` data using its specified serialization method.
     - Uses the S3 client to put the serialized data into the specified S3 bucket with the constructed object key.
-- **Output**: The method does not return any value; it performs an action of saving the task result to S3.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/task.TaskResult.serialize`](#TaskResultserialize)
-- **See also**: [`python-backend/content_services/inspector/src/utils/task.S3TaskResultPersistence`](#S3TaskResultPersistence)  (Base Class)
+- **Output**: The method does not return any value; it performs an action of saving the serialized task result to an S3 bucket.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/task.TaskResult.serialize`](<#TaskResultserialize>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/task.S3TaskResultPersistence`](<#S3TaskResultPersistence>)  (Base Class)
 
 
 ---
 #### S3TaskResultPersistence\.load\_task\_result<!-- {{#callable:python-backend/content_services/inspector/src/utils/task.S3TaskResultPersistence.load_task_result}} -->
-The `load_task_result` method retrieves a task result from an S3 bucket using a specified run ID and task ID, attempting different serialization methods until successful or returning None if unsuccessful.
+The `load_task_result` method retrieves a task result from an S3 bucket using a specified run ID and task ID, attempting to deserialize it using supported serialization methods.
 - **Inputs**:
     - `run_id`: A string representing the unique identifier for the run.
     - `task_id`: A string representing the unique identifier for the task.
 - **Control Flow**:
     - Constructs a base object key using the run ID and task ID.
-    - Iterates over available serialization methods and their corresponding file extensions.
+    - Iterates over supported serialization methods and their corresponding file extensions.
     - For each method, constructs the full object key and attempts to retrieve the object from the S3 bucket using the S3 client.
     - Handles exceptions for missing keys, missing AWS credentials, and other errors, printing an error message and returning None if an error occurs.
     - Reads the body of the response if the object is successfully retrieved.
     - Deserializes the body using the appropriate method based on the serialization method, either JSON or PICKLE.
     - Raises a ValueError if the serialization method is unsupported.
-    - Returns the deserialized TaskResult if successful, or continues to the next method if not.
-- **Output**: Returns a `TaskResult` object if a valid result is found and deserialized successfully, otherwise returns `None`.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/task.TaskResult.deserialize`](#TaskResultdeserialize)
-- **See also**: [`python-backend/content_services/inspector/src/utils/task.S3TaskResultPersistence`](#S3TaskResultPersistence)  (Base Class)
+    - Returns the deserialized TaskResult if successful, otherwise continues to the next method or returns None if no methods succeed.
+- **Output**: Returns a `TaskResult` object if the task result is successfully retrieved and deserialized, otherwise returns `None`.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/task.TaskResult.deserialize`](<#TaskResultdeserialize>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/task.S3TaskResultPersistence`](<#S3TaskResultPersistence>)  (Base Class)
 
 
 
@@ -372,15 +369,15 @@ The `load_task_result` method retrieves a task result from an S3 bucket using a 
     - `dependencies`: A tuple of Task types that this task depends on.
 - **Description**: The `Task` class is an abstract base class designed to represent a unit of work within a dependency graph, where each task is associated with a `LiteNode` and may have dependencies on other tasks. It provides an asynchronous `run` method that executes the task, ensuring that all dependencies are completed first, and requires subclasses to implement the `run_implementation`, `post_run_io`, and `work_units` methods. The class also includes properties for generating a stable identifier and its hashed version, which are used for task comparison and persistence.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/task.Task.run`](#Taskrun)
-    - [`python-backend/content_services/inspector/src/utils/task.Task.run_implementation`](#Taskrun_implementation)
-    - [`python-backend/content_services/inspector/src/utils/task.Task.post_run_io`](#Taskpost_run_io)
-    - [`python-backend/content_services/inspector/src/utils/task.Task.work_units`](#Taskwork_units)
-    - [`python-backend/content_services/inspector/src/utils/task.Task.stable_id`](#Taskstable_id)
-    - [`python-backend/content_services/inspector/src/utils/task.Task.hashed_stable_id`](#Taskhashed_stable_id)
-    - [`python-backend/content_services/inspector/src/utils/task.Task.__hash__`](#Task__hash__)
-    - [`python-backend/content_services/inspector/src/utils/task.Task.__eq__`](#Task__eq__)
-    - [`python-backend/content_services/inspector/src/utils/task.Task.__str__`](#Task__str__)
+    - [`python-backend/content_services/inspector/src/utils/task.Task.run`](<#Taskrun>)
+    - [`python-backend/content_services/inspector/src/utils/task.Task.run_implementation`](<#Taskrun_implementation>)
+    - [`python-backend/content_services/inspector/src/utils/task.Task.post_run_io`](<#Taskpost_run_io>)
+    - [`python-backend/content_services/inspector/src/utils/task.Task.work_units`](<#Taskwork_units>)
+    - [`python-backend/content_services/inspector/src/utils/task.Task.stable_id`](<#Taskstable_id>)
+    - [`python-backend/content_services/inspector/src/utils/task.Task.hashed_stable_id`](<#Taskhashed_stable_id>)
+    - [`python-backend/content_services/inspector/src/utils/task.Task.__hash__`](<#Task__hash__>)
+    - [`python-backend/content_services/inspector/src/utils/task.Task.__eq__`](<#Task__eq__>)
+    - [`python-backend/content_services/inspector/src/utils/task.Task.__str__`](<#Task__str__>)
 - **Inherits From**:
     - `abc.ABC`
 
@@ -388,17 +385,17 @@ The `load_task_result` method retrieves a task result from an S3 bucket using a 
 
 ---
 #### Task\.run<!-- {{#callable:python-backend/content_services/inspector/src/utils/task.Task.run}} -->
-The `run` method asynchronously executes a task by invoking its [`run_implementation`](#Taskrun_implementation) method with the results of its dependencies.
+The `run` method asynchronously executes a task by invoking its [`run_implementation`](<#Taskrun_implementation>) method with the results of its dependencies.
 - **Decorators**: `@abstractmethod`
 - **Inputs**:
-    - `dependent_results`: A dictionary mapping `Task` instances to their corresponding `TaskResult` objects, representing the results of tasks that the current task depends on.
+    - `dependent_results`: A dictionary mapping `Task` objects to their respective `TaskResult` objects, representing the results of tasks that the current task depends on.
 - **Control Flow**:
-    - The method is defined as asynchronous, allowing it to be awaited in an asynchronous context.
-    - It directly calls and awaits the [`run_implementation`](#Taskrun_implementation) method, passing the `dependent_results` dictionary as an argument.
-- **Output**: The method returns a `TaskResult` object, which is the result of executing the [`run_implementation`](#Taskrun_implementation) method.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/task.Task.run_implementation`](#Taskrun_implementation)
-- **See also**: [`python-backend/content_services/inspector/src/utils/task.Task`](#Task)  (Base Class)
+    - The method is asynchronous and uses the `await` keyword to call [`run_implementation`](<#Taskrun_implementation>).
+    - It directly returns the result of the [`run_implementation`](<#Taskrun_implementation>) method, passing `dependent_results` as an argument.
+- **Output**: The method returns a `TaskResult` object, which is the result of executing the task's [`run_implementation`](<#Taskrun_implementation>) method.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/task.Task.run_implementation`](<#Taskrun_implementation>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/task.Task`](<#Task>)  (Base Class)
 
 
 ---
@@ -407,12 +404,12 @@ The `run_implementation` method is an abstract method that must be implemented b
 - **Decorators**: `@abstractmethod`
 - **Inputs**:
     - `self`: Refers to the instance of the class implementing this method.
-    - `dependent_results`: A dictionary mapping `Task` instances to their corresponding `TaskResult` objects, representing the results of tasks that the current task depends on.
+    - `dependent_results`: A dictionary mapping `Task` instances to their respective `TaskResult` objects, representing the results of tasks that this task depends on.
 - **Control Flow**:
-    - The method is defined as an abstract method, meaning it must be implemented by any subclass of the `Task` class.
-    - The method raises a `NotImplementedError`, indicating that it is a placeholder and should be overridden in a subclass.
-- **Output**: The method is expected to return a `TaskResult` object, which encapsulates the result of executing the task.
-- **See also**: [`python-backend/content_services/inspector/src/utils/task.Task`](#Task)  (Base Class)
+    - The method is defined as an abstract method, meaning it must be implemented by any subclass of `Task` that inherits it.
+    - The method raises a `NotImplementedError` if it is not overridden, indicating that it is intended to be implemented by subclasses.
+- **Output**: The method is expected to return a `TaskResult` object, which encapsulates the result of the task execution.
+- **See also**: [`python-backend/content_services/inspector/src/utils/task.Task`](<#Task>)  (Base Class)
 
 
 ---
@@ -426,7 +423,7 @@ The `post_run_io` method is an abstract method that must be implemented to handl
     - The method is defined as an abstract method, meaning it must be implemented by any subclass of the `Task` class.
     - The method raises a `NotImplementedError` if it is not overridden in a subclass, indicating that it is intended to be implemented with specific logic for handling post-run I/O operations.
 - **Output**: The method is expected to return a dictionary with string keys and any type of values, representing the results of the post-run I/O operations.
-- **See also**: [`python-backend/content_services/inspector/src/utils/task.Task`](#Task)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/task.Task`](<#Task>)  (Base Class)
 
 
 ---
@@ -436,38 +433,38 @@ The `work_units` method is an abstract property that must be implemented by subc
 - **Inputs**: None
 - **Control Flow**:
     - The method is defined as an abstract property, indicating that it must be overridden by any concrete subclass of the `Task` class.
-    - The method raises a `NotImplementedError` if it is not implemented in a subclass, enforcing the requirement for subclasses to provide their own implementation.
+    - The method raises a `NotImplementedError` if it is not implemented in a subclass, enforcing that subclasses provide their own implementation.
 - **Output**: The method outputs an integer representing the number of work units for a task, but this must be defined in a subclass.
-- **See also**: [`python-backend/content_services/inspector/src/utils/task.Task`](#Task)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/task.Task`](<#Task>)  (Base Class)
 
 
 ---
 #### Task\.stable\_id<!-- {{#callable:python-backend/content_services/inspector/src/utils/task.Task.stable_id}} -->
-The `stable_id` property method generates a unique identifier string for a `Task` instance based on its class name, node's stable ID, and the stable IDs of its dependencies.
+The `stable_id` method generates a unique identifier string for a `Task` instance based on its class name, node's stable ID, and its dependencies' stable IDs.
 - **Decorators**: `@property`
 - **Inputs**: None
 - **Control Flow**:
-    - Initialize `id_str` with the class name and node's stable ID.
+    - Initialize `id_str` with the class name and the node's stable ID.
     - Check if the task has dependencies.
-    - If dependencies exist, concatenate their stable IDs to `id_str`.
+    - If dependencies exist, concatenate their stable IDs into a string `dep_str`.
+    - Append `dep_str` to `id_str` if dependencies are present.
     - Return the constructed `id_str`.
-- **Output**: A string representing the unique stable identifier for the task instance.
-- **See also**: [`python-backend/content_services/inspector/src/utils/task.Task`](#Task)  (Base Class)
+- **Output**: A string representing the stable identifier for the task, incorporating the class name, node stable ID, and dependencies' stable IDs if any.
+- **See also**: [`python-backend/content_services/inspector/src/utils/task.Task`](<#Task>)  (Base Class)
 
 
 ---
 #### Task\.hashed\_stable\_id<!-- {{#callable:python-backend/content_services/inspector/src/utils/task.Task.hashed_stable_id}} -->
-The `hashed_stable_id` method returns a SHA-256 hash of the stable identifier for a Task instance.
+The `hashed_stable_id` method returns a SHA-256 hash of the `stable_id` property of a `Task` instance.
 - **Decorators**: `@property`
 - **Inputs**: None
 - **Control Flow**:
-    - The method accesses the `stable_id` property of the Task instance.
+    - The method accesses the `stable_id` property of the `Task` instance.
     - It encodes the `stable_id` string into bytes.
-    - It computes the SHA-256 hash of the encoded bytes using `hashlib.sha256`.
-    - It converts the hash to a hexadecimal string using `hexdigest`.
-    - The hexadecimal string is returned as the output.
-- **Output**: A string representing the SHA-256 hash of the Task's stable identifier.
-- **See also**: [`python-backend/content_services/inspector/src/utils/task.Task`](#Task)  (Base Class)
+    - It computes the SHA-256 hash of the encoded `stable_id`.
+    - It converts the hash to a hexadecimal string representation.
+- **Output**: A string representing the SHA-256 hash of the `stable_id`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/task.Task`](<#Task>)  (Base Class)
 
 
 ---
@@ -475,11 +472,10 @@ The `hashed_stable_id` method returns a SHA-256 hash of the stable identifier fo
 The `__hash__` method returns the hash value of the `stable_id` property of a `Task` instance.
 - **Inputs**: None
 - **Control Flow**:
-    - The method retrieves the `stable_id` property of the `Task` instance.
-    - It computes the hash of the `stable_id` using Python's built-in `hash` function.
-    - The computed hash value is returned as the output of the method.
-- **Output**: An integer representing the hash value of the `stable_id` of the `Task` instance.
-- **See also**: [`python-backend/content_services/inspector/src/utils/task.Task`](#Task)  (Base Class)
+    - The method computes the hash value of the `stable_id` property of the `Task` instance.
+    - It returns this hash value as the result of the method.
+- **Output**: An integer representing the hash value of the `stable_id` property.
+- **See also**: [`python-backend/content_services/inspector/src/utils/task.Task`](<#Task>)  (Base Class)
 
 
 ---
@@ -493,18 +489,20 @@ The `__eq__` method checks if two `Task` objects are equal by comparing their ha
     - Return `True` if the hashes are equal, otherwise return `False`.
     - If `other` is not a `Task`, return `False`.
 - **Output**: A boolean value indicating whether the two `Task` objects are considered equal.
-- **See also**: [`python-backend/content_services/inspector/src/utils/task.Task`](#Task)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/task.Task`](<#Task>)  (Base Class)
 
 
 ---
 #### Task\.\_\_str\_\_<!-- {{#callable:python-backend/content_services/inspector/src/utils/task.Task.__str__}} -->
-The `__str__` method provides a string representation of a `Task` object, including its class name, node's root relative path, and node status.
+The `__str__` method provides a string representation of a `Task` instance, including its class name, node's root relative path, and node status.
 - **Inputs**: None
 - **Control Flow**:
     - The method constructs a string using an f-string format.
-    - It includes the class name of the object, the root relative path of the node, and the status of the node.
-- **Output**: A string that describes the `Task` object, including its class name, node's root relative path, and node status.
-- **See also**: [`python-backend/content_services/inspector/src/utils/task.Task`](#Task)  (Base Class)
+    - It accesses the class name of the instance using `self.__class__.__name__`.
+    - It retrieves the `root_rel_path` and `status` attributes from the `node` attribute of the instance.
+    - The constructed string is returned as the output.
+- **Output**: A string that describes the `Task` instance, including its class name, node's root relative path, and node status.
+- **See also**: [`python-backend/content_services/inspector/src/utils/task.Task`](<#Task>)  (Base Class)
 
 
 
@@ -517,28 +515,28 @@ The `__str__` method provides a string representation of a `Task` object, includ
     - `task_results`: A dictionary mapping Task types to their TaskResult.
     - `task_io_results`: A dictionary mapping Task types to their IO results.
     - `task_to_asynctask`: A dictionary mapping Task types to asyncio.Task objects.
-    - `persistence`: An optional TaskResultPersistence object for saving task results.
+    - `persistence`: An optional TaskResultPersistence instance for saving task results.
     - `write_queue`: An asyncio.Queue for managing task result writing operations.
     - `write_executor`: A ThreadPoolExecutor for executing write operations.
-    - `progress_state`: A ProgressState object for tracking task execution progress.
-- **Description**: The TaskManager class is responsible for managing and executing a collection of tasks, either serially or concurrently, while tracking their progress and results. It supports persistence of task results using a configurable persistence mechanism, such as S3 or local disk storage. The class also handles the scheduling and execution of tasks, ensuring that dependencies are respected and results are stored and updated accordingly. Additionally, it provides mechanisms for loading persisted results and updating progress as tasks are completed.
+    - `progress_state`: A ProgressState instance for tracking task execution progress.
+- **Description**: The TaskManager class is responsible for managing and executing a collection of tasks, either serially or concurrently, while tracking their progress and handling the persistence of task results. It supports asynchronous task execution and provides mechanisms for loading persisted results, updating progress, and writing task results to a specified persistence layer. The class is designed to work with tasks that have dependencies, ensuring that all dependencies are executed before a task runs, and it can be configured to use different persistence strategies, such as S3 or local disk storage.
 - **Methods**:
-    - [`python-backend/content_services/inspector/src/utils/task.TaskManager.with_s3_persistence`](#TaskManagerwith_s3_persistence)
-    - [`python-backend/content_services/inspector/src/utils/task.TaskManager._initialize_progress`](#TaskManager_initialize_progress)
-    - [`python-backend/content_services/inspector/src/utils/task.TaskManager._update_progress`](#TaskManager_update_progress)
-    - [`python-backend/content_services/inspector/src/utils/task.TaskManager.run_tasks`](#TaskManagerrun_tasks)
-    - [`python-backend/content_services/inspector/src/utils/task.TaskManager.load_persisted_results`](#TaskManagerload_persisted_results)
-    - [`python-backend/content_services/inspector/src/utils/task.TaskManager._schedule_and_await_task`](#TaskManager_schedule_and_await_task)
-    - [`python-backend/content_services/inspector/src/utils/task.TaskManager._schedule_task`](#TaskManager_schedule_task)
-    - [`python-backend/content_services/inspector/src/utils/task.TaskManager._can_skip_task`](#TaskManager_can_skip_task)
-    - [`python-backend/content_services/inspector/src/utils/task.TaskManager._run_task`](#TaskManager_run_task)
-    - [`python-backend/content_services/inspector/src/utils/task.TaskManager._write_task_results`](#TaskManager_write_task_results)
+    - [`python-backend/content_services/inspector/src/utils/task.TaskManager.with_s3_persistence`](<#TaskManagerwith_s3_persistence>)
+    - [`python-backend/content_services/inspector/src/utils/task.TaskManager._initialize_progress`](<#TaskManager_initialize_progress>)
+    - [`python-backend/content_services/inspector/src/utils/task.TaskManager._update_progress`](<#TaskManager_update_progress>)
+    - [`python-backend/content_services/inspector/src/utils/task.TaskManager.run_tasks`](<#TaskManagerrun_tasks>)
+    - [`python-backend/content_services/inspector/src/utils/task.TaskManager.load_persisted_results`](<#TaskManagerload_persisted_results>)
+    - [`python-backend/content_services/inspector/src/utils/task.TaskManager._schedule_and_await_task`](<#TaskManager_schedule_and_await_task>)
+    - [`python-backend/content_services/inspector/src/utils/task.TaskManager._schedule_task`](<#TaskManager_schedule_task>)
+    - [`python-backend/content_services/inspector/src/utils/task.TaskManager._can_skip_task`](<#TaskManager_can_skip_task>)
+    - [`python-backend/content_services/inspector/src/utils/task.TaskManager._run_task`](<#TaskManager_run_task>)
+    - [`python-backend/content_services/inspector/src/utils/task.TaskManager._write_task_results`](<#TaskManager_write_task_results>)
 
 **Methods**
 
 ---
 #### TaskManager\.with\_s3\_persistence<!-- {{#callable:python-backend/content_services/inspector/src/utils/task.TaskManager.with_s3_persistence}} -->
-The `with_s3_persistence` class method creates a `TaskManager` instance with S3-based task result persistence using a specified S3 bucket.
+The `with_s3_persistence` class method creates a `TaskManager` instance with S3-based task result persistence using the specified S3 bucket.
 - **Decorators**: `@classmethod`
 - **Inputs**:
     - `cls`: The class `TaskManager` itself, used to create an instance.
@@ -546,78 +544,76 @@ The `with_s3_persistence` class method creates a `TaskManager` instance with S3-
     - `*args`: Additional positional arguments to be passed to the `TaskManager` constructor.
     - `**kwargs`: Additional keyword arguments to be passed to the `TaskManager` constructor.
 - **Control Flow**:
-    - The method is a class method, so it operates on the class itself rather than an instance.
-    - It calls the class constructor `cls()` to create a new `TaskManager` instance.
-    - The `persistence` parameter is explicitly set to an instance of [`S3TaskResultPersistence`](#S3TaskResultPersistence) initialized with the provided `bucket_name`.
-    - The method returns the newly created `TaskManager` instance.
-- **Output**: A `TaskManager` instance configured with S3 persistence for task results.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/task.S3TaskResultPersistence`](#S3TaskResultPersistence)
-- **See also**: [`python-backend/content_services/inspector/src/utils/task.TaskManager`](#TaskManager)  (Base Class)
+    - The method is a class method, so it operates on the class `TaskManager` rather than an instance.
+    - It creates an instance of `TaskManager` using the provided `*args` and `**kwargs`.
+    - The `persistence` parameter of the `TaskManager` is set to an instance of [`S3TaskResultPersistence`](<#S3TaskResultPersistence>) initialized with the given `bucket_name`.
+- **Output**: Returns a new instance of `TaskManager` with S3 persistence configured.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/task.S3TaskResultPersistence`](<#S3TaskResultPersistence>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/task.TaskManager`](<#TaskManager>)  (Base Class)
 
 
 ---
 #### TaskManager\.\_initialize\_progress<!-- {{#callable:python-backend/content_services/inspector/src/utils/task.TaskManager._initialize_progress}} -->
-The `_initialize_progress` method initializes the progress tracking state for tasks by setting total work units and task counts to zero and printing the initialized state.
+The `_initialize_progress` method initializes the progress tracking state for tasks by setting total work units and task count, and resetting completed work units and task count to zero.
 - **Inputs**: None
 - **Control Flow**:
     - Calculate the total work units by summing the work units of each task in `self.tasks`.
     - Set `self.progress_state.total_work_units` to the calculated total work units.
     - Set `self.progress_state.task_count` to the number of tasks in `self.tasks`.
-    - Initialize `self.progress_state.completed_work_units` to 0.
-    - Initialize `self.progress_state.completed_task_count` to 0.
-    - Print a message indicating the initialized progress tracking state with total work units and task count.
-- **Output**: The method does not return any value; it modifies the `progress_state` attribute of the `TaskManager` instance and prints a message.
-- **See also**: [`python-backend/content_services/inspector/src/utils/task.TaskManager`](#TaskManager)  (Base Class)
+    - Reset `self.progress_state.completed_work_units` to 0.
+    - Reset `self.progress_state.completed_task_count` to 0.
+    - Print a message indicating the initialized progress tracking with total work units and task count.
+- **Output**: The method does not return any value; it modifies the `progress_state` attribute of the `TaskManager` instance.
+- **See also**: [`python-backend/content_services/inspector/src/utils/task.TaskManager`](<#TaskManager>)  (Base Class)
 
 
 ---
 #### TaskManager\.\_update\_progress<!-- {{#callable:python-backend/content_services/inspector/src/utils/task.TaskManager._update_progress}} -->
-The `_update_progress` method updates the progress state of a task manager by incrementing completed work units and task count, and conditionally prints progress if a specified percentage threshold is crossed.
+The `_update_progress` method updates the progress state of a task manager by incrementing completed work units and task count, and conditionally prints the progress if a specified percentage threshold is crossed.
 - **Inputs**:
     - `completed_task`: A `Task` object representing the task that has been completed, which contains the number of work units it contributed.
     - `threshold`: A float value representing the percentage threshold for printing progress updates, defaulting to 1.0.
 - **Control Flow**:
-    - Increment the `completed_work_units` in `progress_state` by the `work_units` of the `completed_task`.
-    - Increment the `completed_task_count` in `progress_state` by 1.
-    - Calculate the percentage of work completed before and after the current task completion.
-    - Check if the percentage of work completed has crossed the specified `threshold`.
+    - Increment the `completed_work_units` by the work units of the `completed_task`.
+    - Increment the `completed_task_count` by 1.
+    - Check if the percentage of completed work units has crossed the specified `threshold`.
     - If the threshold is crossed, print the progress in a formatted string with color coding.
-- **Output**: The method does not return any value; it updates the internal state of the `TaskManager` and may print progress information to the console.
-- **See also**: [`python-backend/content_services/inspector/src/utils/task.TaskManager`](#TaskManager)  (Base Class)
+- **Output**: The method does not return any value; it updates the internal state of the `progress_state` and may print progress information to the console.
+- **See also**: [`python-backend/content_services/inspector/src/utils/task.TaskManager`](<#TaskManager>)  (Base Class)
 
 
 ---
 #### TaskManager\.run\_tasks<!-- {{#callable:python-backend/content_services/inspector/src/utils/task.TaskManager.run_tasks}} -->
-The `run_tasks` method asynchronously executes a list of tasks, optionally loading persisted results, and manages task execution either serially or concurrently, while tracking progress and writing results to a persistence layer.
+The `run_tasks` method asynchronously executes a list of tasks, optionally loading persisted results and writing task results to a persistence layer.
 - **Decorators**: `@asyncio`
 - **Inputs**:
     - `run_id`: A UUID representing the unique identifier for the current run of tasks.
     - `result_loading_config`: An optional list of tuples, each containing a UUID and a set of NodeStatus, used to load persisted task results before execution.
 - **Control Flow**:
-    - Initialize the progress tracking for the tasks.
-    - Check if there is a result loading configuration and persistence is enabled; if so, load persisted results using the provided configuration.
-    - If persistence is enabled, create an asynchronous task to write task results using the [`_write_task_results`](#TaskManager_write_task_results) method.
-    - Determine the execution mode (serial or concurrent) based on the `serial_exe` attribute and execute tasks accordingly using [`_schedule_and_await_task`](#TaskManager_schedule_and_await_task).
-    - Ensure that the writer task is stopped by putting `None` in the write queue and awaiting the writer task if persistence is enabled.
+    - Initialize progress tracking for the tasks.
+    - Check if result loading configuration is provided and persistence is enabled; if so, load persisted results.
+    - If persistence is enabled, create an asynchronous task to write task results.
+    - Execute tasks serially if `serial_exe` is True, otherwise execute them concurrently using `asyncio.gather`.
+    - Ensure the writer task is stopped by putting `None` in the write queue and awaiting the writer task if persistence is enabled.
     - Return the dictionary of task results.
-- **Output**: A dictionary mapping each Task type to its corresponding TaskResult, representing the results of the executed tasks.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/task.TaskManager._initialize_progress`](#TaskManager_initialize_progress)
-    - [`python-backend/content_services/inspector/src/utils/task.TaskManager.load_persisted_results`](#TaskManagerload_persisted_results)
-    - [`python-backend/content_services/inspector/src/utils/task.TaskManager._write_task_results`](#TaskManager_write_task_results)
-    - [`python-backend/content_services/inspector/src/utils/task.TaskManager._schedule_and_await_task`](#TaskManager_schedule_and_await_task)
-- **See also**: [`python-backend/content_services/inspector/src/utils/task.TaskManager`](#TaskManager)  (Base Class)
+- **Output**: A dictionary mapping each Task type to its TaskResult, representing the results of the executed tasks.
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/task.TaskManager._initialize_progress`](<#TaskManager_initialize_progress>)
+    - [`python-backend/content_services/inspector/src/utils/task.TaskManager.load_persisted_results`](<#TaskManagerload_persisted_results>)
+    - [`python-backend/content_services/inspector/src/utils/task.TaskManager._write_task_results`](<#TaskManager_write_task_results>)
+    - [`python-backend/content_services/inspector/src/utils/task.TaskManager._schedule_and_await_task`](<#TaskManager_schedule_and_await_task>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/task.TaskManager`](<#TaskManager>)  (Base Class)
 
 
 ---
 #### TaskManager\.load\_persisted\_results<!-- {{#callable:python-backend/content_services/inspector/src/utils/task.TaskManager.load_persisted_results}} -->
-The `load_persisted_results` method loads previously saved task results from a persistence layer based on a given configuration of run IDs and node statuses.
+The `load_persisted_results` method loads previously saved task results from a persistence layer based on a given configuration of run IDs and node statuses, updating the task results in the `TaskManager`.
 - **Inputs**:
-    - `result_loading_config`: A list of tuples, where each tuple contains a run ID (string) and a set of NodeStatus values, specifying which task results to load based on their statuses.
+    - `result_loading_config`: A list of tuples, where each tuple contains a run ID (string) and a set of `NodeStatus` values, specifying which task results to load based on their statuses.
 - **Control Flow**:
-    - Initialize a dictionary `task_by_id` mapping task hashed stable IDs to Task objects from the `tasks` list.
-    - Print a message indicating the start of loading persisted results using a thread pool.
+    - Initialize a dictionary `task_by_id` mapping task hashed stable IDs to task objects from the `tasks` list.
+    - Print a message indicating the start of loading persisted results with a thread pool.
     - Initialize an empty dictionary `loaded_results` to store the loaded task results.
     - Iterate over each tuple in `result_loading_config`, extracting `run_id` and `node_statuses`.
     - For each configuration, create a list `needed` of task IDs whose node status matches any in `node_statuses`.
@@ -625,10 +621,9 @@ The `load_persisted_results` method loads previously saved task results from a p
     - Map each future to its corresponding task ID in `future_map`.
     - As each future completes, retrieve the result and update `loaded_results` if the result is valid and the task ID exists in `task_by_id`.
     - Handle exceptions during result loading by printing an error message.
-    - Update the `task_results` dictionary with the `loaded_results`.
-    - Print a message indicating the number of successfully loaded task results.
-- **Output**: The method does not return any value; it updates the `task_results` attribute of the `TaskManager` instance with the loaded results.
-- **See also**: [`python-backend/content_services/inspector/src/utils/task.TaskManager`](#TaskManager)  (Base Class)
+    - Update `task_results` with the loaded results and print a success message indicating the number of tasks loaded.
+- **Output**: The method does not return any value; it updates the `task_results` attribute of the `TaskManager` instance with the loaded task results.
+- **See also**: [`python-backend/content_services/inspector/src/utils/task.TaskManager`](<#TaskManager>)  (Base Class)
 
 
 ---
@@ -638,13 +633,13 @@ The `_schedule_and_await_task` method schedules a given task for execution and a
 - **Inputs**:
     - `task`: A class type of `Task` that needs to be scheduled and awaited.
 - **Control Flow**:
-    - The method calls [`_schedule_task`](#TaskManager_schedule_task) with the provided `task` to schedule it for execution.
-    - The scheduled task is awaited using the `await` keyword, ensuring that the method pauses execution until the task is complete.
+    - The method calls [`_schedule_task`](<#TaskManager_schedule_task>) with the provided `task` to schedule it for execution.
+    - The scheduled task is awaited using the `await` keyword, ensuring that the method waits for the task to complete before proceeding.
     - The result of the awaited task is returned.
 - **Output**: An `asyncio.Task` object representing the scheduled and awaited task.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/task.TaskManager._schedule_task`](#TaskManager_schedule_task)
-- **See also**: [`python-backend/content_services/inspector/src/utils/task.TaskManager`](#TaskManager)  (Base Class)
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/task.TaskManager._schedule_task`](<#TaskManager_schedule_task>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/task.TaskManager`](<#TaskManager>)  (Base Class)
 
 
 ---
@@ -654,25 +649,25 @@ The `_schedule_task` method schedules a given task for execution by creating an 
     - `task`: A task of type `Task` that needs to be scheduled for execution.
 - **Control Flow**:
     - Check if the task is not already in the `task_to_asynctask` dictionary.
-    - If the task is not scheduled, call [`_run_task`](#TaskManager_run_task) to get the task's coroutine.
+    - If the task is not scheduled, call [`_run_task`](<#TaskManager_run_task>) to get the task's coroutine.
     - Create an asyncio task from the coroutine using `asyncio.create_task` and store it in `task_to_asynctask` with the task as the key.
     - Return the asyncio task associated with the given task.
 - **Output**: Returns an `asyncio.Task` object that represents the scheduled task.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/task.TaskManager._run_task`](#TaskManager_run_task)
-- **See also**: [`python-backend/content_services/inspector/src/utils/task.TaskManager`](#TaskManager)  (Base Class)
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/task.TaskManager._run_task`](<#TaskManager_run_task>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/task.TaskManager`](<#TaskManager>)  (Base Class)
 
 
 ---
 #### TaskManager\.\_can\_skip\_task<!-- {{#callable:python-backend/content_services/inspector/src/utils/task.TaskManager._can_skip_task}} -->
-The `_can_skip_task` method checks if a given task can be skipped by verifying if its result is already present in the `task_results` dictionary.
+The `_can_skip_task` method checks if a given task can be skipped by verifying if its result is already present in the task results dictionary.
 - **Inputs**:
-    - `task`: A `Task` type object whose completion status is to be checked.
+    - `task`: A task of type `Task` whose result is to be checked in the `task_results` dictionary.
 - **Control Flow**:
     - Retrieve the result of the given task from the `task_results` dictionary using the task as the key.
     - Check if the retrieved task result is not `None`.
-- **Output**: Returns `True` if the task result is found (indicating the task can be skipped), otherwise returns `False`.
-- **See also**: [`python-backend/content_services/inspector/src/utils/task.TaskManager`](#TaskManager)  (Base Class)
+- **Output**: Returns `True` if the task result is found in the `task_results` dictionary, indicating the task can be skipped; otherwise, returns `False`.
+- **See also**: [`python-backend/content_services/inspector/src/utils/task.TaskManager`](<#TaskManager>)  (Base Class)
 
 
 ---
@@ -682,22 +677,22 @@ The `_run_task` method executes a given task, ensuring all its dependencies are 
 - **Inputs**:
     - `task`: A `Task` object representing the task to be executed, which includes its dependencies and execution logic.
 - **Control Flow**:
-    - Check if tasks should be executed serially or in parallel based on `self.serial_exe` flag.
-    - If serial execution is enabled, await each dependency task sequentially using [`_schedule_and_await_task`](#TaskManager_schedule_and_await_task).
-    - If parallel execution is enabled, gather all dependency tasks and await them concurrently using `asyncio.gather`.
+    - Check if tasks should be executed serially or concurrently based on `self.serial_exe` flag.
+    - If serial execution is enabled, await each dependency task sequentially using [`_schedule_and_await_task`](<#TaskManager_schedule_and_await_task>).
+    - If concurrent execution is enabled, gather all dependency tasks and await them concurrently using `asyncio.gather`.
     - Determine if the current task can be skipped by checking if its result already exists in `self.task_results`.
-    - If the task can be skipped, retrieve its result from `self.task_results`; otherwise, execute the task's [`run`](#Taskrun) method and store the result.
-    - Execute the task's [`post_run_io`](#Taskpost_run_io) method unconditionally to handle any post-execution I/O operations, storing the result in `self.task_io_results`.
+    - If the task can be skipped, retrieve its result from `self.task_results`; otherwise, execute the task's [`run`](<#Taskrun>) method and store the result.
+    - Execute the task's [`post_run_io`](<#Taskpost_run_io>) method unconditionally to handle any post-execution I/O operations, storing the result in `self.task_io_results`.
     - Put the task's result into the `write_queue` for persistence.
-    - Update the task progress using [`_update_progress`](#TaskManager_update_progress).
+    - Update the task's progress using [`_update_progress`](<#TaskManager_update_progress>).
 - **Output**: Returns a `TaskResult` object representing the result of the executed task.
-- **Functions called**:
-    - [`python-backend/content_services/inspector/src/utils/task.TaskManager._schedule_and_await_task`](#TaskManager_schedule_and_await_task)
-    - [`python-backend/content_services/inspector/src/utils/task.TaskManager._can_skip_task`](#TaskManager_can_skip_task)
-    - [`python-backend/content_services/inspector/src/utils/task.Task.run`](#Taskrun)
-    - [`python-backend/content_services/inspector/src/utils/task.Task.post_run_io`](#Taskpost_run_io)
-    - [`python-backend/content_services/inspector/src/utils/task.TaskManager._update_progress`](#TaskManager_update_progress)
-- **See also**: [`python-backend/content_services/inspector/src/utils/task.TaskManager`](#TaskManager)  (Base Class)
+- **Functions Called**:
+    - [`python-backend/content_services/inspector/src/utils/task.TaskManager._schedule_and_await_task`](<#TaskManager_schedule_and_await_task>)
+    - [`python-backend/content_services/inspector/src/utils/task.TaskManager._can_skip_task`](<#TaskManager_can_skip_task>)
+    - [`python-backend/content_services/inspector/src/utils/task.Task.run`](<#Taskrun>)
+    - [`python-backend/content_services/inspector/src/utils/task.Task.post_run_io`](<#Taskpost_run_io>)
+    - [`python-backend/content_services/inspector/src/utils/task.TaskManager._update_progress`](<#TaskManager_update_progress>)
+- **See also**: [`python-backend/content_services/inspector/src/utils/task.TaskManager`](<#TaskManager>)  (Base Class)
 
 
 ---
@@ -709,12 +704,12 @@ The `_write_task_results` method asynchronously writes task results from a queue
 - **Control Flow**:
     - Enter an infinite loop to continuously process items from the `write_queue`.
     - Await an item from the `write_queue` using `await self.write_queue.get()`.
-    - Check if the item is `None`, and if so, break the loop to stop processing.
+    - Check if the retrieved item is `None`, and if so, break the loop to stop processing.
     - Unpack the item into `task_id` and `result`.
-    - Use `asyncio.get_running_loop().run_in_executor` to run `self.persistence.save_task_result` in a thread pool executor, passing `run_id`, `task_id`, and `result` as arguments.
+    - Use `asyncio.get_running_loop().run_in_executor` to run the `self.persistence.save_task_result` method in a separate thread, passing `run_id`, `task_id`, and `result` as arguments.
     - Print 'Writer task done' after exiting the loop.
 - **Output**: The method does not return any value (returns `None`).
-- **See also**: [`python-backend/content_services/inspector/src/utils/task.TaskManager`](#TaskManager)  (Base Class)
+- **See also**: [`python-backend/content_services/inspector/src/utils/task.TaskManager`](<#TaskManager>)  (Base Class)
 
 
 
@@ -728,8 +723,8 @@ The `flatten_tasks` function recursively flattens a list of tasks, including the
 - **Control Flow**:
     - Initialize an empty set `seen` to keep track of tasks that have already been processed.
     - Define a nested function `_flatten` that takes a task and a set of seen tasks, and returns a list of the task and its dependencies, ensuring no task is processed more than once.
-    - Iterate over each task in the input list `tasks`, and for each task, call `_flatten` to get a flattened list of the task and its dependencies.
-    - Return the combined list of all flattened tasks.
+    - For each task in the input list `tasks`, call `_flatten` to recursively gather the task and all its dependencies into a flat list.
+    - Return the flattened list of tasks.
 - **Output**: A list of Task types, representing the input tasks and all their dependencies, flattened into a single list without duplicates.
 
 

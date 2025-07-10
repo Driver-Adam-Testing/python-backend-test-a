@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `lambdas` folder in the `python-backend` codebase contains the `metrics_handler` directory, which is responsible for handling AWS Lambda events and managing dependencies for LLM session usage events.
+Handles AWS Lambda events, manages dependencies with Poetry, and sends usage events for LLM sessions.
 
 ## Folders
-- **[metrics_handler](metrics_handler/README.md)**: The `metrics_handler` folder in the `python-backend` codebase contains the main logic for handling AWS Lambda events, managing dependencies, and sending usage events related to LLM sessions, with configuration and utility functions located in the `src` folder, and project management files like `poetry.lock` and `pyproject.toml` ensuring consistent environments.
+- **[metrics_handler](metrics_handler/README.md)**: Main logic for handling AWS Lambda events, managing dependencies with Poetry, and sending usage events.
 
 
 ---

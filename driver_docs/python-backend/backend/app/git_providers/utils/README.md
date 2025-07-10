@@ -3,7 +3,7 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `utils` folder in the `python-backend` codebase contains utility files for handling Git provider errors and generating codebase metadata.
+Utility files for handling Git provider errors and generating codebase metadata.
 
 
 ## Files

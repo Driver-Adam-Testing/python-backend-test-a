@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `auth0.py` file in the `python-backend` codebase provides functions for managing Auth0 organizations and users, including creating, retrieving, and deleting organizations, with automatic token refresh handling.
+The `auth0.py` file in the `python-backend` codebase provides functions for managing Auth0 organizations and users, including creating, retrieving, and deleting organizations, with automatic token refresh and error handling.
 
 # Purpose
-This Python code file provides a set of functions to interact with the Auth0 Management API, focusing on managing users and organizations. It is designed to be part of a larger application, likely serving as a utility module for handling authentication and authorization tasks related to Auth0. The code includes functions to refresh the Auth0 management API token, retrieve users, and manage organizations by creating, retrieving, and deleting them. The primary technical components include the use of the `auth0` library for API interactions, a global variable to store the management API instance, and a mechanism to refresh the API token periodically or on-demand.
+This Python code file provides a set of functions to interact with the Auth0 Management API, focusing on user and organization management. It is designed to be part of a larger application, likely serving as a utility module for handling authentication and authorization tasks related to Auth0. The code includes functions to refresh the Auth0 management API token, retrieve users, and manage organizations by creating, retrieving, and deleting them. The primary technical components include the use of the `auth0` library for API interactions, a global variable to store the management API instance, and a mechanism to refresh the API token periodically or on-demand.
 
-The file defines a public API for interacting with Auth0, encapsulating the complexity of token management and API calls within a set of well-defined functions. These functions handle errors gracefully by logging them and attempting to refresh the API token if an error occurs, ensuring robust and reliable operation. The code relies on configuration settings for Auth0 credentials, which are expected to be provided through environment variables, highlighting its integration into a larger application context. Overall, this module provides a focused and essential functionality for applications that require seamless integration with Auth0 for user and organization management.
+The file defines a public API for other parts of the application to interact with Auth0, encapsulating the complexity of token management and API calls. It ensures that the Auth0 management API token is refreshed every hour or when explicitly forced, maintaining secure and efficient access to Auth0 resources. The functions handle exceptions by logging errors and attempting to refresh the token before re-raising the exceptions, ensuring robustness in the face of API errors. This code is intended to be imported and used by other modules within the application, providing a centralized and consistent interface for Auth0-related operations.
 # Imports and Dependencies
 
 ---
@@ -24,15 +24,15 @@ The file defines a public API for interacting with Auth0, encapsulating the comp
 
 ---
 ### \_auth0\_management
-- **Type**: `Auth0 or NoneType`
-- **Description**: The `_auth0_management` variable is a global variable that holds an instance of the `Auth0` class, which is used to interact with the Auth0 Management API. Initially, it is set to `None` and is later assigned an `Auth0` instance when the `refresh_auth0_management_api` function is called and successfully retrieves a management API token.
-- **Use**: This variable is used to store and provide access to the Auth0 Management API client throughout the application, ensuring that API interactions are authenticated and authorized.
+- **Type**: `NoneType`
+- **Description**: The `_auth0_management` variable is a global variable initialized to `None`. It is intended to hold an instance of the `Auth0` class, which is used to interact with the Auth0 Management API. This variable is updated with a valid `Auth0` instance when the `refresh_auth0_management_api` function is called and successfully retrieves a management API token.
+- **Use**: This variable is used to store and provide access to the Auth0 Management API client throughout the application.
 
 
 ---
 ### \_last\_refresh\_time
 - **Type**: `int`
-- **Description**: `_last_refresh_time` is a global integer variable initialized to 0, representing the last time the Auth0 management API was refreshed, stored as a Unix timestamp.
+- **Description**: The `_last_refresh_time` variable is an integer that stores the timestamp of the last time the Auth0 management API was refreshed. It is initialized to 0, indicating that no refresh has occurred yet.
 - **Use**: This variable is used to determine if the Auth0 management API needs to be refreshed based on the elapsed time since the last refresh.
 
 
@@ -40,19 +40,18 @@ The file defines a public API for interacting with Auth0, encapsulating the comp
 
 ---
 ### refresh\_auth0\_management\_api<!-- {{#callable:python-backend/backend/app/api/routes/legacy/auth0.refresh_auth0_management_api}} -->
-The function refreshes the Auth0 Management API token if necessary, ensuring the token is valid and up-to-date.
+The function refreshes the Auth0 Management API token if necessary, based on time elapsed or a forced refresh request.
 - **Inputs**:
-    - `force_refresh`: A boolean flag that, if set to True, forces the refresh of the Auth0 Management API token regardless of the last refresh time.
+    - `force_refresh`: A boolean flag indicating whether to forcefully refresh the Auth0 Management API token, regardless of the time elapsed since the last refresh.
 - **Control Flow**:
     - Retrieve the current time using time.time().
-    - Check if force_refresh is False and if the time since the last refresh is less than 3600 seconds (1 hour); if both conditions are true, return without refreshing.
+    - Check if the force_refresh flag is False and if the time elapsed since the last refresh is less than 3600 seconds (1 hour); if both conditions are true, exit the function early.
     - Verify that the necessary Auth0 environment variables (AUTH0_DOMAIN, AUTH0_MGMT_API_CLIENT_ID, AUTH0_MGMT_API_CLIENT_SECRET) are set; if not, log an error and raise a ValueError.
     - Create a GetToken instance using the Auth0 domain, client ID, and client secret from the settings.
     - Request a new access token using the client credentials method with the specified Auth0 API audience.
-    - Extract the access token from the response and use it to create a new Auth0 management API client instance.
-    - Update the global _auth0_management variable with the new Auth0 client instance.
-    - Update the global _last_refresh_time variable with the current time.
-- **Output**: The function does not return any value; it updates the global _auth0_management and _last_refresh_time variables.
+    - Extract the access token from the response and use it to instantiate a new Auth0 management API client.
+    - Update the global _auth0_management variable with the new Auth0 client and set _last_refresh_time to the current time.
+- **Output**: The function does not return any value; it updates the global _auth0_management variable with a new Auth0 client instance and updates _last_refresh_time.
 
 
 ---
@@ -60,12 +59,12 @@ The function refreshes the Auth0 Management API token if necessary, ensuring the
 The `get_auth0_management_api` function retrieves the Auth0 management API client, refreshing the token if it is expired or not initialized.
 - **Inputs**: None
 - **Control Flow**:
-    - Checks if the global variable `_auth0_management` is `None` or if the time since the last refresh is greater than or equal to 3600 seconds (1 hour).
-    - If either condition is true, it calls `refresh_auth0_management_api()` to refresh the Auth0 management API client.
-    - Returns the `_auth0_management` object.
-- **Output**: Returns an instance of the `Auth0` management API client.
-- **Functions called**:
-    - [`python-backend/backend/app/api/routes/legacy/auth0.refresh_auth0_management_api`](#refresh_auth0_management_api)
+    - Check if the global variable `_auth0_management` is `None` or if the time since `_last_refresh_time` is greater than or equal to 3600 seconds (1 hour).
+    - If either condition is true, call `refresh_auth0_management_api()` to refresh the Auth0 management API client.
+    - Return the `_auth0_management` object.
+- **Output**: An instance of the `Auth0` management API client.
+- **Functions Called**:
+    - [`python-backend/backend/app/api/routes/legacy/auth0.refresh_auth0_management_api`](<#refresh_auth0_management_api>)
 
 
 ---
@@ -73,15 +72,14 @@ The `get_auth0_management_api` function retrieves the Auth0 management API clien
 The `get_users` function retrieves a list of users from the Auth0 management API, handling errors by logging them and attempting to refresh the API token if necessary.
 - **Inputs**: None
 - **Control Flow**:
-    - Attempts to retrieve a list of users using the [`get_auth0_management_api`](#get_auth0_management_api) function, which provides an instance of the Auth0 management API.
-    - If successful, returns the list of users.
-    - If an `Auth0Error` is raised during the attempt, logs the error message.
-    - Calls [`refresh_auth0_management_api`](#refresh_auth0_management_api) with `force_refresh=True` to refresh the API token in case of an error.
-    - Re-raises the caught `Auth0Error` after attempting to refresh the token.
-- **Output**: Returns a list of users from the Auth0 management API if successful; otherwise, raises an `Auth0Error` after logging and attempting a token refresh.
-- **Functions called**:
-    - [`python-backend/backend/app/api/routes/legacy/auth0.get_auth0_management_api`](#get_auth0_management_api)
-    - [`python-backend/backend/app/api/routes/legacy/auth0.refresh_auth0_management_api`](#refresh_auth0_management_api)
+    - The function attempts to call `get_auth0_management_api().users.list()` to retrieve the list of users.
+    - If an `Auth0Error` is raised during this process, it logs the error message.
+    - The function then calls `refresh_auth0_management_api(force_refresh=True)` to refresh the Auth0 management API token.
+    - Finally, the function re-raises the caught `Auth0Error` to propagate the exception.
+- **Output**: The function returns a list of users from the Auth0 management API if successful, otherwise it raises an `Auth0Error` after attempting to refresh the API token.
+- **Functions Called**:
+    - [`python-backend/backend/app/api/routes/legacy/auth0.get_auth0_management_api`](<#get_auth0_management_api>)
+    - [`python-backend/backend/app/api/routes/legacy/auth0.refresh_auth0_management_api`](<#refresh_auth0_management_api>)
 
 
 ---
@@ -91,45 +89,45 @@ The `get_organizations` function retrieves all organizations from the Auth0 mana
 - **Control Flow**:
     - Attempts to retrieve all organizations using the Auth0 management API.
     - If successful, returns the list of organizations.
-    - If an Auth0Error occurs, logs the error message.
-    - Calls [`refresh_auth0_management_api`](#refresh_auth0_management_api) with `force_refresh=True` to refresh the API token.
-    - Re-raises the caught Auth0Error after attempting to refresh the token.
-- **Output**: Returns a list of organizations from the Auth0 management API if successful; otherwise, raises an Auth0Error after attempting to refresh the API token.
-- **Functions called**:
-    - [`python-backend/backend/app/api/routes/legacy/auth0.get_auth0_management_api`](#get_auth0_management_api)
-    - [`python-backend/backend/app/api/routes/legacy/auth0.refresh_auth0_management_api`](#refresh_auth0_management_api)
+    - If an `Auth0Error` occurs, logs the error message.
+    - Calls [`refresh_auth0_management_api`](<#refresh_auth0_management_api>) with `force_refresh=True` to refresh the API token.
+    - Re-raises the caught `Auth0Error` after attempting to refresh the token.
+- **Output**: Returns a list of all organizations from the Auth0 management API if successful, otherwise raises an `Auth0Error` after logging and attempting a token refresh.
+- **Functions Called**:
+    - [`python-backend/backend/app/api/routes/legacy/auth0.get_auth0_management_api`](<#get_auth0_management_api>)
+    - [`python-backend/backend/app/api/routes/legacy/auth0.refresh_auth0_management_api`](<#refresh_auth0_management_api>)
 
 
 ---
 ### get\_organization\_by\_name<!-- {{#callable:python-backend/backend/app/api/routes/legacy/auth0.get_organization_by_name}} -->
-The function retrieves an Auth0 organization by its name, handling errors and refreshing the Auth0 management API token if necessary.
+The function retrieves an Auth0 organization by its name using the Auth0 Management API.
 - **Inputs**:
-    - `org_name`: The name of the organization to retrieve from Auth0.
+    - `org_name`: A string representing the name of the organization to be retrieved.
 - **Control Flow**:
-    - Attempts to retrieve the organization by name using the Auth0 management API.
+    - Attempts to retrieve the organization by name using the Auth0 Management API.
     - If an Auth0Error occurs, logs the error message.
-    - Refreshes the Auth0 management API token by forcing a refresh.
-    - Re-raises the caught Auth0Error after attempting to refresh the token.
-- **Output**: Returns the organization object retrieved from Auth0 if successful, otherwise raises an Auth0Error.
-- **Functions called**:
-    - [`python-backend/backend/app/api/routes/legacy/auth0.get_auth0_management_api`](#get_auth0_management_api)
-    - [`python-backend/backend/app/api/routes/legacy/auth0.refresh_auth0_management_api`](#refresh_auth0_management_api)
+    - Refreshes the Auth0 Management API token by forcing a refresh.
+    - Re-raises the exception after attempting to refresh the token.
+- **Output**: Returns the organization object retrieved from the Auth0 Management API if successful, otherwise raises an Auth0Error.
+- **Functions Called**:
+    - [`python-backend/backend/app/api/routes/legacy/auth0.get_auth0_management_api`](<#get_auth0_management_api>)
+    - [`python-backend/backend/app/api/routes/legacy/auth0.refresh_auth0_management_api`](<#refresh_auth0_management_api>)
 
 
 ---
 ### get\_organization\_by\_id<!-- {{#callable:python-backend/backend/app/api/routes/legacy/auth0.get_organization_by_id}} -->
-The function retrieves an organization from Auth0 by its ID, handling errors and refreshing the Auth0 management API token if necessary.
+The function retrieves an Auth0 organization by its ID, handling errors and refreshing the Auth0 management API token if necessary.
 - **Inputs**:
     - `org_id`: A string representing the unique identifier of the organization to be retrieved.
 - **Control Flow**:
     - Attempts to retrieve the organization using the Auth0 management API's `get_organization` method with the provided `org_id`.
     - If an `Auth0Error` is raised during the retrieval, logs an error message indicating the failure.
-    - Calls [`refresh_auth0_management_api`](#refresh_auth0_management_api) with `force_refresh=True` to refresh the Auth0 management API token.
+    - Calls [`refresh_auth0_management_api`](<#refresh_auth0_management_api>) with `force_refresh=True` to refresh the Auth0 management API token.
     - Re-raises the caught `Auth0Error` after attempting to refresh the token.
-- **Output**: Returns the organization object retrieved from the Auth0 management API if successful; otherwise, it raises an `Auth0Error`.
-- **Functions called**:
-    - [`python-backend/backend/app/api/routes/legacy/auth0.get_auth0_management_api`](#get_auth0_management_api)
-    - [`python-backend/backend/app/api/routes/legacy/auth0.refresh_auth0_management_api`](#refresh_auth0_management_api)
+- **Output**: Returns the organization object retrieved from the Auth0 management API if successful, otherwise raises an `Auth0Error`.
+- **Functions Called**:
+    - [`python-backend/backend/app/api/routes/legacy/auth0.get_auth0_management_api`](<#get_auth0_management_api>)
+    - [`python-backend/backend/app/api/routes/legacy/auth0.refresh_auth0_management_api`](<#refresh_auth0_management_api>)
 
 
 ---
@@ -140,15 +138,15 @@ The `create_organization` function attempts to create a new organization in Auth
     - `display_name`: The display name for the organization to be created.
     - `org_id`: A unique identifier for the organization, used as metadata.
 - **Control Flow**:
-    - The function first attempts to retrieve an existing organization by its name using [`get_organization_by_name`](#get_organization_by_name).
+    - The function first attempts to retrieve an existing organization by its name using [`get_organization_by_name`](<#get_organization_by_name>).
     - If an existing organization is found, it logs an informational message and returns the existing organization.
     - If no existing organization is found, it proceeds to create a new organization using the Auth0 management API with the provided `org_name`, `display_name`, and `org_id`.
-    - If an `Auth0Error` is encountered during the process, it logs an error message, refreshes the Auth0 management API token by calling [`refresh_auth0_management_api`](#refresh_auth0_management_api) with `force_refresh=True`, and re-raises the exception.
-- **Output**: The function returns the existing organization if it already exists, or the newly created organization object if successful.
-- **Functions called**:
-    - [`python-backend/backend/app/api/routes/legacy/auth0.get_organization_by_name`](#get_organization_by_name)
-    - [`python-backend/backend/app/api/routes/legacy/auth0.get_auth0_management_api`](#get_auth0_management_api)
-    - [`python-backend/backend/app/api/routes/legacy/auth0.refresh_auth0_management_api`](#refresh_auth0_management_api)
+    - If an `Auth0Error` is encountered during the process, it logs an error message, refreshes the Auth0 management API token by calling [`refresh_auth0_management_api`](<#refresh_auth0_management_api>) with `force_refresh=True`, and re-raises the exception.
+- **Output**: The function returns the existing organization if found, or the newly created organization object from the Auth0 management API.
+- **Functions Called**:
+    - [`python-backend/backend/app/api/routes/legacy/auth0.get_organization_by_name`](<#get_organization_by_name>)
+    - [`python-backend/backend/app/api/routes/legacy/auth0.get_auth0_management_api`](<#get_auth0_management_api>)
+    - [`python-backend/backend/app/api/routes/legacy/auth0.refresh_auth0_management_api`](<#refresh_auth0_management_api>)
 
 
 ---
@@ -157,15 +155,16 @@ The `delete_organization` function attempts to delete an organization from Auth0
 - **Inputs**:
     - `org_id`: A string representing the ID of the organization to be deleted.
 - **Control Flow**:
-    - The function begins by attempting to delete the organization with the given `org_id` using the Auth0 management API.
+    - The function calls `get_auth0_management_api()` to obtain the Auth0 management API instance.
+    - It attempts to delete the organization with the given `org_id` using the `delete` method of the `organizations` object from the Auth0 management API.
     - If the deletion is successful, it logs an informational message indicating the organization has been deleted and returns `True`.
-    - If an `Auth0Error` is raised during the deletion attempt, it logs an error message with the error details.
-    - The function then calls [`refresh_auth0_management_api`](#refresh_auth0_management_api) with `force_refresh=True` to refresh the Auth0 management API token.
+    - If an `Auth0Error` is raised during the deletion process, it logs an error message with the error details.
+    - The function then calls `refresh_auth0_management_api(force_refresh=True)` to refresh the Auth0 management API token.
     - Finally, the function re-raises the caught `Auth0Error` to propagate the exception.
-- **Output**: The function returns `True` if the organization is successfully deleted; otherwise, it raises an `Auth0Error`.
-- **Functions called**:
-    - [`python-backend/backend/app/api/routes/legacy/auth0.get_auth0_management_api`](#get_auth0_management_api)
-    - [`python-backend/backend/app/api/routes/legacy/auth0.refresh_auth0_management_api`](#refresh_auth0_management_api)
+- **Output**: Returns `True` if the organization is successfully deleted; otherwise, it raises an `Auth0Error`.
+- **Functions Called**:
+    - [`python-backend/backend/app/api/routes/legacy/auth0.get_auth0_management_api`](<#get_auth0_management_api>)
+    - [`python-backend/backend/app/api/routes/legacy/auth0.refresh_auth0_management_api`](<#refresh_auth0_management_api>)
 
 
 

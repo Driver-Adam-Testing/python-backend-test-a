@@ -3,12 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `block_kind_list.py` file defines the `BlockKindCopyEditorList` class, which provides functionality for converting a list of strings into either an ordered or unordered markdown format.
+The `block_kind_list.py` file defines the `BlockKindCopyEditorList` class, which provides a structured response for a copy editor agent to convert lists of strings into markdown format, supporting both ordered and unordered lists.
 
 # Purpose
-This Python code defines a class `BlockKindCopyEditorList`, which is a specialized component designed to handle and format lists for a copy editor agent. The class extends `BlockResponse`, indicating that it is part of a larger framework or system where structured responses are necessary. The primary functionality of this class is to encapsulate a list of strings and provide a method to convert this list into a markdown format, supporting both ordered and unordered lists. The class includes an inner enumeration `ListKind` to specify the type of list, with two possible values: `ORDERED` and `UNORDERED`. This allows the user to specify whether the list should be formatted with numbers or bullet points.
-
-The [`to_markdown`](#BlockKindCopyEditorListto_markdown) method is a key component of this class, responsible for transforming the list into a markdown string based on the specified `ListKind`. This method iterates over the list items and formats them accordingly, either with numbers for ordered lists or bullet points for unordered lists. The class is intended to be used within an agentic system, where an agent populates the `response` attribute with list items and sets the `list_kind` attribute to determine the output format. This code is likely part of a larger library or framework, providing a specific utility for formatting text in a structured and consistent manner.
+This Python code defines a class `BlockKindCopyEditorList` that extends `BlockResponse` and is designed to handle and format lists for a copy editor agent. The class provides a narrow functionality focused on converting a list of strings into a markdown format, supporting both ordered and unordered lists. It includes an inner enumeration `ListKind` to specify the type of list, with options for `ORDERED` and `UNORDERED`. The primary method, [`to_markdown`](<#BlockKindCopyEditorListto_markdown>), generates a markdown string representation of the list based on its type. This code is part of a larger system, likely involving agent-based interactions, where it serves as a utility for formatting list responses.
 # Imports and Dependencies
 
 ---
@@ -21,15 +19,15 @@ The [`to_markdown`](#BlockKindCopyEditorListto_markdown) method is a key compone
 ---
 ### PROMPT
 - **Type**: `str`
-- **Description**: The variable `PROMPT` is a string that is initialized as an empty multi-line string. It is intended to hold a prompt or template text that can be used in various contexts, such as generating messages or responses.
-- **Use**: This variable is used to store a prompt that can be utilized by other components or functions in the code.
+- **Description**: The variable `PROMPT` is a string that is initialized as an empty multi-line string. It is intended to hold a prompt or template text that can be used elsewhere in the code.
+- **Use**: `PROMPT` is used to store a string that can be referenced or modified later in the program.
 
 
 ---
 ### MESSAGE
 - **Type**: `dict`
-- **Description**: The `MESSAGE` variable is a dictionary with two keys: 'role' and 'content'. The 'role' key is assigned the string value 'system', and the 'content' key is assigned the value of the `PROMPT` variable, which is currently an empty string.
-- **Use**: This variable is used to define a message structure, likely for communication or configuration purposes, where the role is specified as 'system' and the content is dynamically set by the `PROMPT` variable.
+- **Description**: The `MESSAGE` variable is a dictionary with two keys: 'role' and 'content'. The 'role' key is assigned the string value 'system', and the 'content' key is assigned the value of the `PROMPT` variable, which is currently an empty string. This structure is likely used to define a message format for a system role in a communication protocol or agent system.
+- **Use**: This variable is used to store a message template with a predefined role and dynamic content, which can be utilized in system communications or agent interactions.
 
 
 # Classes
@@ -37,27 +35,27 @@ The [`to_markdown`](#BlockKindCopyEditorListto_markdown) method is a key compone
 ---
 ### BlockKindCopyEditorList<!-- {{#class:python-backend/packages/shared/shared/prompts/block_kind/block_kind_list.BlockKindCopyEditorList}} -->
 - **Members**:
-    - `list_output`: A list of strings representing the items to be formatted into markdown.
+    - `list_output`: A list of strings representing the items in the list.
     - `list_kind`: An enumeration indicating whether the list is ordered or unordered.
-    - `rationale`: A string providing the reasoning or explanation for the list's content or format.
-- **Description**: The BlockKindCopyEditorList class extends BlockResponse to provide a structured response for a copy editor agent that handles lists. It encapsulates a list of strings and offers functionality to convert this list into markdown format, supporting both ordered and unordered lists. The class includes an inner enumeration, ListKind, to specify the type of list, and it is designed for use in agentic systems where the list items and their format need to be dynamically determined and rendered.
+    - `rationale`: A string providing the rationale for the list format.
+- **Description**: The BlockKindCopyEditorList class is a specialized response class for a copy editor agent that handles lists, inheriting from BlockResponse. It encapsulates a list of strings and provides functionality to convert this list into a markdown format, supporting both ordered and unordered list types. The class includes an inner enumeration, ListKind, to specify the list type, and it is designed for use in agentic systems where the list items and their format need to be dynamically set and converted to markdown.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/prompts/block_kind/block_kind_list.BlockKindCopyEditorList.to_markdown`](#BlockKindCopyEditorListto_markdown)
+    - [`python-backend/packages/shared/shared/prompts/block_kind/block_kind_list.BlockKindCopyEditorList.to_markdown`](<#BlockKindCopyEditorListto_markdown>)
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/interfaces/agents/block_response.BlockResponse`](../../interfaces/agents/block_response.py.md#BlockResponse)
+    - [`python-backend/packages/shared/shared/interfaces/agents/block_response.BlockResponse`](<../../interfaces/agents/block_response.py.md#BlockResponse>)
 
 **Methods**
 
 ---
 #### BlockKindCopyEditorList\.to\_markdown<!-- {{#callable:python-backend/packages/shared/shared/prompts/block_kind/block_kind_list.BlockKindCopyEditorList.to_markdown}} -->
-The `to_markdown` method converts a list of strings into a markdown-formatted string, either as an ordered or unordered list.
+The `to_markdown` method converts a list of strings into a markdown formatted string, either as an ordered or unordered list based on the list kind.
 - **Inputs**: None
 - **Control Flow**:
-    - The method checks if `self.list_output` is equal to `self.ListKind.ORDERED`.
-    - If it is ordered, it returns a string where each item is prefixed with its index (starting from 1) followed by a period.
-    - If it is not ordered, it returns a string where each item is prefixed with a hyphen.
-- **Output**: A string representing the list in markdown format, either as an ordered or unordered list.
-- **See also**: [`python-backend/packages/shared/shared/prompts/block_kind/block_kind_list.BlockKindCopyEditorList`](#BlockKindCopyEditorList)  (Base Class)
+    - Check if `self.list_output` is equal to `self.ListKind.ORDERED`.
+    - If true, generate an ordered markdown list by enumerating over `self.list_output` and prefixing each item with its index plus one followed by a period.
+    - If false, generate an unordered markdown list by prefixing each item in `self.list_output` with a hyphen.
+- **Output**: A string representing the list in markdown format, either ordered or unordered.
+- **See also**: [`python-backend/packages/shared/shared/prompts/block_kind/block_kind_list.BlockKindCopyEditorList`](<#BlockKindCopyEditorList>)  (Base Class)
 
 
 

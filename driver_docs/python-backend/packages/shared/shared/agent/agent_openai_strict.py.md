@@ -3,12 +3,12 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `agent_openai_strict.py` file defines the `OpenAIStrictAgent` class, which extends `AgentBase` to interact with OpenAI's API, manage tool calls, and generate responses with strict adherence to tool usage and message handling.
+The `agent_openai_strict.py` file defines the `OpenAIStrictAgent` class, which extends `AgentBase` to interact with OpenAI's API, manage tool calls, and generate responses with optional usage tracking.
 
 # Purpose
-The provided Python code defines a class `OpenAIStrictAgent`, which extends `AgentBase` and is designed to interact with OpenAI's API to facilitate the execution of tool calls and generate responses based on given prompts. This class is part of a broader system that likely involves multiple agents and tools, as indicated by its inheritance from `AgentBase` and its use of `ToolStrict` objects. The primary functionality of this class is to manage the execution of tool calls in parallel using a `ThreadPoolExecutor`, handle the generation of responses from OpenAI's chat completion API, and manage the lifecycle of these interactions, including error handling and usage tracking.
+The provided Python code defines a class `OpenAIStrictAgent`, which extends `AgentBase` and is designed to interact with OpenAI's API to facilitate the execution of tool calls and generate responses based on those interactions. This class is part of a broader system that likely involves multiple agents and tools, as indicated by its inheritance from `AgentBase` and its use of `ToolStrict` objects. The primary functionality of this class is to manage the execution of tool calls in parallel using a `ThreadPoolExecutor`, handle the generation of responses from OpenAI's chat completions, and manage the usage metrics associated with these operations. The class is structured to support multiple iterations of response generation, allowing for complex interactions with the OpenAI API.
 
-The `OpenAIStrictAgent` class is structured to be a component within a larger application, likely serving as a specialized agent that enforces strict tool usage policies. It integrates with OpenAI's API to parse and execute chat completions, and it supports the execution of multiple tool calls concurrently. The class also includes mechanisms for tracking usage metrics, which suggests it is part of a system that monitors and possibly limits API usage. The code is designed to be robust, with error handling and support for multiple iterations of response generation, making it suitable for complex interactions that require iterative processing and tool integration.
+The `OpenAIStrictAgent` class is a specialized component within a larger framework, likely intended for use in applications that require structured and strict interactions with OpenAI's language models. It provides a public API through its methods, such as [`_execute_tool_calls`](<#OpenAIStrictAgent_execute_tool_calls>), [`_generate_response`](<#OpenAIStrictAgent_generate_response>), and [`_execute_iteration`](<#OpenAIStrictAgent_execute_iteration>), which are responsible for executing tool calls, generating responses, and iterating through response generation processes, respectively. The class also integrates with a usage tracking system, as evidenced by the interaction with `UsageEventType` and `llm_usage_session`, ensuring that the usage of the language model is monitored and recorded. This code is not a standalone script but rather a library component meant to be integrated into a larger system that manages AI-driven interactions.
 # Imports and Dependencies
 
 ---
@@ -27,36 +27,36 @@ The `OpenAIStrictAgent` class is structured to be a component within a larger ap
 ### OpenAIStrictAgent<!-- {{#class:python-backend/packages/shared/shared/agent/agent_openai_strict.OpenAIStrictAgent}} -->
 - **Members**:
     - `client`: An instance of the OpenAI client used for making API calls.
-- **Description**: The `OpenAIStrictAgent` class extends the `AgentBase` class and is designed to interact with OpenAI's API, specifically handling tool execution and response generation. It initializes with a list of tools, processes them using OpenAI's pydantic function tool, and manages the execution of tool calls in parallel using a thread pool. The class also generates responses by interacting with the OpenAI API, adjusting messages based on system prompts, and handling multiple iterations if necessary. Additionally, it tracks usage metrics if a usage session is active, ensuring efficient and structured communication with the OpenAI service.
+- **Description**: The OpenAIStrictAgent class extends the AgentBase class to provide a specialized agent that interacts with OpenAI's API. It processes a list of tools, converting them into a format suitable for OpenAI's pydantic function tools, and manages the execution of tool calls and message handling. The class is designed to handle multiple iterations of tool execution and response generation, integrating with OpenAI's chat completion API to generate responses based on the provided model and messages. It also supports usage tracking through an optional LLM usage session.
 - **Methods**:
-    - [`python-backend/packages/shared/shared/agent/agent_openai_strict.OpenAIStrictAgent.__init__`](#OpenAIStrictAgent__init__)
-    - [`python-backend/packages/shared/shared/agent/agent_openai_strict.OpenAIStrictAgent._execute_tool_calls`](#OpenAIStrictAgent_execute_tool_calls)
-    - [`python-backend/packages/shared/shared/agent/agent_openai_strict.OpenAIStrictAgent._generate_response`](#OpenAIStrictAgent_generate_response)
-    - [`python-backend/packages/shared/shared/agent/agent_openai_strict.OpenAIStrictAgent._execute_iteration`](#OpenAIStrictAgent_execute_iteration)
+    - [`python-backend/packages/shared/shared/agent/agent_openai_strict.OpenAIStrictAgent.__init__`](<#OpenAIStrictAgent__init__>)
+    - [`python-backend/packages/shared/shared/agent/agent_openai_strict.OpenAIStrictAgent._execute_tool_calls`](<#OpenAIStrictAgent_execute_tool_calls>)
+    - [`python-backend/packages/shared/shared/agent/agent_openai_strict.OpenAIStrictAgent._generate_response`](<#OpenAIStrictAgent_generate_response>)
+    - [`python-backend/packages/shared/shared/agent/agent_openai_strict.OpenAIStrictAgent._execute_iteration`](<#OpenAIStrictAgent_execute_iteration>)
 - **Inherits From**:
-    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase`](agent_base.py.md#AgentBase)
+    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase`](<agent_base.py.md#AgentBase>)
 
 **Methods**
 
 ---
 #### OpenAIStrictAgent\.\_\_init\_\_<!-- {{#callable:python-backend/packages/shared/shared/agent/agent_openai_strict.OpenAIStrictAgent.__init__}} -->
-The [`__init__`](agent_base.py.md#AgentBase__init__) method initializes an instance of the `OpenAIStrictAgent` class, setting up tools and client configurations.
+The [`__init__`](<agent_base.py.md#AgentBase__init__>) method initializes an instance of the `OpenAIStrictAgent` class, processing and setting up tools, and preparing the client and initial messages.
 - **Inputs**:
-    - `tools`: A list of `ToolStrict` objects or `None`, which are processed and stored for use by the agent.
+    - `tools`: An optional list of `ToolStrict` objects to be processed and used by the agent.
     - `*args`: Additional positional arguments passed to the superclass initializer.
     - `**kwargs`: Additional keyword arguments passed to the superclass initializer, with 'tools' being updated to include processed tools.
 - **Control Flow**:
-    - Check if `tools` is `None` and initialize it as an empty list if so.
-    - Process each tool in the `tools` list using `openai.pydantic_function_tool` and store the result in `processed_tools`.
-    - Update `kwargs` to include the `processed_tools` under the key 'tools'.
-    - Initialize the `OpenAI` client and assign it to `self.client`.
-    - Call the superclass initializer with `*args` and `**kwargs`.
-    - Iterate over each tool in `tools`, and if the tool has a callable `system_prompt` method, add a system message with the prompt content.
-- **Output**: None, as this is an initializer method.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.__init__`](agent_base.py.md#AgentBase__init__)
-    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.add_message`](agent_base.py.md#AgentBaseadd_message)
-- **See also**: [`python-backend/packages/shared/shared/agent/agent_openai_strict.OpenAIStrictAgent`](#OpenAIStrictAgent)  (Base Class)
+    - Check if 'tools' is None and initialize it as an empty list if so.
+    - Process each tool in the 'tools' list using `openai.pydantic_function_tool` and store the results in 'processed_tools'.
+    - Update 'kwargs' to include the 'processed_tools' under the key 'tools'.
+    - Initialize the 'client' attribute with an instance of `OpenAI`.
+    - Call the superclass (`AgentBase`) initializer with the provided arguments and updated keyword arguments.
+    - Iterate over each tool in 'tools', and if the tool has a callable 'system_prompt' method, add a system message with the prompt content.
+- **Output**: None, as this is an initializer method for setting up the class instance.
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.__init__`](<agent_base.py.md#AgentBase__init__>)
+    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.add_message`](<agent_base.py.md#AgentBaseadd_message>)
+- **See also**: [`python-backend/packages/shared/shared/agent/agent_openai_strict.OpenAIStrictAgent`](<#OpenAIStrictAgent>)  (Base Class)
 
 
 ---
@@ -70,27 +70,27 @@ The `_execute_tool_calls` method processes a list of tool calls concurrently, ex
     - Submits each tool call to the executor and collects the futures.
     - Iterates over the completed futures and adds the resulting messages to the agent's message list using `self.add_message()`.
 - **Output**: The method does not return any value; it modifies the agent's message list by adding the results of the tool calls.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/agent/tools/tool_strict.ToolStrict.execute`](tools/tool_strict.py.md#ToolStrictexecute)
-    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.add_message`](agent_base.py.md#AgentBaseadd_message)
-- **See also**: [`python-backend/packages/shared/shared/agent/agent_openai_strict.OpenAIStrictAgent`](#OpenAIStrictAgent)  (Base Class)
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/agent/tools/tool_strict.ToolStrict.execute`](<tools/tool_strict.py.md#ToolStrictexecute>)
+    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.add_message`](<agent_base.py.md#AgentBaseadd_message>)
+- **See also**: [`python-backend/packages/shared/shared/agent/agent_openai_strict.OpenAIStrictAgent`](<#OpenAIStrictAgent>)  (Base Class)
 
 
 ---
 #### OpenAIStrictAgent\.\_generate\_response<!-- {{#callable:python-backend/packages/shared/shared/agent/agent_openai_strict.OpenAIStrictAgent._generate_response}} -->
 The `_generate_response` method generates a chat completion response using OpenAI's API and optionally logs usage metrics if a session is active.
 - **Inputs**:
-    - `completion_kwargs`: A dictionary containing keyword arguments for the chat completion request, such as model and messages.
+    - `completion_kwargs`: A dictionary containing keyword arguments for the OpenAI chat completion API call.
 - **Control Flow**:
     - The method calls `self.client.beta.chat.completions.parse` with `completion_kwargs` to generate a response.
-    - It checks if `self.llm_usage_session` is active; if so, it computes usage metrics using the session's [`compute_usage`](../usage/llm_session.py.md#LLMUsageSessioncompute_usage) method with details like prompts, response, event type, model, and provider.
+    - It checks if `self.llm_usage_session` is active; if so, it computes usage metrics using the [`compute_usage`](<../usage/llm_session.py.md#LLMUsageSessioncompute_usage>) method with details from the response and `completion_kwargs`.
     - If usage metrics are computed, it sends the event using `self.llm_usage_session.send_event`.
     - Finally, it returns the generated response.
 - **Output**: The method returns an `openai.ChatCompletion` object representing the generated chat response.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession.compute_usage`](../usage/llm_session.py.md#LLMUsageSessioncompute_usage)
-    - [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession.send_event`](../usage/llm_session.py.md#LLMUsageSessionsend_event)
-- **See also**: [`python-backend/packages/shared/shared/agent/agent_openai_strict.OpenAIStrictAgent`](#OpenAIStrictAgent)  (Base Class)
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession.compute_usage`](<../usage/llm_session.py.md#LLMUsageSessioncompute_usage>)
+    - [`python-backend/packages/shared/shared/usage/llm_session.LLMUsageSession.send_event`](<../usage/llm_session.py.md#LLMUsageSessionsend_event>)
+- **See also**: [`python-backend/packages/shared/shared/agent/agent_openai_strict.OpenAIStrictAgent`](<#OpenAIStrictAgent>)  (Base Class)
 
 
 ---
@@ -100,16 +100,16 @@ The `_execute_iteration` method processes a single iteration of generating a res
 - **Control Flow**:
     - Check if system prompts are set to 'none' and adjust message roles accordingly.
     - Prepare `completion_kwargs` with model and messages, and optionally add tools and response format based on conditions.
-    - Attempt to generate a response using [`_generate_response`](#OpenAIStrictAgent_generate_response) with the prepared `completion_kwargs`.
+    - Attempt to generate a response using [`_generate_response`](<#OpenAIStrictAgent_generate_response>) with the prepared `completion_kwargs`.
     - If an exception occurs and more iterations are possible, log the error and return `None`; otherwise, re-raise the exception.
     - Add the generated response message to the message list.
-    - If the response includes tool calls, execute them using [`_execute_tool_calls`](#OpenAIStrictAgent_execute_tool_calls); otherwise, return the response content.
+    - If the response includes tool calls, execute them using [`_execute_tool_calls`](<#OpenAIStrictAgent_execute_tool_calls>); otherwise, return the response content.
 - **Output**: Returns a string containing the response content if no tool calls are present, or `None` if an error occurs and more iterations are possible.
-- **Functions called**:
-    - [`python-backend/packages/shared/shared/agent/agent_openai_strict.OpenAIStrictAgent._generate_response`](#OpenAIStrictAgent_generate_response)
-    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.add_message`](agent_base.py.md#AgentBaseadd_message)
-    - [`python-backend/packages/shared/shared/agent/agent_openai_strict.OpenAIStrictAgent._execute_tool_calls`](#OpenAIStrictAgent_execute_tool_calls)
-- **See also**: [`python-backend/packages/shared/shared/agent/agent_openai_strict.OpenAIStrictAgent`](#OpenAIStrictAgent)  (Base Class)
+- **Functions Called**:
+    - [`python-backend/packages/shared/shared/agent/agent_openai_strict.OpenAIStrictAgent._generate_response`](<#OpenAIStrictAgent_generate_response>)
+    - [`python-backend/packages/shared/shared/agent/agent_base.AgentBase.add_message`](<agent_base.py.md#AgentBaseadd_message>)
+    - [`python-backend/packages/shared/shared/agent/agent_openai_strict.OpenAIStrictAgent._execute_tool_calls`](<#OpenAIStrictAgent_execute_tool_calls>)
+- **See also**: [`python-backend/packages/shared/shared/agent/agent_openai_strict.OpenAIStrictAgent`](<#OpenAIStrictAgent>)  (Base Class)
 
 
 

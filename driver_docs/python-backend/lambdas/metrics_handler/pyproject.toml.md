@@ -3,10 +3,10 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `pyproject.toml` file in the `python-backend` codebase specifies the project configuration for the `metrics-handler` package, including its dependencies, development dependencies, and build system settings.
+Configuration for the `metrics-handler` project using Poetry, specifying dependencies and build settings.
 
 # Purpose
-The provided file is a `pyproject.toml` configuration file used by the Python dependency management tool, Poetry. It defines the metadata and dependencies for a Python project named "metrics-handler" with version "0.1.0". The file specifies the project's author, the location of the README file, and the packages to include, particularly from the "src/utils" directory. It lists the required dependencies for the project, including specific versions of Python, boto3, httpx, and others, as well as development dependencies like pytest and moto. Additionally, it configures the build system to use `poetry-core` and sets options for pytest, such as the test paths and Python path for the project.
+The file is a configuration file for the Poetry dependency management tool, which is used to manage Python project dependencies and packaging. It specifies the project metadata, including the project name `metrics-handler`, version `0.1.0`, and author information. The file defines the dependencies required for the project, such as `boto3`, `httpx`, and `pydantic`, with specific version constraints. It also includes development dependencies under the `dev` group, like `pytest` and `moto`, which are used for testing purposes. Additionally, the file configures the build system to use `poetry-core` and sets options for `pytest`, specifying the test paths and Python path for the project.
 
 ---
 Made with ❤️ by [Driver](https://www.driver.ai/)

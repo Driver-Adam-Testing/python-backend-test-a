@@ -6,7 +6,7 @@
 The `2025_02_05_1616-3b2cb97a373b_update_inspectorrun_to_cascade_delete_.py` file contains an Alembic migration script that updates the `InspectorRun` table to cascade delete related entries and removes the `inspection_version_id` column.
 
 # Purpose
-This source code file is a database migration script using Alembic, a lightweight database migration tool for SQLAlchemy. The script provides narrow functionality, specifically focusing on modifying the schema of a database table named `inspectorrun`. The [`upgrade`](#upgrade) function alters the table to enforce a cascade delete on the `version_id` foreign key, removes the `inspection_version_id` column, and ensures that `version_id` is not nullable. Conversely, the [`downgrade`](#downgrade) function reverses these changes, restoring the `inspection_version_id` column, altering the `version_id` column to be nullable, and changing the foreign key constraint to set `version_id` to null upon deletion. This script is part of a version-controlled sequence of migrations, as indicated by the revision identifiers.
+This source code file is a database migration script using Alembic, a database migration tool for SQLAlchemy. It provides narrow functionality, specifically focusing on modifying the schema of a database table named `inspectorrun`. The script defines two functions, `upgrade()` and `downgrade()`, which are used to apply and revert changes to the database schema, respectively. The `upgrade()` function enforces a cascade delete on the foreign key relationship between `inspectorrun` and `v2_version` tables, removes the `inspection_version_id` column, and ensures that the `version_id` column is not nullable. Conversely, the `downgrade()` function reverses these changes, reintroducing the `inspection_version_id` column and altering the foreign key constraint to set the `version_id` to null upon deletion. This script is part of a version-controlled sequence of database migrations, as indicated by the revision identifiers.
 # Imports and Dependencies
 
 ---
@@ -19,55 +19,55 @@ This source code file is a database migration script using Alembic, a lightweigh
 ---
 ### revision
 - **Type**: `string`
-- **Description**: The `revision` variable is a string that represents the unique identifier for the current database migration script. It is used by Alembic, a database migration tool for SQLAlchemy, to track and apply changes to the database schema.
-- **Use**: This variable is used by Alembic to identify the current migration script in the version control history.
+- **Description**: The `revision` variable is a string that uniquely identifies the current database schema migration in the Alembic migration script. It serves as a unique identifier for this particular migration, allowing Alembic to track the order and application of migrations.
+- **Use**: This variable is used by Alembic to identify and apply the specific migration when upgrading or downgrading the database schema.
 
 
 ---
 ### down\_revision
-- **Type**: `str`
+- **Type**: `string`
 - **Description**: The `down_revision` variable is a string that holds the identifier of the previous database schema revision in an Alembic migration script. It is used to establish a linear sequence of migrations, allowing Alembic to determine the order in which migrations should be applied.
-- **Use**: This variable is used by Alembic to track and apply database schema changes in the correct order.
+- **Use**: This variable is used by Alembic to track the migration history and ensure that migrations are applied in the correct order.
 
 
 ---
 ### branch\_labels
 - **Type**: `NoneType`
-- **Description**: The `branch_labels` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which can be used to label branches in a migration history.
-- **Use**: This variable is used to define branch labels for the migration script, but is currently not utilized as it is set to `None`.
+- **Description**: The `branch_labels` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically includes information about the migration such as revision identifiers and dependencies.
+- **Use**: This variable is used to define branch labels for the migration, but in this case, it is not utilized as it is set to `None`.
 
 
 ---
 ### depends\_on
 - **Type**: `NoneType`
-- **Description**: The `depends_on` variable is a global variable set to `None`. It is part of the Alembic migration script metadata, which typically indicates dependencies on other migrations.
-- **Use**: This variable is used to specify that the current migration does not depend on any other migrations.
+- **Description**: The `depends_on` variable is a global variable set to `None`. It is used in the context of Alembic migrations to specify dependencies between migration scripts.
+- **Use**: This variable is used to indicate that the current migration script does not depend on any other migration script.
 
 
 # Functions
 
 ---
 ### upgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2025_02_05_1616-3b2cb97a373b_update_inspectorrun_to_cascade_delete_.upgrade}} -->
-The `upgrade` function modifies the database schema for the `inspectorrun` table by enforcing non-null constraints, updating foreign key relationships, and removing a column.
+The `upgrade` function modifies the database schema by deleting rows with null `version_id`, altering the `version_id` column to be non-nullable, updating foreign key constraints, and dropping the `inspection_version_id` column.
 - **Inputs**: None
 - **Control Flow**:
     - Execute a SQL command to delete rows from the `inspectorrun` table where `version_id` is NULL.
-    - Alter the `version_id` column in the `inspectorrun` table to make it non-nullable.
-    - Drop the existing foreign key constraint on the `version_id` column in the `inspectorrun` table.
-    - Create a new foreign key constraint on the `version_id` column in the `inspectorrun` table, linking it to the `id` column in the `v2_version` table with a cascade delete action.
+    - Alter the `version_id` column in the `inspectorrun` table to make it non-nullable, specifying its type as `UUID`.
+    - Drop the existing foreign key constraint `inspectorrun_version_id_fkey` from the `inspectorrun` table.
+    - Create a new foreign key constraint on the `inspectorrun` table linking `version_id` to the `id` column of the `v2_version` table with a cascade delete action.
     - Drop the `inspection_version_id` column from the `inspectorrun` table.
 - **Output**: The function does not return any value; it performs schema modifications on the database.
 
 
 ---
 ### downgrade<!-- {{#callable:python-backend/driver_db/database/alembic/versions/2025_02_05_1616-3b2cb97a373b_update_inspectorrun_to_cascade_delete_.downgrade}} -->
-The `downgrade` function reverts database schema changes by adding a column, dropping a foreign key constraint, creating a new foreign key constraint with a different deletion policy, and altering a column's nullability.
+The `downgrade` function reverses database schema changes by adding a column, dropping a foreign key constraint, creating a new foreign key constraint with a different deletion policy, and altering a column's nullability.
 - **Inputs**: None
 - **Control Flow**:
-    - Add a new column `inspection_version_id` to the `inspectorrun` table with type `UUID` and nullable set to `True`.
-    - Drop an existing foreign key constraint from the `inspectorrun` table.
-    - Create a new foreign key constraint `inspectorrun_version_id_fkey` on the `inspectorrun` table referencing the `v2_version` table, with `ondelete` set to `SET NULL`.
-    - Alter the `version_id` column in the `inspectorrun` table to make it nullable.
+    - Add a new column 'inspection_version_id' to the 'inspectorrun' table with type UUID, non-autoincrement, and nullable.
+    - Drop an existing foreign key constraint from the 'inspectorrun' table.
+    - Create a new foreign key constraint 'inspectorrun_version_id_fkey' on the 'inspectorrun' table referencing the 'v2_version' table, with 'ondelete' set to 'SET NULL'.
+    - Alter the 'version_id' column in the 'inspectorrun' table to be nullable.
 - **Output**: The function does not return any value; it performs schema modifications on the database.
 
 

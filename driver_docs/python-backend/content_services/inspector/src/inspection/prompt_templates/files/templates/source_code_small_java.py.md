@@ -3,13 +3,18 @@
 <!-- Manual edits may be overwritten on future commits. --------------------------->
 <!--------------------------------------------------------------------------------->
 
-The `source_code_small_java.py` file defines a template for processing Java source code, including prompts for purpose, imports, interfaces, and classes, using various collections and utilities.
+The `source_code_small_java.py` file defines a template for generating structured prompts related to Java source code, including sections for purpose, imports, interfaces, and classes.
 
 # Purpose
-This Python code defines a configuration for generating structured documentation templates specifically for Java source code. It imports various utilities and classes from different modules to facilitate the analysis and representation of Java code elements such as imports, interfaces, and classes. The `SOURCE_CODE_SMALL_TEMPLATE_JAVA` variable is a list of tuples, each representing a section of the documentation template, including prompts for describing the purpose of the code, and methods for extracting and formatting information about imports, interfaces, and classes using static analysis and language model (LLM) outputs. This code provides narrow functionality focused on creating a structured template for documenting small Java source code files, leveraging both static analysis and machine learning techniques.
+This Python code file is a configuration script that defines a template for generating structured prompts related to Java source code analysis. It imports various components and utilities from shared and specialized modules to construct a template, `SOURCE_CODE_SMALL_TEMPLATE_JAVA`, which outlines how to generate prompts for different sections of Java code, such as purpose, imports, interfaces, and classes. The template uses a combination of static analysis and language model (LLM) outputs to populate these sections, indicating a narrow functionality focused on facilitating structured prompting for Java code documentation or analysis. The code is organized to support the generation of detailed and structured information about Java code components, making it useful for tools that automate code documentation or review processes.
 # Imports and Dependencies
 
 ---
+- `shared.prompts.structured_prompting.GENERAL_STE_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.NO_RESTATEMENT_STYLE_INSTRUCTION_FOR_CODE_PURPOSE`
+- `shared.prompts.structured_prompting.USE_BACKTICKS_STYLE_INSTRUCTION`
+- `shared.prompts.structured_prompting.Component`
+- `shared.prompts.structured_prompting.Prompt`
 - `utils.lang_specialization.ir_common.ListData`
 - `utils.lang_specialization.java.SOURCE_CODE_SMALL_PURPOSE_USER_PROMPT`
 - `utils.lang_specialization.java.SOURCE_CODE_SMALL_SYSTEM_PROMPT_GENERAL_JAVA`
@@ -26,8 +31,8 @@ This Python code defines a configuration for generating structured documentation
 ---
 ### SOURCE\_CODE\_SMALL\_TEMPLATE\_JAVA
 - **Type**: `list`
-- **Description**: `SOURCE_CODE_SMALL_TEMPLATE_JAVA` is a list of tuples, each representing a section of a Java source code template. Each tuple contains a prompt type, a section title, and functions or prompts related to that section, such as system prompts, user prompts, or functions for processing Java code elements like imports, interfaces, and classes.
-- **Use**: This variable is used to define a structured template for generating or analyzing Java source code, with each tuple specifying how to handle different code components.
+- **Description**: `SOURCE_CODE_SMALL_TEMPLATE_JAVA` is a list of tuples, each containing structured data for generating prompts and processing Java source code. Each tuple includes a type identifier, a description, and a series of components or functions that define how to handle specific aspects of Java code, such as purpose, imports, interfaces, and classes.
+- **Use**: This variable is used to define templates for generating structured prompts and processing Java code elements in a systematic way.
 
 
 
